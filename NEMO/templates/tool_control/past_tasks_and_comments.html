@@ -1,0 +1,75 @@
+{% load custom_tags_and_filters %}
+
+{% for i in past %}
+	{% if i|class_name == "Task" %}
+		<div class="media">
+			<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#past_task_{{ i.id }}_details" class="pointer">
+				{% if i.force_shutdown %}
+					<span class="glyphicon glyphicon-fire pull-left notification-icon danger-highlight" title="Click to toggle details about this task"></span>
+				{% else %}
+					<span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight" title="Click to toggle details about this task"></span>
+				{% endif %}
+				<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+			</a>
+			<div class="media-body">
+				{% if i.problem_category %}<h4 class="media-heading">{{ i.problem_category }}</h4>{% endif %}
+				{{ i.problem_description }}<br>
+				<div id="past_task_{{ i.id }}_details" class="collapse">
+					<span class="grey">
+						Created by {{ i.creator }} on {{ i.creation_time }}.<br>
+						{% if i.force_shutdown %}
+							The tool was shut down because of this task.<br>
+						{% endif %}
+						{% if user.is_staff %}
+							You can <a href="{% url 'task_update_form' i.id %}">reopen</a> this task if it was mistakenly resolved.
+						{% endif %}
+					</span>
+					{% if i.progress_description %}
+						<div class="media">
+							<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
+							<div class="media-body">
+								<h4 class="media-heading">Progress updates</h4>
+								{{ i.progress_description|linebreaksbr }}
+							</div>
+						</div>
+					{% endif %}
+					<div class="media">
+						{% if i.status == i.Status.CANCELLED %}
+							<span class="glyphicon glyphicon-remove pull-left notification-icon danger-highlight"></span>
+							<div class="media-body">
+								<h4 class="media-heading">Cancelled</h4>
+								On {{ i.resolution_time }} by {{ i.resolver }}.<br>
+							</div>
+						{% else %}
+							<span class="glyphicon glyphicon-thumbs-up pull-left notification-icon success-highlight"></span>
+							<div class="media-body">
+								<h4 class="media-heading">Resolved <span class="grey">{{ i.resolution_category|default_if_none:"" }}</span></h4>
+								On {{ i.resolution_time }} by {{ i.resolver }}.<br>
+								{{ i.resolution_description|linebreaksbr|default_if_none:"" }}
+							</div>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		</div>
+	{% endif %}
+	{% if i|class_name == "Comment" %}
+		<div class="media">
+			<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#past_comment_{{ i.id }}_details" class="pointer">
+				<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"></span>
+				<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+			</a>
+			<div class="media-body">
+				{{ i.content }}<br>
+				<div id="past_comment_{{ i.id }}_details" class="collapse grey">
+					{{ i.author }} wrote this comment on {{ i.creation_date }}.<br>
+					{% if i.hide_date %}
+						{{ i.hidden_by }} hid the comment on {{ i.hide_date }}.
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	{% endif %}
+{% empty %}
+	No tasks or comments were created between these dates.
+{% endfor %}

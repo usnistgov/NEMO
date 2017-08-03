@@ -1,0 +1,344 @@
+[
+	{
+		"pk": 1,
+		"model": "NEMO.user",
+		"fields": {
+			"username": "cap",
+			"first_name": "Steven",
+			"last_name": "Rogers",
+			"qualifications": [
+				3,
+				2,
+				1
+			],
+			"is_active": true,
+			"is_superuser": false,
+			"is_staff": false,
+			"is_technician": false,
+			"last_login": "2012-12-10T16:44:58Z",
+			"access_expiration": "2014-09-09",
+			"groups": [],
+			"user_permissions": [],
+			"email": "captain.america@avengers.org",
+			"projects": [
+				3,
+				2,
+				1
+			],
+			"date_joined": "2012-12-10T16:43:37Z"
+		}
+	},
+	{
+		"pk": 2,
+		"model": "NEMO.user",
+		"fields": {
+			"username": "ironman",
+			"first_name": "Tony",
+			"last_name": "Stark",
+			"qualifications": [
+				3,
+				2,
+				1
+			],
+			"is_active": true,
+			"is_superuser": false,
+			"is_staff": false,
+			"is_technician": false,
+			"access_expiration": "2014-09-09",
+			"last_login": null,
+			"groups": [],
+			"user_permissions": [],
+			"email": "ironman@avengers.org",
+			"projects": [
+				3,
+				2,
+				1
+			],
+			"date_joined": "2012-12-10T16:48:43Z"
+		}
+	},
+	{
+		"pk": 3,
+		"model": "NEMO.user",
+		"fields": {
+			"username": "thor",
+			"first_name": "Thor",
+			"last_name": "Odinson",
+			"qualifications": [
+				3,
+				2,
+				1
+			],
+			"is_active": true,
+			"is_superuser": false,
+			"is_staff": false,
+			"is_technician": false,
+			"access_expiration": "2014-09-09",
+			"last_login": null,
+			"groups": [],
+			"user_permissions": [],
+			"email": "thor@avengers.org",
+			"projects": [
+				3,
+				2,
+				1
+			],
+			"date_joined": "2012-12-10T16:49:38Z"
+		}
+	},
+	{
+		"pk": 4,
+		"model": "NEMO.user",
+		"fields": {
+			"username": "hulk",
+			"first_name": "Bruce",
+			"last_name": "Banner",
+			"qualifications": [
+				3,
+				2,
+				1
+			],
+			"is_active": true,
+			"is_superuser": false,
+			"is_staff": false,
+			"is_technician": false,
+			"access_expiration": "2014-09-09",
+			"last_login": null,
+			"groups": [],
+			"user_permissions": [],
+			"email": "hulk.smash@avengers.org",
+			"projects": [
+				3,
+				2,
+				1
+			],
+			"date_joined": "2012-12-10T16:50:13Z"
+		}
+	},
+	{
+		"pk": 1,
+		"model": "NEMO.tool",
+		"fields": {
+			"category": "Gen Furnaces",
+			"notification_email_address": "service@avengers.org",
+			"maximum_usage_block_time": null,
+			"name": "Sinter",
+			"secondary_owner": 1,
+			"visible": true,
+			"minimum_usage_block_time": null,
+			"reservation_horizon": 14,
+			"operational": true,
+			"primary_owner": 1,
+			"location": "NanoFab",
+			"phone_number": "x1234"
+		}
+	},
+	{
+		"pk": 2,
+		"model": "NEMO.tool",
+		"fields": {
+			"category": "Chemical Vapor Deposition",
+			"notification_email_address": "service@avengers.org",
+			"maximum_usage_block_time": null,
+			"name": "PECVD",
+			"secondary_owner": 1,
+			"visible": true,
+			"minimum_usage_block_time": null,
+			"reservation_horizon": 14,
+			"operational": true,
+			"primary_owner": 1,
+			"location": "NanoFab",
+			"phone_number": "x1234"
+		}
+	},
+	{
+		"pk": 3,
+		"model": "NEMO.tool",
+		"fields": {
+			"category": "Packaging",
+			"notification_email_address": "service@avengers.org",
+			"maximum_usage_block_time": null,
+			"name": "Dicing saw",
+			"secondary_owner": 1,
+			"visible": true,
+			"minimum_usage_block_time": null,
+			"reservation_horizon": 14,
+			"operational": true,
+			"primary_owner": 1,
+			"location": "NanoFab",
+			"phone_number": "x1234"
+		}
+	},
+	{
+		"pk": 1,
+		"model": "NEMO.configuration",
+		"fields": {
+			"prompt": "What blade type do you need to use?",
+			"advance_notice_limit": 18,
+			"available_settings": "Metal Blade, Resin Blade, SiC Blade",
+			"tool": 3,
+			"display_priority": 0,
+			"maintainers": [
+				1,
+				2,
+				4,
+				3
+			],
+			"configurable_item_name": "Blade",
+			"current_settings": "SiC Blade",
+			"name": "Blade type"
+		}
+	},
+	{
+		"pk": 1,
+		"model": "NEMO.account",
+		"fields": {
+			"active": true,
+			"name": "Thor Labs"
+		}
+	},
+	{
+		"pk": 2,
+		"model": "NEMO.account",
+		"fields": {
+			"active": true,
+			"name": "Stark Industries"
+		}
+	},
+	{
+		"pk": 3,
+		"model": "NEMO.account",
+		"fields": {
+			"active": true,
+			"name": "Shield"
+		}
+	},
+	{
+		"pk": 1,
+		"model": "NEMO.project",
+		"fields": {
+			"active": true,
+			"account": 1,
+			"name": "Mjolnir",
+			"application_identifier": "THOR.382"
+		}
+	},
+	{
+		"pk": 2,
+		"model": "NEMO.project",
+		"fields": {
+			"active": true,
+			"account": 2,
+			"name": "Jarvis ASIC",
+			"application_identifier": "STARK.294"
+		}
+	},
+	{
+		"pk": 3,
+		"model": "NEMO.project",
+		"fields": {
+			"active": true,
+			"account": 3,
+			"name": "Force-field armor",
+			"application_identifier": "SHIELD.472"
+		}
+	},
+	{
+		"pk": 1,
+		"model": "NEMO.consumable",
+		"fields": {
+			"name": "Tweezers",
+			"quantity": 10,
+			"reminder_threshold": 5,
+			"reminder_email": "service@avengers.org"
+		}
+	},
+	{
+		"pk": 2,
+		"model": "NEMO.consumable",
+		"fields": {
+			"name": "2 inch wafer tray",
+			"quantity": 10,
+			"reminder_threshold": 5,
+			"reminder_email": "service@avengers.org"
+		}
+	},
+	{
+		"pk": 1,
+		"model": "NEMO.taskcategory",
+		"fields": {
+			"name": "User error",
+			"stage": 0
+		}
+	},
+	{
+		"pk": 2,
+		"model": "NEMO.taskcategory",
+		"fields": {
+			"name": "Computer error",
+			"stage": 0
+		}
+	},
+	{
+		"pk": 3,
+		"model": "NEMO.taskcategory",
+		"fields": {
+			"name": "Tony fixed it",
+			"stage": 1
+		}
+	},
+	{
+		"pk": 4,
+		"model": "NEMO.taskcategory",
+		"fields": {
+			"name": "Magic",
+			"stage": 1
+		}
+	},
+	{
+		"pk": 1,
+		"model": "NEMO.resourcecategory",
+		"fields": {
+			"name": "Facility"
+		}
+	},
+	{
+		"pk": 2,
+		"model": "NEMO.resourcecategory",
+		"fields": {
+			"name": "Gases"
+		}
+	},
+	{
+		"pk": 1,
+		"model": "NEMO.resource",
+		"fields": {
+			"available": true,
+			"name": "NanoFab",
+			"category": 1,
+			"fully_dependent_tools": [
+				3,
+				2,
+				1
+			],
+			"restriction_message": "The NanoFab is closed."
+		}
+	},
+	{
+		"pk": 2,
+		"model": "NEMO.resource",
+		"fields": {
+			"available": true,
+			"name": "Oxygen",
+			"category": 2,
+			"fully_dependent_tools": [
+				3,
+				2
+			],
+			"partially_dependent_tools": [
+				1
+			],
+			"restriction_message": "No more oxygen!"
+		}
+	}
+]

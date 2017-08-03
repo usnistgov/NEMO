@@ -1,0 +1,82 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<meta name="application-name" content="NanoFab Equipment Management and Operations (NEMO)">
+	<meta name="author" content="Dylan Klomparens">
+	<meta name="description" content="NEMO allows NanoFab users to make tool reservations, control access to tools in the NanoFab, and streamline logistics and communication">
+	<meta name="keywords" content="NanoFab, logistics, operations, nano-technology, nano-fabrication, reservation, tool control, status">
+
+	{# Snippet to prevent clickjacking. Taken from https://www.codemagi.com/blog/post/194 #}
+	<style id="antiClickjack">body{display:none !important;}</style>
+	<!--suppress JSValidateTypes -->
+	<script type="text/javascript">
+		if (self === top)
+		{
+			var antiClickjack = document.getElementById("antiClickjack");
+			antiClickjack.parentNode.removeChild(antiClickjack);
+		}
+		else
+			top.location = self.location;
+	</script>
+
+	<title>NEMO - NanoFab Equipment Management and Operations website</title>
+	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.css" %}"/>
+</head>
+<body>
+	<div class="container">
+		<div class="col-md-8 col-md-offset-2" style="text-align:center; margin-bottom:30px"><h1>Welcome to the NanoFab Equipment Management &amp; Operations website</h1></div>
+
+		<form method="post" class="form-horizontal" autocomplete="off" id="login_form">
+			{% csrf_token %}
+
+			<div class="form-group">
+				<div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
+					<input type="text" id="username" name="username" class="form-control" placeholder="User name" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" autofocus>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
+					<input type="password" id="password" name="password" class="form-control" placeholder="Password" autocomplete="off">
+				</div>
+			</div>
+
+			<div class="form-group">
+				<div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
+					<input type="submit" class="btn btn-success form-control" value="Log in">
+				</div>
+			</div>
+		</form>
+
+		<div class="alert alert-danger" style="display:none" id="cookie_error">
+			NEMO relies on cookies to work properly. Please modify your web browser settings
+			to allow this site to use cookies. Reload this page after modifying the settings
+			and you will be able to log in.
+		</div>
+
+		{% if user_name_or_password_incorrect %}
+			<div class="alert alert-danger">
+				<span class="glyphicon icon-info"></span> The user name or password was not valid.
+			</div>
+		{% endif %}
+
+		<div class="alert alert-info">
+			You are accessing a U.S. Government information system, which includes: 1) this computer, 2) this computer network, 3) all computers connected to this network, and 4) all devices and storage media attached to this network or to a computer on this network. You understand and consent to the following: you may access this information system for authorized use only; you have no reasonable expectation of privacy regarding any communication of data transiting or stored on this information system; at any time and for any lawful Government purpose, the Government may monitor, intercept, and search and seize any communication or data transiting or stored on this information system; and any communications or data transiting or stored on this information system may be disclosed or used for any lawful Government purpose.
+		</div>
+	</div>
+
+	<script>
+		if(!navigator.cookieEnabled)
+		{
+			document.getElementById("login_form").style.display = "none";
+			document.getElementById("cookie_error").style.display = "block";
+		}
+	</script>
+
+</body>
+</html>

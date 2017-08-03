@@ -1,0 +1,19 @@
+<h1>According to our records, you're already logged into the {{ area|lower }} under the project named {{ project }}.</h1>
+<h2>Please visit the NanoFab user office if you believe this is an error.</h2>
+<h2>What would you like to do?</h2>
+<p>
+	<a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="revert_to_default_content()">
+		Do nothing and keep me logged in
+	</a>
+</p>
+<p>
+	<a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="just_open_the_door({{ badge_number }})">
+		Open the door and keep me logged in
+	</a>
+</p>
+<p>
+	<a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="exit_area({{ badge_number }})">
+		Log out of the {{ area|lower }}
+	</a>
+</p>
+<script>revert(15);</script>

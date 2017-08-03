@@ -1,0 +1,184 @@
+<div class="row" style="margin-top:30px">
+	<div class="col-xs-offset-3 col-xs-6" onclick="load_choices({{ customer.badge_number }})">
+		<div class="alert alert-warning" style="text-align:center; margin-bottom:0; font-size:x-large">
+			Go back
+		</div>
+	</div>
+</div>
+
+<h1>{{ tool }}</h1>
+
+{# Display tool status... #}
+{% if tool.in_use %}
+	<div class="primary-highlight">
+		<span class="glyphicon glyphicon-user pull-left status-icon"></span>
+		{% with tool.get_current_usage_event as current_usage_event %}
+			<h3>
+				{% if current_usage_event.operator.id == customer.id %}
+					You are using this tool
+				{% else %}
+					{{ current_usage_event.operator }} is using this tool
+				{% endif %}
+				{% if current_usage_event.operator.id != current_usage_event.user.id %}
+					on behalf of {{ current_usage_event.user }}
+				{% endif %}
+				for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start }}.
+			</h3>
+		{% endwith %}
+	</div>
+{% elif tool.delayed_logoff_in_progress %}
+	{% with tool.get_delayed_logoff_usage_event as delayed_logoff_event %}
+		<div class="primary-highlight">
+			<span class="glyphicon glyphicon-time pull-left status-icon"></span>
+			<h3>{{ delayed_logoff_event.operator }} has finished using the {{ tool }} but delayed logoff is in effect. The tool will be available at {{ delayed_logoff_event.end|time }}.</h3>
+		</div>
+	{% endwith %}
+{% elif not tool.operational or tool.required_resource_is_unavailable %}
+	<div class="danger-highlight">
+		<span class="glyphicon glyphicon-ban-circle pull-left status-icon"></span>
+		<h3>This tool is <strong>shut down</strong>.</h3>
+	</div>
+{% elif tool.nonrequired_resource_is_unavailable %}
+	<div class="warning-highlight">
+		<span class="glyphicon glyphicon-exclamation-sign pull-left status-icon"></span>
+		<h3>This tool is <strong>operational</strong> but not all resources are available.</h3>
+	</div>
+{% else %}
+	<div class="success-highlight">
+		<span class="glyphicon glyphicon-ok pull-left status-icon"></span>
+		<h3>This tool is <strong>operational</strong> and <strong>idle</strong>.</h3>
+	</div>
+{% endif %}
+
+{# Display any unavailable required resources... #}
+{% for r in tool.unavailable_required_resources %}
+	<div class="media">
+		<span class="glyphicon glyphicon-leaf pull-left notification-icon danger-highlight"></span>
+		<div class="media-body">
+			<h4 class="media-heading">A required resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></h4>
+			{{ r.restriction_message }}
+		</div>
+	</div>
+{% endfor %}
+
+{# Display any unavailable non-required resources... #}
+{% for r in tool.unavailable_nonrequired_resources %}
+	<div class="media">
+		<span class="glyphicon glyphicon-leaf pull-left notification-icon warning-highlight"></span>
+		<div class="media-body">
+			<h4 class="media-heading">An optional resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></h4>
+			{{ r.restriction_message }}
+		</div>
+	</div>
+{% endfor %}
+
+{# Display all problems and shutdowns... #}
+{% for t in tool.problems %}
+	<div class="media">
+		<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#task_{{ t.id }}_details" class="pointer">
+			{% if t.force_shutdown %}
+				<span class="glyphicon glyphicon-fire pull-left notification-icon danger-highlight"></span>
+			{% else %}
+				<span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight"></span>
+			{% endif %}
+			<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+		</a>
+		<div class="media-body">
+			{% if t.problem_category %}<h4 class="media-heading">{{ t.problem_category }}</h4>{% endif %}
+			{{ t.problem_description }}
+			{% if t.estimated_resolution_time %}<br>Estimated resolution time is {{ t.estimated_resolution_time }}.{% endif %}
+			<div id="task_{{ t.id }}_details" class="collapse">
+						<span class="grey">
+							This task was created by {{ t.creator }} on {{ t.creation_time }}.
+							{% if t.force_shutdown %}
+								The tool will remain shut down until this task is resolved.
+							{% endif %}
+						</span>
+				{% if t.progress_description %}
+					<div class="media">
+						<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
+						<div class="media-body">
+							<h4 class="media-heading">Progress updates</h4>
+							{{ t.progress_description|linebreaksbr }}
+						</div>
+					</div>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+{% endfor %}
+
+{# Display all comments... #}
+{% for c in tool.comments %}
+	<div class="media">
+		<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"></span>
+		<div class="media-body">
+			{{ c.content }}<br>
+			<span style="color:grey; font-style:italic">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
+		</div>
+	</div>
+{% endfor %}
+
+{% if rendered_configuration_html %}
+	<div class="form-group">
+		<h3>Configuration</h3>
+		{{ rendered_configuration_html }}
+	</div>
+{% endif %}
+
+{# Display tool control... #}
+<form id="tool_control" style="margin-top:20px">
+	{% csrf_token %}
+	<input type="hidden" name="tool_id" value="{{ tool.id }}">
+	<input type="hidden" name="customer_id" value="{{ customer.id }}">
+	{% if tool.in_use %}
+		{% if tool.get_current_usage_event.operator.id == customer.id or tool.get_current_usage_event.user.id == customer.id %}
+			<div class="col-xs-offset-3 col-xs-6">
+				<div class="alert alert-danger" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="disable_tool()">
+					<span class="glyphicon glyphicon-stop"></span> Stop using the {{ tool.name }}
+					{% if remaining_reservation_duration %}
+						and relinquish the remaining {{ remaining_reservation_duration }} minutes of your reservation
+					{% endif %}
+				</div>
+			</div>
+		{% endif %}
+	{% else %}
+		{% if customer.is_staff or tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and tool in customer.qualifications.all %}
+			{% with customer.active_projects as active_projects %}
+				{% if active_projects|length == 0 %}
+					<h3>You cannot use any tools because you are not a member of an active project. Please visit the NanoFab User Office to begin a project.</h3>
+				{% elif active_projects|length == 1 %}
+					<h3>Tool usage will be billed to the project named &quot;{{ active_projects.0 }}&quot;.</h3>
+					<input type="hidden" name="project_id" value="{{ active_projects.0.id }}">
+					<script>
+						$("#start").show();
+					</script>
+				{% else %}
+					<h3>Charge tool usage to which project?</h3>
+					<div class="list-group" style="display:table">
+						{% for project in active_projects %}
+							<a href="javascript:void(0)" class="list-group-item project-choice" style="font-size:large" onclick="select_project(this, {{ project.id }})">{{ project.name }}</a>
+						{% endfor %}
+					</div>
+					<input type="hidden" name="project_id" id="project_id">
+				{% endif %}
+			{% endwith %}
+			<div id="start" class="col-xs-offset-3 col-xs-6" style="display:none; margin-top:20px">
+				<div class="alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="enable_tool()">
+					<span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}
+				</div>
+			</div>
+		{% elif tool not in customer.qualifications.all %}
+			<h3 class="light-grey">
+				You have not been qualified to use this tool yet.
+				Please contact the primary tool owner, {{ tool.primary_owner }}, if you would like to receive training for tool qualification.
+				{% if tool.primary_owner.id != tool.secondary_owner.id %}
+					If you are unable to reach {{ tool.primary_owner }} then please contact {{ tool.secondary_owner }}.
+				{% endif %}
+			</h3>
+		{% endif %}
+	{% endif %}
+</form>
+<div style="height:150px">{# Spacer #}</div>
+
+<script>revert(60);</script>

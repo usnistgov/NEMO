@@ -1,0 +1,57 @@
+<div class="row" style="margin-top:30px">
+	<div class="col-xs-offset-3 col-xs-6" onclick="revert()">
+		<div class="alert alert-warning" style="text-align:center; margin-bottom:0">
+			<span style="font-size:x-large">I've finished using this kiosk</span>
+		</div>
+	</div>
+</div>
+
+{% if usage_events %}
+	<h1>Current NanoFab usage</h1>
+	<div class="row">
+		{% for u in usage_events %}
+			<div class="col-xs-6">
+				<div class="alert alert-info" onclick="tool_information('{% url 'kiosk_tool_information' u.tool.id customer.id %}')">
+					<span style="font-size:x-large">{{ u.tool }}</span><br>
+					You are using this tool for the project named <strong>{{ u.project }}</strong> since <strong>{{ u.start|date:"l @ g:i A" }}</strong>
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+{% endif %}
+<h1>Nearby tools</h1>
+<div class="row">
+	{% for tool in tools %}
+		<div class="col-xs-6">
+			<div class="panel panel-default" onclick="tool_information('{% url 'kiosk_tool_information' tool.id customer.id %}')">
+				<div class="panel-body">
+
+					<span style="font-size:x-large; margin-right:10px">{{ tool }}</span>
+
+					{% if tool.in_use %}
+						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-user primary-highlight"></span>
+					{% endif %}
+
+					{% if tool.delayed_logoff_in_progress %}
+						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-time primary-highlight"></span>
+					{% endif %}
+
+					{% if tool.required_resource_is_unavailable %}
+						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-leaf danger-highlight"></span>
+					{% elif tool.nonrequired_resource_is_unavailable %}
+						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-leaf warning-highlight"></span>
+					{% endif %}
+
+					{% if tool.operational == False %}
+						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-fire danger-highlight"></span>
+					{% elif tool.problematic == True %}
+						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-wrench warning-highlight"></span>
+					{% endif %}
+
+				</div>
+			</div>
+		</div>
+	{% endfor %}
+</div>
+
+<script>revert(60);</script>

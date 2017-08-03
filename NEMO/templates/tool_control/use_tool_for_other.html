@@ -1,0 +1,8 @@
+<input type="text" id="user_search" placeholder="Which user?" class="form-control" style="width:270px">
+<button id="customer" class="btn btn-default" style="display:none" onclick="clear_customer(); return false"></button><p>
+<div id="customer_project"></div>
+
+<script>
+	{% load custom_tags_and_filters %}
+	$('#user_search').autocomplete('users', load_projects, {{ users|json_search_base }}).focus();
+</script>

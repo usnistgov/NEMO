@@ -1,0 +1,50 @@
+<table class="table table-bordered table-condensed">
+	<thead>
+	<tr>
+		<th>Tool</th>
+		<th>User</th>
+		<th>In use since...</th>
+	</tr>
+	</thead>
+	<tbody>
+	{% for tool in tool_summary %}
+		<tr class="{% if tool.problematic or not tool.operational or tool.required_resource_is_unavailable or tool.nonrequired_resource_is_unavailable %}problematic{% else %}healthy{% endif %} {% if tool.in_use %}in_use{% else %}idle{% endif %}">
+			<td>
+				{{ tool.name }}
+				{# Output the state of the tool, summarizing any associated problems. #}
+				{% if tool.in_use %}
+					<span class="glyphicon glyphicon-user primary-highlight" title="{{ tool.user }} is using this tool"></span>
+				{% endif %}
+				{% if tool.delayed_logoff_in_progress %}
+					<span class="glyphicon glyphicon-time primary-highlight" title="Delayed logoff is in effect for this tool"></span>
+				{% endif %}
+				{% if tool.problematic %}
+					<span class="glyphicon glyphicon-wrench warning-highlight" title="This tool requires maintenance"></span>
+				{% endif %}
+				{% if tool.operational == False %}
+					<span class="glyphicon glyphicon-fire danger-highlight" title="This tool is shut down"></span>
+				{% endif %}
+				{% if tool.required_resource_is_unavailable %}
+					<span class="glyphicon glyphicon-leaf danger-highlight" title="This tool is unavailable because a required resource is unavailable"></span>
+				{% endif %}
+				{% if tool.nonrequired_resource_is_unavailable %}
+					<span class="glyphicon glyphicon-leaf warning-highlight" title="This tool is operating in a diminished capacity because an optional resource is unavailable"></span>
+				{% endif %}
+			</td>
+			{% if tool.in_use %}
+				{# Output the operator & user of the tool. If the person viewing this page is a staff member, then also allow them to force the operator off the tool. #}
+				<td>
+					{% if user.is_staff %}
+						<span class="glyphicon glyphicon-remove-circle grey pointer" onclick="force_user_off_of_tool('{% url 'disable_tool' tool.id %}')" title="Force {{ tool.operator }} to stop using the {{ tool.name }}"></span>
+					{% endif %}
+					{{ tool.user }}
+				</td>
+				<td>{{ tool.in_use_since|date:"l @ g:i A" }}</td>
+			{% else %}
+				<td></td>
+				<td></td>
+			{% endif %}
+		</tr>
+	{% endfor %}
+	</tbody>
+</table>

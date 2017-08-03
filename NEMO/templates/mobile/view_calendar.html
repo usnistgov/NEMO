@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{{ tool }} calendar{% endblock %}
+{% block content %}
+	<div class="row" style="font-size:1.7em; margin-bottom:20px">
+		<div class="col-xs-2"><a href="{% url 'view_calendar' tool.id %}{{ previous_day|date:"Y-m-d" }}/"><span class="glyphicon glyphicon-chevron-left"></span></a></div>
+		<div class="col-xs-8" style="text-align:center">
+			{{ tool }}<br>
+			{{ current_day|date:"l" }}<br>
+			{{ current_day|date:"F jS" }}
+		</div>
+		<div class="col-xs-2"><a href="{% url 'view_calendar' tool.id %}{{ next_day|date:"Y-m-d" }}/"><span class="glyphicon glyphicon-chevron-right"></span></a></div>
+	</div>
+	{% for reservation in reservations %}
+		{% include 'mobile/individual_reservation.html' %}
+	{% empty %}
+		<div style="text-align:center">There are no reservations</div>
+	{% endfor %}
+	<a href="{% url 'new_reservation' tool.id current_day_string %}">
+		<svg height="50" width="50" style="position:fixed; right:15px; bottom:15px">
+			<circle cx="25" cy="25" r="25" fill="green"></circle>
+			<rect x="24" y="15" width="3" height="20" fill="white"></rect>
+			<rect x="15" y="24" width="21" height="3" fill="white"></rect>
+		</svg>
+	</a>
+{% endblock %}

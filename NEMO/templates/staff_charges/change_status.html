@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Staff charges{% endblock %}
+{% block content %}
+	<h1>Staff charges</h1>
+	<form action="{% url 'end_staff_charge' %}" class="form-horizontal" method="post">
+		{% csrf_token %}
+		<input type="submit" class="btn btn-primary" value="I have finished working on this project">
+	</form>
+	{% if areas %}
+		<div style="height:50px"></div>
+		<form action="{% url 'begin_staff_area_charge' %}" class="form-horizontal" method="post">
+			{% csrf_token %}
+			<p>I have entered a billable area on behalf of this user:</p>
+			{% for a in areas %}
+				<div class="radio">
+					<label><input type="radio" name="area" value="{{ a.id }}" required> {{ a }}</label>
+				</div>
+			{% endfor %}
+			<br>
+			<input type="submit" class="btn btn-primary" value="Begin billing for area access">
+		</form>
+	{% endif %}
+{% endblock %}

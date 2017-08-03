@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Configuration agenda{% endblock %}
+{% block content %}
+	<h1>Configuration agenda
+		<small>for {% if time_period == 'today' %}today{% elif time_period == 'near_future' %}the near future{% endif %}</small>
+	</h1>
+	{% if tools %}
+		<p>
+			Below is a list of reservations which require tool configurations.
+			The reservations are grouped by tool and ordered by start time.
+			Reservations that have a red background were created on short notice,
+			thus there is no guarantee the tool will be configured properly when the user arrives.
+			Reservations that have already started or have no configuration information are excluded.
+			You can also
+			{% if time_period == 'today' %}
+				<a href="{% url 'configuration_agenda_near_future' %}">view reservations in the near future</a>
+			{% elif time_period == 'near_future' %}
+				<a href="{% url 'configuration_agenda' %}">view reservations for today</a>
+			{% endif %}
+			that will require configuration changes.
+		</p>
+		{% for tool in tools %}
+			<table class="table table-bordered">
+				<thead>
+				<tr style="border:2px solid black" class="info">
+					<th colspan="2" style="text-align:center; font-size:large; border:2px solid black">
+						<a href="{% url 'calendar' tool.id %}" title="View the {{ tool }} calendar" target="_blank">
+							{{ tool.name }}
+						</a>
+					</th>
+				</tr>
+				</thead>
+				{% regroup reservations|dictsort:"tool.id" by tool as regrouped_reservations %}
+				{% for t in regrouped_reservations %}
+					{% if t.grouper.id == tool.id %}
+						{% for reservation in t.list %}
+							<tr style="border:2px solid black">
+								<td style="width:50%;border:2px solid black" {% if reservation.short_notice %}class="danger"{% endif %}>
+									<p>
+										{{ reservation.user }}<br>
+										{% if reservation.project %}{{ reservation.project }}<br>{% endif %}
+										{{ reservation.start }}<br>
+										{{ reservation.end }}<br>
+										{{ reservation.additional_information|linebreaksbr }}
+									</p>
+									{% if not reservation.tool.in_use and reservation.project %}
+										<button class="btn btn-info" onclick="enable_tool({{ reservation.tool.id }}, {{ reservation.user.id }}, {{ reservation.project.id }})">
+											Enable the tool on behalf of {{ reservation.user.first_name }}
+										</button>
+									{% endif %}
+								</td>
+								{% if forloop.first %}
+									<td style="width:50%;border:2px solid black" rowspan="100">
+										{% for id, widget in configuration_widgets.items %}
+											{% if tool.id == id %}
+												{{ widget }}
+											{% endif %}
+										{% endfor %}
+										{% if reservation.tool.in_use %}
+											{% if reservation.tool.get_current_usage_event.operator.id == user.id %}
+												<button id="interlock" type="button" class="btn btn-default" onclick="disable_tool('{% url 'disable_tool' reservation.tool.id %}')">Disable tool</button>
+											{% else %}
+												<button type="button" class="btn btn-default disabled"><span class="glyphicon glyphicon-ban-circle"></span> Tool in use</button>
+											{% endif %}
+										{% else %}
+											{% if user.active_project_count == 1 %}
+												<button id="interlock" type="button" class="btn btn-default" onclick="enable_tool({{ reservation.tool.id }}, {{ user.id }}, {{ user.active_projects.0.id }})">Enable the tool for myself</button>
+											{% elif user.active_project_count > 1 %}
+												<div class="btn-group">
+													<button id="interlock" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Enable the tool for myself <span class="caret"></span></button>
+													<ul class="dropdown-menu">
+														<li class="dropdown-header">Using which project?</li>
+														{% for project in user.active_projects %}
+															<li><a href="javascript:void(0)" onclick="enable_tool({{ reservation.tool.id }}, {{ user.id }}, {{ project.id }})">{{ project.name }}</a></li>
+														{% endfor %}
+													</ul>
+												</div>
+											{% endif %}
+										{% endif %}
+									</td>
+								{% endif %}
+							</tr>
+						{% endfor %}
+					{% endif %}
+				{% endfor %}
+			</table>
+		{% endfor %}
+		<script>
+			function enable_tool(tool_id, user_id, project_id)
+			{
+				var url = "/enable_tool/" + tool_id + "/user/" + user_id + "/project/" + project_id + "/staff_charge/false/";
+				var failure_dialog = ajax_failure_callback("Unable to enable tool");
+				ajax_post(url, undefined, reload_page, failure_dialog);
+			}
+
+			function disable_tool(url)
+			{
+				var failure_dialog = ajax_failure_callback("Unable to disable tool");
+				ajax_post(url, undefined, reload_page, failure_dialog);
+			}
+
+			function reload_page(response, status, xml_http_request)
+			{
+				location.reload(true);
+			}
+		</script>
+	{% else %}
+		<p>No tools require configuration {% if time_period == 'today' %}today{% elif time_period == 'near_future' %}for the near future{% endif %}.</p>
+		<p>
+			You can also
+			{% if time_period == 'today' %}
+				<a href="{% url 'configuration_agenda_near_future' %}">view reservations in the near future</a>
+			{% elif time_period == 'near_future' %}
+				<a href="{% url 'configuration_agenda' %}">view reservations for today</a>
+			{% endif %}
+			that will require configuration changes.
+		</p>
+	{% endif %}
+{% endblock %}

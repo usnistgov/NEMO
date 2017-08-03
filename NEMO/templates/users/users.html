@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Users{% endblock %}
+{% block content %}
+	<h1>
+		Users
+		<a href="{% url 'create_or_modify_user' 'new' %}" class="btn btn-success pull-right">New user</a>
+	</h1>
+	<div class="row">
+		<div class="col-md-4">
+			<input id="search" type="text" placeholder="Search for a user" class="form-control" autofocus>
+		</div>
+	</div>
+	<script>
+		function get_user(jquery_event, search_selection, dataset_name)
+		{
+			window.location.href = '/user/' + search_selection.id + '/';
+		}
+		function on_load()
+		{
+			$("#search").autocomplete('users', get_user, {{ users|json_search_base }}).focus();
+		}
+		$(on_load);
+	</script>
+{% endblock %}

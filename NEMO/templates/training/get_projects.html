@@ -1,0 +1,13 @@
+{% if projects|length == 0 %}
+	<span class="danger-highlight">No active projects</span>
+{% elif projects|length == 1 %}
+	{{ projects.0.name }}
+	<input type="hidden" name="chosen_project__{{ entry_number }}" value="{{ projects.0.id }}">
+{% else %}
+	<select name="chosen_project__{{ entry_number }}" class="form-control" id="chosen_project__{{ entry_number }}">
+		<option value="-1">&nbsp;</option>
+		{% for p in projects %}
+			<option value="{{ p.id }}">{{ p.name }}</option>
+		{% endfor %}
+	</select>
+{% endif %}

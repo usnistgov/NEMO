@@ -1,0 +1,18 @@
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal">&times;</button>
+	<h4 class="modal-title">{{ event.area }} access details</h4>
+</div>
+<div class="modal-body">
+	{% if event.staff_charge %}
+		This {{ event.area|lower }} charge was incurred by {{ event.staff_charge.staff_member }} while performing work on the customer's behalf.<p>
+	{% endif %}
+	Customer: {{ event.customer }}<br>
+	Project: {{ event.project.name }}<br>
+	Start: {{ event.start }}<br>
+	{% if event.end %}
+		End: {{ event.end }}<br>
+	{% else %}
+		{{ event.area }} time is currently being charged for this project.<br>
+	{% endif %}
+	Identifier: {{ event.id }}
+</div>

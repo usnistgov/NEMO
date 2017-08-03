@@ -1,0 +1,51 @@
+{# This template is shared by both the desktop and mobile versions of NEMO. #}
+{# It is included from templates/calendar/configuration.html for the desktop version #}
+{# and from templates/mobile/new_reservation.html from the mobile version. #}
+{# If you modify this template then please check that both versions work. #}
+
+<div class="form-group">
+	{% for config in configurations %}
+		{% if config.prompt %}<p>{{ config.prompt }}</p>{% endif %}
+		{% if config.current_settings_as_list|length == 1 %}
+			<label for="configuration_{{ config.id }}__slot_0__display_priority_{{ config.display_priority }}">{{ config.name }}:</label>
+			<select class="form-control" name="configuration_{{ config.id }}__slot_0__display_priority_{{ config.display_priority }}" id="configuration_{{ config.id }}__slot_0__display_priority_{{ config.display_priority }}">
+				{% if config.absence_string %}
+					<option value="">{{ config.absence_string }}</option>
+				{% endif %}
+				{% for setting in config.available_settings_as_list %}
+					<option value={{ forloop.counter0 }}>{{ setting }}</option>
+				{% endfor %}
+			</select>
+		{% else %}
+			{{ config.name }}:<br>
+			{% for slot in config.range_of_configurable_items %}
+				<label for="configuration_{{ config.id }}__slot_{{ slot }}__display_priority_{{ config.display_priority }}">{{ config.configurable_item_name }}:</label>
+				<select class="form-control" name="configuration_{{ config.id }}__slot_{{ slot }}__display_priority_{{ config.display_priority }}" id="configuration_{{ config.id }}__slot_{{ slot }}__display_priority_{{ config.display_priority }}">
+					{% if config.absence_string %}
+						<option value="">{{ config.absence_string }}</option>
+					{% endif %}
+					{% for setting in config.available_settings_as_list %}
+						<option value={{ forloop.counter0 }}>{{ setting }}</option>
+					{% endfor %}
+				</select>
+				<br>
+			{% endfor %}
+		{% endif %}
+		<p>
+	{% endfor %}
+</div>
+
+{% if able_to_self_configure %}
+	<div class="form-group">
+		<div class="checkbox">
+			<label data-toggle="tooltip" data-placement="bottom" title="Checking this box indicates you wish to perform the tool configuration instead of having the NanoFab staff configure the tool. If you configure the tool, you are responsible for recording the configuration change.">
+				<input type="checkbox" name="self_configuration"> I will configure the tool myself
+			</label>
+		</div>
+	</div>
+{% endif %}
+
+<div class="form-group">
+	<label for="additional_information">Do you have anything else to add? (Optional)</label>
+	<textarea name="additional_information" id="additional_information" rows="7" class="form-control" maxlength="{{ additional_information_maximum_length }}" placeholder="Please provide any additional information regarding tool configuration for your reservation (using less than 3000 characters)."></textarea>
+</div>

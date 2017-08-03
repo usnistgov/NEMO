@@ -1,0 +1,49 @@
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal">&times;</button>
+	<h4 class="modal-title">{{ reservation.tool }} reservation details</h4>
+</div>
+<div class="modal-body">
+	{% if reservation.short_notice %}
+		<div class="alert alert-danger">NanoFab staff were not given sufficient notice to configure this tool. There is no guarantee that this tool will be configured properly at time of use.</div>
+	{% endif %}
+	{% if reservation.missed %}
+		<div class="alert alert-danger">This reservation was automatically removed from the tool calendar due to tool inactivity.</div>
+	{% endif %}
+
+	User: {{ reservation.user }}<br>
+	Created by: {{ reservation.creator }}<br>
+	Created on: {{ reservation.creation_time }}<br>
+	Tool: {{ reservation.tool }}<br>
+	{% if reservation.project %}Project: {{ reservation.project }}<br>{% endif %}
+	Start: {{ reservation.start }}<br>
+	End: {{ reservation.end }}<br>
+	Identifier: {{ reservation.id }}<br>
+	{% if reservation.self_configuration %}
+		{{ reservation.user }} has opted to perform the tool configuration.<br>
+	{% endif %}
+	{% if reservation.additional_information %}
+		Additional information:<br>
+		{{ reservation.additional_information|linebreaksbr }}
+	{% endif %}
+</div>
+{# Allow the user to cancel the reservation if they have that priviledge. #}
+{% if not reservation.missed and not reservation.cancelled %}
+	{% if reservation.user.id == user.id and reservation.has_not_ended or user.is_staff %}
+		<div class="modal-footer">
+			{# You must provide a reason if you are cancelling someone else's reservation. #}
+			{% if reservation.user == user %}
+				<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_reservation('{% url 'cancel_reservation' reservation.id %}', {{ reservation.id }}) })">Cancel this reservation</button>
+			{% else %}
+				<div class="input-group">
+					<input type="text" id="reason" class="form-control" placeholder="Reason for cancellation (required)" maxlength="3000">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_reservation('{% url 'cancel_reservation' reservation.id %}', {{ reservation.id }}, $('#reason').val()) })">Cancel this reservation</button>
+					</span>
+				</div>
+				<script>
+					autofocus("#reason");
+				</script>
+			{% endif %}
+		</div>
+	{% endif %}
+{% endif %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Staff charges{% endblock %}
+{% block content %}
+	<h1>Staff charges</h1>
+	<p>Use this form to charge a user for staff time and area access time when you are working on a project on their behalf. You may only work on one user project at a time for a customer.</p>
+	{% if error %}
+		<div class="alert alert-danger">
+			{{ error }}
+		</div>
+	{% endif %}
+	<form id="new_staff_charge" action="{% url 'staff_charges' %}" class="form-horizontal" method="get">
+		<div class="form-group">
+			<label for="customer_search" class="control-label col-sm-1">Customer</label>
+			<div class="col-sm-4">
+				<input id="customer_search" type="text" class="form-control" placeholder="Search for a customer">
+				<input id="customer" name="customer" type="hidden">
+			</div>
+		</div>
+	</form>
+	<script>
+		function select_user(jquery_event, search_selection, dataset_name)
+		{
+			$("#customer").val(search_selection.id);
+			$("#new_staff_charge").submit();
+		}
+		$('#customer_search').autocomplete('users', select_user, {{ users|json_search_base }}).focus();
+	</script>
+{% endblock %}

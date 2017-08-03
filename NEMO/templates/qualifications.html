@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Batch qualifications{% endblock %}
+
+{% block content %}
+	<h1>Batch qualifications</h1>
+	<p>
+		Use this form to qualify one or more users on one or more tools. You may select as many users or tools as you like.
+		User and tool names are automatically searched for when you type in the text boxes below. All of the selected users
+		will be qualified or disqualified for all of the selected tools. You can remove a selected user or tool by clicking
+		on the representative button.
+	</p>
+
+	<form method="post" action="{% url 'modify_qualifications' %}">
+		{% csrf_token %}
+		<input type="hidden" name="redirect" value="true">
+		<div class="form-group">
+			<div class="row">
+				<div class="col-md-12">
+					<button type='submit' class="btn btn-primary" name="action" value="qualify">Qualify users</button>
+					<button type='submit' class="btn btn-primary pull-right" name="action" value="disqualify">Disqualify users</button>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="form-group">
+					<label for="user_search">Search for user</label>
+					<input id='user_search' class="form-control"/>
+				</div>
+				<div id="chosen_users" class="form-group"></div>
+			</div>
+			<div class="col-md-6">
+				<div class="form-group">
+					<label for="tool_search">Search for tool</label>
+					<input id='tool_search' class="form-control"/>
+				</div>
+				<div id="chosen_tools" class="form-group"></div>
+			</div>
+		</div>
+	</form>
+
+	<script type="text/javascript">
+		function create_entry(jquery_event, search_selection, dataset_name)
+		{
+			$('#user_search').typeahead('val', '');
+			$('#tool_search').typeahead('val', '');
+			var id = dataset_name + "_" + search_selection.id;
+			if($("#" + id).length)
+				return;
+			$("#chosen_" + dataset_name + "s").append
+			(
+					"<div class='form-group'>" +
+					"<button class='btn btn-default' onclick='$(this).closest(\"div\").remove()'>" + search_selection.name + "</button>" +
+					"<input type='hidden' name='chosen_" + dataset_name + "[]' value='" + search_selection.id + "' id='" + dataset_name + "_" + search_selection.id + "'>" +
+					"</div>"
+			);
+		}
+
+		function on_load()
+		{
+			$('#user_search').autocomplete('user', create_entry, {{ users|json_search_base }}).focus();
+			$('#tool_search').autocomplete('tool', create_entry, {{ tools|json_search_base }});
+		}
+
+		$(on_load);
+
+	</script>
+
+{% endblock %}

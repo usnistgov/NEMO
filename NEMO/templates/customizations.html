@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+{% block title %}Site customization{% endblock %}
+{% block content %}
+	<div class="container-fluid">
+		<h1>Customizations</h1>
+		<p>You can customize portions of NEMO to suit your organization's needs.</p>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Email addresses</h3>
+				<form method="POST" action="{% url 'customize' 'email_addresses' %}" class="form-horizontal">
+					{% csrf_token %}
+					<div class="form-group">
+						<label class="control-label col-md-2" for="feedback_email_address">Feedback</label>
+						<div class="col-md-3">
+							<input type="email" id="feedback_email_address" name="feedback_email_address" class="form-control" value="{{ feedback_email_address }}" placeholder="feedback@example.org">
+						</div>
+						<div class="col-md-7 form-control-static light-grey">
+							User feedback from the <a href="{% url 'feedback' %}">Feedback page</a> is sent to this email address.
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="control-label col-md-2" for="safety_email_address">Safety</label>
+						<div class="col-md-3">
+							<input type="email" id="safety_email_address" name="safety_email_address" class="form-control" value="{{ safety_email_address }}" placeholder="safety@example.org">
+						</div>
+						<div class="col-md-7 form-control-static light-grey">
+							<a href="{% url 'safety' %}">Safety suggestions and observations</a> are sent to this email address.
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="control-label col-md-2" for="abuse_email_address">Abuse</label>
+						<div class="col-md-3">
+							<input type="email" id="abuse_email_address" name="abuse_email_address" class="form-control" value="{{ abuse_email_address }}" placeholder="abuse@example.org">
+						</div>
+						<div class="col-md-7 form-control-static light-grey">
+							Alerts about user activities that could constitute 'abuse' are sent to this email address. Examples include missed reservations and unauthorized tool access.
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="control-label col-md-2" for="user_office_email_address">User office</label>
+						<div class="col-md-3">
+							<input type="email" id="user_office_email_address" name="user_office_email_address" class="form-control" value="{{ user_office_email_address }}" placeholder="information@example.org">
+						</div>
+						<div class="col-md-7 form-control-static light-grey">
+							The main point of contact for users to obtain NanoFab information. Automated emails sent from NEMO are typically 'from' this address.
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-md-3">
+							<input type="submit" value="Save email addresses" class="btn btn-success">
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Introduction for &quot;<a href="{% url 'safety' %}" target="_blank">Safety suggestions and observations</a>&quot; page</h3>
+				<p>What would you like everyone to know about safety policy and procedures? This introduction will be presented at the top of the safety page. You can use HTML to modify the look of the text.</p>
+				<form method="POST" action="{% url 'customize' 'safety_introduction' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="safety_introduction">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload safety introduction" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>&quot;<a href="{% url 'nanofab_rules' %}" target="_blank">NanoFab rules tutorial</a>&quot; page</h3>
+				<p>The NanoFab rules tutorial is an opportunity to provide new users with a tutorial to your lab operating procedures and rules. The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page. Completion of the HTML form should be POSTed to the 'nanofab_rules' URL. Upon completion, the user's "training required" attribute is set to false, and they are able to make reservations and control tools.</p>
+				<form method="POST" action="{% url 'customize' 'nanofab_rules_tutorial' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="nanofab_rules_tutorial">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload NanoFab rules tutorial" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Cancellation email</h3>
+				<p>This email is sent to a user when a staff member cancels the user's reservation. The following context variables are provided when the email is rendered:</p>
+				<ul>
+					<li><b>reservation</b> - the user's reservation that was cancelled</li>
+					<li><b>staff_member</b> - the user object of the staff member who cancelled the reservation</li>
+					<li><b>reason</b> - the reason the staff member provided for cancelling the reservation</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'cancellation_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="cancellation_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload cancellation email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Feedback email</h3>
+				<p>
+					This email is sent when a user <a href="{% url 'feedback' %}" target="_blank">submits feedback</a>. The feedback email address (at the top of this page) must also be configured for users to be able to do this.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>contents</b> - the user's feedback</li>
+					<li><b>user</b> - the user object of the user who submitted the feedback</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'feedback_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="feedback_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload feedback email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Generic email</h3>
+				<p>A generic email that can be sent to qualified tool users, members of an account, or members of a project. Send these using the <a href="{% url 'email_broadcast' %}">email broadcast page</a>. The following context variables are provided when the email is rendered:</p>
+				<ul>
+					<li><b>title</b> - the user specified title of the email</li>
+					<li><b>greeting</b> - a greeting to the recipients of the email</li>
+					<li><b>contents</b> - the body of the email</li>
+					<li><b>template_color</b> - the color to emphasize</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'generic_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="generic_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload generic email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Missed reservation email</h3>
+				<p>
+					This email is sent when a user misses a reservation. If a tool is not used for an amount
+					of time after the user's reservation has begun, it is marked as missed and removed from the calendar.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>reservation</b> - the reservation that the user missed</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'missed_reservation_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="missed_reservation_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload missed reservation email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>NanoFab rules tutorial email</h3>
+				<p>
+					This email is sent when a user completes the NanoFab rules tutorial. It can contain a free-response answer (quiz question).
+					If you do not upload a template then no notification email is sent to staff when a user completes the training tutorial.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>user</b> - the user's model instance</li>
+					<li><b>making_reservations_rule_summary</b> - a free-response answer provided by the user. Normally, this is provided by the user to summarize their understanding of the NanoFab rules and proceedures.</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'nanofab_rules_tutorial_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="nanofab_rules_tutorial_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload NanoFab rules tutorial email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>New task email</h3>
+				<p>
+					This email is sent when a new maintenance task is created for a tool.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>user</b> - the user who created the task</li>
+					<li><b>task</b> - the task information</li>
+					<li><b>tool</b> - the tool that the task is associated with</li>
+					<li><b>tool_control_absolute_url</b> - the URL of the tool control page for the tool</li>
+					<li><b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'new_task_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="new_task_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload new task email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Reservation reminder email</h3>
+				<p>
+					This email is sent to a user two hours before their tool reservation begins.
+					The reservation warning email must also exist for this email to be sent.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>reservation</b> - the user's upcoming reservation</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'reservation_reminder_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="reservation_reminder_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload reservation reminder email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Reservation warning email</h3>
+				<p>
+					This email is sent to a user two hours before their tool reservation begins and maintenance may interfere with the upcoming reservation.
+					The reservation reminder email must also exist for this email to be sent.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>reservation</b> - the user's upcoming reservation</li>
+					<li><b>fatal_error</b> - boolean value that, when true, indicates that it will be impossible for the user to use the tool during their reservation (due to tool maintenance or a missing required dependency)</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'reservation_warning_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="reservation_warning_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload reservation warning email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Safety issue email</h3>
+				<p>
+					This email is sent when a new maintenance task is created for a tool.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>issue</b> - the issue information</li>
+					<li><b>issue_absolute_url</b> - the URL for the detailed view of the issue</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'safety_issue_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="safety_issue_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload safety issue email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Staff charge reminder email</h3>
+				<p>
+					This email is periodically sent to remind staff that they are charging a user for staff time.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>staff_charge</b> - the staff charge that is in progress</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'staff_charge_reminder_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="staff_charge_reminder_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload staff charge reminder email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Unauthorized tool access email</h3>
+				<p>
+					This email is sent when a user tries to access a tool without being logged in to the area in which the tool resides.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>operator</b> - the person who attempted to use the tool</li>
+					<li><b>tool</b> - the tool that the user was denied access to</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'unauthorized_tool_access_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="unauthorized_tool_access_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload unauthorized tool access email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Usage reminder email</h3>
+				<p>
+					This email is periodically sent to remind a user that they have a tool enabled.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>user</b> - the user who is using a tool or logged in to an area</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'usage_reminder_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="usage_reminder_email">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload new task email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+{% endblock %}

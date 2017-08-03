@@ -1,0 +1,103 @@
+<div class="row" style="background:transparent">
+	<div class="{% if alerts or disabled_resources %}col-lg-4{% else %}col-lg-6{% endif %}" style="text-align:center; background:transparent">
+		{% if not nanofab_occupants %}
+			<h2>Nobody is in an access controlled<br>NanoFab area</h2>
+		{% else %}
+			{% regroup nanofab_occupants by area as area_occupants %}
+			<h2>Area occupancy</h2>
+			<p>Staff members are highlighted in <span class="success-highlight">green</span></p>
+			{% for area in area_occupants %}
+				{# Panel is used to make table borders rounded. #}
+				<div class="panel panel-default" style="background:transparent">
+					<table class="table table-bordered table-condensed" style="background:transparent">
+						<thead>
+						<tr>
+							<th colspan="4" style="font-size:large; background:rgba(255, 255, 255, 0.7)">
+								<span class="primary-highlight">{{ area.grouper }}</span>
+								{% if area.list|length > 1 %}<span class="light-grey pull-right">{{ area.list|length }} people</span>{% endif %}
+							</th>
+						</tr>
+						<tr>
+							<th style="text-align:center; background:rgba(255, 255, 255, 0.7)">User</th>
+							<th style="text-align:center; background:rgba(255, 255, 255, 0.7)">Since</th>
+							<th style="text-align:center; background:rgba(255, 255, 255, 0.7)">Working on project...</th>
+						</tr>
+						</thead>
+						<tbody>
+						{% for o in area.list %}
+							<tr>
+								<td style="background:rgba(255, 255, 255, 0.7)">
+									<span {% if o.customer.is_staff %}class="success-highlight"{% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
+								</td>
+								<td style="background:rgba(255, 255, 255, 0.7)">{{ o.start|date:"l @ g:i A" }}</td>
+								<td style="background:rgba(255, 255, 255, 0.7); max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ o.project }}</td>
+							</tr>
+						{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			{% endfor %}
+		{% endif %}
+	</div>
+	<div class="{% if alerts or disabled_resources %}col-lg-4{% else %}col-lg-6{% endif %}" style="text-align:center; background:transparent">
+		{% if usage_events %}
+			<h2>Tool usage</h2>
+			<p>{% if usage_events|length > 1 %}{{ usage_events|length }} tools are in use{% endif %}&nbsp;</p>
+			{# Panel is used to make table borders rounded. #}
+			<div class="panel panel-default" style="background:transparent">
+				<table class="table table-bordered table-condensed" style="background:transparent">
+					<thead>
+					<tr>
+						<th style="text-align: center">Tool</th>
+						<th style="text-align: center">User</th>
+						<th style="text-align: center">In use since...</th>
+					</tr>
+					</thead>
+					<tbody style="background:transparent">
+					{% for u in usage_events %}
+						<tr style="background:transparent">
+							<td style="background:rgba(255, 255, 255, 0.7)">{{ u.tool }}</td>
+							<td style="background:rgba(255, 255, 255, 0.7)"><span {% if u.operator.is_staff %}class="success-highlight"{% endif %}>{{ u.operator.first_name }} {{ u.operator.last_name }}{% if u.user != u.operator %} on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}</span></td>
+							<td style="background:rgba(255, 255, 255, 0.7)">{{ u.start|date:"l @ g:i A" }}</td>
+						</tr>
+					{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{% else %}
+			<h2>No interlocked NanoFab tools are in use</h2>
+		{% endif %}
+	</div>
+	<div class="col-lg-4" style="text-align:center">
+		{% if alerts or disabled_resources %}
+			<h2>Alerts and outages</h2>
+			<p>{# For spacing #}&nbsp;</p>
+			{% for a in alerts %}
+				<div class="alert alert-danger">
+					<table style="width:100%">
+						<tr>
+							<td style="width:100px"><span class="glyphicon glyphicon-alert danger-highlight" style="font-size:64px"></span></td>
+							<td>
+								{% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
+								{{ a.contents }}
+							</td>
+						</tr>
+					</table>
+				</div>
+			{% endfor %}
+			{% for r in disabled_resources %}
+				<div class="alert alert-danger">
+					<table style="width:100%">
+						<tr>
+							<td style="width:100px"><span class="glyphicon glyphicon-leaf danger-highlight" style="font-size:64px"></span></td>
+							<td>
+								<span style="font-weight:bold">Resource outage: {{ r }}</span><br>
+								{{ r.restriction_message }}
+							</td>
+						</tr>
+					</table>
+				</div>
+			{% endfor %}
+		{% endif %}
+	</div>
+</div>

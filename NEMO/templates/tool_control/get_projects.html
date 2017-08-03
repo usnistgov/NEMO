@@ -1,0 +1,20 @@
+{% if active_projects|length == 0 %}
+	This user is not assigned to any active projects.<br>
+	A user must be a member of at least one active project to operate a tool.
+{% elif active_projects|length == 1 %}
+	<h4>Tool usage will be billed to the project named &quot;{{ active_projects.0 }}&quot;.</h4>
+	<input type="hidden" id="project_id" value="{{ active_projects.0.id }}">
+	<script>
+		$("#start").show();
+	</script>
+{% else %}
+	<h4>Charge tool usage to which project?</h4>
+	<div class="list-group" style="display:table">
+		{% for p in active_projects %}
+			<a href="javascript:void(0)" class="list-group-item project-choice" onclick="select_project(this, {{ p.id }})">{{ p.name }}</a>
+		{% endfor %}
+	</div>
+	<input type="hidden" id="project_id">
+{% endif %}
+
+<input type="hidden" id="user_id" value="{{ user_id }}">

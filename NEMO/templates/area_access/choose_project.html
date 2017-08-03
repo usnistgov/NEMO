@@ -1,0 +1,16 @@
+<h1>Welcome to the {{ area|lower }}, {{ user.first_name }}!</h1>
+<h2>Please choose a project to bill for area access.</h2>
+<h2>You can always change your choice later.</h2>
+{% for project in user.active_projects %}
+	<p>
+		<button type="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area({{ user.badge_number }}, {{ project.id }})">
+			{{ project.name }}
+		</button>
+	</p>
+{% endfor %}
+<p>
+	<button type="button" class="btn btn-warning btn-lg btn-block btn-extra-large" onclick="revert_to_default_content()">
+		Nevermind, don't log in
+	</button>
+</p>
+<script>revert(30);</script>

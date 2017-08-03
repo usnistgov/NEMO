@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+	{% if heading %}<h1>{{ heading }}</h1>{% endif %}
+	{% if content %}<p>{{ content }}</p>{% endif %}
+	<div class="row">
+		<div class="col-xs-4">
+			<a href="{% url 'landing' %}" class="btn btn-success">Continue to NEMO home screen</a>
+		</div>
+	</div>
+{% endblock %}

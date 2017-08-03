@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+	{# This meta-tag forcefully disables 'compatibility mode' in Internet Explorer because it causes rendering problems. #}
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+	<meta charset="UTF-8">
+
+	{# jQuery #}
+	<script type="text/javascript" src="{% static "jquery.js" %}"></script>
+
+	{# Bootstrap #}
+	<script type="text/javascript" src="{% static "bootstrap/js/bootstrap.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.css" %}"/>
+
+	{# NEMO #}
+	<script type="text/javascript" src="{% static "nemo.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}"/>
+
+	<title>Jumbotron</title>
+</head>
+<body style="padding:10px 30px">
+<div style="position:absolute; left:0; top:0; width:100%; height:100%; opacity:0.50; background:url({% static 'jumbotron_watermark.bmp' %}) no-repeat fixed center;"></div>
+<div class="container-fluid" style="background:transparent">
+	<div class="row" id="content" style="background:transparent"></div>
+	<div class="row" id="offline-message" style="display:none">
+		<div class="col-lg-12" style="text-align:center">
+			<span style="font-size:250px; color:red">NEMO is offline</span>
+		</div>
+	</div>
+</div>
+<script>
+	function on_complete(response, status, xml_http_request)
+	{
+		if(status == "success")
+		{
+			$("#offline-message").hide();
+			$("#content").show();
+		}
+		if(status == "error")
+		{
+			$("#content").hide();
+			$("#offline-message").show();
+		}
+	}
+	function refresh_jumbotron()
+	{
+		$("#content").load("{% url 'jumbotron_content' %}", undefined, on_complete);
+	}
+	function on_load()
+	{
+		refresh_jumbotron();
+		setInterval(refresh_jumbotron, 10000);
+	}
+	$(on_load);
+</script>
+</body>
+</html>

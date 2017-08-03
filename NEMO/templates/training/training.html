@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Training{% endblock %}
+{% block content %}
+	<h1>Training</h1>
+	<p>Use this form to charge users for training sessions.</p>
+	<p>You can add participants to a training session by clicking the 'Add another participant' link.
+	Remove a participant or blank row by clicking the circled X on that row.</p>
+	<p>When a user has successfully completed a training session you have the option to check the "Qualify" box, which qualifies the user for that tool.</p>
+	<br>
+	<form onsubmit="return on_submit()" id="training_session_form">
+		{% csrf_token %}
+		<table id="training_entries" class="table">
+			<tr>
+				<th>&nbsp;</th>
+				<th style="min-width:200px">Trainee</th>
+				<th style="min-width:200px">Tool</th>
+				<th style="min-width:200px">Project</th>
+				<th>Duration (in minutes)</th>
+				<th>Training type</th>
+				<th>Qualify</th>
+			</tr>
+			{# Rows are inserted here upon load & when "Add another participant" is clicked. #}
+			{% include 'training/training_entry.html' with entry_number=0 %}
+			<tr>
+				<td colspan="7" style="text-align:center"><a href="javascript:void(0)" onclick="add_participant()">Add another participant</a></td>
+			</tr>
+		</table>
+		<br>
+		<input type="submit" class="btn btn-default" id="record_training_sessions" value="Record training sessions">
+	</form>
+
+	<script type="text/javascript">
+
+		var current_entry_number = 1;
+		function add_participant()
+		{
+			var failure_dialog = ajax_failure_callback("Cannot add new entry", "The web browser was not able to communicate with the server.");
+			ajax_get("{% url 'training_entry' %}", { "entry_number": current_entry_number }, add_entry_success_callback, failure_dialog);
+			function add_entry_success_callback(response, status, xml_http_request)
+			{
+				$("#training_entries tr:last").before(response);
+				enable_autocompletion(current_entry_number);
+				current_entry_number++;
+			}
+		}
+
+		function enable_autocompletion(entry_number)
+		{
+			var id = "#user_textbox__" + entry_number;
+			$(id).autocomplete('user', on_autocomplete_selection, {{ users|json_search_base }}).focus();
+			id = "#tool_textbox__" + entry_number;
+			$(id).autocomplete('tool', on_autocomplete_selection, {{ tools|json_search_base }});
+		}
+
+		function remove_row(number)
+		{
+			$("#row_" + number).remove();
+		}
+
+		function on_autocomplete_selection(jquery_event, search_selection, dataset_name)
+		{
+			$(this).typeahead('val', search_selection.id).hide();
+			var row = $(this).data('row');
+			var button_id = "#" + dataset_name + "_button__" + row;
+			$(button_id).val(search_selection.name).show();
+
+			if(dataset_name == "user")
+				fetch_projects(row, search_selection.id);
+
+			advance_focus(dataset_name, row);
+		}
+
+		function advance_focus(type, row)
+		{
+			var project_select_id = "#chosen_project__" + row;
+			var tool_textbox_id = "#tool_textbox__" + row;
+			var duration_id = "#duration__" + row;
+			if(type == "user")
+			{
+				if($(tool_textbox_id).is(":visible"))
+					$(tool_textbox_id).focus();
+				else
+					$(duration_id).focus();
+			}
+			else if(type == "tool")
+			{
+				if($(project_select_id).length > 0)
+					$(project_select_id).focus();
+				else
+					$(duration_id).focus();
+			}
+		}
+
+		function fetch_projects(row, user_id)
+		{
+			var parameters =
+			{
+				"source_template": "training",
+				"user_id": user_id,
+				"entry_number": row
+			};
+			var target_element = "#project__" + row;
+			var url = "{% url 'get_projects' %}?" + jQuery.param(parameters);
+			var report_error = ajax_complete_callback("Could not fetch projects for user", "There was a problem obtaining the list of projects for the user.");
+			$(target_element).load(url, undefined, report_error);
+		}
+
+		function purge_trainee(row)
+		{
+			$("#user_button__" + row).hide();
+			$("#project__" + row).html("");
+			$("#user_textbox__" + row).typeahead('val', '').show().focus();
+		}
+
+		function purge_tool(row)
+		{
+			$("#tool_button__" + row).hide();
+			$("#tool_textbox__" + row).typeahead('val', '').show().focus();
+		}
+
+		function on_submit()
+		{
+			var failure_dialog = ajax_failure_callback("Could not record training sessions");
+			ajax_post("{% url 'charge_training' %}", serialize("#training_session_form"), ajax_success_callback, failure_dialog);
+			return false;
+		}
+
+		function on_load()
+		{
+			enable_autocompletion(0);
+		}
+
+		$(on_load);
+
+	</script>
+
+{% endblock %}

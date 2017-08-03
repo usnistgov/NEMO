@@ -1,0 +1,29 @@
+{% load custom_tags_and_filters %}
+
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal">&times;</button>
+	<h4 class="modal-title">Make a reservation for someone else</h4>
+</div>
+
+<div class="modal-body">
+	<p>
+		You can make reservations for another user by searching for and selecting the user below. Any reservations you make after that will be made for the selected user.
+		When you are done making reservations for another user, click the button that says &quot;Reserving as [user]&quot; at the top of the calendar.
+	</p>
+	<p>
+		While you are making reservations for someone else, all validation checks apply as if you are that user.
+		Likewise, error messages are displayed as if you are that person.
+	</p>
+	<input id="proxy_reservation" type="text" class="form-control" placeholder="Search for a user">
+</div>
+
+<script>
+	$("#proxy_reservation").autocomplete('users', proxy_reservation, {{ users|json_search_base }});
+	autofocus('#proxy_reservation');
+	function proxy_reservation(jquery_event, search_selection)
+	{
+		$($(".fc-proxyReservation-button")[0]).html('Reserving as ' + search_selection.name);
+		$("#impersonate").val(search_selection.id);
+		$("#dialog").modal('hide');
+	}
+</script>

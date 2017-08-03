@@ -1,0 +1,10 @@
+{% if unavailable_resources|length == 1 %}
+	<h1>This area is currently inaccessible because a required resource is unavailable:</h1>
+{% else %}
+	<h1>This area is currently inaccessible because the following required resources are unavailable:</h1>
+{% endif %}
+{% for resource in unavailable_resources %}
+	<h1 style="display:flex; align-items:center; margin-bottom:5px"><span class="glyphicon glyphicon-leaf" style="color:red"></span>&nbsp;{{ resource }}</h1>
+	<h2 style="margin-top:0">{{ resource.restriction_message }}</h2>
+{% endfor %}
+<script>revert(15);</script>

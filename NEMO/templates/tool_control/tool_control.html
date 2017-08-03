@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Tool control{% endblock %}
+{% block extrahead %}
+	{% load static %}
+	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+{% endblock %}
+{% block body %}
+
+	<style>
+		h3
+		{
+			margin-top: 0;
+		}
+	</style>
+
+	{% if device == 'mobile' %}
+		<div id="content" class="container"></div>
+	{% else %}
+		<div id="sidebar" class="application-sidebar">
+			<div id="expand-collapse" class="btn-group sidebar-item">
+				<button type="button" class="btn btn-default" style="width:50%" onclick="expand_all_categories()" title="Expand all tool categories"><span class="glyphicon glyphicon glyphicon-resize-full"></span></button>
+				<button type="button" class="btn btn-default" style="width:50%" onclick="collapse_all_categories()" title="Collapse all tool categories"><span class="glyphicon glyphicon glyphicon-resize-small"></span></button>
+			</div>
+			<input type="text" id="tool_search" placeholder="Search for a tool" class="form-control sidebar-item">
+			{{ rendered_tool_tree_html }}
+			<div style="height:50px"></div>
+		</div>
+		<div id="content" class="application-content" style="padding-right: 20px; overflow-y:scroll"></div>
+	{% endif %}
+
+	<script>
+
+		function refresh_tool_status()
+		{
+			var selected_item = {% if device == 'mobile' %}{{ selected_tool }}{% else %}get_selected_item(){% endif %};
+			if(selected_item)
+				$("#content").load('/tool_status/' + selected_item + "/", undefined, refresh_tool_completion_callback);
+			{% if device == 'desktop' %}
+				refresh_sidebar_icons();
+			{% endif %}
+		}
+
+		function reload_page()
+		{
+			location.reload();
+		}
+
+		function refresh_tool_completion_callback(response, status, xml_http_request)
+		{
+			if(status == "error")
+			{
+				var content = "<div class='alert alert-danger'><span class='glyphicon glyphicon-remove'></span> Unable to retrieve tool status.";
+				if(xml_http_request.responseText)
+					content += " " + xml_http_request.responseText;
+				content += "</div>";
+				$("#content").html(content);
+			}
+		}
+
+		function use_tool_for_self()
+		{
+			$("#project_choice").html("Fetching project list...").show().load("{% url 'get_projects_for_self' %}", undefined, load_projects_completion_callback);
+		}
+
+		function select_project(element, project_id)
+		{
+			$(".project-choice").removeClass('active');
+			$(element).addClass('active');
+			$("#project_id").val(project_id);
+			$("#start").show();
+		}
+
+		function load_projects(jquery_event, search_selection, dataset_name)
+		{
+			$("#user_search").typeahead('val', '').hide();
+			$("#customer").text(search_selection.name).show();
+			var data = "user_id=" + search_selection.id;
+			$("#customer_project").html("Fetching project list...").show().load("{% url 'get_projects_for_tool_control' %}", data, load_projects_completion_callback);
+		}
+
+		function load_projects_completion_callback(response, status, xml_http_request)
+		{
+			if(status == "error")
+				$("#customer_project").html("Unable to retrieve a list of projects for this user.")
+		}
+
+		function enable_tool(tool_id)
+		{
+			$("#start").prop("disabled", true);
+			var user_id = parseInt($("#user_id").val());
+			var project_id = parseInt($("#project_id").val());
+			var staff_charge = false;
+			if($("input[name='staff_charge']").length > 0 && $("input[name='staff_charge']:checked").val() == 'true')
+				staff_charge = true;
+			var url = "/enable_tool/" + tool_id + "/user/" + user_id + "/project/" + project_id + "/staff_charge/" + staff_charge + "/";
+			var failure_dialog = ajax_failure_callback("Couldn't change tool status");
+			var success_callbacks;
+			if(staff_charge === true)
+				success_callbacks = [reload_page]; {# If there's a new staff charge then we need to reload the whole page so it's displayed in the menu bar. #}
+			else
+				success_callbacks = [refresh_tool_status, ajax_success_callback];
+			var enable_start_button = function() { $("#start").prop("disabled", false); };
+			ajax_post(url, undefined, success_callbacks, failure_dialog, enable_start_button);
+		}
+
+		function disable_tool(url, confirm, downtime)
+		{
+			$("#stop").prop("disabled", true);
+			var contents = {
+				'confirm': confirm === true,
+				'downtime': parseInt($('#downtime').val()) || downtime || 0
+			};
+			var failure_dialog = ajax_failure_callback("Couldn't change tool status");
+			var enable_stop_button = function() { $("#stop").prop("disabled", false); };
+			ajax_post(url, contents, ajax_success_callback, failure_dialog, refresh_tool_status, enable_stop_button);
+		}
+
+		{% if user.is_staff %}
+
+			{# Only staff can perform the functions in this if-block. #}
+
+			function use_tool_for_other()
+			{
+				$("#start").hide();
+				$("#project_choice").html("Fetching user list...").show().load("{% url 'use_tool_for_other' %}", undefined, load_projects_completion_callback);
+			}
+
+			function clear_customer()
+			{
+				$("#customer").text("").hide();
+				$("#customer_project").html("").hide();
+				$("#start").hide();
+				$("#user_search").show().focus();
+			}
+
+			function add_qualified_user(jquery_event, search_selection, dataset_name)
+			{
+				$(this).typeahead('val', '');
+				var failure_dialog = ajax_failure_callback("Failed to qualify user", "There was a problem qualifying this user.");
+				var data = serialize("#add_qualified_user_form");
+				data['chosen_user[]'] = search_selection.id;
+				ajax_post("{% url 'modify_qualifications' %}", data, reload_qualified_users, failure_dialog)
+			}
+
+			function remove_qualified_user(user_id, tool_id)
+			{
+				var failure_dialog = ajax_failure_callback("Failed to remove qualified user", "There was a problem revoking this user's tool qualification.");
+				var data = {
+					'action': 'disqualify',
+					'chosen_tool[]': tool_id,
+					'chosen_user[]': user_id
+				};
+				ajax_post("{% url 'modify_qualifications' %}", data, reload_qualified_users, failure_dialog);
+			}
+
+			function reload_qualified_users()
+			{
+				var url = "{% url 'get_qualified_users' %}?tool_id=" + {% if device == 'mobile' %}{{ selected_tool }}{% else %}get_selected_item(){% endif %};
+				$("#qualified_users_container").load(url);
+			}
+
+			function end_staff_charge()
+			{
+				var failure_dialog = ajax_failure_callback("Unable to end staff charge", "There was a problem ending your staff charge.");
+				ajax_post("{% url 'end_staff_charge' %}", undefined, reload_page, failure_dialog);
+			}
+		{% endif %}
+
+		function load_tasks_and_comments(tool_id)
+		{
+			var failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
+			var data = serialize("#history_form");
+			data.start = moment(data.start, "MM/DD/YYYY").unix();
+			data.end = moment(data.end, "MM/DD/YYYY").add(1, 'day').unix();
+			{# Add one day because by default the time is midnight the day of. We want to include the full duration of the last day. #}
+			$("#past_tasks_and_comments").load("{% url 'past_comments_and_tasks' %}?" + $.param(data), failure_dialog);
+		}
+
+		function load_tasks_and_comments_for_last_three_months(tool_id)
+		{
+			var start = moment().subtract(3, 'months').format("MM/DD/YYYY");
+			var end = moment().format("MM/DD/YYYY");
+			$("#task_and_comment_start").val(start);
+			$("#task_and_comment_end").val(end);
+			load_tasks_and_comments(tool_id);
+		}
+
+		function load_ten_most_recent_tasks_and_comments(url)
+		{
+			var failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
+			$("#past_tasks_and_comments").load(url, failure_dialog);
+		}
+
+		function on_load()
+		{
+			{% if device == 'desktop' %}
+				set_tool_link_callback(refresh_tool_status);
+				enable_tool_tree_toggling();
+				$('#tool_search').autocomplete('tools', on_tool_search_selection, {{ tools|json_search_base }});
+				$("#tool_search").focus();
+				load_sidebar_state();
+				$("#tool_tree").show();
+				{# Tool tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
+				{% if selected_tool %}
+					expand_to_tool({{ selected_tool }});
+				{% endif %}
+				setInterval(refresh_sidebar_icons, 30000);
+			{% endif %}
+			refresh_tool_status();
+		}
+
+		$(on_load);
+
+	</script>
+
+{% endblock %}

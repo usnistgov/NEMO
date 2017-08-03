@@ -1,0 +1,250 @@
+label
+{
+	font-weight: normal !important;
+}
+
+.application-sidebar
+{
+	position: absolute;
+	top: 47px;
+	bottom: 0;
+	left: 0;
+	width: 300px;
+	padding: 10px;
+	overflow: auto;
+}
+
+.application-content
+{
+	position: absolute;
+	top: 51px;
+	bottom: 0;
+	left: 300px;
+	right: 0;
+	padding-top: 15px;
+	padding-left: 7px;
+}
+
+#calendar th
+{
+	font-weight: normal;
+}
+
+.sidebar-item
+{
+	width: 100%;
+	margin-bottom: 5px;
+	margin-top: 5px
+}
+
+#sidebar .glyphicon
+{
+	margin-top: 2px;
+	margin-left: 4px;
+}
+
+/* Add left indents to each sub-list in the sidebar. */
+#sidebar .nav-list
+{
+	margin-left: 10px;
+	padding-right: 0;
+}
+
+#sidebar a
+{
+	padding-top: 0;
+	padding-bottom: 0;
+	padding-right: 4px;
+}
+
+#extra-links a
+{
+	padding-left: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+#sidebar label
+{
+	width: 100%;
+	margin: 0;
+}
+
+#tool_tree div, #extra-links div
+{
+	width: 100%;
+	cursor: pointer;
+	font-weight: normal;
+}
+
+#tool_tree div:hover
+{
+	background-color: #eeeeee;
+}
+
+#sidebar .selected
+{
+	background-color: #e7e7e7;
+}
+
+.status-icon
+{
+	font-size: 1.5em;
+	margin-right: 10px;
+}
+
+.notification-icon
+{
+	font-size: 2.5em;
+	margin-right: 5px;
+}
+
+.small-icon
+{
+	margin-right: 5px;
+}
+
+.primary-highlight
+{
+	color: #428bca;
+}
+
+.success-highlight
+{
+	color: #22b14c;
+}
+
+.warning-highlight
+{
+	color: #f0ad4e;
+}
+
+.danger-highlight
+{
+	color: red;
+}
+
+.grey
+{
+	color: grey;
+}
+
+.light-grey
+{
+	color: lightgrey;
+}
+
+.hover-black:hover
+{
+	color: black;
+}
+
+.chevron
+{
+	color: lightgrey;
+	padding-right: 10px;
+}
+
+.pointer
+{
+	cursor: pointer;
+}
+
+.italic
+{
+	font-style: italic;
+}
+
+.table-in-well *
+{
+	background-color: transparent !important;
+}
+
+.split-screen-left-panel
+{
+	position: absolute;
+	top: 120px;
+	bottom: 0;
+	width: 50%;
+	overflow-y: scroll;
+}
+
+.split-screen-right-panel
+{
+	position: absolute;
+	top: 120px;
+	bottom: 0;
+	width: 50%;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	left: 50%;
+	padding-left: 12px;
+	padding-right: 24px;
+}
+
+.datetimepicker-container
+{
+	display: inline-block;
+	position: relative;
+}
+
+/* Overrides the styling of un-editable Full Calendar events. Makes the cursor
+appear as a pointer (rather than text selector) when mousing over event text. */
+.fc-title
+{
+	pointer-events: none;
+}
+
+/* Twitter typeahead styles */
+.twitter-typeahead
+{
+	display: block !important;
+}
+
+/* The hint is the portion of text that comes after what you've typed to suggest word completion. */
+.tt-hint
+{
+	color: #999999
+}
+
+/* This styles the dropdown menu of possible search results. */
+.tt-dropdown-menu
+{
+	margin-top: 4px;
+	padding: 4px 0;
+	background-color: #ffffff;
+	border: 1px solid #cccccc;
+	border-radius: 4px;
+	box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+	max-height: 150px;
+	overflow-y: auto;
+}
+
+/* Override Bootstrap's media and media-body CSS settings so that the
+Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
+.media, .media-body
+{
+	overflow: visible;
+	min-height: 35px;
+}
+
+/* The suggestion style encases the matching part of the query in each of the search results. */
+/* Zero out some padding and margin properties. */
+.tt-suggestion
+{
+	padding: 3px 20px;
+	line-height: 20px;
+	cursor: pointer;
+}
+
+.tt-suggestion p
+{
+	margin: 0;
+}
+
+/* The style of the search result that the mouse is hovering over. */
+.tt-suggestion.tt-cursor
+{
+	color: #fff;
+	background-color: #0097cf;
+}

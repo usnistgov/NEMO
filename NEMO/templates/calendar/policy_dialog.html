@@ -1,0 +1,27 @@
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal">&times;</button>
+	<h4 class="modal-title">NanoFab policy conflict</h4>
+</div>
+
+<div class="modal-body">
+	<p>This reservation conflicts with NanoFab policy.{% if overridable %} The policy <span style="font-weight:bold">can</span> be overridden.{% endif %}</p>
+	<ul>
+		{% for reason in policy_problems %}
+			<li>{{ reason }}</li>
+		{% endfor %}
+	</ul>
+	<input type="hidden" id="dialog_cancelled" value="true">
+	<form id="additional_reservation_parameters">
+		<input type="hidden" name="explicit_policy_override" value="true">
+	</form>
+	{% if overridable %}<p>What would you like to do?</p>{% endif %}
+</div>
+
+<div class="modal-footer">
+	{% if overridable %}
+		<button type="button" class="btn btn-info pull-left" data-dismiss="modal">Don't create the reservation</button>
+		<button type="button" class="btn btn-success" data-dismiss="modal" onclick="$('#dialog_cancelled').val(false)">Override policy and create the reservation</button>
+	{% else %}
+		<button type="button" class="btn btn-warning" data-dismiss="modal">Continue</button>
+	{% endif %}
+</div>

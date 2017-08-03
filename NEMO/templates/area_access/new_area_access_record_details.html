@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Add area access record{% endblock %}
+{% block content %}
+	<h1>New area access record</h1>
+	<p style="font-weight: bold">
+		Only use this form under extraordinary circumstances (such as when tablet login is not working).
+		This form is not intended to be used regularly.
+	</p>
+	<form action="{% url 'new_area_access_record' %}" class="form-horizontal" method="post">
+		{% csrf_token %}
+		<div class="form-group">
+			<div class="col-sm-12">
+				Customer: {{ customer }}<br>
+				<input type="hidden" name="customer" value="{{ customer.id }}">
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-12">
+				{% if customer.active_project_count == 1 %}
+					Area access will be billed to the customer's only project, &quot;{{ customer.active_projects.0 }}&quot;
+					<input type="hidden" name="project" value="{{ customer.active_projects.0.id }}">
+				{% else %}
+					Which of the customer's projects would you like to bill?
+					<div class="radio">
+						{% for p in customer.active_projects %}
+							<label class="control-label"><input type="radio" name="project" value="{{ p.id }}" required> {{ p }}</label><br>
+						{% endfor %}
+					</div>
+				{% endif %}
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-12">
+				{% if areas|length == 1 %}
+					The customer only has access to the {{ areas.0|lower }}. Access will be billed for that area.
+					<input type="hidden" name="area" value="{{ areas.0.id }}">
+				{% else %}
+					{{ customer }} has access to the following areas. Which would you like to bill for access?
+					<div class="radio">
+						{% for a in areas %}
+							<label class="control-label"><input type="radio" name="area" value="{{ a.id }}" required> {{ a }}</label><br>
+						{% endfor %}
+					</div>
+				{% endif %}
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-12">
+				<input type="submit" class="btn btn-success" value="Create area access record">
+			</div>
+		</div>
+	</form>
+{% endblock %}

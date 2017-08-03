@@ -1,0 +1,9 @@
+{% for u in users %}
+	<a href="javascript:remove_user_from_project('{{ u.id }}', '{{ project.id }}')" class="{% if u.is_active %}grey{% else %}light-grey{% endif %} hover-black" title="Remove {{ u.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a> {% if u.is_active %}{{ u }}{% else %}<span class="light-grey">{{ u }}</span>{% endif %}<br>
+{% empty %}
+	This project does not have any members.
+{% endfor %}
+
+<script>
+	$("#search_user_for_project_" + "{{ project.id }}").focus();
+</script>

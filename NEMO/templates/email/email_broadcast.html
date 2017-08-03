@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Email broadcast{% endblock %}
+{% block content %}
+	<h1>Email broadcast</h1>
+
+	{% if error %}
+		<div class="alert alert-danger">
+			{{ error }}
+		</div>
+	{% endif %}
+
+	Compose an email to all users who...
+	<ul>
+		<li><a href="{% url 'email_broadcast' 'tool' %}">are qualified for a tool</a></li>
+		<li><a href="{% url 'email_broadcast' 'project' %}">are working on a project</a></li>
+		<li><a href="{% url 'email_broadcast' 'account' %}">bill to an account</a></li>
+	</ul>
+
+	{% if search_base %}
+		<div class="row">
+			<div class="col-sm-4">
+				<input id="search" class="form-control" placeholder="Which {{ audience }}?" autofocus />
+			</div>
+		</div>
+
+		<form id="email" method="get" action="{% url 'compose_email' %}">
+			<input type="hidden" name="audience" value="{{ audience }}">
+			<input type="hidden" id="selection" name="selection">
+		</form>
+
+		<script type="text/javascript">
+			$('#search').autocomplete('search_base', set_selection, {{ search_base|json_search_base }});
+			function set_selection(jquery_event, search_selection, dataset_name)
+			{
+				$('#selection').val(search_selection.id);
+				$('#email').submit();
+			}
+		</script>
+	{% endif %}
+{% endblock %}

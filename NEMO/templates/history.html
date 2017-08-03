@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}History for {{ name }}{% endblock %}
+{% block content %}
+	{% if action_list %}
+		<h1>History for {{ name }}</h1>
+		<table class="table">
+			<thead>
+			<tr>
+				<th>Date & time</th>
+				<th>User</th>
+				<th>Action</th>
+			</tr>
+			</thead>
+			<tbody>
+			{% for action in action_list %}
+				<tr>
+					<td>{{ action.date }}</td>
+					<td>{{ action.authorizer }}</td>
+					<td>{{ action.message }}</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+	{% else %}
+		<p>{{ name }} doesn't have a change history.</p>
+	{% endif %}
+{% endblock %}

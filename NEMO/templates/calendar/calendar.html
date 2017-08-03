@@ -1,0 +1,382 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Calendar{% endblock %}
+{% block extrahead %}
+	{% load static %}
+	<link rel="stylesheet" type="text/css" href="{% static "fullcalendar/fullcalendar.css" %}" />
+	<script type="text/javascript" src="{% static "fullcalendar/fullcalendar.js" %}"></script>
+{% endblock %}
+{% block body %}
+
+<div id="sidebar" class="application-sidebar">
+	<div class="btn-group sidebar-item">
+		<button type="button" class="btn btn-default dropdown-toggle" style="width:100%" data-toggle="dropdown">
+			<span id="event_type">Reservations</span>
+			<span class="caret"></span>
+		</button>
+		<ul class="dropdown-menu">
+			<li class="dropdown-header">Which type of events would you like<br>to view on the calendar?</li>
+			<li data-toggle="tooltip" data-placement="right" title="Displays tool reservations. While viewing reservations, the 'Personal schedule' link shows your reservations for all tools. Select a tool to view everyone's reservations for that tool."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Reservations</a></li>
+			<li data-toggle="tooltip" data-placement="right" title="Displays your NanoFab usage. This includes area access, tool usage, and missed reservations (which are all billable items)."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">NanoFab usage</a></li>
+			{% if user.is_staff %}
+				<li data-toggle="tooltip" data-placement="right" title="Displays NanoFab reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Specific user</a></li>
+			{% endif %}
+		</ul>
+	</div>
+	<div id="expand-collapse" class="btn-group sidebar-item">
+		<button type="button" class="btn btn-default" style="width:50%" onclick="expand_all_categories()" title="Expand all tool categories"><span class="glyphicon glyphicon-resize-full"></span></button>
+		<button type="button" class="btn btn-default" style="width:50%" onclick="collapse_all_categories()" title="Collapse all tool categories"><span class="glyphicon glyphicon-resize-small"></span></button>
+	</div>
+	<input type="text" id="tool_search" placeholder="Search for a tool" class="form-control sidebar-item" autocomplete="off">
+	<input type="text" id="user_search" placeholder="Search for a user" class="form-control sidebar-item" autocomplete="off" style="display:none">
+	<button id="chosen_user_button" type="button" class="btn btn-default" style="width:100%; display:none" onclick="clear_specific_user()"></button>
+
+	{# The following menu tree code was take from an example at http://www.bootply.com/120625 #}
+	<ul id="extra-links" class="nav nav-list" style="margin-top: 10px; margin-bottom: 8px;">
+		<li><a href="javascript:void(0)" class="selected personal_schedule" data-tool-id="personal_schedule" onclick="set_selected_item(this); update_event_sources()">Personal schedule</a></li>
+	</ul>
+	{# The tool tree has the HTML ID tag "tool_tree". See the widgets/tool_tree.py file for more information. #}
+	{{ rendered_tool_tree_html }}
+	<div style="height:50px"></div>
+</div>
+
+<div id="calendar" class="application-content"></div>
+<input type="hidden" id="impersonate" name="impersonate" value="test">
+
+<script type="text/javascript">
+
+function get_event_type()
+{
+	return $("#event_type").text().trim().toLowerCase();
+}
+
+function set_event_type(text)
+{
+	$("#event_type").html(text);
+}
+
+{# Check which tool we want to display information for and establish the calendar feed. #}
+{# This function also checks if the user wishes to display their personal calendar feed (that is, all events #}
+{# specific to them for all tools). #}
+function update_event_sources()
+{
+	{# Remove all event sources from the calendar. #}
+	$("#calendar").fullCalendar("removeEventSource", "{% url 'event_feed' %}");
+
+	var event_type = get_event_type();
+	var tool_event_source =
+	{
+		url: "{% url 'event_feed' %}",
+		data:
+		{
+			event_type: event_type
+		}
+	};
+
+	if(event_type == 'reservations' || event_type == 'nanofab usage')
+	{
+		var item = get_selected_item();
+		if(item == 'personal_schedule')
+		{
+			tool_event_source.color = "#33ad33";
+			{# Use green for calendar events of the user's personal schedule. #}
+			tool_event_source.data.personal_schedule = true;
+		}
+		else if(item)
+			tool_event_source.data.tool_id = item;
+	}
+	else if(event_type == 'specific user')
+	{
+		if($("#user_search").typeahead('val'))
+			tool_event_source.data.user = $("#user_search").typeahead('val');
+		else
+			return;
+	}
+
+	$("#calendar").fullCalendar("addEventSource", tool_event_source);
+
+	refresh_sidebar_icons();
+}
+
+{# This function is a callback for when a reservation is successfully created by the user. #}
+{# It renders the event to the calendar by refetching the event feed. #}
+function reservation_creation_success_callback(response, status, xml_http_request, ajax_post)
+{
+	$("#calendar").fullCalendar("unselect");
+	{# If the response is empty then the reservation was successfully created. #}
+	if(response == "")
+		refresh_calendar_and_sidebar();
+	else {# the response was non-empty so the tool requires configuration details before the reservation is created. #}
+	{
+		{# Construct the configuration dialog that is contained in the server response. #}
+		$("#dialog .modal-content").html(response);
+		$("#dialog").one('hidden.bs.modal', function() { return submit_reservation_with_more_information(ajax_post) });
+		$("#dialog").modal('show');
+	}
+}
+
+{# This function is a callback for when reservation creation fails. #}
+{# It removes the visual indication of the reservation (on the calendar) #}
+{# and refreshes it with current events. #}
+function unselect_and_refresh()
+{
+	$("#calendar").fullCalendar("unselect");
+	refresh_calendar_and_sidebar();
+}
+
+function submit_reservation_with_more_information(ajax_post)
+{
+	if($('#dialog_cancelled').val() == "true")
+		return;
+	serialize("#additional_reservation_parameters", ajax_post.data);
+	jQuery.ajax(ajax_post)
+		.fail(ajax_failure_callback("Reservation creation failed"))
+		.done(function(response, status, xml_http_request)
+		{
+			return reservation_creation_success_callback(response, status, xml_http_request, ajax_post)
+		});
+}
+
+{# This function is called when the user clicks and drags on the calendar to create a reservation. #}
+function create_reservation(start, end, jsEvent, view)
+{
+	{# Find out which tool is selected in the tool tree. #}
+	var item = $(".selected");
+	{# Only allow reservations to be created when a tool has been selected. #}
+	var item_selected = (item != null);
+	{# Only allow selection to proceed when we're in reservation view (instead of usage view). #}
+	var reservation_view = get_event_type() == 'reservations';
+	{# Users may not create reservations when viewing their personal schedule. #}
+	var personal_schedule = item.hasClass('personal_schedule');
+	if(!item_selected || !reservation_view || personal_schedule)
+	{
+		$("#calendar").fullCalendar("unselect");
+		return;
+	}
+	var event_properties =
+	{
+		"start": start.unix(),
+		"end": end.unix(),
+		"tool_name": item.text(),
+		"impersonate": $("#impersonate").val(),
+		"csrfmiddlewaretoken": "{{ csrf_token }}"
+	};
+	var ajax_post =
+	{
+		"url": "{% url 'create_reservation' %}",
+		"data": event_properties,
+		"type": "POST",
+		"dataType": "html"
+	};
+	jQuery.ajax(ajax_post)
+		.fail([unselect_and_refresh, ajax_failure_callback("Reservation creation failed")])
+		.done(function(response, status, xml_http_request) { return reservation_creation_success_callback(response, status, xml_http_request, ajax_post) });
+}
+
+{# This function is called when the user clicks and drags on the calendar to resize a reservation. #}
+function resize_reservation(event, delta, revertFunc, jsEvent, ui, view)
+{
+	var event_changes =
+	{
+		"reservation_id": event.id,
+		"delta": delta.asMinutes()
+	};
+	ajax_post("{% url 'resize_reservation' %}", event_changes, undefined, [revertFunc, ajax_failure_callback("Reservation resize failed")], refresh_calendar_and_sidebar);
+}
+
+{# This function is called when the user clicks and drags an event in order to move their reservation. #}
+function move_reservation(event, delta, revertFunc, jsEvent, ui, view)
+{
+	var event_changes =
+	{
+		"reservation_id": event.id,
+		"delta": delta.asMinutes()
+	};
+	ajax_post("{% url 'move_reservation' %}", event_changes, undefined, [revertFunc, ajax_failure_callback("Reservation move failed")], refresh_calendar_and_sidebar);
+}
+
+function click_event(event, jsEvent, view)
+{
+	var failure_dialog = ajax_failure_callback("Unable to display details");
+	ajax_get(event.details_url, undefined, ajax_success_callback, [failure_dialog, refresh_calendar_and_sidebar]);
+}
+
+function cancel_reservation(url, reservation_id, reason)
+{
+	var failure_dialog = ajax_failure_callback("Unable to cancel this reservation");
+	function reservation_cancel_success_callback()
+	{
+		$("#calendar").fullCalendar("removeEvents", reservation_id);
+	}
+	var contents = undefined;
+	if(reason)
+		contents = {'reason': reason};
+	ajax_post(url, contents, reservation_cancel_success_callback, [failure_dialog, refresh_calendar_and_sidebar]);
+}
+
+function on_browser_resize()
+{
+	$('#calendar').fullCalendar('option', 'height', $("#calendar").height());
+}
+
+function create_calendar()
+{
+	{# Documentation for properties: http://arshaw.com/fullcalendar/docs/ #}
+	var calendar_properties =
+	{
+		"header":
+		{
+			left: "prev,next today{% if user.is_staff %} proxyReservation{% endif %}",
+			center: "title",
+			right: "agendaDay,agendaWeek,month"
+		},
+		"views": {
+			"day": {
+				"titleFormat": ' ',
+				"columnFormat": 'dddd MM/DD/YYYY'
+			},
+			"week": {
+				"titleFormat": ' '
+			},
+			"month": {
+				"titleFormat": 'MMMM YYYY'
+			}
+		},
+		"firstDay": 1, {# Make Monday the first day of the week #}
+		"scrollTime": '07:00:00', {# The day starts at 7 AM #}
+		"defaultView": "agendaWeek",
+		"allDaySlot": false,
+		"allDayDefault": false,
+		"slotDuration": '00:15:00', {# 15 minutes each row #}
+		"slotLabelInterval": '1:00', {# One hour intervals for label #}
+		"editable": false,
+		"selectable": true,
+		"selectHelper": true,
+		"select": create_reservation,
+		"eventResize": resize_reservation,
+		"eventDrop": move_reservation,
+		"eventClick": click_event,
+		"height": $("#calendar").height(),
+		"handleWindowResize": true,
+		"windowResize": on_browser_resize,
+		"slotEventOverlap": false,
+		"buttonText": {
+			"today": "Today",
+			"day": "Day",
+			"week": "Week",
+			"month": "Month"
+		},
+		"customButtons": {
+			"proxyReservation": {
+				"text": "Reserve for someone else",
+				"click": reserve_for_someone_else
+			}
+		}
+	};
+	$("#calendar").fullCalendar(calendar_properties);
+}
+
+function reserve_for_someone_else()
+{
+	var text = $($(".fc-proxyReservation-button")[0]).html();
+	if(text === "Reserve for someone else")
+		ajax_get('{% url 'proxy_reservation' %}', undefined, reserve_for_someone_else_callback);
+	else
+	{
+		$($(".fc-proxyReservation-button")[0]).html("Reserve for someone else");
+		$("#impersonate").val('');
+	}
+}
+
+function reserve_for_someone_else_callback(response, status, xml_http_request)
+{
+	$("#dialog .modal-content").html(response);
+	$("#dialog").modal('show');
+}
+
+function refresh_calendar_and_sidebar()
+{
+	$("#calendar").fullCalendar('refetchEvents');
+	refresh_sidebar_icons();
+}
+
+function change_calendar_event_type(calling_element)
+{
+	set_event_type(calling_element.text);
+	var expand_collapse = $("#expand-collapse").hide();
+	var tool_search = $("#tool_search").hide();
+	var tool_tree = $("#tool_tree").hide();
+	var event_type = get_event_type();
+	var extra_links = $("#extra-links");
+	var user_search = $("#user_search").hide();
+	var chosen_user_button = $("#chosen_user_button").show();
+	if(event_type == "reservations")
+	{
+		user_search.hide();
+		chosen_user_button.hide();
+		extra_links.show();
+		expand_collapse.show();
+		tool_search.show();
+		tool_tree.show();
+		update_event_sources();
+	}
+	else if(event_type == "nanofab usage")
+	{
+		user_search.hide();
+		chosen_user_button.hide();
+		extra_links.show();
+		expand_collapse.show();
+		tool_search.show();
+		tool_tree.show();
+		update_event_sources();
+	}
+	else if(event_type == "specific user")
+	{
+		extra_links.hide();
+		expand_collapse.hide();
+		tool_search.hide();
+		tool_tree.hide();
+		clear_specific_user();
+	}
+}
+
+function get_specific_user_activity(jquery_event, search_selection, dataset_name)
+{
+	$("#user_search").typeahead('val', search_selection.id).hide();
+	$("#chosen_user_button").text(search_selection.name).show();
+	update_event_sources();
+}
+
+function clear_specific_user()
+{
+	$("#chosen_user_button").hide();
+	$("#user_search").typeahead('val', '').show().focus();
+	update_event_sources();
+}
+
+function on_load()
+{
+	create_calendar();
+	setInterval(refresh_calendar_and_sidebar, 30000);
+	set_tool_link_callback(update_event_sources);
+	enable_tool_tree_toggling();
+	$('#tool_search').autocomplete('tools', on_tool_search_selection, {{ tools|json_search_base }});
+	$("#tool_search").focus();
+	load_sidebar_state();
+	$("#tool_tree").show(); {# Tool tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
+	{% if auto_select_tool %}
+		expand_to_tool({{ auto_select_tool }});
+	{% else %}
+		update_event_sources();
+	{% endif %}
+	{% if user.is_staff %}
+		$("#user_search").autocomplete('users', get_specific_user_activity, {{ users|json_search_base }});
+	{% endif %}
+	$('[data-toggle~="tooltip"]').tooltip({ container: 'body' });
+}
+
+$(on_load);
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_tags_and_filters %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "mobile.js" %}"></script>
+{% endblock %}
+{% block title %}Choose tool{% endblock %}
+{% block content %}
+	<h3>{{ title }}</h3>
+	<form>
+		<div class="form-group">
+			<label for="search">Search for a tool</label>
+			<input class="form-control" type="text" id="search" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" oninput="mobile_search(this, '/{{ next_page }}/')" data-search-results-target="#search_results" data-search-base='{{ tools|json_search_base }}'>
+		</div>
+	</form>
+	<div id="search_results"></div>
+	<p>... or select by category:</p>
+	{% regroup tools by category as tools_regrouped_by_category %}
+	{% for category in tools_regrouped_by_category %}
+		<div class="alert alert-info" role="alert">
+			<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down" data-toggle="collapse" data-target="#category_{{ forloop.counter }}"></span>
+			<p style="cursor:pointer" data-toggle="collapse" data-target="#category_{{ forloop.counter }}"><strong>{{ category.grouper }}</strong></p>
+			<div id="category_{{ forloop.counter }}" class="collapse">
+				<div style="margin-bottom:10px"></div>
+				{% for tool in category.list %}
+					<p><a href="/{{ next_page }}/{{ tool.id }}/">{{ tool }}</a></p>
+				{% endfor %}
+			</div>
+		</div>
+	{% endfor %}
+{% endblock %}

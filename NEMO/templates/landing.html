@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}NEMO{% endblock %}
+{% block content %}
+	{% if user.training_required %}
+		<div class="row">
+			<div class="col-lg-12">
+				<a href="{% url 'nanofab_rules' %}">
+					<div class="well clearfix">
+						<div class="col-lg-2 text-center"><img src="{% static 'icons/caution.png' %}" height="128" width="128"></div>
+						<div class="col-lg-8 text-center">
+							<h2>NanoFab Rules Tutorial</h2>
+							<p style="text-align: center">You must complete your NanoFab rules tutorial before you can make reservations or use NanoFab tools. Click here to begin the tutorial.</p>
+						</div>
+						<div class="col-lg-2 text-center"><img src="{% static 'icons/agreement.png' %}" height="128" width="128"></div>
+					</div>
+				</a>
+			</div>
+		</div>
+	{% endif %}
+	<div class="row">
+		{% if upcoming_reservations %}
+			<div class="col-lg-4">
+				<h3>Upcoming reservations</h3>
+				{% for r in upcoming_reservations %}
+					<a href="{% url 'tool_control' r.tool.id %}" style="text-decoration: none">
+						<div class="alert {% if r.start < now %}alert-warning{% else %}alert-success{% endif %}">
+							<b>{% if r.start < now %}You're late for your {{ r.tool }} reservation!{% else %}{{ r.tool }}{% endif %}</b><br>
+							Starting at {{ r.start }}<br>
+							Ending at {{ r.end }}
+						</div>
+					</a>
+				{% endfor %}
+			</div>
+		{% endif %}
+		{% if alerts or disabled_resources %}
+			<div class="col-lg-4">
+				<h3>Alerts &amp; outages</h3>
+				{% for a in alerts %}
+					<div class="alert alert-danger">
+						{% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
+						{{ a.contents }}
+					</div>
+				{% endfor %}
+				{% for r in disabled_resources %}
+					<div class="alert alert-danger">
+						<span style="font-weight:bold">Resource outage: {{ r }}</span><br>
+						{{ r.restriction_message }}
+					</div>
+				{% endfor %}
+			</div>
+		{% endif %}
+		{% if usage_events or user.in_area %}
+			<div class="col-lg-4">
+				<h3>Current NanoFab usage</h3>
+				{% for usage in usage_events %}
+					<a href="{% url 'tool_control' usage.tool.id %}" style="text-decoration: none">
+						<div class="alert alert-info">
+							You are using the <b>{{ usage.tool }}</b> for the project named {{ usage.project }} since {{ usage.start }}.
+						</div>
+					</a>
+				{% endfor %}
+				{% if user.in_area %}
+					{% with user.active_project_count as active_project_count %}
+						{% if active_project_count > 1 %}<a href="{% url 'change_project' %}" style="text-decoration: none">{% endif %}
+						<div class="alert alert-info">
+							You are logged in to the <b>{{ user.area_access_record.area|lower }}</b>. Usage time is being billed to the project named <b>{{ user.billing_to_project }}</b>.
+							{% if active_project_count > 1 %}
+								Click to bill to a different project at any time.
+							{% endif %}
+						</div>
+						{% if active_project_count > 1 %}</a>{% endif %}
+					{% endwith %}
+				{% endif %}
+			</div>
+		{% endif %}
+	</div>
+	<div class="row">
+		{% for choice in landing_page_choices %}
+			{% if not choice.hide_from_mobile_devices and device == 'mobile' or not choice.hide_from_desktop_computers and device == 'desktop' %}
+				<a href="{{ choice.url }}" {% if choice.open_in_new_tab %}target="_blank"{% endif %} {% if secure_referral %}rel="noopener noreferrer"{% endif %}>
+					<div class="col-md-3 text-center" style="margin-bottom:30px">
+						<img src="{{ choice.image.url }}" height="128" width="128">
+						<h3 style="margin-top:0">{{ choice.name }}</h3>
+					</div>
+				</a>
+			{% endif %}
+		{% endfor %}
+	</div>
+{% endblock %}
+{% block extra_whitespace %}{# Hide extra whitespace #}{% endblock %}

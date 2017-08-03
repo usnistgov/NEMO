@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}New project{% endblock %}
+{% block content %}
+	<h1>New project</h1>
+	{% if form.non_field_errors %}
+		<div class="alert alert-danger">
+			Oops! Something went wrong. The project was not created because:<br>
+			{{ form.non_field_errors }}
+		</div>
+	{% endif %}
+	<form method="post" action="{% url 'create_project' %}" class="form-horizontal">
+		{% csrf_token %}
+		<div class="form-group">
+			<label for="name" class="control-label col-sm-2">Name</label>
+			<div class="col-sm-4">
+				<input type="text" name="name" id="name" maxlength="100" class="form-control" value="{{ form.name.value }}" autofocus>
+			</div>
+			<div class="col-sm-6 form-control-static danger-highlight">
+				{{ form.name.errors|striptags }}
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="account_search" class="control-label col-sm-2">Account</label>
+			<div class="col-sm-4">
+				<input type="text" id="account_search" name="account" class="form-control">
+				<input type="button" id="selected_account" class="btn btn-default" onclick="clear_account_selection()" style="display:none">
+			</div>
+			<div class="col-sm-6 form-control-static danger-highlight">
+				{{ form.account.errors|striptags }}
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="application_identifier" class="control-label col-sm-2">Application identifier</label>
+			<div class="col-sm-4">
+				<input type="text" name="application_identifier" id="application_identifier" maxlength="100" class="form-control" value="{{ form.application_identifier.value }}">
+			</div>
+			<div class="col-sm-6 form-control-static danger-highlight">
+				{{ form.application_identifier.errors|striptags }}
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-offset-2 col-sm-10">
+				<div class="checkbox">
+					<label>
+						<input type="checkbox" name="active" checked> Active
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-offset-2 col-sm-10">
+				<input type="submit" class="btn btn-success" value="Create new project">
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-sm-offset-2 col-sm-10">
+				<a href="{% url 'accounts_and_projects' %}" class="btn btn-warning">Abandon project creation</a>
+			</div>
+		</div>
+	</form>
+	<script>
+		function select_account(jquery_event, search_selection, dataset_name)
+		{
+			$('#account_search').typeahead('val', search_selection.id).hide();
+			$("#selected_account").val(search_selection.name).show();
+		}
+		function clear_account_selection()
+		{
+			$("#selected_account").hide();
+			$('#account_search').typeahead('val', '').show().focus();
+		}
+		function on_load()
+		{
+			$('#account_search').autocomplete('account', select_account, {{ account_list|json_search_base }});
+		}
+		$(on_load);
+	</script>
+{% endblock %}

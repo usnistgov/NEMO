@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+{% block title %}Resolve task{% endblock %}
+{% block content %}
+	<h1>{{ task.tool.name }} task</h1>
+	<span style="color:grey">Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).</span>
+	<p>
+		{% if task.last_updated and task.last_updated_by %}
+			<span style="color:grey">Last updated by {{ task.last_updated_by }} on {{ task.last_updated }} ({{ task.last_updated|naturaltime }}).</span>
+		{% endif %}
+	</p>
+
+	<div class="row">
+		<div class="col-md-5">
+			<h4>Resolve the task</h4>
+			<form action="{% url 'update_task' task.id %}" method="post">
+				{% csrf_token %}
+				<input type="hidden" name="tool" value="{{ task.tool_id }}">
+				<input type="hidden" name="action" value="resolve">
+				<input type="hidden" name="urgency" value="{{ task.urgency }}">
+				<input type="hidden" name="problem_category" value="{{ task.problem_category_id|default_if_none:'' }}">
+				<input type="hidden" name="estimated_resolution_time" value="{{ task.estimated_resolution_time|date:"m/d/Y g:i A" }}">
+				<input type="hidden" name="force_shutdown" value="{{ task.force_shutdown }}">
+				<input type="hidden" name="safety_hazard" value="{{ task.safety_hazard }}">
+				<div class="form-group">
+					<label for="description">Please describe any actions taken to resolve this task. This information will be kept in order to analyze long-term trends in NanoFab maintenance.</label>
+					<textarea id="description" name="description" class="form-control" rows="3"></textarea>
+				</div>
+				<div class="form-group">
+					<label for="resolution_category">Please select a classification that best describes how this problem was fixed. If no classification is appropriate then leave this field blank.</label>
+					<select id="resolution_category" name="resolution_category" class="form-control">
+						<option value="">&nbsp;</option>
+						{% for c in categories %}
+							<option value="{{ c.id }}">{{ c.name }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="form-group">
+					<input type="submit" class="btn btn-success" value="Resolve">
+				</div>
+			</form>
+		</div>
+		<div class="col-md-6 col-md-offset-1">
+			<h4>Problem description</h4>
+			{{ task.problem_description|linebreaksbr }}
+			{% if task.progress_description %}
+				<h4>Progress</h4>
+				{{ task.progress_description|linebreaksbr }}
+			{% endif %}
+		</div>
+	</div>
+{% endblock %}

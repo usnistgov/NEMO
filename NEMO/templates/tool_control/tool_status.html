@@ -1,0 +1,395 @@
+<div>
+	{% if device == 'mobile' %}
+		<h1>{{ tool.name }}</h1>
+		<ul class="nav nav-pills" id="tabs" style="margin-bottom:10px">
+			<li style="width:48%; text-align:center" class="active"><a href="#summary" style="padding: 10px 5px">Summary</a></li>
+			<li style="width:48%; text-align:center"><a href="#details" style="padding: 10px 5px">Details</a></li>
+			<li style="width:48%; text-align:center"><a href="#problem" style="padding: 10px 5px">Report a problem</a></li>
+			<li style="width:48%; text-align:center"><a href="#comment" style="padding: 10px 5px">Post a comment</a></li>
+		</ul>
+	{% else %}
+		<h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:10px">{{ tool.name }}</h1>
+		<ul class="nav nav-pills" id="tabs">
+			<li class="active"><a href="#summary">Summary</a></li>
+			<li><a href="#details">Details</a></li>
+			<li><a href="#problem">Report a problem</a></li>
+			<li><a href="#comment">Post a comment</a></li>
+		</ul>
+	{% endif %}
+</div>
+
+<div class="tab-content">
+	<div class="tab-pane active" id="summary">
+		{# Display tool status... #}
+		{% if tool.in_use %}
+			<div class="primary-highlight">
+				<span class="glyphicon glyphicon-user pull-left status-icon"></span>
+				{% with tool.get_current_usage_event as current_usage_event %}
+					<h3>
+						{% if current_usage_event.operator.id == user.id %}
+							You are using this tool
+						{% else %}
+							{{ current_usage_event.operator }} is using this tool
+						{% endif %}
+						{% if current_usage_event.operator.id != current_usage_event.user.id %}
+							on behalf of {{ current_usage_event.user }}
+						{% endif %}
+						for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start }}.
+					</h3>
+				{% endwith %}
+			</div>
+		{% elif tool.delayed_logoff_in_progress %}
+			{% with tool.get_delayed_logoff_usage_event as delayed_logoff_event %}
+				<div class="primary-highlight">
+					<span class="glyphicon glyphicon-time pull-left status-icon"></span>
+					<h3>{{ delayed_logoff_event.operator }} has finished using the {{ tool }} but delayed logoff is in effect. The tool will be available at {{ delayed_logoff_event.end|time }}.</h3>
+				</div>
+			{% endwith %}
+		{% elif not tool.operational or tool.required_resource_is_unavailable %}
+			<div class="danger-highlight">
+				<span class="glyphicon glyphicon-ban-circle pull-left status-icon"></span>
+				<h3>This tool is <strong>shut down</strong>.</h3>
+			</div>
+		{% elif tool.nonrequired_resource_is_unavailable %}
+			<div class="warning-highlight">
+				<span class="glyphicon glyphicon-exclamation-sign pull-left status-icon"></span>
+				<h3>This tool is <strong>operational</strong> but not all resources are available.</h3>
+			</div>
+		{% else %}
+			<div class="success-highlight">
+				<span class="glyphicon glyphicon-ok pull-left status-icon"></span>
+				<h3>This tool is <strong>operational</strong> and <strong>idle</strong>.</h3>
+			</div>
+		{% endif %}
+
+		{# Display any unavailable required resources... #}
+		{% for r in tool.unavailable_required_resources %}
+			<div class="media">
+				<span class="glyphicon glyphicon-leaf pull-left notification-icon danger-highlight"></span>
+				<div class="media-body">
+					<h4 class="media-heading">A required resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></h4>
+					{{ r.restriction_message }}
+				</div>
+			</div>
+		{% endfor %}
+
+		{# Display any unavailable non-required resources... #}
+		{% for r in tool.unavailable_nonrequired_resources %}
+			<div class="media">
+				<span class="glyphicon glyphicon-leaf pull-left notification-icon warning-highlight"></span>
+				<div class="media-body">
+					<h4 class="media-heading">An optional resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></h4>
+					{{ r.restriction_message }}
+				</div>
+			</div>
+		{% endfor %}
+
+		{# Display all problems and shutdowns... #}
+		{% for t in tool.problems %}
+			<div class="media">
+				<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#task_{{ t.id }}_details" class="pointer">
+					{% if t.force_shutdown %}
+						<span class="glyphicon glyphicon-fire pull-left notification-icon danger-highlight" title="Click to toggle details about this task"></span>
+					{% else %}
+						<span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight" title="Click to toggle details about this task"></span>
+					{% endif %}
+					<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+				</a>
+				<div class="media-body">
+					{% if t.problem_category %}<h4 class="media-heading">{{ t.problem_category }}</h4>{% endif %}
+					{{ t.problem_description }}
+					{% if t.estimated_resolution_time %}<br>Estimated resolution time is {{ t.estimated_resolution_time }}.{% endif %}
+					<div id="task_{{ t.id }}_details" class="collapse">
+						<span class="grey">
+							This task was created by {{ t.creator }} on {{ t.creation_time }}.
+							{% if user.is_staff %}
+								You can <a href="{% url 'task_update_form' t.id %}">update</a> or <a href="{% url 'task_resolution_form' t.id %}">resolve</a> this task.
+							{% endif %}
+							{% if t.force_shutdown %}
+								The tool will remain shut down until this task is resolved.
+							{% endif %}
+							{% if t.creator.id == user.id and t.status == t.Status.REQUIRES_ATTENTION %}
+								You may <a href="javascript:$('#cancel_task_{{ t.id }}').submit()">cancel</a> this task if it was mistakenly created.<br>
+								<form id="cancel_task_{{ t.id }}" action="{% url 'cancel_task' t.id %}" method="POST">
+									{% csrf_token %}
+								</form>
+							{% endif %}
+						</span>
+						{% if t.progress_description %}
+							<div class="media">
+								<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
+								<div class="media-body">
+									<h4 class="media-heading">Progress updates</h4>
+									{{ t.progress_description|linebreaksbr }}
+								</div>
+							</div>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		{% endfor %}
+
+		{# Display all comments... #}
+		{% for c in tool.comments %}
+			<div class="media">
+				{% if user.id == c.author.id or user.is_staff %}
+					<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#comment_{{ c.id }}_actions" class="pointer">
+				{% endif %}
+				<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight" title="{% if c.expiration_date %}This comment will expire and become hidden on {{ c.expiration_date }}{% else %}This comment will be displayed indefinitely.{% endif %}"></span>
+				{% if user.id == c.author.id or user.is_staff %}
+					<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+					</a>
+				{% endif %}
+				<div class="media-body">
+					{{ c.content }}<br>
+					<span style="font-size:x-small; color:grey; font-style:italic">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
+					{% if user.id == c.author.id or user.is_staff %}
+						<div id="comment_{{ c.id }}_actions" class="collapse grey">
+							<form action="{% url 'hide_comment' c.id %}" method="post">
+								{% csrf_token %}
+								<a href="javascript:void(0)" onclick="$(this).closest('form').submit()">Hide this comment</a>.
+							</form>
+						</div>
+					{% endif %}
+				</div>
+			</div>
+		{% endfor %}
+
+		<div style="margin-top:10px">
+			{{ rendered_configuration_html }}
+		</div>
+
+		{# Display tool control... #}
+		<form id="tool_control">
+			{% if tool.in_use %}
+				{% if tool.get_current_usage_event.operator.id == user.id or tool.get_current_usage_event.user.id == user.id %}
+					<button id="stop" class="btn btn-default" onclick="disable_tool('{% url 'disable_tool' tool.id %}'); return false"><span class="glyphicon glyphicon-stop"></span> Stop using the {{ tool.name }}</button><p>
+					{% if tool.allow_delayed_logoff and not tool.delayed_logoff_in_progress %}
+						<div>
+							Prevent others from using the tool for <input type="number" id="downtime" class="form-control" style="display:inline; width:auto" min="1" max="120" inputmode="numeric" pattern="[0-9]*" placeholder="0"> minutes after disabling the tool.
+							<a id="delayed_logoff_help" class="pointer" tabindex="0" data-toggle="popover" data-placement="bottom" data-trigger="focus" data-content="Some tools may require downtime after you finish using them. (For example, to perform automated cleaning or pump-down). Once you click &quot;Stop using the {{ tool }}&quot; the tool interlock will immediately disable the tool and it will remain unusable for the specified duration. Leave the duration blank to indicate that no post-usage downtime is required.">What's this?</a>
+						</div>
+					{% endif %}
+				{% endif %}
+			{% else %}
+				{% if user.is_staff %}
+					<h4>What would you like to do?</h4>
+					<div class="radio"><label><input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">Use this tool for my own project</label></div>
+					<div class="radio"><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="false">Use this tool on behalf of another user</label></div>
+					{% if user.charging_staff_time %}
+						{% with user.get_staff_charge as staff_charge %}
+							<div class="radio disabled">
+								<label id="staff_charge_tooltip_container" class="light-grey" data-toggle="tooltip" data-placement="right" title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
+									<input type="radio" onchange="use_tool_for_other()" disabled>
+									<span id="staff_charge_tooltip_location">Use this tool on behalf of another user and begin charging staff time</span>
+								</label>
+							</div>
+							<script>
+								$("#staff_charge_tooltip_container").tooltip();
+							</script>
+						{% endwith %}
+					{% else %}
+						<div class="radio"><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">Use this tool on behalf of another user and begin charging staff time</label></div>
+					{% endif %}
+					<div id="project_choice"></div>
+				{% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress %}
+					{% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
+				{% endif %}
+				{% if user.is_staff or tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress %}
+					<button id="start" class="btn btn-default" style="display:none" onclick="enable_tool({{ tool.id }}); return false"><span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}</button>
+				{% endif %}
+			{% endif %}
+		</form>
+		<div style="height:150px">{# Spacer #}</div>
+	</div>
+
+	<div class="tab-pane" id="details">
+		{% if user.is_staff and tool.in_use %}
+			<p>You may <a href="javascript:void(0)" onclick="disable_tool('{% url 'disable_tool' tool.id %}')">force {{ tool.get_current_usage_event.operator }} off this tool</a>.</p>
+		{% endif %}
+		<div class="media">
+			<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
+			<div class="media-body">
+				<p><a href="{% url 'get_email_form_for_user' tool.primary_owner.id %}" title="Email {{ tool.primary_owner.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.primary_owner }}</a> is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.</p>
+				{% if tool.primary_owner.id != tool.secondary_owner.id %}
+					<p>If you are unable to reach {{ tool.primary_owner }} then please contact <a href="{% url 'get_email_form_for_user' tool.secondary_owner.id %}" title="Email {{ tool.secondary_owner.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.secondary_owner }}</a>.</p>
+				{% endif %}
+				{% if tool.notification_email_address %}
+					<p>Problem reports for the {{ tool.name }} are automatically emailed to <a href="{% url 'get_email_form' %}?recipient={{ tool.notification_email_address }}" title="Email {{ tool.notification_email_address }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.notification_email_address }}</a>.</p>
+				{% endif %}
+				<p>The {{ tool.name }} is located in room <span class="glyphicon glyphicon-map-marker small-icon"></span>{{ tool.location }}.</p>
+				<p>You may dial the phone that is closest to the {{ tool.name }} at extension <span class="glyphicon glyphicon-phone small-icon"></span>{{ tool.phone_number }}.</p>
+			</div>
+		</div>
+		{% if user.is_staff %}
+			<div id="qualified_users_container" class="media">
+				{% include 'tool_control/qualified_users.html' %}
+			</div>
+		{% endif %}
+		{% if tool.required_resource_set.exists %}
+			<div class="media">
+				<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#required_resources" class="pointer">
+					<span class="glyphicon glyphicon-leaf pull-left notification-icon success-highlight"></span>
+					<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+				</a>
+				<div class="media-body">
+					<h4 class="media-heading">Resources that are required for this tool to operate</h4>
+					<div id="required_resources" class="collapse">
+						<ul>
+							{% for u in tool.required_resource_set.all %}
+								<li>{{ u.name }} <span class="light-grey">({{ u.category }})</span></li>
+							{% endfor %}
+						</ul>
+					</div>
+				</div>
+			</div>
+		{% endif %}
+		{% if tool.nonrequired_resource_set.exists %}
+			<div class="media">
+				<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#nonrequired_resources" class="pointer">
+					<span class="glyphicon glyphicon-leaf pull-left notification-icon warning-highlight"></span>
+					<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+				</a>
+				<div class="media-body">
+					<h4 class="media-heading">Resources that are optional for this tool to operate</h4>
+					<div id="nonrequired_resources" class="collapse">
+						<ul>
+							{% for u in tool.nonrequired_resource_set.all %}
+								<li>{{ u.name }} <span class="light-grey">({{ u.category }})</span></li>
+							{% endfor %}
+						</ul>
+					</div>
+				</div>
+			</div>
+		{% endif %}
+		<div class="media">
+			<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#history" class="pointer">
+				<span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight"></span>
+				<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+			</a>
+			<div class="media-body">
+				<h4 class="media-heading">Task &amp; comment history for this tool</h4>
+				<div id="history" class="collapse">
+					<form id="history_form">
+						<input type="hidden" name="tool_id" value="{{ tool.id }}">
+						<div class="form-group">
+							<input type="button" class="btn btn-info" onclick="load_tasks_and_comments_for_last_three_months('{{ tool.id }}')" value="Created in the last 3 months">
+						</div>
+						<div class="form-group">
+							<input type="button" class="btn btn-info" onclick="load_ten_most_recent_tasks_and_comments('{% url 'ten_most_recent_past_comments_and_tasks' tool.id %}')" value="10 most recent"><br>
+						</div>
+						<div class="panel panel-default" style="display:inline-block">
+							<div class="panel-body">
+								<div id="task_and_comment_start_form_group" class="form-group" style="position:relative">
+									<div class="input-group" style="max-width:250px">
+										<span class="input-group-addon">Between</span>
+										<input id="task_and_comment_start" name="start" type="text" placeholder="start" class="form-control">
+									</div>
+								</div>
+								<div id="task_and_comment_end_form_group" class="form-group" style="position:relative">
+									<div class="input-group" style="max-width:250px">
+										<span class="input-group-addon">and</span>
+										<input id="task_and_comment_end" name="end" type="text" placeholder="end" class="form-control">
+									</div>
+								</div>
+								<div class="form-group" style="margin-bottom:0">
+									<a href="javascript:load_tasks_and_comments('{{ tool.id }}')" type="button" class="btn btn-default">Go</a>
+								</div>
+							</div>
+						</div>
+					</form>
+					<div id="past_tasks_and_comments"></div>
+				</div>
+			</div>
+		</div>
+		<div style="height:150px">{# Spacer #}</div>
+	</div>
+
+	<div class="tab-pane" id="problem">
+		<form action="{% url 'create_task' %}" method="post">
+			{% csrf_token %}
+			<input type="hidden" name="action" value="create">
+			<input type="hidden" name="tool" value="{{ tool.id }}">
+			<p>Use this form to report a problem relating to the currently selected tool. The NanoFab staff will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</p>
+
+			<div class="form-group">
+				<label for="problem_category">Please choose a category that best describes this problem. If there is no appropriate category then leave this field blank.</label>
+				<select id="problem_category" name="problem_category" class="form-control" style="max-width:300px">
+					<option value="">&nbsp;</option>
+					{% for c in task_categories %}
+						<option value="{{ c.id }}">{{ c.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+
+			<div class="form-group">
+				<label for="description">Please provide a <strong>detailed</strong> description of the problem so that the NanoFab staff have enough information to resolve the problem efficiently.</label>
+				<textarea id="description" name="description" class="form-control" rows="7" required></textarea>
+			</div>
+			{% if user.is_staff %}
+				<div class="form-group">
+					<div style="position:relative">
+						<label for="estimated_resolution_time" class="control-label">What is your best estimate of when the problem will be resolved? Leave this field blank if you are unsure.</label>
+						<input id="estimated_resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off">
+						<script>
+							var timepicker_properties =
+							{
+								sideBySide: true
+							};
+							$('#estimated_resolution_time').datetimepicker(timepicker_properties);
+						</script>
+					</div>
+				</div>
+			{% endif %}
+			<div class="form-group">
+				<div class="checkbox"><label><input name="safety_hazard" type="checkbox"/>This problem represents a safety hazard to the NanoFab and should be regarded as urgent. Notify the NanoFab safety officer of this issue.</label></div>
+				<div class="checkbox"><label><input name="force_shutdown" type="checkbox"/>Shut down the tool so that it may not be used until this problem is resolved.</label></div>
+			</div>
+			<div class="form-group">
+				<button type="submit" class="btn btn-danger">Report problem</button>
+			</div>
+		</form>
+		<div style="height:150px">{# Spacer #}</div>
+	</div>
+
+	<div class="tab-pane" id="comment">
+		<form action="{% url 'create_comment' %}" method="post">
+			{% csrf_token %}
+			<input type="hidden" name="tool" value="{{ tool.id }}">
+			<p>
+				Use this form to comment on the operating status of the selected tool.
+				The comment will be visible to everyone on the website for <strong>informational purposes</strong>.
+				(Note: if there is something wrong with the tool then please report a problem instead of creating a comment).
+				You may remove the comment at any time because you are its author.
+			</p>
+			<div class="form-group">
+				<label class="form-inline">
+					How many days would you like the comment to be visible?
+					<select name="expiration" class="form-control" style="width:150px">
+						<option value="1">1 day</option>
+						<option value="7">7 days</option>
+						<option value="30" selected>30 days</option>
+						<option value="60">60 days</option>
+						<option value="90">90 days</option>
+						<option value="0">Indefinitely</option>
+					</select>
+				</label>
+			</div>
+			<div class="form-group">
+				<label for="content">What would you like to say?</label>
+				<textarea name="content" id="content" class="form-control" rows="6" required></textarea>
+			</div>
+			<div class="form-group">
+				<button type="submit" class="btn btn-info">Post comment</button>
+			</div>
+		</form>
+		<div style="height:150px">{# Spacer #}</div>
+	</div>
+</div>
+
+<script>
+	$("#tabs a").click(switch_tab);
+	$('#task_and_comment_start').datetimepicker({format: 'MM/DD/YYYY', 'widgetParent': '#task_and_comment_start_form_group'});
+	$('#task_and_comment_end').datetimepicker({format: 'MM/DD/YYYY', 'widgetParent': '#task_and_comment_end_form_group'});
+	$('#delayed_logoff_help').popover()
+</script>

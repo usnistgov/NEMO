@@ -1,0 +1,18 @@
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal">&times;</button>
+	<h4 class="modal-title">Would you like to end your staff charge?</h4>
+</div>
+
+<div class="modal-body">
+	{% with user.get_staff_charge as staff_charge %}
+		You are charging staff time to {{ staff_charge.customer }} for the project named
+		{{ staff_charge.project }} since {{ staff_charge.start }}.
+		Now that you have finished using the {{ tool.name }} on this person's behalf, would you
+		also like to stop charging staff time to this user?
+	{% endwith %}
+</div>
+
+<div class="modal-footer">
+	<button type="button" class="btn btn-success" data-dismiss="modal">Continue charging staff time</button><br><div style="height:10px"></div>
+	<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', end_staff_charge);">Stop charging staff time</button>
+</div>

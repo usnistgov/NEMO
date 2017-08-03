@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Add area access record{% endblock %}
+{% block content %}
+	{% if error_message %}
+		<div class="alert alert-danger">
+			Oops! Something went wrong. The new area access record was not created because:<br>
+			{{ error_message }}
+		</div>
+	{% endif %}
+	{% if success %}
+		<div class="alert alert-success">{{ success }}</div>
+	{% endif %}
+	<h1>New area access record</h1>
+	<p style="font-weight: bold">
+		Only use this form under extraordinary circumstances (such as when tablet login is not working).
+		This form is not intended to be used regularly.
+	</p>
+	<form id="new_area_access_record" action="{% url 'new_area_access_record' %}" class="form-inline" method="get">
+		<div class="form-group">
+			<input id="customer_search" type="text" class="form-control" placeholder="Search for a customer">
+			<input id="customer" name="customer" type="hidden">
+		</div>
+	</form>
+	<script>
+		function select_user(jquery_event, search_selection, dataset_name)
+		{
+			$("#customer").val(search_selection.id);
+			$("#new_area_access_record").submit();
+		}
+		$('#customer_search').autocomplete('users', select_user, {{ customers|json_search_base }}).focus();
+	</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Feedback{% endblock %}
+{% block content %}
+	{% if customization_required %}
+		<h1>The Feedback page has not been customized yet</h1>
+		<p>
+			Feedback is emailed to an address specified by the NEMO site administrator.
+			{% if user.is_staff %}
+				Use the <a href="{% url 'customization' %}">customizations page</a>
+				to enter an email address, then all users will be able to send feedback.
+			{% endif %}
+		</p>
+	{% else %}
+		<h1>Submit feedback about the NanoFab</h1>
+		<p>
+			We're continually working to improve the NanoFab experience for everyone.<br>
+			Do you have an idea to make the NanoFab better? Send us your feedback!
+		</p>
+		<form class="form" id="feedback_form" action="{% url 'feedback' %}" method="post">
+			{% csrf_token %}
+			<div class="form-group">
+				<label><textarea rows="6" cols="75" name="feedback" id="feedback" class="form-control" maxlength="5000" required></textarea></label>
+			</div>
+			<div class="form-group">
+				<input type="submit" value="Send feedback" class="btn btn-success">
+			</div>
+		</form>
+	{% endif %}
+{% endblock %}

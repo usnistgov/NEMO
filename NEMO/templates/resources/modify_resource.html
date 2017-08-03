@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Modify resource{% endblock %}
+{% block content %}
+	{% if error %}
+		<div class="alert alert-danger">
+			{{ error }}
+		</div>
+	{% endif %}
+	<h1>Modify a resource</h1>
+	<form method="post" action="{% url 'modify_resource' resource.id %}" style="margin-bottom:50px">
+		{% csrf_token %}
+		{% if resource.available %}
+			<input type="hidden" name="status" value="unavailable">
+			<p>
+				<strong>{{ resource.name }}</strong> is currently <strong>available</strong>. Enter a status message to mark the resource as unavailable.
+			</p>
+			When a resource is unavailable:
+			<ul>
+				<li>The status message will be displayed on the landing page and tool control page of each affected tool</li>
+				<li>Tools that fully depend on this resource will be <strong>unavailable to users</strong></li>
+				<li>Areas that depend on this resource will be <strong>unavailable to users</strong></li>
+				<li>Tools that partially depend on this resource will be available to users, however it is the user's responsibility to determine if their fabrication process will succeed without the resource available</li>
+			</ul>
+			<div class="form-group">
+				<textarea name="reason" class="form-control" rows="3" placeholder="Why is the resource unavailable?" required></textarea>
+			</div>
+			{% if fully_dependent_tools_in_use %}
+				<div class="alert alert-danger">
+					<p>
+						<strong>Warning:</strong> the following tools fully depend on this resource and are in use.
+						You must disable the tools individually to block <strong>current</strong> use. It is recommended
+						that you disable these tools before making the resource unavailable.
+					</p>
+					<ul>
+						{% for t in fully_dependent_tools_in_use %}
+							<li>{{ t.name }}</li>
+						{% endfor %}
+					</ul>
+				</div>
+			{% endif %}
+		{% else %}
+			<p>{{ resource.name }} is currently <strong>unavailable</strong>. What would you like to do?</p>
+			<div class="form-group">
+				<div class="radio">
+					<label>
+						<input type="radio" name="status" id="available" value="available" checked onclick="$('#modify_status_message').hide()">
+						Make the resource available
+					</label>
+				</div>
+				<div class="radio">
+					<label>
+						<input type="radio" name="status" id="unavailable" value="unavailable" onclick="$('#modify_status_message').show(); $('#reason').focus().select()">
+						Change the status message for the resource outage
+					</label>
+				</div>
+			</div>
+			<div id="modify_status_message" class="form-group" style="display:none">
+				<label for="reason">What would you like the new status message to say?</label>
+				<textarea id="reason" name="reason" rows="3" class="form-control">{{ resource.restriction_message }}</textarea>
+			</div>
+		{% endif %}
+		<input type="submit" id="submit" class="btn btn-info" value="Modify resource">
+		<a href="{% url 'resources' %}" class="btn btn-warning">Nevermind</a>
+	</form>
+	{% if resource.fully_dependent_tools.all %}
+		<h3>Tools that fully depend on {{ resource }}</h3>
+		<ul>
+			{% for t in resource.fully_dependent_tools.all %}
+				<li>
+					{% if t.in_use %}
+						{{ t }} - in use by <a href="{% url 'get_email_form_for_user' t.get_current_usage_event.operator.id %}"><span class="glyphicon glyphicon-send"></span> {{ t.get_current_usage_event.operator }}</a>
+					{% else %}
+						{{ t }}
+					{% endif %}
+				</li>
+			{% endfor %}
+		</ul>
+	{% else %}
+		<h3>No tools fully depend on {{ resource }}</h3>
+	{% endif %}
+	{% if resource.partially_dependent_tools.all %}
+		<h3>Tools that partially depend on {{ resource }}</h3>
+		<ul>
+			{% for t in resource.partially_dependent_tools.all %}
+				<li>
+					{% if t.in_use %}
+						{{ t }} - in use by <a href="{% url 'get_email_form_for_user' t.get_current_usage_event.operator.id %}"><span class="glyphicon glyphicon-send"></span> {{ t.get_current_usage_event.operator }}</a>
+					{% else %}
+						{{ t }}
+					{% endif %}
+				</li>
+			{% endfor %}
+		</ul>
+	{% else %}
+		<h3>No tools partially depend on {{ resource }}</h3>
+	{% endif %}
+	{% if resource.dependent_areas.all %}
+		<h3>Areas that depend on {{ resource }}</h3>
+		<ul>
+			{% for a in resource.dependent_areas.all %}
+				<li>{{ a }}</li>
+			{% endfor %}
+		</ul>
+	{% else %}
+		<h3>No areas depend on {{ resource }}</h3>
+	{% endif %}
+{% endblock %}

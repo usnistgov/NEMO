@@ -1,0 +1,41 @@
+[
+	{% for x in usage_events %}
+	{
+		{% if personal_schedule %}
+			"title": "{{ x.tool.name }}",
+		{% else %}
+			"title": "{% if x.operator.id != x.user.id %}{{ x.operator }} on behalf of {% endif %}{{ x.user }}",
+		{% endif %}
+		"id": {{ x.id }},
+		"start": "{{ x.start|date:"c" }}",
+		{# Usage events that are less than 15 minutes are artificially lengthened for display purposes. #}
+		"end": "{{ x.get_visual_end|date:"c" }}",
+		"details_url": "{% url 'usage_details' x.id %}"
+	}{% if not forloop.last %},{% elif area_access_events or missed_reservations %},{% endif %}
+	{% endfor %}
+	{% for x in area_access_events %}
+	{
+		"title": "{{ x.area }} access billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
+		"id": {{ x.id }},
+		"color": "#e68a00",
+		"start": "{{ x.start|date:"c" }}",
+		{# Area access events that are less than 15 minutes are artificially lengthened for display purposes. #}
+		"end": "{{ x.get_visual_end|date:"c" }}",
+		"details_url": "{% url 'area_access_details' x.id %}"
+	}{% if not forloop.last %},{% elif missed_reservations %},{% endif %}
+	{% endfor %}
+	{% for x in missed_reservations %}
+	{
+		{% if personal_schedule %}
+			"title": "Missed reservation for the {{ x.tool }}",
+		{% else %}
+			"title": "Missed reservation by {{ x.user }}",
+		{% endif %}
+		"id": {{ x.id }},
+		"color": "#ff0000",
+		"start": "{{ x.start|date:"c" }}",
+		"end": "{{ x.end|date:"c" }}",
+		"details_url": "{% url 'reservation_details' x.id %}"
+	}{% if not forloop.last %},{% endif %}
+	{% endfor %}
+]

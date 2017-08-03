@@ -1,0 +1,20 @@
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal">&times;</button>
+	<h4 class="modal-title">Which project is this for?</h4>
+</div>
+
+<div class="modal-body">
+	{# Assume the dialog is cancelled by default, preventing the reservation request from being processed further. #}
+	{# When a button is clicked this value is set to true, enabling further processing. #}
+	{# Hiding the dialog using the X in the top right, or clicking outside of it, will stop processing. #}
+	<input type="hidden" id="dialog_cancelled" value="true">
+	<form id="additional_reservation_parameters" onsubmit="return false">
+		<p>Associate your reservation with a project. A fee will be charged to that project if you miss your reservation.</p>
+		<input type="hidden" id="project_id" name="project_id">
+		{% for project in active_projects %}
+			<div class="form-group">
+				<button class="btn btn-default" data-dismiss="modal" onclick="$('#project_id').val({{ project.id }}); $('#dialog_cancelled').val(false)">{{ project }}</button>
+			</div>
+		{% endfor %}
+	</form>
+</div>

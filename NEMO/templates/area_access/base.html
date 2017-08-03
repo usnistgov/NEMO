@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{% block title %}{% endblock %}</title>
+	{% load static %}
+
+	{# jQuery #}
+	<script type="text/javascript" src="{% static "jquery.js" %}"></script>
+
+	{# Bootstrap #}
+	<script type="text/javascript" src="{% static "bootstrap/js/bootstrap.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.css" %}"/>
+
+	<!--suppress CssUnusedSymbol -->
+	<style>
+		.btn-extra-large
+		{
+			margin-top: 50px;
+			margin-bottom: 50px;
+			font-size: 36px;
+		}
+	</style>
+</head>
+<body style="padding-left:20px; padding-right:20px">
+	<div id="default_content">
+		{% block default_content %}
+		{% endblock %}
+	</div>
+	<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1></div>
+	<div id="status" style="display: none"></div>
+	<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
+	<script type="text/javascript">
+		$(window).keypress(on_keypress);
+		var badge_number = "";
+		var timeout_handle = null;
+		function on_keypress(event)
+		{
+			if(event.which == 13) // Submit the badge number when 'Enter' is pressed.
+			{
+				clear_timeout();
+				{% block action %}{% endblock %}
+				$("#badge_number").html(badge_number + ", sent");
+				badge_number = "";
+			}
+			else
+			{
+				badge_number += String.fromCharCode(event.which);
+				$("#badge_number").html(badge_number);
+			}
+		}
+		function load_complete(response, status, xml_http_request)
+		{
+			if(status == "error")
+			{
+				$("#default_content").hide();
+				$("#status").hide();
+				$("#error").show();
+				revert(15);
+			}
+		}
+		function revert(delay)
+		{
+			clear_timeout();
+			delay = delay * 1000;
+			timeout_handle = setTimeout(revert_to_default_content, delay);
+		}
+		function revert_to_default_content()
+		{
+			clear_timeout();
+			$("#status").hide();
+			$("#error").hide();
+			$("#badge_number").html("");
+			$("#default_content").show();
+		}
+		function clear_timeout()
+		{
+			if(timeout_handle != null)
+				clearTimeout(timeout_handle);
+			timeout_handle = null;
+		}
+		function just_open_the_door(badge_number)
+		{
+			var data = {
+				'door_id': {{ door.id }},
+				'badge_number': badge_number,
+				'csrfmiddlewaretoken': '{{ csrf_token }}'
+			};
+			$("#default_content").hide();
+			$("#error").hide();
+			$("#status").html("<h1>Opening the door...</h1>").show().load('{% url 'open_door' door.id %}', data, load_complete);
+		}
+		function enter_area(badge_number, project_id)
+		{
+			var data = {
+				'door_id': {{ door.id }},
+				'badge_number': badge_number,
+				'csrfmiddlewaretoken': '{{ csrf_token }}'
+			};
+			if(project_id)
+				data.project_id = project_id;
+			$("#default_content").hide();
+			$("#error").hide();
+			$("#status").html("<h1>Logging you in to the {{ area|lower }}...</h1>").show().load('{% url 'login_to_area' door.id %}', data, load_complete);
+		}
+		function exit_area(badge_number)
+		{
+			var data = {
+				'door_id': {{ door.id }},
+				'badge_number': badge_number,
+				'csrfmiddlewaretoken': '{{ csrf_token }}'
+			};
+			$("#default_content").hide();
+			$("#error").hide();
+			$("#status").html("<h1>Logging you out of the {{ area|lower }}...</h1>").show().load('{% url 'logout_of_area' door.id %}', data, load_complete);
+		}
+	</script>
+</body>
+</html>

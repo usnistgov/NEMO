@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Staff charges{% endblock %}
+{% block content %}
+	<h1>Staff charges</h1>
+	<div class="col-sm-12">
+		<form action="{% url 'begin_staff_charge' %}" class="form-horizontal" method="post">
+			{% csrf_token %}
+			<div class="form-group">
+				Customer: {{ customer }}<br>
+				<input type="hidden" name="customer" value="{{ customer.id }}">
+			</div>
+			<div class="form-group">
+				{% if customer.active_project_count == 1 %}
+					Staff time will be billed to the customer's only project, &quot;{{ customer.active_projects.0 }}&quot;
+					<input type="hidden" name="project" value="{{ customer.active_projects.0.id }}">
+				{% else %}
+					Which of the customer's projects would you like to bill?
+					<div class="radio">
+						{% for p in customer.active_projects %}
+							<label class="control-label"><input type="radio" name="project" value="{{ p.id }}" required> {{ p }}</label><br>
+						{% endfor %}
+					</div>
+				{% endif %}
+			</div>
+			<div class="form-group">
+				<input type="submit" class="btn btn-success" value="Begin billing staff time">
+			</div>
+		</form>
+	</div>
+{% endblock %}

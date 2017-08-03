@@ -1,0 +1,136 @@
+{% load humanize %}
+<h2>{{ task.tool.name }} task</h2>
+<div style="margin-bottom: 12px">
+	{% if task.tool.in_use %}
+		{% if task.tool.get_current_usage_event.operator.id == user.id %}
+			<button id="interlock" type="button" class="btn btn-default" onclick="disable_tool('{% url 'disable_tool' task.tool.id %}')">Disable tool</button>
+		{% else %}
+			<button type="button" class="btn btn-default disabled"><span class="glyphicon glyphicon-ban-circle"></span> Tool in use</button>
+		{% endif %}
+	{% else %}
+		{% if user.active_project_count == 1 %}
+			<button id="interlock" type="button" class="btn btn-default" onclick="enable_tool({{ task.tool.id }}, {{ user.active_projects.0.id }})">Enable tool</button>
+		{% elif user.active_project_count > 1 %}
+			<div class="btn-group">
+				<button id="interlock" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Enable tool <span class="caret"></span></button>
+				<ul class="dropdown-menu">
+					<li class="dropdown-header">Using which project?</li>
+					{% for project in user.active_projects %}
+						<li><a href="javascript:void(0)" onclick="enable_tool({{ task.tool.id }}, {{ project.id }})">{{ project.name }}</a></li>
+					{% endfor %}
+				</ul>
+			</div>
+		{% endif %}
+	{% endif %}
+	<a href="{% url 'calendar' task.tool.id %}" class="btn btn-default" target="_blank">
+		<span class="glyphicon glyphicon-share-alt"></span>
+		Calendar
+	</a>
+	<a href="{% url 'tool_control' task.tool.id %}" class="btn btn-default" target="_blank">
+		<span class="glyphicon glyphicon-share-alt"></span>
+		Tool control
+	</a>
+</div>
+<span style="color:grey">Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).</span>
+<p>
+{% if task.last_updated and task.last_updated_by %}
+	<span style="color:grey">Last updated by {{ task.last_updated_by }} on {{ task.last_updated }} ({{ task.last_updated|naturaltime }}).</span>
+{% endif %}
+
+<p>
+
+<form class="form-horizontal" action="{% url 'update_task' task.id %}" method="post">
+	{% csrf_token %}
+	<input type="hidden" name="next_page" value="maintenance">
+	<input type="hidden" name="tool" value="{{ task.tool.id }}">
+	<div class="form-group">
+		<label for="urgency" class="control-label col-lg-3">Urgency</label>
+		<div class="col-lg-3">
+			<select id="urgency" name="urgency" class="form-control">
+				{% for level in task.Urgency.Choices %}
+					<option value="{{ level.0 }}" {% if task.urgency == level.0 %}selected{% endif %}>{{ level.1 }}</option>
+				{% endfor %}
+			</select>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="problem_category" class="control-label col-lg-3">Problem category</label>
+		<div class="col-lg-3">
+			<select id="problem_category" name="problem_category" class="form-control">
+				<option value="">&nbsp;</option>
+				{% for category in initial_assessment_categories %}
+					<option value="{{ category.id }}" {% if task.problem_category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+				{% endfor %}
+			</select>
+		</div>
+	</div>
+	<div class="form-group">
+		<label for="estimated_resolution_time" class="control-label col-lg-3">Estimated resolution</label>
+		<div class="col-lg-3">
+			<input id="estimated_resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off" value="{{ task.estimated_resolution_time|date:"m/d/Y g:i A" }}">
+		</div>
+		<script>
+			var timepicker_properties =
+			{
+				sideBySide: true
+			};
+			$('#estimated_resolution_time').datetimepicker(timepicker_properties);
+		</script>
+	</div>
+	<div class="form-group">
+		<div class="col-lg-12">
+			<div class="checkbox"><label><input type="checkbox" name="force_shutdown" {% if task.force_shutdown %}checked{% endif %}> This task requires the {{ task.tool.name }} to be shutdown</label></div>
+			<div class="checkbox"><label><input type="checkbox" name="safety_hazard" {% if task.safety_hazard %}checked{% endif %}> This task is considered a potential safety hazard to the NanoFab</label></div>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-lg-12">
+			<div class="radio">
+				<label class="col-lg-2"><input type="radio" name="action" value="update" checked onchange="$('#resolution_category').toggle('collapsed')"> Update</label>
+				<label class="col-lg-2"><input type="radio" name="action" value="resolve" onchange="$('#resolution_category').toggle('collapsed')"> Resolve</label>
+			</div>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-lg-6">
+			<textarea name="description" class="form-control" rows="3" placeholder="Please describe any actions being taken to resolve this task."></textarea>
+		</div>
+	</div>
+	<div id="resolution_category" class="form-group collapse">
+		<div class="col-lg-12">
+			<label for="category" class="control-label pull-left">Resolution category</label>
+			<div class="col-lg-4">
+				<select id="category" name="resolution_category" class="form-control">
+					<option value="">&nbsp;</option>
+					{% for c in completion_categories %}
+						<option value="{{ c.id }}">{{ c.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+		</div>
+	</div>
+	<div class="form-group">
+		<div class="col-lg-12">
+			<input type="submit" class="btn btn-success" value="Save task">
+		</div>
+	</div>
+</form>
+
+<p>
+	<h4>Problem description</h4>
+	{{ task.problem_description|linebreaksbr }}
+<p>
+
+{% if task.progress_description %}
+	<p>
+		<h4>Progress</h4>
+		{{ task.progress_description|linebreaksbr }}
+	<p>
+{% endif %}
+
+{% if rendered_configuration_html %}
+	<p>
+		<h4>Configuration</h4>
+		{{ rendered_configuration_html }}
+	<p>
+{% endif %}

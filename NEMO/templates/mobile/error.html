@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Error{% endblock %}
+{% block content %}
+	<h2>Error</h2>
+	<h3>{{ message }}</h3>
+	<div style="font-size:x-large">
+		<p><a href="javascript:history.back()"><span class="glyphicon glyphicon-backward" style="color:#22b14c"></span> Back to previous page</a></p>
+		<p><a href="{% url 'landing' %}"><span class="glyphicon glyphicon-home" style="color:#22b14c"></span> Return to homepage</a></p>
+	</div>
+{% endblock %}

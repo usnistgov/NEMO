@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Remote work{% endblock %}
+{% block content %}
+	<h1>Remote work</h1>
+
+	<p>This page displays remote work done by NanoFab staff on behalf of users. You can filter by which staff member performed the work, and
+	when, by using the dropdown boxes below.</p>
+
+	<p>Each charge can be validated, which means that you have confirmed that the charge is legitimate and correct, and no adjustment needs to
+	be made to it. Press the green 'Validate' button on an individual row to validate a charge. Charges that have already been validated are
+	highlighted in <span class="success-highlight">green</span>.</p>
+
+	<p>Do not validate a charge if part or all of it is incorrect. Instead, visit the user office so an adjustment can be entered
+	into the billing system. Furthermore, please visit the user office if there is a charge that you forgot to enter.</p>
+
+	<form class="form-inline" role="form">
+		<div class="form-group">
+			<label class="control-label">View charges for
+				<select name="operator" class="form-control">
+					<option {% if selected_staff == "all staff" %}selected{% endif %}>all staff</option>
+					{% for s in staff_list %}
+						<option value="{{ s.id }}" {% if s.id == selected_staff %}selected{% endif %}>{{ s }}</option>
+					{% endfor %}
+				</select>
+			</label>
+		</div>
+		<div class="form-group" style="margin-right:20px">
+			<label class="control-label">during
+				<select name="date" class="form-control">
+					{% for month in month_list %}
+						<option {% if selected_month == month|date:"F, Y" %}selected{% endif %}>{{ month|date:"F, Y" }}</option>
+					{% endfor %}
+				</select>
+			</label>
+		</div>
+		<div class="form-group">
+			<input type="submit" class="btn btn-default" value="Update">
+		</div>
+	</form>
+
+	<h3>Staff charges</h3>
+	<table class="table">
+		<thead>
+		<tr>
+			<th>ID</th>
+			<th>Staff member</th>
+			<th>Customer</th>
+			<th>Project</th>
+			<th>Start</th>
+			<th>End</th>
+			<th>Validate</th>
+		</tr>
+		</thead>
+		<tbody>
+		{% for c in staff_charges %}
+			<tr {% if c.validated %}class="success-highlight"{% endif %} id="staff_charge_row_{{ forloop.counter }}">
+				<td>{{ c.id }}</td>
+				<td>{{ c.staff_member }}</td>
+				<td>{{ c.customer }}</td>
+				<td>{{ c.project }}</td>
+				<td>{{ c.start }}</td>
+				<td>{{ c.end }}</td>
+				<td>{% if not c.validated %}<button class="btn btn-success" onclick="validate_charge('{% url 'validate_staff_charge' c.id %}', this, '#staff_charge_row_{{ forloop.counter }}')">Validate</button>{% endif %}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+	<br>
+	<h3>Tool usage</h3>
+	<table class="table">
+		<thead>
+		<tr>
+			<th>ID</th>
+			<th>Operator</th>
+			<th>User</th>
+			<th>Project</th>
+			<th>Start</th>
+			<th>End</th>
+			<th>Tool</th>
+			<th>Validate</th>
+		</tr>
+		</thead>
+		<tbody>
+		{% for u in usage %}
+			<tr {% if u.validated %}class="success-highlight"{% endif %} id="usage_event_row_{{ forloop.counter }}">
+				<td>{{ u.id }}</td>
+				<td>{{ u.operator }}</td>
+				<td>{{ u.user }}</td>
+				<td>{{ u.project }}</td>
+				<td>{{ u.start }}</td>
+				<td>{{ u.end }}</td>
+				<td>{{ u.tool }}</td>
+				<td>{% if not u.validated %}<button class="btn btn-success" onclick="validate_charge('{% url 'validate_usage_event' u.id %}', this, '#usage_event_row_{{ forloop.counter }}')">Validate</button>{% endif %}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+
+	<script>
+		function validate_charge(url, button, row)
+		{
+			$(button).hide();
+			$(row).addClass('success-highlight');
+			var failure_dialog = ajax_failure_callback("Unable to validate charge");
+			ajax_post(url, undefined, undefined, failure_dialog);
+		}
+	</script>
+
+{% endblock %}

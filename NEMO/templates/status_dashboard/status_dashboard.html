@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Status dashboard{% endblock %}
+{% block content %}
+
+<div>
+	<h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">Status dashboard</h1>
+	<ul class="nav nav-pills" id="tabs">
+		<li class="active"><a href="#occupancy">Area occupancy</a></li>
+		<li><a href="#tools">Tool status & usage</a></li>
+	</ul>
+</div>
+
+<div id="content" class="tab-content" style="padding-top:10px">
+	<div class="tab-pane active" id="occupancy">
+		{% include 'status_dashboard/occupancy.html' %}
+	</div>
+	<div class="tab-pane" id="tools">
+		<div class="btn-group sidebar-item">
+			<button id="filter" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+				Showing all tools
+				<span class="caret"></span>
+			</button>
+			<ul class="dropdown-menu">
+				<li class="dropdown-header">Filter by...</li>
+				<li><a href="javascript:void(0)" onclick="filter('all tools')">All tools</a></li>
+				<li><a href="javascript:void(0)" onclick="filter('tools in use')">Tools in use</a></li>
+				<li><a href="javascript:void(0)" onclick="filter('problematic tools')">Problematic tools</a></li>
+				<li><a href="javascript:void(0)" onclick="filter('idle tools')">Idle tools</a></li>
+			</ul>
+		</div>
+
+
+		<p>
+		<div id="tool_status_table">
+			{% include 'status_dashboard/tools.html' %}
+		</div>
+	</div>
+</div>
+
+<script>
+	function on_load()
+	{
+		$("#tabs a").click(switch_tab);
+		$("#tabs a").click(refresh_status_dashboard);
+		setInterval(refresh_status_dashboard, 10000);
+	}
+	$(on_load);
+
+	function refresh_status_dashboard()
+	{
+		var occupancy_tab = $("#occupancy");
+		if(occupancy_tab.hasClass("active"))
+			occupancy_tab.load("{% url 'status_dashboard' %}?interest=occupancy");
+
+		if($("#tools").hasClass("active"))
+			$("#tool_status_table").load("{% url 'status_dashboard' %}?interest=tools");
+	}
+
+	function force_user_out_of_the_area(url)
+	{
+		var failure_dialog = ajax_failure_callback("Unable to force the user to log out of the area");
+		ajax_post(url, undefined, undefined, failure_dialog, refresh_status_dashboard);
+	}
+
+	function force_user_off_of_tool(url)
+	{
+		var failure_dialog = ajax_failure_callback("Unable to force user off the tool");
+		var contents = { "state": "disable" };
+		ajax_post(url, contents, undefined, failure_dialog, refresh_status_dashboard);
+	}
+
+	{# This function modifies the contents of a style sheet after the page has been loaded. #}
+	function set_style(css_text)
+	{
+		var sheet = document.createElement('style');
+		sheet.type = 'text/css';
+		(document.head || document.getElementsByTagName('head')[0]).appendChild(sheet);
+		return (set_style = function(css_text, node)
+		{
+			if(!node || node.parentNode !== sheet)
+				return sheet.appendChild(document.createTextNode(css_text));
+			node.nodeValue = css_text;
+			return node;
+		})(css_text);
+	}
+
+	function filter(show)
+	{
+		$("#filter").html("Showing " + show + " <span class='caret'></span>");
+		if(show == "all tools")
+			set_style('.in_use { display: table-row; } .idle { display: table-row; }');
+		else if(show == "tools in use")
+			set_style('.in_use { display: table-row; } .idle { display: none; }');
+		else if(show == "problematic tools")
+			set_style('.problematic { display: table-row } .healthy { display: none; }');
+		else if(show == "idle tools")
+			set_style('.idle { display: table-row; } .in_use { display: none; }');
+	}
+</script>
+
+{% endblock %}

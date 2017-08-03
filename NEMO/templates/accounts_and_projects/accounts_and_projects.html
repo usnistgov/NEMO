@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Accounts and projects{% endblock %}
+{% block content %}
+	<h1>
+		Accounts and projects
+		<span class="hidden-sm hidden-xs">
+			<a href="{% url 'create_project' %}" class="btn btn-success pull-right" style="margin-left:17px">New project</a>
+			<a href="{% url 'create_account' %}" class="btn btn-success pull-right">New account</a>
+		</span>
+	</h1>
+	<div class="row visible-sm visible-xs" style="margin-bottom:17px">
+		<div class="col-sm-12">
+			<a href="{% url 'create_project' %}" class="btn btn-success pull-right">New project</a>
+			<a href="{% url 'create_account' %}" class="btn btn-success">New account</a>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-md-4" id="search_container">
+			<input id="search" type="text" placeholder="Search for an account or project" class="form-control" autofocus>
+		</div>
+	</div>
+	{% if account %}
+		<div class="row">
+			<div class="col-sm-12">
+				<h2>
+					{{ account }}
+					<form style="display:inline" method="post" action="{% url 'toggle_active' 'account' account.id %}">
+						{% csrf_token %}
+						{# Using an 'input submit' element would be preferable to an anchor on the following line, but Bootstrap can't style a 'submit' as a label so you have to use an anchor. #}
+						<a onclick="$(this).closest('form').submit()" class="label {% if account.active %}label-success{% else %}label-danger{% endif %}" style="vertical-align:50%; font-size:small">
+							{% if account.active %}Active{% else %}Inactive{% endif %}
+						</a>
+					</form>
+				</h2>
+				{% for project in account.project_set.all %}
+					<h3>
+						<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#project_{{ project.id }}_details" class="pointer" style="text-decoration:none">
+							<span id="project_{{ project.id }}_chevron" class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+							{{ project }}
+						</a>
+						<form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
+							{% csrf_token %}
+							{# Using an 'input submit' element would be preferable to an anchor on the following line, but Bootstrap can't style a 'submit' as a label so you have to use an anchor. #}
+							<a onclick="$(this).closest('form').submit()" class="label {% if project.active %}label-success{% else %}label-danger{% endif %}" style="vertical-align:50%; font-size:small">
+								{% if project.active %}Active{% else %}Inactive{% endif %}
+							</a>
+						</form>
+					</h3>
+					<div style="margin-left:34px">
+						<span class="grey">{{ project.application_identifier }}</span>
+						<div id="project_{{ project.id }}_details" class="collapse">
+							<div style="height:10px"></div>
+							<div id="add_user_to_project_{{ project.id }}">
+								<label class="control-label"><input id="search_user_for_project_{{ project.id }}" type="text" class="form-control user_search" placeholder="Search for a user to add" data-project-id="{{ project.id }}"></label>
+							</div>
+							<div id="project_{{ project.id }}_users">
+								{% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
+							</div>
+						</div>
+					</div>
+				{% empty %}
+					<h4 class="grey">This account does not have any projects</h4>
+				{% endfor %}
+			</div>
+		</div>
+	{% endif %}
+	<script>
+		function get_account(jquery_event, search_selection, dataset_name)
+		{
+			if(search_selection.type == 'project')
+				window.location.href = '/project/' + search_selection.id + '/';
+			else if(search_selection.type == 'account')
+				window.location.href = '/account/' + search_selection.id + '/';
+		}
+		function add_user_to_project(jquery_event, search_selection, dataset_name)
+		{
+			var project_id = $(this).data('project-id');
+			$(this).typeahead('val', '').focus();
+			var url = "/add_user/" + search_selection.id + "/to_project/" + project_id + "/";
+			var complete_callback = ajax_complete_callback('Unable to modify project');
+			$("#project_" + project_id + "_users").load(url, {'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
+		}
+		function remove_user_from_project(user_id, project_id)
+		{
+			var complete_callback = ajax_complete_callback('Unable to remove user from project');
+			$("#project_" + project_id + "_users").load('/remove_user/' + user_id + '/from_project/' + project_id + '/', {'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
+		}
+		function on_load()
+		{
+			$('#search').autocomplete('accounts_and_projects', get_account, {% json_search_base_with_extra_fields accounts_and_projects 'application_identifier' %});
+			$('.user_search').autocomplete('users', add_user_to_project, {{ users|json_search_base }});
+		}
+		$(on_load);
+	</script>
+	<style>
+		#search_container .tt-dropdown-menu
+		{
+			min-width: 400px;
+			max-height: 600px;
+		}
+	</style>
+{% endblock %}

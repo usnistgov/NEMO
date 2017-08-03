@@ -1,0 +1,41 @@
+{% load custom_tags_and_filters %}
+
+<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#qualified_users" class="pointer">
+	<span class="glyphicon glyphicon-user pull-left notification-icon primary-highlight"></span>
+	<span class="glyphicon {% if expanded %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
+</a>
+<div class="media-body">
+	<h4 class="media-heading">Qualified users</h4>
+	<div id="qualified_users" class="collapse {% if expanded %}in{% endif %}">
+		<p>Only qualified users are able to operate the {{ tool.name }}.</p>
+		<form id="add_qualified_user_form" class="form-inline" style="margin-bottom:10px">
+			<div class="form-group">
+				<label class="control-label">Add a qualified user <input type="text" id="add_qualified_user_search_box" placeholder="Search for a user" class="form-control"></label>
+			</div>
+			<input type="hidden" name="chosen_tool[]" value="{{ tool.id }}">
+			<input type="hidden" name="action" value="qualify">
+		</form>
+		{% with tool.user_set.all as qualified_users %}
+			{% if qualified_users %}
+				<p>You can email <a href="{% url 'compose_email' %}?audience=tool&selection={{ tool.id }}"><span class="glyphicon glyphicon-send"></span> all qualified users</a>.</p>
+				<p>
+					Current qualified users are listed below. Inactive qualified users are marked in <span class="light-grey">light grey</span>.<br>
+					{% for u in qualified_users %}
+						{% if u.is_active %}
+							<a href="javascript:remove_qualified_user('{{ u.id }}', '{{ tool.id }}')" class="grey hover-black" title="Disqualify {{ u.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a> {{ u }}
+						{% else %}
+							<span class="light-grey">
+									<a href="javascript:remove_qualified_user('{{ u.id }}', '{{ tool.id }}')" class="light-grey hover-black" title="Disqualify {{ u.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a> {{ u }}
+								</span>
+						{% endif %}
+						<br>
+					{% endfor %}
+				</p>
+			{% endif %}
+		{% endwith %}
+	</div>
+</div>
+
+<script>
+	$('#add_qualified_user_search_box').autocomplete('users', add_qualified_user, {{ users|json_search_base }}).focus();
+</script>

@@ -1,0 +1,8 @@
+{% extends 'area_access/base.html' %}
+{% block title %}Welcome{% endblock %}
+{% block default_content %}
+	{{ area.welcome_message|safe }}
+{% endblock %}
+{% block action %}
+	enter_area(badge_number, undefined);
+{% endblock %}

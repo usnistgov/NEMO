@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Compose email{% endblock %}
+{% block content %}
+	<h1>Compose an email</h1>
+	{% if generic_email_sample %}
+		<div class="row">
+			<form action="{% url 'send_broadcast_email' %}" method="post">
+				{% csrf_token %}
+				<div class="col-sm-6">
+					<h3>Recipients</h3>
+					Active NEMO users are listed below in black. Inactive users are <span style="color:lightgrey">gray</span>.
+					<div class="checkbox">
+						<label><input type="checkbox" name="only_active_users" checked> Only send this email to active users</label>
+					</div>
+					<div class="checkbox">
+						<label><input type="checkbox" name="copy_me" checked> Send a copy of this email to myself</label>
+					</div>
+					{% for u in users %}
+						<span {% if not u.is_active %}style="color:lightgrey"{% endif %}>{{ u }} - {{ u.email }}</span><br>
+					{% endfor %}
+				</div>
+				<div class="col-sm-6">
+					<h3>Email content</h3>
+					<input type="hidden" name="audience" value="{{ audience }}">
+					<input type="hidden" name="selection" value="{{ selection }}">
+					<div class="form-group">
+						<input type="text" name="subject" class="form-control" placeholder="Subject line" autofocus>
+					</div>
+					<div class="form-group">
+						Title background color:
+						<div class="radio" style="background-color:#5bc0de; padding:5px">
+							<label>
+								<input type="radio" name="color" value="#5bc0de" checked>
+								Blue, for conveying information
+							</label>
+						</div>
+						<div class="radio" style="background-color:#5cb85c; padding:5px">
+							<label>
+								<input type="radio" name="color" value="#5cb85c">
+								Green, for conveying success
+							</label>
+						</div>
+						<div class="radio" style="background-color:#f0ad4e; padding:5px">
+							<label>
+								<input type="radio" name="color" value="#f0ad4e">
+								Orange, for conveying a warning
+							</label>
+						</div>
+						<div class="radio" style="background-color:#d9534f; padding:5px">
+							<label>
+								<input type="radio" name="color" value="#d9534f">
+								Red, for conveying danger
+							</label>
+						</div>
+					</div>
+					<div class="form-group">
+						<input type="text" name="title" class="form-control" style="text-transform:uppercase" placeholder="Title (always uppercase)">
+					</div>
+					<div class="form-group">
+						<input type="text" name="greeting" class="form-control" placeholder="Greeting">
+					</div>
+					<div class="form-group">
+						<textarea class="form-control" name="contents" rows="6" placeholder="What would you like to say?"></textarea>
+					</div>
+					<input type="submit" class="btn btn-success" value="Send">
+					<div style="height:50px"></div>
+					<h3>Your email will look like this...</h3>
+					<table width="100%" border="1">
+						<tr>
+							<td>{{ generic_email_sample|safe }}</td>
+						</tr>
+					</table>
+				</div>
+			</form>
+		</div>
+	{% else %}
+		A generic email format has not been customized for your organization yet. You'll need to create one before you can send email broadcasts from within NEMO. Please visit the <a href="{% url 'customization' %}">customizations page</a> to upload a template.
+	{% endif %}
+{% endblock %}
