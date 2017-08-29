@@ -2,7 +2,7 @@
 # Do NOT customize these settings for your organization.
 
 # Core settings
-DEBUG = True
+DEBUG = False
 AUTH_USER_MODEL = 'NEMO.User'
 WSGI_APPLICATION = 'NEMO.wsgi.application'
 ROOT_URLCONF = 'NEMO.urls'
