@@ -1,0 +1,11 @@
+cryptography
+Django
+django-filter
+djangorestframework
+ldap3
+pyasn1
+python-dateutil
+pytz
+gunicorn
+requests
+Pillow
