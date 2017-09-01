@@ -3,11 +3,10 @@ from datetime import timedelta
 from django.core.mail import send_mail
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import Template, Context
-from django.template.loader import render_to_string
 from django.utils import timezone
 
 from NEMO.models import Reservation, AreaAccessRecord
-from NEMO.utilities import bootstrap_primary_color, format_datetime
+from NEMO.utilities import format_datetime
 from NEMO.views.customization import get_customization, get_media_file_contents
 
 

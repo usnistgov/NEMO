@@ -1,5 +1,4 @@
 from django.contrib.admin.views.decorators import staff_member_required
-from django.core.files.base import ContentFile
 from django.core.files.storage import get_storage_class
 from django.core.validators import validate_email
 from django.http import HttpResponseBadRequest

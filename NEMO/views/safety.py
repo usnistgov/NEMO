@@ -4,13 +4,11 @@ from django.core.mail import send_mail
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.template import Template, Context
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_GET
 
 from NEMO.forms import SafetyIssueCreationForm, SafetyIssueUpdateForm
 from NEMO.models import SafetyIssue
-from NEMO.utilities import bootstrap_primary_color
 from NEMO.views.customization import get_media_file_contents, get_customization
 
 

@@ -4,7 +4,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404, render, redirect
 from django.template import Template, Context
-from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
 

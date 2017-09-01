@@ -1,5 +1,6 @@
-from django.core.management import BaseCommand
 from os import remove
+
+from django.core.management import BaseCommand
 
 
 class Command(BaseCommand):

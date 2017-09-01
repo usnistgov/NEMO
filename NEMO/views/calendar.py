@@ -8,7 +8,6 @@ from django.core.mail import send_mail
 from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound
 from django.shortcuts import render, get_object_or_404, redirect
 from django.template import Template, Context
-from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 

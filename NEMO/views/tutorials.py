@@ -5,7 +5,6 @@ from django.template import Template, RequestContext, Context
 from django.views.decorators.http import require_http_methods
 
 from NEMO.models import User, Project
-from NEMO.utilities import bootstrap_primary_color
 from NEMO.views.customization import get_customization, get_media_file_contents
 
 

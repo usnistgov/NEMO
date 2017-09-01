@@ -7,7 +7,6 @@ from django.core.validators import validate_email
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404
 from django.template import Template, Context
-from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import EmailBroadcastForm
