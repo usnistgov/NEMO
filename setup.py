@@ -7,7 +7,7 @@ setup(
 	url='https://github.com/usnistgov/NEMO',
 	license='Public domain',
 	author='Dylan Klomparens',
-	author_email='dylan.klomparens@gmail.com',
+	author_email='dylan.klomparens@nist.gov',
 	description='NEMO is a laboratory logistics web application. Use it to schedule reservations, control tool access, track maintenance issues, and more.',
 	install_requires=[
 		'Django',
