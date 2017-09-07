@@ -57,6 +57,22 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
+				<h3>Login banner</h3>
+				<p>The login banner is an informational message displayed underneath the username and password text boxes on the login page. You can customize this to convey rules for NEMO users at your organization.</p>
+				<form method="POST" action="{% url 'customize' 'login_banner' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="login_banner">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload login banner" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
 				<h3>Introduction for &quot;<a href="{% url 'safety' %}" target="_blank">Safety suggestions and observations</a>&quot; page</h3>
 				<p>What would you like everyone to know about safety policy and procedures? This introduction will be presented at the top of the safety page. You can use HTML to modify the look of the text.</p>
 				<form method="POST" action="{% url 'customize' 'safety_introduction' %}" enctype="multipart/form-data">

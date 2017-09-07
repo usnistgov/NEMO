@@ -32,6 +32,7 @@ customizable_key_values = [
 ]
 
 customizable_content = [
+	'login_banner',
 	'safety_introduction',
 	'nanofab_rules_tutorial',
 	'cancellation_email',

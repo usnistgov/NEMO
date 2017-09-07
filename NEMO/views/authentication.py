@@ -12,6 +12,7 @@ from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE
 from ldap3.core.exceptions import LDAPBindError, LDAPExceptionError
 
 from NEMO.models import User
+from NEMO.views.customization import get_media_file_contents
 
 
 class RemoteUserAuthenticationBackend(RemoteUserBackend):
@@ -92,8 +93,12 @@ def login_user(request):
 		else:
 			return render(request, 'authorization_failed.html')
 
+	dictionary = {
+		'login_banner': get_media_file_contents('login_banner.html'),
+		'user_name_or_password_incorrect': False,
+	}
 	if request.method == 'GET':
-		return render(request, 'login.html')
+		return render(request, 'login.html', dictionary)
 	username = request.POST.get('username', '')
 	password = request.POST.get('password', '')
 	user = authenticate(username=username, password=password)
@@ -105,7 +110,8 @@ def login_user(request):
 		except:
 			next_page = reverse('landing')
 		return HttpResponseRedirect(next_page)
-	return render(request, 'login.html', {'user_name_or_password_incorrect': True})
+	dictionary['user_name_or_password_incorrect'] = True
+	return render(request, 'login.html', dictionary)
 
 
 @require_GET
