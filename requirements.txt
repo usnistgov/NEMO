@@ -6,6 +6,6 @@ ldap3
 pyasn1
 python-dateutil
 pytz
-gunicorn
+Gunicorn
 requests
 Pillow
