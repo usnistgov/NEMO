@@ -11,7 +11,7 @@ from django.utils.crypto import get_random_string
 
 
 def entry_point():
-	request = argv[1] if len(argv) == 1 else None
+	request = argv[1] if len(argv) == 2 else None
 	if request == 'generate_secret_key':
 		generate_secret_key()
 	elif request == 'generate_tls_keys':
