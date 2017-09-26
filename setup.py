@@ -4,7 +4,7 @@ setup(
 	name='NEMO',
 	version='0.0.0',
 	python_requires='>=3.6',
-	packages=find_packages(exclude=['tests', '*.tests', '*.tests.*', 'migrations', '*.migrations', '*.migrations.*']),
+	packages=find_packages(exclude=['NEMO.tests']),
 	include_package_data=True,
 	url='https://github.com/usnistgov/NEMO',
 	license='Public domain',
