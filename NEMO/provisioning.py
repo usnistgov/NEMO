@@ -1,4 +1,5 @@
 from os import remove
+from subprocess import run
 from sys import argv
 from textwrap import dedent
 
@@ -20,6 +21,8 @@ def entry_point():
 		install_systemd_service()
 	elif request == 'uninstall_systemd_service':
 		uninstall_systemd_service()
+	elif request == 'open_firewall_ports':
+		open_firewall_ports()
 	else:
 		usage = \
 				"""
@@ -48,6 +51,13 @@ def entry_point():
 				
 				uninstall_systemd_service -
 					Uninstalls NEMO as a service with Systemd (by simply deleting /etc/systemd/system/nemo.service).
+				
+				open_firewall_ports -
+					Configure the firewall to allow incoming web browser requests.
+					Requests received on port 80 are intended to be redirected to port 443 for improved security.
+					Port 80 (HTTP) and 443 (HTTPS) are made available via firewall-cmd:
+					firewall-cmd --zone=public --permanent --add-service=http
+					firewall-cmd --zone=public --permanent --add-service=https
 				"""
 		print(dedent(usage))
 
@@ -152,3 +162,8 @@ def uninstall_systemd_service():
 	""" Uninstalls NEMO as a systemd service """
 	remove('/etc/systemd/system/nemo.service')
 	print("The systemd NEMO service was successfully uninstalled")
+
+
+def open_firewall_ports():
+	http_result = run(['firewall-cmd', '--zone=public', '--permanent', '--add-service=http'])
+	https_result = run(['firewall-cmd', '--zone=public', '--permanent', '--add-service=https'])
