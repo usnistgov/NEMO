@@ -120,6 +120,8 @@ def create_or_modify_user(request, user_id):
 				'username': form.cleaned_data['username'],
 				'domain': form.cleaned_data['domain'],
 				'badge_number': form.cleaned_data.get('badge_number', ''),
+				'email': form.cleaned_data.get('email'),
+				'access_expiration': form.cleaned_data.get('access_expiration'),
 				'requested_areas': request.POST.getlist('externally_managed_access_levels'),
 			}
 			try:
