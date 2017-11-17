@@ -1,5 +1,6 @@
 from _ssl import PROTOCOL_TLSv1, CERT_REQUIRED
 from logging import exception
+from base64 import b64decode
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout
@@ -14,35 +15,37 @@ from ldap3.core.exceptions import LDAPBindError, LDAPExceptionError
 from NEMO.models import User
 from NEMO.views.customization import get_media_file_contents
 
+class RemoteUserAuthenticationBackend(object):
+	""" The web server performs Kerberos authentication and the username is in the request's header. """
 
-class RemoteUserAuthenticationBackend(RemoteUserBackend):
-	""" The web server performs Kerberos authentication and passes the user name in via the REMOTE_USER environment variable. """
-	create_unknown_user = False
+	# Create an authentication method
+	# This is called by the standard Django login procedure
+	def authenticate(self, request):
+		auth = request.environ.get("HTTP_AUTHORIZATION", None)
+		if not auth or auth == "":
+			return None
 
-	def authenticate(self, request, remote_user):
-		# Run Django's normal authentication checks here. It will attempt to find the user in the database.
-		user = super(RemoteUserAuthenticationBackend, self).authenticate(request, remote_user)
+		# Decode the authorization string
+		# The HTTP_AUTORIZATION string for basic authentication looks like: "Basic dXNlcm5hbWU6cGFzc3dvcmQK".
+		# The string is encoded in Base64. The decoded string looks like: "Basic username:password".
+		scheme, data = auth.split(None, 1)
+		if scheme.lower() != "basic":
+			return None
+		username, password = b64decode(data).decode('utf-8').split(':', 1)
 
-		# Perform any custom security checks below.
-		# Returning None blocks the user's access.
+		try:
+			# Try to find a user matching your username
+			user = User.objects.get(username=username)
+			return user
+		except User.DoesNotExist:
+			return None
 
-		# The user must exist in the database & RemoteUserBackend.authenticate must have succeeded.
-		if not user:
-			return
-
-		# The user must be marked active.
-		if not user.is_active:
-			return
-
-		# All security checks passed so let the user in.
-		return user
-
-	def clean_username(self, username):
-		"""
-		User names arrive in the form user@DOMAIN.NAME.
-		This function chops off Kerberos realm information (i.e. the '@' and everything after).
-		"""
-		return username.partition('@')[0]
+	# Required for your backend to work properly - unchanged in most scenarios
+	def get_user(self, user_id):
+		try:
+			return User.objects.get(pk=user_id)
+		except User.DoesNotExist:
+			return None
 
 
 class LDAPAuthenticationBackend(object):
@@ -87,8 +90,10 @@ class LDAPAuthenticationBackend(object):
 
 @require_http_methods(['GET', 'POST'])
 def login_user(request):
-	if 'views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
-		if request.user.is_authenticated:
+	if 'NEMO.views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
+		user = authenticate(request)
+		if user:
+			login(request, user)
 			return HttpResponseRedirect(reverse('landing'))
 		else:
 			return render(request, 'authorization_failed.html')
