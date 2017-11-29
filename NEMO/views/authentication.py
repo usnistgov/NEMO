@@ -87,7 +87,7 @@ class LDAPAuthenticationBackend(object):
 
 @require_http_methods(['GET', 'POST'])
 def login_user(request):
-	if 'views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
+	if 'NEMO.views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
 		if request.user.is_authenticated:
 			return HttpResponseRedirect(reverse('landing'))
 		else:
@@ -116,7 +116,7 @@ def login_user(request):
 
 @require_GET
 def logout_user(request):
-	if 'views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
+	if 'NEMO.views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
 		return HttpResponseNotFound()
 	logout(request)
 	return HttpResponseRedirect(reverse('login'))
