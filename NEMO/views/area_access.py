@@ -36,7 +36,7 @@ def area_access(request):
 
 
 @login_required
-@permission_required('add_areaaccessrecord')
+@permission_required('NEMO.add_areaaccessrecord')
 @require_GET
 def welcome_screen(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
@@ -44,7 +44,7 @@ def welcome_screen(request, door_id):
 
 
 @login_required
-@permission_required('change_areaaccessrecord')
+@permission_required('NEMO.change_areaaccessrecord')
 @require_GET
 def farewell_screen(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
@@ -52,7 +52,7 @@ def farewell_screen(request, door_id):
 
 
 @login_required
-@permission_required('add_areaaccessrecord')
+@permission_required('NEMO.add_areaaccessrecord')
 @require_POST
 def login_to_area(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
@@ -166,7 +166,7 @@ def unlock_door(door):
 
 
 @login_required
-@permission_required('change_areaaccessrecord')
+@permission_required('NEMO.change_areaaccessrecord')
 @require_POST
 def logout_of_area(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
@@ -200,7 +200,7 @@ def force_area_logout(request, user_id):
 
 
 @login_required
-@permission_required('change_areaaccessrecord')
+@permission_required('NEMO.change_areaaccessrecord')
 @require_POST
 def open_door(request, door_id):
 	door = get_object_or_404(Door, id=door_id)

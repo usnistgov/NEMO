@@ -399,7 +399,7 @@ def cancel_reservation(request, reservation_id):
 
 
 @login_required
-@permission_required('trigger_timed_services', raise_exception=True)
+@permission_required('NEMO.trigger_timed_services', raise_exception=True)
 @require_GET
 def email_reservation_reminders(request):
 	# Exit early if the reservation reminder email template has not been customized for the organization yet.
@@ -432,7 +432,7 @@ def email_reservation_reminders(request):
 
 
 @login_required
-@permission_required('trigger_timed_services', raise_exception=True)
+@permission_required('NEMO.trigger_timed_services', raise_exception=True)
 @require_GET
 def email_usage_reminders(request):
 	projects_to_exclude = request.GET.getlist("projects_to_exclude[]")
@@ -507,7 +507,7 @@ def area_access_details(request, event_id):
 
 @login_required
 @require_GET
-@permission_required('trigger_timed_services', raise_exception=True)
+@permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def cancel_unused_reservations(request):
 	# Exit early if the missed reservation email template has not been customized for the organization yet.
 	if not get_media_file_contents('missed_reservation_email.html'):

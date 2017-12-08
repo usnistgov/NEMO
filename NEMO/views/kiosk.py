@@ -14,7 +14,7 @@ from NEMO.views.status_dashboard import create_tool_summary
 
 
 @login_required
-@permission_required('kiosk')
+@permission_required('NEMO.kiosk')
 @require_POST
 def enable_tool(request):
 	tool = Tool.objects.get(id=request.POST['tool_id'])
@@ -46,7 +46,7 @@ def enable_tool(request):
 
 
 @login_required
-@permission_required('kiosk')
+@permission_required('NEMO.kiosk')
 @require_POST
 def disable_tool(request):
 	tool = Tool.objects.get(id=request.POST['tool_id'])
@@ -87,7 +87,7 @@ def disable_tool(request):
 
 
 @login_required
-@permission_required('kiosk')
+@permission_required('NEMO.kiosk')
 @require_GET
 def choices(request):
 	try:
@@ -105,7 +105,7 @@ def choices(request):
 
 
 @login_required
-@permission_required('kiosk')
+@permission_required('NEMO.kiosk')
 @require_GET
 def tool_information(request, tool_id, user_id):
 	tool = Tool.objects.get(id=tool_id, visible=True)
@@ -128,7 +128,7 @@ def tool_information(request, tool_id, user_id):
 
 
 @login_required
-@permission_required('kiosk')
+@permission_required('NEMO.kiosk')
 @require_GET
 def kiosk(request, location=None):
 	if location and Tool.objects.filter(location=location, visible=True).exists():
