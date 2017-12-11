@@ -125,6 +125,9 @@ def create_or_modify_user(request, user_id):
 				'requested_areas': request.POST.getlist('externally_managed_access_levels'),
 			}
 			try:
+				if len(parameters['requested_areas']) > 0 and not parameters['badge_number']:
+					dictionary['warning'] = 'A user must have a badge number in order to have area access. Please enter the badge number first, then grant access to areas.'
+					return render(request, 'users/create_or_modify_user.html', dictionary)
 				result = requests.put(settings.IDENTITY_SERVICE['url'], data=parameters, timeout=3)
 				if result.status_code == HTTPStatus.NOT_FOUND:
 					dictionary['warning'] = 'The username was not found on this domain. Did you spell the username correctly in this form and did you select the correct domain? Ensure the user exists on the domain in order to proceed.'
