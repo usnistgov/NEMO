@@ -62,7 +62,7 @@
 					</form>
 					{% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
 					{{ a.contents }}<br>
-					Debuts on {{ a.debut_time|date:"m/d/Y g:i A" }}<br>
+					Debuts on {{ a.debut_time }}<br>
 					{% if a.expiration_time %}Expires on {{ a.expiration_time }}{% else %}This alert will never expire{% endif %}<br>
 				</div>
 			</div>
