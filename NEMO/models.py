@@ -523,6 +523,7 @@ class Reservation(CalendarDisplay):
 	descendant = models.OneToOneField('Reservation', related_name='ancestor', null=True, blank=True, help_text="Any time a reservation is moved or resized, the old reservation is cancelled and a new reservation with updated information takes its place. This field links the old reservation to the new one, so the history of reservation moves & changes can be easily tracked.")
 	additional_information = models.TextField(null=True, blank=True)
 	self_configuration = models.BooleanField(default=False, help_text="When checked, indicates that the user will perform their own tool configuration (instead of requesting that the NanoFab staff configure it for them).")
+	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
 
 	def duration(self):
 		return self.end - self.start

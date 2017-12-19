@@ -214,6 +214,12 @@ function cancel_reservation(url, reservation_id, reason)
 	ajax_post(url, contents, reservation_cancel_success_callback, [failure_dialog, refresh_calendar_and_sidebar]);
 }
 
+function set_reservation_title(url, reservation_id, title)
+{
+	var failure_dialog = ajax_failure_callback("Unable to set reservation title");
+	ajax_post(url, {'title': title}, refresh_calendar_and_sidebar, [failure_dialog, refresh_calendar_and_sidebar]);
+}
+
 function on_browser_resize()
 {
 	$('#calendar').fullCalendar('option', 'height', $("#calendar").height());

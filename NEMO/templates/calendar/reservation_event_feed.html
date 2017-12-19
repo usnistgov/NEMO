@@ -2,9 +2,9 @@
 	{% for x in events %}
 	{
 		{% if personal_schedule %}
-			"title": "{{ x.tool.name }}",
+			"title": "{{ x.title|default:x.tool.name }}",
 		{% else %}
-			"title": "{{ x.user }}",
+			"title": "{{ x.title|default:x.user }}",
 		{% endif %}
 		"id": {{ x.id }},
 		{# The reservation creator or staff may edit the event: #}

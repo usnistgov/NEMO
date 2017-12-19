@@ -23,7 +23,7 @@
 	{% endfor %}
 	{% for x in reservations %}
 	{
-		"title": "Reservation for the {{ x.tool.name }}",
+		"title": "Reservation for the {{ x.tool.name }}{% if x.title %}, titled \"{{ x.title }}\"{% endif %}",
 		"id": {{ x.id }},
 		"color": "#3a87ad",
 		"start": "{{ x.start|date:"c" }}",

@@ -10,6 +10,20 @@
 		<div class="alert alert-danger">This reservation was automatically removed from the tool calendar due to tool inactivity.</div>
 	{% endif %}
 
+	{% if user.is_staff %}
+		<div class="input-group">
+			<span class="input-group-addon">
+				Title
+			</span>
+			<input type="text" id="title" class="form-control" placeholder="{{ reservation.user }}" maxlength="200" value="{{ reservation.title }}">
+			<span class="input-group-btn">
+				<button type="button" class="btn btn-success" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { set_reservation_title('{% url 'set_reservation_title' reservation.id %}', {{ reservation.id }}, $('#title').val()) })">Set title</button>
+			</span>
+		</div>
+	{% elif reservation.title %}
+		Title: {{ reservation.title }}<br>
+	{% endif %}
+
 	User: {{ reservation.user }}<br>
 	Created by: {{ reservation.creator }}<br>
 	Created on: {{ reservation.creation_time }}<br>

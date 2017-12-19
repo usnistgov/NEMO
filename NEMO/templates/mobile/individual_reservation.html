@@ -1,6 +1,6 @@
 <div class="alert {% if personal_schedule %}alert-success{% else %}alert-info{% endif %}" role="alert">
 	<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}"></span>
-	<span style="cursor:pointer" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}"><strong>{% if personal_schedule %}{{ reservation.tool }}{% else %}{{ reservation.user }}{% endif %}</strong></span><br>
+	<span style="cursor:pointer" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}"><strong>{% if personal_schedule %}{{ reservation.title|default:reservation.tool }}{% else %}{{ reservation.title|default:reservation.user }}{% endif %}</strong></span><br>
 	Starting {{ reservation.start|time }}<br>
 	Ending {{ reservation.end|time }}<br>
 	<div id="extended_reservation_information_{{ reservation.id }}" class="collapse">
@@ -8,7 +8,7 @@
 		{% if reservation.project %}
 			For project {{ reservation.project }}<br>
 		{% endif %}
-		Created by {{ reservation.creator }} on {{ reservation.creation_time }}<br>
+		Created by {{ reservation.creator }} {% if reservation.user != reservation.creator %} on behalf of {{ reservation.user }}{% endif %} on {{ reservation.creation_time }}<br>
 		{% if reservation.self_configuration %}
 			<strong>You have elected to configure this tool yourself.</strong><br>
 		{% else %}

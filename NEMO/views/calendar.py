@@ -320,6 +320,7 @@ def modify_reservation(request, start_delta, end_delta):
 	reservation_to_cancel.cancelled_by = request.user
 	# Create a new reservation for the user.
 	new_reservation = Reservation()
+	new_reservation.title = reservation_to_cancel.title
 	new_reservation.creator = request.user
 	new_reservation.additional_information = reservation_to_cancel.additional_information
 	# A change in start time will only be provided if the reservation is being moved.
@@ -396,6 +397,16 @@ def cancel_reservation(request, reservation_id):
 		return render(request, 'mobile/cancellation_result.html', {'reservation': reservation})
 	else:
 		return render(request, 'mobile/error.html', {'message': response.content})
+
+
+@staff_member_required(login_url=None)
+@require_POST
+def set_reservation_title(request, reservation_id):
+	""" Cancel a reservation for a user. """
+	reservation = get_object_or_404(Reservation, id=reservation_id)
+	reservation.title = request.POST.get('title', '')[:reservation._meta.get_field('title').max_length]
+	reservation.save()
+	return HttpResponse()
 
 
 @login_required
