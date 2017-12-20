@@ -32,7 +32,6 @@ setup(
 		'pyasn1',
 		'python-dateutil',
 		'pytz',
-		'Gunicorn',
 		'requests',
 		'Pillow',
 	],
