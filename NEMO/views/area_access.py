@@ -107,33 +107,38 @@ def login_to_area(request, door_id):
 		log.save()
 		return render(request, 'area_access/resource_unavailable.html', {'unavailable_resources': unavailable_resources})
 
-	project = user.billing_to_project()
-	if project:
-		if user.area_access_record().area == door.area:
-			log.result = PhysicalAccessType.ALLOW
-			log.details = "The user was permitted to enter this area, and already had an active area access record for this area."
-			log.save()
-			return render(request, 'area_access/already_logged_in.html', {'area': door.area, 'project': project, 'badge_number': user.badge_number})
-		else:
-			log.details = "The user was denied access to this area because they were already logged into a different area."
-			log.save()
-			return render(request, 'area_access/already_logged_in_to_different_area.html', {'existing_area': user.area_access_record().area, 'new_area': door.area, 'project': project})
-
+	# Users must have at least one billable project in order to enter an area.
 	if user.active_project_count() == 0:
 		log.details = "The user has no active projects, preventing them from entering an access controlled area."
 		log.save()
 		return render(request, 'area_access/no_active_projects.html')
-	elif user.active_project_count() == 1:
+
+	current_area_access_record = user.area_access_record()
+	if current_area_access_record and current_area_access_record.area == door.area:
+		# No log entry necessary here because all validation checks passed.
+		# The log entry is captured when the subsequent choice is made by the user.
+		return render(request, 'area_access/already_logged_in.html', {'area': door.area, 'project': current_area_access_record.project, 'badge_number': user.badge_number})
+
+	previous_area = None
+	if user.active_project_count() == 1:
 		log.result = PhysicalAccessType.ALLOW
 		log.save()
+
+		# Automatically log the user out of any previous area before logging them in to the new area.
+		if user.in_area():
+			previous_area_access_record = user.area_access_record()
+			previous_area_access_record.end = timezone.now()
+			current_area_access_record.save()
+			previous_area = current_area_access_record.area
+
 		record = AreaAccessRecord()
 		record.area = door.area
 		record.customer = user
 		record.project = user.active_projects()[0]
 		record.save()
 		unlock_door(door)
-		return render(request, 'area_access/login_success.html', {'area': door.area, 'name': user.first_name, 'project': record.project})
-	else:
+		return render(request, 'area_access/login_success.html', {'area': door.area, 'name': user.first_name, 'project': record.project, 'previous_area': previous_area})
+	elif user.active_project_count() > 1:
 		project_id = request.POST.get('project_id')
 		if project_id:
 			project = get_object_or_404(Project, id=project_id)
@@ -144,13 +149,21 @@ def login_to_area(request, door_id):
 				return render(request, 'area_access/physical_access_denied.html', {'message': message})
 			log.result = PhysicalAccessType.ALLOW
 			log.save()
+
+			# Automatically log the user out of any previous area before logging them in to the new area.
+			if user.in_area():
+				previous_area_access_record = user.area_access_record()
+				previous_area_access_record.end = timezone.now()
+				current_area_access_record.save()
+				previous_area = current_area_access_record.area
+
 			record = AreaAccessRecord()
 			record.area = door.area
 			record.customer = user
 			record.project = project
 			record.save()
 			unlock_door(door)
-			return render(request, 'area_access/login_success.html', {'area': door.area, 'name': user.first_name, 'project': record.project})
+			return render(request, 'area_access/login_success.html', {'area': door.area, 'name': user.first_name, 'project': record.project, 'previous_area': previous_area})
 		else:
 			# No log entry necessary here because all validation checks passed, and the user must indicate which project
 			# the wish to login under. The log entry is captured when the subsequent choice is made by the user.
@@ -169,22 +182,19 @@ def unlock_door(door):
 @permission_required('NEMO.change_areaaccessrecord')
 @require_POST
 def logout_of_area(request, door_id):
-	door = get_object_or_404(Door, id=door_id)
-	badge_number = request.POST.get('badge_number', '')
 	try:
-		badge_number = int(badge_number)
+		badge_number = int(request.POST.get('badge_number', ''))
 		user = User.objects.get(badge_number=badge_number)
 	except (User.DoesNotExist, ValueError):
 		return render(request, 'area_access/badge_not_found.html')
 	record = user.area_access_record()
-	# The user must be logging out of the same area they logged into.
-	# (That is, they can not log out of an area from a different area.)
-	if record and record.area == door.area:
+	# Allow the user to log out of any area, even if this is a logout tablet for a different area.
+	if record:
 		record.end = timezone.now()
 		record.save()
-		return render(request, 'area_access/logout_success.html', {'area': door.area, 'name': user.first_name})
+		return render(request, 'area_access/logout_success.html', {'area': record.area, 'name': user.first_name})
 	else:
-		return render(request, 'area_access/not_logged_in.html', {'area': door.area})
+		return render(request, 'area_access/not_logged_in.html')
 
 
 @staff_member_required(login_url=None)
@@ -211,6 +221,8 @@ def open_door(request, door_id):
 	except (User.DoesNotExist, ValueError):
 		return render(request, 'area_access/badge_not_found.html')
 	if user.area_access_record() and user.area_access_record().area == door.area:
+		log = PhysicalAccessLog(user=user, door=door, time=timezone.now, result=PhysicalAccessType.ALLOW, details="The user was permitted to enter this area, and already had an active area access record for this area.")
+		log.save()
 		unlock_door(door)
 		return render(request, 'area_access/door_is_open.html')
 	return render(request, 'area_access/not_logged_in.html', {'area': door.area})
