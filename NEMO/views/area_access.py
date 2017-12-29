@@ -128,8 +128,8 @@ def login_to_area(request, door_id):
 		if user.in_area():
 			previous_area_access_record = user.area_access_record()
 			previous_area_access_record.end = timezone.now()
-			current_area_access_record.save()
-			previous_area = current_area_access_record.area
+			previous_area_access_record.save()
+			previous_area = previous_area_access_record.area
 
 		record = AreaAccessRecord()
 		record.area = door.area
@@ -154,8 +154,8 @@ def login_to_area(request, door_id):
 			if user.in_area():
 				previous_area_access_record = user.area_access_record()
 				previous_area_access_record.end = timezone.now()
-				current_area_access_record.save()
-				previous_area = current_area_access_record.area
+				previous_area_access_record.save()
+				previous_area = previous_area_access_record.area
 
 			record = AreaAccessRecord()
 			record.area = door.area
@@ -221,7 +221,7 @@ def open_door(request, door_id):
 	except (User.DoesNotExist, ValueError):
 		return render(request, 'area_access/badge_not_found.html')
 	if user.area_access_record() and user.area_access_record().area == door.area:
-		log = PhysicalAccessLog(user=user, door=door, time=timezone.now, result=PhysicalAccessType.ALLOW, details="The user was permitted to enter this area, and already had an active area access record for this area.")
+		log = PhysicalAccessLog(user=user, door=door, time=timezone.now(), result=PhysicalAccessType.ALLOW, details="The user was permitted to enter this area, and already had an active area access record for this area.")
 		log.save()
 		unlock_door(door)
 		return render(request, 'area_access/door_is_open.html')
