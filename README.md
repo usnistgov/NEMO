@@ -1,9 +1,16 @@
 # NEMO
 NEMO allows CNST NanoFab users to make tool reservations, control access to tools in the NanoFab, and streamline logistics and communication.
 
-# Beta test
-Thank you to everyone who has chosen to participate in the NEMO beta test. If you identify a bug, please [open an issue](https://github.com/usnistgov/NEMO/issues) and provide a description of what's wrong.
+# Screenshots
 
-All collaborators are [able to modify the wiki](https://github.com/usnistgov/NEMO/wiki). If you think there is some information others would find useful then please add it!
+_Landing page_
+![Landing page](/documentation/landing_page.png "Landing page")
 
-Deployment instructions for NEMO are in the wiki.
+_Calendar_
+![Calendar](/documentation/calendar.png "Calendar")
+
+_Tool control (with hardware interlocks)_
+![Tool control](/documentation/tool_control.png "Tool control")
+
+_Maintenance tasks_
+![Maintenance tasks](/documentation/maintenance.png "Maintenance tasks")
