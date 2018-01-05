@@ -1,4 +1,4 @@
-NEMO is a laboratory management web application that strives to be intuitive and easy to use, making life easier in the lab. NEMO manages tool reservations, control access to tools, and streamline logistics and communication. The source code is open source and free so that other labs can benefit.
+The **N**anoFab **E**quipment **M**anagement & **O**perations (NEMO) web application is laboratory management software that strives to be intuitive and easy to use, making life easier in the lab. NEMO manages tool reservations, control access to tools, and streamline logistics and communication. The source code is open source and free so that other labs can benefit.
 
 Documentation for NEMO resides in the [GitHub wiki](https://github.com/usnistgov/NEMO/wiki).
 
