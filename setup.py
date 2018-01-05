@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name='NEMO',
-	version='0.0.0',
+	version='1.0.0',
 	python_requires='>=3.6',
 	packages=find_packages(exclude=['NEMO.tests']),
 	include_package_data=True,
@@ -13,7 +13,7 @@ setup(
 	description='NEMO is a laboratory logistics web application. Use it to schedule reservations, control tool access, track maintenance issues, and more.',
 	long_description='Find out more about NEMO on the GitHub project page https://github.com/usnistgov/NEMO',
 	classifiers=[
-		'Development Status :: 4 - Beta',
+		'Development Status :: 5 - Production/Stable',
 		'Environment :: Web Environment',
 		'Framework :: Django',
 		'Intended Audience :: Science/Research',
