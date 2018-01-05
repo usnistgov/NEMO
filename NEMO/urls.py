@@ -155,9 +155,6 @@ urlpatterns = [
 
 	# Media
 	url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}, name='media'),
-
-        # Static files
-	url(r'^static/(?P<path>.*$)', serve, {'document_root': settings.STATIC_ROOT}, name='static'),
 ]
 
 if settings.ALLOW_CONDITIONAL_URLS:
@@ -223,7 +220,11 @@ if settings.ALLOW_CONDITIONAL_URLS:
 	]
 
 if settings.DEBUG:
+        # Static files
+	url(r'^static/(?P<path>.*$)', serve, {'document_root': settings.STATIC_ROOT}, name='static'),
+
 	try:
+		# Django debug toolbar
 		import debug_toolbar
 		urlpatterns += [
 			url(r'^__debug__/', include(debug_toolbar.urls)),
