@@ -1,4 +1,22 @@
-FROM docker.nist.gov:4567/nanofab/devops/appbase
+FROM centos:centos7
+
+RUN yum -y update
+
+# Install utility tools
+RUN yum -y install vim
+
+# Install Python3
+RUN yum -y install https://centos7.iuscommunity.org/ius-release.rpm && \
+    yum -y install python36u
+
+# Install Pip
+RUN yum -y install python36u-pip
+
+# User Python3 as default Python
+RUN echo "alias python=python3.6" >> ~/.bashrc
+RUN echo "alias pip=pip3.6" >> ~/.bashrc
+
+# Install NEMO
 
 # NEMO source code dir
 ENV SRC_PATH /root/src
