@@ -10,5 +10,5 @@ RUN pip3.6 install /nemo/ gunicorn
 
 EXPOSE 8000/tcp
 COPY docker_run.sh /usr/local/bin/
-RUN chmod +x docker_run.sh
+RUN chmod +x /usr/local/bin/docker_run.sh
 CMD ["docker_run.sh"]
