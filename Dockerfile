@@ -10,6 +10,6 @@ RUN pip3.6 install /nemo/ gunicorn
 RUN rm --recursive --force /nemo/
 
 EXPOSE 8000/tcp
-COPY docker_run.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker_run.sh
-CMD ["docker_run.sh"]
+COPY start_NEMO_in_Docker.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/start_NEMO_in_Docker.sh
+CMD ["start_NEMO_in_Docker.sh"]
