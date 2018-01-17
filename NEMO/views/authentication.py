@@ -1,4 +1,5 @@
 from _ssl import PROTOCOL_TLSv1, CERT_REQUIRED
+from base64 import b64decode
 from logging import exception
 
 from django.conf import settings
@@ -28,11 +29,11 @@ class RemoteUserAuthenticationBackend(RemoteUserBackend):
 
 		# The user must exist in the database & RemoteUserBackend.authenticate must have succeeded.
 		if not user:
-			return
+			return None
 
 		# The user must be marked active.
 		if not user.is_active:
-			return
+			return None
 
 		# All security checks passed so let the user in.
 		return user
@@ -45,9 +46,56 @@ class RemoteUserAuthenticationBackend(RemoteUserBackend):
 		return username.partition('@')[0]
 
 
-class LDAPAuthenticationBackend(object):
+class NginxKerberosAuthorizationHeaderAuthenticationBackend:
+	""" The web server performs Kerberos authentication and passes the user name in via the HTTP_AUTHORIZATION header. """
+	create_unknown_user = False
+
+	def authenticate(self, request):
+		# Perform any custom security checks below.
+		# Returning None blocks the user's access.
+		username = self.clean_username(request.META.get('HTTP_AUTHORIZATION', None))
+
+		# The user must exist in the database
+		try:
+			user = User.objects.get(username=username)
+		except User.DoesNotExist:
+			return None
+
+		if not user:
+			return None
+
+		# The user must be marked active.
+		if not user.is_active:
+			return None
+
+		# All security checks passed so let the user in.
+		return user
+
+	def clean_username(self, username):
+		"""
+		User names arrive encoded in base 64, similar to Basic authentication, but with a bogus password set (since .
+		This function chops off Kerberos realm information (i.e. the '@' and everything after).
+		"""
+		if not username:
+			return None
+		pieces = username.split()
+		if len(pieces) != 2:
+			return None
+		if pieces[0] != "Basic":
+			return None
+		return b64decode(pieces[1]).partition(':')[0]
+
+	def get_user(self, user_id):
+		# Attempt to find the user in the database.
+		try:
+			return User.objects.get(id=user_id)
+		except User.DoesNotExist:
+			return None
+
+
+class LDAPAuthenticationBackend:
 	""" This class provides LDAP authentication against an LDAP or Active Directory server. """
-	def authenticate(self, username, password):
+	def authenticate(self, request, username, password):
 		if len(username) == 0 or len(password) == 0:
 			return None
 
@@ -87,7 +135,7 @@ class LDAPAuthenticationBackend(object):
 
 @require_http_methods(['GET', 'POST'])
 def login_user(request):
-	if 'NEMO.views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
+	if 'NEMO.views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS or 'NEMO.views.authentication.NginxKerberosAuthorizationHeaderAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
 		if request.user.is_authenticated:
 			return HttpResponseRedirect(reverse('landing'))
 		else:
@@ -101,7 +149,7 @@ def login_user(request):
 		return render(request, 'login.html', dictionary)
 	username = request.POST.get('username', '')
 	password = request.POST.get('password', '')
-	user = authenticate(username=username, password=password)
+	user = authenticate(request, username=username, password=password)
 	if user:
 		login(request, user)
 		try:
@@ -116,7 +164,5 @@ def login_user(request):
 
 @require_GET
 def logout_user(request):
-	if 'NEMO.views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
-		return HttpResponseNotFound()
 	logout(request)
-	return HttpResponseRedirect(reverse('login'))
+	return HttpResponseRedirect(reverse('landing'))

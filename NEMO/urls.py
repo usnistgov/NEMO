@@ -220,7 +220,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 	]
 
 if settings.DEBUG:
-        # Static files
+	# Static files
 	url(r'^static/(?P<path>.*$)', serve, {'document_root': settings.STATIC_ROOT}, name='static'),
 
 	try:

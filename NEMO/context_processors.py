@@ -1,11 +1,8 @@
-from django.conf import settings
+def show_logout_button(request):
+	return {'logout_allowed': True}
 
 
-def logout_allowed(request):
-	# Set 'logout_allowed' to True for any authentication backends that are capable of logging out.
-	# LDAP is capable of logging out. Kerberos is not.
-	if 'NEMO.views.authentication.LDAPAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
-		return {'logout_allowed': True}
+def hide_logout_button(request):
 	return {'logout_allowed': False}
 
 
