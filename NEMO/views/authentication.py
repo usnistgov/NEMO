@@ -1,11 +1,11 @@
-from _ssl import PROTOCOL_TLSv1, CERT_REQUIRED
+from _ssl import PROTOCOL_TLSv1_2, CERT_REQUIRED
 from base64 import b64decode
 from logging import exception
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout
 from django.contrib.auth.backends import RemoteUserBackend
-from django.http import HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse, resolve
 from django.views.decorators.http import require_http_methods, require_GET
@@ -111,7 +111,7 @@ class LDAPAuthenticationBackend:
 
 		for server in settings.LDAP_SERVERS:
 			try:
-				t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1, ca_certs_file=server['certificate'])
+				t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=server['certificate'])
 				s = Server(server['url'], port=636, use_ssl=True, tls=t)
 				c = Connection(s, user='{}\\{}'.format(server['domain'], username), password=password, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, authentication=SIMPLE)
 				c.unbind()
