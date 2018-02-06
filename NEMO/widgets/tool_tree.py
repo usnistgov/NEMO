@@ -3,7 +3,7 @@ from django.utils.safestring import mark_safe
 
 
 class ToolTree(Widget):
-	def render(self, name, value, attrs=None):
+	def render(self, name, value, attrs=None, renderer=None):
 		"""
 		This widget takes a list of tools and creates nested unordered lists in a hierarchical manner.
 		The parameters name and attrs are not used.
@@ -43,7 +43,7 @@ class ToolTree(Widget):
 		return mark_safe(tree.render())
 
 
-class ToolTreeHelper():
+class ToolTreeHelper:
 	"""
 	This class reads in a textual representation of the organization of each NanoFab tool and renders it to equivalent
 	unordered HTML lists.
@@ -89,11 +89,9 @@ class ToolTreeHelper():
 		"""
 		result += '<li>'
 		if node.__is_leaf():
-			result += '<a href="javascript:void(0);" onclick="set_selected_item(this)" data-tool-id="{0}" data-type="tool link">'.format(node.id)
-			result += node.name
-			result += '</a>'
+			result += f'<a href="javascript:void(0);" onclick="set_selected_item(this)" data-tool-id="{node.id}" data-type="tool link">{node.name}</a>'
 		if not node.__is_leaf():
-			result += '<label class="tree-toggler nav-header"><div>' + node.name + '</div></label><ul class="nav nav-list tree" data-category="' + node.name + '">'
+			result += f'<label class="tree-toggler nav-header"><div>{node.name}</div></label><ul class="nav nav-list tree" data-category="{node.name}">'
 			for child in node.children:
 				result = self.__render_helper(child, result)
 			result += '</ul>'

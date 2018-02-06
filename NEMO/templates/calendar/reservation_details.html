@@ -46,12 +46,12 @@
 		<div class="modal-footer">
 			{# You must provide a reason if you are cancelling someone else's reservation. #}
 			{% if reservation.user == user %}
-				<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_reservation('{% url 'cancel_reservation' reservation.id %}', {{ reservation.id }}) })">Cancel this reservation</button>
+				<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}') })">Cancel this reservation</button>
 			{% else %}
 				<div class="input-group">
 					<input type="text" id="reason" class="form-control" placeholder="Reason for cancellation (required)" maxlength="3000">
 					<span class="input-group-btn">
-						<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_reservation('{% url 'cancel_reservation' reservation.id %}', {{ reservation.id }}, $('#reason').val()) })">Cancel this reservation</button>
+						<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}', $('#reason').val()) })">Cancel this reservation</button>
 					</span>
 				</div>
 				<script>

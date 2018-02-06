@@ -8,7 +8,7 @@
 	{# When a button is clicked this value is set to true, enabling further processing. #}
 	{# Hiding the dialog using the X in the top right, or clicking outside of it, will stop processing. #}
 	<input type="hidden" id="dialog_cancelled" value="true">
-	<form id="additional_reservation_parameters" onsubmit="return false">
+	<form id="additional_event_parameters" onsubmit="return false">
 		<p>Associate your reservation with a project. A fee will be charged to that project if you miss your reservation.</p>
 		<input type="hidden" id="project_id" name="project_id">
 		{% for project in active_projects %}

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}{{ tool }} calendar{% endblock %}
 {% block content %}
 	<div class="row" style="font-size:1.7em; margin-bottom:20px">
@@ -10,8 +11,12 @@
 		</div>
 		<div class="col-xs-2"><a href="{% url 'view_calendar' tool.id %}{{ next_day|date:"Y-m-d" }}/"><span class="glyphicon glyphicon-chevron-right"></span></a></div>
 	</div>
-	{% for reservation in reservations %}
-		{% include 'mobile/individual_reservation.html' %}
+	{% for event in events %}
+		{% if event|class_name == "Reservation" %}
+			{% include 'mobile/individual_reservation.html' with reservation=event %}
+		{% elif event|class_name == "ScheduledOutage" %}
+			{% include 'mobile/individual_outage.html' with outage=event %}
+		{% endif %}
 	{% empty %}
 		<div style="text-align:center">There are no reservations</div>
 	{% endfor %}

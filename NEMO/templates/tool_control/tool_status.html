@@ -45,6 +45,15 @@
 					<h3>{{ delayed_logoff_event.operator }} has finished using the {{ tool }} but delayed logoff is in effect. The tool will be available at {{ delayed_logoff_event.end|time }}.</h3>
 				</div>
 			{% endwith %}
+		{% elif tool.scheduled_outage %}
+			{% with tool.scheduled_outage as outage %}
+				<div class="danger-highlight">
+					<span class="glyphicon glyphicon-time pull-left status-icon"></span>
+					<h3>Scheduled outage: {{ outage.title }}</h3>
+					{% if outage.details %}<h4>{{ outage.details }}</h4>{% endif %}
+					<h4>{{ outage.creator }} scheduled this outage from {{ outage.start }} until {{ outage.end }}.</h4>
+				</div>
+			{% endwith %}
 		{% elif not tool.operational or tool.required_resource_is_unavailable %}
 			<div class="danger-highlight">
 				<span class="glyphicon glyphicon-ban-circle pull-left status-icon"></span>
@@ -192,10 +201,10 @@
 						<div class="radio"><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">Use this tool on behalf of another user and begin charging staff time</label></div>
 					{% endif %}
 					<div id="project_choice"></div>
-				{% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress %}
+				{% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage %}
 					{% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
 				{% endif %}
-				{% if user.is_staff or tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress %}
+				{% if user.is_staff or tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage %}
 					<button id="start" class="btn btn-default" style="display:none" onclick="enable_tool({{ tool.id }}); return false"><span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}</button>
 				{% endif %}
 			{% endif %}
@@ -388,7 +397,7 @@
 </div>
 
 <script>
-	$("#tabs a").click(switch_tab);
+	$("#tabs").find("a").click(switch_tab);
 	$('#task_and_comment_start').datetimepicker({format: 'MM/DD/YYYY', 'widgetParent': '#task_and_comment_start_form_group'});
 	$('#task_and_comment_end').datetimepicker({format: 'MM/DD/YYYY', 'widgetParent': '#task_and_comment_end_form_group'});
 	$('#delayed_logoff_help').popover()

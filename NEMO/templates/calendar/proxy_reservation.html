@@ -22,7 +22,9 @@
 	autofocus('#proxy_reservation');
 	function proxy_reservation(jquery_event, search_selection)
 	{
-		$($(".fc-proxyReservation-button")[0]).html('Reserving as ' + search_selection.name);
+		$($(".fc-scheduledOutage-button")[0]).hide();
+		var proxy_reservation_button = $(".fc-proxyReservation-button")[0];
+		$(proxy_reservation_button).html('Reserving as ' + search_selection.name);
 		$("#impersonate").val(search_selection.id);
 		$("#dialog").modal('hide');
 	}

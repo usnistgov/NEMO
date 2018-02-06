@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.models import AreaAccessRecord, Tool, Task, Resource, UsageEvent
+from NEMO.models import AreaAccessRecord, Tool, Task, Resource, UsageEvent, ScheduledOutage
 
 
 @login_required
@@ -40,13 +40,14 @@ def create_tool_summary():
 	tasks = Task.objects.filter(unfinished).prefetch_related('tool')
 	unavailable_resources = Resource.objects.filter(available=False).prefetch_related('fully_dependent_tools', 'partially_dependent_tools')
 	usage_events = UsageEvent.objects.filter(end=None).prefetch_related('operator', 'user', 'tool')
-	tool_summary = merge(tools, tasks, unavailable_resources, usage_events)
+	scheduled_outages = ScheduledOutage.objects.filter(start__lte=timezone.now(), end__gt=timezone.now())
+	tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages)
 	tool_summary = list(tool_summary.values())
 	tool_summary.sort(key=lambda x: x['name'])
 	return tool_summary
 
 
-def merge(tools, tasks, unavailable_resources, usage_events):
+def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):
 	result = {}
 	tools_with_delayed_logoff_in_effect = [x.tool.id for x in UsageEvent.objects.filter(end__gt=timezone.now())]
 	for tool in tools:
@@ -62,6 +63,7 @@ def merge(tools, tasks, unavailable_resources, usage_events):
 			'operational': tool.operational,
 			'required_resource_is_unavailable': False,
 			'nonrequired_resource_is_unavailable': False,
+			'scheduled_outage': False,
 		}
 	for task in tasks:
 		result[task.tool.id]['problematic'] = True
@@ -77,4 +79,6 @@ def merge(tools, tasks, unavailable_resources, usage_events):
 			result[tool.id]['required_resource_is_unavailable'] = True
 		for tool in resource.partially_dependent_tools.filter(visible=True):
 			result[tool.id]['nonrequired_resource_is_unavailable'] = True
+	for outage in scheduled_outages:
+		result[outage.tool.id]['scheduled_outage'] = True
 	return result

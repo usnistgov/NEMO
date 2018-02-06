@@ -7,6 +7,9 @@ $('#sidebar .sidebar-status-icon').remove();
 	{% if tool.delayed_logoff_in_progress %}
 		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-time primary-highlight sidebar-status-icon" title="Delayed logoff is in effect for this tool"></span>');
 	{% endif %}
+	{% if tool.scheduled_outage %}
+		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-time danger-highlight sidebar-status-icon" title="A scheduled outage is in effect for this tool"></span>');
+	{% endif %}
 
 	{% if tool.required_resource_is_unavailable %}
 		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-leaf danger-highlight sidebar-status-icon" title="This tool is unavailable because a required resource is unavailable"></span>');

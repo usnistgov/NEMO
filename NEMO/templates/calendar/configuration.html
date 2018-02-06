@@ -5,10 +5,10 @@
 
 <div class="modal-body">
 	{# Assume the dialog is cancelled by default, preventing the reservation request from being processed further. #}
-	{# When a button is clicked this value is set to true, enabling further processing. #}
+	{# When a button is clicked this value is set to false, enabling further processing. #}
 	{# Hiding the dialog using the X in the top right, or clicking outside of it, will stop processing. #}
 	<input type="hidden" id="dialog_cancelled" value="true">
-	<form id="additional_reservation_parameters">
+	<form id="additional_event_parameters">
 		<input type="hidden" id="configured" name="configured" value="true">
 		{% if not sufficient_notice %}
 			<div class="alert alert-danger">

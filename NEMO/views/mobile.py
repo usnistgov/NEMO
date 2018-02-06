@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from itertools import chain
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
@@ -6,7 +7,7 @@ from django.shortcuts import render, get_object_or_404
 from django.utils.dateparse import parse_time, parse_date
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.models import Reservation, Tool, Project
+from NEMO.models import Reservation, Tool, Project, ScheduledOutage
 from NEMO.utilities import extract_date, localize, beginning_of_the_day, end_of_the_day
 from NEMO.views.calendar import extract_configuration, determine_insufficient_notice
 from NEMO.views.policy import check_policy_to_save_reservation
@@ -107,7 +108,13 @@ def view_calendar(request, tool_id, date=None):
 	# The event starts and ends after the time-window.
 	reservations = reservations.exclude(start__lt=start, end__lt=start)
 	reservations = reservations.exclude(start__gt=end, end__gt=end)
-	reservations = reservations.order_by('start')
+
+	outages = ScheduledOutage.objects.filter(tool=tool)
+	outages = outages.exclude(start__lt=start, end__lt=start)
+	outages = outages.exclude(start__gt=end, end__gt=end)
+
+	events = list(chain(reservations, outages))
+	events.sort(key=lambda x: x.start)
 
 	dictionary = {
 		'tool': tool,
@@ -115,7 +122,7 @@ def view_calendar(request, tool_id, date=None):
 		'current_day': start,
 		'current_day_string': date.strftime('%Y-%m-%d'),
 		'next_day': start + timedelta(days=1),
-		'reservations': reservations,
+		'events': events,
 	}
 
 	return render(request, 'mobile/view_calendar.html', dictionary)

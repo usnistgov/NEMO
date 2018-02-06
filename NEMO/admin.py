@@ -5,7 +5,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 
 from NEMO.actions import lock_selected_interlocks, unlock_selected_interlocks
-from NEMO.models import Tool, UsageEvent, Reservation, Project, Account, Consumable, ConsumableWithdraw, InterlockCard, Interlock, Task, MembershipHistory, ActivityHistory, Configuration, TaskCategory, Comment, ConfigurationHistory, Resource, User, TrainingSession, StaffCharge, AreaAccessRecord, ConsumableCategory, ResourceCategory, Door, PhysicalAccessLevel, PhysicalAccessLog, SafetyIssue, Area, Alert, UserType, ContactInformationCategory, ContactInformation, LandingPageChoice, Customization
+from NEMO.models import Tool, UsageEvent, Reservation, Project, Account, Consumable, ConsumableWithdraw, InterlockCard, Interlock, Task, MembershipHistory, ActivityHistory, Configuration, TaskCategory, Comment, ConfigurationHistory, Resource, User, TrainingSession, StaffCharge, AreaAccessRecord, ConsumableCategory, ResourceCategory, Door, PhysicalAccessLevel, PhysicalAccessLog, SafetyIssue, Area, Alert, UserType, ContactInformationCategory, ContactInformation, LandingPageChoice, Customization, ScheduledOutage
 
 admin.site.site_header = "NEMO"
 admin.site.site_title = "NEMO"
@@ -423,6 +423,11 @@ class LandingPageChoiceAdmin(admin.ModelAdmin):
 @register(Customization)
 class CustomizationAdmin(admin.ModelAdmin):
 	list_display = ('name', 'value')
+
+
+@register(ScheduledOutage)
+class ScheduledOutageAdmin(admin.ModelAdmin):
+	list_display = ('id', 'tool', 'creator', 'title', 'start', 'end')
 
 
 admin.site.register(ResourceCategory)

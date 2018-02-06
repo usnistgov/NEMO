@@ -54,6 +54,7 @@ class UserManager(BaseUserManager):
 		user = self.create_user(username, first_name, last_name, email)
 		user.is_superuser = True
 		user.is_staff = True
+		user.training_required = False
 		user.save()
 		return user
 
@@ -251,10 +252,6 @@ class Tool(models.Model):
 	problematic.admin_order_field = 'task'
 	problematic.boolean = True
 
-	def problem_count(self):
-		unfinished = Q(status=Task.Status.REQUIRES_ATTENTION) | Q(status=Task.Status.WORK_IN_PROGRESS)
-		return self.task_set.filter(unfinished).count()
-
 	def problems(self):
 		unfinished = Q(status=Task.Status.REQUIRES_ATTENTION) | Q(status=Task.Status.WORK_IN_PROGRESS)
 		return self.task_set.filter(unfinished)
@@ -270,7 +267,9 @@ class Tool(models.Model):
 		return self.nonrequired_resource_set.filter(available=False).exists()
 
 	def all_resources_available(self):
-		if not self.required_resource_set.filter(available=False).exists() and not self.nonrequired_resource_set.filter(available=False).exists():
+		required_resources_available = not self.unavailable_required_resources().exists()
+		nonrequired_resources_available = not self.unavailable_nonrequired_resources().exists()
+		if required_resources_available and nonrequired_resources_available:
 			return True
 		return False
 
@@ -292,6 +291,12 @@ class Tool(models.Model):
 		try:
 			return UsageEvent.objects.get(tool=self.id, end__gt=timezone.now())
 		except UsageEvent.DoesNotExist:
+			return None
+
+	def scheduled_outage(self):
+		try:
+			return ScheduledOutage.objects.get(tool=self.id, start__lte=timezone.now(), end__gt=timezone.now())
+		except ScheduledOutage.DoesNotExist:
 			return None
 
 	def is_configurable(self):
@@ -499,6 +504,8 @@ def pre_delete_entity(sender, instance, using, **kwargs):
 	ActivityHistory.objects.filter(object_id=instance.id, content_type=content_type).delete()
 	MembershipHistory.objects.filter(parent_object_id=instance.id, parent_content_type=content_type).delete()
 	MembershipHistory.objects.filter(child_object_id=instance.id, child_content_type=content_type).delete()
+
+
 # Call the function "pre_delete_entity" every time an account, project, tool, or user is deleted:
 pre_delete.connect(pre_delete_entity, sender=Account)
 pre_delete.connect(pre_delete_entity, sender=Project)
@@ -1108,3 +1115,15 @@ class Customization(models.Model):
 
 	def __str__(self):
 		return str(self.name)
+
+
+class ScheduledOutage(models.Model):
+	start = models.DateTimeField()
+	end = models.DateTimeField()
+	creator = models.ForeignKey(User)
+	title = models.CharField(max_length=100)
+	details = models.TextField(blank=True)
+	tool = models.ForeignKey(Tool)
+
+	def __str__(self):
+		return str(self.title)

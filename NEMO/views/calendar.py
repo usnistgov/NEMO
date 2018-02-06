@@ -12,11 +12,11 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project
+from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
-from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation
+from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage
 from NEMO.widgets.tool_tree import ToolTree
 
 
@@ -75,6 +75,7 @@ def event_feed(request):
 
 def reservation_event_feed(request, start, end):
 	events = Reservation.objects.filter(cancelled=False, missed=False, shortened=False)
+	outages = None
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
@@ -86,6 +87,10 @@ def reservation_event_feed(request, start, end):
 	if tool:
 		events = events.filter(tool__id=tool)
 
+		outages = ScheduledOutage.objects.filter(tool=tool)
+		outages = outages.exclude(start__lt=start, end__lt=start)
+		outages = outages.exclude(start__gt=end, end__gt=end)
+
 	# Filter events that only have to do with the current user.
 	personal_schedule = request.GET.get('personal_schedule')
 	if personal_schedule:
@@ -93,6 +98,7 @@ def reservation_event_feed(request, start, end):
 
 	dictionary = {
 		'events': events,
+		'outages': outages,
 		'personal_schedule': personal_schedule,
 	}
 	return render(request, 'calendar/reservation_event_feed.html', dictionary)
@@ -276,6 +282,38 @@ def parse_configuration_entry(key, value):
 		return display_priority, configuration.configurable_item_name + " #" + str(slot + 1) + " needs to be set to " + available_setting + "."
 
 
+@staff_member_required(login_url=None)
+@require_POST
+def create_outage(request):
+	""" Create a reservation for a user. """
+	try:
+		start, end = extract_times(request.POST)
+	except Exception as e:
+		return HttpResponseBadRequest(str(e))
+	tool = get_object_or_404(Tool, name=request.POST.get('tool_name'))
+	# Create the new reservation:
+	outage = ScheduledOutage()
+	outage.creator = request.user
+	outage.tool = tool
+	outage.start = start
+	outage.end = end
+
+	# If there was a problem in saving the reservation then return the error...
+	policy_problem = check_policy_to_create_outage(outage)
+	if policy_problem:
+		return HttpResponseBadRequest(policy_problem)
+
+	# Make sure there is at least an outage title
+	if not request.POST.get('title'):
+		return render(request, 'calendar/scheduled_outage_information.html')
+
+	outage.title = request.POST['title']
+	outage.details = request.POST.get('details', '')
+
+	outage.save()
+	return HttpResponse()
+
+
 @login_required
 @require_POST
 def resize_reservation(request):
@@ -285,6 +323,17 @@ def resize_reservation(request):
 	except:
 		return HttpResponseBadRequest('Invalid delta')
 	return modify_reservation(request, None, delta)
+
+
+@staff_member_required(login_url=None)
+@require_POST
+def resize_outage(request):
+	""" Resize an outage """
+	try:
+		delta = timedelta(minutes=int(request.POST['delta']))
+	except:
+		return HttpResponseBadRequest('Invalid delta')
+	return modify_outage(request, None, delta)
 
 
 @login_required
@@ -298,6 +347,17 @@ def move_reservation(request):
 	return modify_reservation(request, delta, delta)
 
 
+@staff_member_required(login_url=None)
+@require_POST
+def move_outage(request):
+	""" Move a reservation for a user. """
+	try:
+		delta = timedelta(minutes=int(request.POST['delta']))
+	except:
+		return HttpResponseBadRequest('Invalid delta')
+	return modify_outage(request, delta, delta)
+
+
 def modify_reservation(request, start_delta, end_delta):
 	"""
 	Cancel the user's old reservation and create a new one. Reservations are cancelled and recreated so that
@@ -305,7 +365,7 @@ def modify_reservation(request, start_delta, end_delta):
 	not be tied directly to a URL.
 	"""
 	try:
-		reservation_to_cancel = Reservation.objects.get(pk=request.POST['reservation_id'])
+		reservation_to_cancel = Reservation.objects.get(pk=request.POST['id'])
 	except Reservation.DoesNotExist:
 		return HttpResponseNotFound("The reservation that you wish to modify doesn't exist!")
 	response = check_policy_to_cancel_reservation(reservation_to_cancel, request.user)
@@ -351,6 +411,23 @@ def modify_reservation(request, start_delta, end_delta):
 	return response
 
 
+def modify_outage(request, start_delta, end_delta):
+	try:
+		outage = ScheduledOutage.objects.get(pk=request.POST['id'])
+	except ScheduledOutage.DoesNotExist:
+		return HttpResponseNotFound("The outage that you wish to modify doesn't exist!")
+	if start_delta:
+		outage.start += start_delta
+	outage.end += end_delta
+	policy_problem = check_policy_to_create_outage(outage)
+	if policy_problem:
+		return HttpResponseBadRequest(policy_problem)
+	else:
+		# All policy checks passed, so save the reservation.
+		outage.save()
+	return HttpResponse()
+
+
 def determine_insufficient_notice(tool, start):
 	""" Determines if a reservation is created that does not give the
 	NanoFab staff sufficient advance notice to configure a tool. """
@@ -391,12 +468,25 @@ def cancel_reservation(request, reservation_id):
 				cancellation_email = Template(email_contents).render(Context(dictionary))
 				reservation.user.email_user('Your reservation was cancelled', cancellation_email, request.user.email)
 
-	if request.is_ajax():
+	if request.device == 'desktop':
 		return response
-	if response.status_code == HTTPStatus.OK:
-		return render(request, 'mobile/cancellation_result.html', {'reservation': reservation})
-	else:
-		return render(request, 'mobile/error.html', {'message': response.content})
+	if request.device == 'mobile':
+		if response.status_code == HTTPStatus.OK:
+			return render(request, 'mobile/cancellation_result.html', {'event_type': 'Reservation', 'tool': reservation.tool})
+		else:
+			return render(request, 'mobile/error.html', {'message': response.content})
+
+
+@staff_member_required(login_url=None)
+@require_POST
+def cancel_outage(request, outage_id):
+	outage = get_object_or_404(ScheduledOutage, id=outage_id)
+	dictionary = {'event_type': 'Scheduled outage', 'tool': outage.tool}
+	outage.delete()
+	if request.device == 'desktop':
+		return HttpResponse()
+	if request.device == 'mobile':
+		return render(request, 'mobile/cancellation_result.html', dictionary)
 
 
 @staff_member_required(login_url=None)
@@ -500,6 +590,13 @@ def reservation_details(request, reservation_id):
 		error_message = 'This reservation was cancelled by {0} at {1}.'.format(reservation.cancelled_by, format_datetime(reservation.cancellation_time))
 		return HttpResponseNotFound(error_message)
 	return render(request, 'calendar/reservation_details.html', {'reservation': reservation})
+
+
+@login_required
+@require_GET
+def outage_details(request, outage_id):
+	outage = get_object_or_404(ScheduledOutage, id=outage_id)
+	return render(request, 'calendar/outage_details.html', {'outage': outage})
 
 
 @login_required

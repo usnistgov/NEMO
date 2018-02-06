@@ -5,7 +5,7 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import Template, Context
 from django.utils import timezone
 
-from NEMO.models import Reservation, AreaAccessRecord
+from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage
 from NEMO.utilities import format_datetime
 from NEMO.views.customization import get_customization, get_media_file_contents
 
@@ -75,6 +75,10 @@ def check_policy_to_enable_tool(tool, operator, user, project, staff_charge):
 	if tool.delayed_logoff_in_progress() and not operator.is_staff:
 		return HttpResponseBadRequest("Delayed tool logoff is in effect.")
 
+	# Users may not enable a tool during a scheduled outage. Staff are exempt from this rule.
+	if tool.scheduled_outage() and not operator.is_staff:
+		return HttpResponseBadRequest("Scheduled outage is in effect.")
+
 	return HttpResponse()
 
 
@@ -117,6 +121,16 @@ def check_policy_to_save_reservation(cancelled_reservation, new_reservation, use
 	coincident_events = coincident_events.exclude(start__gte=new_reservation.end, end__gt=new_reservation.end)
 	if coincident_events.count() > 0:
 		policy_problems.append("Your reservation coincides with another reservation that already exists. Please choose a different time.")
+
+	# The user may not create, move, or resize a reservation to coincide with a scheduled outage.
+	coincident_events = ScheduledOutage.objects.filter(tool=new_reservation.tool)
+	# Exclude events for which the following is true:
+	# The event starts and ends before the time-window, and...
+	# The event starts and ends after the time-window.
+	coincident_events = coincident_events.exclude(start__lt=new_reservation.start, end__lte=new_reservation.start)
+	coincident_events = coincident_events.exclude(start__gte=new_reservation.end, end__gt=new_reservation.end)
+	if coincident_events.count() > 0:
+		policy_problems.append("Your reservation coincides with a scheduled outage. Please choose a different time.")
 
 	# Reservations that have been cancelled may not be changed.
 	if new_reservation.cancelled:
@@ -274,3 +288,35 @@ def check_policy_to_cancel_reservation(reservation, user):
 		return HttpResponseBadRequest("This reservation was missed and cannot be modified.")
 
 	return HttpResponse()
+
+
+def check_policy_to_create_outage(outage):
+	policy_problems = []
+	# Outages may not have a start time that is earlier than the end time.
+	if outage.start >= outage.end:
+		return "Outage start time (" + format_datetime(outage.start) + ") must be before the end time (" + format_datetime(outage.end) + ")."
+
+	# The user may not create, move, or resize an outage to coincide with another user's reservation.
+	coincident_events = Reservation.objects.filter(tool=outage.tool, cancelled=False, missed=False, shortened=False)
+	# Exclude events for which the following is true:
+	# The event starts and ends before the time-window, and...
+	# The event starts and ends after the time-window.
+	coincident_events = coincident_events.exclude(start__lt=outage.start, end__lte=outage.start)
+	coincident_events = coincident_events.exclude(start__gte=outage.end, end__gt=outage.end)
+	if coincident_events.count() > 0:
+		return "Your scheduled outage coincides with a reservation that already exists. Please choose a different time."
+
+	# The user may not create, move, or resize an outage to coincide with another user's outage.
+	coincident_events = ScheduledOutage.objects.filter(tool=outage.tool)
+	# Exclude the outage we're moving or resizing:
+	coincident_events = coincident_events.exclude(id=outage.id)
+	# Exclude events for which the following is true:
+	# The event starts and ends before the time-window, and...
+	# The event starts and ends after the time-window.
+	coincident_events = coincident_events.exclude(start__lt=outage.start, end__lte=outage.start)
+	coincident_events = coincident_events.exclude(start__gte=outage.end, end__gt=outage.end)
+	if coincident_events.count() > 0:
+		return "Your scheduled outage coincides with another outage that already exists. Please choose a different time."
+
+	# No policy issues! The outage can be created...
+	return None

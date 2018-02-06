@@ -1,0 +1,21 @@
+<div class="alert alert-danger" role="alert">
+	<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down" data-toggle="collapse" data-target="#extended_outage_information_{{ outage.id }}"></span>
+	<span style="cursor:pointer" data-toggle="collapse" data-target="#extended_outage_information_{{ outage.id }}"><strong>{{ outage.title }}</strong></span><br>
+	Starting {{ outage.start|time }}<br>
+	Ending {{ outage.end|time }}<br>
+	<div id="extended_outage_information_{{ outage.id }}" class="collapse">
+		<div style="height:10px">{# Vertical spacer #}</div>
+		Created by {{ outage.creator }}<br>
+		{% if outage.details %}
+			Details:<br>
+			{{ outage.details|linebreaksbr }}
+		{% endif %}
+		{% if user.is_staff %}
+			<div style="height:10px">{# Vertical spacer #}</div>
+			<form method="post" action="{% url 'cancel_outage' outage.id %}">
+				{% csrf_token %}
+				<button type="submit" class="btn btn-danger">Cancel this outage</button>
+			</form>
+		{% endif %}
+	</div>
+</div>
