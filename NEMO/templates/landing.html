@@ -87,6 +87,20 @@
 					</div>
 				</a>
 			{% endif %}
+		{% empty %}
+			<span style="font-size:xx-large">
+				Welcome! This is NEMO's landing page - the first page users see when visiting the site. There's nothing here yet...<br>&nbsp;<br>
+
+				Add landing page choices by navigating to<br>
+				<code>
+					Administration -> Detailed Administration -><br>
+					Landing page choices -> Add landing page choice
+				</code>
+				<br>&nbsp;<br>
+
+				Customize NEMO further by navigating to<br>
+				<code>Administration -> Customization</code>
+			</span>
 		{% endfor %}
 	</div>
 {% endblock %}
