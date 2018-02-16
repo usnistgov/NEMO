@@ -4,7 +4,7 @@ from logging import exception
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout
-from django.contrib.auth.backends import RemoteUserBackend
+from django.contrib.auth.backends import RemoteUserBackend, ModelBackend
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse, resolve
@@ -20,24 +20,6 @@ class RemoteUserAuthenticationBackend(RemoteUserBackend):
 	""" The web server performs Kerberos authentication and passes the user name in via the REMOTE_USER environment variable. """
 	create_unknown_user = False
 
-	def authenticate(self, request, remote_user):
-		# Run Django's normal authentication checks here. It will attempt to find the user in the database.
-		user = super(RemoteUserAuthenticationBackend, self).authenticate(request, remote_user)
-
-		# Perform any custom security checks below.
-		# Returning None blocks the user's access.
-
-		# The user must exist in the database & RemoteUserBackend.authenticate must have succeeded.
-		if not user:
-			return None
-
-		# The user must be marked active.
-		if not user.is_active:
-			return None
-
-		# All security checks passed so let the user in.
-		return user
-
 	def clean_username(self, username):
 		"""
 		User names arrive in the form user@DOMAIN.NAME.
@@ -46,11 +28,11 @@ class RemoteUserAuthenticationBackend(RemoteUserBackend):
 		return username.partition('@')[0]
 
 
-class NginxKerberosAuthorizationHeaderAuthenticationBackend:
+class NginxKerberosAuthorizationHeaderAuthenticationBackend(ModelBackend):
 	""" The web server performs Kerberos authentication and passes the user name in via the HTTP_AUTHORIZATION header. """
 	create_unknown_user = False
 
-	def authenticate(self, request):
+	def authenticate(self, request, username=None, password=None, **keyword_arguments):
 		# Perform any custom security checks below.
 		# Returning None blocks the user's access.
 		username = self.clean_username(request.META.get('HTTP_AUTHORIZATION', None))
@@ -85,17 +67,10 @@ class NginxKerberosAuthorizationHeaderAuthenticationBackend:
 			return None
 		return b64decode(pieces[1]).partition(':')[0]
 
-	def get_user(self, user_id):
-		# Attempt to find the user in the database.
-		try:
-			return User.objects.get(id=user_id)
-		except User.DoesNotExist:
-			return None
 
-
-class LDAPAuthenticationBackend:
+class LDAPAuthenticationBackend(ModelBackend):
 	""" This class provides LDAP authentication against an LDAP or Active Directory server. """
-	def authenticate(self, request, username, password):
+	def authenticate(self, request, username=None, password=None, **keyword_arguments):
 		if len(username) == 0 or len(password) == 0:
 			return None
 
@@ -124,13 +99,6 @@ class LDAPAuthenticationBackend:
 
 		# The user did not successfully authenticate to any of the LDAP servers.
 		return None
-
-	def get_user(self, user_id):
-		# Attempt to find the user in the database.
-		try:
-			return User.objects.get(id=user_id)
-		except User.DoesNotExist:
-			return None
 
 
 @require_http_methods(['GET', 'POST'])
