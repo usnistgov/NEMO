@@ -30,7 +30,6 @@ class RemoteUserAuthenticationBackend(RemoteUserBackend):
 
 class NginxKerberosAuthorizationHeaderAuthenticationBackend(ModelBackend):
 	""" The web server performs Kerberos authentication and passes the user name in via the HTTP_AUTHORIZATION header. """
-	create_unknown_user = False
 
 	def authenticate(self, request, username=None, password=None, **keyword_arguments):
 		# Perform any custom security checks below.
