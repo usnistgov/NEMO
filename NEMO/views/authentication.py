@@ -70,7 +70,7 @@ class NginxKerberosAuthorizationHeaderAuthenticationBackend(ModelBackend):
 class LDAPAuthenticationBackend(ModelBackend):
 	""" This class provides LDAP authentication against an LDAP or Active Directory server. """
 	def authenticate(self, request, username=None, password=None, **keyword_arguments):
-		if len(username) == 0 or len(password) == 0:
+		if not username or not password:
 			return None
 
 		# The user must exist in the database
