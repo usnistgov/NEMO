@@ -1,3 +1,5 @@
+from socket import gethostbyname_ex, gaierror
+from socket import error as socket_error
 from _ssl import CERT_REQUIRED, PROTOCOL_TLSv1_2
 from getpass import getpass
 from os import remove
@@ -47,6 +49,11 @@ def entry_point():
 					This is useful if you want to verify correct TLS configuration,
 					or pin a particular certificate for LDAPS authentication.
 				
+				test_ldap_authentication -
+					Opens an encrypted connection (using only TLS 1.2) to an LDAP directory (such as Active Directory)
+					and tests authentication. You will be prompted for the hostname of the authentication server,
+					the domain name, a username, password, and public TLS key.
+				
 				generate_tls_keys -
 					Generates an RSA 4096 bit private key and certificate signing request. These can be used
 					to obtain a public key, enabling TLS encryption for your NEMO users. This keeps communication
@@ -85,26 +92,56 @@ def generate_secret_key():
 
 
 def query_public_key():
-	"""  """
-	print("Enter a hostname and port to query a server's public TLS key.")
+	"""
+	Opens a secure connection to a server and downloads its public TLS key.
+	The key is printed in PEM format.
+	"""
+	print("Query a server's public TLS key.")
+	print("If the DNS name resolves to multiple IP addresses then the public keys for all IP addresses are printed.")
 	print("Port 636 is commonly used for secure LDAP.")
 	print("Port 443 is commonly used for secure HTTP.")
-	hostname = input("Hostname = ")
+	name = input("DNS name or IP address = ")
 	port = input("Port = ")
-	certificate = get_server_certificate((hostname, port))
-	print(certificate)
+
+	try:
+		ip_addresses = gethostbyname_ex(name)[2]
+	except gaierror:
+		print('DNS name resolution failed.')
+		return
+	except socket_error as e:
+		print(f'Socket error: {e}')
+		return
+
+	if len(ip_addresses) == 0:
+		print('No IP address was returned from DNS name resolution.')
+	elif len(ip_addresses) == 1:
+		try:
+			certificate = get_server_certificate((name, port))
+			print(certificate)
+		except socket_error as e:
+			print(f'Socket error: {e}')
+			return
+	elif len(ip_addresses) > 1:
+		print(f"Name resolves to {len(ip_addresses)} IP addresses: {ip_addresses}")
+		for ip in ip_addresses:
+			print(f"Querying certificate for {ip}:")
+			try:
+				certificate = get_server_certificate((ip, port))
+				print(certificate)
+			except socket_error as e:
+				print(f'Socket error: {e}')
 
 
 def test_ldap_authentication():
-	"""  """
-	hostname = input("Hostname = ")
+	""" Opens an encrypted connection (using only TLS 1.2) to an LDAP directory (such as Active Directory) and tests authentication """
+	name = input("DNS name or IP address = ")
 	domain = input("Domain = ")
 	username = input("Username = ")
 	password = getpass("Password = ")
 	certificate = input("Path to public key certificate = ")
 	try:
 		t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=certificate)
-		s = Server(hostname, port=636, use_ssl=True, tls=t)
+		s = Server(name, port=636, use_ssl=True, tls=t)
 		c = Connection(s, user='{}\\{}'.format(domain, username), password=password, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, authentication=SIMPLE)
 		c.unbind()
 		# At this point the user successfully authenticated to at least one LDAP server.
@@ -112,6 +149,7 @@ def test_ldap_authentication():
 	except LDAPBindError as e:
 		pass  # When this error is caught it means the username and password were invalid against the LDAP server.
 	except LDAPExceptionError as e:
+		print("A problem was encountered during authentication:\n")
 		print(e)
 
 
@@ -175,8 +213,7 @@ def install_systemd_service():
 		'user': 'nemo',
 		'group': 'nemo',
 		'process_identifier_file': '/tmp/nemo.pid',
-		'gunicorn': '/bin/gunicorn',
-		'nemo_source_directory': '/home/nemo/',
+		'gunicorn': '/home/nemo/python/bin/gunicorn',
 	}
 
 	service = """
@@ -188,7 +225,7 @@ def install_systemd_service():
 	User={user}
 	Group={group}
 	PIDFile={process_identifier_file}
-	ExecStart={gunicorn} --chdir {nemo_source_directory} --bind 127.0.0.1:9000 wsgi:application
+	ExecStart={gunicorn} NEMO.wsgi:application
 	ExecReload=/bin/kill -s HUP $MAINPID
 	ExecStop=/bin/kill -s TERM $MAINPID
 	PrivateTmp=true
