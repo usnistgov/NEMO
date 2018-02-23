@@ -12,7 +12,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from NEMO.admin import record_local_many_to_many_changes, record_active_state
 from NEMO.forms import UserForm
-from NEMO.models import User, Project, Tool, PhysicalAccessLevel
+from NEMO.models import User, Project, Tool, PhysicalAccessLevel, Reservation, StaffCharge, UsageEvent, AreaAccessRecord, ActivityHistory
 
 
 @staff_member_required(login_url=None)
@@ -158,6 +158,88 @@ def create_or_modify_user(request, user_id):
 		return redirect('users')
 	else:
 		return HttpResponseBadRequest('Invalid method')
+
+
+@staff_member_required(login_url=None)
+@require_http_methods(['GET', 'POST'])
+def deactivate(request, user_id):
+	dictionary = {
+		'user_to_deactivate': get_object_or_404(User, id=user_id),
+		'reservations': Reservation.objects.filter(user=user_id, cancelled=False, missed=False, end__gt=timezone.now()),
+		'staff_charges': StaffCharge.objects.filter(customer=user_id, end=None),
+		'tool_usage': UsageEvent.objects.filter(user=user_id, end=None).prefetch_related('tool'),
+	}
+	user_to_deactivate = dictionary['user_to_deactivate']
+	if request.method == 'GET':
+		return render(request, 'users/safe_deactivation.html', dictionary)
+	elif request.method == 'POST':
+		if settings.IDENTITY_SERVICE['available']:
+			parameters = {
+				'username': user_to_deactivate.username,
+				'domain': user_to_deactivate.domain,
+			}
+			try:
+				result = requests.delete(settings.IDENTITY_SERVICE['url'], data=parameters, timeout=3)
+				# If the delete succeeds, or the user is not found, then everything is ok.
+				if result.status_code not in (HTTPStatus.OK, HTTPStatus.NOT_FOUND):
+					logger.error(f'The identity service encountered a problem while attempting to delete a user. The HTTP error is {result.status_code}: {result.text}')
+					dictionary['warning'] = 'The user information was not modified because the identity service could not delete the corresponding domain account. The NEMO administrator has been notified to resolve the problem.'
+					return render(request, 'users/safe_deactivation.html', dictionary)
+			except Exception as e:
+				logger.error('There was a problem communicating with the identity service while attempting to delete a user. An exception was encountered: ' + type(e).__name__ + ' - ' + str(e))
+				dictionary['warning'] = 'The user information was not modified because the identity service could not delete the corresponding domain account. The NEMO administrator has been notified to resolve the problem.'
+				return render(request, 'users/safe_deactivation.html', dictionary)
+
+		if request.POST.get('cancel_reservations') == 'on':
+			# Cancel all reservations that haven't ended
+			for reservation in dictionary['reservations']:
+				reservation.cancelled = True
+				reservation.cancellation_time = timezone.now()
+				reservation.cancelled_by = request.user
+				reservation.save()
+		if request.POST.get('disable_tools') == 'on':
+			# End all current tool usage
+			for usage_event in dictionary['tool_usage']:
+				if usage_event.tool.interlock and not usage_event.tool.interlock.lock():
+					error_message = f"The interlock command for the {usage_event.tool} failed. The error message returned: {usage_event.tool.interlock.most_recent_reply}"
+					logger.error(error_message)
+				usage_event.end = timezone.now()
+				usage_event.save()
+		if request.POST.get('force_area_logout') == 'on':
+			area_access = user_to_deactivate.area_access_record()
+			if area_access:
+				area_access.end = timezone.now()
+				area_access.save()
+		if request.POST.get('end_staff_charges') == 'on':
+			# End a staff charge that the user might be performing
+			staff_charge = user_to_deactivate.get_staff_charge()
+			if staff_charge:
+				staff_charge.end = timezone.now()
+				staff_charge.save()
+				try:
+					area_access = AreaAccessRecord.objects.get(staff_charge=staff_charge, end=None)
+					area_access.end = timezone.now()
+					area_access.save()
+				except AreaAccessRecord.DoesNotExist:
+					pass
+			# End all staff charges that are being performed for the user
+			for staff_charge in dictionary['staff_charges']:
+				staff_charge.end = timezone.now()
+				staff_charge.save()
+				try:
+					area_access = AreaAccessRecord.objects.get(staff_charge=staff_charge, end=None)
+					area_access.end = timezone.now()
+					area_access.save()
+				except AreaAccessRecord.DoesNotExist:
+					pass
+		user_to_deactivate.is_active = False
+		user_to_deactivate.save()
+		activity_entry = ActivityHistory()
+		activity_entry.authorizer = request.user
+		activity_entry.action = ActivityHistory.Action.DEACTIVATED
+		activity_entry.content_object = user_to_deactivate
+		activity_entry.save()
+		return redirect('users')
 
 
 @staff_member_required(login_url=None)

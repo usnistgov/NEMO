@@ -7,10 +7,10 @@ from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound
+from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound, HttpResponseServerError
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, logger
 
 from NEMO.forms import nice_errors, CommentForm
 from NEMO.models import Tool, Project, UsageEvent, Task, Configuration, TaskCategory, ConfigurationHistory, Comment, User, StaffCharge, Reservation
@@ -210,7 +210,9 @@ def disable_tool(request, tool_id):
 
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
-		raise Exception("The interlock command for this tool failed. The error message returned: " + str(tool.interlock.most_recent_reply))
+		error_message = f"The interlock command for the {tool} failed. The error message returned: {tool.interlock.most_recent_reply}"
+		logger.error(error_message)
+		return HttpResponseServerError(error_message)
 	# End the current usage event for the tool and save it.
 	current_usage_event = tool.get_current_usage_event()
 	current_usage_event.end = timezone.now() + downtime

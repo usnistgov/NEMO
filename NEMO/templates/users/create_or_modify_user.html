@@ -18,17 +18,18 @@
 			{{ warning }}
 		</div>
 	{% endif %}
-	<h1>{% if form.instance.id %}Modify user{% else %}New user{% endif %}</h1>
 	<div class="row">
 		<div class="col-sm-12">
 			<div class="form-group">
 				{% if form.instance.id %}
 					<a href="{% url 'users' %}">Search for another user</a><br>
-					<a href="{% url 'history' 'user' form.instance.id %}">View history for {{ form.instance }}</a>
+					<a href="{% url 'history' 'user' form.instance.id %}">View user history</a><br>
+					{% if form.is_active.value %}<a href="{% url 'deactivate_user' form.instance.id %}">Safely deactivate this user</a><br>{% endif %}
 				{% endif %}
 			</div>
 		</div>
 	</div>
+	<h1>{% if form.instance.id %}Modify user{% else %}New user{% endif %}</h1>
 	<form class="form-horizontal" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}">
 		{% csrf_token %}
 		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="user_id">{% endif %}
@@ -114,7 +115,7 @@
 		<div class="form-group">
 			<div class="col-sm-offset-2 col-sm-10">
 				<div class="checkbox">
-					<label>
+					<label {% if form.is_active.value %}data-toggle="tooltip" data-placement="left" title="Pro-tip: you can safely deactivate this user using the link at the top of this page so that no future costs are incurred (such as missed reservations)."{% endif %}>
 						<input id="is_active" name="is_active" type="checkbox" {% if form.is_active.value %}checked{% endif %}> Active
 					</label>
 				</div>
@@ -246,9 +247,9 @@
 		function on_search_selection(jquery_event, search_selection, dataset_name)
 		{
 			$(this).typeahead('val', '').focus();
-			if(dataset_name == 'projects')
+			if(dataset_name === 'projects')
 				add_project(search_selection.name, search_selection.id);
-			else if(dataset_name == 'tools')
+			else if(dataset_name === 'tools')
 				add_tool_qualification(search_selection.name, search_selection.id);
 		}
 		function add_project(project_name, project_id)
@@ -269,6 +270,7 @@
 		}
 		function on_load()
 		{
+			$('[data-toggle="tooltip"]').tooltip();
 			$("#access_expiration").datetimepicker({format: 'MM/DD/YYYY'});
 			$('#add_a_project').autocomplete('projects', on_search_selection, {% json_search_base_with_extra_fields projects 'application_identifier' %});
 			$('#add_a_tool_qualification').autocomplete('tools', on_search_selection, {{ tools|json_search_base }});
