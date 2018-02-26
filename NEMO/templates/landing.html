@@ -77,16 +77,15 @@
 			</div>
 		{% endif %}
 	</div>
-	<div class="row">
 		{% for choice in landing_page_choices %}
-			{% if not choice.hide_from_mobile_devices and device == 'mobile' or not choice.hide_from_desktop_computers and device == 'desktop' %}
-				<a href="{{ choice.url }}" {% if choice.open_in_new_tab %}target="_blank"{% endif %} {% if secure_referral %}rel="noopener noreferrer"{% endif %}>
-					<div class="col-md-3 text-center" style="margin-bottom:30px">
+			{% if forloop.counter0|divisibleby:4 %}<div class="row">{% endif %}
+				<div class="col-md-3 text-center" style="margin-bottom:30px">
+					<a href="{{ choice.url }}" {% if choice.open_in_new_tab %}target="_blank"{% endif %} {% if secure_referral %}rel="noopener noreferrer"{% endif %} style="text-decoration: none !important">
 						<img src="{{ choice.image.url }}" height="128" width="128">
 						<h3 style="margin-top:0">{{ choice.name }}</h3>
-					</div>
-				</a>
-			{% endif %}
+					</a>
+				</div>
+			{% if forloop.counter|divisibleby:4 or forloop.last %}</div>{% endif %}
 		{% empty %}
 			<span style="font-size:xx-large">
 				Welcome! This is NEMO's landing page - the first page users see when visiting the site. There's nothing here yet...<br>&nbsp;<br>
@@ -102,6 +101,5 @@
 				<code>Administration -> Customization</code>
 			</span>
 		{% endfor %}
-	</div>
 {% endblock %}
 {% block extra_whitespace %}{# Hide extra whitespace #}{% endblock %}
