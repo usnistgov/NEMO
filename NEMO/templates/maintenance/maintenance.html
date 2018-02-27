@@ -30,7 +30,7 @@
 						<th>Description</th>
 					</tr></thead>
 					{% for task in pending_tasks %}
-						<tr onclick="pending_task_details(this, '{% url 'task_details' task.id %}')" data-task-id="{{ task.id }}">
+						<tr onclick="pending_task_details(this, '{% url 'task_details' task.id %}')" data-task-id="{{ task.id }}" {% if task.tool.primary_owner.id == user.id %} class="bg-danger" {% elif task.tool.secondary_owner.id == user.id %} class="bg-warning" {% endif %}>
 							<td>{{ task.get_urgency_display }}</td>
 							<td>{% if task.force_shutdown %}
 									<span class="glyphicon glyphicon-fire danger-highlight"></span>

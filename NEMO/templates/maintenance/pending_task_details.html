@@ -1,5 +1,9 @@
 {% load humanize %}
 <h2>{{ task.tool.name }} task</h2>
+<p class="grey">
+	Primary tool owner: {{ task.tool.primary_owner }}<br>
+	Secondary tool owner: {{ task.tool.secondary_owner }}
+</p>
 <div style="margin-bottom: 12px">
 	{% if task.tool.in_use %}
 		{% if task.tool.get_current_usage_event.operator.id == user.id %}
