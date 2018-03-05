@@ -1,10 +1,12 @@
 import datetime
 import socket
 import struct
+import pytz
 from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import auth
+from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.models import Group, Permission, BaseUserManager
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -14,6 +16,7 @@ from django.db.models import Q
 from django.db.models.signals import pre_delete
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 
 from NEMO.utilities import format_datetime
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
@@ -1128,3 +1131,46 @@ class ScheduledOutage(models.Model):
 
 	def __str__(self):
 		return str(self.title)
+
+class UserAuth(models.Model):
+	username = models.CharField(max_length=100, unique=True)
+	hash = models.CharField(max_length=200)
+
+	def set_password(self, password):
+		self.hash = make_password(password)
+
+	def validate_password(self, password):
+		return check_password(password, self.hash)
+
+	def __str__(self):
+		return str(self.username + ":" + self.hash)
+
+class ForgotPasswordToken(models.Model):
+	DEFAULT_EXPIRATION_HOURS = 24 #move to settings.py ?
+
+	email = models.EmailField(verbose_name='email address')
+	hash = models.CharField(max_length=200, unique=True)
+	expiration = models.DateTimeField()
+	expired = models.BooleanField()
+
+	@classmethod
+	def create(cls, email):
+		expiration = datetime.datetime.now() + datetime.timedelta(hours=cls.DEFAULT_EXPIRATION_HOURS)
+		token = cls(
+			email=email,
+			hash=cls.random_token(),
+			expiration=expiration,
+			expired=False
+		)
+		return token
+
+	@classmethod
+	def random_token(cls):
+		token = get_random_string(30, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+		return token
+
+	def is_valid(self):
+		return (self.expired == False) and (self.expiration > datetime.datetime.now(tz=pytz.UTC))
+
+	def __str__(self):
+		return str(self.email + ":" + self.hash)
