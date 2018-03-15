@@ -854,7 +854,7 @@ class Resource(models.Model):
 	fully_dependent_tools = models.ManyToManyField(Tool, blank=True, related_name="required_resource_set", help_text="These tools will be completely inoperable if the resource is unavailable.")
 	partially_dependent_tools = models.ManyToManyField(Tool, blank=True, related_name="nonrequired_resource_set", help_text="These tools depend on this resource but can operated at a reduced capacity if the resource is unavailable.")
 	dependent_areas = models.ManyToManyField(Area, blank=True, related_name="required_resources", help_text="Users will not be able to login to these areas when the resource is unavailable.")
-	restriction_message = models.TextField(help_text="The message that is displayed to users on the tool control page when this resource is unavailable.")
+	restriction_message = models.TextField(blank=True, help_text="The message that is displayed to users on the tool control page when this resource is unavailable.")
 
 	class Meta:
 		ordering = ['name']

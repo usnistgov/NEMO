@@ -2,16 +2,13 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_GET, require_http_methods
 
-from NEMO.models import Resource, UsageEvent, Tool, ResourceCategory
+from NEMO.models import Resource, UsageEvent, Tool
 
 
 @staff_member_required(login_url=None)
 @require_GET
 def resources(request):
-	dictionary = {
-		'resource_categories': ResourceCategory.objects.all()
-	}
-	return render(request, 'resources/resources.html', dictionary)
+	return render(request, 'resources/resources.html', {'resources': Resource.objects.all().order_by('category', 'name')})
 
 
 @staff_member_required(login_url=None)

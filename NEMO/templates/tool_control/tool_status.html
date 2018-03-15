@@ -246,7 +246,7 @@
 					<div id="required_resources" class="collapse">
 						<ul>
 							{% for u in tool.required_resource_set.all %}
-								<li>{{ u.name }} <span class="light-grey">({{ u.category }})</span></li>
+								<li>{{ u.name }} {% if u.category %}<span class="light-grey">({{ u.category }})</span>{% endif %}</li>
 							{% endfor %}
 						</ul>
 					</div>
