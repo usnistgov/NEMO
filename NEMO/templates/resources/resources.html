@@ -6,7 +6,7 @@
 		Below is a list of resources, grouped by category. Resources in <span class="success-highlight">green</span> are currently
 		available while resources in <span class="danger-highlight">red</span> are unavailable. Click on a resource to modify its
 		availability and status message. When a resource is unavailable, users are blocked from using tools that fully depend on that
-		resource.
+		resource. You can also <a href="{% url 'schedule_resource_outage' %}">schedule resource outages</a>.
 	</p>
 	{% if resources %}
 		{% regroup resources by category as category_list %}

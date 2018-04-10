@@ -5,7 +5,7 @@ from django.forms import ModelForm, BaseForm, IntegerField, ModelChoiceField, Ch
 from django.forms.utils import ErrorDict
 from django.utils import timezone
 
-from NEMO.models import User, Project, Account, Task, Comment, TaskCategory, SafetyIssue, ConsumableWithdraw, Alert
+from NEMO.models import User, Project, Account, Task, Comment, TaskCategory, SafetyIssue, ConsumableWithdraw, Alert, ScheduledOutage
 from NEMO.utilities import bootstrap_primary_color, format_datetime
 
 
@@ -245,6 +245,16 @@ class AlertForm(ModelForm):
 	class Meta:
 		model = Alert
 		fields = ['title', 'contents', 'debut_time', 'expiration_time']
+
+
+class ScheduledOutageForm(ModelForm):
+	def __init__(self, *positional_arguments, **keyword_arguments):
+		super().__init__(*positional_arguments, **keyword_arguments)
+		self.fields['details'].required = True
+
+	class Meta:
+		model = ScheduledOutage
+		fields = ['details', 'start', 'end', 'resource']
 
 
 def nice_errors(form, non_field_msg='General form errors'):

@@ -1,11 +1,12 @@
 <div class="modal-header">
 	<button type="button" class="close" data-dismiss="modal">&times;</button>
-	<h4 class="modal-title">{{ outage.tool }} scheduled outage details</h4>
+	<h4 class="modal-title">Scheduled outage details</h4>
 </div>
 <div class="modal-body">
 	Title: {{ outage.title }}<br>
 	Created by: {{ outage.creator }}<br>
-	Tool: {{ outage.tool }}<br>
+	{% if outage.tool %}Tool: {{ outage.tool }}<br>{% endif %}
+	{% if outage.resource %}Resource: {{ outage.resource }} <span class="light-grey">({{ outage.resource.category }})</span><br>{% endif %}
 	Start: {{ outage.start }}<br>
 	End: {{ outage.end }}<br>
 	Identifier: {{ outage.id }}<br>

@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.core.mail import send_mail
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import Template, Context
 from django.utils import timezone
@@ -73,11 +74,11 @@ def check_policy_to_enable_tool(tool, operator, user, project, staff_charge):
 
 	# Users may only use a tool when delayed logoff is not in effect. Staff are exempt from this rule.
 	if tool.delayed_logoff_in_progress() and not operator.is_staff:
-		return HttpResponseBadRequest("Delayed tool logoff is in effect.")
+		return HttpResponseBadRequest("Delayed tool logoff is in effect. You must wait for the delayed logoff to expire before you can use the tool.")
 
 	# Users may not enable a tool during a scheduled outage. Staff are exempt from this rule.
-	if tool.scheduled_outage() and not operator.is_staff:
-		return HttpResponseBadRequest("Scheduled outage is in effect.")
+	if tool.scheduled_outage_in_progress() and not operator.is_staff:
+		return HttpResponseBadRequest("A scheduled outage is in effect. You must wait for the outage to end before you can use the tool.")
 
 	return HttpResponse()
 
@@ -123,7 +124,7 @@ def check_policy_to_save_reservation(cancelled_reservation, new_reservation, use
 		policy_problems.append("Your reservation coincides with another reservation that already exists. Please choose a different time.")
 
 	# The user may not create, move, or resize a reservation to coincide with a scheduled outage.
-	coincident_events = ScheduledOutage.objects.filter(tool=new_reservation.tool)
+	coincident_events = ScheduledOutage.objects.filter(Q(tool=new_reservation.tool) | Q(resource__fully_dependent_tools__in=[new_reservation.tool]))
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
@@ -305,18 +306,6 @@ def check_policy_to_create_outage(outage):
 	coincident_events = coincident_events.exclude(start__gte=outage.end, end__gt=outage.end)
 	if coincident_events.count() > 0:
 		return "Your scheduled outage coincides with a reservation that already exists. Please choose a different time."
-
-	# The user may not create, move, or resize an outage to coincide with another user's outage.
-	coincident_events = ScheduledOutage.objects.filter(tool=outage.tool)
-	# Exclude the outage we're moving or resizing:
-	coincident_events = coincident_events.exclude(id=outage.id)
-	# Exclude events for which the following is true:
-	# The event starts and ends before the time-window, and...
-	# The event starts and ends after the time-window.
-	coincident_events = coincident_events.exclude(start__lt=outage.start, end__lte=outage.start)
-	coincident_events = coincident_events.exclude(start__gte=outage.end, end__gt=outage.end)
-	if coincident_events.count() > 0:
-		return "Your scheduled outage coincides with another outage that already exists. Please choose a different time."
 
 	# No policy issues! The outage can be created...
 	return None

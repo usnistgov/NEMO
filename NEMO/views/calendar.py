@@ -5,6 +5,7 @@ from re import match
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.mail import send_mail
+from django.db.models import Q
 from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound
 from django.shortcuts import render, get_object_or_404, redirect
 from django.template import Template, Context
@@ -87,7 +88,7 @@ def reservation_event_feed(request, start, end):
 	if tool:
 		events = events.filter(tool__id=tool)
 
-		outages = ScheduledOutage.objects.filter(tool=tool)
+		outages = ScheduledOutage.objects.filter(Q(tool=tool) | Q(resource__fully_dependent_tools__in=[tool]))
 		outages = outages.exclude(start__lt=start, end__lt=start)
 		outages = outages.exclude(start__gt=end, end__gt=end)
 

@@ -80,5 +80,9 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):
 		for tool in resource.partially_dependent_tools.filter(visible=True):
 			result[tool.id]['nonrequired_resource_is_unavailable'] = True
 	for outage in scheduled_outages:
-		result[outage.tool.id]['scheduled_outage'] = True
+		if outage.tool_id:
+			result[outage.tool.id]['scheduled_outage_in_progress'] = True
+		elif outage.resource_id:
+			for t in outage.resource.fully_dependent_tools.all():
+				result[t.id]['scheduled_outage_in_progress'] = True
 	return result

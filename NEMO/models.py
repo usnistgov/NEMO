@@ -293,11 +293,13 @@ class Tool(models.Model):
 		except UsageEvent.DoesNotExist:
 			return None
 
-	def scheduled_outage(self):
-		try:
-			return ScheduledOutage.objects.get(tool=self.id, start__lte=timezone.now(), end__gt=timezone.now())
-		except ScheduledOutage.DoesNotExist:
-			return None
+	def scheduled_outages(self):
+		""" Returns a QuerySet of scheduled outages that are in progress for this tool. This includes tool outages, and resources outages (when the tool fully depends on the resource). """
+		return ScheduledOutage.objects.filter(Q(tool=self.id) | Q(resource__fully_dependent_tools__in=[self.id]), start__lte=timezone.now(), end__gt=timezone.now())
+
+	def scheduled_outage_in_progress(self):
+		""" Returns a true if a tool or resource outage is currently in effect for this tool. Otherwise, returns false. """
+		return ScheduledOutage.objects.filter(Q(tool=self.id) | Q(resource__fully_dependent_tools__in=[self.id]), start__lte=timezone.now(), end__gt=timezone.now()).exists()
 
 	def is_configurable(self):
 		return self.configuration_set.exists()
@@ -845,6 +847,7 @@ class ResourceCategory(models.Model):
 
 	class Meta:
 		verbose_name_plural = 'resource categories'
+		ordering = ['name']
 
 
 class Resource(models.Model):
@@ -1124,7 +1127,8 @@ class ScheduledOutage(models.Model):
 	creator = models.ForeignKey(User)
 	title = models.CharField(max_length=100)
 	details = models.TextField(blank=True)
-	tool = models.ForeignKey(Tool)
+	tool = models.ForeignKey(Tool, null=True)
+	resource = models.ForeignKey(Resource, null=True)
 
 	def __str__(self):
 		return str(self.title)

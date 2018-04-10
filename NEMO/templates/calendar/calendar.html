@@ -243,6 +243,7 @@ function cancel_outage(url, outage_id)
 	function outage_cancel_success_callback()
 	{
 		$("#calendar").fullCalendar("removeEvents", outage_id);
+		refresh_sidebar_icons();
 	}
 	ajax_post(url, undefined, outage_cancel_success_callback, [failure_dialog, refresh_calendar_and_sidebar]);
 }

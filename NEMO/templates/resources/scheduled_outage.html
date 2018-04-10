@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block extrahead %}
+	{% load static %}
+	{% load custom_tags_and_filters %}
+	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+{% endblock %}
+{% block title %}Resource outages{% endblock %}
+{% block content %}
+	<h1>Scheduled resource outages</h1>
+	<p>
+		You can schedule a resource outage to occur for a specific time window. This prevents users from using
+		affected tools and areas, <strong>but will not kick users off if they're already logged in to an area or using a tool</strong>.
+		It is the staff's responsibility to ensure that all tools and areas that use the resource are properly shutdown.
+	</p>
+	<p>
+		When a resource is unavailable:
+		<ul>
+			<li>The status message will be displayed on the landing page and tool control page of each affected tool</li>
+			<li>Tools that fully depend on the resource will be <strong>unavailable to users</strong></li>
+			<li>Areas that depend on the resource will be <strong>unavailable to users</strong></li>
+			<li>Tools that partially depend on the resource will be available to users, however it is the user's responsibility to determine if their fabrication process will succeed without the resource available</li>
+		</ul>
+	</p>
+	{% if form.non_field_errors %}
+		<div class="alert alert-danger">
+			{{ form.non_field_errors }}
+		</div>
+	{% endif %}
+	<form action="{% url 'schedule_resource_outage' %}" method="post" class="well">
+		<h4>{% if editing %}Edit this outage{% else %}Create a new outage{% endif %}</h4>
+		{% csrf_token %}
+		{% if form.instance.id %}<input type="hidden" name="outage_id" value="{{ form.instance.id }}">{% endif %}
+		<div class="form-group">
+			<label for="resource">Resource</label>{% if form.resource.errors %} - <span style="color:red">{{ form.resource.errors|striptags }}</span>{% endif %}
+			<select class="form-control" name="resource" id="resource">
+				<option></option>
+				{% regroup resources by category as categories %}
+				{% for c in categories %}
+					{% if c.grouper %}<optgroup label="{{ c.grouper }}">{% endif %}
+						{% for r in c.list %}
+							<option value="{{ r.id }}" {% if form.resource.value|to_int == r.id %}selected{% endif %}>{{ r }}</option>
+						{% endfor %}
+					{% if c.grouper %}</optgroup>{% endif %}
+				{% endfor %}
+			</select>
+		</div>
+		<div class="form-group">
+			<label for="details">Details</label>{% if form.details.errors %} - <span style="color:red">{{ form.details.errors|striptags }}</span>{% endif %}
+			<input type="text" class="form-control" name="details" id="details" value="{{ form.details.value|default_if_none:"" }}" maxlength="{{ form.fields.details.max_length }}" placeholder="What is the reason for the outage? What other details will be relevant for users to know?">
+		</div>
+		<div class="form-group">
+			<div class="row">
+				<div class="col-sm-6">
+					<label for="start">Start time</label>{% if form.start.errors %} - <span style="color:red">{{ form.start.errors|striptags }}</span>{% endif %}
+					<input type="text" class="form-control" name="start" id="start">
+				</div>
+				<div class="col-sm-6">
+					<label for="end">End time</label>{% if form.end.errors %} - <span style="color:red">{{ form.end.errors|striptags }}</span>{% endif %}
+					<input type="text" class="form-control" name="end" id="end">
+				</div>
+			</div>
+		</div>
+		{% if editing %}
+			<div class="form-group">
+				<a href="{% url 'schedule_resource_outage' %}" class="btn btn-warning">Abandon changes</a>
+			</div>
+		{% endif %}
+		<div class="form-group">
+			<input type="submit" class="btn btn-success" value="{% if editing %}Save changes{% else %}Create outage{% endif %}">
+		</div>
+	</form>
+	<div class="row">
+		{% for o in outages %}
+			<div class="col-sm-6">
+				<div class="alert alert-danger">
+					<form id="delete_resource_outage_{{ o.id }}" method="post" action="{% url 'delete_scheduled_resource_outage' o.id %}">
+						{% csrf_token %}
+						<span class="glyphicon glyphicon-remove pull-right" style="cursor:pointer" onclick="$('#delete_resource_outage_{{ o.id }}').submit()" data-toggle="tooltip" data-placement="top" title="Delete this outage"></span>
+					</form>
+					<form id="edit_resource_outage_{{ o.id }}" method="get" action="{% url 'schedule_resource_outage' %}">
+						<span class="glyphicon glyphicon-pencil pull-right" style="margin-right:10px; cursor:pointer" onclick="$('#edit_resource_outage_{{ o.id }}').submit()" data-toggle="tooltip" data-placement="top" title="Edit this outage"></span>
+						<input type="hidden" name="outage_id" value="{{ o.id }}">
+					</form>
+					<span style="font-weight:bold">{{ o.title }}</span><br>
+					{{ o.details }}<br>
+					Starts on {{ o.start }}<br>
+					Ends on {{ o.end }}<br>
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+	<script>
+		var start = {sideBySide: true, defaultDate: "{% if form.start.value %}{{ form.start.value|date:"m/d/Y g:i A" }}{% else %}{% now "m/d/Y g:i A" %}{% endif %}"};
+		var end = {sideBySide: true{% if form.end.value %}, defaultDate: "{{ form.end.value|date:"m/d/Y g:i A" }}"{% endif %}};
+		$('#start').datetimepicker(start);
+		$('#end').datetimepicker(end);
+		$('.glyphicon').tooltip({container: 'body'});
+	</script>
+{% endblock %}

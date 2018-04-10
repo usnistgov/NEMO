@@ -427,7 +427,7 @@ class CustomizationAdmin(admin.ModelAdmin):
 
 @register(ScheduledOutage)
 class ScheduledOutageAdmin(admin.ModelAdmin):
-	list_display = ('id', 'tool', 'creator', 'title', 'start', 'end')
+	list_display = ('id', 'tool', 'resource', 'creator', 'title', 'start', 'end')
 
 
 admin.site.register(ResourceCategory)

@@ -7,7 +7,7 @@ $('#sidebar .sidebar-status-icon').remove();
 	{% if tool.delayed_logoff_in_progress %}
 		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-time primary-highlight sidebar-status-icon" title="Delayed logoff is in effect for this tool"></span>');
 	{% endif %}
-	{% if tool.scheduled_outage %}
+	{% if tool.scheduled_outage_in_progress %}
 		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-time danger-highlight sidebar-status-icon" title="A scheduled outage is in effect for this tool"></span>');
 	{% endif %}
 

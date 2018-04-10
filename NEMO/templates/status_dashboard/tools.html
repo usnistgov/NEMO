@@ -18,7 +18,7 @@
 				{% if tool.delayed_logoff_in_progress %}
 					<span class="glyphicon glyphicon-time primary-highlight" title="Delayed logoff is in effect for this tool"></span>
 				{% endif %}
-				{% if tool.scheduled_outage %}
+				{% if tool.scheduled_outage_in_progress %}
 					<span class="glyphicon glyphicon-time danger-highlight" title="A scheduled outage is in effect for this tool"></span>
 				{% endif %}
 				{% if tool.problematic %}
