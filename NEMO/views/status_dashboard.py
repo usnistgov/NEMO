@@ -37,9 +37,9 @@ def status_dashboard(request):
 def create_tool_summary():
 	tools = Tool.objects.filter(visible=True)
 	unfinished = Q(status=Task.Status.REQUIRES_ATTENTION) | Q(status=Task.Status.WORK_IN_PROGRESS)
-	tasks = Task.objects.filter(unfinished).prefetch_related('tool')
+	tasks = Task.objects.filter(unfinished, tool__visible=True).prefetch_related('tool')
 	unavailable_resources = Resource.objects.filter(available=False).prefetch_related('fully_dependent_tools', 'partially_dependent_tools')
-	usage_events = UsageEvent.objects.filter(end=None).prefetch_related('operator', 'user', 'tool')
+	usage_events = UsageEvent.objects.filter(end=None, tool__visible=True).prefetch_related('operator', 'user', 'tool')
 	scheduled_outages = ScheduledOutage.objects.filter(start__lte=timezone.now(), end__gt=timezone.now())
 	tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages)
 	tool_summary = list(tool_summary.values())
@@ -80,9 +80,9 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):
 		for tool in resource.partially_dependent_tools.filter(visible=True):
 			result[tool.id]['nonrequired_resource_is_unavailable'] = True
 	for outage in scheduled_outages:
-		if outage.tool_id:
+		if outage.tool_id and outage.tool.visible:
 			result[outage.tool.id]['scheduled_outage_in_progress'] = True
 		elif outage.resource_id:
-			for t in outage.resource.fully_dependent_tools.all():
+			for t in outage.resource.fully_dependent_tools.filter(visible=True):
 				result[t.id]['scheduled_outage_in_progress'] = True
 	return result
