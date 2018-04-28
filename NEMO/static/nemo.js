@@ -61,7 +61,7 @@ function get_selected_item()
 {
 	var selected_item = $(".selected");
 	// Exactly one thing should be selected at a time, otherwise there's an error.
-	if(!(selected_item && selected_item.length == 1))
+	if(!(selected_item && selected_item.length === 1))
 		return undefined;
 	// Check if the selected item is a special link. Otherwise, get its tool ID.
 	if($(selected_item[0]).hasClass('personal_schedule'))
@@ -161,7 +161,7 @@ function ajax_complete_callback(title, preface)
 	preface = preface || "";
 	function callback(response, status, xml_header_request)
 	{
-		if(status != "error")
+		if(status !== "error")
 			return;
 		var dialog_contents =
 			"<div class='modal-header'>" +
@@ -185,18 +185,7 @@ function serialize(form_selector, ajax_message)
 		ajax_message = {};
 	var form_values = $(form_selector).serializeArray();
 	for(var c = 0; c < form_values.length; c++)
-	{
-		var key = form_values[c].name;
-		var value = form_values[c].value;
-		if(form_values[c].name in ajax_message)
-		{
-			if(!jQuery.isArray(ajax_message[key]))
-				ajax_message[key] = [ajax_message[key]];
-			ajax_message[key] = ajax_message[key].concat(value);
-		}
-		else
-			ajax_message[key] = value;
-	}
+		ajax_message[form_values[c].name] = form_values[c].value;
 	return ajax_message;
 }
 
@@ -207,7 +196,7 @@ function ajax_get(url, contents, success_callback, failure_callback, always_call
 
 function ajax_post(url, contents, success_callback, failure_callback, always_callback, traditional_serialization)
 {
-	if(contents == undefined)
+	if(contents === undefined)
 		contents = {};
 	//noinspection JSUnresolvedFunction
 	contents.csrfmiddlewaretoken = csrf_token();
@@ -223,11 +212,11 @@ function ajax_message(url, type, contents, success_callback, failure_callback, a
 		"traditional": traditional_serialization === true
 	};
 	var message = jQuery.ajax(url, options);
-	if(success_callback != undefined)
+	if(success_callback !== undefined)
 		message.done(success_callback);
-	if(failure_callback != undefined)
+	if(failure_callback !== undefined)
 		message.fail(failure_callback);
-	if(always_callback != undefined)
+	if(always_callback !== undefined)
 		message.always(always_callback);
 }
 
@@ -366,6 +355,6 @@ function matcher(items, search_fields)
 // Calendar, Tool Control, and Status Dashboard) make regular polling AJAX requests.
 function navigate_to_login_on_session_expiration(event, xhr, status, error)
 {
-	if(xhr.status == 403)
+	if(xhr.status === 403)
 		window.location.href = '/logout/';
 }
