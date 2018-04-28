@@ -482,11 +482,11 @@ def cancel_reservation(request, reservation_id):
 @require_POST
 def cancel_outage(request, outage_id):
 	outage = get_object_or_404(ScheduledOutage, id=outage_id)
-	dictionary = {'event_type': 'Scheduled outage', 'tool': outage.tool}
 	outage.delete()
 	if request.device == 'desktop':
 		return HttpResponse()
 	if request.device == 'mobile':
+		dictionary = {'event_type': 'Scheduled outage', 'tool': outage.tool}
 		return render(request, 'mobile/cancellation_result.html', dictionary)
 
 

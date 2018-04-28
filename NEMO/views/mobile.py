@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from itertools import chain
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404
 from django.utils.dateparse import parse_time, parse_date
@@ -109,7 +110,7 @@ def view_calendar(request, tool_id, date=None):
 	reservations = reservations.exclude(start__lt=start, end__lt=start)
 	reservations = reservations.exclude(start__gt=end, end__gt=end)
 
-	outages = ScheduledOutage.objects.filter(tool=tool)
+	outages = ScheduledOutage.objects.filter(Q(tool=tool) | Q(resource__fully_dependent_tools__in=[tool]))
 	outages = outages.exclude(start__lt=start, end__lt=start)
 	outages = outages.exclude(start__gt=end, end__gt=end)
 
