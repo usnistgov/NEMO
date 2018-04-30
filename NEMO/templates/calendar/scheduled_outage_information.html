@@ -8,7 +8,7 @@
 	{# When a button is clicked this value is set to false, enabling further processing. #}
 	{# Hiding the dialog using the X in the top right, or clicking outside of it, will stop processing. #}
 	<input type="hidden" id="dialog_cancelled" value="true">
-	<form id="additional_event_parameters">
+	<form id="additional_event_parameters" onsubmit="return false">
 		<input type="hidden" id="configured" name="configured" value="true">
 		<div class="form-group">
 			<label for="title">Title</label>
