@@ -65,7 +65,7 @@ def schedule_outage(request):
 		form = ScheduledOutageForm()
 	dictionary = {
 		'form': form,
-		'editing': True if form['details'].value() else False,
+		'editing': True if form.instance.id else False,
 		'resources': Resource.objects.all().prefetch_related('category').order_by('category__name', 'name'),
 		'outages': ScheduledOutage.objects.filter(resource__isnull=False)
 	}

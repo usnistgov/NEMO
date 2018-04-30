@@ -31,7 +31,7 @@ def alerts(request):
 		form = AlertForm()
 	dictionary = {
 		'form': form,
-		'editing': True if form['contents'].value() else False,
+		'editing': True if form.instance.id else False,
 		'alerts': Alert.objects.filter(user=None)
 	}
 	delete_expired_alerts()

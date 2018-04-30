@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block extrahead %}
 	{% load static %}
+	{% load custom_tags_and_filters %}
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
 	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
 {% endblock %}
@@ -31,11 +32,11 @@
 			<div class="row">
 				<div class="col-sm-6">
 					<label for="debut_time">Debut time</label>{% if form.debut_time.errors %} - <span style="color:red">{{ form.debut_time.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control" name="debut_time" id="debut_time" value="{% if form.debut_time.value|date:"m/d/Y g:i A" %}{{ form.debut_time.value|date:"m/d/Y g:i A" }}{% else %}{% now "m/d/Y g:i A" %}{% endif %}">
+					<input type="text" class="form-control" name="debut_time" id="debut_time" value="{% if form.debut_time.value %}{% if form.debut_time.value|class_name == "datetime" %}{{ form.debut_time.value|date:"m/d/Y g:i A" }}{% else %}{{ form.debut_time.value }}{% endif %}{% else %}{% now "m/d/Y g:i A" %}{% endif %}">
 				</div>
 				<div class="col-sm-6">
 					<label for="expiration_time">Expiration time</label>{% if form.expiration_time.errors %} - <span style="color:red">{{ form.expiration_time.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control" name="expiration_time" id="expiration_time" value="{{ form.expiration_time.value|date:"m/d/Y g:i A"|default_if_none:"" }}">
+					<input type="text" class="form-control" name="expiration_time" id="expiration_time" value="{% if form.expiration_time.value|class_name == "datetime" %}{{ form.expiration_time.value|date:"m/d/Y g:i A" }}{% else %}{{ form.expiration_time.value }}{% endif %}">
 				</div>
 			</div>
 		</div>
