@@ -626,7 +626,7 @@ def cancel_unused_reservations(request):
 	missed_reservations = []
 	for tool in tools:
 		# If a tool is in use then there's no need to look for unused reservation time.
-		if tool.in_use() or tool.required_resource_is_unavailable():
+		if tool.in_use() or tool.required_resource_is_unavailable() or tool.scheduled_outage_in_progress():
 			continue
 		# Calculate the timestamp of how long a user can be late for a reservation.
 		threshold = (timezone.now() - timedelta(minutes=tool.missed_reservation_threshold))
