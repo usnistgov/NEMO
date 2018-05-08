@@ -112,6 +112,11 @@ def login_user(request):
 		'login_banner': get_media_file_contents('login_banner.html'),
 		'user_name_or_password_incorrect': False,
 	}
+	if 'NEMO.views.db_authentication.DbAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
+		dictionary['reset_password_link'] = reverse('forgot_password')
+	else:
+		dictionary['reset_password_link'] = ""
+
 	if request.method == 'GET':
 		return render(request, 'login.html', dictionary)
 	username = request.POST.get('username', '')
