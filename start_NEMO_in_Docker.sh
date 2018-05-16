@@ -8,7 +8,7 @@ django-admin makemigrations NEMO
 django-admin migrate
 
 # Collect static files
-django-admin collectstatic
+django-admin collectstatic --no-input --clear
 
 # Run NEMO
-gunicorn NEMO.wsgi:application
+gunicorn --bind 0.0.0.0:8000 NEMO.wsgi:application
