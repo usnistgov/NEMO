@@ -336,6 +336,33 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
+				<h3>Task status notification email</h3>
+				<p>
+					This email is sent when a tool task has be updated and set to a particular state.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>template_color</b> - the color to emphasize</li>
+					<li><b>title</b> - a title indicating that the message is a task status notification</li>
+					<li><b>task</b> - the task that was updated</li>
+					<li><b>status_message</b> - the current status message for the task</li>
+					<li><b>notification_message</b> - the notification message that is configured (via the admin site) for the status</li>
+					<li><b>tool_control_absolute_url</b> - the URL of the tool control page for the task</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'task_status_notification' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="task_status_notification">
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload task status notification email" class="btn btn-success">
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
 				<h3>Unauthorized tool access email</h3>
 				<p>
 					This email is sent when a user tries to access a tool without being logged in to the area in which the tool resides.

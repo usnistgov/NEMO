@@ -6,14 +6,13 @@ from itertools import chain
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
 from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound, HttpResponseServerError
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, logger
 
 from NEMO.forms import nice_errors, CommentForm
-from NEMO.models import Tool, Project, UsageEvent, Task, Configuration, TaskCategory, ConfigurationHistory, Comment, User, StaffCharge, Reservation
+from NEMO.models import Tool, Project, UsageEvent, Task, Configuration, TaskCategory, ConfigurationHistory, Comment, User, StaffCharge, Reservation, TaskStatus
 from NEMO.utilities import quiet_int, extract_times
 from NEMO.views.policy import check_policy_to_enable_tool, check_policy_to_disable_tool
 from NEMO.widgets.tool_tree import ToolTree
@@ -50,6 +49,7 @@ def tool_status(request, tool_id):
 		'task_categories': TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
 		'rendered_configuration_html': tool.configuration_widget(request.user),
 		'mobile': request.device == 'mobile',
+		'task_statuses': TaskStatus.objects.all(),
 	}
 
 	# Staff need the user list to be able to qualify users for the tool.
@@ -128,7 +128,7 @@ def hide_comment(request, comment_id):
 
 def determine_tool_status(tool):
 	# Make the tool operational when all problems are resolved that require a shutdown.
-	if tool.task_set.filter(Q(force_shutdown=True) & (Q(status=Task.Status.REQUIRES_ATTENTION) | Q(status=Task.Status.WORK_IN_PROGRESS))).count() == 0:
+	if tool.task_set.filter(force_shutdown=True, cancelled=False, resolved=False).count() == 0:
 		tool.operational = True
 	else:
 		tool.operational = False
@@ -179,7 +179,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 def disable_tool(request, tool_id):
 
 	if not settings.ALLOW_CONDITIONAL_URLS:
-		return HttpResponseBadRequest('Tool control is only available on campus. We\'re working to change that! Thanks for your patience.')
+		return HttpResponseBadRequest('Tool control is only available on campus.')
 
 	tool = get_object_or_404(Tool, id=tool_id)
 	if tool.get_current_usage_event() is None:

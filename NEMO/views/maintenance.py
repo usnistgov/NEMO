@@ -5,18 +5,17 @@ from django.db.models import Q
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.http import require_GET
 
-from NEMO.models import Task, TaskCategory
+from NEMO.models import Task, TaskCategory, TaskStatus, TaskHistory
 
 
 @staff_member_required(login_url=None)
 @require_GET
 def maintenance(request, sort_by=''):
-	pending = Q(status=Task.Status.REQUIRES_ATTENTION) | Q(status=Task.Status.WORK_IN_PROGRESS)
-	pending_tasks = Task.objects.filter(pending)
+	pending_tasks = Task.objects.filter(cancelled=False, resolved=False)
 	if sort_by in ['urgency', 'force_shutdown', 'tool', 'problem_category', 'last_updated', 'creation_time']:
 		if sort_by == 'last_updated':
 			pending_tasks = pending_tasks.exclude(last_updated=None).order_by('-last_updated')
-			not_yet_updated_tasks = Task.objects.filter(pending, last_updated=None).order_by('-creation_time')
+			not_yet_updated_tasks = Task.objects.filter(cancelled=False, resolved=False, last_updated=None).order_by('-creation_time')
 			pending_tasks = list(chain(pending_tasks, not_yet_updated_tasks))
 		else:
 			pending_tasks = pending_tasks.order_by(sort_by)
@@ -24,8 +23,7 @@ def maintenance(request, sort_by=''):
 				pending_tasks = pending_tasks.reverse()
 	else:
 		pending_tasks = pending_tasks.order_by('urgency').reverse()  # Order by urgency by default
-	closed = Q(status=Task.Status.COMPLETE) | Q(status=Task.Status.CANCELLED)
-	closed_tasks = Task.objects.filter(closed).exclude(resolution_time__isnull=True).order_by('-resolution_time')[:20]
+	closed_tasks = Task.objects.filter(Q(cancelled=True) | Q(resolved=True)).exclude(resolution_time__isnull=True).order_by('-resolution_time')[:20]
 	dictionary = {
 		'pending_tasks': pending_tasks,
 		'closed_tasks': closed_tasks,
@@ -38,13 +36,14 @@ def maintenance(request, sort_by=''):
 def task_details(request, task_id):
 	task = get_object_or_404(Task, id=task_id)
 
-	if task.status in [task.Status.COMPLETE, task.Status.CANCELLED]:
+	if task.cancelled or task.resolved:
 		return render(request, 'maintenance/closed_task_details.html', {'task': task})
 
 	dictionary = {
 		'task': task,
 		'initial_assessment_categories': TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
 		'completion_categories': TaskCategory.objects.filter(stage=TaskCategory.Stage.COMPLETION),
+		'task_statuses': TaskStatus.objects.all(),
 	}
 
 	if task.tool.is_configurable():

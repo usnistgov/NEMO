@@ -24,12 +24,12 @@ Urgency: {{ task.get_urgency_display|lower }}<br>
 		{{ task.progress_description|linebreaksbr }}
 	<p>
 {% endif %}
-{% if task.status == task.Status.CANCELLED %}
+{% if task.cancelled %}
 	<p>
 		<h4 class="primary-highlight">Cancelled on {{ task.resolution_time }}</h4>
 	<p>
 {% endif %}
-{% if task.status == task.Status.COMPLETE %}
+{% if task.resolved %}
 	<h4 class="success-highlight">Resolved by {{ task.resolver }} on {{ task.resolution_time }}</h4>
 	{% if task.resolution_category %}
 		Resolution category: {{ task.resolution_category|lower }}<br>

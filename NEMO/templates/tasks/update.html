@@ -32,17 +32,32 @@
 						{% endfor %}
 					</select>
 				</div>
-				<div class="form-group">
-					<label class="control-label" for="problem_category">
-						Would you like to change this task's initial classification to more accurately reflect the nature of the problem? Proper classification helps the NanoFab staff analyze long-term maintenance trends.
-					</label>
-					<select name="problem_category" id="problem_category" class="form-control">
-						<option value="">&nbsp;</option>
-						{% for c in categories %}
-							<option value="{{ c.id }}" {% if task.problem_category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
-						{% endfor %}
-					</select>
-				</div>
+				{% if categories %}
+					<div class="form-group">
+						<label class="control-label" for="problem_category">
+							Would you like to change this task's initial classification to more accurately reflect the nature of the problem? Proper classification helps the NanoFab staff analyze long-term maintenance trends.
+						</label>
+						<select name="problem_category" id="problem_category" class="form-control">
+							<option value="">&nbsp;</option>
+							{% for c in categories %}
+								<option value="{{ c.id }}" {% if task.problem_category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+							{% endfor %}
+						</select>
+					</div>
+				{% endif %}
+				{% if task_statuses %}
+					<div class="form-group">
+						<label class="control-label" for="status">
+							What is the status of the task?
+						</label>
+						<select name="status" id="status" class="form-control">
+							<option value="">&nbsp;</option>
+							{% for s in task_statuses %}
+								<option {% if task.current_status == s.name %}selected{% endif %}>{{ s.name }}</option>
+							{% endfor %}
+						</select>
+					</div>
+				{% endif %}
 				<div class="form-group">
 					<label for="resolution_time" class="control-label">When do you think the problem will be resolved? Leave this field blank if it's difficult to predict.</label>
 					<input id="resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off" value="{{ task.estimated_resolution_time|date:"m/d/Y g:i A" }}">

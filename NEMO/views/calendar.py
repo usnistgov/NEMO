@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage
+from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
@@ -295,6 +295,7 @@ def create_outage(request):
 	# Create the new reservation:
 	outage = ScheduledOutage()
 	outage.creator = request.user
+	outage.category = request.POST.get('category', '')[:200]
 	outage.tool = tool
 	outage.start = start
 	outage.end = end
@@ -306,7 +307,8 @@ def create_outage(request):
 
 	# Make sure there is at least an outage title
 	if not request.POST.get('title'):
-		return render(request, 'calendar/scheduled_outage_information.html')
+		dictionary = {'categories': ScheduledOutageCategory.objects.all()}
+		return render(request, 'calendar/scheduled_outage_information.html', dictionary)
 
 	outage.title = request.POST['title']
 	outage.details = request.POST.get('details', '')

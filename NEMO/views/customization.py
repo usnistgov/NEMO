@@ -45,6 +45,7 @@ customizable_content = [
 	'reservation_warning_email',
 	'safety_issue_email',
 	'staff_charge_reminder_email',
+	'task_status_notification',
 	'unauthorized_tool_access_email',
 	'usage_reminder_email',
 ]

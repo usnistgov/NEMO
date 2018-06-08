@@ -5,7 +5,7 @@ from django.forms import ModelForm, BaseForm, IntegerField, ModelChoiceField, Ch
 from django.forms.utils import ErrorDict
 from django.utils import timezone
 
-from NEMO.models import User, Project, Account, Task, Comment, TaskCategory, SafetyIssue, ConsumableWithdraw, Alert, ScheduledOutage
+from NEMO.models import User, Project, Account, Task, Comment, TaskCategory, SafetyIssue, ConsumableWithdraw, Alert, ScheduledOutage, TaskHistory
 from NEMO.utilities import bootstrap_primary_color, format_datetime
 
 
@@ -55,51 +55,43 @@ class TaskForm(ModelForm):
 			if not self.cleaned_data['description']:
 				raise ValidationError('You must describe the problem.')
 		if action == 'resolve':
-			if self.instance.status in (Task.Status.CANCELLED, Task.Status.COMPLETE):
-				raise ValidationError("This task can't be completed because it is marked as 'cancelled' or 'complete' already.")
+			if self.instance.cancelled or self.instance.resolved:
+				raise ValidationError("This task can't be resolved because it is marked as 'cancelled' or 'resolved' already.")
 
 	def save(self, commit=True):
 		instance = super(TaskForm, self).save(commit=False)
 		action = self.cleaned_data['action']
 		description = self.cleaned_data['description']
 		instance.problem_category = self.cleaned_data['problem_category']
+		now = timezone.now()
 		if action == 'create':
 			instance.problem_description = description
 			instance.urgency = Task.Urgency.HIGH if self.cleaned_data['force_shutdown'] or self.cleaned_data['safety_hazard'] else Task.Urgency.NORMAL
 			instance.creator = self.user
 		if action == 'update':
-			instance.status = Task.Status.WORK_IN_PROGRESS
-			instance.last_updated = timezone.now()
-			instance.last_updated_by = self.user
+			instance.cancelled = False
+			instance.resolved = False
 			if description:
-				preface = 'On ' + format_datetime(timezone.now()) + ' ' + self.user.get_full_name() + ' updated this task:\n'
+				preface = f'On {format_datetime(now)} {self.user.get_full_name()} updated this task:\n'
 				if instance.progress_description is None:
 					instance.progress_description = preface + description
 				else:
 					instance.progress_description += '\n\n' + preface + description
 				instance.progress_description = instance.progress_description.strip()
 		if action == 'resolve':
-			instance.status = Task.Status.COMPLETE
-			instance.resolution_time = timezone.now()
+			instance.cancelled = False
+			instance.resolved = True
+			instance.resolution_time = now
 			instance.resolver = self.user
 			if 'resolution_category' in self.cleaned_data:
 				instance.resolution_category = self.cleaned_data['resolution_category']
 			if 'description' in self.cleaned_data:
 				if instance.resolution_description:
-					preface = 'On ' + format_datetime(timezone.now()) + ' ' + self.user.get_full_name() + ' updated the resolution information:\n'
+					preface = f'On {format_datetime(now)} {self.user.get_full_name()} updated the resolution information:\n'
 					instance.resolution_description = (instance.resolution_description + '\n\n' + preface + self.cleaned_data['description']).strip()
 				else:
 					instance.resolution_description = self.cleaned_data['description']
-			if instance.first_response_time is None:
-				instance.first_response_time = timezone.now()
-			if instance.first_responder is None:
-				instance.first_responder = self.user
-		if action in ('update', 'resolve'):
-			if instance.first_response_time is None:
-				instance.first_response_time = timezone.now()
-			if instance.first_responder is None:
-				instance.first_responder = self.user
-		return super(TaskForm, self).save(commit=commit)
+		return super(TaskForm, self).save(commit=True)
 
 
 class CommentForm(ModelForm):
@@ -254,7 +246,7 @@ class ScheduledOutageForm(ModelForm):
 
 	class Meta:
 		model = ScheduledOutage
-		fields = ['details', 'start', 'end', 'resource']
+		fields = ['details', 'start', 'end', 'resource', 'category']
 
 
 def nice_errors(form, non_field_msg='General form errors'):

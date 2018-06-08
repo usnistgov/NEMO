@@ -36,8 +36,7 @@ def status_dashboard(request):
 
 def create_tool_summary():
 	tools = Tool.objects.filter(visible=True)
-	unfinished = Q(status=Task.Status.REQUIRES_ATTENTION) | Q(status=Task.Status.WORK_IN_PROGRESS)
-	tasks = Task.objects.filter(unfinished, tool__visible=True).prefetch_related('tool')
+	tasks = Task.objects.filter(cancelled=False, resolved=False, tool__visible=True).prefetch_related('tool')
 	unavailable_resources = Resource.objects.filter(available=False).prefetch_related('fully_dependent_tools', 'partially_dependent_tools')
 	usage_events = UsageEvent.objects.filter(end=None, tool__visible=True).prefetch_related('operator', 'user', 'tool')
 	scheduled_outages = ScheduledOutage.objects.filter(start__lte=timezone.now(), end__gt=timezone.now())

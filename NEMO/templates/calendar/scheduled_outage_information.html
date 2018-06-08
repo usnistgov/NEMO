@@ -14,6 +14,17 @@
 			<label for="title">Title</label>
 			<input id="title" name="title" type="text" maxlength="100" class="form-control" autocomplete="off" placeholder="You must provide a title to create a scheduled outage">
 		</div>
+		{% if categories %}
+			<div class="form-group">
+				<label for="category">Category</label><span class="light-grey"> - is there a category for this outage? This is useful for data and trend analysis</span>
+				<select class="form-control" name="category" id="category">
+					<option></option>
+					{% for c in categories %}
+						<option>{{ c }}</option>
+					{% endfor %}
+				</select>
+			</div>
+		{% endif %}
 		<div class="form-group">
 			<label for="details">Details</label>
 			<textarea name="details" id="details" rows="7" maxlength="3000" class="form-control" placeholder="Please provide any additional details for the scheduled outage. Be descriptive so that users understand why there is a scheduled outage."></textarea>

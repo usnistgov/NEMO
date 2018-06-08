@@ -7,6 +7,7 @@
 	Created by: {{ outage.creator }}<br>
 	{% if outage.tool %}Tool: {{ outage.tool }}<br>{% endif %}
 	{% if outage.resource %}Resource: {{ outage.resource }} <span class="light-grey">({{ outage.resource.category }})</span><br>{% endif %}
+	{% if outage.category %}Outage category: {{ outage.category }}<br>{% endif %}
 	Start: {{ outage.start }}<br>
 	End: {{ outage.end }}<br>
 	Identifier: {{ outage.id }}<br>

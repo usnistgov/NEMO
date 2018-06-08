@@ -15,9 +15,12 @@ router = routers.DefaultRouter()
 router.register(r'users', api.UserViewSet)
 router.register(r'projects', api.ProjectViewSet)
 router.register(r'accounts', api.AccountViewSet)
+router.register(r'tools', api.ToolViewSet)
 router.register(r'reservations', api.ReservationViewSet)
 router.register(r'usage_events', api.UsageEventViewSet)
 router.register(r'area_access_records', api.AreaAccessRecordViewSet)
+router.register(r'tasks', api.TaskViewSet)
+router.register(r'scheduled_outages', api.ScheduledOutageViewSet)
 
 urlpatterns = [
 	# Authentication & error pages:

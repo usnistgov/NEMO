@@ -119,7 +119,7 @@
 							{% if t.force_shutdown %}
 								The tool will remain shut down until this task is resolved.
 							{% endif %}
-							{% if t.creator.id == user.id and t.status == t.Status.REQUIRES_ATTENTION %}
+							{% if t.creator.id == user.id %}
 								You may <a href="javascript:$('#cancel_task_{{ t.id }}').submit()">cancel</a> this task if it was mistakenly created.<br>
 								<form id="cancel_task_{{ t.id }}" action="{% url 'cancel_task' t.id %}" method="POST">
 									{% csrf_token %}
@@ -323,15 +323,29 @@
 			<input type="hidden" name="tool" value="{{ tool.id }}">
 			<p>Use this form to report a problem relating to the currently selected tool. The NanoFab staff will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</p>
 
-			<div class="form-group">
-				<label for="problem_category">Please choose a category that best describes this problem. If there is no appropriate category then leave this field blank.</label>
-				<select id="problem_category" name="problem_category" class="form-control" style="max-width:300px">
-					<option value="">&nbsp;</option>
-					{% for c in task_categories %}
-						<option value="{{ c.id }}">{{ c.name }}</option>
-					{% endfor %}
-				</select>
-			</div>
+			{% if task_categories %}
+				<div class="form-group">
+					<label for="problem_category">Please choose a category that best describes this problem. If there is no appropriate category then leave this field blank.</label>
+					<select id="problem_category" name="problem_category" class="form-control" style="max-width:300px">
+						<option value="">&nbsp;</option>
+						{% for c in task_categories %}
+							<option value="{{ c.id }}">{{ c.name }}</option>
+						{% endfor %}
+					</select>
+				</div>
+			{% endif %}
+
+			{% if task_statuses and user.is_staff %}
+				<div class="form-group">
+					<label for="status">What is the status of this task?</label>
+					<select id="status" name="status" class="form-control" style="max-width:300px">
+						<option value="">&nbsp;</option>
+						{% for s in task_statuses %}
+							<option>{{ s.name }}</option>
+						{% endfor %}
+					</select>
+				</div>
+			{% endif %}
 
 			<div class="form-group">
 				<label for="description">Please provide a <strong>detailed</strong> description of the problem so that the NanoFab staff have enough information to resolve the problem efficiently.</label>

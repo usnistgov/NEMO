@@ -4,7 +4,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from NEMO.forms import ScheduledOutageForm
-from NEMO.models import Resource, UsageEvent, Tool, ScheduledOutage
+from NEMO.models import Resource, UsageEvent, Tool, ScheduledOutage, ScheduledOutageCategory
 
 
 @staff_member_required(login_url=None)
@@ -67,7 +67,8 @@ def schedule_outage(request):
 		'form': form,
 		'editing': True if form.instance.id else False,
 		'resources': Resource.objects.all().prefetch_related('category').order_by('category__name', 'name'),
-		'outages': ScheduledOutage.objects.filter(resource__isnull=False)
+		'outages': ScheduledOutage.objects.filter(resource__isnull=False),
+		'outage_categories': ScheduledOutageCategory.objects.all(),
 	}
 	return render(request, 'resources/scheduled_outage.html', dictionary)
 

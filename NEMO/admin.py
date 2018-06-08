@@ -5,7 +5,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 
 from NEMO.actions import lock_selected_interlocks, unlock_selected_interlocks
-from NEMO.models import Tool, UsageEvent, Reservation, Project, Account, Consumable, ConsumableWithdraw, InterlockCard, Interlock, Task, MembershipHistory, ActivityHistory, Configuration, TaskCategory, Comment, ConfigurationHistory, Resource, User, TrainingSession, StaffCharge, AreaAccessRecord, ConsumableCategory, ResourceCategory, Door, PhysicalAccessLevel, PhysicalAccessLog, SafetyIssue, Area, Alert, UserType, ContactInformationCategory, ContactInformation, LandingPageChoice, Customization, ScheduledOutage
+from NEMO.models import Tool, UsageEvent, Reservation, Project, Account, Consumable, ConsumableWithdraw, InterlockCard, Interlock, Task, MembershipHistory, ActivityHistory, Configuration, TaskCategory, Comment, ConfigurationHistory, Resource, User, TrainingSession, StaffCharge, AreaAccessRecord, ConsumableCategory, ResourceCategory, Door, PhysicalAccessLevel, PhysicalAccessLog, SafetyIssue, Area, Alert, UserType, ContactInformationCategory, ContactInformation, LandingPageChoice, Customization, ScheduledOutage, TaskHistory, TaskStatus, ScheduledOutageCategory
 
 admin.site.site_header = "NEMO"
 admin.site.site_title = "NEMO"
@@ -310,14 +310,26 @@ class InterlockAdmin(admin.ModelAdmin):
 
 @register(Task)
 class TaskAdmin(admin.ModelAdmin):
-	list_display = ('id', 'status', 'urgency', 'tool', 'creator', 'creation_time', 'problem_category', 'first_responder', 'resolver', 'resolution_category')
-	list_filter = ('status', 'urgency', 'creation_time', 'tool')
+	list_display = ('id', 'urgency', 'tool', 'creator', 'creation_time', 'problem_category', 'cancelled', 'resolved', 'resolution_category')
+	list_filter = ('urgency', 'resolved', 'cancelled', 'safety_hazard', 'creation_time', 'tool')
 	date_hierarchy = 'creation_time'
 
 
 @register(TaskCategory)
 class TaskCategoryAdmin(admin.ModelAdmin):
 	list_display = ('name', 'stage')
+
+
+@register(TaskStatus)
+class TaskStatusAdmin(admin.ModelAdmin):
+	list_display = ('name', 'notify_primary_tool_owner', 'notify_secondary_tool_owner', 'notify_tool_notification_email', 'custom_notification_email_address')
+
+
+@register(TaskHistory)
+class TaskHistoryAdmin(admin.ModelAdmin):
+	list_display = ('id', 'task', 'status', 'time', 'user')
+	readonly_fields = ('time',)
+	date_hierarchy = 'time'
 
 
 @register(Comment)
@@ -386,6 +398,7 @@ class PhysicalAccessLogAdmin(admin.ModelAdmin):
 class SafetyIssueAdmin(admin.ModelAdmin):
 	list_display = ('id', 'reporter', 'creation_time', 'visible', 'resolved', 'resolution_time', 'resolver')
 	list_filter = ('resolved', 'visible', 'creation_time', 'resolution_time')
+	readonly_fields = ('creation_time', 'resolution_time')
 	search_fields = ('location', 'concern', 'progress', 'resolution',)
 
 
@@ -423,6 +436,11 @@ class LandingPageChoiceAdmin(admin.ModelAdmin):
 @register(Customization)
 class CustomizationAdmin(admin.ModelAdmin):
 	list_display = ('name', 'value')
+
+
+@register(ScheduledOutageCategory)
+class ScheduledOutageCategoryAdmin(admin.ModelAdmin):
+	list_display = ('name',)
 
 
 @register(ScheduledOutage)

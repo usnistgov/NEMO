@@ -27,15 +27,17 @@
 					<label for="description">Please describe any actions taken to resolve this task. This information will be kept in order to analyze long-term trends in NanoFab maintenance.</label>
 					<textarea id="description" name="description" class="form-control" rows="3"></textarea>
 				</div>
-				<div class="form-group">
-					<label for="resolution_category">Please select a classification that best describes how this problem was fixed. If no classification is appropriate then leave this field blank.</label>
-					<select id="resolution_category" name="resolution_category" class="form-control">
-						<option value="">&nbsp;</option>
-						{% for c in categories %}
-							<option value="{{ c.id }}">{{ c.name }}</option>
-						{% endfor %}
-					</select>
-				</div>
+				{% if categories %}
+					<div class="form-group">
+						<label for="resolution_category">Please select a classification that best describes how this problem was fixed. If no classification is appropriate then leave this field blank.</label>
+						<select id="resolution_category" name="resolution_category" class="form-control">
+							<option value="">&nbsp;</option>
+							{% for c in categories %}
+								<option value="{{ c.id }}">{{ c.name }}</option>
+							{% endfor %}
+						</select>
+					</div>
+				{% endif %}
 				<div class="form-group">
 					<input type="submit" class="btn btn-success" value="Resolve">
 				</div>

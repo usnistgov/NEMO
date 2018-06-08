@@ -1,38 +1,53 @@
-from rest_framework import viewsets
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from NEMO.filters import ReservationFilter, UsageEventFilter, AreaAccessRecordFilter
-from NEMO.models import User, Project, Account, Reservation, UsageEvent, AreaAccessRecord
-from NEMO.serializers import UserSerializer, ProjectSerializer, AccountSerializer, ReservationSerializer, UsageEventSerializer, AreaAccessRecordSerializer
+from NEMO.models import User, Project, Account, Reservation, UsageEvent, AreaAccessRecord, Task, ScheduledOutage, Tool
+from NEMO.serializers import UserSerializer, ProjectSerializer, AccountSerializer, ReservationSerializer, UsageEventSerializer, AreaAccessRecordSerializer, TaskSerializer, ScheduledOutageSerializer, ToolSerializer
 
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
+class UserViewSet(ReadOnlyModelViewSet):
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
 
 
-class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
+class ProjectViewSet(ReadOnlyModelViewSet):
 	queryset = Project.objects.all()
 	serializer_class = ProjectSerializer
 
 
-class AccountViewSet(viewsets.ReadOnlyModelViewSet):
+class AccountViewSet(ReadOnlyModelViewSet):
 	queryset = Account.objects.all()
 	serializer_class = AccountSerializer
 
 
-class ReservationViewSet(viewsets.ReadOnlyModelViewSet):
+class ToolViewSet(ReadOnlyModelViewSet):
+	queryset = Tool.objects.all()
+	serializer_class = ToolSerializer
+
+
+class ReservationViewSet(ReadOnlyModelViewSet):
 	queryset = Reservation.objects.all()
 	serializer_class = ReservationSerializer
 	filter_class = ReservationFilter
 
 
-class UsageEventViewSet(viewsets.ReadOnlyModelViewSet):
+class UsageEventViewSet(ReadOnlyModelViewSet):
 	queryset = UsageEvent.objects.all()
 	serializer_class = UsageEventSerializer
 	filter_class = UsageEventFilter
 
 
-class AreaAccessRecordViewSet(viewsets.ReadOnlyModelViewSet):
+class AreaAccessRecordViewSet(ReadOnlyModelViewSet):
 	queryset = AreaAccessRecord.objects.all()
 	serializer_class = AreaAccessRecordSerializer
 	filter_class = AreaAccessRecordFilter
+
+
+class TaskViewSet(ReadOnlyModelViewSet):
+	queryset = Task.objects.all()
+	serializer_class = TaskSerializer
+
+
+class ScheduledOutageViewSet(ReadOnlyModelViewSet):
+	queryset = ScheduledOutage.objects.all()
+	serializer_class = ScheduledOutageSerializer

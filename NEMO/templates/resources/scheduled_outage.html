@@ -35,16 +35,27 @@
 			<label for="resource">Resource</label>{% if form.resource.errors %} - <span style="color:red">{{ form.resource.errors|striptags }}</span>{% endif %}
 			<select class="form-control" name="resource" id="resource">
 				<option></option>
-				{% regroup resources by category as categories %}
-				{% for c in categories %}
-					{% if c.grouper %}<optgroup label="{{ c.grouper }}">{% endif %}
-						{% for r in c.list %}
+				{% regroup resources by category as resource_categories %}
+				{% for rc in resource_categories %}
+					{% if rc.grouper %}<optgroup label="{{ rc.grouper }}">{% endif %}
+						{% for r in rc.list %}
 							<option value="{{ r.id }}" {% if form.resource.value|to_int == r.id %}selected{% endif %}>{{ r }}</option>
 						{% endfor %}
-					{% if c.grouper %}</optgroup>{% endif %}
+					{% if rc.grouper %}</optgroup>{% endif %}
 				{% endfor %}
 			</select>
 		</div>
+		{% if outage_categories %}
+			<div class="form-group">
+				<label for="category">Outage category</label><span class="grey"> - is there a category for this outage? This is useful for data and trend analysis</span>
+				<select class="form-control" name="category" id="category">
+					<option></option>
+					{% for oc in outage_categories %}
+						<option {% if oc.name == form.category.value %}selected{% endif %}>{{ oc }}</option>
+					{% endfor %}
+				</select>
+			</div>
+		{% endif %}
 		<div class="form-group">
 			<label for="details">Details</label>{% if form.details.errors %} - <span style="color:red">{{ form.details.errors|striptags }}</span>{% endif %}
 			<input type="text" class="form-control" name="details" id="details" value="{{ form.details.value|default_if_none:"" }}" maxlength="{{ form.fields.details.max_length }}" placeholder="What is the reason for the outage? What other details will be relevant for users to know?">
@@ -83,9 +94,10 @@
 						<input type="hidden" name="outage_id" value="{{ o.id }}">
 					</form>
 					<span style="font-weight:bold">{{ o.title }}</span><br>
-					{{ o.details }}<br>
+					{% if o.category %}Outage category: {{ o.category }}<br>{% endif %}
 					Starts on {{ o.start }}<br>
 					Ends on {{ o.end }}<br>
+					{{ o.details }}<br>
 				</div>
 			</div>
 		{% endfor %}

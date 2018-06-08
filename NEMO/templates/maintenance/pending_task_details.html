@@ -57,17 +57,32 @@
 			</select>
 		</div>
 	</div>
-	<div class="form-group">
-		<label for="problem_category" class="control-label col-lg-3">Problem category</label>
-		<div class="col-lg-3">
-			<select id="problem_category" name="problem_category" class="form-control">
-				<option value="">&nbsp;</option>
-				{% for category in initial_assessment_categories %}
-					<option value="{{ category.id }}" {% if task.problem_category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
-				{% endfor %}
-			</select>
+	{% if initial_assessment_categories %}
+		<div class="form-group">
+			<label for="problem_category" class="control-label col-lg-3">Problem category</label>
+			<div class="col-lg-3">
+				<select id="problem_category" name="problem_category" class="form-control">
+					<option value="">&nbsp;</option>
+					{% for category in initial_assessment_categories %}
+						<option value="{{ category.id }}" {% if task.problem_category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
 		</div>
-	</div>
+	{% endif %}
+	{% if task_statuses %}
+		<div class="form-group">
+			<label for="status" class="control-label col-lg-3">Status</label>
+			<div class="col-lg-3">
+				<select id="status" name="status" class="form-control">
+					<option value="">&nbsp;</option>
+					{% for status in task_statuses %}
+						<option {% if task.current_status == status.name %}selected{% endif %}>{{ status.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+		</div>
+	{% endif %}
 	<div class="form-group">
 		<label for="estimated_resolution_time" class="control-label col-lg-3">Estimated resolution</label>
 		<div class="col-lg-3">
@@ -90,8 +105,8 @@
 	<div class="form-group">
 		<div class="col-lg-12">
 			<div class="radio">
-				<label class="col-lg-2"><input type="radio" name="action" value="update" checked onchange="$('#resolution_category').toggle('collapsed')"> Update</label>
-				<label class="col-lg-2"><input type="radio" name="action" value="resolve" onchange="$('#resolution_category').toggle('collapsed')"> Resolve</label>
+				<label class="col-lg-2"><input type="radio" name="action" value="update" checked {% if completion_categories %}onchange="$('#resolution_category').toggle('collapsed')"{% endif %}> Update</label>
+				<label class="col-lg-2"><input type="radio" name="action" value="resolve" {% if completion_categories %}onchange="$('#resolution_category').toggle('collapsed')"{% endif %}> Resolve</label>
 			</div>
 		</div>
 	</div>
