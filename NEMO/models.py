@@ -187,8 +187,7 @@ class User(models.Model):
 			return access_record.project
 
 	def active_project_count(self):
-		x = self.projects.filter(active=True, account__active=True).count()
-		return x
+		return self.projects.filter(active=True, account__active=True).count()
 
 	def active_projects(self):
 		return self.projects.filter(active=True, account__active=True)
@@ -247,14 +246,12 @@ class Tool(models.Model):
 		return reverse('tool_control', args=[self.id])
 
 	def problematic(self):
-		unfinished = Q(status=Task.Status.REQUIRES_ATTENTION) | Q(status=Task.Status.WORK_IN_PROGRESS)
-		return self.task_set.filter(unfinished).exists()
+		return self.task_set.filter(resolved=False, cancelled=False).exists()
 	problematic.admin_order_field = 'task'
 	problematic.boolean = True
 
 	def problems(self):
-		unfinished = Q(status=Task.Status.REQUIRES_ATTENTION) | Q(status=Task.Status.WORK_IN_PROGRESS)
-		return self.task_set.filter(unfinished)
+		return self.task_set.filter(resolved=False, cancelled=False)
 
 	def comments(self):
 		unexpired = Q(expiration_date__isnull=True) | Q(expiration_date__gt=timezone.now())
@@ -755,7 +752,7 @@ class Interlock(models.Model):
 
 
 class Task(models.Model):
-	class Status(object):
+	class Status(object):  # Marked for deletion
 		CANCELLED = -1
 		REQUIRES_ATTENTION = 0
 		WORK_IN_PROGRESS = 1
@@ -776,7 +773,7 @@ class Task(models.Model):
 			(NORMAL, 'Normal'),
 			(HIGH, 'High'),
 		)
-	status = models.IntegerField(choices=Status.Choices, default=Status.REQUIRES_ATTENTION)
+	status = models.IntegerField(choices=Status.Choices, default=Status.REQUIRES_ATTENTION)  # Marked for deletion
 	urgency = models.IntegerField(choices=Urgency.Choices)
 	tool = models.ForeignKey(Tool, help_text="The tool that this task relates to.")
 	force_shutdown = models.BooleanField(default=None, help_text="Indicates that the tool this task relates to will be shutdown until the task is resolved.")
@@ -785,12 +782,14 @@ class Task(models.Model):
 	creation_time = models.DateTimeField(default=timezone.now, help_text="The date and time when the task was created.")
 	problem_category = models.ForeignKey('TaskCategory', null=True, blank=True, related_name='problem_category')
 	problem_description = models.TextField(blank=True, null=True)
-	first_response_time = models.DateTimeField(null=True, blank=True, help_text="The timestamp of when a staff member initially responds to the task by changing its status.")
-	first_responder = models.ForeignKey(User, null=True, blank=True, related_name='task_first_responder', help_text="The staff member who initially assessed the task after it was reported.")
+	first_response_time = models.DateTimeField(null=True, blank=True, help_text="The timestamp of when a staff member initially responds to the task by changing its status.")  # Marked for deletion
+	first_responder = models.ForeignKey(User, null=True, blank=True, related_name='task_first_responder', help_text="The staff member who initially assessed the task after it was reported.")  # Marked for deletion
 	progress_description = models.TextField(blank=True, null=True)
 	last_updated = models.DateTimeField(null=True, blank=True, help_text="The last time this task was modified. (Creating the task does not count as modifying it.)")
 	last_updated_by = models.ForeignKey(User, null=True, blank=True, help_text="The last user who modified this task. This should always be a staff member.")
 	estimated_resolution_time = models.DateTimeField(null=True, blank=True, help_text="The estimated date and time that the task will be resolved.")
+	cancelled = models.BooleanField(default=False)
+	resolved = models.BooleanField(default=False)
 	resolution_time = models.DateTimeField(null=True, blank=True, help_text="The timestamp of when the task was marked complete or cancelled.")
 	resolver = models.ForeignKey(User, null=True, blank=True, related_name='task_resolver', help_text="The staff member who resolved the task.")
 	resolution_description = models.TextField(blank=True, null=True)
@@ -801,6 +800,13 @@ class Task(models.Model):
 
 	def __str__(self):
 		return str(self.id)
+
+	def current_status(self):
+		""" Returns the textual description of the current task status """
+		try:
+			return TaskHistory.objects.filter(task_id=self.id).latest().status
+		except TaskHistory.DoesNotExist:
+			return None
 
 
 class TaskCategory(models.Model):
@@ -820,6 +826,34 @@ class TaskCategory(models.Model):
 
 	def __str__(self):
 		return str(self.name)
+
+
+class TaskStatus(models.Model):
+	name = models.CharField(max_length=200, unique=True)
+	notify_primary_tool_owner = models.BooleanField(default=False, help_text="Notify the primary tool owner when a task transitions to this status")
+	notify_secondary_tool_owner = models.BooleanField(default=False, help_text="Notify the secondary tool owner when a task transitions to this status")
+	notify_tool_notification_email = models.BooleanField(default=False, help_text="Send an email to the tool notification email address when a task transitions to this status")
+	custom_notification_email_address = models.EmailField(blank=True, help_text="Notify a custom email address when a task transitions to this status. Leave this blank if you don't need it.")
+	notification_message = models.TextField(blank=True)
+
+	def __str__(self):
+		return self.name
+
+	class Meta:
+		verbose_name_plural = 'task statuses'
+		ordering = ['name']
+
+
+class TaskHistory(models.Model):
+	task = models.ForeignKey(Task, help_text='The task that this historical entry refers to', related_name='history')
+	status = models.CharField(max_length=200, help_text="A text description of the task's status")
+	time = models.DateTimeField(auto_now_add=True, help_text='The date and time when the task status was changed')
+	user = models.ForeignKey(User, help_text='The user that changed the task to this status')
+
+	class Meta:
+		verbose_name_plural = 'task histories'
+		ordering = ['time']
+		get_latest_by = 'time'
 
 
 class Comment(models.Model):
@@ -1121,12 +1155,24 @@ class Customization(models.Model):
 		return str(self.name)
 
 
+class ScheduledOutageCategory(models.Model):
+	name = models.CharField(max_length=200)
+
+	class Meta:
+		ordering = ['name']
+		verbose_name_plural = "Scheduled outage categories"
+
+	def __str__(self):
+		return self.name
+
+
 class ScheduledOutage(models.Model):
 	start = models.DateTimeField()
 	end = models.DateTimeField()
 	creator = models.ForeignKey(User)
-	title = models.CharField(max_length=100)
-	details = models.TextField(blank=True)
+	title = models.CharField(max_length=100, help_text="A brief description to quickly inform users about the outage")
+	details = models.TextField(blank=True, help_text="A detailed description of why there is a scheduled outage, and what users can expect during the outage")
+	category = models.CharField(blank=True, max_length=200, help_text="A categorical reason for why this outage is scheduled. Useful for trend analytics.")
 	tool = models.ForeignKey(Tool, null=True)
 	resource = models.ForeignKey(Resource, null=True)
 
