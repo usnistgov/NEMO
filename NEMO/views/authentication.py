@@ -79,10 +79,12 @@ class LDAPAuthenticationBackend(ModelBackend):
 		try:
 			user = User.objects.get(username=username)
 		except User.DoesNotExist:
+			logger.warning(f"Username {username} attempted to authenticate with LDAP, but that username does not exist in the NEMO database. The user was denied access.")
 			return None
 
 		# The user must be marked active.
 		if not user.is_active:
+			logger.warning(f"User {username} successfully authenticated with LDAP, but that user is marked inactive in the NEMO database. The user was denied access.")
 			return None
 
 		for server in settings.LDAP_SERVERS:
@@ -94,6 +96,7 @@ class LDAPAuthenticationBackend(ModelBackend):
 				# At this point the user successfully authenticated to at least one LDAP server.
 				return user
 			except LDAPBindError as e:
+				logger.warning(f"User {username} attempted to authenticate with LDAP, but entered an incorrect password. The user was denied access.")
 				pass  # When this error is caught it means the username and password were invalid against the LDAP server.
 			except LDAPExceptionError as e:
 				exception(e)
