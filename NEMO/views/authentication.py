@@ -1,6 +1,6 @@
 from _ssl import PROTOCOL_TLSv1_2, CERT_REQUIRED
 from base64 import b64decode
-from logging import exception, getLogger
+from logging import exception
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout
@@ -8,14 +8,12 @@ from django.contrib.auth.backends import RemoteUserBackend, ModelBackend
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse, resolve
-from django.views.decorators.http import require_http_methods, require_GET
+from django.views.decorators.http import require_http_methods, require_GET, logger
 from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE
 from ldap3.core.exceptions import LDAPBindError, LDAPExceptionError
 
 from NEMO.models import User
 from NEMO.views.customization import get_media_file_contents
-
-log = getLogger(__name__)
 
 
 class RemoteUserAuthenticationBackend(RemoteUserBackend):
@@ -42,16 +40,16 @@ class NginxKerberosAuthorizationHeaderAuthenticationBackend(ModelBackend):
 		try:
 			user = User.objects.get(username=username)
 		except User.DoesNotExist:
-			log.warning(f"Username {username} attempted to authenticate with Kerberos via Nginx, but that username does not exist in the NEMO database. The user was denied access.")
+			logger.warning(f"Username {username} attempted to authenticate with Kerberos via Nginx, but that username does not exist in the NEMO database. The user was denied access.")
 			return None
 
 		# The user must be marked active.
 		if not user.is_active:
-			log.warning(f"User {username} successfully authenticated with Kerberos via Nginx, but that user is marked inactive in the NEMO database. The user was denied access.")
+			logger.warning(f"User {username} successfully authenticated with Kerberos via Nginx, but that user is marked inactive in the NEMO database. The user was denied access.")
 			return None
 
 		# All security checks passed so let the user in.
-		log.debug(f"User {username} successfully authenticated with Kerberos via Nginx and was granted access to NEMO.")
+		logger.debug(f"User {username} successfully authenticated with Kerberos via Nginx and was granted access to NEMO.")
 		return user
 
 	def clean_username(self, username):
