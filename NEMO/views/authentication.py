@@ -8,6 +8,7 @@ from django.contrib.auth.backends import RemoteUserBackend, ModelBackend
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse, resolve
+from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_GET, logger
 from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE
 from ldap3.core.exceptions import LDAPBindError, LDAPExceptionError
@@ -67,6 +68,7 @@ class NginxKerberosAuthorizationHeaderAuthenticationBackend(ModelBackend):
 		return b64decode(pieces[1]).partition(':')[0]
 
 
+@sensitive_post_parameters('password')
 class LDAPAuthenticationBackend(ModelBackend):
 	""" This class provides LDAP authentication against an LDAP or Active Directory server. """
 	def authenticate(self, request, username=None, password=None, **keyword_arguments):
@@ -101,6 +103,7 @@ class LDAPAuthenticationBackend(ModelBackend):
 
 
 @require_http_methods(['GET', 'POST'])
+@sensitive_post_parameters('password')
 def login_user(request):
 	if 'NEMO.views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS or 'NEMO.views.authentication.NginxKerberosAuthorizationHeaderAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
 		if request.user.is_authenticated:
