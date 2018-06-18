@@ -68,9 +68,10 @@ class NginxKerberosAuthorizationHeaderAuthenticationBackend(ModelBackend):
 		return b64decode(pieces[1]).partition(':')[0]
 
 
-@sensitive_post_parameters('password')
 class LDAPAuthenticationBackend(ModelBackend):
 	""" This class provides LDAP authentication against an LDAP or Active Directory server. """
+
+	@sensitive_post_parameters('password')
 	def authenticate(self, request, username=None, password=None, **keyword_arguments):
 		if not username or not password:
 			return None
