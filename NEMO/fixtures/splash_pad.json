@@ -4,8 +4,8 @@
 		"model": "NEMO.user",
 		"fields": {
 			"username": "cap",
-			"first_name": "Steven",
-			"last_name": "Rogers",
+			"first_name": "Captain",
+			"last_name": "Nemo",
 			"qualifications": [
 				3,
 				2,
@@ -19,7 +19,7 @@
 			"access_expiration": "2014-09-09",
 			"groups": [],
 			"user_permissions": [],
-			"email": "captain.america@avengers.org",
+			"email": "captain.nemo@nautilus.com",
 			"projects": [
 				3,
 				2,
@@ -32,9 +32,9 @@
 		"pk": 2,
 		"model": "NEMO.user",
 		"fields": {
-			"username": "ironman",
-			"first_name": "Tony",
-			"last_name": "Stark",
+			"username": "professor",
+			"first_name": "Pierre",
+			"last_name": "Aronnax",
 			"qualifications": [
 				3,
 				2,
@@ -48,7 +48,7 @@
 			"last_login": null,
 			"groups": [],
 			"user_permissions": [],
-			"email": "ironman@avengers.org",
+			"email": "pierre.aronnax@nautilus.com",
 			"projects": [
 				3,
 				2,
@@ -61,9 +61,9 @@
 		"pk": 3,
 		"model": "NEMO.user",
 		"fields": {
-			"username": "thor",
-			"first_name": "Thor",
-			"last_name": "Odinson",
+			"username": "ned",
+			"first_name": "Ned",
+			"last_name": "Land",
 			"qualifications": [
 				3,
 				2,
@@ -77,7 +77,7 @@
 			"last_login": null,
 			"groups": [],
 			"user_permissions": [],
-			"email": "thor@avengers.org",
+			"email": "ned.land@nautilus.com",
 			"projects": [
 				3,
 				2,
@@ -87,40 +87,11 @@
 		}
 	},
 	{
-		"pk": 4,
-		"model": "NEMO.user",
-		"fields": {
-			"username": "hulk",
-			"first_name": "Bruce",
-			"last_name": "Banner",
-			"qualifications": [
-				3,
-				2,
-				1
-			],
-			"is_active": true,
-			"is_superuser": false,
-			"is_staff": false,
-			"is_technician": false,
-			"access_expiration": "2014-09-09",
-			"last_login": null,
-			"groups": [],
-			"user_permissions": [],
-			"email": "hulk.smash@avengers.org",
-			"projects": [
-				3,
-				2,
-				1
-			],
-			"date_joined": "2012-12-10T16:50:13Z"
-		}
-	},
-	{
 		"pk": 1,
 		"model": "NEMO.tool",
 		"fields": {
 			"category": "Gen Furnaces",
-			"notification_email_address": "service@avengers.org",
+			"notification_email_address": "service@nautilus.com",
 			"maximum_usage_block_time": null,
 			"name": "Sinter",
 			"secondary_owner": 1,
@@ -138,7 +109,7 @@
 		"model": "NEMO.tool",
 		"fields": {
 			"category": "Chemical Vapor Deposition",
-			"notification_email_address": "service@avengers.org",
+			"notification_email_address": "service@nautilus.com",
 			"maximum_usage_block_time": null,
 			"name": "PECVD",
 			"secondary_owner": 1,
@@ -156,7 +127,7 @@
 		"model": "NEMO.tool",
 		"fields": {
 			"category": "Packaging",
-			"notification_email_address": "service@avengers.org",
+			"notification_email_address": "service@nautilus.com",
 			"maximum_usage_block_time": null,
 			"name": "Dicing saw",
 			"secondary_owner": 1,
@@ -194,7 +165,7 @@
 		"model": "NEMO.account",
 		"fields": {
 			"active": true,
-			"name": "Thor Labs"
+			"name": "Account 1"
 		}
 	},
 	{
@@ -202,7 +173,7 @@
 		"model": "NEMO.account",
 		"fields": {
 			"active": true,
-			"name": "Stark Industries"
+			"name": "Account 2"
 		}
 	},
 	{
@@ -210,7 +181,7 @@
 		"model": "NEMO.account",
 		"fields": {
 			"active": true,
-			"name": "Shield"
+			"name": "Account 3"
 		}
 	},
 	{
@@ -219,8 +190,8 @@
 		"fields": {
 			"active": true,
 			"account": 1,
-			"name": "Mjolnir",
-			"application_identifier": "THOR.382"
+			"name": "Project 1",
+			"application_identifier": "PROJ.123"
 		}
 	},
 	{
@@ -229,8 +200,8 @@
 		"fields": {
 			"active": true,
 			"account": 2,
-			"name": "Jarvis ASIC",
-			"application_identifier": "STARK.294"
+			"name": "Project 2",
+			"application_identifier": "PROJ.456"
 		}
 	},
 	{
@@ -239,8 +210,8 @@
 		"fields": {
 			"active": true,
 			"account": 3,
-			"name": "Force-field armor",
-			"application_identifier": "SHIELD.472"
+			"name": "Project 3",
+			"application_identifier": "PROJ.789"
 		}
 	},
 	{
@@ -250,7 +221,7 @@
 			"name": "Tweezers",
 			"quantity": 10,
 			"reminder_threshold": 5,
-			"reminder_email": "service@avengers.org"
+			"reminder_email": "service@nautilus.com"
 		}
 	},
 	{
@@ -260,7 +231,7 @@
 			"name": "2 inch wafer tray",
 			"quantity": 10,
 			"reminder_threshold": 5,
-			"reminder_email": "service@avengers.org"
+			"reminder_email": "service@nautilus.com"
 		}
 	},
 	{
@@ -283,7 +254,7 @@
 		"pk": 3,
 		"model": "NEMO.taskcategory",
 		"fields": {
-			"name": "Tony fixed it",
+			"name": "A reboot fixed it",
 			"stage": 1
 		}
 	},

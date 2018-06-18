@@ -1,0 +1,18 @@
+FROM python:3.6.5
+
+RUN pip install .
+
+RUN mkdir /nemo
+RUN mkdir /nemo/media
+
+COPY resources/icons/* /nemo/media
+COPY resources/people/* /nemo/media
+COPY resources/splash_pad_settings.py /nemo/settings.py
+
+ENV PYTHONPATH "/nemo/"
+
+RUN django-admin makemigrations NEMO
+RUN django-admin migrate
+
+EXPOSE 8000/tcp
+CMD ["django-admin","runserver","0.0.0.0:8000"]
