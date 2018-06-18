@@ -69,6 +69,8 @@ class TaskForm(ModelForm):
 			instance.urgency = Task.Urgency.HIGH if self.cleaned_data['force_shutdown'] or self.cleaned_data['safety_hazard'] else Task.Urgency.NORMAL
 			instance.creator = self.user
 		if action == 'update':
+			instance.last_updated = timezone.now()
+			instance.last_updated_by = self.user
 			instance.cancelled = False
 			instance.resolved = False
 			if description:
