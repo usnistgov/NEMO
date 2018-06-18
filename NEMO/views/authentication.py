@@ -8,6 +8,7 @@ from django.contrib.auth.backends import RemoteUserBackend, ModelBackend
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse, resolve
+from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_GET, logger
 from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE
@@ -71,7 +72,7 @@ class NginxKerberosAuthorizationHeaderAuthenticationBackend(ModelBackend):
 class LDAPAuthenticationBackend(ModelBackend):
 	""" This class provides LDAP authentication against an LDAP or Active Directory server. """
 
-	@sensitive_post_parameters('password')
+	@method_decorator(sensitive_post_parameters('password'))
 	def authenticate(self, request, username=None, password=None, **keyword_arguments):
 		if not username or not password:
 			return None
