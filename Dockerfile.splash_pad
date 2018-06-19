@@ -1,14 +1,17 @@
 FROM python:3.6.5
 
-RUN pip install .
+COPY . /nemo/
+RUN pip install /nemo/
+RUN rm --recursive --force /nemo
 
 RUN mkdir /nemo
 RUN mkdir /nemo/media
 
-COPY resources/icons/* /nemo/media
-COPY resources/people/* /nemo/media
-COPY resources/splash_pad_settings.py /nemo/settings.py
+COPY resources/icons/* /nemo/media/
+COPY resources/people/* /nemo/media/
+COPY resources/splash_pad_settings.py /nemo/
 
+ENV DJANGO_SETTINGS_MODULE "splash_pad_settings"
 ENV PYTHONPATH "/nemo/"
 
 RUN django-admin makemigrations NEMO
