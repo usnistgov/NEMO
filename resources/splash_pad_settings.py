@@ -69,8 +69,6 @@ REST_FRAMEWORK = {
 	'PAGE_SIZE': 1000,
 }
 
-ALLOWED_HOSTS = ['localhost']
-
 SERVER_EMAIL = 'NEMO Server Administrator <nemo.admin@example.org>'
 
 ADMINS = [
