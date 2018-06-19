@@ -3,7 +3,7 @@
 		"pk": 1,
 		"model": "NEMO.user",
 		"fields": {
-			"username": "cap",
+			"username": "captain",
 			"first_name": "Captain",
 			"last_name": "Nemo",
 			"qualifications": [

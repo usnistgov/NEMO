@@ -1,4 +1,5 @@
 DEBUG = True
+FIXTURE_DIRS = ['/nemo/']
 AUTH_USER_MODEL = 'NEMO.User'
 WSGI_APPLICATION = 'NEMO.wsgi.application'
 ROOT_URLCONF = 'NEMO.urls'
