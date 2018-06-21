@@ -1,307 +1,358 @@
 [
 	{
+		"model": "NEMO.usertype",
 		"pk": 1,
-		"model": "NEMO.user",
 		"fields": {
-			"username": "captain",
-			"first_name": "Captain",
-			"last_name": "Nemo",
-			"qualifications": [
-				3,
-				2,
-				1
-			],
-			"is_active": true,
-			"is_superuser": false,
-			"is_staff": false,
-			"is_technician": false,
-			"last_login": "2012-12-10T16:44:58Z",
-			"access_expiration": "2014-09-09",
-			"groups": [],
-			"user_permissions": [],
-			"email": "captain.nemo@nautilus.com",
-			"projects": [
-				3,
-				2,
-				1
-			],
-			"date_joined": "2012-12-10T16:43:37Z"
+			"name": "Student"
 		}
 	},
 	{
+		"model": "NEMO.usertype",
 		"pk": 2,
-		"model": "NEMO.user",
 		"fields": {
-			"username": "professor",
-			"first_name": "Pierre",
-			"last_name": "Aronnax",
-			"qualifications": [
-				3,
-				2,
-				1
-			],
-			"is_active": true,
-			"is_superuser": false,
-			"is_staff": false,
-			"is_technician": false,
-			"access_expiration": "2014-09-09",
-			"last_login": null,
-			"groups": [],
-			"user_permissions": [],
-			"email": "pierre.aronnax@nautilus.com",
-			"projects": [
-				3,
-				2,
-				1
-			],
-			"date_joined": "2012-12-10T16:48:43Z"
+			"name": "Faculty"
 		}
 	},
 	{
+		"model": "NEMO.usertype",
 		"pk": 3,
-		"model": "NEMO.user",
 		"fields": {
-			"username": "ned",
-			"first_name": "Ned",
-			"last_name": "Land",
-			"qualifications": [
-				3,
-				2,
-				1
-			],
-			"is_active": true,
-			"is_superuser": false,
-			"is_staff": false,
-			"is_technician": false,
-			"access_expiration": "2014-09-09",
-			"last_login": null,
-			"groups": [],
-			"user_permissions": [],
-			"email": "ned.land@nautilus.com",
-			"projects": [
-				3,
-				2,
-				1
-			],
-			"date_joined": "2012-12-10T16:49:38Z"
+			"name": "Lab staff"
 		}
 	},
 	{
-		"pk": 1,
 		"model": "NEMO.tool",
+		"pk": 1,
 		"fields": {
-			"category": "Gen Furnaces",
-			"notification_email_address": "service@nautilus.com",
-			"maximum_usage_block_time": null,
 			"name": "Sinter",
-			"secondary_owner": 1,
+			"category": "Gen Furnaces",
 			"visible": true,
-			"minimum_usage_block_time": null,
-			"reservation_horizon": 14,
-			"operational": true,
+			"operational": false,
 			"primary_owner": 1,
+			"secondary_owner": 1,
 			"location": "NanoFab",
-			"phone_number": "x1234"
+			"phone_number": "x1234",
+			"notification_email_address": "service@nautilus.com",
+			"requires_area_access": null,
+			"interlock": null,
+			"reservation_horizon": 14,
+			"minimum_usage_block_time": null,
+			"maximum_usage_block_time": null,
+			"maximum_reservations_per_day": null,
+			"minimum_time_between_reservations": null,
+			"maximum_future_reservation_time": null,
+			"missed_reservation_threshold": null,
+			"allow_delayed_logoff": false
 		}
 	},
 	{
+		"model": "NEMO.tool",
 		"pk": 2,
-		"model": "NEMO.tool",
 		"fields": {
-			"category": "Chemical Vapor Deposition",
-			"notification_email_address": "service@nautilus.com",
-			"maximum_usage_block_time": null,
 			"name": "PECVD",
-			"secondary_owner": 1,
+			"category": "Chemical Vapor Deposition",
 			"visible": true,
-			"minimum_usage_block_time": null,
-			"reservation_horizon": 14,
 			"operational": true,
 			"primary_owner": 1,
+			"secondary_owner": 1,
 			"location": "NanoFab",
-			"phone_number": "x1234"
-		}
-	},
-	{
-		"pk": 3,
-		"model": "NEMO.tool",
-		"fields": {
-			"category": "Packaging",
+			"phone_number": "x1234",
 			"notification_email_address": "service@nautilus.com",
-			"maximum_usage_block_time": null,
-			"name": "Dicing saw",
-			"secondary_owner": 1,
-			"visible": true,
-			"minimum_usage_block_time": null,
+			"requires_area_access": null,
+			"interlock": null,
 			"reservation_horizon": 14,
-			"operational": true,
-			"primary_owner": 1,
-			"location": "NanoFab",
-			"phone_number": "x1234"
+			"minimum_usage_block_time": null,
+			"maximum_usage_block_time": null,
+			"maximum_reservations_per_day": null,
+			"minimum_time_between_reservations": null,
+			"maximum_future_reservation_time": null,
+			"missed_reservation_threshold": null,
+			"allow_delayed_logoff": false
 		}
 	},
 	{
-		"pk": 1,
-		"model": "NEMO.configuration",
+		"model": "NEMO.tool",
+		"pk": 3,
 		"fields": {
-			"prompt": "What blade type do you need to use?",
-			"advance_notice_limit": 18,
-			"available_settings": "Metal Blade, Resin Blade, SiC Blade",
+			"name": "Dicing saw",
+			"category": "Packaging",
+			"visible": true,
+			"operational": true,
+			"primary_owner": 1,
+			"secondary_owner": 1,
+			"location": "NanoFab",
+			"phone_number": "x1234",
+			"notification_email_address": "service@nautilus.com",
+			"requires_area_access": null,
+			"interlock": null,
+			"reservation_horizon": 14,
+			"minimum_usage_block_time": null,
+			"maximum_usage_block_time": null,
+			"maximum_reservations_per_day": null,
+			"minimum_time_between_reservations": null,
+			"maximum_future_reservation_time": null,
+			"missed_reservation_threshold": null,
+			"allow_delayed_logoff": false
+		}
+	},
+	{
+		"model": "NEMO.configuration",
+		"pk": 1,
+		"fields": {
 			"tool": 3,
+			"name": "Blade type",
+			"configurable_item_name": "Blade",
+			"advance_notice_limit": 18,
 			"display_priority": 0,
+			"prompt": "What blade type do you need to use?",
+			"current_settings": "SiC Blade",
+			"available_settings": "Metal Blade, Resin Blade, SiC Blade",
+			"qualified_users_are_maintainers": false,
+			"exclude_from_configuration_agenda": false,
+			"absence_string": null,
 			"maintainers": [
 				1,
-				2,
-				4,
-				3
-			],
-			"configurable_item_name": "Blade",
-			"current_settings": "SiC Blade",
-			"name": "Blade type"
+				3,
+				2
+			]
 		}
 	},
 	{
+		"model": "NEMO.area",
 		"pk": 1,
-		"model": "NEMO.account",
 		"fields": {
-			"active": true,
-			"name": "Account 1"
+			"name": "Cleanroom",
+			"welcome_message": "Welcome to the cleanroom!"
 		}
 	},
 	{
+		"model": "NEMO.areaaccessrecord",
+		"pk": 1,
+		"fields": {
+			"area": 1,
+			"customer": 1,
+			"project": 2,
+			"start": "2018-06-21T20:10:00Z",
+			"end": null,
+			"staff_charge": null
+		}
+	},
+	{
+		"model": "NEMO.account",
+		"pk": 1,
+		"fields": {
+			"name": "Account 1",
+			"active": true
+		}
+	},
+	{
+		"model": "NEMO.account",
 		"pk": 2,
-		"model": "NEMO.account",
 		"fields": {
-			"active": true,
-			"name": "Account 2"
+			"name": "Account 2",
+			"active": true
 		}
 	},
 	{
+		"model": "NEMO.account",
 		"pk": 3,
-		"model": "NEMO.account",
 		"fields": {
-			"active": true,
-			"name": "Account 3"
+			"name": "Account 3",
+			"active": true
 		}
 	},
 	{
-		"pk": 1,
 		"model": "NEMO.project",
+		"pk": 1,
 		"fields": {
-			"active": true,
-			"account": 1,
 			"name": "Project 1",
-			"application_identifier": "PROJ.123"
+			"application_identifier": "PROJ.123",
+			"account": 1,
+			"active": true
 		}
 	},
 	{
+		"model": "NEMO.project",
 		"pk": 2,
-		"model": "NEMO.project",
 		"fields": {
-			"active": true,
-			"account": 2,
 			"name": "Project 2",
-			"application_identifier": "PROJ.456"
+			"application_identifier": "PROJ.456",
+			"account": 2,
+			"active": true
 		}
 	},
 	{
-		"pk": 3,
 		"model": "NEMO.project",
+		"pk": 3,
 		"fields": {
-			"active": true,
-			"account": 3,
 			"name": "Project 3",
-			"application_identifier": "PROJ.789"
+			"application_identifier": "PROJ.789",
+			"account": 3,
+			"active": true
 		}
 	},
 	{
+		"model": "NEMO.usageevent",
 		"pk": 1,
+		"fields": {
+			"user": 1,
+			"operator": 1,
+			"project": 2,
+			"tool": 2,
+			"start": "2018-06-21T20:36:33.777Z",
+			"end": null,
+			"validated": false
+		}
+	},
+	{
 		"model": "NEMO.consumable",
+		"pk": 1,
 		"fields": {
 			"name": "Tweezers",
+			"category": null,
 			"quantity": 10,
 			"reminder_threshold": 5,
 			"reminder_email": "service@nautilus.com"
 		}
 	},
 	{
-		"pk": 2,
 		"model": "NEMO.consumable",
+		"pk": 2,
 		"fields": {
 			"name": "2 inch wafer tray",
+			"category": null,
 			"quantity": 10,
 			"reminder_threshold": 5,
 			"reminder_email": "service@nautilus.com"
 		}
 	},
 	{
+		"model": "NEMO.task",
 		"pk": 1,
+		"fields": {
+			"status": 0,
+			"urgency": 0,
+			"tool": 3,
+			"force_shutdown": false,
+			"safety_hazard": false,
+			"creator": 1,
+			"creation_time": "2018-06-21T21:02:26.460Z",
+			"problem_category": null,
+			"problem_description": "Blade needs to be changed",
+			"first_response_time": null,
+			"first_responder": null,
+			"progress_description": null,
+			"last_updated": null,
+			"last_updated_by": null,
+			"estimated_resolution_time": "2018-06-23T21:02:00Z",
+			"cancelled": false,
+			"resolved": false,
+			"resolution_time": null,
+			"resolver": null,
+			"resolution_description": null,
+			"resolution_category": null
+		}
+	},
+	{
+		"model": "NEMO.task",
+		"pk": 2,
+		"fields": {
+			"status": 0,
+			"urgency": 1,
+			"tool": 1,
+			"force_shutdown": true,
+			"safety_hazard": false,
+			"creator": 1,
+			"creation_time": "2018-06-21T21:02:55.300Z",
+			"problem_category": null,
+			"problem_description": "Tool is offline for maintenance",
+			"first_response_time": null,
+			"first_responder": null,
+			"progress_description": "On Thursday, June 21st, 2018 @ 5:03 PM Captain Nemo (captain) updated this task:\nAwaiting vendor maintenance",
+			"last_updated": "2018-06-21T21:03:34.824Z",
+			"last_updated_by": 1,
+			"estimated_resolution_time": null,
+			"cancelled": false,
+			"resolved": false,
+			"resolution_time": null,
+			"resolver": null,
+			"resolution_description": null,
+			"resolution_category": null
+		}
+	},
+	{
 		"model": "NEMO.taskcategory",
+		"pk": 1,
 		"fields": {
 			"name": "User error",
 			"stage": 0
 		}
 	},
 	{
-		"pk": 2,
 		"model": "NEMO.taskcategory",
+		"pk": 2,
 		"fields": {
 			"name": "Computer error",
 			"stage": 0
 		}
 	},
 	{
-		"pk": 3,
 		"model": "NEMO.taskcategory",
+		"pk": 3,
 		"fields": {
 			"name": "A reboot fixed it",
 			"stage": 1
 		}
 	},
 	{
-		"pk": 4,
 		"model": "NEMO.taskcategory",
+		"pk": 4,
 		"fields": {
 			"name": "Magic",
 			"stage": 1
 		}
 	},
 	{
-		"pk": 1,
 		"model": "NEMO.resourcecategory",
+		"pk": 1,
 		"fields": {
 			"name": "Facility"
 		}
 	},
 	{
-		"pk": 2,
 		"model": "NEMO.resourcecategory",
+		"pk": 2,
 		"fields": {
 			"name": "Gases"
 		}
 	},
 	{
-		"pk": 1,
 		"model": "NEMO.resource",
+		"pk": 1,
 		"fields": {
-			"available": true,
 			"name": "NanoFab",
 			"category": 1,
+			"available": true,
+			"restriction_message": "The NanoFab is closed.",
 			"fully_dependent_tools": [
 				3,
 				2,
 				1
 			],
-			"restriction_message": "The NanoFab is closed."
+			"partially_dependent_tools": [
+			],
+			"dependent_areas": [
+			]
 		}
 	},
 	{
-		"pk": 2,
 		"model": "NEMO.resource",
+		"pk": 2,
 		"fields": {
-			"available": true,
 			"name": "Oxygen",
 			"category": 2,
+			"available": true,
+			"restriction_message": "No more oxygen!",
 			"fully_dependent_tools": [
 				3,
 				2
@@ -309,7 +360,253 @@
 			"partially_dependent_tools": [
 				1
 			],
-			"restriction_message": "No more oxygen!"
+			"dependent_areas": [
+			]
+		}
+	},
+	{
+		"model": "NEMO.alert",
+		"pk": 1,
+		"fields": {
+			"title": "Cleanroom closed this weekend",
+			"contents": "The cleanroom will be closed this weekend for maintenance",
+			"creation_time": "2018-06-21T20:40:04.140Z",
+			"creator": 1,
+			"debut_time": "2018-06-21T20:39:00Z",
+			"expiration_time": null,
+			"user": null,
+			"dismissible": false
+		}
+	},
+	{
+		"model": "NEMO.landingpagechoice",
+		"pk": 1,
+		"fields": {
+			"image": "calendar.png",
+			"name": "Calendar",
+			"url": "/calendar/",
+			"display_priority": 0,
+			"open_in_new_tab": false,
+			"secure_referral": false,
+			"hide_from_mobile_devices": false,
+			"hide_from_desktop_computers": false,
+			"hide_from_users": false
+		}
+	},
+	{
+		"model": "NEMO.landingpagechoice",
+		"pk": 2,
+		"fields": {
+			"image": "tools.png",
+			"name": "Tool control",
+			"url": "/tool_control/",
+			"display_priority": 1,
+			"open_in_new_tab": false,
+			"secure_referral": false,
+			"hide_from_mobile_devices": false,
+			"hide_from_desktop_computers": false,
+			"hide_from_users": false
+		}
+	},
+	{
+		"model": "NEMO.landingpagechoice",
+		"pk": 3,
+		"fields": {
+			"image": "information.png",
+			"name": "Status dashboard",
+			"url": "/status_dashboard/",
+			"display_priority": 2,
+			"open_in_new_tab": false,
+			"secure_referral": false,
+			"hide_from_mobile_devices": false,
+			"hide_from_desktop_computers": false,
+			"hide_from_users": false
+		}
+	},
+	{
+		"model": "NEMO.landingpagechoice",
+		"pk": 4,
+		"fields": {
+			"image": "safety.png",
+			"name": "Safety",
+			"url": "/safety/",
+			"display_priority": 3,
+			"open_in_new_tab": false,
+			"secure_referral": false,
+			"hide_from_mobile_devices": false,
+			"hide_from_desktop_computers": false,
+			"hide_from_users": false
+		}
+	},
+	{
+		"model": "NEMO.landingpagechoice",
+		"pk": 5,
+		"fields": {
+			"image": "feedback.png",
+			"name": "Send feedback",
+			"url": "/feedback/",
+			"display_priority": 4,
+			"open_in_new_tab": false,
+			"secure_referral": false,
+			"hide_from_mobile_devices": false,
+			"hide_from_desktop_computers": false,
+			"hide_from_users": false
+		}
+	},
+	{
+		"model": "NEMO.landingpagechoice",
+		"pk": 6,
+		"fields": {
+			"image": "contact.png",
+			"name": "Contact the NanoFab staff",
+			"url": "/contact_staff/",
+			"display_priority": 5,
+			"open_in_new_tab": false,
+			"secure_referral": false,
+			"hide_from_mobile_devices": false,
+			"hide_from_desktop_computers": false,
+			"hide_from_users": false
+		}
+	},
+	{
+		"model": "NEMO.landingpagechoice",
+		"pk": 7,
+		"fields": {
+			"image": "receipt.png",
+			"name": "View your usage",
+			"url": "/nanofab_usage/",
+			"display_priority": 6,
+			"open_in_new_tab": false,
+			"secure_referral": false,
+			"hide_from_mobile_devices": false,
+			"hide_from_desktop_computers": false,
+			"hide_from_users": false
+		}
+	},
+	{
+		"model": "NEMO.landingpagechoice",
+		"pk": 8,
+		"fields": {
+			"image": "library.png",
+			"name": "Google",
+			"url": "https://www.google.com/",
+			"display_priority": 8,
+			"open_in_new_tab": true,
+			"secure_referral": true,
+			"hide_from_mobile_devices": false,
+			"hide_from_desktop_computers": false,
+			"hide_from_users": false
+		}
+	},
+	{
+		"model": "NEMO.user",
+		"pk": 1,
+		"fields": {
+			"username": "captain",
+			"first_name": "Captain",
+			"last_name": "Nemo",
+			"email": "captain.nemo@nautilus.com",
+			"type": 3,
+			"domain": "",
+			"badge_number": null,
+			"access_expiration": "2014-09-09",
+			"is_active": true,
+			"is_staff": true,
+			"is_technician": false,
+			"is_superuser": true,
+			"training_required": false,
+			"date_joined": "2012-12-10T16:43:37Z",
+			"last_login": "2012-12-10T16:44:58Z",
+			"physical_access_levels": [
+			],
+			"groups": [
+			],
+			"user_permissions": [
+			],
+			"qualifications": [
+				3,
+				2,
+				1
+			],
+			"projects": [
+				1,
+				2,
+				3
+			]
+		}
+	},
+	{
+		"model": "NEMO.user",
+		"pk": 2,
+		"fields": {
+			"username": "professor",
+			"first_name": "Pierre",
+			"last_name": "Aronnax",
+			"email": "pierre.aronnax@nautilus.com",
+			"type": 2,
+			"domain": "",
+			"badge_number": null,
+			"access_expiration": "2014-09-09",
+			"is_active": true,
+			"is_staff": false,
+			"is_technician": false,
+			"is_superuser": false,
+			"training_required": false,
+			"date_joined": "2012-12-10T16:48:43Z",
+			"last_login": null,
+			"physical_access_levels": [
+			],
+			"groups": [
+			],
+			"user_permissions": [
+			],
+			"qualifications": [
+				3,
+				2,
+				1
+			],
+			"projects": [
+				1,
+				2,
+				3
+			]
+		}
+	},
+	{
+		"model": "NEMO.user",
+		"pk": 3,
+		"fields": {
+			"username": "ned",
+			"first_name": "Ned",
+			"last_name": "Land",
+			"email": "ned.land@nautilus.com",
+			"type": 1,
+			"domain": "",
+			"badge_number": null,
+			"access_expiration": "2014-09-09",
+			"is_active": true,
+			"is_staff": false,
+			"is_technician": false,
+			"is_superuser": false,
+			"training_required": false,
+			"date_joined": "2012-12-10T16:49:38Z",
+			"last_login": null,
+			"physical_access_levels": [
+			],
+			"groups": [
+			],
+			"user_permissions": [
+			],
+			"qualifications": [
+				3,
+				2,
+				1
+			],
+			"projects": [
+				1,
+				2,
+				3
+			]
 		}
 	}
 ]

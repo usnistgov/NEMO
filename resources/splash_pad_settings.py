@@ -101,5 +101,5 @@ AUTHENTICATION_BACKENDS = ['NEMO.views.authentication.RemoteUserAuthenticationBa
 IDENTITY_SERVICE = {
 	'available': False,
 	'url': 'https://identity.example.org/',
-	'domains': ['EXAMPLE', 'ANOTHER'],
+	'domains': [],
 }
