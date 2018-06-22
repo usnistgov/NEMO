@@ -6,6 +6,7 @@ RUN rm --recursive --force /nemo
 
 RUN mkdir /nemo
 RUN mkdir /nemo/media
+WORKDIR /nemo
 
 COPY resources/icons/* /nemo/media/
 COPY resources/people/* /nemo/media/
