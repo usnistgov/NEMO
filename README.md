@@ -7,7 +7,7 @@ You can try NEMO out using the "[splash pad](https://hub.docker.com/r/nanofab/ne
 
 Documentation for NEMO resides in the [GitHub wiki](https://github.com/usnistgov/NEMO/wiki).
 
-If you're interested in deploying NEMO at your organization, there are [deployment considerations](https://github.com/usnistgov/NEMO/wiki/Deployment-considerations) documented in the wiki. This covers what infrastructure you will need in order to have a robust production-level deployment. The [installation guide](https://github.com/usnistgov/NEMO/wiki/Installation-guides) provides a step-by-step guide to deploying NEMO.
+If you're interested in deploying NEMO at your organization, there are [deployment considerations](https://github.com/usnistgov/NEMO/wiki/Deployment-considerations) documented in the wiki. This covers what infrastructure you will need in order to have a robust production-level deployment. The [installation guide](https://github.com/usnistgov/NEMO/wiki/Installation-with-Docker) provides a step-by-step guide to deploying NEMO.
 
 The [community page](https://github.com/usnistgov/NEMO/wiki/Community) outlines how to ask questions and contribute to NEMO. Bugs can be reported to the [issues page](https://github.com/usnistgov/NEMO/issues). If you've found a security issue with NEMO then please read our [security policy](https://github.com/usnistgov/NEMO/wiki/Security-policy) and tell us discretely.
 
