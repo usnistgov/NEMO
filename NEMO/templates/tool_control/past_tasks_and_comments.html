@@ -40,7 +40,7 @@
 								<h4 class="media-heading">Cancelled</h4>
 								On {{ i.resolution_time }} by {{ i.resolver }}.<br>
 							</div>
-						{% else %}
+						{% elif i.resolved %}
 							<span class="glyphicon glyphicon-thumbs-up pull-left notification-icon success-highlight"></span>
 							<div class="media-body">
 								<h4 class="media-heading">Resolved <span class="grey">{{ i.resolution_category|default_if_none:"" }}</span></h4>
