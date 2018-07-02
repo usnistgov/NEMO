@@ -608,5 +608,63 @@
 				3
 			]
 		}
+	},
+	{
+		"model": "NEMO.contactinformationcategory",
+		"pk": 1,
+		"fields": {
+			"name": "Staff",
+			"display_order": 0
+		}
+	},
+	{
+		"model": "NEMO.contactinformationcategory",
+		"pk": 2,
+		"fields": {
+			"name": "Users",
+			"display_order": 1
+		}
+	},
+	{
+		"model": "NEMO.contactinformation",
+		"pk": 1,
+		"fields": {
+			"name": "Captain Nemo",
+			"image": "Captain_Nemo.png",
+			"category": 1,
+			"email": "captain.nemo@nautilus.com",
+			"office_phone": "123-456-7890",
+			"office_location": "123/A456",
+			"mobile_phone": "098-765-4321",
+			"mobile_phone_is_sms_capable": true
+		}
+	},
+	{
+		"model": "NEMO.contactinformation",
+		"pk": 2,
+		"fields": {
+			"name": "Pierre Aronnax",
+			"image": "Pierre_Aronnax.png",
+			"category": 2,
+			"email": "pierre.aronnax@nautilus.com",
+			"office_phone": "314-159-2653",
+			"office_location": "271/A828",
+			"mobile_phone": "",
+			"mobile_phone_is_sms_capable": false
+		}
+	},
+	{
+		"model": "NEMO.contactinformation",
+		"pk": 3,
+		"fields": {
+			"name": "Ned Land",
+			"image": "Ned_Land.png",
+			"category": 2,
+			"email": "ned.land@nautilus.com",
+			"office_phone": "123-456-7899",
+			"office_location": "123/A458",
+			"mobile_phone": "",
+			"mobile_phone_is_sms_capable": false
+		}
 	}
 ]
