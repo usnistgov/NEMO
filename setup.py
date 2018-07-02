@@ -29,9 +29,9 @@ setup(
 		'django-filter==1.1.0',
 		'djangorestframework==3.8.2',
 		'ldap3==2.5',
-		'python-dateutil==2.7.2',
-		'requests==2.18.4',
-		'Pillow==5.1.0',
+		'python-dateutil==2.7.3',
+		'requests==2.19.1',
+		'Pillow==5.2.0',
 	],
 	entry_points={
 		'console_scripts': ['nemo=NEMO.provisioning:entry_point'],
