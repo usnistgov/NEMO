@@ -2,6 +2,7 @@ from copy import deepcopy
 from datetime import timedelta
 from http import HTTPStatus
 from itertools import chain
+from json import dumps
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
@@ -213,9 +214,17 @@ def disable_tool(request, tool_id):
 		error_message = f"The interlock command for the {tool} failed. The error message returned: {tool.interlock.most_recent_reply}"
 		logger.error(error_message)
 		return HttpResponseServerError(error_message)
-	# End the current usage event for the tool and save it.
+
+	# End the current usage event for the tool
 	current_usage_event = tool.get_current_usage_event()
 	current_usage_event.end = timezone.now() + downtime
+
+	# Collect post-usage questions
+	run_data = {}
+	for x in request.POST:
+		run_data[x] = request.POST[x]
+	current_usage_event.run_data = dumps(run_data)
+
 	current_usage_event.save()
 	if request.user.charging_staff_time():
 		existing_staff_charge = request.user.get_staff_charge()

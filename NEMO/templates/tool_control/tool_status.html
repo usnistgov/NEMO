@@ -174,11 +174,7 @@
 		<form id="tool_control">
 			{% if tool.in_use %}
 				{% if tool.get_current_usage_event.operator.id == user.id or tool.get_current_usage_event.user.id == user.id %}
-					{% if tool.post_usage_questions %}
-						<div>
-							Post usage questions exist
-						</div>
-					{% endif %}
+					{{ tool.render_post_usage_questions }}
 					<button id="stop" class="btn btn-default" onclick="disable_tool('{% url 'disable_tool' tool.id %}'); return false"><span class="glyphicon glyphicon-stop"></span> Stop using the {{ tool.name }}</button><p>
 					{% if tool.allow_delayed_logoff and not tool.delayed_logoff_in_progress %}
 						<div>

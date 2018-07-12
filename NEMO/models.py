@@ -2,6 +2,7 @@ import datetime
 import socket
 import struct
 from datetime import timedelta
+from json import loads
 
 from django.conf import settings
 from django.contrib import auth
@@ -14,6 +15,7 @@ from django.db.models import Q
 from django.db.models.signals import pre_delete
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 from NEMO.utilities import format_datetime
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
@@ -338,6 +340,39 @@ class Tool(models.Model):
 			return UsageEvent.objects.get(end=None, tool=self.id)
 		except UsageEvent.DoesNotExist:
 			return None
+
+	def render_post_usage_questions(self):
+		if not self.post_usage_questions:
+			return None
+
+		questions = loads(self.post_usage_questions)
+		result = ""
+		for question in questions:
+			if question['type'] == "radio":
+				result += f'<div>{question["title"]}</div>'
+				for choice in question['choices']:
+					result += '<div class="radio">'
+					required = 'required' if question['required'] else ''
+					is_default_choice = 'checked' if question['default_choice'] == choice else ''
+					result += f'<label><input type="radio" name="{question["name"]}" {required} {is_default_choice}>{choice}</label>'
+					result += '</div>'
+			elif question['type'] == "textbox":
+				result += '<div class="form-group">'
+				result += f'<label for="{question["name"]}">{question["title"]}</label>'
+				input_group_required = True if 'prefix' in question or 'suffix' in question else False
+				if input_group_required:
+					result += f'<div class="input-group" style="max-width:{question["max-width"]}px">'
+				if 'prefix' in question:
+					result += f'<span class="input-group-addon">{question["prefix"]}</span>'
+				required = 'required' if question['required'] is True else ''
+				result += f'<input type="text" class="form-control" name="{question["name"]}" id="{question["name"]}" placeholder="{question["placeholder"]}" {required} style="max-width:{question["max-width"]}px">'
+				if 'suffix' in question:
+					result += f'<span class="input-group-addon">{question["suffix"]}</span>'
+				if input_group_required:
+					result += '</div>'
+				result += '</div>'
+
+		return mark_safe(result)
 
 
 class Configuration(models.Model):
