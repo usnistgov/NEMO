@@ -343,7 +343,7 @@ class Tool(models.Model):
 
 	def render_post_usage_questions(self):
 		if not self.post_usage_questions:
-			return None
+			return ''
 
 		questions = loads(self.post_usage_questions)
 		result = ""
