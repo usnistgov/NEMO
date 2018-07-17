@@ -17,6 +17,7 @@ from NEMO.models import Tool, Project, UsageEvent, Task, Configuration, TaskCate
 from NEMO.utilities import quiet_int, extract_times
 from NEMO.views.policy import check_policy_to_enable_tool, check_policy_to_disable_tool
 from NEMO.widgets.tool_tree import ToolTree
+from widgets.dynamic_form import DynamicForm
 
 
 @login_required
@@ -51,6 +52,7 @@ def tool_status(request, tool_id):
 		'rendered_configuration_html': tool.configuration_widget(request.user),
 		'mobile': request.device == 'mobile',
 		'task_statuses': TaskStatus.objects.all(),
+		'post_usage_questions': DynamicForm(tool.post_usage_questions).render(),
 	}
 
 	# Staff need the user list to be able to qualify users for the tool.
@@ -220,10 +222,7 @@ def disable_tool(request, tool_id):
 	current_usage_event.end = timezone.now() + downtime
 
 	# Collect post-usage questions
-	run_data = {}
-	for x in request.POST:
-		run_data[x] = request.POST[x]
-	current_usage_event.run_data = dumps(run_data)
+	current_usage_event.run_data = DynamicForm(tool.post_usage_questions).extract(request)
 
 	current_usage_event.save()
 	if request.user.charging_staff_time():
