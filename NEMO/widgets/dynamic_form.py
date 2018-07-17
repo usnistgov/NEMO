@@ -8,6 +8,9 @@ class DynamicForm:
 		self.questions = loads(questions) if questions else None
 
 	def render(self):
+		if not self.questions:
+			return ''
+
 		result = ''
 		for question in self.questions:
 			if question['type'] == "radio":
@@ -37,6 +40,9 @@ class DynamicForm:
 		return mark_safe(result)
 
 	def extract(self, request):
+		if not self.questions:
+			return ''
+
 		results = {}
 		for question in self.questions:
 			# Only record the answer when the question was answered. Discard questions that were left blank
