@@ -48,4 +48,4 @@ class DynamicForm:
 			# Only record the answer when the question was answered. Discard questions that were left blank
 			if request.POST.get(question['name']):
 				results[question['name']] = request.POST[question['name']]
-		return dumps(results, indent='\t', sort_keys=True)
+		return dumps(results, indent='\t', sort_keys=True) if len(results) else ''
