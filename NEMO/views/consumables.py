@@ -13,7 +13,7 @@ def consumables(request):
 
 	dictionary = {
 		'users': User.objects.filter(is_active=True),
-		'consumables': Consumable.objects.all().order_by('category', 'name'),
+		'consumables': Consumable.objects.filter(visible=True).order_by('category', 'name'),
 	}
 
 	if form.is_valid():
