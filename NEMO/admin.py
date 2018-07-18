@@ -281,7 +281,7 @@ class UsageEventAdmin(admin.ModelAdmin):
 
 @register(Consumable)
 class ConsumableAdmin(admin.ModelAdmin):
-	list_display = ('name', 'quantity', 'category', 'reminder_threshold', 'reminder_email')
+	list_display = ('name', 'quantity', 'category', 'visible', 'reminder_threshold', 'reminder_email')
 
 
 @register(ConsumableCategory)
