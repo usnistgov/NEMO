@@ -282,6 +282,7 @@ class UsageEventAdmin(admin.ModelAdmin):
 @register(Consumable)
 class ConsumableAdmin(admin.ModelAdmin):
 	list_display = ('name', 'quantity', 'category', 'visible', 'reminder_threshold', 'reminder_email')
+	list_filter = ('visible', 'category')
 
 
 @register(ConsumableCategory)
