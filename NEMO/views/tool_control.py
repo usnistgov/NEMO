@@ -16,7 +16,7 @@ from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, R
 from NEMO.utilities import extract_times, quiet_int
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.tool_tree import ToolTree
-from widgets.dynamic_form import DynamicForm
+from NEMO.widgets.dynamic_form import DynamicForm
 
 
 @login_required
