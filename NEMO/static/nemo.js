@@ -59,7 +59,7 @@ function collapse_all_categories()
 
 function get_selected_item()
 {
-	var selected_item = $(".selected");
+	let selected_item = $(".selected");
 	// Exactly one thing should be selected at a time, otherwise there's an error.
 	if(!(selected_item && selected_item.length === 1))
 		return undefined;
@@ -79,7 +79,7 @@ function set_selected_item(element)
 
 function set_selected_item_by_id(tool_id)
 {
-	var tool = $("#tool_tree [data-tool-id=" + tool_id + "]");
+	let tool = $("#tool_tree [data-tool-id=" + tool_id + "]");
 	if(tool.length === 1)
 	{
 		$("#sidebar a").removeClass('selected');
@@ -90,10 +90,10 @@ function set_selected_item_by_id(tool_id)
 function save_sidebar_state()
 {
 	localStorage.clear();
-	var categories = $("#tool_tree ul.tree");
-	for(var c = 0; c < categories.length; c++)
+	let categories = $("#tool_tree ul.tree");
+	for(let c = 0; c < categories.length; c++)
 	{
-		var category = categories[c].getAttribute('data-category');
+		let category = categories[c].getAttribute('data-category');
 		localStorage[category] = $(categories[c]).is(':visible');
 	}
 	localStorage['Selected tool ID'] = get_selected_item();
@@ -101,18 +101,18 @@ function save_sidebar_state()
 
 function load_sidebar_state()
 {
-	var categories = $("#tool_tree ul.tree");
-	for(var c = 0; c < categories.length; c++)
+	let categories = $("#tool_tree ul.tree");
+	for(let c = 0; c < categories.length; c++)
 	{
-		var category = categories[c];
-		var name = category.getAttribute('data-category');
-		var state = localStorage[name];
+		let category = categories[c];
+		let name = category.getAttribute('data-category');
+		let state = localStorage[name];
 		if(state === "true")
 			$(category).show();
 		else
 			$(category).hide();
 	}
-	var selected = localStorage['Selected tool ID'];
+	let selected = localStorage['Selected tool ID'];
 	if(selected)
 		set_selected_item_by_id(selected);
 }
@@ -141,7 +141,7 @@ function ajax_failure_callback(title, preface)
 	preface = preface || "";
 	function callback(xml_http_request, status, exception)
 	{
-		var dialog_contents =
+		let dialog_contents =
 			"<div class='modal-header'>" +
 			"<button type='button' class='close' data-dismiss='modal'>&times;</button>" +
 			"<h4 class='modal-title'>" + title + "</h4>" +
@@ -163,7 +163,7 @@ function ajax_complete_callback(title, preface)
 	{
 		if(status !== "error")
 			return;
-		var dialog_contents =
+		let dialog_contents =
 			"<div class='modal-header'>" +
 			"<button type='button' class='close' data-dismiss='modal'>&times;</button>" +
 			"<h4 class='modal-title'>" + title + "</h4>" +
@@ -183,8 +183,8 @@ function serialize(form_selector, ajax_message)
 {
 	if(ajax_message === undefined)
 		ajax_message = {};
-	var form_values = $(form_selector).serializeArray();
-	for(var c = 0; c < form_values.length; c++)
+	let form_values = $(form_selector).serializeArray();
+	for(let c = 0; c < form_values.length; c++)
 		ajax_message[form_values[c].name] = form_values[c].value;
 	return ajax_message;
 }
@@ -205,13 +205,13 @@ function ajax_post(url, contents, success_callback, failure_callback, always_cal
 
 function ajax_message(url, type, contents, success_callback, failure_callback, always_callback, traditional_serialization)
 {
-	var options =
+	let options =
 	{
 		"data": contents,
 		"type": type,
 		"traditional": traditional_serialization === true
 	};
-	var message = jQuery.ajax(url, options);
+	let message = jQuery.ajax(url, options);
 	if(success_callback !== undefined)
 		message.done(success_callback);
 	if(failure_callback !== undefined)
@@ -223,13 +223,13 @@ function ajax_message(url, type, contents, success_callback, failure_callback, a
 //noinspection JSUnusedGlobalSymbols
 function on_change_configuration(configuration_id, slot, choice)
 {
-	var reconfiguration_properties =
+	let reconfiguration_properties =
 	{
 		"configuration_id": configuration_id,
 		"slot": slot,
 		"choice": choice
 	};
-	var failure_dialog = ajax_failure_callback("Configuration change failed", "There was a problem while changing this tool's configuration.");
+	let failure_dialog = ajax_failure_callback("Configuration change failed", "There was a problem while changing this tool's configuration.");
 	ajax_post('/tool_configuration/', reconfiguration_properties, undefined, failure_dialog);
 }
 
@@ -249,9 +249,9 @@ function toggle_details(element)
 
 function add_to_list(list_selector, on_click, id, text, removal_title, input_name)
 {
-	var div_id = input_name + "_" + id;
-	var div_id_selector = "#" + div_id;
-	var addition =
+	let div_id = input_name + "_" + id;
+	let div_id_selector = "#" + div_id;
+	let addition =
 		'<div id="' + div_id + '">' +
 		'<a href="javascript:' + on_click + '(' + id + ')" class="grey hover-black" title="' + removal_title + '">' +
 		'<span class="glyphicon glyphicon-remove-circle"></span>' +
@@ -277,10 +277,10 @@ function matcher(items, search_fields)
 	return function find_matches(query, callback)
 	{
 		// An array that will be populated with substring matches
-		var matches = [];
+		let matches = [];
 
 		// Regular expression used to determine if a string contains the substring `query`
-		var matching_regular_expression = new RegExp(query, 'i');
+		let matching_regular_expression = new RegExp(query, 'i');
 
 		// Iterate through the pool of strings and for any string that
 		// contains the substring `query`, add it to the `matches` array
@@ -313,8 +313,8 @@ function matcher(items, search_fields)
 {
 	$.fn.autocomplete = function(dataset_name, select_callback, items_to_search)
 	{
-		var search_fields = ['name', 'application_identifier'];
-		var datasets =
+		let search_fields = ['name', 'application_identifier'];
+		let datasets =
 		{
 				source: matcher(items_to_search, search_fields),
 				name: dataset_name,
@@ -324,7 +324,7 @@ function matcher(items, search_fields)
 		{
 			'suggestion': function(data)
 			{
-				var result = data['name'];
+				let result = data['name'];
 				if(data['type'])
 					result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'] + '</span>';
 				if(data['application_identifier'])
