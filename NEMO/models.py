@@ -569,7 +569,7 @@ class Consumable(models.Model):
 	name = models.CharField(max_length=100)
 	category = models.ForeignKey('ConsumableCategory', blank=True, null=True)
 	quantity = models.IntegerField(help_text="The number of items currently in stock.")
-	visible = models.BooleanField(default=False)
+	visible = models.BooleanField(default=True)
 	reminder_threshold = models.IntegerField(help_text="More of this item should be ordered when the quantity falls below this threshold.")
 	reminder_email = models.EmailField(help_text="An email will be sent to this address when the quantity of this item falls below the reminder threshold.")
 
