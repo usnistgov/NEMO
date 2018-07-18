@@ -6,16 +6,17 @@ from itertools import chain
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound, HttpResponseServerError
-from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseServerError
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_POST, logger
+from django.views.decorators.http import logger, require_GET, require_POST
 
-from NEMO.forms import nice_errors, CommentForm
-from NEMO.models import Tool, Project, UsageEvent, Task, Configuration, TaskCategory, ConfigurationHistory, Comment, User, StaffCharge, Reservation, TaskStatus
-from NEMO.utilities import quiet_int, extract_times
-from NEMO.views.policy import check_policy_to_enable_tool, check_policy_to_disable_tool
+from NEMO.forms import CommentForm, nice_errors
+from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, TaskCategory, TaskStatus, Tool, UsageEvent, User
+from NEMO.utilities import extract_times, quiet_int
+from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.tool_tree import ToolTree
+from widgets.dynamic_form import DynamicForm
 
 
 @login_required
@@ -50,6 +51,7 @@ def tool_status(request, tool_id):
 		'rendered_configuration_html': tool.configuration_widget(request.user),
 		'mobile': request.device == 'mobile',
 		'task_statuses': TaskStatus.objects.all(),
+		'post_usage_questions': DynamicForm(tool.post_usage_questions).render(),
 	}
 
 	# Staff need the user list to be able to qualify users for the tool.
@@ -213,9 +215,14 @@ def disable_tool(request, tool_id):
 		error_message = f"The interlock command for the {tool} failed. The error message returned: {tool.interlock.most_recent_reply}"
 		logger.error(error_message)
 		return HttpResponseServerError(error_message)
-	# End the current usage event for the tool and save it.
+
+	# End the current usage event for the tool
 	current_usage_event = tool.get_current_usage_event()
 	current_usage_event.end = timezone.now() + downtime
+
+	# Collect post-usage questions
+	current_usage_event.run_data = DynamicForm(tool.post_usage_questions).extract(request)
+
 	current_usage_event.save()
 	if request.user.charging_staff_time():
 		existing_staff_charge = request.user.get_staff_charge()
