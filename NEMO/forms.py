@@ -5,7 +5,8 @@ from django.forms import ModelForm, BaseForm, IntegerField, ModelChoiceField, Ch
 from django.forms.utils import ErrorDict
 from django.utils import timezone
 
-from NEMO.models import User, Project, Account, Task, Comment, TaskCategory, SafetyIssue, ConsumableWithdraw, Alert, ScheduledOutage, TaskHistory
+from NEMO.models import User, Project, Account, Task, Comment, TaskCategory, SafetyIssue, ConsumableWithdraw, Alert, \
+	ScheduledOutage, TaskHistory, Consumable
 from NEMO.utilities import bootstrap_primary_color, format_datetime
 
 
@@ -164,6 +165,10 @@ class ConsumableWithdrawForm(ModelForm):
 	class Meta:
 		model = ConsumableWithdraw
 		fields = ['customer', 'project', 'consumable', 'quantity']
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.fields['consumable'].queryset = Consumable.objects.filter(visible=True)
 
 	def clean_customer(self):
 		customer = self.cleaned_data['customer']
