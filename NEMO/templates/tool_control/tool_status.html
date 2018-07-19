@@ -186,7 +186,7 @@
 							<a id="delayed_logoff_help" class="pointer" tabindex="0" data-toggle="popover" data-placement="bottom" data-trigger="focus" data-content="Some tools may require downtime after you finish using them. (For example, to perform automated cleaning or pump-down). Once you click &quot;Stop using the {{ tool }}&quot; the tool interlock will immediately disable the tool and it will remain unusable for the specified duration. Leave the duration blank to indicate that no post-usage downtime is required.">What's this?</a>
 						</div>
 					{% endif %}
-					<button id="stop" class="btn btn-default" onclick="disable_tool('{% url 'disable_tool' tool.id %}'); return false"><span class="glyphicon glyphicon-stop"></span> Stop using the {{ tool.name }}</button><p>
+					<div id="stop_wrapper" style="display:inline-block" data-toggle="tooltip" data-placement="bottom" title="Please answer the required questions (above) to proceed"><button id="stop" class="btn btn-default" onclick="disable_tool('{% url 'disable_tool' tool.id %}'); return false"><span class="glyphicon glyphicon-stop"></span> Stop using the {{ tool.name }}</button></div><p>
 				{% endif %}
 			{% else %}
 				{% if user.is_staff %}
@@ -422,5 +422,23 @@
 	$("#tabs").find("a").click(switch_tab);
 	$('#task_and_comment_start').datetimepicker({format: 'MM/DD/YYYY', 'widgetParent': '#task_and_comment_start_form_group'});
 	$('#task_and_comment_end').datetimepicker({format: 'MM/DD/YYYY', 'widgetParent': '#task_and_comment_end_form_group'});
-	$('#delayed_logoff_help').popover()
+	$('#delayed_logoff_help').popover();
+
+	function update_stop_button()
+	{
+		if(document.querySelector('#tool_control').checkValidity())
+		{
+			$('#stop_wrapper').tooltip('disable');
+			$("#stop").prop("disabled", false);
+		}
+		else
+		{
+			$('#stop_wrapper').tooltip('enable');
+			$("#stop").prop("disabled", true);
+		}
+	}
+
+	update_stop_button();
+	$('#tool_control input[required]').on('change keyup', update_stop_button);
+
 </script>
