@@ -109,8 +109,6 @@
 		{
 			$("#stop").prop("disabled", true);
 			let contents = serialize("#tool_control");
-			contents['confirm'] = confirm === true;
-			contents['downtime'] = parseInt($('#downtime').val()) || downtime || 0;
 			let failure_dialog = ajax_failure_callback("Couldn't change tool status");
 			let enable_stop_button = function() { $("#stop").prop("disabled", false); };
 			ajax_post(url, contents, ajax_success_callback, failure_dialog, refresh_tool_status, enable_stop_button);

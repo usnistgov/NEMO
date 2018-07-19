@@ -54,6 +54,13 @@ def tool_status(request, tool_id):
 		'post_usage_questions': DynamicForm(tool.post_usage_questions).render(),
 	}
 
+	try:
+		current_reservation = Reservation.objects.get(start__lt=timezone.now(), end__gt=timezone.now(), cancelled=False, missed=False, shortened=False, user=request.user, tool=tool)
+		if request.user == current_reservation.user:
+			dictionary['time_left'] = current_reservation.end
+	except Reservation.DoesNotExist:
+		pass
+
 	# Staff need the user list to be able to qualify users for the tool.
 	if request.user.is_staff:
 		dictionary['users'] = User.objects.filter(is_active=True)
@@ -190,23 +197,19 @@ def disable_tool(request, tool_id):
 	response = check_policy_to_disable_tool(tool, request.user, downtime)
 	if response.status_code != HTTPStatus.OK:
 		return response
-	confirm = request.POST.get('confirm') == 'true'
 	try:
 		current_reservation = Reservation.objects.get(start__lt=timezone.now(), end__gt=timezone.now(), cancelled=False, missed=False, shortened=False, user=request.user, tool=tool)
 		# Staff are exempt from mandatory reservation shortening when tool usage is complete.
 		if request.user.is_staff is False:
-			if confirm:
-				# Shorten the user's reservation to the current time because they're done using the tool.
-				new_reservation = deepcopy(current_reservation)
-				new_reservation.id = None
-				new_reservation.pk = None
-				new_reservation.end = timezone.now() + downtime
-				new_reservation.save()
-				current_reservation.shortened = True
-				current_reservation.descendant = new_reservation
-				current_reservation.save()
-			else:
-				return render(request, 'tool_control/confirm_tool_disable.html', {'reservation': current_reservation, 'tool': tool, 'downtime': downtime.total_seconds() / 60})
+			# Shorten the user's reservation to the current time because they're done using the tool.
+			new_reservation = deepcopy(current_reservation)
+			new_reservation.id = None
+			new_reservation.pk = None
+			new_reservation.end = timezone.now() + downtime
+			new_reservation.save()
+			current_reservation.shortened = True
+			current_reservation.descendant = new_reservation
+			current_reservation.save()
 	except Reservation.DoesNotExist:
 		pass
 
