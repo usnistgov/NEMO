@@ -14,13 +14,14 @@ class DynamicForm:
 		result = ''
 		for question in self.questions:
 			if question['type'] == "radio":
-				result += f'<div>{question["title"]}</div>'
+				result += f'<div class="form-group">{question["title"]}'
 				for choice in question['choices']:
 					result += '<div class="radio">'
 					required = 'required' if question['required'] else ''
 					is_default_choice = 'checked' if question['default_choice'] == choice else ''
 					result += f'<label><input type="radio" name="{question["name"]}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
 					result += '</div>'
+				result += '</div>'
 			elif question['type'] == "textbox":
 				result += '<div class="form-group">'
 				result += f'<label for="{question["name"]}">{question["title"]}</label>'
@@ -30,7 +31,7 @@ class DynamicForm:
 				if 'prefix' in question:
 					result += f'<span class="input-group-addon">{question["prefix"]}</span>'
 				required = 'required' if question['required'] is True else ''
-				result += f'<input type="text" class="form-control" name="{question["name"]}" id="{question["name"]}" placeholder="{question["placeholder"]}" {required} style="max-width:{question["max-width"]}px">'
+				result += f'<input type="text" class="form-control" name="{question["name"]}" id="{question["name"]}" placeholder="{question["placeholder"]}" {required} style="max-width:{question["max-width"]}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 				if 'suffix' in question:
 					result += f'<span class="input-group-addon">{question["suffix"]}</span>'
 				if input_group_required:
