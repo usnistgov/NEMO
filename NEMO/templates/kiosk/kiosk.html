@@ -37,11 +37,11 @@
 </div>
 <script type="text/javascript">
 	$(window).keypress(on_keypress);
-	var badge_number = "";
-	var timeout_handle = null;
+	let badge_number = "";
+	let timeout_handle = null;
 	function on_keypress(event)
 	{
-		if(event.which == 13) // Submit the badge number when 'Enter' is pressed.
+		if(event.which === 13) // Submit the badge number when 'Enter' is pressed.
 		{
 			clear_timeout();
 			load_choices(badge_number);
@@ -56,7 +56,7 @@
 	}
 	function load_complete(response, status, xml_http_request)
 	{
-		if(status == "error")
+		if(status === "error")
 		{
 			$("#default_content").hide();
 			$("#status").hide();
@@ -94,7 +94,7 @@
 	}
 	function load_choices(badge_number)
 	{
-		var data = {
+		let data = {
 			'location': '{{ location }}',
 			'badge_number': badge_number
 		};
@@ -112,14 +112,14 @@
 	{
 		$("#default_content").hide();
 		$("#error").hide();
-		var data = serialize('#tool_control');
+		let data = serialize('#tool_control');
 		$("#status").html("<h1>Enabling tool...</h1>").show().load('{% url 'enable_tool_from_kiosk' %}', data, load_complete);
 	}
 	function disable_tool()
 	{
 		$("#default_content").hide();
 		$("#error").hide();
-		var data = serialize('#tool_control');
+		let data = serialize('#tool_control');
 		$("#status").html("<h1>Disabling tool...</h1>").show().load('{% url 'disable_tool_from_kiosk' %}', data, load_complete);
 	}
 	function csrf_token()
