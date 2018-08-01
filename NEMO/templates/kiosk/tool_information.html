@@ -1,5 +1,5 @@
 <div class="row" style="margin-top:30px">
-	<div class="col-xs-offset-3 col-xs-6" onclick="load_choices({{ customer.badge_number }})">
+	<div class="col-xs-offset-3 col-xs-6" onclick="{% if back == 'back_to_start' %}load_choices({{ customer.badge_number }}){% elif back == 'back_to_category' %}view_category('{% url 'kiosk_category_choices' tool.category customer.id %}'){% endif %}">
 		<div class="alert alert-warning" style="text-align:center; margin-bottom:0; font-size:x-large">
 			Go back
 		</div>
@@ -13,7 +13,7 @@
 	<div class="primary-highlight">
 		<span class="glyphicon glyphicon-user pull-left status-icon"></span>
 		{% with tool.get_current_usage_event as current_usage_event %}
-			<h3>
+			<h2>
 				{% if current_usage_event.operator.id == customer.id %}
 					You are using this tool
 				{% else %}
@@ -23,30 +23,30 @@
 					on behalf of {{ current_usage_event.user }}
 				{% endif %}
 				for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start }}.
-			</h3>
+			</h2>
 		{% endwith %}
 	</div>
 {% elif tool.delayed_logoff_in_progress %}
 	{% with tool.get_delayed_logoff_usage_event as delayed_logoff_event %}
 		<div class="primary-highlight">
 			<span class="glyphicon glyphicon-time pull-left status-icon"></span>
-			<h3>{{ delayed_logoff_event.operator }} has finished using the {{ tool }} but delayed logoff is in effect. The tool will be available at {{ delayed_logoff_event.end|time }}.</h3>
+			<h2>{{ delayed_logoff_event.operator }} has finished using the {{ tool }} but delayed logoff is in effect. The tool will be available at {{ delayed_logoff_event.end|time }}.</h2>
 		</div>
 	{% endwith %}
 {% elif not tool.operational or tool.required_resource_is_unavailable %}
 	<div class="danger-highlight">
 		<span class="glyphicon glyphicon-ban-circle pull-left status-icon"></span>
-		<h3>This tool is <strong>shut down</strong>.</h3>
+		<h2>This tool is <strong>shut down</strong>.</h2>
 	</div>
 {% elif tool.nonrequired_resource_is_unavailable %}
 	<div class="warning-highlight">
 		<span class="glyphicon glyphicon-exclamation-sign pull-left status-icon"></span>
-		<h3>This tool is <strong>operational</strong> but not all resources are available.</h3>
+		<h2>This tool is <strong>operational</strong> but not all resources are available.</h2>
 	</div>
 {% else %}
 	<div class="success-highlight">
 		<span class="glyphicon glyphicon-ok pull-left status-icon"></span>
-		<h3>This tool is <strong>operational</strong> and <strong>idle</strong>.</h3>
+		<h2>This tool is <strong>operational</strong> and <strong>idle</strong>.</h2>
 	</div>
 {% endif %}
 
@@ -121,7 +121,7 @@
 
 {% if rendered_configuration_html %}
 	<div class="form-group">
-		<h3>Configuration</h3>
+		<h2>Configuration</h2>
 		{{ rendered_configuration_html }}
 	</div>
 {% endif %}
@@ -133,8 +133,20 @@
 	<input type="hidden" name="customer_id" value="{{ customer.id }}">
 	{% if tool.in_use %}
 		{% if tool.get_current_usage_event.operator.id == customer.id or tool.get_current_usage_event.user.id == customer.id %}
-			<div class="col-xs-offset-3 col-xs-6">
-				<div class="alert alert-danger" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="disable_tool()">
+			{% if post_usage_questions %}
+				<h2>Post usage questions</h2>
+				{{ post_usage_questions }}
+			{% endif %}
+			{% if tool.allow_delayed_logoff and not tool.delayed_logoff_in_progress %}
+				<h2>Delayed logoff</h2>
+				<div class="form-group">
+					Prevent others from using the tool for <input type="number" name="downtime" class="form-control" style="display:inline; width:auto" min="1" max="120" inputmode="numeric" pattern="[0-9]*" placeholder="0"> minutes after disabling the tool.
+					<a id="delayed_logoff_help" class="pointer" tabindex="0" data-toggle="popover" data-placement="bottom" data-trigger="focus" data-content="Some tools may require downtime after you finish using them. (For example, to perform automated cleaning or pump-down). Once you click &quot;Stop using the {{ tool }}&quot; the tool interlock will immediately disable the tool and it will remain unusable for the specified duration. Leave the duration blank to indicate that no post-usage downtime is required.">What's this?</a>
+				</div>
+			{% endif %}
+			<div class="col-xs-offset-3 col-xs-6" style="margin-top:30px">
+				<h2 id="answer_to_proceed" style="text-align:center">Please answer the required questions (above) to stop using the {{ tool.name }}</h2>
+				<div id="stop_button" class="alert alert-danger" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="disable_tool()">
 					<span class="glyphicon glyphicon-stop"></span> Stop using the {{ tool.name }}
 					{% if remaining_reservation_duration %}
 						and relinquish the remaining {{ remaining_reservation_duration }} minutes of your reservation
@@ -146,15 +158,15 @@
 		{% if customer.is_staff or tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and tool in customer.qualifications.all %}
 			{% with customer.active_projects as active_projects %}
 				{% if active_projects|length == 0 %}
-					<h3>You cannot use any tools because you are not a member of an active project. Please visit the NanoFab User Office to begin a project.</h3>
+					<h2>You cannot use any tools because you are not a member of an active project. Please visit the NanoFab User Office to begin a project.</h2>
 				{% elif active_projects|length == 1 %}
-					<h3>Tool usage will be billed to the project named &quot;{{ active_projects.0 }}&quot;.</h3>
+					<h2>Tool usage will be billed to the project named &quot;{{ active_projects.0 }}&quot;.</h2>
 					<input type="hidden" name="project_id" value="{{ active_projects.0.id }}">
 					<script>
 						$("#start").show();
 					</script>
 				{% else %}
-					<h3>Charge tool usage to which project?</h3>
+					<h2>Charge tool usage to which project?</h2>
 					<div class="list-group" style="display:table">
 						{% for project in active_projects %}
 							<a href="javascript:void(0)" class="list-group-item project-choice" style="font-size:large" onclick="select_project(this, {{ project.id }})">{{ project.name }}</a>
@@ -169,16 +181,34 @@
 				</div>
 			</div>
 		{% elif tool not in customer.qualifications.all %}
-			<h3 class="light-grey">
+			<h2 class="light-grey">
 				You have not been qualified to use this tool yet.
 				Please contact the primary tool owner, {{ tool.primary_owner }}, if you would like to receive training for tool qualification.
 				{% if tool.primary_owner.id != tool.secondary_owner.id %}
 					If you are unable to reach {{ tool.primary_owner }} then please contact {{ tool.secondary_owner }}.
 				{% endif %}
-			</h3>
+			</h2>
 		{% endif %}
 	{% endif %}
 </form>
 <div style="height:150px">{# Spacer #}</div>
 
-<script>revert(60);</script>
+<script>
+	function update_stop_button()
+	{
+		if(document.querySelector('#tool_control').checkValidity())
+		{
+			$('#answer_to_proceed').hide();
+			$("#stop_button").show();
+		}
+		else
+		{
+			$('#answer_to_proceed').show();
+			$("#stop_button").hide();
+		}
+	}
+
+	update_stop_button();
+	$('#tool_control input[required]').on('change keyup', update_stop_button);	$('#delayed_logoff_help').popover();
+	revert(60);
+</script>

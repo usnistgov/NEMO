@@ -8,9 +8,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.models import Tool, User, UsageEvent, Project, Reservation
-from NEMO.views.policy import check_policy_to_enable_tool, check_policy_to_disable_tool
+from NEMO.models import Project, Reservation, Tool, UsageEvent, User
+from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.views.status_dashboard import create_tool_summary
+from utilities import quiet_int
+from widgets.dynamic_form import DynamicForm
 
 
 @login_required
@@ -51,7 +53,8 @@ def enable_tool(request):
 def disable_tool(request):
 	tool = Tool.objects.get(id=request.POST['tool_id'])
 	customer = User.objects.get(id=request.POST['customer_id'])
-	response = check_policy_to_disable_tool(tool, customer, downtime=timedelta(minutes=0))
+	downtime = timedelta(minutes=quiet_int(request.POST.get('downtime')))
+	response = check_policy_to_disable_tool(tool, customer, downtime)
 	if response.status_code != HTTPStatus.OK:
 		dictionary = {
 			'message': response.content,
@@ -79,7 +82,11 @@ def disable_tool(request):
 		raise Exception("The interlock command for this tool failed. The error message returned: " + str(tool.interlock.most_recent_reply))
 	# End the current usage event for the tool and save it.
 	current_usage_event = tool.get_current_usage_event()
-	current_usage_event.end = timezone.now()
+	current_usage_event.end = timezone.now() + downtime
+
+	# Collect post-usage questions
+	current_usage_event.run_data = DynamicForm(tool.post_usage_questions).extract(request)
+
 	current_usage_event.save()
 
 	dictionary = {'message': 'You are no longer using the {}'.format(tool)}
@@ -100,6 +107,7 @@ def choices(request):
 		'usage_events': UsageEvent.objects.filter(operator=customer.id, end=None).order_by('tool__name').prefetch_related('tool', 'project'),
 		'tools': Tool.objects.filter(visible=True, location=request.GET['location']),
 		'tool_summary': create_tool_summary(),
+		'categories': [t[0] for t in Tool.objects.filter(visible=True).order_by('category').values_list('category').distinct()],
 	}
 	return render(request, 'kiosk/choices.html', dictionary)
 
@@ -107,13 +115,34 @@ def choices(request):
 @login_required
 @permission_required('NEMO.kiosk')
 @require_GET
-def tool_information(request, tool_id, user_id):
+def category_choices(request, category, user_id):
+	try:
+		customer = User.objects.get(id=user_id)
+	except:
+		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please visit the NanoFab user office to resolve the problem."}
+		return render(request, 'kiosk/acknowledgement.html', dictionary)
+	tools = Tool.objects.filter(visible=True, category=category)
+	dictionary = {
+		'customer': customer,
+		'category': category,
+		'tools': tools,
+		'tool_summary': create_tool_summary(),
+	}
+	return render(request, 'kiosk/category_choices.html', dictionary)
+
+
+@login_required
+@permission_required('NEMO.kiosk')
+@require_GET
+def tool_information(request, tool_id, user_id, back):
 	tool = Tool.objects.get(id=tool_id, visible=True)
 	customer = User.objects.get(id=user_id)
 	dictionary = {
 		'customer': customer,
 		'tool': tool,
 		'rendered_configuration_html': tool.configuration_widget(customer),
+		'post_usage_questions': DynamicForm(tool.post_usage_questions).render(),
+		'back': back,
 	}
 	try:
 		current_reservation = Reservation.objects.get(start__lt=timezone.now(), end__gt=timezone.now(), cancelled=False, missed=False, shortened=False, user=customer, tool=tool)

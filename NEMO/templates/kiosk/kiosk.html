@@ -36,22 +36,36 @@
 	<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
 </div>
 <script type="text/javascript">
-	$(window).keypress(on_keypress);
+	$(window).keypress(on_keypress).keydown(on_keydown);
+	let record_badge_number = false;
 	let badge_number = "";
 	let timeout_handle = null;
+
+	{# Note that keydown and keyup provide a code indicating which key is pressed, while keypress indicates which
+	character was entered. For example, a lowercase "a" will be reported as 65 by keydown and keyup, but as 97 by
+	keypress. An uppercase "A" is reported as 65 by all events. Because of this distinction, when catching special
+	keystrokes such as F2, .keydown() or .keyup() is a better choice. #}
+
 	function on_keypress(event)
 	{
-		if(event.which === 13) // Submit the badge number when 'Enter' is pressed.
-		{
-			clear_timeout();
-			load_choices(badge_number);
-			$("#badge_number").html(badge_number + ", sent");
-			badge_number = "";
-		}
-		else
+		if(record_badge_number)
 		{
 			badge_number += String.fromCharCode(event.which);
 			$("#badge_number").html(badge_number);
+		}
+	}
+	function on_keydown(event)
+	{
+		if(event.which === 113) {# The F2 key activates badge number recording #}
+		{
+			record_badge_number = !record_badge_number;
+			if(!record_badge_number)
+			{
+				clear_timeout();
+				load_choices(badge_number);
+				$("#badge_number").html(badge_number + ", sent");
+				badge_number = "";
+			}
 		}
 	}
 	function load_complete(response, status, xml_http_request)
@@ -107,6 +121,12 @@
 		$("#default_content").hide();
 		$("#error").hide();
 		$("#status").html("<h1>Loading tool information...</h1>").show().load(url, undefined, load_complete);
+	}
+	function view_category(url)
+	{
+		$("#default_content").hide();
+		$("#error").hide();
+		$("#status").html("<h1>Loading category...</h1>").show().load(url, undefined, load_complete);
 	}
 	function enable_tool()
 	{

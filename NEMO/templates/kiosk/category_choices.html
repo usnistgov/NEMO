@@ -1,30 +1,16 @@
 <div class="row" style="margin-top:30px">
-	<div class="col-xs-offset-3 col-xs-6" onclick="revert()">
+	<div class="col-xs-offset-3 col-xs-6" onclick="load_choices({{ customer.badge_number }})">
 		<div class="alert alert-warning" style="text-align:center; margin-bottom:0">
-			<span style="font-size:x-large">I've finished using this kiosk</span>
+			<span style="font-size:x-large">Go back</span>
 		</div>
 	</div>
 </div>
 
-{% if usage_events %}
-	<h1>Current NanoFab usage</h1>
-	<div class="row">
-		{% for u in usage_events %}
-			<div class="col-xs-6">
-				<div class="alert alert-info" onclick="tool_information('{% url 'kiosk_tool_information' u.tool.id customer.id 'back_to_start' %}')">
-					<span style="font-size:x-large">{{ u.tool }}</span><br>
-					You are using this tool for the project named <strong>{{ u.project }}</strong> since <strong>{{ u.start|date:"l @ g:i A" }}</strong>
-				</div>
-			</div>
-		{% endfor %}
-	</div>
-{% endif %}
-
-<h1>Nearby tools</h1>
+<h1>{{ category }}</h1>
 <div class="row">
 	{% for tool in tools %}
 		<div class="col-xs-6">
-			<div class="panel panel-default" onclick="tool_information('{% url 'kiosk_tool_information' tool.id customer.id 'back_to_start' %}')">
+			<div class="panel panel-default" onclick="tool_information('{% url 'kiosk_tool_information' tool.id customer.id 'back_to_category' %}')">
 				<div class="panel-body">
 
 					<span style="font-size:x-large; margin-right:10px">{{ tool }}</span>
@@ -49,19 +35,6 @@
 						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-wrench warning-highlight"></span>
 					{% endif %}
 
-				</div>
-			</div>
-		</div>
-	{% endfor %}
-</div>
-
-<h1>Find a tool by category</h1>
-<div class="row">
-	{% for category in categories %}
-		<div class="col-xs-6">
-			<div class="panel panel-default" onclick="view_category('{% url 'kiosk_category_choices' category customer.id %}')">
-				<div class="panel-body">
-					<span style="font-size:x-large; margin-right:10px">{{ category }}</span>
 				</div>
 			</div>
 		</div>
