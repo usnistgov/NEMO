@@ -28,7 +28,7 @@ setup(
 		'Django==1.11.13',
 		'django-filter==1.1.0',
 		'djangorestframework==3.8.2',
-		'ldap3==2.5',
+		'ldap3==2.5.1',
 		'python-dateutil==2.7.3',
 		'requests==2.19.1',
 		'Pillow==5.2.0',
