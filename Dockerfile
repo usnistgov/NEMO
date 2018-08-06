@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.6
 
 # Intall NEMO (in the current directory) and Gunicorn
 COPY . /nemo/
