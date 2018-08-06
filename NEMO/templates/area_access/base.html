@@ -54,7 +54,7 @@
 				if(!record_badge_number)
 				{
 					clear_timeout();
-					load_choices(badge_number);
+					{% block action %}{% endblock %}
 					$("#badge_number").html(badge_number + ", sent");
 					badge_number = "";
 				}
