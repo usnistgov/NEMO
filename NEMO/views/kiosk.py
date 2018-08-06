@@ -12,7 +12,7 @@ from NEMO.models import Project, Reservation, Tool, UsageEvent, User
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.views.status_dashboard import create_tool_summary
 from NEMO.utilities import quiet_int
-from widgets.dynamic_form import DynamicForm
+from NEMO.widgets.dynamic_form import DynamicForm
 
 
 @login_required
