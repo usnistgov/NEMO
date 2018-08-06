@@ -21,11 +21,11 @@ setup(
 		'License :: Public Domain',
 		'Natural Language :: English',
 		'Operating System :: OS Independent',
-		'Programming Language :: Python :: 3.7',
+		'Programming Language :: Python :: 3.6',
 	],
 	install_requires=[
 		'cryptography==2.3',
-		'Django==1.11.13',
+		'Django==1.11.15',
 		'django-filter==1.1.0',
 		'djangorestframework==3.8.2',
 		'ldap3==2.5.1',
