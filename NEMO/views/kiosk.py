@@ -11,7 +11,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.models import Project, Reservation, Tool, UsageEvent, User
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.views.status_dashboard import create_tool_summary
-from utilities import quiet_int
+from NEMO.utilities import quiet_int
 from widgets.dynamic_form import DynamicForm
 
 
@@ -86,7 +86,6 @@ def disable_tool(request):
 
 	# Collect post-usage questions
 	current_usage_event.run_data = DynamicForm(tool.post_usage_questions).extract(request)
-
 	current_usage_event.save()
 
 	dictionary = {'message': 'You are no longer using the {}'.format(tool)}
