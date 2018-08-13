@@ -1,6 +1,6 @@
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from NEMO.filters import ReservationFilter, UsageEventFilter, AreaAccessRecordFilter
+from NEMO.filters import ReservationFilter, UsageEventFilter, AreaAccessRecordFilter, UserFilter
 from NEMO.models import User, Project, Account, Reservation, UsageEvent, AreaAccessRecord, Task, ScheduledOutage, Tool
 from NEMO.serializers import UserSerializer, ProjectSerializer, AccountSerializer, ReservationSerializer, UsageEventSerializer, AreaAccessRecordSerializer, TaskSerializer, ScheduledOutageSerializer, ToolSerializer
 
@@ -8,6 +8,7 @@ from NEMO.serializers import UserSerializer, ProjectSerializer, AccountSerialize
 class UserViewSet(ReadOnlyModelViewSet):
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
+	filter_class = UserFilter
 
 
 class ProjectViewSet(ReadOnlyModelViewSet):
