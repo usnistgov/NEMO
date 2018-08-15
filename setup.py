@@ -24,7 +24,7 @@ setup(
 		'Programming Language :: Python :: 3.6',
 	],
 	install_requires=[
-		'cryptography==2.3',
+		'cryptography==2.3.1',
 		'Django==1.11.15',
 		'django-filter==1.1.0',
 		'djangorestframework==3.8.2',
