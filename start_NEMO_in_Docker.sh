@@ -4,7 +4,6 @@
 set -e
 
 # Run migrations to create or update the database
-django-admin makemigrations NEMO
 django-admin migrate
 
 # Collect static files
