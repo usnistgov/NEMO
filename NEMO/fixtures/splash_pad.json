@@ -230,7 +230,6 @@
 		"model": "NEMO.task",
 		"pk": 1,
 		"fields": {
-			"status": 0,
 			"urgency": 0,
 			"tool": 3,
 			"force_shutdown": false,
@@ -239,8 +238,6 @@
 			"creation_time": "2018-06-21T21:02:26.460Z",
 			"problem_category": null,
 			"problem_description": "Blade needs to be changed",
-			"first_response_time": null,
-			"first_responder": null,
 			"progress_description": null,
 			"last_updated": null,
 			"last_updated_by": null,
@@ -257,7 +254,6 @@
 		"model": "NEMO.task",
 		"pk": 2,
 		"fields": {
-			"status": 0,
 			"urgency": 1,
 			"tool": 1,
 			"force_shutdown": true,
@@ -266,8 +262,6 @@
 			"creation_time": "2018-06-21T21:02:55.300Z",
 			"problem_category": null,
 			"problem_description": "Tool is offline for maintenance",
-			"first_response_time": null,
-			"first_responder": null,
 			"progress_description": "On Thursday, June 21st, 2018 @ 5:03 PM Captain Nemo (captain) updated this task:\nAwaiting vendor maintenance",
 			"last_updated": "2018-06-21T21:03:34.824Z",
 			"last_updated_by": 1,
