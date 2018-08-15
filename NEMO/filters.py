@@ -1,7 +1,7 @@
 from django_filters import FilterSet, IsoDateTimeFilter, BooleanFilter
 from django_filters.widgets import BooleanWidget
 
-from NEMO.models import Reservation, UsageEvent, AreaAccessRecord
+from NEMO.models import Reservation, UsageEvent, AreaAccessRecord, User
 
 
 class ReservationFilter(FilterSet):
@@ -30,3 +30,12 @@ class AreaAccessRecordFilter(FilterSet):
 	class Meta:
 		model = AreaAccessRecord
 		fields = []
+
+
+class UserFilter(FilterSet):
+
+	class Meta:
+		model = User
+		fields = {
+			'date_joined': ['month', 'year'],
+		}
