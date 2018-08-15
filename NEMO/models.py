@@ -755,18 +755,6 @@ class Interlock(models.Model):
 
 
 class Task(models.Model):
-	class Status(object):  # Marked for deletion
-		CANCELLED = -1
-		REQUIRES_ATTENTION = 0
-		WORK_IN_PROGRESS = 1
-		COMPLETE = 2
-		Choices = (
-			(CANCELLED, 'Cancelled'),
-			(REQUIRES_ATTENTION, 'Requires attention'),
-			(WORK_IN_PROGRESS, 'Work in progress'),
-			(COMPLETE, 'Complete'),
-		)
-
 	class Urgency(object):
 		LOW = -1
 		NORMAL = 0
@@ -776,7 +764,6 @@ class Task(models.Model):
 			(NORMAL, 'Normal'),
 			(HIGH, 'High'),
 		)
-	status = models.IntegerField(choices=Status.Choices, default=Status.REQUIRES_ATTENTION)  # Marked for deletion
 	urgency = models.IntegerField(choices=Urgency.Choices)
 	tool = models.ForeignKey(Tool, help_text="The tool that this task relates to.")
 	force_shutdown = models.BooleanField(default=None, help_text="Indicates that the tool this task relates to will be shutdown until the task is resolved.")
@@ -785,8 +772,6 @@ class Task(models.Model):
 	creation_time = models.DateTimeField(default=timezone.now, help_text="The date and time when the task was created.")
 	problem_category = models.ForeignKey('TaskCategory', null=True, blank=True, related_name='problem_category')
 	problem_description = models.TextField(blank=True, null=True)
-	first_response_time = models.DateTimeField(null=True, blank=True, help_text="The timestamp of when a staff member initially responds to the task by changing its status.")  # Marked for deletion
-	first_responder = models.ForeignKey(User, null=True, blank=True, related_name='task_first_responder', help_text="The staff member who initially assessed the task after it was reported.")  # Marked for deletion
 	progress_description = models.TextField(blank=True, null=True)
 	last_updated = models.DateTimeField(null=True, blank=True, help_text="The last time this task was modified. (Creating the task does not count as modifying it.)")
 	last_updated_by = models.ForeignKey(User, null=True, blank=True, help_text="The last user who modified this task. This should always be a staff member.")
