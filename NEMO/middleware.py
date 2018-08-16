@@ -1,6 +1,12 @@
 import re
 
 from django.http import HttpResponseForbidden
+from django.contrib.auth.middleware import RemoteUserMiddleware
+from django.conf import settings
+
+
+class HTTPHeaderAuthenticationMiddleware(RemoteUserMiddleware):
+	header = "HTTP_" + getattr(settings, "AUTHENTICATION_HEADER", "AUTHORIZATION")
 
 
 class SessionTimeout:

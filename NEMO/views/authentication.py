@@ -66,7 +66,7 @@ class NginxKerberosAuthorizationHeaderAuthenticationBackend(ModelBackend):
 			return None
 		if pieces[0] != "Basic":
 			return None
-		return b64decode(pieces[1]).partition(':')[0]
+		return b64decode(pieces[1]).decode().partition(':')[0]
 
 
 class LDAPAuthenticationBackend(ModelBackend):
