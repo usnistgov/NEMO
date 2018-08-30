@@ -1,9 +1,11 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
+from django.conf import settings
 
 from NEMO.models import Reservation, UsageEvent, AreaAccessRecord, ConsumableWithdraw, StaffCharge, TrainingSession
 from NEMO.utilities import month_list, get_month_timeframe
+from NEMO.views import billing_service
 
 
 @login_required
@@ -20,5 +22,9 @@ def nanofab_usage(request):
 		'month_list': month_list(),
 		'timeframe': request.GET.get('timeframe') or first_of_the_month.strftime('%B, %Y'),
 	}
-	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
+
+	if hasattr(settings, 'BILLING_SERVICE_POSTGRES_CONNECTION'):
+		dictionary['spending'] = billing_service.get_usage_from_billing(request.user, first_of_the_month, last_of_the_month)
+
+	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'] or dictionary['spending'])
 	return render(request, 'nanofab_usage.html', dictionary)

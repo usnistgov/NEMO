@@ -23,6 +23,10 @@
 		</div>
 	</form>
 
+	{% if spending %}
+		{% include 'billing/billing.html' %}
+	{% endif %}
+
 	{% if no_charges %}
 		<h3>There are no billable charges for {{ timeframe }}.</h3>
 	{% endif %}
