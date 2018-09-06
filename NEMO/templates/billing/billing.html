@@ -15,8 +15,10 @@
 						Application: {{ application.1 }}</td>
 					<td colspan="3" style="text-align: right; border-bottom: 1px dotted lightgray"></td>
 					<td style="border-bottom: 1px dotted lightgray; text-align: right">
-						{% if application.0 in spending.user_pi_applications %}${{ spending.application_totals|get_item:
-							application.0|floatformat:2|intcomma }}{% endif %}</td>
+						{% if application.0 in spending.user_pi_applications %}
+							${{ spending.application_totals|get_item:application.0|floatformat:2|intcomma }}
+						{% endif %}
+					</td>
 				</tr>
 				{% for project, users in projects.items %}
 					<tr>

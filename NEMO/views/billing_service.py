@@ -58,6 +58,4 @@ def dict_fetch_all(cursor):
 
 
 def is_user_pi(user, application_pi_row):
-	return application_pi_row is not None and (user.username == application_pi_row['username'] or
-											   (user.first_name == application_pi_row['first_name'] and
-												user.last_name == application_pi_row['last_name']))
+	return application_pi_row is not None and (user.username == application_pi_row['username'] or (user.first_name == application_pi_row['first_name'] and user.last_name == application_pi_row['last_name']))
