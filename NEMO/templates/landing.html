@@ -80,7 +80,7 @@
 		{% for choice in landing_page_choices %}
 			{% if forloop.counter0|divisibleby:4 %}<div class="row">{% endif %}
 				<div class="col-md-3 text-center" style="margin-bottom:30px">
-					<a href="{{ choice.url }}" {% if choice.open_in_new_tab %}target="_blank"{% endif %} {% if secure_referral %}rel="noopener noreferrer"{% endif %} style="text-decoration: none !important">
+					<a href="{{ choice.url }}" {% if choice.open_in_new_tab %}target="_blank"{% endif %} {% if choice.secure_referral %}rel="noopener noreferrer"{% endif %} style="text-decoration: none !important">
 						<img src="{{ choice.image.url }}" height="128" width="128">
 						<h3 style="margin-top:0">{{ choice.name }}</h3>
 					</a>
