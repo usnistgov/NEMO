@@ -10,4 +10,4 @@ django-admin migrate
 django-admin collectstatic --no-input --clear
 
 # Run NEMO
-gunicorn --bind 0.0.0.0:8000 NEMO.wsgi:application --workers=8 --threads=8
+gunicorn --config=/nemo/gunicorn.py NEMO.wsgi:application
