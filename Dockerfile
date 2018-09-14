@@ -6,9 +6,10 @@ RUN pip install /nemo/ gunicorn
 RUN rm --recursive --force /nemo/
 
 RUN mkdir /nemo
+WORKDIR /nemo
 ENV DJANGO_SETTINGS_MODULE "settings"
 ENV PYTHONPATH "/nemo/"
-COPY gunicorn.py /nemo/
+COPY gunicorn.py /nemo
 
 EXPOSE 8000/tcp
 
