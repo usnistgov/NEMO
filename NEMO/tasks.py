@@ -1,8 +1,12 @@
+import logging
 from atexit import register
 from queue import Queue
 from threading import Thread
 
 from django.core.mail import mail_admins
+
+
+logger = logging.getLogger(__name__)
 
 
 def postpone(function):
@@ -16,9 +20,11 @@ def _worker():
 		function, arguments, named_arguments = _queue.get()
 		try:
 			function(*arguments, **named_arguments)
-		except:
+		except Exception as error:
 			from traceback import format_exc
 			details = format_exc()
+			logger.error('An error occurred: ' + type(error).__name__ + ' - ' + str(error))
+			logger.error(details)
 			mail_admins('Background process exception', details)
 		finally:
 			_queue.task_done()  # So we can join at exit

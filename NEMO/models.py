@@ -1,6 +1,7 @@
 import datetime
 import socket
 import struct
+import logging
 from datetime import timedelta
 
 from django.conf import settings
@@ -18,6 +19,9 @@ from django.utils import timezone
 from NEMO.utilities import format_datetime
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
+
+
+interlocks_logger = logging.getLogger("NEMO.interlocks")
 
 
 class CalendarDisplay(models.Model):
@@ -104,6 +108,7 @@ class User(models.Model):
 	REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
 	objects = UserManager()
 
+	# TODO: move those authentication methods out of the model
 	def has_perm(self, perm, obj=None):
 		"""
 		Returns True if the user has each of the specified permissions. If
@@ -160,6 +165,7 @@ class User(models.Model):
 	def get_username(self):
 		return self.username
 
+	# TODO: move this out of the model. wherever it's called (calendar & tasks)
 	def email_user(self, subject, message, from_email=None):
 		""" Sends an email to this user. """
 		send_mail(subject=subject, message='', from_email=from_email, recipient_list=[self.email], html_message=message)
@@ -637,6 +643,7 @@ class Interlock(models.Model):
 	state = models.IntegerField(choices=State.Choices, default=State.UNKNOWN)
 	most_recent_reply = models.TextField(default="None")
 
+	# TODO: move this application logic out of the model
 	def unlock(self):
 		return self.__issue_command(self.State.UNLOCKED)
 
@@ -648,6 +655,7 @@ class Interlock(models.Model):
 			self.most_recent_reply = "Interlock interface mocked out because settings.DEBUG = True. Interlock last set on " + format_datetime(timezone.now()) + "."
 			self.state = command_type
 			self.save()
+			interlocks_logger.debug(self.most_recent_reply)
 			return True
 
 		# The string in this next function call identifies the format of the interlock message.
@@ -709,6 +717,7 @@ class Interlock(models.Model):
 			reply_message += " command "
 			if reply[5]:  # Index 5 of the reply is the return value of the whole command.
 				reply_message += "succeeded."
+				interlocks_logger.debug(reply_message)
 			else:
 				reply_message += "failed. Response information: " +\
 								"Instruction count = " + str(reply[0]) + ", " +\
@@ -725,6 +734,7 @@ class Interlock(models.Model):
 								"ADC done = " + str(reply[11]) + ", " +\
 								"busy = " + str(reply[12]) + ", " +\
 								"instruction return value = " + str(reply[13]) + "."
+				interlocks_logger.error(reply_message)
 
 		# Log any errors that occurred during the operation into the database.
 		except OSError as error:
@@ -733,12 +743,15 @@ class Interlock(models.Model):
 				reply_message += " " + str(error.errno)
 			reply_message += ": " + str(error)
 			self.state = self.State.UNKNOWN
+			interlocks_logger.error(reply_message)
 		except struct.error as error:
 			reply_message = "Response format error. " + str(error)
 			self.state = self.State.UNKNOWN
+			interlocks_logger.error(reply_message)
 		except Exception as error:
 			reply_message = "General exception. " + str(error)
 			self.state = self.State.UNKNOWN
+			interlocks_logger.error(reply_message)
 		finally:
 			sock.close()
 			self.most_recent_reply = reply_message

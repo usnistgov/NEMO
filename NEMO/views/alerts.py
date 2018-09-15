@@ -15,7 +15,7 @@ def alerts(request):
 	alert_id = request.GET.get('alert_id') or request.POST.get('alert_id')
 	try:
 		alert = Alert.objects.get(id=alert_id)
-	except:
+	except Alert.DoesNotExist:
 		alert = None
 	if request.method == 'GET':
 		form = AlertForm(instance=alert)

@@ -108,8 +108,8 @@ def query_public_key():
 	except gaierror:
 		print('DNS name resolution failed.')
 		return
-	except socket_error as e:
-		print(f'Socket error: {e}')
+	except socket_error as error:
+		print(f'Socket error: {error}')
 		return
 
 	if len(ip_addresses) == 0:
@@ -118,8 +118,8 @@ def query_public_key():
 		try:
 			certificate = get_server_certificate((name, port))
 			print(certificate)
-		except socket_error as e:
-			print(f'Socket error: {e}')
+		except socket_error as error:
+			print(f'Socket error: {error}')
 			return
 	elif len(ip_addresses) > 1:
 		print(f"Name resolves to {len(ip_addresses)} IP addresses: {ip_addresses}")
@@ -128,8 +128,8 @@ def query_public_key():
 			try:
 				certificate = get_server_certificate((ip, port))
 				print(certificate)
-			except socket_error as e:
-				print(f'Socket error: {e}')
+			except socket_error as error:
+				print(f'Socket error: {error}')
 
 
 def test_ldap_authentication():
@@ -146,11 +146,11 @@ def test_ldap_authentication():
 		c.unbind()
 		# At this point the user successfully authenticated to at least one LDAP server.
 		print("Authentication successful!")
-	except LDAPBindError as e:
+	except LDAPBindError:
 		pass  # When this error is caught it means the username and password were invalid against the LDAP server.
-	except LDAPExceptionError as e:
+	except LDAPExceptionError as error:
 		print("A problem was encountered during authentication:\n")
-		print(e)
+		print(error)
 
 
 def generate_tls_keys():

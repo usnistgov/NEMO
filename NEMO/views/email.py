@@ -1,3 +1,4 @@
+import logging
 from smtplib import SMTPException
 
 from django.contrib.admin.views.decorators import staff_member_required
@@ -12,6 +13,9 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.forms import EmailBroadcastForm
 from NEMO.models import Tool, Account, Project, User
 from NEMO.views.customization import get_media_file_contents
+
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -50,11 +54,13 @@ def send_email(request):
 		email = EmailMultiAlternatives(subject, from_email=sender, bcc=recipient_list)
 		email.attach_alternative(body, 'text/html')
 		email.send()
-	except SMTPException as e:
+	except SMTPException as error:
+		error_message = 'NEMO was unable to send the email through the email server. The error message that NEMO received is: ' + str(error)
+		logger.error(error_message)
 		dictionary = {
 			'title': 'Email not sent',
 			'heading': 'There was a problem sending your email',
-			'content': 'NEMO was unable to send the email through the email server. The error message that NEMO received is: ' + str(e),
+			'content': error_message,
 		}
 		return render(request, 'acknowledgement.html', dictionary)
 	dictionary = {
@@ -155,11 +161,13 @@ def send_broadcast_email(request):
 		email = EmailMultiAlternatives(subject, from_email=request.user.email, bcc=set(users))
 		email.attach_alternative(content, 'text/html')
 		email.send()
-	except SMTPException as e:
+	except SMTPException as error:
+		error_message = 'NEMO was unable to send the email through the email server. The error message that NEMO received is: ' + str(error)
+		logger.error(error_message)
 		dictionary = {
 			'title': 'Email not sent',
 			'heading': 'There was a problem sending your email',
-			'content': 'NEMO was unable to send the email through the email server. The error message that NEMO received is: ' + str(e),
+			'content': error_message,
 		}
 		return render(request, 'acknowledgement.html', dictionary)
 	dictionary = {

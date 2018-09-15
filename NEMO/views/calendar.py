@@ -14,7 +14,8 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory
-from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string
+from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, \
+	parse_parameter_string, InvalidParameter
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage
@@ -51,8 +52,8 @@ def event_feed(request):
 	""" Get all reservations for a specific time-window. Optionally: filter by tool or user name. """
 	try:
 		start, end = extract_dates(request.GET)
-	except Exception as e:
-		return HttpResponseBadRequest('Invalid start or end time. ' + str(e))
+	except InvalidParameter as error:
+		return HttpResponseBadRequest('Invalid start or end time. ' + str(error))
 
 	# We don't want to let someone hammer the database with phony calendar feed lookups.
 	# Block any requests that have a duration of more than 8 weeks. The FullCalendar
@@ -185,14 +186,14 @@ def create_reservation(request):
 	""" Create a reservation for a user. """
 	try:
 		start, end = extract_times(request.POST)
-	except Exception as e:
-		return HttpResponseBadRequest(str(e))
+	except InvalidParameter as error:
+		return HttpResponseBadRequest(str(error))
 	tool = get_object_or_404(Tool, name=request.POST.get('tool_name'))
 	explicit_policy_override = False
 	if request.user.is_staff:
 		try:
-			user = User.objects.get(id=request.POST['impersonate'])
-		except:
+			user = User.objects.get(id=request.POST.get('impersonate'))
+		except User.DoesNotExist:
 			user = request.user
 		try:
 			explicit_policy_override = request.POST['explicit_policy_override'] == 'true'
@@ -223,8 +224,8 @@ def create_reservation(request):
 		new_reservation.project = active_projects[0]
 	else:
 		try:
-			new_reservation.project = Project.objects.get(id=request.POST['project_id'])
-		except:
+			new_reservation.project = Project.objects.get(id=request.POST.get('project_id'))
+		except Project.DoesNotExist:
 			return render(request, 'calendar/project_choice.html', {'active_projects': active_projects})
 
 	# Make sure the user is actually enrolled on the project. We wouldn't want someone
@@ -289,8 +290,8 @@ def create_outage(request):
 	""" Create a reservation for a user. """
 	try:
 		start, end = extract_times(request.POST)
-	except Exception as e:
-		return HttpResponseBadRequest(str(e))
+	except InvalidParameter as error:
+		return HttpResponseBadRequest(str(error))
 	tool = get_object_or_404(Tool, name=request.POST.get('tool_name'))
 	# Create the new reservation:
 	outage = ScheduledOutage()
@@ -368,7 +369,7 @@ def modify_reservation(request, start_delta, end_delta):
 	not be tied directly to a URL.
 	"""
 	try:
-		reservation_to_cancel = Reservation.objects.get(pk=request.POST['id'])
+		reservation_to_cancel = Reservation.objects.get(pk=request.POST.get('id'))
 	except Reservation.DoesNotExist:
 		return HttpResponseNotFound("The reservation that you wish to modify doesn't exist!")
 	response = check_policy_to_cancel_reservation(reservation_to_cancel, request.user)

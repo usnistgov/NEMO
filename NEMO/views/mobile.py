@@ -9,7 +9,7 @@ from django.utils.dateparse import parse_time, parse_date
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import Reservation, Tool, Project, ScheduledOutage
-from NEMO.utilities import extract_date, localize, beginning_of_the_day, end_of_the_day
+from NEMO.utilities import extract_date, localize, beginning_of_the_day, end_of_the_day, InvalidParameter
 from NEMO.views.calendar import extract_configuration, determine_insufficient_notice
 from NEMO.views.policy import check_policy_to_save_reservation
 
@@ -74,8 +74,8 @@ def make_reservation(request):
 
 	# All policy checks have passed.
 	try:
-		reservation.project = Project.objects.get(id=request.POST['project_id'])
-	except:
+		reservation.project = Project.objects.get(id=request.POST.get('project_id'))
+	except Project.DoesNotExist:
 		if not request.user.is_staff:
 			return render(request, 'mobile/error.html', {'message': 'You must specify a project for your reservation'})
 
@@ -94,7 +94,7 @@ def view_calendar(request, tool_id, date=None):
 	if date:
 		try:
 			date = extract_date(date)
-		except:
+		except InvalidParameter:
 			render(request, 'mobile/error.html', {'message': 'Invalid date requested for tool calendar'})
 			return HttpResponseBadRequest()
 	else:

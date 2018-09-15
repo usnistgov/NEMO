@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.http import require_GET
 
-from NEMO.models import Task, TaskCategory, TaskStatus, TaskHistory
+from NEMO.models import Task, TaskCategory, TaskStatus
 
 
 @staff_member_required(login_url=None)

@@ -1,3 +1,4 @@
+import logging
 from copy import deepcopy
 from datetime import timedelta
 from http import HTTPStatus
@@ -6,17 +7,21 @@ from itertools import chain
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseServerError
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import logger, require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import CommentForm, nice_errors
-from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, TaskCategory, TaskStatus, Tool, UsageEvent, User
-from NEMO.utilities import extract_times, quiet_int
+from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, \
+	TaskCategory, TaskStatus, Tool, UsageEvent, User
+from NEMO.utilities import extract_times, quiet_int, InvalidParameter
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
-from NEMO.widgets.tool_tree import ToolTree
 from NEMO.widgets.dynamic_form import DynamicForm
+from NEMO.widgets.tool_tree import ToolTree
+
+logger = logging.getLogger(__name__)
+interlocks_logger = logging.getLogger("NEMO.interlocks")
 
 
 @login_required
@@ -81,10 +86,7 @@ def use_tool_for_other(request):
 @require_POST
 def tool_configuration(request):
 	""" Sets the current configuration of a tool. """
-	try:
-		configuration = Configuration.objects.get(id=request.POST['configuration_id'])
-	except:
-		return HttpResponseNotFound('Configuration not found.')
+	configuration = get_object_or_404(Configuration, id=request.POST.get('configuration_id'))
 	if configuration.tool.in_use():
 		return HttpResponseBadRequest('Cannot change a configuration while a tool is in use.')
 	if not configuration.user_is_maintainer(request.user):
@@ -163,7 +165,10 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 
 	# All policy checks passed so enable the tool for the user.
 	if tool.interlock and not tool.interlock.unlock():
-		raise Exception("The interlock command for this tool failed. The error message returned: " + str(tool.interlock.most_recent_reply))
+		error_message = f"The interlock command for the {tool} failed. The error message returned: {tool.interlock.most_recent_reply}"
+		interlocks_logger.error(error_message)
+		raise Exception(error_message)
+		# TODO: return HttpResponseServerError instead of raising exception?
 
 	# Create a new usage event to track how long the user uses the tool.
 	new_usage_event = UsageEvent()
@@ -216,7 +221,7 @@ def disable_tool(request, tool_id):
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
 		error_message = f"The interlock command for the {tool} failed. The error message returned: {tool.interlock.most_recent_reply}"
-		logger.error(error_message)
+		interlocks_logger.error(error_message)
 		return HttpResponseServerError(error_message)
 
 	# End the current usage event for the tool
@@ -240,8 +245,8 @@ def disable_tool(request, tool_id):
 def past_comments_and_tasks(request):
 	try:
 		start, end = extract_times(request.GET)
-	except:
-		return HttpResponseBadRequest('Please enter a start and end date.')
+	except InvalidParameter as error:
+		return HttpResponseBadRequest('Please enter a start and end date. ' + str(error))
 	tool_id = request.GET.get('tool_id')
 	try:
 		tasks = Task.objects.filter(tool_id=tool_id, creation_time__gt=start, creation_time__lt=end)

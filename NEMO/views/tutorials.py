@@ -36,6 +36,7 @@ def nanofab_rules(request):
 			'heading': 'Tutorial complete!',
 			'content': 'Tool usage and reservation privileges have been enabled on your user account.',
 		}
+		# TODO: I think this is a concurrency issue waiting to happen. Get user then update then save
 		request.user.training_required = False
 		request.user.save()
 		return render(request, 'acknowledgement.html', dictionary)

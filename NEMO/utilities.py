@@ -8,6 +8,10 @@ from django.utils import timezone
 from django.utils.timezone import localtime
 
 
+class InvalidParameter(Exception):
+	"""The requested parameter is invalid"""
+
+
 def bootstrap_primary_color(color_type):
 	if color_type == 'success':
 		return '#5cb85c'
@@ -47,11 +51,11 @@ def parse_parameter_string(parameter_dictionary, parameter_key, maximum_length=3
 	try:
 		parameter = parameter_dictionary[parameter_key].strip()
 		if raise_on_error and len(parameter) > maximum_length:
-			raise Exception('The parameter named {} is {} characters long, exceeding the maximum length of {} characters.'.format(parameter_key, len(parameter), maximum_length))
+			raise InvalidParameter('The parameter named {} is {} characters long, exceeding the maximum length of {} characters.'.format(parameter_key, len(parameter), maximum_length))
 		return parameter
-	except Exception as e:
+	except Exception as error:
 		if raise_on_error:
-			raise e
+			raise InvalidParameter(str(error))
 		return default_return
 
 
@@ -80,30 +84,30 @@ def extract_times(parameters, input_timezone=None):
 	"""
 	try:
 		start = parameters['start']
-	except:
-		raise Exception("The request parameters did not contain a start time.")
+	except KeyError:
+		raise InvalidParameter("The request parameters did not contain a start time.")
 
 	try:
 		end = parameters['end']
-	except:
-		raise Exception("The request parameters did not contain an end time.")
+	except KeyError:
+		raise InvalidParameter("The request parameters did not contain an end time.")
 
 	try:
 		start = float(start)
 		start = datetime.utcfromtimestamp(start)
 		start = localize(start, input_timezone)
 	except:
-		raise Exception("The request parameters did not have a valid start time.")
+		raise InvalidParameter("The request parameters did not have a valid start time.")
 
 	try:
 		end = float(end)
 		end = datetime.utcfromtimestamp(end)
 		end = localize(end, input_timezone)
 	except:
-		raise Exception("The request parameters did not have a valid end time.")
+		raise InvalidParameter("The request parameters did not have a valid end time.")
 
 	if end < start:
-		raise Exception("The request parameters have an end time that precedes the start time.")
+		raise InvalidParameter("The request parameters have an end time that precedes the start time.")
 
 	return start, end
 
@@ -118,26 +122,26 @@ def extract_dates(parameters):
 	"""
 	try:
 		start = parameters['start']
-	except:
-		raise Exception("The request parameters did not contain a start time.")
+	except KeyError:
+		raise InvalidParameter("The request parameters did not contain a start time.")
 
 	try:
 		end = parameters['end']
-	except:
-		raise Exception("The request parameters did not contain an end time.")
+	except KeyError:
+		raise InvalidParameter("The request parameters did not contain an end time.")
 
 	try:
 		start = extract_date(start)
 	except:
-		raise Exception("The request parameters did not have a valid start time.")
+		raise InvalidParameter("The request parameters did not have a valid start time.")
 
 	try:
 		end = extract_date(end)
 	except:
-		raise Exception("The request parameters did not have a valid end time.")
+		raise InvalidParameter("The request parameters did not have a valid end time.")
 
 	if end < start:
-		raise Exception("The request parameters have an end time that precedes the start time.")
+		raise InvalidParameter("The request parameters have an end time that precedes the start time.")
 
 	return start, end
 
@@ -153,11 +157,14 @@ def format_datetime(universal_time):
 
 
 def localize(dt, tz=None):
-	tz = tz or timezone.get_current_timezone()
-	if isinstance(dt, list):
-		return [tz.localize(d) for d in dt]
-	else:
-		return tz.localize(dt)
+	try:
+		tz = tz or timezone.get_current_timezone()
+		if isinstance(dt, list):
+			return [tz.localize(d) for d in dt]
+		else:
+			return tz.localize(dt)
+	except Exception as error:
+		raise InvalidParameter(str(error))
 
 
 def naive_local_current_datetime():

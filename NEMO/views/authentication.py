@@ -1,6 +1,6 @@
+import logging
 from _ssl import PROTOCOL_TLSv1_2, CERT_REQUIRED
 from base64 import b64decode
-from logging import exception
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout
@@ -10,12 +10,15 @@ from django.shortcuts import render
 from django.urls import reverse, resolve
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
-from django.views.decorators.http import require_http_methods, require_GET, logger
+from django.views.decorators.http import require_http_methods, require_GET
 from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE
 from ldap3.core.exceptions import LDAPBindError, LDAPExceptionError
 
 from NEMO.models import User
 from NEMO.views.customization import get_media_file_contents
+
+
+logger = logging.getLogger(__name__)
 
 
 class RemoteUserAuthenticationBackend(RemoteUserBackend):
@@ -97,11 +100,11 @@ class LDAPAuthenticationBackend(ModelBackend):
 				c.unbind()
 				# At this point the user successfully authenticated to at least one LDAP server.
 				return user
-			except LDAPBindError as e:
-				logger.warning(f"User {username} attempted to authenticate with LDAP, but entered an incorrect password. The user was denied access.")
+			except LDAPBindError as error:
+				logger.warning(f"User {username} attempted to authenticate with LDAP, but entered an incorrect password. The user was denied access. " + str(error))
 				pass  # When this error is caught it means the username and password were invalid against the LDAP server.
-			except LDAPExceptionError as e:
-				exception(e)
+			except LDAPExceptionError as error:
+				logger.error(error)
 
 		# The user did not successfully authenticate to any of the LDAP servers.
 		return None

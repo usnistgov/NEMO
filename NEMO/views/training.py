@@ -7,6 +7,10 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import User, Tool, TrainingSession, Project, MembershipHistory
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 @staff_member_required(login_url=None)
 @require_GET
@@ -54,7 +58,8 @@ def charge_training(request):
 					charges[index].qualified = (value == "on")
 		for c in charges.values():
 			c.full_clean()
-	except Exception:
+	except Exception as error:
+		logger.error('An error occurred while processing the training charges: ' + type(error).__name__ + ' - ' + str(error))
 		return HttpResponseBadRequest('An error occurred while processing the training charges. None of the charges were committed to the database. Please review the form for errors and omissions then submit the form again.')
 	else:
 		for c in charges.values():

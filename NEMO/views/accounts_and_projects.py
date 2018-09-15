@@ -1,4 +1,5 @@
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
@@ -17,7 +18,7 @@ def accounts_and_projects(request, kind=None, identifier=None):
 			account = Account.objects.get(id=identifier)
 		else:
 			account = None
-	except:
+	except ObjectDoesNotExist:
 		account = None
 	dictionary = {
 		'account': account,

@@ -1,3 +1,4 @@
+import logging
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404, redirect
@@ -5,6 +6,9 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from NEMO.forms import ScheduledOutageForm
 from NEMO.models import Resource, UsageEvent, Tool, ScheduledOutage, ScheduledOutageCategory
+
+
+logger = logging.getLogger(__name__)
 
 
 @staff_member_required(login_url=None)
@@ -38,6 +42,7 @@ def modify_resource(request, resource_id):
 			resource.available = True
 			resource.save()
 		else:
+			logger.error(f'The server received an invalid resource modification request. status={status}')
 			dictionary['error'] = 'The server received an invalid resource modification request.'
 			return render(request, 'resources/modify_resource.html', dictionary)
 		return redirect('resources')

@@ -21,8 +21,8 @@ def staff_charges(request):
 	error = None
 	customer = None
 	try:
-		customer = User.objects.get(id=request.GET['customer'])
-	except:
+		customer = User.objects.get(id=request.GET.get('customer'))
+	except User.DoesNotExist:
 		pass
 	if customer:
 		if customer.active_project_count() > 0:

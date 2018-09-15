@@ -1,3 +1,4 @@
+import logging
 from copy import deepcopy
 from datetime import timedelta
 from http import HTTPStatus
@@ -13,6 +14,9 @@ from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enab
 from NEMO.views.status_dashboard import create_tool_summary
 from NEMO.utilities import quiet_int
 from NEMO.widgets.dynamic_form import DynamicForm
+
+
+interlocks_logger = logging.getLogger("NEMO.interlocks")
 
 
 @login_required
@@ -33,7 +37,9 @@ def enable_tool(request):
 
 	# All policy checks passed so enable the tool for the user.
 	if tool.interlock and not tool.interlock.unlock():
-		raise Exception("The interlock command for this tool failed. The error message returned: " + str(tool.interlock.most_recent_reply))
+		error_message = "The interlock command for this tool failed. The error message returned: " + str(tool.interlock.most_recent_reply)
+		interlocks_logger.error(error_message)
+		raise Exception(error_message)
 
 	# Create a new usage event to track how long the user uses the tool.
 	new_usage_event = UsageEvent()
@@ -79,7 +85,9 @@ def disable_tool(request):
 
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
-		raise Exception("The interlock command for this tool failed. The error message returned: " + str(tool.interlock.most_recent_reply))
+		error_message = "The interlock command for this tool failed. The error message returned: " + str(tool.interlock.most_recent_reply)
+		interlocks_logger.error(error_message)
+		raise Exception(error_message)
 	# End the current usage event for the tool and save it.
 	current_usage_event = tool.get_current_usage_event()
 	current_usage_event.end = timezone.now() + downtime
@@ -97,8 +105,8 @@ def disable_tool(request):
 @require_GET
 def choices(request):
 	try:
-		customer = User.objects.get(badge_number=request.GET['badge_number'])
-	except:
+		customer = User.objects.get(badge_number=request.GET.get('badge_number'))
+	except User.DoesNotExist:
 		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please visit the NanoFab user office to resolve the problem."}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
 	dictionary = {
@@ -117,7 +125,7 @@ def choices(request):
 def category_choices(request, category, user_id):
 	try:
 		customer = User.objects.get(id=user_id)
-	except:
+	except User.DoesNotExist:
 		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please visit the NanoFab user office to resolve the problem."}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
 	tools = Tool.objects.filter(visible=True, category=category)
