@@ -11,3 +11,4 @@ bind = "0.0.0.0:8000"
 workers = cpu_count() * 2 + 1
 
 keepalive = 60
+capture_output = True
