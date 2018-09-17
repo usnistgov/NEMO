@@ -1,6 +1,6 @@
 # This is the default Gunicorn configuration file for the NEMO Docker image.
-# It is mounted inside the image at /nemo/gunicorn.py, and you can override it by
-# mounting your own configuration file to this location.
+# It is mounted inside the image at /etc/gunicorn_configuration.py, and you can override it by
+# mounting your own configuration file to this location or providing command line arguments to Gunicorn.
 
 from multiprocessing import cpu_count
 
