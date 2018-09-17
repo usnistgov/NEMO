@@ -9,7 +9,7 @@ RUN mkdir /nemo
 WORKDIR /nemo
 ENV DJANGO_SETTINGS_MODULE "settings"
 ENV PYTHONPATH "/nemo/"
-COPY gunicorn_configuration.py /nemo
+COPY gunicorn_configuration.py /etc/
 
 EXPOSE 8000/tcp
 
