@@ -23,7 +23,7 @@ def nanofab_usage(request):
 		'timeframe': request.GET.get('timeframe') or first_of_the_month.strftime('%B, %Y'),
 	}
 
-	if hasattr(settings, 'BILLING_SERVICE_POSTGRES_CONNECTION'):
+	if hasattr(settings, 'BILLING_SERVICE'):
 		dictionary['spending'] = billing_service.get_usage_from_billing(request.user, first_of_the_month, last_of_the_month)
 
 	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'] or dictionary['spending'])
