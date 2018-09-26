@@ -73,7 +73,8 @@
 			<div class="alert alert-info">
 				<span style="font-weight:bold">{{ a.area }}</span><br>
 				{{ a.start }}<br>
-				{{ a.end|default_if_none:"In progress" }}
+				{{ a.end|default_if_none:"In progress" }}<br>
+				Charged to project {{ a.project }}
 			</div>
 		{% endfor %}
 	{% endif %}
