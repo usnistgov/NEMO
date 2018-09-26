@@ -2,6 +2,9 @@
 {% load custom_tags_and_filters %}
 <h3>Spending</h3>
 <div class="alert" style="background: #e0e0e0; border-color: #b3b3b3; color: #616161">
+	{% if spending.error %}
+		{{ spending.error }}
+	{% endif %}
 	<table>
 		{% for account, value in spending.activities.items %}
 			<tr>
