@@ -59,7 +59,7 @@ def charge_training(request):
 		for c in charges.values():
 			c.full_clean()
 	except Exception as error:
-		logger.error('An error occurred while processing the training charges: ' + type(error).__name__ + ' - ' + str(error))
+		logger.exception('An error occurred while processing the training charges: ' + type(error).__name__ + ' - ' + str(error))
 		return HttpResponseBadRequest('An error occurred while processing the training charges. None of the charges were committed to the database. Please review the form for errors and omissions then submit the form again.')
 	else:
 		for c in charges.values():

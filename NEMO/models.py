@@ -743,15 +743,15 @@ class Interlock(models.Model):
 				reply_message += " " + str(error.errno)
 			reply_message += ": " + str(error)
 			self.state = self.State.UNKNOWN
-			interlocks_logger.error(reply_message)
+			interlocks_logger.exception(reply_message)
 		except struct.error as error:
 			reply_message = "Response format error. " + str(error)
 			self.state = self.State.UNKNOWN
-			interlocks_logger.error(reply_message)
+			interlocks_logger.exception(reply_message)
 		except Exception as error:
 			reply_message = "General exception. " + str(error)
 			self.state = self.State.UNKNOWN
-			interlocks_logger.error(reply_message)
+			interlocks_logger.exception(reply_message)
 		finally:
 			sock.close()
 			self.most_recent_reply = reply_message

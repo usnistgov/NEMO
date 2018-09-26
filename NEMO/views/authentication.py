@@ -103,8 +103,8 @@ class LDAPAuthenticationBackend(ModelBackend):
 			except LDAPBindError as error:
 				logger.warning(f"User {username} attempted to authenticate with LDAP, but entered an incorrect password. The user was denied access. " + str(error))
 				pass  # When this error is caught it means the username and password were invalid against the LDAP server.
-			except LDAPExceptionError as error:
-				logger.error(error)
+			except LDAPExceptionError:
+				logger.exception('LDAP error')
 
 		# The user did not successfully authenticate to any of the LDAP servers.
 		return None

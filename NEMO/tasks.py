@@ -23,8 +23,7 @@ def _worker():
 		except Exception as error:
 			from traceback import format_exc
 			details = format_exc()
-			logger.error('An error occurred: ' + type(error).__name__ + ' - ' + str(error))
-			logger.error(details)
+			logger.exception('An error occurred: ' + type(error).__name__ + ' - ' + str(error))
 			mail_admins('Background process exception', details)
 		finally:
 			_queue.task_done()  # So we can join at exit

@@ -56,7 +56,7 @@ def send_email(request):
 		email.send()
 	except SMTPException as error:
 		error_message = 'NEMO was unable to send the email through the email server. The error message that NEMO received is: ' + str(error)
-		logger.error(error_message)
+		logger.exception(error_message)
 		dictionary = {
 			'title': 'Email not sent',
 			'heading': 'There was a problem sending your email',
@@ -163,7 +163,7 @@ def send_broadcast_email(request):
 		email.send()
 	except SMTPException as error:
 		error_message = 'NEMO was unable to send the email through the email server. The error message that NEMO received is: ' + str(error)
-		logger.error(error_message)
+		logger.exception(error_message)
 		dictionary = {
 			'title': 'Email not sent',
 			'heading': 'There was a problem sending your email',

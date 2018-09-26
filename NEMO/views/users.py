@@ -59,7 +59,7 @@ def create_or_modify_user(request, user_id):
 			warning_message = 'There was a problem communicating with the identity service. NEMO is unable to retrieve the list of externally managed areas. The NEMO administrator has been notified to resolve the problem.'
 			dictionary['warning'] = warning_message
 			warning_message += ' An exception was encountered: ' + type(error).__name__ + ' - ' + str(error)
-			identity_service_logger.error(warning_message)
+			identity_service_logger.exception(warning_message)
 	else:
 		dictionary['warning'] = 'The identity service is disabled. You will not be able to modify externally managed physical access levels, reset account passwords, or unlock accounts.'
 
@@ -87,7 +87,7 @@ def create_or_modify_user(request, user_id):
 			warning_message = 'There was a problem communicating with the identity service. NEMO is unable to search for a user. The NEMO administrator has been notified to resolve the problem.'
 			dictionary['warning'] = warning_message
 			warning_message += ' An exception was encountered: ' + type(error).__name__ + ' - ' + str(error)
-			identity_service_logger.error(warning_message)
+			identity_service_logger.exception(warning_message)
 		return render(request, 'users/create_or_modify_user.html', dictionary)
 	elif request.method == 'POST':
 		form = UserForm(request.POST, instance=user)
@@ -115,7 +115,7 @@ def create_or_modify_user(request, user_id):
 						return render(request, 'users/create_or_modify_user.html', dictionary)
 				except Exception as error:
 					dictionary['identity_service_available'] = False
-					identity_service_logger.error('There was a problem communicating with the identity service while attempting to delete a user. An exception was encountered: ' + type(error).__name__ + ' - ' + str(error))
+					identity_service_logger.exception('There was a problem communicating with the identity service while attempting to delete a user. An exception was encountered: ' + type(error).__name__ + ' - ' + str(error))
 					dictionary['warning'] = 'The user information was not modified because the identity service could not delete the corresponding domain account. The NEMO administrator has been notified to resolve the problem.'
 					return render(request, 'users/create_or_modify_user.html', dictionary)
 
@@ -144,7 +144,7 @@ def create_or_modify_user(request, user_id):
 					return render(request, 'users/create_or_modify_user.html', dictionary)
 			except Exception as error:
 				dictionary['identity_service_available'] = False
-				identity_service_logger.error('There was a problem communicating with the identity service while attempting to modify a user. An exception was encountered: ' + type(error).__name__ + ' - ' + str(error))
+				identity_service_logger.exception('There was a problem communicating with the identity service while attempting to modify a user. An exception was encountered: ' + type(error).__name__ + ' - ' + str(error))
 				dictionary['warning'] = 'The user information was not modified because the identity service encountered a problem while creating the corresponding domain account. The NEMO administrator has been notified to resolve the problem.'
 				return render(request, 'users/create_or_modify_user.html', dictionary)
 
@@ -191,7 +191,7 @@ def deactivate(request, user_id):
 					dictionary['warning'] = 'The user information was not modified because the identity service could not delete the corresponding domain account. The NEMO administrator has been notified to resolve the problem.'
 					return render(request, 'users/safe_deactivation.html', dictionary)
 			except Exception as error:
-				identity_service_logger.error('There was a problem communicating with the identity service while attempting to delete a user. An exception was encountered: ' + type(error).__name__ + ' - ' + str(error))
+				identity_service_logger.exception('There was a problem communicating with the identity service while attempting to delete a user. An exception was encountered: ' + type(error).__name__ + ' - ' + str(error))
 				dictionary['warning'] = 'The user information was not modified because the identity service could not delete the corresponding domain account. The NEMO administrator has been notified to resolve the problem.'
 				return render(request, 'users/safe_deactivation.html', dictionary)
 
@@ -268,7 +268,7 @@ def reset_password(request, user_id):
 			}
 	except Exception as error:
 		error_message = 'Exception caught: {}. {}'.format(type(error).__name__, str(error))
-		identity_service_logger.error(error_message)
+		identity_service_logger.exception(error_message)
 		dictionary = {
 			'title': 'Oops',
 			'heading': 'There was a problem communicating with the identity service',
@@ -298,7 +298,7 @@ def unlock_account(request, user_id):
 			}
 	except Exception as error:
 		error_message = 'Exception caught: {}. {}'.format(type(error).__name__, str(error))
-		identity_service_logger.error(error_message)
+		identity_service_logger.exception(error_message)
 		dictionary = {
 			'title': 'Oops',
 			'heading': 'There was a problem communicating with the identity service',
