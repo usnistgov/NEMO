@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}News{% endblock %}
+{% block content %}
+	<h1>
+		Recent news
+		{% if device == 'desktop' and user.is_staff %}
+			<a href="{% url 'new_news_form' %}" class="btn btn-success pull-right">Publish new news</a>
+		{% endif %}
+	</h1>
+	{% if news %}
+		{% if user.is_staff %}
+			{% if device == 'mobile' %}<p><a href="{% url 'new_news_form' %}" class="btn btn-success">Publish new news</a></p>{% endif %}
+			<p>Click a news story title to publish an update or archive it.</p>
+		{% endif %}
+		<p>Stories that were updated recently appear first.</p>
+	{% endif %}
+	<p>You can also <a href="{% url 'view_archived_news' %}">view archived news</a>.</p>
+	<div class="row">
+		{% for story in news %}
+			<div class="col-sm-12">
+				<h3 style="line-height:1.4">
+					{% if user.is_staff %}<a href="{% url 'news_update_form' story.id %}">{% endif %}
+					{{ story.title }}
+					{% if user.is_staff %}</a>{% endif %}
+				</h3>
+				{% if story.update_count > 2 %}
+					<div id="abridged_story_{{ story.id }}">
+						<p>{{ story.original_content|linebreaksbr }}</p>
+						<p>... <a href="javascript:expand_story({{ story.id }})">show full story</a> ...</p>
+						<p>{{ story.last_update_content|linebreaksbr }}</p>
+					</div>
+					<div id="full_story_{{ story.id }}" style="display:none">
+						<p>{{ story.all_content|linebreaksbr }}</p>
+					</div>
+				{% else %}
+					<p>{{ story.all_content|linebreaksbr }}</p>
+				{% endif %}
+			</div>
+		{% empty %}
+			<div class="col-sm-12">
+				There's no news!
+			</div>
+		{% endfor %}
+	</div>
+	<script>
+		function expand_story(story_id)
+		{
+			let fade_in = function() { $('#full_story_' + story_id).fadeIn() };
+			$('#abridged_story_' + story_id).fadeOut(undefined, "swing", fade_in);
+			return false;
+		}
+	</script>
+{% endblock %}

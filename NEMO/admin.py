@@ -5,7 +5,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 
 from NEMO.actions import lock_selected_interlocks, unlock_selected_interlocks
-from NEMO.models import Tool, UsageEvent, Reservation, Project, Account, Consumable, ConsumableWithdraw, InterlockCard, Interlock, Task, MembershipHistory, ActivityHistory, Configuration, TaskCategory, Comment, ConfigurationHistory, Resource, User, TrainingSession, StaffCharge, AreaAccessRecord, ConsumableCategory, ResourceCategory, Door, PhysicalAccessLevel, PhysicalAccessLog, SafetyIssue, Area, Alert, UserType, ContactInformationCategory, ContactInformation, LandingPageChoice, Customization, ScheduledOutage, TaskHistory, TaskStatus, ScheduledOutageCategory
+from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord, Comment, Configuration, ConfigurationHistory, Consumable, ConsumableCategory, ConsumableWithdraw, ContactInformation, ContactInformationCategory, Customization, Door, Interlock, InterlockCard, LandingPageChoice, MembershipHistory, PhysicalAccessLevel, PhysicalAccessLog, Project, Reservation, Resource, ResourceCategory, SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, Tool, TrainingSession, UsageEvent, User, UserType, News
 
 admin.site.site_header = "NEMO"
 admin.site.site_title = "NEMO"
@@ -447,6 +447,12 @@ class ScheduledOutageCategoryAdmin(admin.ModelAdmin):
 @register(ScheduledOutage)
 class ScheduledOutageAdmin(admin.ModelAdmin):
 	list_display = ('id', 'tool', 'resource', 'creator', 'title', 'start', 'end')
+
+
+@register(News)
+class NewsAdmin(admin.ModelAdmin):
+	list_display = ('id', 'created', 'last_updated', 'archived', 'title')
+	list_filter = ('archived',)
 
 
 admin.site.register(ResourceCategory)

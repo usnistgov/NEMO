@@ -1166,3 +1166,18 @@ class ScheduledOutage(models.Model):
 
 	def __str__(self):
 		return str(self.title)
+
+
+class News(models.Model):
+	title = models.CharField(max_length=200)
+	created = models.DateTimeField(help_text="The date and time this story was first published")
+	original_content = models.TextField(help_text="The content of the story when it was first published, useful for visually hiding updates 'in the middle' of the story")
+	all_content = models.TextField(help_text="The entire content of the story")
+	last_updated = models.DateTimeField(help_text="The date and time this story was last updated")
+	last_update_content = models.TextField(help_text="The most recent update to the story, useful for visually hiding updates 'in the middle' of the story")
+	archived = models.BooleanField(default=False, help_text="A story is removed from the 'Recent News' page when it is archived")
+	update_count = models.PositiveIntegerField(help_text="The number of times this story has been updated. When the number of updates is greater than 2, then only the original story and the latest update are displayed in the 'Recent News' page")
+
+	class Meta:
+		ordering = ['-last_updated']
+		verbose_name_plural = 'News'
