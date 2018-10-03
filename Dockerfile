@@ -2,7 +2,7 @@ FROM python:3.6
 
 # Intall NEMO (in the current directory) and Gunicorn
 COPY . /nemo/
-RUN pip install /nemo/ gunicorn
+RUN pip install /nemo/ gunicorn==19.9.0
 RUN rm --recursive --force /nemo/
 
 RUN mkdir /nemo
