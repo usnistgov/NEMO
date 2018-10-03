@@ -429,7 +429,8 @@
 			"secure_referral": false,
 			"hide_from_mobile_devices": false,
 			"hide_from_desktop_computers": false,
-			"hide_from_users": false
+			"hide_from_users": false,
+			"notifications": "safetyissue"
 		}
 	},
 	{
@@ -504,7 +505,8 @@
 			"secure_referral": false,
 			"hide_from_mobile_devices": false,
 			"hide_from_desktop_computers": false,
-			"hide_from_users": false
+			"hide_from_users": false,
+			"notifications": "news"
 		}
 	},
 	{
@@ -996,6 +998,17 @@
 			"last_update_content": "Updated on Wednesday, September 26th, 2018 @ 12:33 PM by Captain Nemo (captain):\r\nAbout two o'clock, I was in the drawing-room, busied in arranging my notes, when the Captain opened the door and appeared. I bowed. He made a slight inclination in return, without speaking. I resumed my work, hoping that he would perhaps give me some explanation of the events of the preceding night. He made none. I looked at him. He seemed fatigued; his heavy eyes had not been refreshed by sleep; his face looked very sorrowful. He walked to and fro, sat down and got up again, took a chance book, put it down, consulted his instruments without taking his habitual notes, and seemed restless and uneasy.",
 			"archived": false,
 			"update_count": 5
+		}
+	},
+	{
+		"model": "NEMO.notification",
+		"pk": 1,
+		"fields":
+		{
+			"user": 1,
+			"expiration": "2100-01-01T00:00:00Z",
+			"content_type": ["NEMO", "news"],
+			"object_id": 23
 		}
 	}
 ]

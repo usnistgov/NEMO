@@ -19,6 +19,7 @@
 		{% for story in news %}
 			<div class="col-sm-12">
 				<h3 style="line-height:1.4">
+					{% if story.id in notifications %}<span class="label label-success">New update</span>{% endif %}
 					{% if user.is_staff %}<a href="{% url 'news_update_form' story.id %}">{% endif %}
 					{{ story.title }}
 					{% if user.is_staff %}</a>{% endif %}

@@ -1114,6 +1114,22 @@ class ContactInformation(models.Model):
 		return str(self.name)
 
 
+class Notification(models.Model):
+	user = models.ForeignKey(User, related_name='notifications')
+	expiration = models.DateTimeField()
+	content_type = models.ForeignKey(ContentType)
+	object_id = models.PositiveIntegerField()
+	content_object = GenericForeignKey('content_type', 'object_id')
+
+	class Types:
+		NEWS = 'news'
+		SAFETY = 'safetyissue'
+		Choices = (
+			(NEWS, 'News creation and updates - notifies all users'),
+			(SAFETY, 'New safety issues - notifies staff only')
+		)
+
+
 class LandingPageChoice(models.Model):
 	image = models.ImageField(help_text='An image that symbolizes the choice. It is automatically resized to 128x128 pixels when displayed, so set the image to this size before uploading to optimize bandwidth usage and landing page load time')
 	name = models.CharField(max_length=40, help_text='The textual name that will be displayed underneath the image')
@@ -1124,6 +1140,7 @@ class LandingPageChoice(models.Model):
 	hide_from_mobile_devices = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a mobile device")
 	hide_from_desktop_computers = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a desktop computer")
 	hide_from_users = models.BooleanField(default=False, help_text="Hides this choice from normal users. When checked, only staff, technicians, and super-users can see the choice")
+	notifications = models.CharField(max_length=25, blank=True, null=True, choices=Notification.Types.Choices, help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.")
 
 	class Meta:
 		ordering = ['display_priority']

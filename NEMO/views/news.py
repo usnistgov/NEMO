@@ -8,13 +8,15 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import News
 from NEMO.utilities import format_datetime
+from views.notifications import create_news_notification, delete_news_notification, get_notifications
 
 
 @login_required
 @require_GET
 def view_recent_news(request):
 	dictionary = {
-		'news': News.objects.filter(archived=False)
+		'news': News.objects.filter(archived=False),
+		'notifications': get_notifications(request.user, News),
 	}
 	return render(request, 'news/recent_news.html', dictionary)
 
@@ -43,6 +45,7 @@ def archive_story(request, story_id):
 		story = News.objects.get(id=story_id)
 		story.archived = True
 		story.save()
+		delete_news_notification(story)
 	except News.DoesNotExist:
 		pass
 	return redirect(reverse('view_recent_news'))
@@ -90,4 +93,5 @@ def publish(request, story_id=None):
 		story.last_update_content = content
 		story.update_count = 0
 	story.save()
+	create_news_notification(story)
 	return redirect(reverse('view_recent_news'))
