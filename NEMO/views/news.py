@@ -8,7 +8,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import News
 from NEMO.utilities import format_datetime
-from views.notifications import create_news_notification, delete_news_notification, get_notifications
+from NEMO.views.notifications import create_news_notification, delete_news_notification, get_notifications
 
 
 @login_required
