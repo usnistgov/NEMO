@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
-{% block title %}NanoFab usage{% endblock %}
+{% block title %}Usage and billing information{% endblock %}
 {% block content %}
-	<h1>NanoFab usage
+	<h1>Usage and billing information
 		<small> for {{ timeframe }}</small>
 	</h1>
 	<p>
@@ -23,77 +23,96 @@
 		</div>
 	</form>
 
-	{% if no_charges %}
-		<h3>There are no billable charges for {{ timeframe }}.</h3>
-	{% endif %}
-	<div id="billing_information"></div>
-	{% if missed_reservations %}
-		<h3>Missed reservations</h3>
-		{% for m in missed_reservations %}
-			<div class="alert alert-danger">
-				<span style="font-weight:bold">{{ m.tool }}</span><br>
-				{{ m.start }}<br>
-				Charged to project {{ m.project }}
-			</div>
-		{% endfor %}
-	{% endif %}
-	{% if consumables %}
-		<h3>Supplies and consumables</h3>
-		{% for c in consumables %}
-			<div class="alert alert-info">
-				<span style="font-weight:bold">{{ c.consumable }}</span><br>
-				Quantity {{ c.quantity }}<br>
-				Purchased from {{ c.merchant }} on {{ c.date }}<br>
-				Charged to project {{ c.project }}
-			</div>
-		{% endfor %}
-	{% endif %}
-	{% if staff_charges %}
-		<h3>Staff charges</h3>
-		{% for s in staff_charges %}
-			<div class="alert alert-info">
-				<span style="font-weight:bold">Work performed by {{ s.staff_member }}</span><br>
-				{{ s.start }}<br>
-				{{ s.end }}<br>
-				Charged to project {{ s.project }}
-			</div>
-		{% endfor %}
-	{% endif %}
-	{% if training_sessions %}
-		<h3>Training sessions</h3>
-		{% for t in training_sessions %}
-			<div class="alert alert-info">
-				{{ t.get_type_display }} training for {{ t.duration }} minutes taught by <span style="font-weight:bold">{{ t.trainer }}</span>
-				for the <span style="font-weight:bold">{{ t.tool }}</span>. Charged to project {{ t.project }} on {{ t.date }}.
-			</div>
-		{% endfor %}
-	{% endif %}
-	{% if area_access %}
-		<h3>Area access</h3>
-		{% for a in area_access %}
-			<div class="alert alert-info">
-				<span style="font-weight:bold">{{ a.area }}</span><br>
-				{{ a.start }}<br>
-				{{ a.end|default_if_none:"In progress" }}<br>
-				Charged to project {{ a.project }}
-			</div>
-		{% endfor %}
-	{% endif %}
-	{% if usage_events %}
-		<h3>Tool usage</h3>
-		{% for u in usage_events %}
-			<div class="alert {% if u.user == u.operator %}alert-info{% else %}alert-warning{% endif %}">
-				<span style="font-weight:bold">{{ u.tool }}</span><br>
-				{% if u.user != u.operator %}<span style="font-weight:bold">Operated by {{ u.operator }} on your behalf</span><br>{% endif %}
-				{{ u.start }}<br>
-				{{ u.end }}<br>
-				Charged to project {{ u.project }}
-			</div>
-		{% endfor %}
-	{% endif %}
+	<div style="margin-top:10px">
+		<ul class="nav nav-pills" id="tabs">
+			<li class="active"><a href="#usage">Usage</a></li>
+			<li><a href="#billing_information">Billing information</a></li>
+		</ul>
+	</div>
+
+	<div id="content" class="tab-content">
+		<div class="tab-pane active" id="usage">
+			{% if no_charges %}
+				<h3>There was no usage for {{ timeframe }}.</h3>
+			{% endif %}
+			{% if missed_reservations %}
+				<h3>Missed reservations</h3>
+				{% for m in missed_reservations %}
+					<div class="alert alert-danger">
+						<span style="font-weight:bold">{{ m.tool }}</span><br>
+						{{ m.start }}<br>
+						Charged to project {{ m.project }}
+					</div>
+				{% endfor %}
+			{% endif %}
+			{% if consumables %}
+				<h3>Supplies and consumables</h3>
+				{% for c in consumables %}
+					<div class="alert alert-info">
+						<span style="font-weight:bold">{{ c.consumable }}</span><br>
+						Quantity {{ c.quantity }}<br>
+						Purchased from {{ c.merchant }} on {{ c.date }}<br>
+						Charged to project {{ c.project }}
+					</div>
+				{% endfor %}
+			{% endif %}
+			{% if staff_charges %}
+				<h3>Staff charges</h3>
+				{% for s in staff_charges %}
+					<div class="alert alert-info">
+						<span style="font-weight:bold">Work performed by {{ s.staff_member }}</span><br>
+						{{ s.start }}<br>
+						{{ s.end }}<br>
+						Charged to project {{ s.project }}
+					</div>
+				{% endfor %}
+			{% endif %}
+			{% if training_sessions %}
+				<h3>Training sessions</h3>
+				{% for t in training_sessions %}
+					<div class="alert alert-info">
+						{{ t.get_type_display }} training for {{ t.duration }} minutes taught by <span style="font-weight:bold">{{ t.trainer }}</span>
+						for the <span style="font-weight:bold">{{ t.tool }}</span>. Charged to project {{ t.project }} on {{ t.date }}.
+					</div>
+				{% endfor %}
+			{% endif %}
+			{% if area_access %}
+				<h3>Area access</h3>
+				{% for a in area_access %}
+					<div class="alert alert-info">
+						<span style="font-weight:bold">{{ a.area }}</span><br>
+						{{ a.start }}<br>
+						{{ a.end|default_if_none:"In progress" }}<br>
+						Charged to project {{ a.project }}
+					</div>
+				{% endfor %}
+			{% endif %}
+			{% if usage_events %}
+				<h3>Tool usage</h3>
+				{% for u in usage_events %}
+					<div class="alert {% if u.user == u.operator %}alert-info{% else %}alert-warning{% endif %}">
+						<span style="font-weight:bold">{{ u.tool }}</span><br>
+						{% if u.user != u.operator %}<span style="font-weight:bold">Operated by {{ u.operator }} on your behalf</span><br>{% endif %}
+						{{ u.start }}<br>
+						{{ u.end }}<br>
+						Charged to project {{ u.project }}
+					</div>
+				{% endfor %}
+			{% endif %}
+		</div>
+		<div class="tab-pane" id="billing_information">
+			Billing information
+		</div>
+	</div>
 
 	<script>
-		ajax_get('{% url 'billing_information' %}', undefined, display_billing_information, display_error_message);
+		function on_load()
+		{
+			$("#tabs a").click(switch_tab);
+			ajax_get('{% url 'billing_information' %}', undefined, display_billing_information, display_error_message);
+		}
+		$(on_load);
+
 		function display_billing_information(response, status, xml_http_request)
 		{
 			$('#billing_information').html(response);
