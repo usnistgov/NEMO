@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.static import serve
 from rest_framework import routers
 
-from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, kiosk, landing, maintenance, mobile, nanofab_usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
+from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, kiosk, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
 
 # Use our custom login page instead of Django's built-in one.
 admin.site.login = login_required(admin.site.login)
@@ -157,7 +157,8 @@ urlpatterns = [
 	url(r'^force_area_logout/(?P<user_id>\d+)/$', area_access.force_area_logout, name='force_area_logout'),
 
 	# NanoFab usage:
-	url(r'^nanofab_usage/$', nanofab_usage.nanofab_usage, name='nanofab_usage'),
+	url(r'^usage/$', usage.usage, name='usage'),
+	url(r'^billing_information/$', usage.billing_information, name='billing_information'),
 
 	# Alerts:
 	url(r'^alerts/$', alerts.alerts, name='alerts'),

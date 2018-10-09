@@ -10,7 +10,7 @@
 	</p>
 	<form class="form-inline" role="form">
 		<div class="form-group">
-			<label class="control-label">View charges for
+			<label class="control-label">View information for
 				<select name="timeframe" class="form-control">
 					{% for month in month_list %}
 						<option {% if timeframe == month|date:"F, Y" %}selected{% endif %}>{{ month|date:"F, Y" }}</option>
@@ -26,6 +26,7 @@
 	{% if no_charges %}
 		<h3>There are no billable charges for {{ timeframe }}.</h3>
 	{% endif %}
+	<div id="billing_information"></div>
 	{% if missed_reservations %}
 		<h3>Missed reservations</h3>
 		{% for m in missed_reservations %}
@@ -90,4 +91,17 @@
 			</div>
 		{% endfor %}
 	{% endif %}
+
+	<script>
+		ajax_get('{% url 'billing_information' %}', undefined, display_billing_information, display_error_message);
+		function display_billing_information(response, status, xml_http_request)
+		{
+			$('#billing_information').html(response);
+		}
+		function display_error_message()
+		{
+			$('#billing_information').html('There was a problem communicating with the billing service. The financial information associated with your usage cannot be displayed at this time.');
+		}
+	</script>
+
 {% endblock %}
