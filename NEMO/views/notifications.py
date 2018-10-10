@@ -33,7 +33,7 @@ def get_notificaiton_counts(user):
 def create_news_notification(story):
 	content_type = ContentType.objects.get_for_model(News)
 	Notification.objects.filter(content_type=content_type, object_id=story.id).delete()  # Delete all existing notifications for this story, so we don't have multiple notifications for the same story
-	users = User.objects.all()
+	users = User.objects.filter(is_active=True)
 	expiration = timezone.now() + timedelta(days=30)  # Unread news story notifications always expire after 30 days
 	for u in users:
 		Notification.objects.create(user=u, expiration=expiration, content_object=story)
@@ -45,7 +45,7 @@ def delete_news_notification(story):
 
 
 def create_safety_notification(safety_issue):
-	users = User.objects.filter(is_staff=True)
+	users = User.objects.filter(is_staff=True, is_active=True)
 	expiration = timezone.now() + timedelta(days=30)  # Unread safety issue notifications always expire after 30 days
 	for u in users:
 		Notification.objects.create(user=u, expiration=expiration, content_object=safety_issue)

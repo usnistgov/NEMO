@@ -469,7 +469,7 @@
 		"fields": {
 			"image": "receipt.png",
 			"name": "View your usage",
-			"url": "/nanofab_usage/",
+			"url": "/usage/",
 			"display_priority": 6,
 			"open_in_new_tab": false,
 			"secure_referral": false,
