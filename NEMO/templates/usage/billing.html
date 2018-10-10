@@ -4,7 +4,7 @@
 	{{ spending.error }}
 {% endif %}
 
-<table>
+<table style="margin-top:20px">
 	{% for account, value in spending.activities.items %}
 		<tr>
 			<td>Account: {{ account.1 }}</td>
@@ -18,7 +18,7 @@
 				<td colspan="3" style="text-align: right; border-bottom: 1px dotted lightgray"></td>
 				<td style="border-bottom: 1px dotted lightgray; text-align: right">
 					{% if application.0 in spending.user_pi_applications %}
-						${{ spending.application_totals.application.0|floatformat:2|intcomma }}
+						${{ spending.application_totals|get_item:application.0|floatformat:2|intcomma }}
 					{% endif %}
 				</td>
 			</tr>
@@ -32,8 +32,7 @@
 				{% for user, amount in users.items %}
 					<tr>
 						<td colspan="2"></td>
-						<td colspan="2"
-							style="text-align: right; padding: 3px 0; font-size: 12px">{{ user.1.get_full_name }}</td>
+						<td colspan="2" style="text-align: right; padding: 3px 0; font-size: 12px">{{ user.1.get_full_name }}</td>
 						<td style="width: 15px"></td>
 						<td style="; text-align: right; font-size: 12px">${{ amount|floatformat:2|intcomma }}</td>
 					</tr>
@@ -41,13 +40,9 @@
 				{% if application.0 in spending.user_pi_applications %}
 					<tr>
 						<td colspan="2"></td>
-						<td colspan="2"
-							style="border-top: 1px solid lightgray; text-align: right;font-weight: bold">Project
-							Total
-						</td>
+						<td colspan="2" style="border-top: 1px solid lightgray; text-align: right;font-weight: bold">Project total</td>
 						<td></td>
-						<td style="border-top: 1px solid lightgray; font-weight: bold; text-align: right">
-							${{ spending.project_totals.project.0|floatformat:2|intcomma }}</td>
+						<td style="border-top: 1px solid lightgray; font-weight: bold; text-align: right">${{ spending.project_totals|get_item:project.0|floatformat:2|intcomma }}</td>
 					</tr>
 				{% endif %}
 			{% endfor %}
