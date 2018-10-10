@@ -29,7 +29,7 @@ def usage(request):
 
 @login_required
 @require_GET
-def billing_information(request):
+def billing_information(request, timeframe=''):
 	dictionary = {}
 	if not settings.BILLING_SERVICE['available']:
 		return HttpResponse()
@@ -38,7 +38,7 @@ def billing_information(request):
 		project_lead_url = settings.BILLING_SERVICE['project_lead_url']
 		keyword_arguments = settings.BILLING_SERVICE['keyword_arguments']
 
-		first_of_the_month, last_of_the_month = get_month_timeframe(request.GET.get('timeframe'))
+		first_of_the_month, last_of_the_month = get_month_timeframe(timeframe)
 		formatted_projects = ','.join(map(str, set(request.user.active_projects().values_list('application_identifier', flat=True))))
 		cost_activity_params = {
 			'created_date_gte': f"'{first_of_the_month.strftime('%m/%d/%Y')}'",

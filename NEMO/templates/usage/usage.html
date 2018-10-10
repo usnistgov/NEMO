@@ -109,7 +109,7 @@
 		function on_load()
 		{
 			$("#tabs a").click(switch_tab);
-			ajax_get('{% url 'billing_information' %}', undefined, display_billing_information, display_error_message);
+			ajax_get('{% url 'billing_information' timeframe %}', undefined, display_billing_information, display_error_message);
 		}
 		$(on_load);
 
