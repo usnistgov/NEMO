@@ -68,7 +68,7 @@ def billing_information(request, timeframe=''):
 			user_is_pi = is_user_pi(request.user, next((x for x in latest_pis_data if x['application_name'] == activity['application_name']), None))
 			if user_is_pi:
 				user_pi_applications.append(activity['application_id'])
-			if user_is_pi or request.user.id == activity['member_id']:
+			if user_is_pi or str(request.user.id) == activity['member_id']:
 				cost_activities_tree.setdefault((activity['account_id'], activity['account_name']), {})
 				cost_activities_tree[account_key].setdefault(application_key, {})
 				cost_activities_tree[account_key][application_key].setdefault(project_key, {})

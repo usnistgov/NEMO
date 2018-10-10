@@ -1,10 +1,6 @@
 {% load humanize %}
 {% load custom_tags_and_filters %}
 
-{% if spending.error %}
-	{{ spending.error }}
-{% endif %}
-
 <table style="margin-top:20px">
 	{% for account, value in spending.activities.items %}
 		<tr>
