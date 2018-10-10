@@ -1,0 +1,56 @@
+{% load humanize %}
+
+{% if spending.error %}
+	{{ spending.error }}
+{% endif %}
+
+<table>
+	{% for account, value in spending.activities.items %}
+		<tr>
+			<td>Account: {{ account.1 }}</td>
+			<td colspan="4"></td>
+		</tr>
+		{% for application, projects in value.items %}
+			<tr>
+				<td></td>
+				<td style="border-bottom: 1px dotted lightgray; padding-top: 5px">
+					Application: {{ application.1 }}</td>
+				<td colspan="3" style="text-align: right; border-bottom: 1px dotted lightgray"></td>
+				<td style="border-bottom: 1px dotted lightgray; text-align: right">
+					{% if application.0 in spending.user_pi_applications %}
+						${{ spending.application_totals.application.0|floatformat:2|intcomma }}
+					{% endif %}
+				</td>
+			</tr>
+			{% for project, users in projects.items %}
+				<tr>
+					<td colspan="2"></td>
+					<td style="border-bottom: 1px solid lightgray;padding-top: 5px">Project: {{ project.1 }}</td>
+					<td style="width: 10%; border-bottom: 1px solid lightgray"></td>
+					<td colspan="2" style="border-bottom: 1px solid lightgray"></td>
+				</tr>
+				{% for user, amount in users.items %}
+					<tr>
+						<td colspan="2"></td>
+						<td colspan="2"
+							style="text-align: right; padding: 3px 0; font-size: 12px">{{ user.1.get_full_name }}</td>
+						<td style="width: 15px"></td>
+						<td style="; text-align: right; font-size: 12px">${{ amount|floatformat:2|intcomma }}</td>
+					</tr>
+				{% endfor %}
+				{% if application.0 in spending.user_pi_applications %}
+					<tr>
+						<td colspan="2"></td>
+						<td colspan="2"
+							style="border-top: 1px solid lightgray; text-align: right;font-weight: bold">Project
+							Total
+						</td>
+						<td></td>
+						<td style="border-top: 1px solid lightgray; font-weight: bold; text-align: right">
+							${{ spending.project_totals.project.0|floatformat:2|intcomma }}</td>
+					</tr>
+				{% endif %}
+			{% endfor %}
+		{% endfor %}
+	{% endfor %}
+</table>
