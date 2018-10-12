@@ -114,6 +114,15 @@ class ToolAdminForm(forms.ModelForm):
 		)
 	)
 
+	backup_owners = forms.ModelMultipleChoiceField(
+		queryset=User.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(
+			verbose_name='Users',
+			is_stacked=False
+		)
+	)
+
 	required_resources = forms.ModelMultipleChoiceField(
 		queryset=Resource.objects.all(),
 		required=False,
@@ -132,13 +141,6 @@ class ToolAdminForm(forms.ModelForm):
 		)
 	)
 
-	def __init__(self, *args, **kwargs):
-		super(ToolAdminForm, self).__init__(*args, **kwargs)
-		if self.instance.pk:
-			self.fields['qualified_users'].initial = self.instance.user_set.all()
-			self.fields['required_resources'].initial = self.instance.required_resource_set.all()
-			self.fields['nonrequired_resources'].initial = self.instance.nonrequired_resource_set.all()
-
 
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
@@ -148,7 +150,7 @@ class ToolAdmin(admin.ModelAdmin):
 	fieldsets = (
 		(None, {'fields': ('name', 'category', 'qualified_users', 'post_usage_questions'),}),
 		('Current state', {'fields': ('visible', 'operational'),}),
-		('Contact information', {'fields': ('primary_owner', 'secondary_owner', 'notification_email_address', 'location', 'phone_number'),}),
+		('Contact information', {'fields': ('primary_owner', 'backup_owners', 'notification_email_address', 'location', 'phone_number'),}),
 		('Usage policy', {'fields': ('reservation_horizon', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time', 'missed_reservation_threshold', 'requires_area_access', 'interlock', 'allow_delayed_logoff'),}),
 		('Dependencies', {'fields': ('required_resources', 'nonrequired_resources'),}),
 	)
@@ -323,7 +325,7 @@ class TaskCategoryAdmin(admin.ModelAdmin):
 
 @register(TaskStatus)
 class TaskStatusAdmin(admin.ModelAdmin):
-	list_display = ('name', 'notify_primary_tool_owner', 'notify_secondary_tool_owner', 'notify_tool_notification_email', 'custom_notification_email_address')
+	list_display = ('name', 'notify_primary_tool_owner', 'notify_backup_tool_owners', 'notify_tool_notification_email', 'custom_notification_email_address')
 
 
 @register(TaskHistory)

@@ -219,7 +219,7 @@ class Tool(models.Model):
 	visible = models.BooleanField(default=True, help_text="Specifies whether this tool is visible to users.")
 	operational = models.BooleanField(default=False, help_text="Marking the tool non-operational will prevent users from using the tool.")
 	primary_owner = models.ForeignKey(User, related_name="primary_tool_owner", help_text="The staff member who is responsible for administration of this tool.")
-	secondary_owner = models.ForeignKey(User, related_name="secondary_tool_owner", help_text="The alternate staff member who is responsible for administration of this tool.")
+	backup_owners = models.ManyToManyField(User, null=True, blank=True, related_name="backup_for_tools", help_text="Alternate staff members who are responsible for administration of this tool when the primary owner is unavailable.")
 	location = models.CharField(max_length=100)
 	phone_number = models.CharField(max_length=100)
 	notification_email_address = models.EmailField(blank=True, null=True, help_text="Messages that relate to this tool (such as comments, problems, and shutdowns) will be forwarded to this email address. This can be a normal email address or a mailing list address.")
@@ -819,7 +819,7 @@ class TaskCategory(models.Model):
 class TaskStatus(models.Model):
 	name = models.CharField(max_length=200, unique=True)
 	notify_primary_tool_owner = models.BooleanField(default=False, help_text="Notify the primary tool owner when a task transitions to this status")
-	notify_secondary_tool_owner = models.BooleanField(default=False, help_text="Notify the secondary tool owner when a task transitions to this status")
+	notify_backup_tool_owners = models.BooleanField(default=False, help_text="Notify the backup tool owners when a task transitions to this status")
 	notify_tool_notification_email = models.BooleanField(default=False, help_text="Send an email to the tool notification email address when a task transitions to this status")
 	custom_notification_email_address = models.EmailField(blank=True, help_text="Notify a custom email address when a task transitions to this status. Leave this blank if you don't need it.")
 	notification_message = models.TextField(blank=True)

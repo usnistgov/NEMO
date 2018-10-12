@@ -228,8 +228,20 @@
 			<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
 			<div class="media-body">
 				<p><a href="{% url 'get_email_form_for_user' tool.primary_owner.id %}" title="Email {{ tool.primary_owner.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.primary_owner }}</a> is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.</p>
-				{% if tool.primary_owner.id != tool.secondary_owner.id %}
-					<p>If you are unable to reach {{ tool.primary_owner }} then please contact <a href="{% url 'get_email_form_for_user' tool.secondary_owner.id %}" title="Email {{ tool.secondary_owner.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.secondary_owner }}</a>.</p>
+				{% if tool.backup_owners.all.count == 1 %}
+					{% with tool.backup_owners.all|first as backup %}
+						<p>If you are unable to reach {{ tool.primary_owner }} then please contact the backup tool owner, <a href="{% url 'get_email_form_for_user' backup.id %}" title="Email {{ backup.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ backup }}</a>.</p>
+					{% endwith %}
+				{% elif tool.backup_owners.all.count > 1 %}
+					<p>If you are unable to reach {{ tool.primary_owner }} then please contact
+					{% for x in tool.backup_owners.all %}
+						{% if not forloop.last %}
+							<a href="{% url 'get_email_form_for_user' x.id %}" title="Email {{ x.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ x }}</a>,
+						{% else %}
+							or <a href="{% url 'get_email_form_for_user' x.id %}" title="Email {{ x.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ x }}</a>.
+						{% endif %}
+					{% endfor %}
+					</p>
 				{% endif %}
 				{% if tool.notification_email_address %}
 					<p>Problem reports for the {{ tool.name }} are automatically emailed to <a href="{% url 'get_email_form' %}?recipient={{ tool.notification_email_address }}" title="Email {{ tool.notification_email_address }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.notification_email_address }}</a>.</p>

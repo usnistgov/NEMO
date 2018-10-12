@@ -2,7 +2,7 @@
 <h2>{{ task.tool.name }} task</h2>
 <p class="grey">
 	Primary tool owner: {{ task.tool.primary_owner }}<br>
-	Secondary tool owner: {{ task.tool.secondary_owner }}
+	{% if task.tool.backup_owners.all.exist %}Backup tool owner{{ task.tool.backup_owners.count|pluralize }}: {% for x in task.tool.backup_owners %}{{ x }}{% if not forloop.last %}, {% else %}{% endif %}{% endif %}
 </p>
 <div style="margin-bottom: 12px">
 	{% if task.tool.in_use %}
