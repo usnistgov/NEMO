@@ -1,11 +1,11 @@
 from django.conf import settings
-from django.conf.urls import url, include
+from django.conf.urls import include, url
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.views.static import serve
 from rest_framework import routers
 
-from NEMO.views import abuse, accounts_and_projects, alerts, api, authentication, area_access, calendar, configuration_agenda, consumables, contact_staff, email, feedback, get_projects, history, landing, jumbotron, kiosk, maintenance, mobile, nanofab_usage, qualifications, remote_work, resources, safety, sidebar, customization, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
+from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, kiosk, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
 
 # Use our custom login page instead of Django's built-in one.
 admin.site.login = login_required(admin.site.login)
@@ -157,11 +157,22 @@ urlpatterns = [
 	url(r'^force_area_logout/(?P<user_id>\d+)/$', area_access.force_area_logout, name='force_area_logout'),
 
 	# NanoFab usage:
-	url(r'^nanofab_usage/$', nanofab_usage.nanofab_usage, name='nanofab_usage'),
+	url(r'^usage/$', usage.usage, name='usage'),
+	url(r'^billing_information/(?P<timeframe>.*)/$', usage.billing_information, name='billing_information'),
 
 	# Alerts:
 	url(r'^alerts/$', alerts.alerts, name='alerts'),
 	url(r'^delete_alert/(?P<alert_id>\d+)/$', alerts.delete_alert, name='delete_alert'),
+
+	# News:
+	url(r'^news/$', news.view_recent_news, name='view_recent_news'),
+	url(r'^news/archive/$', news.view_archived_news, name='view_archived_news'),
+	url(r'^news/archive/(?P<page>\d+)/$', news.view_archived_news, name='view_archived_news'),
+	url(r'^news/archive_story/(?P<story_id>\d+)/$', news.archive_story, name='archive_story'),
+	url(r'^news/new/$', news.new_news_form, name='new_news_form'),
+	url(r'^news/update/(?P<story_id>\d+)/$', news.news_update_form, name='news_update_form'),
+	url(r'^news/publish/$', news.publish, name='publish_new_news'),
+	url(r'^news/publish/(?P<story_id>\d+)/$', news.publish, name='publish_news_update'),
 
 	# Media
 	url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}, name='media'),

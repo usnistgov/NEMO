@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Publish new news{% endblock %}
+{% block content %}
+	<h1>Publish new news</h1>
+	<form method="post" action="{% url 'publish_new_news' %}">
+		{% csrf_token %}
+		<div class="form-group">
+			<input name="title" type="text" class="form-control" autocomplete="off" required placeholder="Provide a news story title">
+		</div>
+		<div class="form-group">
+			<textarea name="content" class="form-control" rows="6" required placeholder="What's happening?"></textarea>
+		</div>
+		<div class="form-group">
+			<input type="submit" class="btn btn-success pull-right" name="publish" value="Publish">
+		</div>
+	</form>
+{% endblock %}

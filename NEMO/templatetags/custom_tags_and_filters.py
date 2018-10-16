@@ -61,3 +61,8 @@ def navigation_url(url_name, description):
 		return format_html('<li><a href="{}">{}</a></li>', reverse(url_name), description)
 	except NoReverseMatch:
 		return ''
+
+
+@register.filter
+def get_item(dictionary, key):
+	return dictionary.get(key)

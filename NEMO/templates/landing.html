@@ -82,7 +82,16 @@
 				<div class="col-md-3 text-center" style="margin-bottom:30px">
 					<a href="{{ choice.url }}" {% if choice.open_in_new_tab %}target="_blank"{% endif %} {% if choice.secure_referral %}rel="noopener noreferrer"{% endif %} style="text-decoration: none !important">
 						<img src="{{ choice.image.url }}" height="128" width="128">
-						<h3 style="margin-top:0">{{ choice.name }}</h3>
+						<h3 style="margin-top:0">
+							{{ choice.name }}
+							{% if choice.notifications %}
+								{% for type, count in notification_counts.items %}
+									{% if choice.notifications == type and count %}
+										<span class="badge" style="vertical-align:middle; background-color:red">{{ count }}</span>
+									{% endif %}
+								{% endfor %}
+							{% endif %}
+						</h3>
 					</a>
 				</div>
 			{% if forloop.counter|divisibleby:4 or forloop.last %}</div>{% endif %}

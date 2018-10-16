@@ -181,11 +181,20 @@
 				</div>
 			</div>
 		{% elif tool not in customer.qualifications.all %}
-			<h2 class="light-grey">
-				You have not been qualified to use this tool yet.
-				Please contact the primary tool owner, {{ tool.primary_owner }}, if you would like to receive training for tool qualification.
-				{% if tool.primary_owner.id != tool.secondary_owner.id %}
-					If you are unable to reach {{ tool.primary_owner }} then please contact {{ tool.secondary_owner }}.
+			<h2>
+				You have not been qualified to use this tool yet.<br>
+				Please contact the primary tool owner, {{ tool.primary_owner }}, if you would like to receive training for tool qualification.<br>
+				{% if tool.backup_owners.all.exists %}
+					{% if tool.backup_owners.all.count == 1 %}
+						If you are unable to reach {{ tool.primary_owner }} then please contact the backup tool owner, {{ tool.backup_owners.all|first }}.
+					{% elif tool.backup_owners.all.count > 1 %}
+						If you are unable to reach {{ tool.primary_owner }} then please contact one of the backup tool owners:
+						<ul>
+						{% for x in tool.backup_owners.all %}
+							<li>{{ x }}</li>
+						{% endfor %}
+						</ul>
+					{% endif %}
 				{% endif %}
 			</h2>
 		{% endif %}

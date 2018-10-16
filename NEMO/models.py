@@ -225,7 +225,7 @@ class Tool(models.Model):
 	visible = models.BooleanField(default=True, help_text="Specifies whether this tool is visible to users.")
 	operational = models.BooleanField(default=False, help_text="Marking the tool non-operational will prevent users from using the tool.")
 	primary_owner = models.ForeignKey(User, related_name="primary_tool_owner", help_text="The staff member who is responsible for administration of this tool.")
-	secondary_owner = models.ForeignKey(User, related_name="secondary_tool_owner", help_text="The alternate staff member who is responsible for administration of this tool.")
+	backup_owners = models.ManyToManyField(User, blank=True, related_name="backup_for_tools", help_text="Alternate staff members who are responsible for administration of this tool when the primary owner is unavailable.")
 	location = models.CharField(max_length=100)
 	phone_number = models.CharField(max_length=100)
 	notification_email_address = models.EmailField(blank=True, null=True, help_text="Messages that relate to this tool (such as comments, problems, and shutdowns) will be forwarded to this email address. This can be a normal email address or a mailing list address.")
@@ -832,7 +832,7 @@ class TaskCategory(models.Model):
 class TaskStatus(models.Model):
 	name = models.CharField(max_length=200, unique=True)
 	notify_primary_tool_owner = models.BooleanField(default=False, help_text="Notify the primary tool owner when a task transitions to this status")
-	notify_secondary_tool_owner = models.BooleanField(default=False, help_text="Notify the secondary tool owner when a task transitions to this status")
+	notify_backup_tool_owners = models.BooleanField(default=False, help_text="Notify the backup tool owners when a task transitions to this status")
 	notify_tool_notification_email = models.BooleanField(default=False, help_text="Send an email to the tool notification email address when a task transitions to this status")
 	custom_notification_email_address = models.EmailField(blank=True, help_text="Notify a custom email address when a task transitions to this status. Leave this blank if you don't need it.")
 	notification_message = models.TextField(blank=True)
@@ -1127,6 +1127,22 @@ class ContactInformation(models.Model):
 		return str(self.name)
 
 
+class Notification(models.Model):
+	user = models.ForeignKey(User, related_name='notifications')
+	expiration = models.DateTimeField()
+	content_type = models.ForeignKey(ContentType)
+	object_id = models.PositiveIntegerField()
+	content_object = GenericForeignKey('content_type', 'object_id')
+
+	class Types:
+		NEWS = 'news'
+		SAFETY = 'safetyissue'
+		Choices = (
+			(NEWS, 'News creation and updates - notifies all users'),
+			(SAFETY, 'New safety issues - notifies staff only')
+		)
+
+
 class LandingPageChoice(models.Model):
 	image = models.ImageField(help_text='An image that symbolizes the choice. It is automatically resized to 128x128 pixels when displayed, so set the image to this size before uploading to optimize bandwidth usage and landing page load time')
 	name = models.CharField(max_length=40, help_text='The textual name that will be displayed underneath the image')
@@ -1137,6 +1153,7 @@ class LandingPageChoice(models.Model):
 	hide_from_mobile_devices = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a mobile device")
 	hide_from_desktop_computers = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a desktop computer")
 	hide_from_users = models.BooleanField(default=False, help_text="Hides this choice from normal users. When checked, only staff, technicians, and super-users can see the choice")
+	notifications = models.CharField(max_length=25, blank=True, null=True, choices=Notification.Types.Choices, help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.")
 
 	class Meta:
 		ordering = ['display_priority']
@@ -1179,3 +1196,18 @@ class ScheduledOutage(models.Model):
 
 	def __str__(self):
 		return str(self.title)
+
+
+class News(models.Model):
+	title = models.CharField(max_length=200)
+	created = models.DateTimeField(help_text="The date and time this story was first published")
+	original_content = models.TextField(help_text="The content of the story when it was first published, useful for visually hiding updates 'in the middle' of the story")
+	all_content = models.TextField(help_text="The entire content of the story")
+	last_updated = models.DateTimeField(help_text="The date and time this story was last updated")
+	last_update_content = models.TextField(help_text="The most recent update to the story, useful for visually hiding updates 'in the middle' of the story")
+	archived = models.BooleanField(default=False, help_text="A story is removed from the 'Recent News' page when it is archived")
+	update_count = models.PositiveIntegerField(help_text="The number of times this story has been updated. When the number of updates is greater than 2, then only the original story and the latest update are displayed in the 'Recent News' page")
+
+	class Meta:
+		ordering = ['-last_updated']
+		verbose_name_plural = 'News'
