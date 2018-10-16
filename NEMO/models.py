@@ -651,6 +651,7 @@ class Interlock(models.Model):
 		return self.__issue_command(self.State.LOCKED)
 
 	def __issue_command(self, command_type):
+		# TODO: use a different setting to enable/disable interlock functionality
 		if settings.DEBUG:
 			self.most_recent_reply = "Interlock interface mocked out because settings.DEBUG = True. Interlock last set on " + format_datetime(timezone.now()) + "."
 			self.state = command_type
