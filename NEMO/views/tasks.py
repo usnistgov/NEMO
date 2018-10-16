@@ -76,7 +76,7 @@ def send_new_task_emails(request, task):
 		# Send an email to the appropriate NanoFab staff that a new task has been created:
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
 		message = Template(message).render(Context(dictionary))
-		recipients = tuple([r for r in [task.tool.primary_owner.email, *task.tool.backup_owners.objects.values_list('email', flat=True), task.tool.notification_email_address] if r])
+		recipients = tuple([r for r in [task.tool.primary_owner.email, *task.tool.backup_owners.all().values_list('email', flat=True), task.tool.notification_email_address] if r])
 		send_mail(subject, '', request.user.email, recipients, html_message=message)
 
 	# Send an email to any user (excluding staff) with a future reservation on the tool:
