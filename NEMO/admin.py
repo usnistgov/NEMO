@@ -141,6 +141,13 @@ class ToolAdminForm(forms.ModelForm):
 		)
 	)
 
+	def __init__(self, *args, **kwargs):
+		super(ToolAdminForm, self).__init__(*args, **kwargs)
+		if self.instance.pk:
+			self.fields['qualified_users'].initial = self.instance.user_set.all()
+			self.fields['required_resources'].initial = self.instance.required_resource_set.all()
+			self.fields['nonrequired_resources'].initial = self.instance.nonrequired_resource_set.all()
+
 
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
