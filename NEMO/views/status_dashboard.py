@@ -92,10 +92,10 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):
 @disable_session_expiry_refresh
 def occupancy(request):
 	area = request.GET.get('occupancy')
-	if area is None or not Area.objects.filter(area=area).exists():
+	if area is None or not Area.objects.filter(name=area).exists():
 		return HttpResponse()
 	dictionary = {
 		'area': area,
-		'occupants': AreaAccessRecord.objects.filter(area=area, end=None, staff_charge=None).prefetch_related('customer'),
+		'occupants': AreaAccessRecord.objects.filter(area__name=area, end=None, staff_charge=None).prefetch_related('customer'),
 	}
 	return render(request, 'occupancy.html', dictionary)
