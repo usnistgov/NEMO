@@ -36,7 +36,7 @@
 		let record_badge_number = false;
 		let badge_number = "";
 		let timeout_handle = null;
-		let occupancy = URLSearchParams(window.location.search).get('occupancy');
+		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
 
 		if(occupancy)
 		{
