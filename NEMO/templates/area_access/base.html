@@ -36,8 +36,9 @@
 		let record_badge_number = false;
 		let badge_number = "";
 		let timeout_handle = null;
+		let occupancy = URLSearchParams(window.location.search).get('occupancy');
 
-		if(URLSearchParams(window.location.search).get('occupancy'))
+		if(occupancy)
 		{
 			fetch_occupancy();
 			setInterval(fetch_occupancy, 30000);
@@ -134,7 +135,6 @@
 		}
 		function fetch_occupancy()
 		{
-			let occupancy = URLSearchParams(window.location.search).get('occupancy');
 			ajax_get('{% url 'occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 		}
 	</script>
