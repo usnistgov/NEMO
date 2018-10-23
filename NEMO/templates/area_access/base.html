@@ -90,6 +90,7 @@
 		}
 		function revert_to_default_content()
 		{
+			fetch_occupancy();
 			clear_timeout();
 			$("#status").hide();
 			$("#error").hide();

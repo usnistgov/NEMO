@@ -1,6 +1,4 @@
-{% if occupants|length == 0 %}
-	Nobody is in the {{ area }}.
-{% else %}
+{% if occupants|length > 0 %}
 	Staff members are highlighted in <span class="success-highlight">green</span>.<p>
 	{# Panel is used to make table borders rounded. #}
 	<div class="panel panel-default">

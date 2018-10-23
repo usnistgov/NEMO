@@ -30,6 +30,7 @@
 <div class="container-fluid">
 	<div id="default_content">
 		<h1>Scan your badge to control tools</h1>
+		<div id="occupancy"></div>
 	</div>
 	<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1></div>
 	<div id="status" style="display: none"></div>
@@ -40,6 +41,13 @@
 	let record_badge_number = false;
 	let badge_number = "";
 	let timeout_handle = null;
+	let occupancy = new URLSearchParams(window.location.search).get('occupancy');
+
+	if(occupancy)
+	{
+		fetch_occupancy();
+		setInterval(fetch_occupancy, 30000);
+	}
 
 	{# Note that keydown and keyup provide a code indicating which key is pressed, while keypress indicates which character was entered. For example, a lowercase "a" will be reported as 65 by keydown and keyup, but as 97 by keypress. An uppercase "A" is reported as 65 by all events. Because of this distinction, when catching special keystrokes such as F2, .keydown() or .keyup() is a better choice. #}
 
@@ -84,6 +92,7 @@
 	}
 	function revert_to_default_content()
 	{
+		fetch_occupancy();
 		clear_timeout();
 		$("#status").hide();
 		$("#error").hide();
@@ -142,6 +151,10 @@
 	function csrf_token()
 	{
 		return '{{ csrf_token }}';
+	}
+	function fetch_occupancy()
+	{
+		ajax_get('{% url 'occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 	}
 </script>
 </body>
