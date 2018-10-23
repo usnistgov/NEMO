@@ -1,11 +1,11 @@
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.models import AreaAccessRecord, Tool, Task, Resource, UsageEvent, ScheduledOutage
+from NEMO.models import Area, AreaAccessRecord, Resource, ScheduledOutage, Task, Tool, UsageEvent
 
 
 @login_required
@@ -85,3 +85,17 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):
 			for t in outage.resource.fully_dependent_tools.filter(visible=True):
 				result[t.id]['scheduled_outage'] = True
 	return result
+
+
+@login_required
+@require_GET
+@disable_session_expiry_refresh
+def occupancy(request):
+	area = request.GET.get('occupancy')
+	if area is None or not Area.objects.filter(area=area).exists():
+		return HttpResponse()
+	dictionary = {
+		'area': area,
+		'occupants': AreaAccessRecord.objects.filter(area=area, end=None, staff_charge=None).prefetch_related('customer'),
+	}
+	return render(request, 'occupancy.html', dictionary)

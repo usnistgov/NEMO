@@ -26,6 +26,7 @@
 	<div id="default_content">
 		{% block default_content %}
 		{% endblock %}
+		<div id="occupancy"></div>
 	</div>
 	<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1></div>
 	<div id="status" style="display: none"></div>
@@ -35,6 +36,12 @@
 		let record_badge_number = false;
 		let badge_number = "";
 		let timeout_handle = null;
+
+		if(URLSearchParams(window.location.search).get('occupancy'))
+		{
+			fetch_occupancy();
+			setInterval(fetch_occupancy, 30000);
+		}
 
 		{# Note that keydown and keyup provide a code indicating which key is pressed, while keypress indicates which character was entered. For example, a lowercase "a" will be reported as 65 by keydown and keyup, but as 97 by keypress. An uppercase "A" is reported as 65 by all events. Because of this distinction, when catching special keystrokes such as F2, .keydown() or .keyup() is a better choice. #}
 
@@ -124,6 +131,11 @@
 			$("#default_content").hide();
 			$("#error").hide();
 			$("#status").html("<h1>Logging you out of the {{ area|lower }}...</h1>").show().load('{% url 'logout_of_area' door.id %}', data, load_complete);
+		}
+		function fetch_occupancy()
+		{
+			let occupancy = URLSearchParams(window.location.search).get('occupancy');
+			ajax_get('{% url 'occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 		}
 	</script>
 </body>
