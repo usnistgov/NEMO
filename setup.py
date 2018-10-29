@@ -30,7 +30,7 @@ setup(
 		'djangorestframework==3.8.2',
 		'ldap3==2.5.1',
 		'python-dateutil==2.7.3',
-		'requests==2.19.1',
+		'requests==2.20.0',
 		'Pillow==5.2.0',
 	],
 	entry_points={
