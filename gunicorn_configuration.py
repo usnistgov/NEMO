@@ -6,6 +6,7 @@ from multiprocessing import cpu_count
 
 bind = "0.0.0.0:8000"
 
+worker_class = 'gthread'
 # The following value was decided based on the Gunicorn documentation and configuration example:
 # http://docs.gunicorn.org/en/stable/configure.html#configuration-file
 threads = cpu_count() * 2 + 1
