@@ -8,6 +8,7 @@ bind = "0.0.0.0:8000"
 worker_class = 'gthread'
 # The following value was decided based on the Gunicorn documentation and configuration example:
 # http://docs.gunicorn.org/en/stable/configure.html#configuration-file
-threads = cpu_count() * 2 + 1
+workers = cpu_count() * 2 + 1
+threads = 8
 keepalive = 60
 capture_output = True
