@@ -6,7 +6,7 @@
 		{% csrf_token %}
 		<div class="form-group">
 			{% if projects|length == 1 %}
-				{{ projects.0 }}
+				You only have one active project. Area access will be billed to: {{ projects.0 }}
 				<input type="hidden" name="project" value="{{ projects.0.id }}">
 			{% else %}
 				<p>Charge area access to which project?</p>
@@ -19,7 +19,7 @@
 		</div>
 		<div class="form-group">
 		{% if areas|length == 1 %}
-			{{ areas.0 }}
+			You are only able to access one area: {{ areas.0 }}
 			<input type="hidden" name="area" value="{{ areas.0.id }}">
 		{% else %}
 			<p>Log in to which area?</p>
