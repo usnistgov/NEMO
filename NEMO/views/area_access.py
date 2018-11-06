@@ -1,19 +1,19 @@
-from datetime import timedelta, date
+from datetime import date, timedelta
 from time import sleep
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.shortcuts import get_object_or_404, render, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import urlencode
-from django.views.decorators.http import require_POST, require_GET, require_http_methods
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.models import AreaAccessRecord, Project, User, Door, PhysicalAccessType, Area, PhysicalAccessLog
+from NEMO.models import Area, AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User
 from NEMO.tasks import postpone
 from NEMO.utilities import parse_start_and_end_date
-from views.customization import get_customization
+from NEMO.views.customization import get_customization
 
 
 @staff_member_required(login_url=None)
