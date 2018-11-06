@@ -57,6 +57,27 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
+				<h3>Application settings</h3>
+				<form method="POST" action="{% url 'customize' 'application_settings' %}" class="form-horizontal">
+					{% csrf_token %}
+					<div class="form-group">
+						<div class="col-md-12">
+							<div class="checkbox">
+								<label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas</label>
+							</div>
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-md-3">
+							<input type="submit" value="Save settings" class="btn btn-success">
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
 				<h3>Login banner</h3>
 				<p>The login banner is an informational message displayed underneath the username and password text boxes on the login page. You can customize this to convey rules for NEMO users at your organization.</p>
 				<form method="POST" action="{% url 'customize' 'login_banner' %}" enctype="multipart/form-data">
