@@ -1,8 +1,9 @@
 from atexit import register
+from logging import getLogger
 from queue import Queue
 from threading import Thread
 
-from django.core.mail import mail_admins
+postponed_tasks_logger = getLogger("NEMO.PostponedTasks")
 
 
 def postpone(function):
@@ -19,7 +20,7 @@ def _worker():
 		except:
 			from traceback import format_exc
 			details = format_exc()
-			mail_admins('Background process exception', details)
+			postponed_tasks_logger.exception(details)
 		finally:
 			_queue.task_done()  # So we can join at exit
 
