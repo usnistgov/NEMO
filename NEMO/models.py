@@ -2,6 +2,7 @@ import datetime
 import socket
 import struct
 from datetime import timedelta
+from logging import getLogger
 
 from django.conf import settings
 from django.contrib import auth
@@ -650,6 +651,8 @@ class Interlock(models.Model):
 			self.save()
 			return True
 
+		interlocks_logger = getLogger("NEMO.interlocks")
+
 		# The string in this next function call identifies the format of the interlock message.
 		# '!' means use network byte order (big endian) for the contents of the message.
 		# '20s' means that the message begins with a 20 character string.
@@ -699,7 +702,7 @@ class Interlock(models.Model):
 				self.state = self.State.UNKNOWN
 
 			# Compose the status message of the last command and write it to the database.
-			reply_message = "Reply received at " + format_datetime(timezone.now()) + ". "
+			reply_message = f"Reply received at {format_datetime(timezone.now())}. "
 			if command_type == self.State.UNLOCKED:
 				reply_message += "Unlock"
 			elif command_type == self.State.LOCKED:
@@ -743,6 +746,12 @@ class Interlock(models.Model):
 			sock.close()
 			self.most_recent_reply = reply_message
 			self.save()
+			if self.state == self.State.UNKNOWN:
+				interlocks_logger.error(f"Interlock {self.id} is in an unknown state. Most recent reply at {format_datetime(timezone.now())}: {self.most_recent_reply}")
+			elif self.state == self.State.LOCKED:
+				interlocks_logger.debug(f"Interlock {self.id} locked successfully at {format_datetime(timezone.now())}")
+			elif self.state == self.State.UNLOCKED:
+				interlocks_logger.debug(f"Interlock {self.id} unlocked successfully at {format_datetime(timezone.now())}")
 			# If the command type equals the current state then the command worked which will return true:
 			return self.state == command_type
 
