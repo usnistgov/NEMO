@@ -13,8 +13,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import CommentForm, nice_errors
-from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, \
-	TaskCategory, TaskStatus, Tool, UsageEvent, User
+from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, TaskCategory, TaskStatus, Tool, UsageEvent, User
 from NEMO.utilities import extract_times, quiet_int, InvalidParameter
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.dynamic_form import DynamicForm
@@ -229,7 +228,9 @@ def disable_tool(request, tool_id):
 	current_usage_event.end = timezone.now() + downtime
 
 	# Collect post-usage questions
-	current_usage_event.run_data = DynamicForm(tool.post_usage_questions).extract(request)
+	dynamic_form = DynamicForm(tool.post_usage_questions)
+	current_usage_event.run_data = dynamic_form.extract(request)
+	dynamic_form.charge_for_consumable(current_usage_event.user, current_usage_event.operator, current_usage_event.project, current_usage_event.run_data)
 
 	current_usage_event.save()
 	if request.user.charging_staff_time():

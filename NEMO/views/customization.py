@@ -2,8 +2,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.core.files.storage import get_storage_class
 from django.core.validators import validate_email
 from django.http import HttpResponseBadRequest
-from django.shortcuts import render, redirect
-from django.views.decorators.http import require_POST, require_GET
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import Customization
 
@@ -24,11 +24,13 @@ def store_media_file(content, file_name):
 	if content:
 		storage.save(file_name, content)
 
+
 customizable_key_values = [
 	'feedback_email_address',
 	'user_office_email_address',
 	'safety_email_address',
-	'abuse_email_address'
+	'abuse_email_address',
+	'self_log_in',
 ]
 
 customizable_content = [
@@ -92,6 +94,8 @@ def customize(request, element):
 		set_customization('safety_email_address', request.POST.get('safety_email_address', ''))
 		set_customization('abuse_email_address', request.POST.get('abuse_email_address', ''))
 		set_customization('user_office_email_address', request.POST.get('user_office_email_address', ''))
+	elif element == 'application_settings':
+		set_customization('self_log_in', request.POST.get('self_log_in', ''))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
 	return redirect('customization')

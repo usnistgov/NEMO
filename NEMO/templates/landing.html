@@ -52,7 +52,7 @@
 				{% endfor %}
 			</div>
 		{% endif %}
-		{% if usage_events or user.in_area %}
+		{% if usage_events or user.in_area or self_log_in %}
 			<div class="col-lg-4">
 				<h3>Current NanoFab usage</h3>
 				{% for usage in usage_events %}
@@ -73,6 +73,13 @@
 						</div>
 						{% if active_project_count > 1 %}</a>{% endif %}
 					{% endwith %}
+				{% endif %}
+				{% if self_log_in %}
+					<a href="{% url 'self_log_in' %}" style="text-decoration: none">
+						<div class="alert alert-success">
+							You are not logged in to an access controlled area. Click here to log in.
+						</div>
+					</a>
 				{% endif %}
 			</div>
 		{% endif %}

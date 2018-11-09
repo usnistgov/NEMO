@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Log in to an area{% endblock %}
+{% block content %}
+	<h1>Log in to an access controlled area</h1>
+	<form method="post" action="{% url 'self_log_in' %}">
+		{% csrf_token %}
+		<div class="form-group">
+			{% if projects|length == 1 %}
+				You only have one active project. Area access will be billed to: {{ projects.0 }}
+				<input type="hidden" name="project" value="{{ projects.0.id }}">
+			{% else %}
+				<p>Charge area access to which project?</p>
+				{% for p in projects %}
+					<div class="radio">
+						<label><input type="radio" name="project" value="{{ p.id }}" required>{{ p }}</label>
+					</div>
+				{% endfor %}
+			{% endif %}
+		</div>
+		<div class="form-group">
+		{% if areas|length == 1 %}
+			You are only able to access one area: {{ areas.0 }}
+			<input type="hidden" name="area" value="{{ areas.0.id }}">
+		{% else %}
+			<p>Log in to which area?</p>
+			{% for a in areas %}
+				<div class="radio">
+					<label><input type="radio" name="area" value="{{ a.id }}" required>{{ a }}</label>
+				</div>
+			{% endfor %}
+		{% endif %}
+		</div>
+		<input type="submit" class="btn btn-success" value="Log in">
+	</form>
+{% endblock %}

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name='NEMO',
-	version='1.4.0',
+	version='1.7.0',
 	python_requires='>=3.6',
 	packages=find_packages(exclude=['NEMO.tests']),
 	include_package_data=True,
@@ -30,7 +30,7 @@ setup(
 		'djangorestframework==3.8.2',
 		'ldap3==2.5.1',
 		'python-dateutil==2.7.3',
-		'requests==2.19.1',
+		'requests==2.20.0',
 		'Pillow==5.2.0',
 	],
 	entry_points={

@@ -1,6 +1,10 @@
 from json import dumps, loads
 
+from django.utils import timezone
 from django.utils.safestring import mark_safe
+
+from NEMO.models import Consumable, ConsumableWithdraw
+from NEMO.utilities import quiet_int
 
 
 class DynamicForm:
@@ -50,3 +54,24 @@ class DynamicForm:
 			if request.POST.get(question['name']):
 				results[question['name']] = request.POST[question['name']]
 		return dumps(results, indent='\t', sort_keys=True) if len(results) else ''
+
+	def charge_for_consumable(self, customer, merchant, project, run_data):
+		try:
+			run_data = loads(run_data)
+		except:
+			return
+		for question in self.questions:
+			if 'consumable' in question:
+				try:
+					consumable = Consumable.objects.get(name=question['consumable'])
+					quantity = 0
+					if question['type'] == 'textbox':
+						if question['name'] in run_data:
+							quantity = quiet_int(run_data[question['name']])
+					elif question['type'] == 'radio':
+						quantity = 1
+
+					if quantity > 0:
+						ConsumableWithdraw.objects.create(customer=customer, merchant=merchant, consumable=consumable, quantity=quantity, project=project, date=timezone.now())
+				except:
+					pass

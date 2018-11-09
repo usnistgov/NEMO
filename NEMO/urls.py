@@ -155,6 +155,7 @@ urlpatterns = [
 	url(r'^change_project/$', area_access.change_project, name='change_project'),
 	url(r'^change_project/(?P<new_project>\d+)/$', area_access.change_project, name='change_project'),
 	url(r'^force_area_logout/(?P<user_id>\d+)/$', area_access.force_area_logout, name='force_area_logout'),
+	url(r'^self_log_in/$', area_access.self_log_in, name='self_log_in'),
 
 	# NanoFab usage:
 	url(r'^usage/$', usage.usage, name='usage'),
@@ -202,6 +203,9 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		# Area access
 		url(r'^area_access/$', area_access.area_access, name='area_access'),
 		url(r'^new_area_access_record/$', area_access.new_area_access_record, name='new_area_access_record'),
+
+		# General area occupancy table, for use with Kiosk and Area Access tablets
+		url(r'^occupancy/$', status_dashboard.occupancy, name='occupancy'),
 
 		# Reminders and periodic events
 		url(r'^email_reservation_reminders/$', calendar.email_reservation_reminders, name='email_reservation_reminders'),
