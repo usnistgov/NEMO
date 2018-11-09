@@ -10,5 +10,5 @@ worker_class = 'gthread'
 # http://docs.gunicorn.org/en/stable/configure.html#configuration-file
 workers = cpu_count() * 2 + 1
 threads = 8
-keepalive = 60
+keepalive = 300
 capture_output = True
