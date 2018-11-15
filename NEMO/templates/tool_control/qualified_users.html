@@ -8,6 +8,7 @@
 	<h4 class="media-heading">Qualified users</h4>
 	<div id="qualified_users" class="collapse {% if expanded %}in{% endif %}">
 		<p>Only qualified users are able to operate the {{ tool.name }}.</p>
+		{% if tool.grant_physical_access_level_upon_qualification %}<p class="danger-highlight">Qualifying a user for this tool automatically grants them the physical access level &quot;{{ tool.grant_physical_access_level_upon_qualification }}&quot;.</p>{% endif %}
 		<form id="add_qualified_user_form" class="form-inline" style="margin-bottom:10px">
 			<div class="form-group">
 				<label class="control-label">Add a qualified user <input type="text" id="add_qualified_user_search_box" placeholder="Search for a user" class="form-control"></label>

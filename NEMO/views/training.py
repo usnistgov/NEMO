@@ -79,3 +79,13 @@ def qualify(authorizer, user, tool):
 	entry.child_content_object = user
 	entry.action = entry.Action.ADDED
 	entry.save()
+
+	if tool.grant_physical_access_level_upon_qualification:
+		if tool.grant_physical_access_level_upon_qualification not in user.physical_access_levels.all():
+			user.physical_access_levels.add(tool.grant_physical_access_level_upon_qualification)
+			entry = MembershipHistory()
+			entry.authorizer = authorizer
+			entry.parent_content_object = tool.grant_physical_access_level_upon_qualification
+			entry.child_content_object = user
+			entry.action = entry.Action.ADDED
+			entry.save()

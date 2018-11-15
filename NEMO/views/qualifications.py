@@ -35,6 +35,18 @@ def modify_qualifications(request):
 		original_qualifications = set(user.qualifications.all())
 		if action == 'qualify':
 			user.qualifications.add(*tools)
+			original_physical_access_levels = set(user.physical_access_levels.all())
+			physical_access_level_automatic_enrollment = list(set([t.grant_physical_access_level_upon_qualification for t in tools.values() if t.grant_physical_access_level_upon_qualification]))
+			user.physical_access_levels.add(*physical_access_level_automatic_enrollment)
+			current_physical_access_levels = set(user.physical_access_levels.all())
+			added_physical_access_levels = set(current_physical_access_levels) - set(original_physical_access_levels)
+			for access_level in added_physical_access_levels:
+				entry = MembershipHistory()
+				entry.authorizer = request.user
+				entry.parent_content_object = access_level
+				entry.child_content_object = user
+				entry.action = entry.Action.ADDED
+				entry.save()
 		elif action == 'disqualify':
 			user.qualifications.remove(*tools)
 		current_qualifications = set(user.qualifications.all())
