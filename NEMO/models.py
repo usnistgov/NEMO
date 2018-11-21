@@ -227,6 +227,7 @@ class Tool(models.Model):
 	# Policy fields:
 	requires_area_access = models.ForeignKey('Area', null=True, blank=True, help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.")
 	grant_physical_access_level_upon_qualification = models.ForeignKey('PhysicalAccessLevel', null=True, blank=True, help_text="The designated physical access level is granted to the user upon qualification for this tool.")
+	grant_badge_reader_access_upon_qualification = models.CharField(max_length=100, null=True, blank=True, help_text="Badge reader access is granted to the user upon qualification for this tool.")
 	interlock = models.OneToOneField('Interlock', blank=True, null=True, on_delete=models.SET_NULL)
 	reservation_horizon = models.PositiveIntegerField(default=14, null=True, blank=True, help_text="Users may create reservations this many days in advance. Leave this field blank to indicate that no reservation horizon exists for this tool.")
 	minimum_usage_block_time = models.PositiveIntegerField(null=True, blank=True, help_text="The minimum amount of time (in minutes) that a user must reserve this tool for a single reservation. Leave this field blank to indicate that no minimum usage block time exists for this tool.")
