@@ -56,9 +56,9 @@ def modify_qualifications(request):
 					tool = Tool.objects.get(id=t)
 					if tool.grant_badge_reader_access_upon_qualification:
 						parameters = {
-							'user': user.username,
+							'username': user.username,
 							'domain': user.domain,
-							'area': tool.grant_badge_reader_access_upon_qualification,
+							'requested_area': tool.grant_badge_reader_access_upon_qualification,
 						}
 						requests.put(urljoin(settings.IDENTITY_SERVICE['url'], '/add/'), data=parameters, timeout=3)
 		elif action == 'disqualify':
