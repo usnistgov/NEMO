@@ -1,5 +1,8 @@
 from re import search
+from urllib.parse import urljoin
 
+import requests
+from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
@@ -89,3 +92,12 @@ def qualify(authorizer, user, tool):
 			entry.child_content_object = user
 			entry.action = entry.Action.ADDED
 			entry.save()
+
+	if settings.IDENTITY_SERVICE['available']:
+		if tool.grant_badge_reader_access_upon_qualification:
+			parameters = {
+				'user': user.username,
+				'domain': user.domain,
+				'area': tool.grant_badge_reader_access_upon_qualification,
+			}
+			requests.put(urljoin(settings.IDENTITY_SERVICE['url'], '/add/'), data=parameters, timeout=3)

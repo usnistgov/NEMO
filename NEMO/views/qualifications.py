@@ -1,3 +1,7 @@
+from urllib.parse import urljoin
+
+import requests
+from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponseBadRequest, HttpResponse
 from django.shortcuts import render, get_object_or_404
@@ -47,6 +51,16 @@ def modify_qualifications(request):
 				entry.child_content_object = user
 				entry.action = entry.Action.ADDED
 				entry.save()
+			if settings.IDENTITY_SERVICE['available']:
+				for t in tools:
+					tool = Tool.objects.get(id=t)
+					if tool.grant_badge_reader_access_upon_qualification:
+						parameters = {
+							'user': user.username,
+							'domain': user.domain,
+							'area': tool.grant_badge_reader_access_upon_qualification,
+						}
+						requests.put(urljoin(settings.IDENTITY_SERVICE['url'], '/add/'), data=parameters, timeout=3)
 		elif action == 'disqualify':
 			user.qualifications.remove(*tools)
 		current_qualifications = set(user.qualifications.all())
