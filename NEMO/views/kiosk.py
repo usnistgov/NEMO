@@ -43,7 +43,10 @@ def enable_tool(request):
 	new_usage_event.tool = tool
 	new_usage_event.save()
 
-	dictionary = {'message': 'You can now use the {}'.format(tool)}
+	dictionary = {
+		'message': 'You can now use the {}'.format(tool),
+		'badge_number': customer.badge_number,
+	}
 	return render(request, 'kiosk/acknowledgement.html', dictionary)
 
 
@@ -88,7 +91,10 @@ def disable_tool(request):
 	current_usage_event.run_data = DynamicForm(tool.post_usage_questions).extract(request)
 	current_usage_event.save()
 
-	dictionary = {'message': 'You are no longer using the {}'.format(tool)}
+	dictionary = {
+		'message': 'You are no longer using the {}'.format(tool),
+		'badge_number': customer.badge_number,
+	}
 	return render(request, 'kiosk/acknowledgement.html', dictionary)
 
 

@@ -1,3 +1,7 @@
 <h1>{{ message }}</h1>
 
-<script>revert({{ delay|default:5 }});</script>
+{% if badge_number %}
+	<script>load_choices({{badge_number}})</script>
+{% else %}
+	<script>revert({{ delay|default:5 }});</script>
+{% endif %}
