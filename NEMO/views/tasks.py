@@ -124,7 +124,7 @@ def cancel(request, task_id):
 
 def micromanage(task, url):
 	# If there's no micromanager present, let the techs do their job and leave them alone...
-	if not settings.MICROMANAGER:
+	if not hasattr(settings, 'MICROMANAGER'):
 		return
 
 	# Otherwise, let the micromanagement begin...
