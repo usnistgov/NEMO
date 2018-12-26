@@ -133,22 +133,22 @@ def micromanage(task, url):
 		subject = f'{task.tool} task resolved'
 	else:
 		subject = f'{task.tool} task updated'
-	message = dedent(f"""
-	A task for the {task.tool} was just modified by {task.last_updated_by} at {timezone.now}.
+	message = f"""
+A task for the {task.tool} was just modified by {task.last_updated_by} at {timezone.now()}.
 
-	The latest update is at the bottom of the description. The entirety of the task status follows: 
+The latest update is at the bottom of the description. The entirety of the task status follows: 
 
-	Task problem description:
-	{task.problem_description}
+Task problem description:
+{task.problem_description}
 
-	Task progress description:
-	{task.progress_description}
+Task progress description:
+{task.progress_description}
 
-	Task resolution description:
-	{task.resolution_description}
+Task resolution description:
+{task.resolution_description}
 
-	Visit {url} to view the tool control page for the task.
-	""")
+Visit {url} to view the tool control page for the task.
+"""
 	send_mail(subject, message, settings.SERVER_EMAIL, settings.MICROMANAGER)
 
 
