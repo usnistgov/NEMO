@@ -134,7 +134,7 @@ def micromanage(task, url):
 	else:
 		subject = f'{task.tool} task updated'
 	message = f"""
-A task for the {task.tool} was just modified by {task.last_updated_by} at {timezone.now()}.
+A task for the {task.tool} was just modified by {task.last_updated_by}.
 
 The latest update is at the bottom of the description. The entirety of the task status follows: 
 
