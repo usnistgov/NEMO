@@ -1,14 +1,16 @@
+from textwrap import dedent
+
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
-from django.shortcuts import get_object_or_404, render, redirect
-from django.template import Template, Context
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template import Context, Template
 from django.utils import timezone
-from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import TaskForm, nice_errors
-from NEMO.models import Task, UsageEvent, Interlock, TaskCategory, Reservation, SafetyIssue, TaskStatus, TaskHistory
+from NEMO.models import Interlock, Reservation, SafetyIssue, Task, TaskCategory, TaskHistory, TaskStatus, UsageEvent
 from NEMO.utilities import bootstrap_primary_color, format_datetime
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.safety import send_safety_email_notification
@@ -120,6 +122,36 @@ def cancel(request, task_id):
 	return redirect('tool_control')
 
 
+def micromanage(task, url):
+	# If there's no micromanager present, let the techs do their job and leave them alone...
+	if not settings.MICROMANAGER:
+		return
+
+	# Otherwise, let the micromanagement begin...
+	task.refresh_from_db()
+	if task.resolved:
+		subject = f'{task.tool} task resolved'
+	else:
+		subject = f'{task.tool} task updated'
+	message = dedent(f"""
+	A task for the {task.tool} was just modified by {task.last_updated_by} at {timezone.now}.
+
+	The latest update is at the bottom of the description. The entirety of the task status follows: 
+
+	Task problem description:
+	{task.problem_description}
+
+	Task progress description:
+	{task.progress_description}
+
+	Task resolution description:
+	{task.resolution_description}
+
+	Visit {url} to view the tool control page for the task.
+	""")
+	send_mail(subject, message, settings.SERVER_EMAIL, settings.MICROMANAGER)
+
+
 @staff_member_required(login_url=None)
 @require_POST
 def update(request, task_id):
@@ -136,6 +168,10 @@ def update(request, task_id):
 	form.save()
 	set_task_status(request, task, request.POST.get('status'), request.user)
 	determine_tool_status(task.tool)
+	try:
+		micromanage(task, request.build_absolute_uri(task.tool.get_absolute_url()))
+	except:
+		pass
 	if next_page == 'maintenance':
 		return redirect('maintenance')
 	else:
