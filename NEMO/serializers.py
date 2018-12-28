@@ -6,7 +6,7 @@ from NEMO.models import User, Project, Account, Reservation, AreaAccessRecord, U
 class UserSerializer(ModelSerializer):
 	class Meta:
 		model = User
-		fields = ('id', 'first_name', 'last_name', 'username', 'date_joined')
+		fields = ('id', 'first_name', 'last_name', 'username', 'email', 'date_joined')
 
 
 class ProjectSerializer(ModelSerializer):
