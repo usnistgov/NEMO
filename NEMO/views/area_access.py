@@ -137,7 +137,7 @@ def login_to_area(request, door_id):
 		record.customer = user
 		record.project = user.active_projects()[0]
 		record.save()
-		unlock_door(door)
+		unlock_door(door.id)
 		return render(request, 'area_access/login_success.html', {'area': door.area, 'name': user.first_name, 'project': record.project, 'previous_area': previous_area})
 	elif user.active_project_count() > 1:
 		project_id = request.POST.get('project_id')
@@ -163,7 +163,7 @@ def login_to_area(request, door_id):
 			record.customer = user
 			record.project = project
 			record.save()
-			unlock_door(door)
+			unlock_door(door.id)
 			return render(request, 'area_access/login_success.html', {'area': door.area, 'name': user.first_name, 'project': record.project, 'previous_area': previous_area})
 		else:
 			# No log entry necessary here because all validation checks passed, and the user must indicate which project
@@ -172,11 +172,11 @@ def login_to_area(request, door_id):
 
 
 @postpone
-def unlock_door(door):
+def unlock_door(door_id):
+	door = Door.objects.get(id=door_id)
 	door.interlock.unlock()
 	sleep(8)
 	door.interlock.lock()
-	sleep(3)
 
 
 @login_required
@@ -224,7 +224,7 @@ def open_door(request, door_id):
 	if user.area_access_record() and user.area_access_record().area == door.area:
 		log = PhysicalAccessLog(user=user, door=door, time=timezone.now(), result=PhysicalAccessType.ALLOW, details="The user was permitted to enter this area, and already had an active area access record for this area.")
 		log.save()
-		unlock_door(door)
+		unlock_door(door.id)
 		return render(request, 'area_access/door_is_open.html')
 	return render(request, 'area_access/not_logged_in.html', {'area': door.area})
 
