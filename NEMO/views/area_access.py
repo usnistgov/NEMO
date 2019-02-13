@@ -204,7 +204,7 @@ def force_area_logout(request, user_id):
 	user = get_object_or_404(User, id=user_id)
 	record = user.area_access_record()
 	if record is None:
-		return HttpResponseBadRequest('That user is not logged into the {}.'.format(record.area))
+		return HttpResponseBadRequest('That user is not logged into any areas.')
 	record.end = timezone.now()
 	record.save()
 	return HttpResponse()
