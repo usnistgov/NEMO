@@ -146,9 +146,11 @@ def send_broadcast_email(request):
 		elif audience == 'account':
 			users = User.objects.filter(projects__account__id=selection)
 		if active_choice:
-			users.filter(is_active=True)
-	except:
-		dictionary = {'error': 'Your email was not sent. There was a problem finding the users to send the email to.'}
+			users = users.filter(is_active=True)
+	except Exception as error:
+		warning_message = 'Your email was not sent. There was a problem finding the users to send the email to.'
+		dictionary = {'error': warning_message}
+		logger.warning(warning_message + ' audience: {}, only_active: {}. The error message that NEMO received is: {}'.format(audience, active_choice, str(error)))
 		return render(request, 'email/compose_email.html', dictionary)
 	if not users:
 		dictionary = {'error': 'The audience you specified is empty. You must send the email to at least one person.'}
@@ -161,11 +163,13 @@ def send_broadcast_email(request):
 		email = EmailMultiAlternatives(subject, from_email=request.user.email, bcc=set(users))
 		email.attach_alternative(content, 'text/html')
 		email.send()
-	except SMTPException as e:
+	except SMTPException as error:
+		error_message = 'NEMO was unable to send the email through the email server. The error message that NEMO received is: ' + str(error)
+		logger.exception(error_message)
 		dictionary = {
 			'title': 'Email not sent',
 			'heading': 'There was a problem sending your email',
-			'content': 'NEMO was unable to send the email through the email server. The error message that NEMO received is: ' + str(e),
+			'content': error_message,
 		}
 		return render(request, 'acknowledgement.html', dictionary)
 	dictionary = {
