@@ -1,4 +1,4 @@
-from textwrap import dedent
+from logging import getLogger
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
@@ -15,6 +15,8 @@ from NEMO.utilities import bootstrap_primary_color, format_datetime
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.tool_control import determine_tool_status
+
+tasks_logger = getLogger("NEMO.Tasks")
 
 
 @login_required
@@ -122,19 +124,19 @@ def cancel(request, task_id):
 	return redirect('tool_control')
 
 
-def micromanage(task, url):
-	# If there's no micromanager present, let the techs do their job and leave them alone...
-	if not hasattr(settings, 'MICROMANAGER'):
+def send_task_updated_email(task, url):
+	if not hasattr(settings, 'LAB_MANAGERS'):
 		return
 
-	# Otherwise, let the micromanagement begin...
 	task.refresh_from_db()
 	if task.resolved:
-		subject = f'{task.tool} task resolved'
+		task_user = task.resolver
+		task_status = 'resolved'
 	else:
-		subject = f'{task.tool} task updated'
+		task_user = task.last_updated_by
+		task_status = 'updated'
 	message = f"""
-A task for the {task.tool} was just modified by {task.last_updated_by}.
+A task for the {task.tool} was just modified by {task_user}.
 
 The latest update is at the bottom of the description. The entirety of the task status follows: 
 
@@ -149,7 +151,7 @@ Task resolution description:
 
 Visit {url} to view the tool control page for the task.
 """
-	send_mail(subject, message, settings.SERVER_EMAIL, settings.MICROMANAGER)
+	send_mail(f'{task.tool} task {task_status}', message, settings.SERVER_EMAIL, settings.LAB_MANAGERS)
 
 
 @staff_member_required(login_url=None)
@@ -169,8 +171,10 @@ def update(request, task_id):
 	set_task_status(request, task, request.POST.get('status'), request.user)
 	determine_tool_status(task.tool)
 	try:
-		micromanage(task, request.build_absolute_uri(task.tool.get_absolute_url()))
-	except:
+		send_task_updated_email(task, request.build_absolute_uri(task.tool.get_absolute_url()))
+	except Exception as error:
+		error_message = 'NEMO was unable to send the task updated email. The error message that NEMO received is: ' + str(error)
+		tasks_logger.exception(error_message)
 		pass
 	if next_page == 'maintenance':
 		return redirect('maintenance')
