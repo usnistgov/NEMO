@@ -2,14 +2,14 @@ from setuptools import setup, find_packages
 
 setup(
 	name='NEMO',
-	version='1.11.1',
+	version='1.11.2',
 	python_requires='>=3.6',
 	packages=find_packages(exclude=['NEMO.tests']),
 	include_package_data=True,
 	url='https://github.com/usnistgov/NEMO',
 	license='Public domain',
-	author='Dylan Klomparens',
-	author_email='dylan.klomparens@nist.gov',
+	author='Center for Nanoscale Science and Technology',
+	author_email='CNSTapplications@nist.gov',
 	description='NEMO is a laboratory logistics web application. Use it to schedule reservations, control tool access, track maintenance issues, and more.',
 	long_description='Find out more about NEMO on the GitHub project page https://github.com/usnistgov/NEMO',
 	classifiers=[
