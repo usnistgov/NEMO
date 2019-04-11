@@ -5,8 +5,7 @@
 		<small> for {{ timeframe }}</small>
 	</h1>
 	<p>
-		This page presents a monthly report of your billable NanoFab usage. <span style="color:red; font-weight:bold">It does not include adjustments requested from the NanoFab User Office.</span>
-		All adjustments and finalized costs can be found on your monthly invoice.
+		This page presents a monthly report of your NanoFab usage and billing information. Approved adjustments are reflected in the Billing information data but not in the Usage data.
 	</p>
 	<form class="form-inline" role="form">
 		<div class="form-group">
@@ -32,6 +31,10 @@
 
 	<div id="content" class="tab-content">
 		<div class="tab-pane active" id="usage">
+            <br/>
+            <p>
+                Adjustment activities <b>are not included</b> in the usage information.
+            </p>
 			{% if no_charges %}
 				<h3>There was no usage for {{ timeframe }}.</h3>
 			{% endif %}
@@ -101,7 +104,13 @@
 			{% endif %}
 		</div>
 		<div class="tab-pane" id="billing_information">
-			Loading billing information...
+            <br>
+            <p>
+                Approved adjustments <b>are included</b> in the billing information.
+            </p>
+            <div id="billing_information_response">
+			    Loading billing information...
+            </div>
 		</div>
 	</div>
 
@@ -115,11 +124,11 @@
 
 		function display_billing_information(response, status, xml_http_request)
 		{
-			$('#billing_information').html(response);
+			$('#billing_information_response').html(response);
 		}
 		function display_error_message()
 		{
-			$('#billing_information').html('There was a problem communicating with the billing service. The financial information associated with your usage cannot be displayed at this time.');
+			$('#billing_information_response').html('There was a problem communicating with the billing service. The financial information associated with your usage cannot be displayed at this time.');
 		}
 	</script>
 
