@@ -2,7 +2,6 @@ from setuptools import setup, find_packages
 
 setup(
 	name='NEMO',
-	version='1.11.2',
 	python_requires='>=3.6',
 	packages=find_packages(exclude=['NEMO.tests']),
 	include_package_data=True,
@@ -33,6 +32,8 @@ setup(
 		'requests==2.21.0',
 		'Pillow==5.2.0',
 	],
+	use_scm_version=True,
+	setup_requires=['setuptools_scm'],
 	entry_points={
 		'console_scripts': ['nemo=NEMO.provisioning:entry_point'],
 	},

@@ -6,6 +6,7 @@ from django.urls import reverse, NoReverseMatch
 from django.utils import timezone
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
+from pkg_resources import get_distribution, DistributionNotFound
 
 register = template.Library()
 
@@ -66,3 +67,21 @@ def navigation_url(url_name, description):
 @register.filter
 def get_item(dictionary, key):
 	return dictionary.get(key)
+
+
+dist_version: str = 0
+
+
+@register.simple_tag()
+def app_version() -> str:
+	global dist_version
+	if dist_version != 0:
+		return dist_version
+	else:
+		try:
+			dist_version = get_distribution("NEMO").version
+		except DistributionNotFound:
+			# package is not installed
+			dist_version = None
+			pass
+	return dist_version
