@@ -24,13 +24,13 @@
 
 	<div style="margin-top:10px">
 		<ul class="nav nav-pills" id="tabs">
-			<li class="active"><a href="#usage">Usage</a></li>
-			<li><a href="#billing_information">Billing information</a></li>
+			<li {% if not billing_active_by_default %}class="active"{% endif %}><a href="#usage">Usage</a></li>
+			<li {% if billing_active_by_default %}class="active"{% endif %}><a href="#billing_information">Billing information</a></li>
 		</ul>
 	</div>
 
 	<div id="content" class="tab-content">
-		<div class="tab-pane active" id="usage">
+		<div class="tab-pane {% if not billing_active_by_default %}active{% endif %}" id="usage">
             <br/>
             <p>
                 Adjustment activities <b>are not included</b> in the usage information.
@@ -103,7 +103,7 @@
 				{% endfor %}
 			{% endif %}
 		</div>
-		<div class="tab-pane" id="billing_information">
+		<div class="tab-pane {% if billing_active_by_default %}active{% endif %}" id="billing_information">
             <br>
             <p>
                 Approved adjustments <b>are included</b> in the billing information.

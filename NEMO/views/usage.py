@@ -22,6 +22,7 @@ def usage(request):
 		'usage_events': UsageEvent.objects.filter(user=request.user, end__gt=first_of_the_month, end__lte=last_of_the_month),
 		'month_list': month_list(),
 		'timeframe': request.GET.get('timeframe') or first_of_the_month.strftime('%B, %Y'),
+		'billing_active_by_default': True if hasattr(settings, 'BILLING_SERVICE') and settings.BILLING_SERVICE['available'] else False
 	}
 	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
 	return render(request, 'usage/usage.html', dictionary)
@@ -31,7 +32,7 @@ def usage(request):
 @require_GET
 def billing_information(request, timeframe=''):
 	dictionary = {}
-	if not settings.BILLING_SERVICE['available']:
+	if not hasattr(settings, 'BILLING_SERVICE') or settings.BILLING_SERVICE['available']:
 		return HttpResponse()
 	try:
 		cost_activity_url = settings.BILLING_SERVICE['cost_activity_url']
