@@ -32,7 +32,7 @@ def usage(request):
 @require_GET
 def billing_information(request, timeframe=''):
 	dictionary = {}
-	if not hasattr(settings, 'BILLING_SERVICE') or settings.BILLING_SERVICE['available']:
+	if not hasattr(settings, 'BILLING_SERVICE') or not settings.BILLING_SERVICE['available']:
 		return HttpResponse()
 	try:
 		cost_activity_url = settings.BILLING_SERVICE['cost_activity_url']
