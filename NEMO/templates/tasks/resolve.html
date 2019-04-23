@@ -24,7 +24,7 @@
 				<input type="hidden" name="force_shutdown" value="{{ task.force_shutdown }}">
 				<input type="hidden" name="safety_hazard" value="{{ task.safety_hazard }}">
 				<div class="form-group">
-					<label for="description">Please describe any actions taken to resolve this task. This information will be kept in order to analyze long-term trends in NanoFab maintenance.</label>
+					<label for="description">Please describe any actions taken to resolve this task. This information will be kept in order to analyze long-term trends in {{ facility_name }} maintenance.</label>
 					<textarea id="description" name="description" class="form-control" rows="3"></textarea>
 				</div>
 				{% if categories %}

@@ -6,12 +6,12 @@
 	{% if user.training_required %}
 		<div class="row">
 			<div class="col-lg-12">
-				<a href="{% url 'nanofab_rules' %}">
+				<a href="{% url 'facility_rules' %}">
 					<div class="well clearfix">
 						<div class="col-lg-2 text-center"><img src="{% static 'icons/caution.png' %}" height="128" width="128"></div>
 						<div class="col-lg-8 text-center">
-							<h2>NanoFab Rules Tutorial</h2>
-							<p style="text-align: center">You must complete your NanoFab rules tutorial before you can make reservations or use NanoFab tools. Click here to begin the tutorial.</p>
+							<h2>{{ facility_name }} Rules Tutorial</h2>
+							<p style="text-align: center">You must complete your {{ facility_name }} rules tutorial before you can make reservations or use {{ facility_name }} tools. Click here to begin the tutorial.</p>
 						</div>
 						<div class="col-lg-2 text-center"><img src="{% static 'icons/agreement.png' %}" height="128" width="128"></div>
 					</div>
@@ -54,7 +54,7 @@
 		{% endif %}
 		{% if usage_events or user.in_area or self_log_in %}
 			<div class="col-lg-4">
-				<h3>Current NanoFab usage</h3>
+				<h3>Current {{ facility_name }} usage</h3>
 				{% for usage in usage_events %}
 					<a href="{% url 'tool_control' usage.tool.tool_or_parent_id %}" style="text-decoration: none">
 						<div class="alert alert-info">

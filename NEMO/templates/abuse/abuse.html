@@ -42,7 +42,7 @@
 			<label for="target" class="col-sm-3 control-label">Evaluate for the</label>
 			<div class="col-sm-3">
 				<select id="target" name="target" class="form-control">
-					<option value="">Entire NanoFab</option>
+					<option value="">Entire {{ facility_name }}</option>
 					{% for tool in tools %}
 						<option value="{{ tool.id }}">{{ tool.name }}</option>
 					{% endfor %}

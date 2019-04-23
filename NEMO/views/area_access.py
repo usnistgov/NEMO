@@ -24,7 +24,7 @@ from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_e
 @staff_member_required(login_url=None)
 @require_GET
 def area_access(request):
-	""" Presents a page that displays audit records for all NanoFab areas. """
+	""" Presents a page that displays audit records for all areas. """
 	now = timezone.now().astimezone()
 	today = now.strftime('%m/%d/%Y')
 	yesterday = (now - timedelta(days=1)).strftime('%m/%d/%Y')
@@ -118,7 +118,7 @@ def check_policy_for_user(customer: User):
 	except NoActiveProjectsForUserError:
 		error_message = '{} does not have any active projects to bill area access'.format(customer)
 	except NoPhysicalAccessUserError:
-		error_message = '{} does not have access to any billable NanoFab areas'.format(customer)
+		error_message = '{} does not have access to any billable areas'.format(customer)
 	except PhysicalAccessExpiredUserError:
 		error_message = '{} does not have access to any areas because the user\'s physical access expired on {}. You must update the user\'s physical access expiration date before creating a new area access record.'.format(customer, customer.access_expiration.strftime('%B %m, %Y'))
 	return error_message

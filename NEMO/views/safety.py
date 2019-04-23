@@ -23,7 +23,7 @@ def safety(request):
 			issue = form.save()
 			send_safety_email_notification(request, issue)
 			dictionary['title'] = 'Concern received'
-			dictionary['heading'] = 'Your safety concern was sent to NanoFab staff and will be addressed promptly'
+			dictionary['heading'] = 'Your safety concern was sent to the staff and will be addressed promptly'
 			create_safety_notification(issue)
 			return render(request, 'acknowledgement.html', dictionary)
 	tickets = SafetyIssue.objects.filter(resolved=False).order_by('-creation_time')

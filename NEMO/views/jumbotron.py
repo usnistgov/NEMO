@@ -18,7 +18,7 @@ def jumbotron(request):
 def jumbotron_content(request):
 	delete_expired_alerts()
 	dictionary = {
-		'nanofab_occupants': AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'project').order_by('area__name', 'start'),
+		'facility_occupants': AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'project').order_by('area__name', 'start'),
 		'usage_events': UsageEvent.objects.filter(end=None).prefetch_related('operator', 'user', 'tool'),
 		'alerts': Alert.objects.filter(user=None, debut_time__lte=timezone.now(), expired=False, deleted=False),
 		'disabled_resources': Resource.objects.filter(available=False),

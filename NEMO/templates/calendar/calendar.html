@@ -17,9 +17,9 @@
 		<ul class="dropdown-menu">
 			<li class="dropdown-header">Which type of events would you like<br>to view on the calendar?</li>
 			<li data-toggle="tooltip" data-placement="right" title="Displays tool reservations. While viewing reservations, the 'Personal schedule' link shows your reservations for all tools. Select a tool to view everyone's reservations for that tool."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Reservations</a></li>
-			<li data-toggle="tooltip" data-placement="right" title="Displays your NanoFab usage. This includes area access, tool usage, and missed reservations (which are all billable items)."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">NanoFab usage</a></li>
+			<li data-toggle="tooltip" data-placement="right" title="Displays your {{ facility_name }} usage. This includes area access, tool usage, and missed reservations (which are all billable items)."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">{{ facility_name }} usage</a></li>
 			{% if user.is_staff %}
-				<li data-toggle="tooltip" data-placement="right" title="Displays NanoFab reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Specific user</a></li>
+				<li data-toggle="tooltip" data-placement="right" title="Displays {{ facility_name }} reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Specific user</a></li>
 			{% endif %}
 		</ul>
 	</div>
@@ -73,7 +73,7 @@ function update_event_sources()
 		}
 	};
 
-	if(event_type === 'reservations' || event_type === 'nanofab usage')
+	if(event_type === 'reservations' || event_type === '{{ facility_name }} usage')
 	{
 		var item = get_selected_item();
 		if(item === 'personal_schedule')
@@ -400,7 +400,7 @@ function change_calendar_event_type(calling_element)
 		$(scheduled_outage_button).show();
 		update_event_sources();
 	}
-	else if(event_type === "nanofab usage")
+	else if(event_type === "{{ facility_name }} usage")
 	{
 		user_search.hide();
 		chosen_user_button.hide();

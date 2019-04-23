@@ -1,6 +1,6 @@
 <script>$('body').removeClass().addClass('logout-error')</script>
 <h1>Your badge wasn't recognized.</h1>
 <h2>If you got a new one recently then we'll need to update your account.</h2>
-<h2>Please visit the NanoFab user office to resolve the problem.</h2>
+<h2>Please visit the {{ facility_name }} staff to resolve the problem.</h2>
 <audio src="{% url 'media' 'error.mp3' %}" autoplay></audio>
 <script>revert(15);</script>

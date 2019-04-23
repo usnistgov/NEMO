@@ -31,6 +31,6 @@ def feedback(request):
 	dictionary = {
 		'title': 'Feedback',
 		'heading': 'Thanks for your feedback!',
-		'content': 'Your feedback has been sent to the NanoFab staff. We will follow up with you as soon as we can.',
+		'content': 'Your feedback has been sent to the staff. We will follow up with you as soon as we can.',
 	}
 	return render(request, 'acknowledgement.html', dictionary)

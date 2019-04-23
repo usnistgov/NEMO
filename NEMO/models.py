@@ -87,7 +87,7 @@ class User(models.Model):
 	domain = models.CharField(max_length=100, blank=True, help_text="The Active Directory domain that the account resides on")
 
 	# Physical access fields
-	badge_number = models.PositiveIntegerField(null=True, blank=True, unique=True, help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the NanoFab lobby) to work properly.")
+	badge_number = models.PositiveIntegerField(null=True, blank=True, unique=True, help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.")
 	access_expiration = models.DateField(blank=True, null=True, help_text="The user will lose all access rights after this date. Typically this is used to ensure that safety training has been completed by the user every year.")
 	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True, related_name='users')
 
@@ -104,7 +104,7 @@ class User(models.Model):
 	date_joined = models.DateTimeField(default=timezone.now)
 	last_login = models.DateTimeField(null=True, blank=True)
 
-	# NanoFab information:
+	# Facility information:
 	qualifications = models.ManyToManyField('Tool', blank=True, help_text='Select the tools that the user is qualified to use.')
 	projects = models.ManyToManyField('Project', blank=True, help_text='Select the projects that this user is currently working on.')
 
@@ -703,7 +703,7 @@ class Configuration(models.Model):
 	available_settings = models.TextField(blank=True, null=True, help_text="The available choices to select for this configuration option. Multiple values are separated by commas.")
 	maintainers = models.ManyToManyField(User, blank=True, help_text="Select the users that are allowed to change this configuration.")
 	qualified_users_are_maintainers = models.BooleanField(default=False, help_text="Any user that is qualified to use the tool that this configuration applies to may also change this configuration. Checking this box implicitly adds qualified users to the maintainers list.")
-	exclude_from_configuration_agenda = models.BooleanField(default=False, help_text="Reservations containing this configuration will be excluded from the NanoFab technician's Configuration Agenda page.")
+	exclude_from_configuration_agenda = models.BooleanField(default=False, help_text="Reservations containing this configuration will be excluded from the Configuration Agenda page.")
 	absence_string = models.CharField(max_length=100, blank=True, null=True, help_text="The text that appears to indicate absence of a choice.")
 
 	def get_current_setting(self, slot):
@@ -881,7 +881,7 @@ class Reservation(CalendarDisplay):
 	project = models.ForeignKey(Project, null=True, blank=True, help_text="Indicates the intended project for this reservation. A missed reservation would be billed to this project.", on_delete=models.CASCADE)
 	start = models.DateTimeField('start')
 	end = models.DateTimeField('end')
-	short_notice = models.BooleanField(default=None, help_text="Indicates that the reservation was made after the configuration deadline for a tool. NanoFab staff may not have enough time to properly configure the tool before the user is scheduled to use it.")
+	short_notice = models.BooleanField(default=None, help_text="Indicates that the reservation was made after the configuration deadline for a tool. Staff may not have enough time to properly configure the tool before the user is scheduled to use it.")
 	cancelled = models.BooleanField(default=False, help_text="Indicates that the reservation has been cancelled, moved, or resized.")
 	cancellation_time = models.DateTimeField(null=True, blank=True)
 	cancelled_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
@@ -889,7 +889,7 @@ class Reservation(CalendarDisplay):
 	shortened = models.BooleanField(default=False, help_text="Indicates that the user finished using the tool and relinquished the remaining time on their reservation. The reservation will no longer be visible on the calendar and a descendant reservation will be created in place of the existing one.")
 	descendant = models.OneToOneField('Reservation', related_name='ancestor', null=True, blank=True, on_delete=models.SET_NULL, help_text="Any time a reservation is moved or resized, the old reservation is cancelled and a new reservation with updated information takes its place. This field links the old reservation to the new one, so the history of reservation moves & changes can be easily tracked.")
 	additional_information = models.TextField(null=True, blank=True)
-	self_configuration = models.BooleanField(default=False, help_text="When checked, indicates that the user will perform their own tool configuration (instead of requesting that the NanoFab staff configure it for them).")
+	self_configuration = models.BooleanField(default=False, help_text="When checked, indicates that the user will perform their own tool configuration (instead of requesting that the staff configure it for them).")
 	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
 
 	def duration(self):
@@ -1055,7 +1055,7 @@ class Task(models.Model):
 	urgency = models.IntegerField(choices=Urgency.Choices)
 	tool = models.ForeignKey(Tool, help_text="The tool that this task relates to.", on_delete=models.CASCADE)
 	force_shutdown = models.BooleanField(default=None, help_text="Indicates that the tool this task relates to will be shutdown until the task is resolved.")
-	safety_hazard = models.BooleanField(default=None, help_text="Indicates that this task represents a safety hazard to the NanoFab.")
+	safety_hazard = models.BooleanField(default=None, help_text="Indicates that this task represents a safety hazard.")
 	creator = models.ForeignKey(User, related_name="created_tasks", help_text="The user who created the task.", on_delete=models.CASCADE)
 	creation_time = models.DateTimeField(default=timezone.now, help_text="The date and time when the task was created.")
 	problem_category = models.ForeignKey('TaskCategory', null=True, blank=True, related_name='problem_category', on_delete=models.SET_NULL)

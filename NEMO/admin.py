@@ -15,6 +15,7 @@ from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord,
 	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
 	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences, TaskImages, InterlockCardCategory, \
 	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory
+from NEMO.views.customization import get_customization
 
 admin.site.site_header = "NEMO"
 admin.site.site_title = "NEMO"
@@ -423,12 +424,13 @@ class UserPreferencesAdmin(admin.ModelAdmin):
 
 @register(User)
 class UserAdmin(admin.ModelAdmin):
+	facility_name = get_customization('facility_name')
 	filter_horizontal = ('groups', 'user_permissions', 'qualifications', 'projects', 'physical_access_levels')
 	fieldsets = (
 		('Personal information', {'fields': ('first_name', 'last_name', 'username', 'email', 'badge_number', 'type', 'domain')}),
 		('Permissions', {'fields': ('is_active', 'is_staff', 'is_technician', 'is_superuser', 'training_required', 'groups', 'user_permissions', 'physical_access_levels')}),
 		('Important dates', {'fields': ('date_joined', 'last_login', 'access_expiration')}),
-		('NanoFab information', {'fields': ('qualifications', 'projects')}),
+		(f"{facility_name} information", {'fields': ('qualifications', 'projects')}),
 	)
 	search_fields = ('first_name', 'last_name', 'username', 'email')
 	list_display = ('first_name', 'last_name', 'username', 'email', 'is_active', 'domain', 'is_staff', 'is_technician', 'is_superuser', 'date_joined', 'last_login')

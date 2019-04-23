@@ -480,7 +480,7 @@
 			{% csrf_token %}
 			<input type="hidden" name="action" value="create">
 			<input type="hidden" name="tool" value="{{ tool.id }}">
-			<p>Use this form to report a problem relating to the currently selected tool. The NanoFab staff will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</p>
+			<p>Use this form to report a problem relating to the currently selected tool. The {{ facility_name }} staff will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</p>
 
 			{% if task_categories %}
 				<div class="form-group">
@@ -507,7 +507,7 @@
 			{% endif %}
 
 			<div class="form-group">
-				<label for="description">Please provide a <strong>detailed</strong> description of the problem so that the NanoFab staff have enough information to resolve the problem efficiently.</label>
+				<label for="description">Please provide a <strong>detailed</strong> description of the problem so that the {{ facility_name }} staff have enough information to resolve the problem efficiently.</label>
 				<textarea id="description" name="description" class="form-control" rows="7" required></textarea>
 			</div>
 			{% if user.is_staff %}
@@ -526,7 +526,7 @@
 				</div>
 			{% endif %}
 			<div class="form-group">
-				<div class="checkbox"><label><input name="safety_hazard" type="checkbox"/>This problem represents a safety hazard to the NanoFab and should be regarded as urgent. Notify the NanoFab safety officer of this issue.</label></div>
+				<div class="checkbox"><label><input name="safety_hazard" type="checkbox"/>This problem represents a safety hazard to the {{ facility_name }} and should be regarded as urgent. Notify the {{ facility_name }} safety officer of this issue.</label></div>
 				<div class="checkbox"><label><input name="force_shutdown" type="checkbox"/>Shut down the tool so that it may not be used until this problem is resolved.</label></div>
 			</div>
 			<div class="form-group">

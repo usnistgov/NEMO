@@ -21,7 +21,7 @@ def status_dashboard(request, tab=None):
 		dictionary = {
 			'tab': tab if tab else "occupancy",
 			'tool_summary': create_tool_summary(),
-			'nanofab_occupants': AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'project', 'area'),
+			'facility_occupants': AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'project', 'area'),
 		}
 		return render(request, 'status_dashboard/status_dashboard.html', dictionary)
 	elif interest == "tools":
@@ -31,7 +31,7 @@ def status_dashboard(request, tab=None):
 		return render(request, 'status_dashboard/tools.html', dictionary)
 	elif interest == "occupancy":
 		dictionary = {
-			'nanofab_occupants': AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'project', 'area'),
+			'facility_occupants': AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'project', 'area'),
 		}
 		return render(request, 'status_dashboard/occupancy.html', dictionary)
 

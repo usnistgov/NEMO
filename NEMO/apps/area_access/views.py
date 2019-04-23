@@ -12,6 +12,7 @@ from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, Phy
 	MaximumCapacityReachedError
 from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent, Area
 from NEMO.tasks import postpone
+from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
 
 
@@ -52,6 +53,8 @@ def login_to_area(request, door_id):
 	log.time = timezone.now()
 	log.result = PhysicalAccessType.DENY  # Assume the user does not have access
 
+	facility_name = get_customization('facility_name')
+
 	# Check policy for entering an area
 	try:
 		check_policy_to_enter_any_area(user=user)
@@ -68,13 +71,13 @@ def login_to_area(request, door_id):
 	except PhysicalAccessExpiredUserError:
 		log.details = "This user was blocked from this physical access level because their physical access has expired."
 		log.save()
-		message = "Your physical access to the NanoFab has expired. Have you completed your safety training within the last year? Please visit the User Office to renew your access."
+		message = f"Your physical access to the {facility_name} has expired. Have you completed your safety training within the last year? Please visit the User Office to renew your access."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	except NoPhysicalAccessUserError:
 		log.details = "This user does not belong to ANY physical access levels."
 		log.save()
-		message = "You have not been granted physical access to any NanoFab area. Please visit the User Office if you believe this is an error."
+		message = f"You have not been granted physical access to any {facility_name} area. Please visit the User Office if you believe this is an error."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	max_capacity_reached = False
@@ -84,7 +87,7 @@ def login_to_area(request, door_id):
 	except NoAccessiblePhysicalAccessUserError:
 		log.details = "This user is not assigned to a physical access level that allows access to this door at this time."
 		log.save()
-		message = "You do not have access to this area of the NanoFab at this time. Please visit the User Office if you believe this is an error."
+		message = f"You do not have access to this area of the {facility_name} at this time. Please visit the User Office if you believe this is an error."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	except UnavailableResourcesUserError:
