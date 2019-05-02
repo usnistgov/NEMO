@@ -83,12 +83,18 @@
 				<form method="POST" action="{% url 'customize' 'login_banner' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="login_banner">
+						<input type="file" name="login_banner" class="customization-input-file" onchange="this.style.color = 'inherit';$('#login_banner_span').hide()">
+						{% if login_banner %}<span id="login_banner_span">login_banner.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload login banner" class="btn btn-success">
 					</div>
 				</form>
+				{% if login_banner %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#login_banner_render">Show current content</button>
+					<div id="login_banner_render" class="collapse customization-content">{{ login_banner }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -99,12 +105,18 @@
 				<form method="POST" action="{% url 'customize' 'safety_introduction' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="safety_introduction">
+						<input type="file" name="safety_introduction" class="customization-input-file" onchange="this.style.color = 'inherit';$('#safety_introduction_span').hide()">
+						{% if safety_introduction %}<span id="safety_introduction_span">safety_introduction.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload safety introduction" class="btn btn-success">
 					</div>
 				</form>
+				{% if safety_introduction %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#safety_introduction_render">Show current content</button>
+					<div id="safety_introduction_render" class="collapse customization-content">{{ safety_introduction }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -115,12 +127,18 @@
 				<form method="POST" action="{% url 'customize' 'nanofab_rules_tutorial' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="nanofab_rules_tutorial">
+						<input type="file" name="nanofab_rules_tutorial" class="customization-input-file" onchange="this.style.color = 'inherit';$('#nanofab_rules_tutorial_span').hide()">
+						{% if nanofab_rules_tutorial %}<span id="nanofab_rules_tutorial_span">nanofab_rules_tutorial.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload NanoFab rules tutorial" class="btn btn-success">
 					</div>
 				</form>
+				{% if nanofab_rules_tutorial %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#nanofab_rules_tutorial_render">Show current content</button>
+					<div id="nanofab_rules_tutorial_render" class="collapse customization-content">{{ nanofab_rules_tutorial }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -136,12 +154,18 @@
 				<form method="POST" action="{% url 'customize' 'cancellation_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="cancellation_email">
+						<input type="file" name="cancellation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#cancellation_email_span').hide()">
+						{% if cancellation_email %}<span id="cancellation_email_span">cancellation_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload cancellation email" class="btn btn-success">
 					</div>
 				</form>
+				{% if cancellation_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#cancellation_email_render">Show current content</button>
+					<div id="cancellation_email_render" class="collapse customization-content">{{ cancellation_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -159,12 +183,18 @@
 				<form method="POST" action="{% url 'customize' 'feedback_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="feedback_email">
+						<input type="file" name="feedback_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#feedback_email_span').hide()">
+						{% if feedback_email %}<span id="feedback_email_span">feedback_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload feedback email" class="btn btn-success">
 					</div>
 				</form>
+				{% if feedback_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#feedback_email_render">Show current content</button>
+					<div id="feedback_email_render" class="collapse customization-content">{{ feedback_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -181,12 +211,18 @@
 				<form method="POST" action="{% url 'customize' 'generic_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="generic_email">
+						<input type="file" name="generic_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#generic_email_span').hide()">
+						{% if generic_email %}<span id="generic_email_span">generic_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload generic email" class="btn btn-success">
 					</div>
 				</form>
+				{% if generic_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#generic_email_render">Show current content</button>
+					<div id="generic_email_render" class="collapse customization-content">{{ generic_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -204,12 +240,18 @@
 				<form method="POST" action="{% url 'customize' 'missed_reservation_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="missed_reservation_email">
+						<input type="file" name="missed_reservation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#missed_reservation_email_span').hide()">
+						{% if missed_reservation_email %}<span id="missed_reservation_email_span">missed_reservation_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload missed reservation email" class="btn btn-success">
 					</div>
 				</form>
+				{% if missed_reservation_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#missed_reservation_email_render">Show current content</button>
+					<div id="missed_reservation_email_render" class="collapse customization-content">{{ missed_reservation_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -228,12 +270,18 @@
 				<form method="POST" action="{% url 'customize' 'nanofab_rules_tutorial_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="nanofab_rules_tutorial_email">
+						<input type="file" name="nanofab_rules_tutorial_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#nanofab_rules_tutorial_email_span').hide()">
+						{% if nanofab_rules_tutorial_email %}<span id="nanofab_rules_tutorial_email_span">nanofab_rules_tutorial_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload NanoFab rules tutorial email" class="btn btn-success">
 					</div>
 				</form>
+				{% if nanofab_rules_tutorial_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#nanofab_rules_tutorial_email_render">Show current content</button>
+					<div id="nanofab_rules_tutorial_email_render" class="collapse customization-content">{{ nanofab_rules_tutorial_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -254,12 +302,18 @@
 				<form method="POST" action="{% url 'customize' 'new_task_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="new_task_email">
+						<input type="file" name="new_task_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#new_task_email_span').hide()">
+						{% if new_task_email %}<span id="new_task_email_span">new_task_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload new task email" class="btn btn-success">
 					</div>
 				</form>
+				{% if new_task_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#new_task_email_render">Show current content</button>
+					<div id="new_task_email_render" class="collapse customization-content">{{ new_task_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -277,12 +331,18 @@
 				<form method="POST" action="{% url 'customize' 'reservation_reminder_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="reservation_reminder_email">
+						<input type="file" name="reservation_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_reminder_email_span').hide()">
+						{% if reservation_reminder_email %}<span id="reservation_reminder_email_span">reservation_reminder_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload reservation reminder email" class="btn btn-success">
 					</div>
 				</form>
+				{% if reservation_reminder_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_reminder_email_render">Show current content</button>
+					<div id="reservation_reminder_email_render" class="collapse customization-content">{{ reservation_reminder_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -301,12 +361,18 @@
 				<form method="POST" action="{% url 'customize' 'reservation_warning_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="reservation_warning_email">
+						<input type="file" name="reservation_warning_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_warning_email_span').hide()">
+						{% if reservation_warning_email %}<span id="reservation_warning_email_span">reservation_warning_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload reservation warning email" class="btn btn-success">
 					</div>
 				</form>
+				{% if reservation_warning_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_warning_email_render">Show current content</button>
+					<div id="reservation_warning_email_render" class="collapse customization-content">{{ reservation_warning_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -324,12 +390,18 @@
 				<form method="POST" action="{% url 'customize' 'safety_issue_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="safety_issue_email">
+						<input type="file" name="safety_issue_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#safety_issue_email_span').hide()">
+						{% if safety_issue_email %}<span id="safety_issue_email_span">safety_issue_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload safety issue email" class="btn btn-success">
 					</div>
 				</form>
+				{% if safety_issue_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#safety_issue_email_render">Show current content</button>
+					<div id="safety_issue_email_render" class="collapse customization-content">{{ safety_issue_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -346,12 +418,18 @@
 				<form method="POST" action="{% url 'customize' 'staff_charge_reminder_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="staff_charge_reminder_email">
+						<input type="file" name="staff_charge_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#staff_charge_reminder_email_span').hide()">
+						{% if staff_charge_reminder_email %}<span id="staff_charge_reminder_email_span">staff_charge_reminder_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload staff charge reminder email" class="btn btn-success">
 					</div>
 				</form>
+				{% if staff_charge_reminder_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#staff_charge_reminder_email_render">Show current content</button>
+					<div id="staff_charge_reminder_email_render" class="collapse customization-content">{{ staff_charge_reminder_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -373,12 +451,18 @@
 				<form method="POST" action="{% url 'customize' 'task_status_notification' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="task_status_notification">
+						<input type="file" name="task_status_notification" class="customization-input-file" onchange="this.style.color = 'inherit';$('#task_status_notification_span').hide()">
+						{% if task_status_notification %}<span id="task_status_notification_span">task_status_notification.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload task status notification email" class="btn btn-success">
 					</div>
 				</form>
+				{% if task_status_notification %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#task_status_notification_render">Show current content</button>
+					<div id="task_status_notification_render" class="collapse customization-content">{{ task_status_notification }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -396,12 +480,18 @@
 				<form method="POST" action="{% url 'customize' 'unauthorized_tool_access_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="unauthorized_tool_access_email">
+						<input type="file" name="unauthorized_tool_access_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#unauthorized_tool_access_email_span').hide()">
+						{% if unauthorized_tool_access_email %}<span id="unauthorized_tool_access_email_span">unauthorized_tool_access_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload unauthorized tool access email" class="btn btn-success">
 					</div>
 				</form>
+				{% if unauthorized_tool_access_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#unauthorized_tool_access_email_render">Show current content</button>
+					<div id="unauthorized_tool_access_email_render" class="collapse customization-content">{{ unauthorized_tool_access_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 
@@ -424,6 +514,11 @@
 						<input type="submit" value="Upload new task email" class="btn btn-success">
 					</div>
 				</form>
+				{% if usage_reminder_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#usage_reminder_email_render">Show current content</button>
+					<div id="usage_reminder_email_render" class="collapse customization-content">{{ usage_reminder_email }}</div>
+				{% endif %}
 			</div>
 		</div>
 	</div>
