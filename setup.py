@@ -27,7 +27,7 @@ setup(
 		'cryptography==2.3.1',
 		'Django==1.11.20',
 		'django-filter==1.1.0',
-		'djangorestframework==3.8.2',
+		'djangorestframework==3.9.4',
 		'ldap3==2.5.1',
 		'python-dateutil==2.7.3',
 		'requests==2.21.0',
