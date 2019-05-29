@@ -159,7 +159,7 @@ urlpatterns = [
 
 	# NanoFab usage:
 	url(r'^usage/$', usage.usage, name='usage'),
-	url(r'^billing_information/(?P<timeframe>((January|February|March|April|May|June|July|August|September|October|November|December), 20\d\d))/$', usage.billing_information, name='billing_information'),
+	url(r'^billing_information/$', usage.billing_information, name='billing_information'),
 
 	# Alerts:
 	url(r'^alerts/$', alerts.alerts, name='alerts'),

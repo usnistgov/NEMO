@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
@@ -6,22 +8,30 @@ from django.views.decorators.http import require_GET
 from requests import get
 
 from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, StaffCharge, TrainingSession, UsageEvent, User
-from NEMO.utilities import get_month_timeframe, month_list
+from NEMO.utilities import get_month_timeframe, month_list, parse_start_and_end_date
 
 
 @login_required
 @require_GET
 def usage(request):
-	first_of_the_month, last_of_the_month = get_month_timeframe(request.GET.get('timeframe'))
+	dates = False
+	if request.GET.get('start_date') and request.GET.get('end_date'):
+		start_date, end_date = parse_start_and_end_date(request.GET.get('start_date'), request.GET.get('end_date'))
+		dates = True
+	else:
+		start_date, end_date = get_month_timeframe(request.GET.get('timeframe'))
 	dictionary = {
-		'area_access': AreaAccessRecord.objects.filter(customer=request.user, end__gt=first_of_the_month, end__lte=last_of_the_month),
-		'consumables': ConsumableWithdraw.objects.filter(customer=request.user, date__gt=first_of_the_month, date__lte=last_of_the_month),
-		'missed_reservations': Reservation.objects.filter(user=request.user, missed=True, end__gt=first_of_the_month, end__lte=last_of_the_month),
-		'staff_charges': StaffCharge.objects.filter(customer=request.user, end__gt=first_of_the_month, end__lte=last_of_the_month),
-		'training_sessions': TrainingSession.objects.filter(trainee=request.user, date__gt=first_of_the_month, date__lte=last_of_the_month),
-		'usage_events': UsageEvent.objects.filter(user=request.user, end__gt=first_of_the_month, end__lte=last_of_the_month),
+		'area_access': AreaAccessRecord.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date),
+		'consumables': ConsumableWithdraw.objects.filter(customer=request.user, date__gt=start_date, date__lte=end_date),
+		'missed_reservations': Reservation.objects.filter(user=request.user, missed=True, end__gt=start_date, end__lte=end_date),
+		'staff_charges': StaffCharge.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date),
+		'training_sessions': TrainingSession.objects.filter(trainee=request.user, date__gt=start_date, date__lte=end_date),
+		'usage_events': UsageEvent.objects.filter(user=request.user, end__gt=start_date, end__lte=end_date),
 		'month_list': month_list(),
-		'timeframe': request.GET.get('timeframe') or first_of_the_month.strftime('%B, %Y'),
+		'timeframe': request.GET.get('timeframe') or start_date.strftime('%B, %Y'),
+		'start_date': start_date,
+		'end_date': end_date,
+		'dates': dates,
 		'billing_active_by_default': True if hasattr(settings, 'BILLING_SERVICE') and settings.BILLING_SERVICE['available'] else False
 	}
 	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
@@ -30,7 +40,7 @@ def usage(request):
 
 @login_required
 @require_GET
-def billing_information(request, timeframe=''):
+def billing_information(request):
 	dictionary = {}
 	if not hasattr(settings, 'BILLING_SERVICE') or not settings.BILLING_SERVICE['available']:
 		return HttpResponse()
@@ -39,11 +49,13 @@ def billing_information(request, timeframe=''):
 		project_lead_url = settings.BILLING_SERVICE['project_lead_url']
 		keyword_arguments = settings.BILLING_SERVICE['keyword_arguments']
 
-		first_of_the_month, last_of_the_month = get_month_timeframe(timeframe)
+		if request.GET.get('start_date') and request.GET.get('end_date'):
+			start_date, end_date = parse_start_and_end_date(request.GET.get('start_date'), request.GET.get('end_date'))
+
 		formatted_projects = ','.join(map(str, set(request.user.active_projects().values_list('application_identifier', flat=True))))
 		cost_activity_params = {
-			'created_date_gte': f"'{first_of_the_month.strftime('%m/%d/%Y')}'",
-			'created_date_lt': f"'{last_of_the_month.strftime('%m/%d/%Y')}'",
+			'created_date_gte': f"'{start_date.strftime('%m/%d/%Y')}'",
+			'created_date_lt': f"'{end_date.strftime('%m/%d/%Y')}'",
 			'application_names': f"'{formatted_projects}'",
 			'$format': 'json'
 		}

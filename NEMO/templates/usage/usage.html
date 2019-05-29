@@ -1,8 +1,17 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Usage and billing information{% endblock %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "pickadate/picker.js" %}"></script>
+	<script type="text/javascript" src="{% static "pickadate/picker.date.js" %}"></script>
+	<script type="text/javascript" src="{% static "pickadate/picker.time.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.date.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.time.css" %}"/>
+{% endblock %}
 {% block content %}
 	<h1>Usage and billing information
-		<small> for {{ timeframe }}</small>
+		<small> between {{ start_date|date:"F jS, Y" }} and {{ end_date|date:"F jS, Y" }}</small>
 	</h1>
 	<p>
 		This page presents a monthly report of your NanoFab usage and billing information. Approved adjustments are reflected in the Billing information data but not in the Usage data.
@@ -11,11 +20,25 @@
 		<div class="form-group">
 			<label class="control-label">View information for
 				<select name="timeframe" class="form-control">
+					<option {% if dates %}selected{% endif %}></option>
 					{% for month in month_list %}
-						<option {% if timeframe == month|date:"F, Y" %}selected{% endif %}>{{ month|date:"F, Y" }}</option>
+						<option {% if not dates and timeframe == month|date:"F, Y" %}selected{% endif %}>{{ month|date:"F, Y" }}</option>
 					{% endfor %}
 				</select>
 			</label>
+		</div>
+		<div class="form-group">
+			<input type="submit" class="btn btn-default" value="Update">
+		</div>
+	</form>
+
+	<form class="form-inline" role="form" style="margin-top: 10px">
+		<div class="form-group" style="margin-right: 10px;">
+			<label class="control-label">Or use a custom date range</label>
+			<input type="text" id="start_date" name="start_date" class="form-control select-date" placeholder="Choose a date">
+		</div>
+		<div class="form-group">
+			<input type="text" id="end_date" name="end_date" class="form-control select-date" placeholder="Choose a date">
 		</div>
 		<div class="form-group">
 			<input type="submit" class="btn btn-default" value="Update">
@@ -36,7 +59,7 @@
                 Adjustment activities <b>are not included</b> in the usage information.
             </p>
 			{% if no_charges %}
-				<h3>There was no usage for {{ timeframe }}.</h3>
+				<h3>There was no usage between {{ start_date|date:"F jS, Y" }} and {{ end_date|date:"F jS, Y" }}.</h3>
 			{% endif %}
 			{% if missed_reservations %}
 				<h3>Missed reservations</h3>
@@ -115,10 +138,12 @@
 	</div>
 
 	<script>
+		$('#start_date').pickadate({format: "mm/dd/yyyy", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, selectYears: true, selectMonths: true, closeOnSelect: true, onStart: set_start_date});
+		$('#end_date').pickadate({format: "mm/dd/yyyy", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, selectYears: true, selectMonths: true, closeOnSelect: true, onStart: set_end_date});
 		function on_load()
 		{
 			$("#tabs a").click(switch_tab);
-			ajax_get('{% url 'billing_information' timeframe %}', undefined, display_billing_information, display_error_message);
+			ajax_get('{% url 'billing_information' %}', {'start_date': '{{ start_date|date:"Y-m-d" }}', 'end_date': '{{ end_date|date:"Y-m-d" }}' }, display_billing_information, display_error_message);
 		}
 		$(on_load);
 
@@ -129,6 +154,16 @@
 		function display_error_message()
 		{
 			$('#billing_information_response').html('There was a problem communicating with the billing service. The financial information associated with your usage cannot be displayed at this time.');
+		}
+		function set_start_date()
+		{
+			if('{{ start_date }}')
+				this.set('select', '{{ start_date|date:"Y-m-d" }}', {format: 'yyyy-mm-dd'})
+		}
+		function set_end_date()
+		{
+			if('{{ end_date }}')
+				this.set('select', '{{ end_date|date:"Y-m-d" }}', {format: 'yyyy-mm-dd'})
 		}
 	</script>
 
