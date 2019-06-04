@@ -244,6 +244,13 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		# Site customization:
 		url(r'^customization/$', customization.customization, name='customization'),
 		url(r'^customize/(?P<element>.+)/$', customization.customize, name='customize'),
+
+		# Project Usage:
+		url(r'^project_usage/$', usage.project_usage, name='project_usage'),
+		url(r'^project_usage/application/(?P<identifier>.+)/$', usage.project_usage, kwargs={'kind': 'application'}, name='project_usage_application'),
+		url(r'^project_usage/project/(?P<identifier>\d+)/$', usage.project_usage, kwargs={'kind': 'project'}, name='project_usage_project'),
+		url(r'^project_usage/account/(?P<identifier>\d+)/$', usage.project_usage, kwargs={'kind': 'account'}, name='project_usage_account'),
+		url(r'^project_billing/$', usage.project_billing_information, name='project_billing_information')
 	]
 
 if settings.DEBUG:

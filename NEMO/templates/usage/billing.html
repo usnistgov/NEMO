@@ -2,6 +2,9 @@
 {% load custom_tags_and_filters %}
 
 <table style="margin-top:20px">
+	{% if not spending.activities %}
+		No billing information available for the selected period
+	{% endif %}
 	{% for account, value in spending.activities.items %}
 		<tr>
 			<td>Account: {{ account.1 }}</td>
@@ -29,7 +32,13 @@
 				{% for user, amount in users.items %}
 					<tr>
 						<td colspan="2"></td>
-						<td colspan="2" style="text-align: right; padding: 3px 0; font-size: 12px">{{ user.1.get_full_name }}</td>
+						<td colspan="2" style="text-align: right; padding: 3px 0; font-size: 12px">
+							{% if user.1 %}
+								{{ user.1.get_full_name }}
+							{% else %}
+								unknown user with id {{ user.0 }}
+							{% endif %}
+						</td>
 						<td style="width: 15px"></td>
 						<td style="; text-align: right; font-size: 12px">${{ amount|floatformat:2|intcomma }}</td>
 					</tr>

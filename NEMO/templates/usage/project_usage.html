@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_tags_and_filters %}
+{% block title %}Usage and billing information{% endblock %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "pickadate/picker.js" %}"></script>
+	<script type="text/javascript" src="{% static "pickadate/picker.date.js" %}"></script>
+	<script type="text/javascript" src="{% static "pickadate/picker.time.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.date.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.time.css" %}"/>
+{% endblock %}
+{% block content %}
+	{% include 'usage/usage_header_form.html' %}
+
+	<h4>Accounts, Applications and Projects</h4>
+	<div class="row">
+		<div class="col-md-4" id="search_container">
+			<input id="search" type="text" placeholder="Search for an account or project" class="form-control" autofocus>
+		</div>
+	</div>
+	<script>
+		function get_account(jquery_event, search_selection, dataset_name)
+		{
+			window.location.href = '/project_usage/'+search_selection.type+'/' + search_selection.id + '/?' + 'start_date='+'{{ start_date|date:"Y-m-d" }}' + '&end_date='+ '{{ end_date|date:"Y-m-d" }}';
+		}
+		function on_load()
+		{
+			$('#search').autocomplete('accounts_and_projects_for_usage', get_account, {% json_search_base_with_extra_fields accounts_and_applications %});
+		}
+		$(on_load);
+	</script>
+	<style>
+		#search_container .tt-dropdown-menu
+		{
+			min-width: 400px;
+			max-height: 600px;
+		}
+	</style>
+
+	{% if applications %}
+		{% include 'usage/usage_tabs_content.html' %}
+	{% endif %}
+
+{% endblock %}

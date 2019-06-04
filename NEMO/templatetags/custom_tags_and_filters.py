@@ -46,8 +46,8 @@ def json_search_base_with_extra_fields(items_to_search, *extra_fields):
 	"""
 	result = '['
 	for item in items_to_search:
-		object_type = ContentType.objects.get_for_model(item).name
-		result += '{{"name":"{0}", "id":{1}, "type":"{2}"'.format(escape(str(item)), item.id, object_type)
+		object_type = item.__class__.__name__.lower()
+		result += '{{"name":"{0}", "id":"{1}", "type":"{2}"'.format(escape(str(item)), item.id, object_type)
 		for x in extra_fields:
 			if hasattr(item, x):
 				result += ', "{0}":"{1}"'.format(x, getattr(item, x))
