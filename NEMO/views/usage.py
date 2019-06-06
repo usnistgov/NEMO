@@ -210,5 +210,5 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 		'project_totals': project_totals,
 		'application_totals': application_totals,
 		'user_pi_applications': user_pi_applications
-	} if cost_activities_tree else {}
+	} if cost_activities_tree else {'activities': {}}
 	return dictionary
