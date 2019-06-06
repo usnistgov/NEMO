@@ -1,3 +1,5 @@
+from logging import getLogger
+
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
@@ -10,15 +12,31 @@ from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, Staff
 from NEMO.utilities import get_month_timeframe, month_list, parse_start_and_end_date
 
 
-@login_required
-@require_GET
-def usage(request):
+logger = getLogger(__name__)
+
+
+def base_args_dict(request):
 	dates = False
 	if request.GET.get('start_date') and request.GET.get('end_date'):
 		start_date, end_date = parse_start_and_end_date(request.GET.get('start_date'), request.GET.get('end_date'))
 		dates = True
 	else:
 		start_date, end_date = get_month_timeframe(request.GET.get('timeframe'))
+	return {
+		'month_list': month_list(),
+		'timeframe': request.GET.get('timeframe') or start_date.strftime('%B, %Y'),
+		'start_date': start_date,
+		'end_date': end_date,
+		'dates': dates,
+	}
+
+
+@login_required
+@require_GET
+def usage(request):
+	args = base_args_dict(request)
+	args['tab_url'] = request.get_full_path().replace('usage/', 'billing/')
+	start_date, end_date = args['start_date'], args['end_date']
 	dictionary = {
 		'area_access': AreaAccessRecord.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date),
 		'consumables': ConsumableWithdraw.objects.filter(customer=request.user, date__gt=start_date, date__lte=end_date),
@@ -26,63 +44,49 @@ def usage(request):
 		'staff_charges': StaffCharge.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date),
 		'training_sessions': TrainingSession.objects.filter(trainee=request.user, date__gt=start_date, date__lte=end_date),
 		'usage_events': UsageEvent.objects.filter(user=request.user, end__gt=start_date, end__lte=end_date),
-		'month_list': month_list(),
-		'timeframe': request.GET.get('timeframe') or start_date.strftime('%B, %Y'),
-		'start_date': start_date,
-		'end_date': end_date,
-		'dates': dates,
-		'billing_active_by_default': True if hasattr(settings, 'BILLING_SERVICE') and settings.BILLING_SERVICE['available'] else False
 	}
 	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
-	return render(request, 'usage/usage.html', dictionary)
+	return render(request, 'usage/usage.html', {**args, **dictionary})
 
 
 @login_required
 @require_GET
-def billing_information(request):
+def billing(request):
 	if not hasattr(settings, 'BILLING_SERVICE') or not settings.BILLING_SERVICE['available']:
 		return HttpResponse()
-	try:
-		if request.GET.get('start_date') and request.GET.get('end_date'):
-			start_date, end_date = parse_start_and_end_date(request.GET.get('start_date'), request.GET.get('end_date'))
-			formatted_applications = ','.join(map(str, set(request.user.active_projects().values_list('application_identifier', flat=True))))
 
-			billing_dictionary = billing(start_date, end_date, request.user, formatted_applications)
-			return render(request, 'usage/billing.html', billing_dictionary)
+	args = base_args_dict(request)
+	args['tab_url'] = request.get_full_path().replace('billing/', 'usage/')
+	start_date, end_date = args['start_date'], args['end_date']
+	formatted_applications = ','.join(map(str, set(request.user.active_projects().values_list('application_identifier', flat=True))))
+
+	try:
+		billing_dictionary = billing_dict(start_date, end_date, request.user, formatted_applications)
+		return render(request, 'usage/billing.html', {**args, **billing_dictionary})
 	except Exception as e:
-		return HttpResponse(str(e))
+		logger.warning(str(e))
+		return render(request, 'usage/billing.html', args)
 
 
 @staff_member_required(login_url=None)
 @require_GET
 def project_usage(request, kind=None, identifier=None):
-	dates = False
-	if request.GET.get('start_date') and request.GET.get('end_date'):
-		start_date, end_date = parse_start_and_end_date(request.GET.get('start_date'), request.GET.get('end_date'))
-		dates = True
-	else:
-		start_date, end_date = get_month_timeframe(request.GET.get('timeframe'))
+	args = base_args_dict(request)
+	args['tab_url'] = request.get_full_path().replace('project_usage', 'project_billing')
+	start_date, end_date = args['start_date'], args['end_date']
 
 	projects = []
-	project_id = ''
-	formatted_applications = ''
 	try:
 		if kind == 'application':
 			projects = Project.objects.filter(application_identifier=identifier)
-			formatted_applications = identifier
-		if kind == 'project':
+		elif kind == 'project':
 			projects = [Project.objects.get(id=identifier)]
-			formatted_applications = projects[0].application_identifier
-			project_id = identifier
 		elif kind == 'account':
 			account = Account.objects.get(id=identifier)
 			projects = Project.objects.filter(account=account, active=True, account__active=True)
-			formatted_applications = ','.join(map(str, set(projects.values_list('application_identifier', flat=True)))) if projects else None
 	except:
 		pass
 	dictionary = {
-		'applications': formatted_applications,
-		'project_id': project_id,
 		'accounts_and_applications': set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()),
 		'area_access': AreaAccessRecord.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
 		'consumables': ConsumableWithdraw.objects.filter(project__in=projects, date__gt=start_date, date__lte=end_date) if projects else None,
@@ -90,15 +94,11 @@ def project_usage(request, kind=None, identifier=None):
 		'staff_charges': StaffCharge.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
 		'training_sessions': TrainingSession.objects.filter(project__in=projects, date__gt=start_date, date__lte=end_date) if projects else None,
 		'usage_events': UsageEvent.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
-		'month_list': month_list(),
-		'timeframe': request.GET.get('timeframe') or start_date.strftime('%B, %Y'),
-		'start_date': start_date,
-		'end_date': end_date,
-		'dates': dates,
-		'billing_active_by_default': True if hasattr(settings, 'BILLING_SERVICE') and settings.BILLING_SERVICE['available'] else False
+		'project_autocomplete': True,
+		'applications': True
 	}
 	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
-	return render(request, 'usage/project_usage.html', dictionary)
+	return render(request, 'usage/usage.html', {**args, **dictionary})
 
 
 class Application(object):
@@ -121,26 +121,44 @@ def get_project_applications():
 
 @staff_member_required(login_url=None)
 @require_GET
-def project_billing_information(request):
+def project_billing(request, kind=None, identifier=None):
 	if not hasattr(settings, 'BILLING_SERVICE') or not settings.BILLING_SERVICE['available']:
 		return HttpResponse()
-	try:
-		if request.GET.get('start_date') and request.GET.get('end_date') and request.GET.get('applications'):
-			start_date, end_date = parse_start_and_end_date(request.GET.get('start_date'), request.GET.get('end_date'))
 
-			formatted_applications = request.GET.get('applications')
-			project_id = request.GET.get('project_id')
-			billing_dictionary = billing(start_date, end_date, None, formatted_applications, project_id, force_pi=True)
-			return render(request, 'usage/billing.html', billing_dictionary)
+	args = base_args_dict(request)
+	args['project_autocomplete'] = True
+	args['tab_url'] = request.get_full_path().replace('project_billing', 'project_usage')
+	args['accounts_and_applications'] = set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications())
+	start_date, end_date = args['start_date'], args['end_date']
+
+	project_id = None
+	formatted_applications = None
+	try:
+		if kind == 'application':
+			formatted_applications = identifier
+		elif kind == 'project':
+			projects = [Project.objects.get(id=identifier)]
+			formatted_applications = projects[0].application_identifier
+			project_id = identifier
+		elif kind == 'account':
+			account = Account.objects.get(id=identifier)
+			projects = Project.objects.filter(account=account, active=True, account__active=True)
+			formatted_applications = ','.join(
+				map(str, set(projects.values_list('application_identifier', flat=True)))) if projects else None
+
+		args['applications'] = formatted_applications
+		billing_dictionary = billing_dict(start_date, end_date, None, formatted_applications, project_id, force_pi=True)
+		return render(request, 'usage/billing.html', {**args, **billing_dictionary})
 	except Exception as e:
-		return HttpResponse(str(e))
+		logger.warning(str(e))
+		return render(request, 'usage/billing.html', args)
 
 
 def is_user_pi(user, application_pi_row):
 	return application_pi_row is not None and (user.username == application_pi_row['username'] or (user.first_name == application_pi_row['first_name'] and user.last_name == application_pi_row['last_name']))
 
 
-def billing(start_date, end_date, user, formatted_applications, project_id=None, force_pi=None):
+def billing_dict(start_date, end_date, user, formatted_applications, project_id=None, force_pi=None):
 	dictionary = {}
 
 	cost_activity_url = settings.BILLING_SERVICE['cost_activity_url']

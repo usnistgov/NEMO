@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% load static %}
+{% block title %}Usage and billing information{% endblock %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "pickadate/picker.js" %}"></script>
+	<script type="text/javascript" src="{% static "pickadate/picker.date.js" %}"></script>
+	<script type="text/javascript" src="{% static "pickadate/picker.time.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.date.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.time.css" %}"/>
+{% endblock %}
+{% block content %}
+	<h1>Usage and billing information
+		<small> between {{ start_date|date:"F jS, Y" }} and {{ end_date|date:"F jS, Y" }}</small>
+	</h1>
+	<p>
+		This page presents a monthly report of your NanoFab usage and billing information. Approved adjustments are reflected in the Billing information data but not in the Usage data.
+	</p>
+	<div style="height: 15px"></div>
+	<form class="form-inline" role="form">
+		<div class="form-group">
+			<label class="control-label">View information for
+				<select name="timeframe" class="form-control" style="margin-right: 5px;">
+					<option {% if dates %}selected{% endif %}></option>
+					{% for month in month_list %}
+						<option {% if not dates and timeframe == month|date:"F, Y" %}selected{% endif %}>{{ month|date:"F, Y" }}</option>
+					{% endfor %}
+				</select>
+			</label>
+		</div>
+		<div class="form-group">
+			<input type="submit" class="btn btn-default" value="Update">
+		</div>
+	</form>
+
+	<form class="form-inline" role="form" style="margin-top: 10px">
+		<div class="form-group" style="margin-right: 5px;">
+			<label class="control-label">Or use a custom date range</label>
+			<input type="text" id="start_date" name="start_date" class="form-control select-date" placeholder="Choose a date">
+		</div>
+		<div class="form-group" style="margin-right: 5px;">
+			<input type="text" id="end_date" name="end_date" class="form-control select-date" placeholder="Choose a date">
+		</div>
+		<div class="form-group">
+			<input type="submit" class="btn btn-default" value="Update">
+		</div>
+	</form>
+	<script>
+		$('#start_date').pickadate({format: "mm/dd/yyyy", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, selectYears: true, selectMonths: true, closeOnSelect: true, onStart: set_start_date});
+		$('#end_date').pickadate({format: "mm/dd/yyyy", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, selectYears: true, selectMonths: true, closeOnSelect: true, onStart: set_end_date});
+		function set_start_date()
+		{
+			if('{{ start_date }}')
+				this.set('select', '{{ start_date|date:"Y-m-d" }}', {format: 'yyyy-mm-dd'})
+		}
+		function set_end_date()
+		{
+			if('{{ end_date }}')
+				this.set('select', '{{ end_date|date:"Y-m-d" }}', {format: 'yyyy-mm-dd'})
+		}
+	</script>
+
+	{% if project_autocomplete %}
+		<h4>Accounts, Applications and Projects</h4>
+		<div class="row">
+			<div class="col-md-4" id="search_container">
+				<input id="search" type="text" placeholder="Search for an account, application or project" class="form-control" autofocus>
+			</div>
+		</div>
+		<script>
+			function get_account(jquery_event, search_selection)
+			{
+				window.location.href = {% if 'project_usage' in request.get_full_path %}'/project_usage/'{% else %}'/project_billing/'{% endif %}+search_selection.type+'/' + search_selection.id + '/?' + 'start_date='+'{{ start_date|date:"Y-m-d" }}' + '&end_date='+ '{{ end_date|date:"Y-m-d" }}';
+			}
+			function on_load()
+			{
+				$('#search').autocomplete('accounts_and_projects_for_usage', get_account, {% json_search_base_with_extra_fields accounts_and_applications %});
+			}
+			$(on_load);
+		</script>
+
+		<style>
+			#search_container .tt-dropdown-menu
+			{
+				min-width: 400px;
+				max-height: 600px;
+			}
+		</style>
+	{% endif %}
+
+	<div style="height: 15px"></div>
+	{% if not project_autocomplete or project_autocomplete and applications %}
+		{% block usage_content %}{% endblock %}
+	{% endif %}
+{% endblock %}
