@@ -22,7 +22,7 @@
 		<div class="form-group">
 			<label class="control-label">View information for
 				<select name="timeframe" class="form-control" style="margin-right: 5px;">
-					<option {% if dates %}selected{% endif %}></option>
+					{% if dates %}<option selected></option>{% endif %}
 					{% for month in month_list %}
 						<option {% if not dates and timeframe == month|date:"F, Y" %}selected{% endif %}>{{ month|date:"F, Y" }}</option>
 					{% endfor %}
