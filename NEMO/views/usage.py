@@ -105,14 +105,18 @@ def project_usage(request, kind=None, identifier=None):
 	base_dictionary, start_date, end_date = date_parameters_dictionary(request)
 
 	projects = []
+	selection = ''
 	try:
 		if kind == 'application':
 			projects = Project.objects.filter(application_identifier=identifier)
+			selection = identifier
 		elif kind == 'project':
 			projects = [Project.objects.get(id=identifier)]
+			selection = projects[0].name
 		elif kind == 'account':
 			account = Account.objects.get(id=identifier)
 			projects = Project.objects.filter(account=account)
+			selection = account.name
 	except:
 		pass
 	dictionary = {
@@ -124,7 +128,7 @@ def project_usage(request, kind=None, identifier=None):
 		'training_sessions': TrainingSession.objects.filter(project__in=projects, date__gt=start_date, date__lte=end_date) if projects else None,
 		'usage_events': UsageEvent.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
 		'project_autocomplete': True,
-		'applications': True if projects else False
+		'selection': selection
 	}
 	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
 	return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
@@ -139,20 +143,24 @@ def project_billing(request, kind=None, identifier=None):
 
 	project_id = None
 	formatted_applications = None
+	selection = ''
 	try:
 		if kind == 'application':
 			formatted_applications = identifier
+			selection = identifier
 		elif kind == 'project':
 			projects = [Project.objects.get(id=identifier)]
 			formatted_applications = projects[0].application_identifier
 			project_id = identifier
+			selection = projects[0].name
 		elif kind == 'account':
 			account = Account.objects.get(id=identifier)
 			projects = Project.objects.filter(account=account, active=True, account__active=True)
 			formatted_applications = ','.join(
 				map(str, set(projects.values_list('application_identifier', flat=True)))) if projects else None
+			selection = account.name
 
-		base_dictionary['applications'] = formatted_applications
+		base_dictionary['selection'] = selection
 		billing_dictionary = billing_dict(start_date, end_date, None, formatted_applications, project_id, force_pi=True)
 		return render(request, 'usage/billing.html', {**base_dictionary, **billing_dictionary})
 	except Exception as e:

@@ -65,7 +65,7 @@
 		<h4>Accounts, Applications and Projects</h4>
 		<div class="row">
 			<div class="col-md-4" id="search_container">
-				<input id="search" type="text" placeholder="Search for an account, application or project" class="form-control" autofocus>
+				<input id="search" type="text" class="form-control" autofocus {% if selection %}placeholder="{{ selection }}"{% else %}placeholder="Search for an account, application or project"{% endif %}>
 			</div>
 		</div>
 		<script>
@@ -90,7 +90,7 @@
 	{% endif %}
 
 	<div style="height: 15px"></div>
-	{% if not project_autocomplete or project_autocomplete and applications %}
+	{% if not project_autocomplete or project_autocomplete and selection %}
 		{% block usage_content %}{% endblock %}
 	{% endif %}
 {% endblock %}
