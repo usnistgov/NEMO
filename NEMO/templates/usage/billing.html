@@ -21,7 +21,7 @@
 					{% if not spending %}
 						<span style="color: #cd0000">There was a problem communicating with the billing service. The financial information associated with your usage cannot be displayed at this time.</span>
 					{% elif not spending.activities %}
-						No billing information available for the selected period
+						<h3>No billing information available for the selected period</h3>
 					{% else %}
 						{% for account, value in spending.activities.items %}
 							<tr>
