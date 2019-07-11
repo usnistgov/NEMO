@@ -26,7 +26,12 @@
 						{% for account, value in spending.activities.items %}
 							<tr>
 								<td>Account: {{ account.1 }}</td>
-								<td colspan="4"></td>
+								<td colspan="4" ></td>
+								<td style="text-align: right">
+									{% if selection == account.1 and user.is_staff %}
+										${{ spending.account_totals|get_item:account.0|floatformat:2|intcomma }}
+									{% endif %}
+								</td>
 							</tr>
 							{% for application, projects in value.items %}
 								<tr>

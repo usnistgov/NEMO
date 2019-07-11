@@ -142,6 +142,7 @@ def project_billing(request, kind=None, identifier=None):
 	base_dictionary['accounts_and_applications'] = set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications())
 
 	project_id = None
+	account_id = None
 	formatted_applications = None
 	selection = ''
 	try:
@@ -158,10 +159,11 @@ def project_billing(request, kind=None, identifier=None):
 			projects = Project.objects.filter(account=account, active=True, account__active=True)
 			formatted_applications = ','.join(
 				map(str, set(projects.values_list('application_identifier', flat=True)))) if projects else None
+			account_id = account.id
 			selection = account.name
 
 		base_dictionary['selection'] = selection
-		billing_dictionary = billing_dict(start_date, end_date, None, formatted_applications, project_id, force_pi=True)
+		billing_dictionary = billing_dict(start_date, end_date, None, formatted_applications, project_id, account_id=account_id, force_pi=True)
 		return render(request, 'usage/billing.html', {**base_dictionary, **billing_dictionary})
 	except Exception as e:
 		logger.warning(str(e))
@@ -172,7 +174,7 @@ def is_user_pi(user, application_pi_row):
 	return application_pi_row is not None and (user.username == application_pi_row['username'] or (user.first_name == application_pi_row['first_name'] and user.last_name == application_pi_row['last_name']))
 
 
-def billing_dict(start_date, end_date, user, formatted_applications, project_id=None, force_pi=None):
+def billing_dict(start_date, end_date, user, formatted_applications, project_id=None, account_id=None, force_pi=None):
 	dictionary = {}
 
 	cost_activity_url = settings.BILLING_SERVICE['cost_activity_url']
@@ -195,14 +197,16 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 
 	project_totals = {}
 	application_totals = {}
+	account_totals = {}
 	user_pi_applications = list()
 	# Construct a tree of account, application, project, and member total spending
 	cost_activities_tree = {}
 	for activity in cost_activity_data:
-		if project_id and activity['project_id'] != project_id:
+		if (project_id and activity['project_id'] != str(project_id)) or (account_id and activity['account_id'] != str(account_id)):
 			continue
 		project_totals.setdefault(activity['project_id'], 0)
 		application_totals.setdefault(activity['application_id'], 0)
+		account_totals.setdefault(activity['account_id'], 0)
 		account_key = (activity['account_id'], activity['account_name'])
 		application_key = (activity['application_id'], activity['application_name'])
 		project_key = (activity['project_id'], activity['project_name'])
@@ -219,10 +223,12 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 			cost_activities_tree[account_key][application_key][project_key][user_key] = cost_activities_tree[account_key][application_key][project_key][user_key] + cost
 			project_totals[activity['project_id']] = project_totals[activity['project_id']] + cost
 			application_totals[activity['application_id']] = application_totals[activity['application_id']] + cost
+			account_totals[activity['account_id']] = account_totals[activity['account_id']] + cost
 	dictionary['spending'] = {
 		'activities': cost_activities_tree,
 		'project_totals': project_totals,
 		'application_totals': application_totals,
+		'account_totals': account_totals,
 		'user_pi_applications': user_pi_applications
 	} if cost_activities_tree else {'activities': {}}
 	return dictionary
