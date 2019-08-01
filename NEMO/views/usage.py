@@ -63,6 +63,8 @@ def date_parameters_dictionary(request):
 		'month_list': month_list(),
 		'start_date': start_date,
 		'end_date': end_date,
+		'kind': kind,
+		'identifier': identifier,
 		'tab_url': get_url_for_other_tab(request)
 	}
 	return dictionary, start_date, end_date, kind, identifier

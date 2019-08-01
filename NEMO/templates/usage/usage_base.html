@@ -44,8 +44,8 @@
 				<input type="text" id="end_date" name="end_date" class="form-control select-date" placeholder="Choose a date">
 			</div>
 		</div>
-		<input id="type" name="type" type="hidden" value=""/>
-		<input id="id" name="id" type="hidden" value=""/>
+		<input id="type" name="type" type="hidden" value="{{ kind|default:'' }}"/>
+		<input id="id" name="id" type="hidden" value="{{ identifier|default:'' }}"/>
 
 		<script>
 			$('#start_date').pickadate({format: "mm/dd/yyyy", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, selectYears: true, selectMonths: true, closeOnSelect: true, onStart: set_start_date});
