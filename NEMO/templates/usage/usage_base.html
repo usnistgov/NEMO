@@ -17,79 +17,111 @@
 	<p>
 		This page presents a monthly report of your NanoFab usage and billing information. Approved adjustments are reflected in the Billing information data but not in the Usage data.
 	</p>
-	<div style="height: 15px"></div>
-	<form class="form-inline" role="form">
+	<div style="height: 20px"></div>
+	<form class="form-horizontal" role="form">
 		<div class="form-group">
-			<label class="control-label">View information for
-				<select name="timeframe" class="form-control" style="margin-right: 5px;">
-					{% if dates %}<option selected></option>{% endif %}
+			<label class="control-label col-sm-2">Select month</label>
+			<div class="col-sm-2">
+				<select id="month_list" class="form-control" style="margin-right: 5px;" onchange="set_dates_from_month(this.value)">
+					<option selected></option>
 					{% for month in month_list %}
-						<option {% if not dates and timeframe == month|date:"F, Y" %}selected{% endif %}>{{ month|date:"F, Y" }}</option>
+						<option>{{ month|date:"F, Y" }}</option>
 					{% endfor %}
 				</select>
-			</label>
-		</div>
-		<div class="form-group">
-			<input type="submit" class="btn btn-default" value="Update">
-		</div>
-	</form>
-
-	<form class="form-inline" role="form" style="margin-top: 10px">
-		<div class="form-group" style="margin-right: 5px;">
-			<label class="control-label">Or use a custom date range</label>
-			<input type="text" id="start_date" name="start_date" class="form-control select-date" placeholder="Choose a date">
-		</div>
-		<div class="form-group" style="margin-right: 5px;">
-			<input type="text" id="end_date" name="end_date" class="form-control select-date" placeholder="Choose a date">
-		</div>
-		<div class="form-group">
-			<input type="submit" class="btn btn-default" value="Update">
-		</div>
-	</form>
-	<script>
-		$('#start_date').pickadate({format: "mm/dd/yyyy", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, selectYears: true, selectMonths: true, closeOnSelect: true, onStart: set_start_date});
-		$('#end_date').pickadate({format: "mm/dd/yyyy", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, selectYears: true, selectMonths: true, closeOnSelect: true, onStart: set_end_date});
-		function set_start_date()
-		{
-			if('{{ start_date }}')
-				this.set('select', '{{ start_date|date:"Y-m-d" }}', {format: 'yyyy-mm-dd'})
-		}
-		function set_end_date()
-		{
-			if('{{ end_date }}')
-				this.set('select', '{{ end_date|date:"Y-m-d" }}', {format: 'yyyy-mm-dd'})
-		}
-	</script>
-
-	{% if project_autocomplete %}
-		<h4>Accounts, Applications and Projects</h4>
-		<div class="row">
-			<div class="col-md-4" id="search_container">
-				<input id="search" type="text" class="form-control" autofocus {% if selection %}placeholder="{{ selection }}"{% else %}placeholder="Search for an account, application or project"{% endif %}>
 			</div>
 		</div>
+		<div class="form-group">
+			<div class="control-label col-sm-2">
+				or from
+			</div>
+			<div class="col-sm-2">
+				<input type="text" id="start_date" name="start_date" class="form-control select-date" placeholder="Choose a date">
+			</div>
+			<div class="control-label col-sm-1" style="width: 3%">
+				to
+			</div>
+			<div class="col-sm-2">
+				<input type="text" id="end_date" name="end_date" class="form-control select-date" placeholder="Choose a date">
+			</div>
+		</div>
+		<input id="type" name="type" type="hidden" value=""/>
+		<input id="id" name="id" type="hidden" value=""/>
+
 		<script>
-			function get_account(jquery_event, search_selection)
+			$('#start_date').pickadate({format: "mm/dd/yyyy", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, selectYears: true, selectMonths: true, closeOnSelect: true, onStart: set_start_date});
+			$('#end_date').pickadate({format: "mm/dd/yyyy", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, selectYears: true, selectMonths: true, closeOnSelect: true, onStart: set_end_date});
+			function set_start_date()
 			{
-				window.location.href = {% if 'project_usage' in request.get_full_path %}'/project_usage/'{% else %}'/project_billing/'{% endif %}+search_selection.type+'/' + search_selection.id + '/?' + 'start_date='+'{{ start_date|date:"Y-m-d" }}' + '&end_date='+ '{{ end_date|date:"Y-m-d" }}';
+				if('{{ start_date }}')
+					this.set('select', '{{ start_date|date:"Y-m-d" }}', {format: 'yyyy-mm-dd'})
 			}
-			function on_load()
+			function set_end_date()
 			{
-				$('#search').autocomplete('accounts_and_projects_for_usage', get_account, {% json_search_base_with_extra_fields accounts_and_applications %});
+				if('{{ end_date }}')
+					this.set('select', '{{ end_date|date:"Y-m-d" }}', {format: 'yyyy-mm-dd'})
 			}
-			$(on_load);
+			function set_dates_from_month(month_input) {
+				var month = moment(month_input, "MMMM, YYYY");
+				var firstOfMonth = month.startOf('month').format('MM/DD/YYYY');
+				var lastOfMonth = month.endOf('month').format('MM/DD/YYYY');
+
+				var start_picker = $('#start_date').pickadate('picker');
+				var end_picker = $('#end_date').pickadate('picker');
+				start_picker.set('select', firstOfMonth, { format: 'mm/dd/yyyy' });
+				end_picker.set('select', lastOfMonth, { format: 'mm/dd/yyyy' });
+			}
+			function set_dropdown_selected() {
+			    if ('{{ start_date }}' && '{{ end_date }}') {
+					var start = moment('{{ start_date|date:'m/d/Y' }}');
+					var end = moment('{{ end_date|date:'m/d/Y' }}');
+					if (start.month() == end.month() && start.year() == end.year() && start.format('MM/DD/YYYY') == start.startOf('month').format('MM/DD/YYYY') && end.format('MM/DD/YYYY') == end.endOf('month').format('MM/DD/YYYY')) {
+					    var month = start.format("MMMM, YYYY");
+						$('#month_list').val(month)
+					}
+				}
+			}
+			$(set_dropdown_selected());
 		</script>
 
-		<style>
-			#search_container .tt-dropdown-menu
-			{
-				min-width: 400px;
-				max-height: 600px;
-			}
-		</style>
-	{% endif %}
+		{% if project_autocomplete %}
+			<div class="form-group">
+				<label class="control-label col-sm-2" for="search"><strong>For</strong></label>
+				<div class="col-sm-4" id="search_container">
+					<input id="search" type="text" class="form-control" style="width: 100%" autofocus {% if selection %}placeholder="{{ selection }}"{% else %}placeholder="Search for an account, application or project"{% endif %}>
+				</div>
+			</div>
+			<script>
+				function get_account(jquery_event, search_selection)
+				{
+					$('#type').val(search_selection.type);
+					$('#id').val(search_selection.id);
+				}
+				function on_load()
+				{
+					$('#search').autocomplete('accounts_and_projects_for_usage', get_account, {% json_search_base_with_extra_fields accounts_and_applications %});
+				}
+				$(on_load);
+			</script>
 
-	<div style="height: 15px"></div>
+			<style>
+				#search_container .tt-dropdown-menu
+				{
+					min-width: 400px;
+					max-height: 600px;
+				}
+			</style>
+
+		{% endif %}
+
+		<div class="form-group" style="margin-top: 25px">
+			<div class="col-sm-2"></div>
+			<div class="col-sm-3">
+				<input type="submit" class="btn btn-success" value="Update">
+			</div>
+		</div>
+	</form>
+
+	<div style="height: 15px; border-top: 1px dotted #eee"></div>
 	{% if not project_autocomplete or project_autocomplete and selection %}
 		{% block usage_content %}{% endblock %}
 	{% endif %}

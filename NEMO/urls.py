@@ -247,13 +247,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# Project Usage:
 		url(r'^project_usage/$', usage.project_usage, name='project_usage'),
-		url(r'^project_usage/application/(?P<identifier>.+)/$', usage.project_usage, kwargs={'kind': 'application'}, name='project_usage_application'),
-		url(r'^project_usage/project/(?P<identifier>\d+)/$', usage.project_usage, kwargs={'kind': 'project'}, name='project_usage_project'),
-		url(r'^project_usage/account/(?P<identifier>\d+)/$', usage.project_usage, kwargs={'kind': 'account'}, name='project_usage_account'),
 		url(r'^project_billing/$', usage.project_billing, name='project_billing'),
-		url(r'^project_billing/application/(?P<identifier>.+)/$', usage.project_billing, kwargs={'kind': 'application'}, name='project_billing_application'),
-		url(r'^project_billing/project/(?P<identifier>\d+)/$', usage.project_billing, kwargs={'kind': 'project'}, name='project_billing_project'),
-		url(r'^project_billing/account/(?P<identifier>\d+)/$', usage.project_billing, kwargs={'kind': 'account'}, name='project_billing_account'),
 	]
 
 if settings.DEBUG:

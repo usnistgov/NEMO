@@ -53,27 +53,25 @@ def get_project_applications():
 
 
 def date_parameters_dictionary(request):
-	dates = False
 	if request.GET.get('start_date') and request.GET.get('end_date'):
 		start_date, end_date = parse_start_and_end_date(request.GET.get('start_date'), request.GET.get('end_date'))
-		dates = True
 	else:
-		start_date, end_date = get_month_timeframe(request.GET.get('timeframe'))
+		start_date, end_date = get_month_timeframe()
+	kind = request.GET.get("type")
+	identifier = request.GET.get("id")
 	dictionary = {
 		'month_list': month_list(),
-		'timeframe': request.GET.get('timeframe') or start_date.strftime('%B, %Y'),
 		'start_date': start_date,
 		'end_date': end_date,
-		'dates': dates,
 		'tab_url': get_url_for_other_tab(request)
 	}
-	return dictionary, start_date, end_date
+	return dictionary, start_date, end_date, kind, identifier
 
 
 @login_required
 @require_GET
 def usage(request):
-	base_dictionary, start_date, end_date = date_parameters_dictionary(request)
+	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	dictionary = {
 		'area_access': AreaAccessRecord.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date),
 		'consumables': ConsumableWithdraw.objects.filter(customer=request.user, date__gt=start_date, date__lte=end_date),
@@ -89,7 +87,7 @@ def usage(request):
 @login_required
 @require_GET
 def billing(request):
-	base_dictionary, start_date, end_date = date_parameters_dictionary(request)
+	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	formatted_applications = ','.join(map(str, set(request.user.active_projects().values_list('application_identifier', flat=True))))
 	try:
 		billing_dictionary = billing_dict(start_date, end_date, request.user, formatted_applications)
@@ -101,8 +99,8 @@ def billing(request):
 
 @staff_member_required(login_url=None)
 @require_GET
-def project_usage(request, kind=None, identifier=None):
-	base_dictionary, start_date, end_date = date_parameters_dictionary(request)
+def project_usage(request):
+	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 
 	projects = []
 	selection = ''
@@ -136,8 +134,8 @@ def project_usage(request, kind=None, identifier=None):
 
 @staff_member_required(login_url=None)
 @require_GET
-def project_billing(request, kind=None, identifier=None):
-	base_dictionary, start_date, end_date = date_parameters_dictionary(request)
+def project_billing(request):
+	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	base_dictionary['project_autocomplete'] = True
 	base_dictionary['accounts_and_applications'] = set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications())
 

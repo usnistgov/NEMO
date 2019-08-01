@@ -63,7 +63,7 @@ def month_list(since=datetime(year=2013, month=11, day=1)):
 	return result
 
 
-def get_month_timeframe(date):
+def get_month_timeframe(date=None):
 	if date:
 		start = parse(date)
 	else:
