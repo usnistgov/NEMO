@@ -43,6 +43,11 @@
 			<div class="col-sm-2">
 				<input type="text" id="end_date" name="end_date" class="form-control select-date" placeholder="Choose a date">
 			</div>
+			{% if not project_autocomplete %}
+				<div class="col-sm-2">
+					<input type="submit" class="btn btn-success" value="Update">
+				</div>
+			{% endif %}
 		</div>
 		<input id="type" name="type" type="hidden" value="{{ kind|default:'' }}"/>
 		<input id="id" name="id" type="hidden" value="{{ identifier|default:'' }}"/>
@@ -86,8 +91,11 @@
 		{% if project_autocomplete %}
 			<div class="form-group">
 				<label class="control-label col-sm-2" for="search"><strong>For</strong></label>
-				<div class="col-sm-4" id="search_container">
+				<div class="col-sm-4" id="search_container" style="width: 36.4%;">
 					<input id="search" type="text" class="form-control" style="width: 100%" autofocus {% if selection %}placeholder="{{ selection }}"{% else %}placeholder="Search for an account, application or project"{% endif %}>
+				</div>
+				<div class="col-sm-2">
+					<input type="submit" class="btn btn-success" value="Update">
 				</div>
 			</div>
 			<script>
@@ -113,15 +121,9 @@
 
 		{% endif %}
 
-		<div class="form-group" style="margin-top: 25px">
-			<div class="col-sm-2"></div>
-			<div class="col-sm-3">
-				<input type="submit" class="btn btn-success" value="Update">
-			</div>
-		</div>
 	</form>
 
-	<div style="height: 15px; border-top: 1px dotted #eee"></div>
+	<div style="height: 5px; border-top: 1px dotted #eee"></div>
 	{% if not project_autocomplete or project_autocomplete and selection %}
 		{% block usage_content %}{% endblock %}
 	{% endif %}
