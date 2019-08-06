@@ -88,6 +88,7 @@ urlpatterns = [
 
 	# Status dashboard:
 	url(r'^status_dashboard/$', status_dashboard.status_dashboard, name='status_dashboard'),
+	url(r'^status_dashboard/(?P<tab>tools|occupancy)/$', status_dashboard.status_dashboard, name='status_dashboard_tab'),
 
 	# Jumbotron:
 	url(r'^jumbotron/$', jumbotron.jumbotron, name='jumbotron'),

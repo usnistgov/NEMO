@@ -5,16 +5,16 @@
 <div>
 	<h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">Status dashboard</h1>
 	<ul class="nav nav-pills" id="tabs">
-		<li class="active"><a href="#occupancy">Area occupancy</a></li>
-		<li><a href="#tools">Tool status & usage</a></li>
+		<li {% if tab == 'occupancy' %}class="active"{% endif %}><a href="#occupancy">Area occupancy</a></li>
+		<li {% if tab == 'tools' %}class="active"{% endif %}><a href="#tools">Tool status & usage</a></li>
 	</ul>
 </div>
 
 <div id="content" class="tab-content" style="padding-top:10px">
-	<div class="tab-pane active" id="occupancy">
+	<div class="tab-pane {% if tab == 'occupancy' %}active{% endif %}" id="occupancy">
 		{% include 'status_dashboard/occupancy.html' %}
 	</div>
-	<div class="tab-pane" id="tools">
+	<div class="tab-pane {% if tab == 'tools' %}active{% endif %}" id="tools">
 		<div class="btn-group sidebar-item">
 			<button id="filter" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
 				Showing tools in use

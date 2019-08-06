@@ -11,13 +11,14 @@ from NEMO.models import Area, AreaAccessRecord, Resource, ScheduledOutage, Task,
 @login_required
 @require_GET
 @disable_session_expiry_refresh
-def status_dashboard(request):
+def status_dashboard(request, tab=None):
 	"""
 	Present a web page to allow users to view the status and usage of all tools.
 	"""
 	interest = request.GET.get('interest')
 	if interest is None:
 		dictionary = {
+			'tab': tab if tab else "occupancy",
 			'tool_summary': create_tool_summary(),
 			'nanofab_occupants': AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'project', 'area'),
 		}
