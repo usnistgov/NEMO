@@ -197,6 +197,18 @@ def check_policy_to_save_reservation(cancelled_reservation, new_reservation, use
 		if new_reservation.start > timezone.now() + reservation_horizon:
 			policy_problems.append("You may not create reservations further than " + str(reservation_horizon.days) + " days from now for this tool.")
 
+
+	# Check tool policy rules
+	tool_policy_problems = []
+	if new_reservation.tool.should_enforce_policy(new_reservation):
+		tool_policy_problems = check_policy_rules_for_tool(cancelled_reservation, new_reservation, user)
+
+	# Return the list of all policies that are not met.
+	return policy_problems + tool_policy_problems, overridable
+
+
+def check_policy_rules_for_tool(cancelled_reservation, new_reservation, user):
+	tool_policy_problems = []
 	# Calculate the duration of the reservation:
 	duration = new_reservation.end - new_reservation.start
 
@@ -206,7 +218,9 @@ def check_policy_to_save_reservation(cancelled_reservation, new_reservation, use
 	if new_reservation.tool.minimum_usage_block_time:
 		minimum_block_time = timedelta(minutes=new_reservation.tool.minimum_usage_block_time)
 		if duration < minimum_block_time:
-			policy_problems.append("Your reservation has a duration of " + str(int(duration.total_seconds() / 60)) + " minutes. This tool requires a minimum reservation duration of " + str(int(minimum_block_time.total_seconds() / 60)) + " minutes.")
+			tool_policy_problems.append("Your reservation has a duration of " + str(int(
+				duration.total_seconds() / 60)) + " minutes. This tool requires a minimum reservation duration of " + str(
+				int(minimum_block_time.total_seconds() / 60)) + " minutes.")
 
 	# The reservation may not exceed the maximum block time for this tool.
 	# Staff may break this rule.
@@ -214,7 +228,9 @@ def check_policy_to_save_reservation(cancelled_reservation, new_reservation, use
 	if new_reservation.tool.maximum_usage_block_time:
 		maximum_block_time = timedelta(minutes=new_reservation.tool.maximum_usage_block_time)
 		if duration > maximum_block_time:
-			policy_problems.append("Your reservation has a duration of " + str(int(duration.total_seconds() / 60)) + " minutes. Reservations for this tool may not exceed " + str(int(maximum_block_time.total_seconds() / 60)) + " minutes.")
+			tool_policy_problems.append("Your reservation has a duration of " + str(
+				int(duration.total_seconds() / 60)) + " minutes. Reservations for this tool may not exceed " + str(
+				int(maximum_block_time.total_seconds() / 60)) + " minutes.")
 
 	# If there is a limit on number of reservations per user per day then verify that the user has not exceeded it.
 	# Staff may break this rule.
@@ -223,12 +239,15 @@ def check_policy_to_save_reservation(cancelled_reservation, new_reservation, use
 		start_of_day = new_reservation.start
 		start_of_day = start_of_day.replace(hour=0, minute=0, second=0, microsecond=0)
 		end_of_day = start_of_day + timedelta(days=1)
-		reservations_for_that_day = Reservation.objects.filter(cancelled=False, shortened=False, start__gte=start_of_day, end__lte=end_of_day, user=user, tool=new_reservation.tool)
+		reservations_for_that_day = Reservation.objects.filter(cancelled=False, shortened=False,
+															   start__gte=start_of_day, end__lte=end_of_day, user=user,
+															   tool=new_reservation.tool)
 		# Exclude any reservation that is being cancelled.
 		if cancelled_reservation and cancelled_reservation.id:
 			reservations_for_that_day = reservations_for_that_day.exclude(id=cancelled_reservation.id)
 		if reservations_for_that_day.count() >= new_reservation.tool.maximum_reservations_per_day:
-			policy_problems.append("You may only have " + str(new_reservation.tool.maximum_reservations_per_day) + " reservations for this tool per day. Missed reservations are included when counting the number of reservations per day.")
+			tool_policy_problems.append("You may only have " + str(
+				new_reservation.tool.maximum_reservations_per_day) + " reservations for this tool per day. Missed reservations are included when counting the number of reservations per day.")
 
 	# A minimum amount of time between reservations for the same user & same tool can be enforced.
 	# Staff may break this rule.
@@ -236,33 +255,39 @@ def check_policy_to_save_reservation(cancelled_reservation, new_reservation, use
 	if new_reservation.tool.minimum_time_between_reservations:
 		buffer_time = timedelta(minutes=new_reservation.tool.minimum_time_between_reservations)
 		must_end_before = new_reservation.start - buffer_time
-		too_close = Reservation.objects.filter(cancelled=False, shortened=False, user=user, end__gt=must_end_before, start__lt=new_reservation.start, tool=new_reservation.tool)
+		too_close = Reservation.objects.filter(cancelled=False, shortened=False, user=user, end__gt=must_end_before,
+											   start__lt=new_reservation.start, tool=new_reservation.tool)
 		if cancelled_reservation and cancelled_reservation.id:
 			too_close = too_close.exclude(id=cancelled_reservation.id)
 		if too_close.exists():
-			policy_problems.append("Separate reservations for this tool that belong to you must be at least " + str(new_reservation.tool.minimum_time_between_reservations) + " minutes apart from each other. The proposed reservation ends too close to another reservation.")
+			tool_policy_problems.append("Separate reservations for this tool that belong to you must be at least " + str(
+				new_reservation.tool.minimum_time_between_reservations) + " minutes apart from each other. The proposed reservation ends too close to another reservation.")
 		must_start_after = new_reservation.end + buffer_time
-		too_close = Reservation.objects.filter(cancelled=False, shortened=False, user=user, start__lt=must_start_after, end__gt=new_reservation.start, tool=new_reservation.tool)
+		too_close = Reservation.objects.filter(cancelled=False, shortened=False, user=user, start__lt=must_start_after,
+											   end__gt=new_reservation.start, tool=new_reservation.tool)
 		if cancelled_reservation and cancelled_reservation.id:
 			too_close = too_close.exclude(id=cancelled_reservation.id)
 		if too_close.exists():
-			policy_problems.append("Separate reservations for this tool that belong to you must be at least " + str(new_reservation.tool.minimum_time_between_reservations) + " minutes apart from each other. The proposed reservation begins too close to another reservation.")
+			tool_policy_problems.append("Separate reservations for this tool that belong to you must be at least " + str(
+				new_reservation.tool.minimum_time_between_reservations) + " minutes apart from each other. The proposed reservation begins too close to another reservation.")
 
 	# Check that the user is not exceeding the maximum amount of time they may reserve in the future.
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
 	if new_reservation.tool.maximum_future_reservation_time:
-		reservations_after_now = Reservation.objects.filter(cancelled=False, user=user, tool=new_reservation.tool, start__gte=timezone.now())
+		reservations_after_now = Reservation.objects.filter(cancelled=False, user=user, tool=new_reservation.tool,
+															start__gte=timezone.now())
 		if cancelled_reservation and cancelled_reservation.id:
 			reservations_after_now = reservations_after_now.exclude(id=cancelled_reservation.id)
 		amount_reserved_in_the_future = new_reservation.duration()
 		for r in reservations_after_now:
 			amount_reserved_in_the_future += r.duration()
 		if amount_reserved_in_the_future.total_seconds() / 60 > new_reservation.tool.maximum_future_reservation_time:
-			policy_problems.append("You may only reserve up to " + str(new_reservation.tool.maximum_future_reservation_time) + " minutes of time on this tool, starting from the current time onward.")
+			tool_policy_problems.append("You may only reserve up to " + str(
+				new_reservation.tool.maximum_future_reservation_time) + " minutes of time on this tool, starting from the current time onward.")
 
-	# Return the list of all policies that are not met.
-	return policy_problems, overridable
+	return tool_policy_problems
+
 
 
 def check_policy_to_cancel_reservation(reservation, user):

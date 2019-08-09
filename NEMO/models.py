@@ -238,6 +238,10 @@ class Tool(models.Model):
 	missed_reservation_threshold = models.PositiveIntegerField(null=True, blank=True, help_text="The amount of time (in minutes) that a tool reservation may go unused before it is automatically marked as \"missed\" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.")
 	allow_delayed_logoff = models.BooleanField(default=False, help_text='Upon logging off users may enter a delay before another user may use the tool. Some tools require "spin-down" or cleaning time after use.')
 	post_usage_questions = models.TextField(null=True, blank=True, help_text="")
+	policy_off_between_times = models.BooleanField(default=False, help_text="Check this box to disable policy rules every day between the given times")
+	policy_off_start_time = models.TimeField(null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
+	policy_off_end_time = models.TimeField(null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
+	policy_off_weekend = models.BooleanField(default=False, help_text="Whether or not policy rules should be enforced on weekends")
 
 	class Meta:
 		ordering = ['name']
@@ -341,6 +345,25 @@ class Tool(models.Model):
 			return UsageEvent.objects.get(end=None, tool=self.id)
 		except UsageEvent.DoesNotExist:
 			return None
+
+	def should_enforce_policy(self, reservation):
+		""" Returns whether or not the policy rules should be enforced. """
+		should_enforce = True
+
+		start_time = reservation.start.astimezone(timezone.get_current_timezone())
+		end_time = reservation.end.astimezone(timezone.get_current_timezone())
+		if self.policy_off_weekend and start_time.weekday() >= 5 and end_time.weekday() >= 5:
+			should_enforce = False
+		if self.policy_off_between_times and self.policy_off_start_time and self.policy_off_end_time:
+			if self.policy_off_start_time <= self.policy_off_end_time:
+				""" Range something like 6am-6pm """
+				if self.policy_off_start_time <= start_time.time() <= self.policy_off_end_time and self.policy_off_start_time <= end_time.time() <= self.policy_off_end_time:
+					should_enforce = False
+			else:
+				""" Range something like 6pm-6am """
+				if (self.policy_off_start_time <= start_time.time() or start_time.time() <= self.policy_off_end_time) and (self.policy_off_start_time <= end_time.time() or end_time.time() <= self.policy_off_end_time):
+					should_enforce = False
+		return should_enforce
 
 
 class Configuration(models.Model):

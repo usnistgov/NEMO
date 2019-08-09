@@ -149,6 +149,18 @@ class ToolAdminForm(forms.ModelForm):
 			self.fields['nonrequired_resources'].initial = self.instance.nonrequired_resource_set.all()
 
 
+	def clean(self):
+		cleaned_data = super().clean()
+		policy_off_between_times = cleaned_data.get("policy_off_between_times")
+		policy_off_start_time = cleaned_data.get("policy_off_start_time")
+		policy_off_end_time = cleaned_data.get("policy_off_end_time")
+		if policy_off_between_times and (not policy_off_start_time or not policy_off_end_time):
+			if not policy_off_start_time:
+				self.add_error("policy_off_start_time", "Start time must be specified")
+			if not policy_off_end_time:
+				self.add_error("policy_off_end_time", "End time must be specified")
+
+
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
 	list_display = ('name', 'category', 'visible', 'operational', 'problematic', 'is_configurable')
@@ -158,7 +170,9 @@ class ToolAdmin(admin.ModelAdmin):
 		(None, {'fields': ('name', 'category', 'qualified_users', 'post_usage_questions'),}),
 		('Current state', {'fields': ('visible', 'operational'),}),
 		('Contact information', {'fields': ('primary_owner', 'backup_owners', 'notification_email_address', 'location', 'phone_number'),}),
-		('Usage policy', {'fields': ('reservation_horizon', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time', 'missed_reservation_threshold', 'requires_area_access', 'grant_physical_access_level_upon_qualification', 'grant_badge_reader_access_upon_qualification', 'interlock', 'allow_delayed_logoff'),}),
+		('Reservation Horizon', {'fields': ('reservation_horizon',),}),
+		('Usage policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time', 'missed_reservation_threshold',),}),
+		('Area Access', {'fields': ('requires_area_access', 'grant_physical_access_level_upon_qualification', 'grant_badge_reader_access_upon_qualification', 'interlock', 'allow_delayed_logoff'),}),
 		('Dependencies', {'fields': ('required_resources', 'nonrequired_resources'),}),
 	)
 
