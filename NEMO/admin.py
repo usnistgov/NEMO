@@ -170,8 +170,8 @@ class ToolAdmin(admin.ModelAdmin):
 		(None, {'fields': ('name', 'category', 'qualified_users', 'post_usage_questions'),}),
 		('Current state', {'fields': ('visible', 'operational'),}),
 		('Contact information', {'fields': ('primary_owner', 'backup_owners', 'notification_email_address', 'location', 'phone_number'),}),
-		('Reservation Horizon', {'fields': ('reservation_horizon',),}),
-		('Usage policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time', 'missed_reservation_threshold',),}),
+		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
+		('Usage policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time',),}),
 		('Area Access', {'fields': ('requires_area_access', 'grant_physical_access_level_upon_qualification', 'grant_badge_reader_access_upon_qualification', 'interlock', 'allow_delayed_logoff'),}),
 		('Dependencies', {'fields': ('required_resources', 'nonrequired_resources'),}),
 	)
