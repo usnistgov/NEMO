@@ -4,7 +4,7 @@
 
 <div>
 	<h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">Status dashboard</h1>
-	<ul class="nav nav-pills" id="tabs">
+	<ul class="nav nav-pills" id="tabs" {% if request.GET.no_header %}style="display:none"{% endif %}>
 		<li {% if tab == 'occupancy' %}class="active"{% endif %}><a href="#occupancy">Area occupancy</a></li>
 		<li {% if tab == 'tools' %}class="active"{% endif %}><a href="#tools">Tool status & usage</a></li>
 	</ul>
@@ -16,7 +16,7 @@
 	</div>
 	<div class="tab-pane {% if tab == 'tools' %}active{% endif %}" id="tools">
 		<div class="btn-group sidebar-item">
-			<button id="filter" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+			<button id="filter" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" {% if request.GET.no_header %}style="display:none;"{% endif %}>
 				Showing tools in use
 				<span class="caret"></span>
 			</button>
