@@ -1,13 +1,12 @@
 from datetime import timedelta
 
-from django.core.mail import send_mail
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import Template, Context
 from django.utils import timezone
 
 from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage
-from NEMO.utilities import format_datetime
+from NEMO.utilities import format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 
 
@@ -53,7 +52,7 @@ def check_policy_to_enable_tool(tool, operator, user, project, staff_charge):
 		message = get_media_file_contents('unauthorized_tool_access_email.html')
 		if abuse_email_address and message:
 			rendered_message = Template(message).render(Context(dictionary))
-			send_mail("Area access requirement", '', abuse_email_address, [abuse_email_address], html_message=rendered_message)
+			send_mail("Area access requirement", rendered_message, abuse_email_address, [abuse_email_address])
 		return HttpResponseBadRequest("You must be logged in to the {} to operate this tool.".format(tool.requires_area_access.name.lower()))
 
 	# Staff may only charge staff time for one user at a time.

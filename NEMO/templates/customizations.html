@@ -521,5 +521,55 @@
 				{% endif %}
 			</div>
 		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>User reservation created email</h3>
+				<p>This email is sent to a user when the user creates a reservation. The following context variables are provided when the email is rendered:</p>
+				<ul>
+					<li><b>reservation</b> - the user's reservation that was cancelled</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'reservation_created_user_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="reservation_created_user_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_created_user_email_span').hide()">
+						{% if reservation_created_user_email %}<span id="reservation_created_user_email_span">reservation_created_user_email.html</span>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload created reservation email" class="btn btn-success">
+					</div>
+				</form>
+				{% if reservation_created_user_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_created_user_email_render">Show current content</button>
+					<div id="reservation_created_user_email_render" class="collapse customization-content">{{ reservation_created_user_email }}</div>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>User reservation cancelled email</h3>
+				<p>This email is sent to a user when the user cancels his own reservation. The following context variables are provided when the email is rendered:</p>
+				<ul>
+					<li><b>reservation</b> - the user's reservation that was cancelled</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'reservation_cancelled_user_email' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="reservation_cancelled_user_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_cancelled_user_email_span').hide()">
+						{% if reservation_cancelled_user_email %}<span id="reservation_cancelled_user_email_span">reservation_cancelled_user_email.html</span>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload cancelled reservation email" class="btn btn-success">
+					</div>
+				</form>
+				{% if reservation_cancelled_user_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_cancelled_user_email_render">Show current content</button>
+					<div id="reservation_cancelled_user_email_render" class="collapse customization-content">{{ reservation_cancelled_user_email }}</div>
+				{% endif %}
+			</div>
+		</div>
 	</div>
 {% endblock %}

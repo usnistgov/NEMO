@@ -5,14 +5,15 @@ from urllib.parse import urljoin
 import requests
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST, logger
 
 from NEMO.admin import record_local_many_to_many_changes, record_active_state
-from NEMO.forms import UserForm
-from NEMO.models import User, Project, Tool, PhysicalAccessLevel, Reservation, StaffCharge, UsageEvent, AreaAccessRecord, ActivityHistory
+from NEMO.forms import UserForm, UserPreferencesForm
+from NEMO.models import User, Project, Tool, PhysicalAccessLevel, Reservation, StaffCharge, UsageEvent, AreaAccessRecord, ActivityHistory, UserPreferences
 
 
 @staff_member_required(login_url=None)
@@ -292,3 +293,23 @@ def unlock_account(request, user_id):
 			'content': 'Exception caught: {}. {}'.format(type(e).__name__, str(e)),
 		}
 	return render(request, 'acknowledgement.html', dictionary)
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def user_preferences(request):
+	user: User = User.objects.get(pk=request.user.id)
+	''' create and save new preferences if they didn't exist before '''
+	if not user.preferences:
+		prefs = UserPreferences()
+		prefs.save()
+		user.preferences = prefs
+		user.save()
+	if request.method == 'POST':
+		form = UserPreferencesForm(data=request.POST, instance=user.preferences)
+		if form.is_valid():
+			form.save()
+	dictionary = {
+		'user_preferences': user.preferences,
+	}
+	return render(request, 'users/preferences.html', dictionary)

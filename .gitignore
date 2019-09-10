@@ -2,3 +2,4 @@
 __pycache__/
 venv/
 settings.py
+NEMO/media

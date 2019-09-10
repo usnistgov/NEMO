@@ -69,13 +69,13 @@ def get_item(dictionary, key):
 	return dictionary.get(key)
 
 
-dist_version: str = 0
+dist_version: str = '0'
 
 
 @register.simple_tag()
 def app_version() -> str:
 	global dist_version
-	if dist_version != 0:
+	if dist_version != '0':
 		return dist_version
 	else:
 		try:

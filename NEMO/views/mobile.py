@@ -83,7 +83,7 @@ def make_reservation(request):
 	# Reservation can't be short notice if the user is configuring the tool themselves.
 	if reservation.self_configuration:
 		reservation.short_notice = False
-	reservation.save()
+	reservation.save_and_notify()
 	return render(request, 'mobile/reservation_success.html', {'new_reservation': reservation})
 
 

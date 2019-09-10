@@ -50,6 +50,8 @@ customizable_content = [
 	'task_status_notification',
 	'unauthorized_tool_access_email',
 	'usage_reminder_email',
+	'reservation_cancelled_user_email',
+	'reservation_created_user_email',
 ]
 
 

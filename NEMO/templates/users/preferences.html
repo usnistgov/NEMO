@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Preferences{% endblock %}
+{% block content %}
+	<h1>User Preferences</h1>
+		<div style="height: 5px;"></div>
+		<form action="{% url 'user_preferences' %}" method="post">
+			{% csrf_token %}
+			<div class="form-group">
+				<div class="checkbox">
+					<label><input name="attach_created_reservation" type="checkbox" {% if user_preferences.attach_created_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when creating reservation</label>
+				</div>
+				<div class="checkbox">
+					<label><input name="attach_cancelled_reservation" type="checkbox" {% if user_preferences.attach_cancelled_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when cancelling a reservation</label>
+				</div>
+			</div>
+			<input type="submit" value="Update" class="btn btn-info">
+		</form>
+
+{% endblock %}

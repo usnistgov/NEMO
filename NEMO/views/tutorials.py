@@ -1,10 +1,10 @@
 from django.contrib.auth.decorators import login_required
-from django.core.mail import send_mail
 from django.shortcuts import render
 from django.template import Template, RequestContext, Context
 from django.views.decorators.http import require_http_methods
 
 from NEMO.models import User, Project
+from NEMO.utilities import send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 
 
@@ -30,7 +30,7 @@ def nanofab_rules(request):
 		email_contents = get_media_file_contents('nanofab_rules_tutorial_email.html')
 		if abuse_email and email_contents:
 			message = Template(email_contents, dictionary).render(Context(dictionary))
-			send_mail('NanoFab rules tutorial', '', abuse_email, [abuse_email], html_message=message)
+			send_mail('NanoFab rules tutorial', message, abuse_email, [abuse_email])
 		dictionary = {
 			'title': 'NanoFab rules tutorial',
 			'heading': 'Tutorial complete!',

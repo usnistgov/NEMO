@@ -1,10 +1,9 @@
 from django.contrib.auth.decorators import login_required
-from django.core.mail import send_mail
 from django.shortcuts import render
 from django.template import Template, Context
 from django.views.decorators.http import require_http_methods
 
-from NEMO.utilities import parse_parameter_string
+from NEMO.utilities import parse_parameter_string, send_mail
 from NEMO.views.constants import FEEDBACK_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
 
@@ -28,7 +27,7 @@ def feedback(request):
 	}
 
 	email = Template(email_contents).render(Context(dictionary))
-	send_mail('Feedback from ' + str(request.user), '', request.user.email, [recipient], html_message=email)
+	send_mail('Feedback from ' + str(request.user), email, request.user.email, [recipient])
 	dictionary = {
 		'title': 'Feedback',
 		'heading': 'Thanks for your feedback!',

@@ -1,10 +1,12 @@
+import io
 from datetime import timedelta, datetime
+from email import encoders
+from email.mime.base import MIMEBase
 from http import HTTPStatus
 from re import match
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
-from django.core.mail import send_mail
 from django.db.models import Q
 from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound
 from django.shortcuts import render, get_object_or_404, redirect
@@ -14,7 +16,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory
-from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string
+from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage
@@ -235,7 +237,7 @@ def create_reservation(request):
 	configured = (request.POST.get('configured') == "true")
 	# If a reservation is requested and the tool does not require configuration...
 	if not tool.is_configurable():
-		new_reservation.save()
+		new_reservation.save_and_notify()
 		return HttpResponse()
 
 	# If a reservation is requested and the tool requires configuration that has not been submitted...
@@ -249,7 +251,7 @@ def create_reservation(request):
 		# Reservation can't be short notice if the user is configuring the tool themselves.
 		if new_reservation.self_configuration:
 			new_reservation.short_notice = False
-		new_reservation.save()
+		new_reservation.save_and_notify()
 		return HttpResponse()
 
 	return HttpResponseBadRequest("Reservation creation failed because invalid parameters were sent to the server.")
@@ -408,9 +410,9 @@ def modify_reservation(request, start_delta, end_delta):
 		return HttpResponseBadRequest(policy_problems[0])
 	else:
 		# All policy checks passed, so save the reservation.
-		new_reservation.save()
+		new_reservation.save_and_notify()
 		reservation_to_cancel.descendant = new_reservation
-		reservation_to_cancel.save()
+		reservation_to_cancel.save_and_notify()
 	return response
 
 
@@ -457,9 +459,10 @@ def cancel_reservation(request, reservation_id):
 		reservation.cancelled = True
 		reservation.cancellation_time = timezone.now()
 		reservation.cancelled_by = request.user
-		reservation.save()
 
 		if reason:
+			''' don't notify in this case since we are sending a specific email for the cancellation '''
+			reservation.save()
 			dictionary = {
 				'staff_member': request.user,
 				'reservation': reservation,
@@ -470,6 +473,9 @@ def cancel_reservation(request, reservation_id):
 			if email_contents:
 				cancellation_email = Template(email_contents).render(Context(dictionary))
 				reservation.user.email_user('Your reservation was cancelled', cancellation_email, request.user.email)
+		else:
+			''' here the user cancelled his own reservation so notify him '''
+			reservation.save_and_notify()
 
 	if request.device == 'desktop':
 		return response
@@ -495,7 +501,7 @@ def cancel_outage(request, outage_id):
 @staff_member_required(login_url=None)
 @require_POST
 def set_reservation_title(request, reservation_id):
-	""" Cancel a reservation for a user. """
+	""" Change reservation title for a user. """
 	reservation = get_object_or_404(Reservation, id=reservation_id)
 	reservation.title = request.POST.get('title', '')[:reservation._meta.get_field('title').max_length]
 	reservation.save()
@@ -572,7 +578,7 @@ def email_usage_reminders(request):
 		subject = "NanoFab usage"
 		for user in aggregate.values():
 			rendered_message = Template(message).render(Context({'user': user}))
-			send_mail(subject, '', user_office_email, [user['email']], html_message=rendered_message)
+			send_mail(subject, rendered_message, user_office_email, [user['email']])
 
 	message = get_media_file_contents('staff_charge_reminder_email.html')
 	if message:
@@ -664,4 +670,47 @@ def send_missed_reservation_notification(reservation):
 	message = Template(message).render(Context({'reservation': reservation}))
 	user_office_email = get_customization('user_office_email_address')
 	abuse_email = get_customization('abuse_email_address')
-	send_mail(subject, '', user_office_email, [reservation.user.email, abuse_email, user_office_email], html_message=message)
+	send_mail(subject, message, user_office_email, [reservation.user.email, abuse_email, user_office_email])
+
+
+def send_user_created_reservation_notification(reservation: Reservation):
+	if reservation.user.preferences.attach_created_reservation:
+		subject = "[NEMO] Reservation for the " + str(reservation.tool)
+		message = get_media_file_contents('reservation_created_user_email.html')
+		message = Template(message).render(Context({'reservation': reservation}))
+		user_office_email = get_customization('user_office_email_address')
+		attachment = create_ics_for_reservation(reservation)
+		reservation.user.email_user(subject, message, user_office_email, [attachment])
+
+
+def send_user_cancelled_reservation_notification(reservation: Reservation):
+	if reservation.user.preferences.attach_cancelled_reservation:
+		subject = "[NEMO] Cancelled Reservation for the " + str(reservation.tool)
+		message = get_media_file_contents('reservation_cancelled_user_email.html')
+		message = Template(message).render(Context({'reservation': reservation}))
+		user_office_email = get_customization('user_office_email_address')
+		attachment = create_ics_for_reservation(reservation, cancelled=True)
+		reservation.user.email_user(subject, message, user_office_email, [attachment])
+
+
+def create_ics_for_reservation(reservation: Reservation, cancelled=False):
+	method = 'METHOD:CANCEL\n' if cancelled else 'METHOD:PUBLISH\n'
+	status = 'STATUS:CANCELLED\n' if cancelled else 'STATUS:CONFIRMED\n'
+	uid = 'UID:'+str(reservation.id)+'\n'
+	sequence = 'SEQUENCE:2\n' if cancelled else 'SEQUENCE:0\n'
+	priority = 'PRIORITY:5\n' if cancelled else 'PRIORITY:0\n'
+	now = datetime.now().strftime('%Y%m%dT%H%M%S')
+	start = reservation.start.astimezone(timezone.get_current_timezone()).strftime('%Y%m%dT%H%M%S')
+	end = reservation.end.astimezone(timezone.get_current_timezone()).strftime('%Y%m%dT%H%M%S')
+	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'SUMMARY:[NEMO] {reservation.tool.name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
+	ics = io.StringIO('')
+	ics.writelines(lines)
+	ics.seek(0)
+
+	filename = 'cancelled_nemo_reservation.ics' if cancelled else 'nemo_reservation.ics'
+	attachment = MIMEBase('application', "octet-stream")
+	attachment.set_payload(ics.read())
+	encoders.encode_base64(attachment)
+	attachment.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+
+	return attachment

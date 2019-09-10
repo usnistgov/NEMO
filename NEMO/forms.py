@@ -5,7 +5,7 @@ from django.forms import BaseForm, BooleanField, CharField, ChoiceField, DateFie
 from django.forms.utils import ErrorDict
 from django.utils import timezone
 
-from NEMO.models import Account, Alert, Comment, Consumable, ConsumableWithdraw, Project, SafetyIssue, ScheduledOutage, Task, TaskCategory, User
+from NEMO.models import Account, Alert, Comment, Consumable, ConsumableWithdraw, Project, SafetyIssue, ScheduledOutage, Task, TaskCategory, User, UserPreferences
 from NEMO.utilities import bootstrap_primary_color, format_datetime
 
 
@@ -253,6 +253,12 @@ class ScheduledOutageForm(ModelForm):
 	class Meta:
 		model = ScheduledOutage
 		fields = ['details', 'start', 'end', 'resource', 'category']
+
+
+class UserPreferencesForm(ModelForm):
+	class Meta:
+		model = UserPreferences
+		fields = ['attach_created_reservation', 'attach_cancelled_reservation']
 
 
 def nice_errors(form, non_field_msg='General form errors'):

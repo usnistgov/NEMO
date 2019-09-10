@@ -4,6 +4,7 @@ from datetime import timedelta, datetime
 from dateutil import parser
 from dateutil.parser import parse
 from dateutil.rrule import MONTHLY, rrule
+from django.core.mail import EmailMessage
 from django.utils import timezone
 from django.utils.timezone import localtime
 
@@ -174,3 +175,9 @@ def end_of_the_day(t, in_local_timezone=True):
 	""" Returns the END of today's day (11:59:59.999999 PM of the current day) in LOCAL time. """
 	midnight = t.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=None)
 	return localize(midnight) if in_local_timezone else midnight
+
+
+def send_mail(subject, message, from_email, recipient_list, attachments=None):
+	mail = EmailMessage(subject=subject, body=message, from_email=from_email, to=recipient_list, attachments=attachments)
+	mail.content_subtype = "html"
+	mail.send()

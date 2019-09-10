@@ -5,7 +5,12 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 
 from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks
-from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord, Comment, Configuration, ConfigurationHistory, Consumable, ConsumableCategory, ConsumableWithdraw, ContactInformation, ContactInformationCategory, Customization, Door, Interlock, InterlockCard, LandingPageChoice, MembershipHistory, News, Notification, PhysicalAccessLevel, PhysicalAccessLog, Project, Reservation, Resource, ResourceCategory, SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, Tool, TrainingSession, UsageEvent, User, UserType
+from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord, Comment, Configuration, \
+	ConfigurationHistory, Consumable, ConsumableCategory, ConsumableWithdraw, ContactInformation, \
+	ContactInformationCategory, Customization, Door, Interlock, InterlockCard, LandingPageChoice, MembershipHistory, \
+	News, Notification, PhysicalAccessLevel, PhysicalAccessLog, Project, Reservation, Resource, ResourceCategory, \
+	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
+	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences
 
 admin.site.site_header = "NEMO"
 admin.site.site_title = "NEMO"
@@ -386,6 +391,11 @@ class MembershipHistoryAdmin(admin.ModelAdmin):
 @register(UserType)
 class UserTypeAdmin(admin.ModelAdmin):
 	list_display = ('name',)
+
+
+@register(UserPreferences)
+class UserPreferencesAdmin(admin.ModelAdmin):
+	list_display = ('user',)
 
 
 @register(User)

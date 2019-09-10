@@ -3,7 +3,6 @@ from logging import getLogger
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
 from django.utils import timezone
@@ -11,7 +10,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import TaskForm, nice_errors
 from NEMO.models import Interlock, Reservation, SafetyIssue, Task, TaskCategory, TaskHistory, TaskStatus, UsageEvent
-from NEMO.utilities import bootstrap_primary_color, format_datetime
+from NEMO.utilities import bootstrap_primary_color, format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.tool_control import determine_tool_status
@@ -81,7 +80,7 @@ def send_new_task_emails(request, task):
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
 		message = Template(message).render(Context(dictionary))
 		recipients = tuple([r for r in [task.tool.primary_owner.email, *task.tool.backup_owners.all().values_list('email', flat=True), task.tool.notification_email_address] if r])
-		send_mail(subject, '', request.user.email, recipients, html_message=message)
+		send_mail(subject, message, request.user.email, recipients)
 
 	# Send an email to any user (excluding staff) with a future reservation on the tool:
 	user_office_email = get_customization('user_office_email_address')
@@ -245,4 +244,4 @@ def set_task_status(request, task, status_name, user):
 	if status.notify_backup_tool_owners:
 		recipients += task.tool.backup_tool_owners.values_list('email')
 	recipients = filter(None, recipients)
-	send_mail(subject, '', user.email, recipients, html_message=message)
+	send_mail(subject, message, user.email, recipients)

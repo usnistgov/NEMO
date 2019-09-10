@@ -9,14 +9,13 @@ from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.core.mail import send_mail
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_delete
 from django.urls import reverse
 from django.utils import timezone
 
-from NEMO.utilities import format_datetime
+from NEMO.utilities import format_datetime, send_mail
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -38,6 +37,15 @@ class CalendarDisplay(models.Model):
 
 	class Meta:
 		abstract = True
+
+
+class UserPreferences(models.Model):
+	attach_created_reservation = models.BooleanField('created_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when creating a new reservation')
+	attach_cancelled_reservation = models.BooleanField('cancelled_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when cancelling a reservation')
+
+	class Meta:
+		verbose_name = 'User preferences'
+		verbose_name_plural = 'User preferences'
 
 
 class UserManager(BaseUserManager):
@@ -101,6 +109,9 @@ class User(models.Model):
 	qualifications = models.ManyToManyField('Tool', blank=True, help_text='Select the tools that the user is qualified to use.')
 	projects = models.ManyToManyField('Project', blank=True, help_text='Select the projects that this user is currently working on.')
 
+	# Preferences
+	preferences: UserPreferences = models.OneToOneField(UserPreferences, null=True)
+
 	USERNAME_FIELD = 'username'
 	REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
 	objects = UserManager()
@@ -161,9 +172,9 @@ class User(models.Model):
 	def get_username(self):
 		return self.username
 
-	def email_user(self, subject, message, from_email=None):
+	def email_user(self, subject, message, from_email, attachments=None):
 		""" Sends an email to this user. """
-		send_mail(subject=subject, message='', from_email=from_email, recipient_list=[self.email], html_message=message)
+		send_mail(subject=subject, message=message, from_email=from_email, recipient_list=[self.email], attachments=attachments)
 
 	def get_full_name(self):
 		return self.first_name + ' ' + self.last_name + ' (' + self.username + ')'
@@ -563,6 +574,14 @@ class Reservation(CalendarDisplay):
 
 	def has_not_ended(self):
 		return False if self.end < timezone.now() else True
+
+	def save_and_notify(self):
+		self.save()
+		from NEMO.views.calendar import send_user_cancelled_reservation_notification, send_user_created_reservation_notification
+		if self.cancelled:
+			send_user_cancelled_reservation_notification(self)
+		else:
+			send_user_created_reservation_notification(self)
 
 	class Meta:
 		ordering = ['-start']
