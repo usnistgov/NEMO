@@ -472,7 +472,7 @@ def cancel_reservation(request, reservation_id):
 			email_contents = get_media_file_contents('cancellation_email.html')
 			if email_contents:
 				cancellation_email = Template(email_contents).render(Context(dictionary))
-				if reservation.user.preferences.attach_cancelled_reservation:
+				if getattr(reservation.user.preferences, 'attach_cancelled_reservation', False):
 					attachment = create_ics_for_reservation(reservation, cancelled=True)
 					reservation.user.email_user('Your reservation was cancelled', cancellation_email, request.user.email, [attachment])
 				else:
@@ -679,7 +679,7 @@ def send_missed_reservation_notification(reservation):
 
 
 def send_user_created_reservation_notification(reservation: Reservation):
-	if reservation.user.preferences.attach_created_reservation:
+	if getattr(reservation.user.preferences, 'attach_created_reservation', False):
 		subject = "[NEMO] Reservation for the " + str(reservation.tool)
 		message = get_media_file_contents('reservation_created_user_email.html')
 		message = Template(message).render(Context({'reservation': reservation}))
@@ -689,7 +689,7 @@ def send_user_created_reservation_notification(reservation: Reservation):
 
 
 def send_user_cancelled_reservation_notification(reservation: Reservation):
-	if reservation.user.preferences.attach_cancelled_reservation:
+	if getattr(reservation.user.preferences, 'attach_cancelled_reservation', False):
 		subject = "[NEMO] Cancelled Reservation for the " + str(reservation.tool)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
 		message = Template(message).render(Context({'reservation': reservation}))
