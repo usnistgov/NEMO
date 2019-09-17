@@ -136,19 +136,19 @@ def send_task_updated_email(task, url):
 		task_status = 'updated'
 	message = f"""
 A task for the {task.tool} was just modified by {task_user}.
-
+<br/><br/>
 The latest update is at the bottom of the description. The entirety of the task status follows: 
-
-Task problem description:
+<br/><br/>
+Task problem description:<br/>
 {task.problem_description}
-
-Task progress description:
+<br/><br/>
+Task progress description:<br/>
 {task.progress_description}
-
-Task resolution description:
+<br/><br/>
+Task resolution description:<br/>
 {task.resolution_description}
-
-Visit {url} to view the tool control page for the task.
+<br/><br/>
+Visit {url} to view the tool control page for the task.<br/>
 """
 	send_mail(f'{task.tool} task {task_status}', message, settings.SERVER_EMAIL, settings.LAB_MANAGERS)
 
