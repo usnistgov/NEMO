@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.http import urlencode
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.models import Area, AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User
+from NEMO.models import Area, AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent
 from NEMO.tasks import postpone
 from NEMO.utilities import parse_start_and_end_date
 from NEMO.views.customization import get_customization
@@ -193,7 +193,11 @@ def logout_of_area(request, door_id):
 	if record:
 		record.end = timezone.now()
 		record.save()
-		return render(request, 'area_access/logout_success.html', {'area': record.area, 'name': user.first_name})
+		busy_tools = UsageEvent.objects.filter(end=None, user=user)
+		if busy_tools:
+			return render(request, 'area_access/logout_warning.html', {'area': record.area, 'name': user.first_name, 'tools_in_use': busy_tools})
+		else:
+			return render(request, 'area_access/logout_success.html', {'area': record.area, 'name': user.first_name})
 	else:
 		return render(request, 'area_access/not_logged_in.html')
 

@@ -32,7 +32,7 @@
 		{% endblock %}
 		<div id="occupancy"></div>
 	</div>
-	<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1></div>
+	<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1><audio id="error-sound" src="{% url 'media' 'error.mp3' %}"></audio></div>
 	<div id="status" style="display: none"></div>
 	<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
 	<script type="text/javascript">
@@ -76,9 +76,11 @@
 		{
 			if(status === "error")
 			{
+				document.getElementById('error-sound').play();
 				$("#default_content").hide();
 				$("#status").hide();
 				$("#error").show();
+				$('body').removeClass().addClass('logout-error');
 				revert(15);
 			}
 		}
@@ -90,6 +92,7 @@
 		}
 		function revert_to_default_content()
 		{
+			$('body').removeClass();
 			fetch_occupancy();
 			clear_timeout();
 			$("#status").hide();

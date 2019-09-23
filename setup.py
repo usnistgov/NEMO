@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name='NEMO',
-	version='1.16.2',
+	version='1.17.0',
 	python_requires='>=3.6',
 	packages=find_packages(exclude=['NEMO.tests']),
 	include_package_data=True,

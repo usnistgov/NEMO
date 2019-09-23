@@ -1,0 +1,12 @@
+<script>$('body').removeClass().addClass('logout-warning')</script>
+<h1>You're now logged out of the {{ area|lower }}, {{ name }}.</h1>
+<audio src="{% url 'media' 'warning.mp3' %}" autoplay></audio>
+<h2 style="color:red">
+	<p>You are currently still logged in to the following tools:</p>
+	<ul>
+		{% for usage_event in tools_in_use %}
+			<li>{{ usage_event.tool.name }}</li>
+		{% endfor %}
+	</ul>
+</h2>
+<script>revert(15);</script>
