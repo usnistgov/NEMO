@@ -62,12 +62,8 @@ class NISTRates(Rates):
 
 	def get_consumable_rate(self, consumable) -> str:
 		full_cost_rate = self._get_rate_by_table_id_and_class(consumable, self.consumable_rate_class, self.full_cost_rate_class)
-		shared_cost_rate = self._get_rate_by_table_id_and_class(consumable, self.consumable_rate_class, self.shared_cost_rate_class)
 		if full_cost_rate:
-			result = "Full Cost <b>${:0,.2f}</b>".format(full_cost_rate)
-			if shared_cost_rate:
-				result += " Shared Cost <b>${:0,.2f}</b>".format(shared_cost_rate)
-			return result
+			return "Cost <b>${:0,.2f}</b>".format(full_cost_rate)
 
 	def get_tool_rate(self, tool: Tool) -> str:
 		full_cost_rate = self._get_rate_by_table_id_and_class(tool, self.tool_rate_class, self.full_cost_rate_class)
