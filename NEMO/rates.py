@@ -87,7 +87,7 @@ class NISTRates(Rates):
 
 	def _get_rate_by_table_id_and_class(self, item: Union[Consumable, Tool], table_id, rate_claz) -> float:
 		if self.rates:
-			matching_rates = list(filter(lambda rate: rate['table_id'] == table_id and rate['rate_class'] == rate_claz and rate['item'] == item.name, self.rates))
+			matching_rates = list(filter(lambda rate: rate['table_id'] == table_id and rate['rate_class'] == rate_claz and rate['item_id'] == item.id, self.rates))
 			if matching_rates:
 				return matching_rates[0]['rate']
 
