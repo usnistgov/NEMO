@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import logger, require_GET, require_POST
 
+from NEMO import rates
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, TaskCategory, TaskStatus, Tool, UsageEvent, User
 from NEMO.utilities import extract_times, quiet_int
@@ -47,6 +48,7 @@ def tool_status(request, tool_id):
 
 	dictionary = {
 		'tool': tool,
+		'tool_rate': rates.rate_class.get_tool_rate(tool),
 		'task_categories': TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
 		'rendered_configuration_html': tool.configuration_widget(request.user),
 		'mobile': request.device == 'mobile',

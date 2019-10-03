@@ -78,6 +78,14 @@
 			</div>
 		{% endif %}
 
+		{% if tool_rate %}
+			<div>
+				{% autoescape off %}
+					{{ tool_rate }}
+				{% endautoescape %}
+			</div>
+		{% endif %}
+
 		{# Display any unavailable required resources... #}
 		{% for r in tool.unavailable_required_resources %}
 			<div class="media">

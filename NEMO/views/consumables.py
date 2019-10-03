@@ -1,19 +1,23 @@
+from logging import getLogger
+
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 
+from NEMO import rates
 from NEMO.forms import ConsumableWithdrawForm
 from NEMO.models import Consumable, User
-
 
 @staff_member_required(login_url=None)
 @require_http_methods(['GET', 'POST'])
 def consumables(request):
 	form = ConsumableWithdrawForm(request.POST or None, initial={'quantity': 1})
+	rate_dict = rates.rate_class.get_consumable_rates(Consumable.objects.all())
 
 	dictionary = {
 		'users': User.objects.filter(is_active=True),
 		'consumables': Consumable.objects.filter(visible=True).order_by('category', 'name'),
+		'rates': rate_dict,
 	}
 
 	if form.is_valid():

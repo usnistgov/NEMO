@@ -68,7 +68,7 @@
 						<option>&nbsp;</option>
 						<optgroup label="{{ category.grouper|default_if_none:"Uncategorized" }}">
 							{% for item in category.list %}
-								<option value="{{ item.id }}" {% if form.cleaned_data.consumable.id == item.id %}selected{% endif %}>{{ item.name }}</option>
+								<option value="{{ item.id }}" {% if form.cleaned_data.consumable.id == item.id %}selected{% endif %}>{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name }}){% endif %}</option>
 							{% endfor %}
 						</optgroup>
 					{% endfor %}
