@@ -36,7 +36,7 @@ def tool_control(request, tool_id=None):
 	}
 	# The tool-choice sidebar only needs to be rendered for desktop devices, not mobile devices.
 	if request.device == 'desktop':
-		dictionary['rendered_tool_tree_html'] = ToolTree().render(None, {'tools': tools})
+		dictionary['rendered_tool_tree_html'] = ToolTree().render(None, {'tools': tools, 'user':request.user})
 	return render(request, 'tool_control/tool_control.html', dictionary)
 
 

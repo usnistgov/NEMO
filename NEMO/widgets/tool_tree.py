@@ -1,5 +1,9 @@
+from typing import List
+
 from django.forms import Widget
 from django.utils.safestring import mark_safe
+
+from NEMO.models import User, Tool
 
 
 class ToolTree(Widget):
@@ -38,8 +42,11 @@ class ToolTree(Widget):
 		</ul>
 		"""
 		tree = ToolTreeHelper(None)
-		for tool in value['tools']:
-			tree.add(tool.category + '/' + tool.name, tool.id)
+		user: User = value['user'] if 'user' in value else None
+		tools: List[Tool] = value['tools']
+		for tool in tools:
+			is_qualified = (user and user.is_staff) or (user and tool in user.qualifications.all())
+			tree.add(tool.category + '/' + tool.name, tool.id,  is_qualified)
 		return mark_safe(tree.render())
 
 
@@ -52,8 +59,9 @@ class ToolTreeHelper:
 		self.name = name
 		self.children = []
 		self.id = None
+		self.is_user_qualified = False
 
-	def add(self, tool, identifier):
+	def add(self, tool, identifier, is_user_qualified):
 		"""
 		This function takes as input a string representation of the tool in the organization hierarchy.
 		Example input might be "Imaging and Analysis/Microscopes/Zeiss FIB". The input is parsed with '/' as the
@@ -62,13 +70,14 @@ class ToolTreeHelper:
 		part = tool.partition('/')
 		for child in self.children:
 			if child.name == part[0]:
-				child.add(part[2], identifier)
+				child.add(part[2], identifier, is_user_qualified)
 				return
 		self.children.append(ToolTreeHelper(part[0]))
 		if part[2] != '':
-			self.children[-1].add(part[2], identifier)
+			self.children[-1].add(part[2], identifier, is_user_qualified)
 		else:
 			self.children[-1].id = identifier
+			self.children[-1].is_user_qualified = is_user_qualified
 
 	def render(self):
 		"""
@@ -89,7 +98,8 @@ class ToolTreeHelper:
 		"""
 		result += '<li>'
 		if node.__is_leaf():
-			result += f'<a href="javascript:void(0);" onclick="set_selected_item(this)" data-tool-id="{node.id}" data-type="tool link">{node.name}</a>'
+			css_class = "" if node.is_user_qualified else 'class="disabled"'
+			result += f'<a href="javascript:void(0);" onclick="set_selected_item(this)" data-tool-id="{node.id}" data-type="tool link" {css_class}>{node.name}</a>'
 		if not node.__is_leaf():
 			result += f'<label class="tree-toggler nav-header"><div>{node.name}</div></label><ul class="nav nav-list tree" data-category="{node.name}">'
 			for child in node.children:

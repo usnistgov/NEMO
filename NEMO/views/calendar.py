@@ -35,7 +35,7 @@ def calendar(request, tool_id=None):
 			return redirect('choose_tool', 'view_calendar')
 
 	tools = Tool.objects.filter(visible=True).order_by('category', 'name')
-	rendered_tool_tree_html = ToolTree().render(None, {'tools': tools})
+	rendered_tool_tree_html = ToolTree().render(None, {'tools': tools, 'user': request.user})
 	dictionary = {
 		'rendered_tool_tree_html': rendered_tool_tree_html,
 		'tools': tools,

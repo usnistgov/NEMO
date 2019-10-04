@@ -87,6 +87,11 @@ label
 	background-color: #e7e7e7;
 }
 
+#sidebar .disabled
+{
+	opacity: .4;
+}
+
 .status-icon
 {
 	font-size: 1.5em;
