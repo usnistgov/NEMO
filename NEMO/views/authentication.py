@@ -114,7 +114,10 @@ def login_user(request):
 		if request.user.is_authenticated:
 			return HttpResponseRedirect(reverse('landing'))
 		else:
-			return render(request, 'authorization_failed.html')
+			backends = [backend for backend in settings.AUTHENTICATION_BACKENDS if backend not in ['NEMO.views.authentication.RemoteUserAuthenticationBackend','NEMO.views.authentication.NginxKerberosAuthorizationHeaderAuthenticationBackend']]
+			if len(backends) == 0:
+				# there are no other authentication backends in the list, send error. Otherwise keep going
+				return render(request, 'authorization_failed.html')
 
 	dictionary = {
 		'login_banner': get_media_file_contents('login_banner.html'),
