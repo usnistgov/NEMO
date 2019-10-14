@@ -18,7 +18,7 @@
 	<div class="row">
 		<div class="col-md-5">
 			<h4>Update the task</h4>
-			<form action="{% url 'update_task' task.id %}" method="post">
+			<form action="{% url 'update_task' task.id %}" method="post" enctype="multipart/form-data">
 				{% csrf_token %}
 				<input type="hidden" name="tool" value="{{ task.tool.id }}">
 				<input type="hidden" name="action" value="update">
@@ -77,6 +77,18 @@
 				<div class="form-group">
 					<label for="description">Please describe any actions being taken to resolve this task. This information will be visible to all users in order to keep everyone apprised of the tool's status.</label>
 					<textarea name="description" id="description" class="form-control" rows="3"></textarea>
+				</div>
+				{% if task.task_images %}
+					<div>images:
+						<ul>
+							{% for image in task.task_images %}
+								<li><a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">image {{ forloop.counter }}</a></li>
+							{% endfor %}
+						</ul>
+					</div>
+				{% endif %}
+				<div class="form-group">
+					<input id="fileupload" type="file" name="image" multiple>
 				</div>
 				<div class="form-group">
 					<input type="submit" class="btn btn-success" value="Update">

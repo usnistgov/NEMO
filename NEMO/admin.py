@@ -10,7 +10,7 @@ from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord,
 	ContactInformationCategory, Customization, Door, Interlock, InterlockCard, LandingPageChoice, MembershipHistory, \
 	News, Notification, PhysicalAccessLevel, PhysicalAccessLog, Project, Reservation, Resource, ResourceCategory, \
 	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
-	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences
+	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences, TaskImages
 
 admin.site.site_header = "NEMO"
 admin.site.site_title = "NEMO"
@@ -359,6 +359,16 @@ class TaskHistoryAdmin(admin.ModelAdmin):
 	list_display = ('id', 'task', 'status', 'time', 'user')
 	readonly_fields = ('time',)
 	date_hierarchy = 'time'
+
+
+@register(TaskImages)
+class TaskImagesAdmin(admin.ModelAdmin):
+	list_display = ('id', 'get_tool', 'task', 'uploaded_at')
+
+	def get_tool(self, task_image: TaskImages):
+		return task_image.task.tool.name
+	get_tool.admin_order_field = 'tool'  # Allows column order sorting
+	get_tool.short_description = 'Tool Name'  # Renames column head
 
 
 @register(Comment)

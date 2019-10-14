@@ -1,9 +1,16 @@
+import os
 from calendar import monthrange
 from datetime import timedelta, datetime
+from email import encoders
+from email.mime.base import MIMEBase
+from io import BytesIO
 
+from PIL import Image
 from dateutil import parser
 from dateutil.parser import parse
 from dateutil.rrule import MONTHLY, rrule
+from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.utils import timezone
 from django.utils.timezone import localtime
@@ -181,3 +188,41 @@ def send_mail(subject, message, from_email, recipient_list, attachments=None):
 	mail = EmailMessage(subject=subject, body=message, from_email=from_email, to=recipient_list, attachments=attachments)
 	mail.content_subtype = "html"
 	mail.send()
+
+
+def create_email_attachment(stream, filename) -> MIMEBase:
+	attachment = MIMEBase('application', "octet-stream")
+	attachment.set_payload(stream.read())
+	encoders.encode_base64(attachment)
+	attachment.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+	return attachment
+
+
+def get_task_image_filename(task_images, filename):
+	from NEMO.models import Task, TaskImages
+	from django.template.defaultfilters import slugify
+	task: Task = task_images.task
+	tool_name = slugify(task.tool)
+	now = datetime.now()
+	date = now.strftime("%Y_%m_%d")
+	year = now.strftime("%Y")
+	number = "{:02d}".format(TaskImages.objects.filter(task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day).count() +1)
+	ext = os.path.splitext(filename)[1]
+	return f"task_images/{year}/{tool_name}/{date}-{number}{ext}"
+
+
+def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
+	""" Returns a resized image based on the given maximum size """
+	img: Image = Image.open(image)
+	if img.size[0] > img.size[1]:
+		width_ratio = (max / float(img.size[0]))
+		height = int((float(img.size[1]) * float(width_ratio)))
+		img = img.resize((max, height), Image.ANTIALIAS)
+	else:
+		height_ratio = (max / float(img.size[1]))
+		width = int((float(img.size[0]) * float(height_ratio)))
+		img = img.resize((width, max), Image.ANTIALIAS)
+	buffer = BytesIO()
+	img.save(fp=buffer, format='PNG', quality=quality)
+	resized_image = ContentFile(buffer.getvalue())
+	return InMemoryUploadedFile(resized_image,'ImageField', "%s.png" %image.name, 'image/png', resized_image.tell(), None)

@@ -33,6 +33,13 @@
 							</div>
 						</div>
 					{% endif %}
+					{% if i.task_images %}
+						<div>images:
+							{% for image in i.task_images %}
+								<a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">image {{ forloop.counter }}</a>
+							{% endfor %}
+						</div>
+					{% endif %}
 					<div class="media">
 						{% if i.cancelled %}
 							<span class="glyphicon glyphicon-remove pull-left notification-icon danger-highlight"></span>

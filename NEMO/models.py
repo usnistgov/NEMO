@@ -1,4 +1,5 @@
 import datetime
+import os
 import socket
 import struct
 from datetime import timedelta
@@ -12,10 +13,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 
-from NEMO.utilities import format_datetime, send_mail
+from NEMO.utilities import format_datetime, send_mail, get_task_image_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -848,6 +850,45 @@ class Task(models.Model):
 			return TaskHistory.objects.filter(task_id=self.id).latest().status
 		except TaskHistory.DoesNotExist:
 			return None
+
+	def task_images(self):
+		return TaskImages.objects.filter(task=self).order_by()
+
+
+class TaskImages(models.Model):
+	task = models.ForeignKey(Task, on_delete=models.CASCADE)
+	image = models.ImageField(upload_to=get_task_image_filename, verbose_name='Image')
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		verbose_name_plural = "Task images"
+		ordering = ['-uploaded_at']
+
+
+# These two auto-delete task images from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=TaskImages)
+def auto_delete_file_on_delete(sender, instance: TaskImages, **kwargs):
+	"""	Deletes file from filesystem when corresponding `TaskImages` object is deleted.	"""
+	if instance.image:
+		if os.path.isfile(instance.image.path):
+			os.remove(instance.image.path)
+
+
+@receiver(models.signals.pre_save, sender=TaskImages)
+def auto_delete_file_on_change(sender, instance: TaskImages, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `TaskImages` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = TaskImages.objects.get(pk=instance.pk).image
+	except TaskImages.DoesNotExist:
+		return False
+
+	new_file = instance.image
+	if not old_file == new_file:
+		if os.path.isfile(old_file.path):
+			os.remove(old_file.path)
 
 
 class TaskCategory(models.Model):

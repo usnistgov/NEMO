@@ -1,7 +1,5 @@
 import io
 from datetime import timedelta, datetime
-from email import encoders
-from email.mime.base import MIMEBase
 from http import HTTPStatus
 from re import match
 
@@ -16,7 +14,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory
-from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail
+from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage
@@ -713,9 +711,5 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	ics.seek(0)
 
 	filename = 'cancelled_nemo_reservation.ics' if cancelled else 'nemo_reservation.ics'
-	attachment = MIMEBase('application', "octet-stream")
-	attachment.set_payload(ics.read())
-	encoders.encode_base64(attachment)
-	attachment.add_header('Content-Disposition', f'attachment; filename="{filename}"')
 
-	return attachment
+	return create_email_attachment(ics, filename)

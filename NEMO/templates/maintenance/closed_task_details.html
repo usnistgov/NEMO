@@ -2,9 +2,6 @@
 <h2>{{ task.tool.name }} task</h2>
 Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).<br>
 Urgency: {{ task.get_urgency_display|lower }}<br>
-{% if task.category %}
-	Category: {{ task.category }}<br>
-{% endif %}
 {% if task.force_shutdown %}
 	<span class="danger-highlight glyphicon glyphicon-fire"></span> This task forced the tool to remain shut down.<br>
 {% endif %}
@@ -18,6 +15,13 @@ Urgency: {{ task.get_urgency_display|lower }}<br>
 	<h4>Problem description</h4>
 	{{ task.problem_description|linebreaksbr }}
 <p>
+{% if task.task_images %}
+	<div>images:
+		{% for image in task.task_images %}
+			<a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">image {{ forloop.counter }}</a>
+		{% endfor %}
+	</div>
+{% endif %}
 {% if task.progress_description %}
 	<p>
 		<h4>Progress</h4>
