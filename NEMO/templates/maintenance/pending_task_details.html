@@ -131,9 +131,11 @@
 	{% if task.task_images %}
 		<div class="form-group">
 			<div class="col-lg-6">images:
-				{% for image in task.task_images %}
-					<a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">image {{ forloop.counter }}</a>
-				{% endfor %}
+				<ul>
+					{% for image in task.task_images %}
+						<li><a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">{{ image.filename }}</a></li>
+					{% endfor %}
+				</ul>
 			</div>
 		</div>
 	{% endif %}

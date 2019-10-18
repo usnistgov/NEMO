@@ -204,11 +204,11 @@ def get_task_image_filename(task_images, filename):
 	task: Task = task_images.task
 	tool_name = slugify(task.tool)
 	now = datetime.now()
-	date = now.strftime("%Y_%m_%d")
+	date = now.strftime("%Y-%m-%d")
 	year = now.strftime("%Y")
 	number = "{:02d}".format(TaskImages.objects.filter(task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day).count() +1)
 	ext = os.path.splitext(filename)[1]
-	return f"task_images/{year}/{tool_name}/{date}-{number}{ext}"
+	return f"task_images/{year}/{tool_name}/{date}_{tool_name}_{number}{ext}"
 
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:

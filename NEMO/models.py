@@ -860,6 +860,9 @@ class TaskImages(models.Model):
 	image = models.ImageField(upload_to=get_task_image_filename, verbose_name='Image')
 	uploaded_at = models.DateTimeField(auto_now_add=True)
 
+	def filename(self):
+		return os.path.basename(self.image.name)
+
 	class Meta:
 		verbose_name_plural = "Task images"
 		ordering = ['-uploaded_at']

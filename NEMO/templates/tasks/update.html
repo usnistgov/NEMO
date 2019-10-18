@@ -82,7 +82,7 @@
 					<div>images:
 						<ul>
 							{% for image in task.task_images %}
-								<li><a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">image {{ forloop.counter }}</a></li>
+								<li><a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">{{ image.filename }}</a></li>
 							{% endfor %}
 						</ul>
 					</div>
