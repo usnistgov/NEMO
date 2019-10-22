@@ -177,6 +177,9 @@ def is_user_pi(user, application_pi_row):
 def billing_dict(start_date, end_date, user, formatted_applications, project_id=None, account_id=None, force_pi=None):
 	dictionary = {}
 
+	if not settings.BILLING_SERVICE or not settings.BILLING_SERVICE['available']:
+		return dictionary
+
 	cost_activity_url = settings.BILLING_SERVICE['cost_activity_url']
 	project_lead_url = settings.BILLING_SERVICE['project_lead_url']
 	keyword_arguments = settings.BILLING_SERVICE['keyword_arguments']

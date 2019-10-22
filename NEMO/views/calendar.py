@@ -1,8 +1,10 @@
 import io
+from collections import Iterable
 from datetime import timedelta, datetime
 from http import HTTPStatus
 from re import match
 
+from dateutil import rrule
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
@@ -14,12 +16,28 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory
-from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment
+from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage
 from NEMO.widgets.tool_tree import ToolTree
 
+
+recurrence_frequency_display = {
+	'DAILY': 'Day(s)',
+	'DAILY_WEEKDAYS':'Week Day(s)',
+	'DAILY WEEKENDS':'Weekend Day(s)',
+	'WEEKLY':'Week(s)',
+	'MONTHLY':'Month(s)',
+}
+
+recurrence_frequencies = {
+	'DAILY': rrule.DAILY,
+	'DAILY_WEEKDAYS': rrule.DAILY,
+	'DAILY WEEKENDS': rrule.DAILY,
+	'WEEKLY': rrule.WEEKLY,
+	'MONTHLY': rrule.MONTHLY,
+}
 
 @login_required
 @require_GET
@@ -286,7 +304,7 @@ def parse_configuration_entry(key, value):
 @staff_member_required(login_url=None)
 @require_POST
 def create_outage(request):
-	""" Create a reservation for a user. """
+	""" Create an outage. """
 	try:
 		start, end = extract_times(request.POST)
 	except Exception as e:
@@ -307,13 +325,46 @@ def create_outage(request):
 
 	# Make sure there is at least an outage title
 	if not request.POST.get('title'):
-		dictionary = {'categories': ScheduledOutageCategory.objects.all()}
+		dictionary = {
+			'categories': ScheduledOutageCategory.objects.all(),
+			'recurrence_intervals': recurrence_frequency_display,
+		}
 		return render(request, 'calendar/scheduled_outage_information.html', dictionary)
 
 	outage.title = request.POST['title']
 	outage.details = request.POST.get('details', '')
 
-	outage.save()
+	if request.POST.get('recurring_outage') == 'on':
+		# we have to remove tz before creating rules otherwise 8am would become 7am after DST change.
+		start_no_tz = outage.start.replace(tzinfo=None)
+		end_no_tz = outage.end.replace(tzinfo=None)
+
+		submitted_frequency = request.POST.get('recurrence_frequency')
+		submitted_date_until = request.POST.get('recurrence_until', None)
+		date_until = end.replace(hour=0, minute=0, second=0)
+		if submitted_date_until:
+			date_until = localize(datetime.strptime(submitted_date_until, '%m/%d/%Y'))
+		date_until += timedelta(days=1, seconds=-1)
+		by_week_day = None
+		if submitted_frequency == 'DAILY_WEEKDAYS':
+			by_week_day = (rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR)
+		elif submitted_frequency == 'DAILY_WEEKENDS':
+			by_week_day = (rrule.SA, rrule.SU)
+		frequency = recurrence_frequencies.get(submitted_frequency, rrule.DAILY)
+		rules: Iterable[datetime] = rrule.rrule(dtstart=start, freq=frequency, interval=int(request.POST.get('recurrence_interval',1)), until=date_until, byweekday=by_week_day)
+		for rule in list(rules):
+			recurring_outage = ScheduledOutage()
+			recurring_outage.creator = outage.creator
+			recurring_outage.category = outage.category
+			recurring_outage.tool = outage.tool
+			recurring_outage.title = outage.title
+			recurring_outage.details = outage.details
+			recurring_outage.start = localize(start_no_tz.replace(year=rule.year, month=rule.month, day=rule.day))
+			recurring_outage.end = localize(end_no_tz.replace(year=rule.year, month=rule.month, day=rule.day))
+			recurring_outage.save()
+	else:
+		outage.save()
+
 	return HttpResponse()
 
 
