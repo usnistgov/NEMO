@@ -1,5 +1,5 @@
 import calendar
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.test import TestCase
 from django.urls import reverse
@@ -41,8 +41,8 @@ class OutageRecurrenceTestCase(TestCase):
 
 	def test_no_tool_name_404(self):
 		start = datetime.now()
-		end = start.replace(hour=start.hour+1)
-		until = datetime.now().replace(day=datetime.now().day+5)
+		end = start + timedelta(hours=1)
+		until = datetime.now() + timedelta(days=5)
 
 		data = self.get_outage_data(start=start, end=end, outage=True, frequency='DAILY', interval= 1, until=until)
 
@@ -52,8 +52,8 @@ class OutageRecurrenceTestCase(TestCase):
 
 	def test_every_day_for_a_week(self):
 		start = datetime.now()
-		end = start.replace(hour=start.hour+1)
-		until = datetime.now().replace(day=datetime.now().day+6)
+		end = start + timedelta(hours=1)
+		until = datetime.now() + timedelta(days=6)
 
 		data = self.get_outage_data(title='every day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY', interval= 1, until=until)
 
@@ -66,8 +66,8 @@ class OutageRecurrenceTestCase(TestCase):
 
 	def test_every_week_for_a_year(self):
 		start = datetime.now().replace(microsecond=0)
-		end = start.replace(hour=start.hour+1)
-		until = datetime.now().replace(year=datetime.now().year+1)
+		end = start + timedelta(hours=1)
+		until = datetime.now() + timedelta(days=365)
 
 		data = self.get_outage_data(title='every day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='WEEKLY', interval= 1, until=until)
 
@@ -86,8 +86,8 @@ class OutageRecurrenceTestCase(TestCase):
 
 	def test_week_day(self):
 		start = datetime.now()
-		end = start.replace(hour=start.hour+1)
-		until = datetime.now().replace(month=datetime.now().month+2)
+		end = start + timedelta(hours=1)
+		until = datetime.now() + timedelta(weeks=9)
 
 		data = self.get_outage_data(title='every day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY_WEEKDAYS', interval= 1, until=until)
 
@@ -102,8 +102,8 @@ class OutageRecurrenceTestCase(TestCase):
 
 	def test_weekend(self):
 		start = datetime.now()
-		end = start.replace(hour=start.hour+1)
-		until = datetime.now().replace(month=datetime.now().month+2)
+		end = start + timedelta(hours=1)
+		until = datetime.now() + timedelta(weeks=9)
 
 		data = self.get_outage_data(title='every day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY_WEEKENDS', interval= 1, until=until)
 
