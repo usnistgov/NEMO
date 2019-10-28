@@ -348,6 +348,33 @@ def self_log_in(request):
 		return redirect(reverse('landing'))
 
 
+@login_required
+@require_GET
+def self_log_out(request, user_id):
+	user = get_object_or_404(User, id=user_id)
+	if able_to_self_log_out_of_area(user):
+		record = user.area_access_record()
+		if record is None:
+			return HttpResponseBadRequest('You are not logged into any areas.')
+		record.end = timezone.now()
+		record.save()
+	return redirect(reverse('landing'))
+
+
+def able_to_self_log_out_of_area(user):
+	# 'Self log out' must be enabled
+	if not get_customization('self_log_out') == 'enabled':
+		return False
+	# Check if the user is active
+	if not user.is_active:
+		return False
+	# Check if the user is already in an area.
+	if not user.in_area():
+		return False
+	# Otherwise we are good to log out
+	return True
+
+
 def able_to_self_log_in_to_area(user):
 	# 'Self log in' must be enabled
 	if not get_customization('self_log_in') == 'enabled':

@@ -157,6 +157,7 @@ urlpatterns = [
 	url(r'^change_project/(?P<new_project>\d+)/$', area_access.change_project, name='change_project'),
 	url(r'^force_area_logout/(?P<user_id>\d+)/$', area_access.force_area_logout, name='force_area_logout'),
 	url(r'^self_log_in/$', area_access.self_log_in, name='self_log_in'),
+	url(r'^self_log_out/(?P<user_id>\d+)$', area_access.self_log_out, name='self_log_out'),
 
 	# NanoFab usage:
 	url(r'^usage/$', usage.usage, name='usage'),

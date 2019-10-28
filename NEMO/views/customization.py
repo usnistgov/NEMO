@@ -31,6 +31,7 @@ customizable_key_values = [
 	'safety_email_address',
 	'abuse_email_address',
 	'self_log_in',
+	'self_log_out',
 ]
 
 customizable_content = [
@@ -98,6 +99,7 @@ def customize(request, element):
 		set_customization('user_office_email_address', request.POST.get('user_office_email_address', ''))
 	elif element == 'application_settings':
 		set_customization('self_log_in', request.POST.get('self_log_in', ''))
+		set_customization('self_log_out', request.POST.get('self_log_out', ''))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
 	return redirect('customization')
