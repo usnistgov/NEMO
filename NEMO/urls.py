@@ -188,6 +188,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 	urlpatterns += [
 		url(r'^admin/', include(admin.site.urls)),
 		url(r'^api/', include(router.urls)),
+		url(r'^api/billing/?$', api.billing),
 
 		# Tablet area access
 		url(r'^welcome_screen/(?P<door_id>\d+)/$', area_access.welcome_screen, name='welcome_screen'),
