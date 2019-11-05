@@ -328,6 +328,7 @@ def create_outage(request):
 		dictionary = {
 			'categories': ScheduledOutageCategory.objects.all(),
 			'recurrence_intervals': recurrence_frequency_display,
+			'recurrence_date_start': start.date(),
 		}
 		return render(request, 'calendar/scheduled_outage_information.html', dictionary)
 
