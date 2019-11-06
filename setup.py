@@ -31,7 +31,7 @@ setup(
 		'ldap3==2.5.1',
 		'python-dateutil==2.7.3',
 		'requests==2.21.0',
-		'Pillow==5.2.0',
+		'Pillow==6.2.0',
 	],
 	entry_points={
 		'console_scripts': ['nemo=NEMO.provisioning:entry_point'],
