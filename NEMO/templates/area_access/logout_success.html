@@ -1,4 +1,4 @@
 <script>$('body').removeClass().addClass('logout-success')</script>
-<h1>You're now logged out of the {{ area|lower }}, {{ name }}.</h1>
+<h1><p>{% now "h:i A" %}</p>You're now logged out of the {{ area|lower }}, {{ name }}.</h1>
 <audio src="{% url 'media' 'success.mp3' %}" autoplay></audio>
 <script>revert(7);</script>
