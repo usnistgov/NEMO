@@ -22,7 +22,7 @@ class OutageRecurrenceTestCase(TestCase):
 		self.client.force_login(user=tester)
 
 	@staticmethod
-	def get_outage_data(title=None, start:datetime=None, end:datetime=None, tool_name:str=None, outage:bool=False, frequency:str=None, interval:int=None, until:datetime=None):
+	def get_outage_data(title=None, start: datetime = None, end: datetime = None, tool_name: str = None, outage: bool = False, frequency: str = None, interval: int = None, until: datetime = None):
 		if not start:
 			start = datetime.now()
 		if not end:
@@ -44,7 +44,7 @@ class OutageRecurrenceTestCase(TestCase):
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(days=5)
 
-		data = self.get_outage_data(start=start, end=end, outage=True, frequency='DAILY', interval= 1, until=until)
+		data = self.get_outage_data(start=start, end=end, outage=True, frequency='DAILY', interval=1, until=until)
 
 		self.login_as_staff()
 		response = self.client.post(reverse('create_outage'), data, follow=True)
@@ -55,13 +55,13 @@ class OutageRecurrenceTestCase(TestCase):
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(days=6)
 
-		data = self.get_outage_data(title='every day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY', interval= 1, until=until)
+		data = self.get_outage_data(title='every day outage week', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY', interval=1, until=until)
 
 		self.login_as_staff()
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
 		self.assertEquals(response.status_code, 200)
-		outages = ScheduledOutage.objects.filter(tool=tool)
+		outages = ScheduledOutage.objects.filter(title='every day outage week', tool=tool)
 		self.assertEqual(len(outages), 7)
 
 	def test_every_week_for_a_year(self):
@@ -69,13 +69,13 @@ class OutageRecurrenceTestCase(TestCase):
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(days=365)
 
-		data = self.get_outage_data(title='every day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='WEEKLY', interval= 1, until=until)
+		data = self.get_outage_data(title='every day outage year', start=start, end=end, tool_name=tool.name, outage=True, frequency='WEEKLY', interval=1, until=until)
 
 		self.login_as_staff()
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
 		self.assertEquals(response.status_code, 200)
-		outages = ScheduledOutage.objects.filter(tool=tool)
+		outages = ScheduledOutage.objects.filter(title='every day outage year', tool=tool)
 		for outage in outages:
 			good_start = outage.start.astimezone(timezone.get_current_timezone())
 			good_end = outage.end.astimezone(timezone.get_current_timezone())
@@ -89,29 +89,29 @@ class OutageRecurrenceTestCase(TestCase):
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(weeks=9)
 
-		data = self.get_outage_data(title='every day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY_WEEKDAYS', interval= 1, until=until)
+		data = self.get_outage_data(title='every week day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY_WEEKDAYS', interval=1, until=until)
 
 		self.login_as_staff()
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
 		self.assertEquals(response.status_code, 200)
-		outages = ScheduledOutage.objects.filter(tool=tool)
+		outages = ScheduledOutage.objects.filter(title='every week day outage', tool=tool)
 		for outage in outages:
 			# 0 is Monday, 5 & 6 are Saturday and Sunday
-			self.assertTrue(outage.start.weekday() < 5)
+			self.assertLess(outage.start.astimezone(timezone.get_current_timezone()).weekday(), 5)
 
 	def test_weekend(self):
 		start = datetime.now()
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(weeks=9)
 
-		data = self.get_outage_data(title='every day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY_WEEKENDS', interval= 1, until=until)
+		data = self.get_outage_data(title='every weekend day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY_WEEKENDS', interval=1, until=until)
 
 		self.login_as_staff()
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
 		self.assertEquals(response.status_code, 200)
-		outages = ScheduledOutage.objects.filter(tool=tool)
+		outages = ScheduledOutage.objects.filter(title='every weekend day outage', tool=tool)
 		for outage in outages:
 			# 0 is Monday, 5 & 6 are Saturday and Sunday
-			self.assertTrue(outage.start.weekday() == 5 or outage.start.weekday() == 6)
+			self.assertGreaterEqual(outage.start.astimezone(timezone.get_current_timezone()).weekday(), 5)
