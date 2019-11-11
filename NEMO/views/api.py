@@ -50,7 +50,7 @@ class BillingFilterForm(forms.Form):
 		return self.cleaned_data['username']
 
 	def get_application_name(self):
-		return self.cleaned_data['username']
+		return self.cleaned_data['application_name']
 
 
 
