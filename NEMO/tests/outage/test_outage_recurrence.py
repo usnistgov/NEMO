@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from NEMO.models import ScheduledOutage, Tool, User
+from NEMO.tests.test_utilities import login_as_staff
 from NEMO.utilities import localize
 
 
@@ -16,10 +17,6 @@ class OutageRecurrenceTestCase(TestCase):
 		global tool
 		owner = User.objects.create(username='mctest', first_name='Testy', last_name='McTester')
 		tool = Tool.objects.create(name='test_tool', primary_owner=owner)
-
-	def login_as_staff(self):
-		tester = User.objects.create(username='test_staff', first_name='Test', last_name='Staff', is_staff=True)
-		self.client.force_login(user=tester)
 
 	@staticmethod
 	def get_outage_data(title=None, start: datetime = None, end: datetime = None, tool_name: str = None, outage: bool = False, frequency: str = None, interval: int = None, until: datetime = None):
@@ -46,7 +43,7 @@ class OutageRecurrenceTestCase(TestCase):
 
 		data = self.get_outage_data(start=start, end=end, outage=True, frequency='DAILY', interval=1, until=until)
 
-		self.login_as_staff()
+		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEquals(response.status_code, 404)
 
@@ -57,7 +54,7 @@ class OutageRecurrenceTestCase(TestCase):
 
 		data = self.get_outage_data(title='every day outage week', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY', interval=1, until=until)
 
-		self.login_as_staff()
+		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
 		self.assertEquals(response.status_code, 200)
@@ -71,7 +68,7 @@ class OutageRecurrenceTestCase(TestCase):
 
 		data = self.get_outage_data(title='every day outage year', start=start, end=end, tool_name=tool.name, outage=True, frequency='WEEKLY', interval=1, until=until)
 
-		self.login_as_staff()
+		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
 		self.assertEquals(response.status_code, 200)
@@ -91,7 +88,7 @@ class OutageRecurrenceTestCase(TestCase):
 
 		data = self.get_outage_data(title='every week day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY_WEEKDAYS', interval=1, until=until)
 
-		self.login_as_staff()
+		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
 		self.assertEquals(response.status_code, 200)
@@ -107,7 +104,7 @@ class OutageRecurrenceTestCase(TestCase):
 
 		data = self.get_outage_data(title='every weekend day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY_WEEKENDS', interval=1, until=until)
 
-		self.login_as_staff()
+		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
 		self.assertEquals(response.status_code, 200)
