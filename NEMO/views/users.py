@@ -41,7 +41,8 @@ def create_or_modify_user(request, user_id):
 
 	if dictionary['identity_service_available']:
 		try:
-			result = requests.get(urljoin(settings.IDENTITY_SERVICE['url'], '/areas/'), timeout=3)
+			timeout = getattr(settings.IDENTITY_SERVICE['timeout'], 'timeout', 3)
+			result = requests.get(urljoin(settings.IDENTITY_SERVICE['url'], '/areas/'), timeout=timeout)
 			if result.status_code == HTTPStatus.OK:
 				dictionary['externally_managed_physical_access_levels'] = result.json()
 			else:
