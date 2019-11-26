@@ -9,8 +9,8 @@ import django.db.models.deletion
 def add_and_set_default_interlock_category(apps, schema_editor):
     InterlockCardCategory = apps.get_model("NEMO", "InterlockCardCategory")
     InterlockCard = apps.get_model("NEMO", "InterlockCard")
-    stanford_category = InterlockCardCategory.objects.create(id=1, name="Stanford")
-    InterlockCardCategory.objects.create(id=2, name="WebRelayQuadHttp")
+    stanford_category = InterlockCardCategory.objects.create(id=1, name="Stanford", key="stanford")
+    InterlockCardCategory.objects.create(id=2, name="WebRelayHttp", key="web_relay_http")
     for interlock_card in InterlockCard.objects.all():
         interlock_card.category = stanford_category
         interlock_card.save()
@@ -26,7 +26,8 @@ class Migration(migrations.Migration):
             name='InterlockCardCategory',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200)),
+                ('name', models.CharField(max_length=200, help_text="The name for this interlock category")),
+                ('key', models.CharField(max_length=100, help_text="The key to identify this interlock category by in interlocks.py")),
             ],
             options={
                 'verbose_name_plural': 'Interlock card categories',
@@ -71,7 +72,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='interlock',
             name='channel',
-            field=models.PositiveIntegerField(blank=True, null=True),
+            field=models.PositiveIntegerField(blank=True, null=True, verbose_name='Channel/Relay'),
         ),
         migrations.AlterField(
             model_name='tool',
@@ -80,6 +81,25 @@ class Migration(migrations.Migration):
                                     help_text='The designated physical access level is granted to the user upon qualification for this tool.',
                                     null=True, on_delete=django.db.models.deletion.PROTECT,
                                     to='NEMO.PhysicalAccessLevel'),
+        ),
+        migrations.AlterField(
+            model_name='door',
+            name='interlock',
+            field=models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, to='NEMO.Interlock'),
+        ),
+        migrations.AlterField(
+            model_name='reservation',
+            name='descendant',
+            field=models.OneToOneField(blank=True,
+                                       help_text='Any time a reservation is moved or resized, the old reservation is cancelled and a new reservation with updated information takes its place. This field links the old reservation to the new one, so the history of reservation moves & changes can be easily tracked.',
+                                       null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='ancestor',
+                                       to='NEMO.Reservation'),
+        ),
+        migrations.AlterField(
+            model_name='user',
+            name='preferences',
+            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                       to='NEMO.UserPreferences'),
         ),
         migrations.RunPython(add_and_set_default_interlock_category),
     ]

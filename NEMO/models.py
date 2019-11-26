@@ -664,7 +664,7 @@ class InterlockCard(models.Model):
 		ordering = ['server', 'number']
 
 	def __str__(self):
-		return str(self.server) + ', card ' + str(self.number)
+		return str(self.server) + (', card ' + str(self.number) if self.number else '')
 
 
 class Interlock(models.Model):
@@ -680,7 +680,7 @@ class Interlock(models.Model):
 		)
 
 	card = models.ForeignKey(InterlockCard, on_delete=models.CASCADE)
-	channel = models.PositiveIntegerField(blank=True, null=True)
+	channel = models.PositiveIntegerField(blank=True, null=True, verbose_name="Channel/Relay")
 	state = models.IntegerField(choices=State.Choices, default=State.UNKNOWN)
 	most_recent_reply = models.TextField(default="None")
 
@@ -701,7 +701,8 @@ class Interlock(models.Model):
 
 
 class InterlockCardCategory(models.Model):
-	name = models.CharField(max_length=200)
+	name = models.CharField(max_length=200, help_text="The name for this interlock category")
+	key = models.CharField(max_length=100, help_text="The key to identify this interlock category by in interlocks.py")
 
 	class Meta:
 		verbose_name_plural = 'Interlock card categories'

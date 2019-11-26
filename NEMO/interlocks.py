@@ -31,7 +31,7 @@ class Interlock(ABC):
 
 	The method "clean_interlock_card" can be implemented to set validation rules for the interlock card with the same category
 
-	The interlock type should be set at the end of this file in the dictionary. The key is the InterlockCategory, the value is the Interlock implementation.
+	The interlock type should be set at the end of this file in the dictionary. The key is the key from InterlockCategory, the value is the Interlock implementation.
 	"""
 
 	def clean_interlock_card(self, interlock_card_form: InterlockCardForm):
@@ -151,9 +151,6 @@ class StanfordInterlock(Interlock):
 			b'EQCNTL_END_COMMAND'
 		)
 
-		# reply_message: str = ""
-		interlock_state: Interlock_model.State = interlock.State.UNKNOWN
-
 		# Create a TCP socket to send the interlock command.
 		sock = socket.socket()
 		try:
@@ -208,7 +205,7 @@ class StanfordInterlock(Interlock):
 			sock.close()
 
 
-class WebRelayQuadHttp(Interlock):
+class WebRelayHttpInterlock(Interlock):
 	WEB_RELAY_OFF = 0
 	WEB_RELAY_ON = 1
 
@@ -225,9 +222,9 @@ class WebRelayQuadHttp(Interlock):
 		state = Interlock_model.State.UNKNOWN
 		try:
 			if command_type == Interlock_model.State.LOCKED:
-				state = WebRelayQuadHttp.setRelayState(interlock, WebRelayQuadHttp.WEB_RELAY_OFF)
+				state = WebRelayHttpInterlock.setRelayState(interlock, WebRelayHttpInterlock.WEB_RELAY_OFF)
 			elif command_type == Interlock_model.State.UNLOCKED:
-				state = WebRelayQuadHttp.setRelayState(interlock, WebRelayQuadHttp.WEB_RELAY_ON)
+				state = WebRelayHttpInterlock.setRelayState(interlock, WebRelayHttpInterlock.WEB_RELAY_ON)
 		except Exception as error:
 			raise InterlockException("General exception: " + str(error))
 		return state
@@ -244,15 +241,15 @@ class WebRelayQuadHttp(Interlock):
 		response.raise_for_status()
 		responseXML = ElementTree.fromstring(response.content)
 		state = int(responseXML.find(f"relay{interlock.channel}state").text)
-		if state == WebRelayQuadHttp.WEB_RELAY_OFF:
+		if state == WebRelayHttpInterlock.WEB_RELAY_OFF:
 			return Interlock_model.State.LOCKED
-		elif state == WebRelayQuadHttp.WEB_RELAY_ON:
+		elif state == WebRelayHttpInterlock.WEB_RELAY_ON:
 			return Interlock_model.State.UNLOCKED
 
 
 def get(category: InterlockCardCategory, raise_exception=True):
 	"""	Returns the corresponding interlock implementation, and raises an exception if not found. """
-	interlock_impl = interlocks.get(category.name, False)
+	interlock_impl = interlocks.get(category.key, False)
 	if not interlock_impl:
 		if raise_exception:
 			raise Exception(f"There is no interlock implementation for category: {category.name}. Please add one in interlocks.py")
@@ -263,6 +260,6 @@ def get(category: InterlockCardCategory, raise_exception=True):
 
 
 interlocks: Dict[str, Interlock] = {
-	'Stanford': StanfordInterlock(),
-	'WebRelayQuadHttp': WebRelayQuadHttp(),
+	'stanford': StanfordInterlock(),
+	'web_relay_http': WebRelayHttpInterlock(),
 }
