@@ -108,7 +108,7 @@ class User(models.Model):
 	projects = models.ManyToManyField('Project', blank=True, help_text='Select the projects that this user is currently working on.')
 
 	# Preferences
-	preferences: UserPreferences = models.OneToOneField(UserPreferences, null=True)
+	preferences: UserPreferences = models.OneToOneField(UserPreferences, null=True, on_delete=models.SET_NULL)
 
 	USERNAME_FIELD = 'username'
 	REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
@@ -562,7 +562,7 @@ class Reservation(CalendarDisplay):
 	cancelled_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
 	missed = models.BooleanField(default=False, help_text="Indicates that the tool was not enabled by anyone before the tool's \"missed reservation threshold\" passed.")
 	shortened = models.BooleanField(default=False, help_text="Indicates that the user finished using the tool and relinquished the remaining time on their reservation. The reservation will no longer be visible on the calendar and a descendant reservation will be created in place of the existing one.")
-	descendant = models.OneToOneField('Reservation', related_name='ancestor', null=True, blank=True, help_text="Any time a reservation is moved or resized, the old reservation is cancelled and a new reservation with updated information takes its place. This field links the old reservation to the new one, so the history of reservation moves & changes can be easily tracked.")
+	descendant = models.OneToOneField('Reservation', related_name='ancestor', null=True, blank=True, on_delete=models.SET_NULL, help_text="Any time a reservation is moved or resized, the old reservation is cancelled and a new reservation with updated information takes its place. This field links the old reservation to the new one, so the history of reservation moves & changes can be easily tracked.")
 	additional_information = models.TextField(null=True, blank=True)
 	self_configuration = models.BooleanField(default=False, help_text="When checked, indicates that the user will perform their own tool configuration (instead of requesting that the NanoFab staff configure it for them).")
 	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
@@ -972,7 +972,7 @@ def calculate_duration(start, end, unfinished_reason):
 class Door(models.Model):
 	name = models.CharField(max_length=100)
 	area = models.ForeignKey(Area, related_name='doors', on_delete=models.PROTECT)
-	interlock = models.OneToOneField(Interlock)
+	interlock = models.OneToOneField(Interlock, on_delete=models.PROTECT)
 
 	def __str__(self):
 		return str(self.name)

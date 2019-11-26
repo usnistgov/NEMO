@@ -1,6 +1,6 @@
 from _ssl import PROTOCOL_TLSv1_2, CERT_REQUIRED
 from base64 import b64decode
-from logging import exception
+from logging import exception, getLogger
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout
@@ -10,13 +10,14 @@ from django.shortcuts import render
 from django.urls import reverse, resolve
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
-from django.views.decorators.http import require_http_methods, require_GET, logger
+from django.views.decorators.http import require_http_methods, require_GET
 from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE
 from ldap3.core.exceptions import LDAPBindError, LDAPExceptionError
 
 from NEMO.models import User
 from NEMO.views.customization import get_media_file_contents
 
+auth_logger = getLogger(__name__)
 
 class RemoteUserAuthenticationBackend(RemoteUserBackend):
 	""" The web server performs Kerberos authentication and passes the user name in via the REMOTE_USER environment variable. """
@@ -42,16 +43,16 @@ class NginxKerberosAuthorizationHeaderAuthenticationBackend(ModelBackend):
 		try:
 			user = User.objects.get(username=username)
 		except User.DoesNotExist:
-			logger.warning(f"Username {username} attempted to authenticate with Kerberos via Nginx, but that username does not exist in the NEMO database. The user was denied access.")
+			auth_logger.warning(f"Username {username} attempted to authenticate with Kerberos via Nginx, but that username does not exist in the NEMO database. The user was denied access.")
 			return None
 
 		# The user must be marked active.
 		if not user.is_active:
-			logger.warning(f"User {username} successfully authenticated with Kerberos via Nginx, but that user is marked inactive in the NEMO database. The user was denied access.")
+			auth_logger.warning(f"User {username} successfully authenticated with Kerberos via Nginx, but that user is marked inactive in the NEMO database. The user was denied access.")
 			return None
 
 		# All security checks passed so let the user in.
-		logger.debug(f"User {username} successfully authenticated with Kerberos via Nginx and was granted access to NEMO.")
+		auth_logger.debug(f"User {username} successfully authenticated with Kerberos via Nginx and was granted access to NEMO.")
 		return user
 
 	def clean_username(self, username):
@@ -81,12 +82,12 @@ class LDAPAuthenticationBackend(ModelBackend):
 		try:
 			user = User.objects.get(username=username)
 		except User.DoesNotExist:
-			logger.warning(f"Username {username} attempted to authenticate with LDAP, but that username does not exist in the NEMO database. The user was denied access.")
+			auth_logger.warning(f"Username {username} attempted to authenticate with LDAP, but that username does not exist in the NEMO database. The user was denied access.")
 			return None
 
 		# The user must be marked active.
 		if not user.is_active:
-			logger.warning(f"User {username} successfully authenticated with LDAP, but that user is marked inactive in the NEMO database. The user was denied access.")
+			auth_logger.warning(f"User {username} successfully authenticated with LDAP, but that user is marked inactive in the NEMO database. The user was denied access.")
 			return None
 
 		for server in settings.LDAP_SERVERS:
@@ -98,7 +99,7 @@ class LDAPAuthenticationBackend(ModelBackend):
 				# At this point the user successfully authenticated to at least one LDAP server.
 				return user
 			except LDAPBindError as e:
-				logger.warning(f"User {username} attempted to authenticate with LDAP, but entered an incorrect password. The user was denied access.")
+				auth_logger.warning(f"User {username} attempted to authenticate with LDAP, but entered an incorrect password. The user was denied access.")
 				pass  # When this error is caught it means the username and password were invalid against the LDAP server.
 			except LDAPExceptionError as e:
 				exception(e)

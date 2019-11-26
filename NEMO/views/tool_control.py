@@ -2,6 +2,7 @@ from copy import deepcopy
 from datetime import timedelta
 from http import HTTPStatus
 from itertools import chain
+from logging import getLogger
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
@@ -9,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseServerError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import logger, require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import rates
 from NEMO.forms import CommentForm, nice_errors
@@ -19,6 +20,7 @@ from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enab
 from NEMO.widgets.dynamic_form import DynamicForm
 from NEMO.widgets.tool_tree import ToolTree
 
+tool_control_logger = getLogger(__name__)
 
 @login_required
 @require_GET
@@ -218,7 +220,7 @@ def disable_tool(request, tool_id):
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
 		error_message = f"The interlock command for the {tool} failed. The error message returned: {tool.interlock.most_recent_reply}"
-		logger.error(error_message)
+		tool_control_logger.error(error_message)
 		return HttpResponseServerError(error_message)
 
 	# End the current usage event for the tool
