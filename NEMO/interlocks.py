@@ -113,11 +113,11 @@ class StanfordInterlock(Interlock):
 		odd_port = interlock_card_form.cleaned_data['odd_port']
 		number = interlock_card_form.cleaned_data['number']
 		error = {}
-		if not even_port:
+		if not even_port and even_port != 0:
 			error['event_port'] = _('This field is required.')
-		if not odd_port:
+		if not odd_port and odd_port != 0:
 			error['odd_port'] = _('This field is required.')
-		if not number:
+		if not number and number != 0:
 			error['number'] = _('This field is required.')
 		if error:
 			raise ValidationError(error)
