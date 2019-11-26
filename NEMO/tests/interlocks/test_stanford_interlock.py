@@ -76,7 +76,7 @@ class StanfordInterlockTestCase(TestCase):
 		settings.__setattr__('INTERLOCKS_ENABLED', True)
 		even_port = 124
 		odd_port = 125
-		interlock_card_category = InterlockCardCategory.objects.get(name='Stanford')
+		interlock_card_category = InterlockCardCategory.objects.get(key='stanford')
 		interlock_card = InterlockCard.objects.create(server=server1, port=port1, number=1, even_port=even_port, odd_port=odd_port, category=interlock_card_category)
 		interlock_card2 = InterlockCard.objects.create(server=server2, port=port2, number=1, even_port=even_port, odd_port=odd_port, category=interlock_card_category)
 		interlock = Interlock.objects.create(card=interlock_card, channel=1)

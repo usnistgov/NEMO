@@ -64,7 +64,7 @@ class WebRelayInterlockTestCase(TestCase):
 		global tool, wrong_response_interlock, bad_interlock, disabled_interlock
 		# enable interlock functionality
 		settings.__setattr__('INTERLOCKS_ENABLED', True)
-		interlock_card_category = InterlockCardCategory.objects.get(name='WebRelayQuadHttp')
+		interlock_card_category = InterlockCardCategory.objects.get(key='web_relay_http')
 		interlock_card = InterlockCard.objects.create(server=server1, port=port1, category=interlock_card_category)
 		interlock_card2 = InterlockCard.objects.create(server=server2, port=port2, category=interlock_card_category)
 		interlock_card3 = InterlockCard.objects.create(server=server2, port=port2, category=interlock_card_category, enabled=False)
