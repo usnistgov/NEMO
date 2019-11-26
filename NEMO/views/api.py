@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Dict
 
 from django import forms
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -51,7 +52,6 @@ class BillingFilterForm(forms.Form):
 
 	def get_application_name(self):
 		return self.cleaned_data['application_name']
-
 
 
 class UserViewSet(ReadOnlyModelViewSet):
@@ -156,8 +156,8 @@ def get_usage_events_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 			'application': usage_event.project.application_identifier,
 			'username': usage_event.user.username,
 			'user_id': usage_event.user_id,
-			'start': usage_event.start.strftime(date_time_format),
-			'end': usage_event.end.strftime(date_time_format),
+			'start': usage_event.start.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
+			'end': usage_event.end.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
 			'quantity': str(round(diff.days*1440 + diff.seconds/60, 2))
 		})
 	return result
@@ -191,8 +191,8 @@ def get_area_access_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 			'application': area_access_record.project.application_identifier,
 			'username': area_access_record.customer.username,
 			'user_id': area_access_record.customer_id,
-			'start': area_access_record.start.strftime(date_time_format),
-			'end': area_access_record.end.strftime(date_time_format),
+			'start': area_access_record.start.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
+			'end': area_access_record.end.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
 			'quantity': str(round(diff.days*1440 + diff.seconds/60, 2))
 		})
 	return result
@@ -226,8 +226,8 @@ def get_missed_reservations_for_billing(billing_form: BillingFilterForm) -> List
 			'application': missed_reservation.project.application_identifier,
 			'username': missed_reservation.user.username,
 			'user_id': missed_reservation.user_id,
-			'start': missed_reservation.start.strftime(date_time_format),
-			'end': missed_reservation.end.strftime(date_time_format),
+			'start': missed_reservation.start.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
+			'end': missed_reservation.end.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
 			'quantity': 1
 		})
 	return result
@@ -261,8 +261,8 @@ def get_consumables_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 			'application': consumable_withdrawal.project.application_identifier,
 			'username': consumable_withdrawal.customer.username,
 			'user_id': consumable_withdrawal.customer_id,
-			'start': consumable_withdrawal.date.strftime(date_time_format),
-			'end': consumable_withdrawal.date.strftime(date_time_format),
+			'start': consumable_withdrawal.date.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
+			'end': consumable_withdrawal.date.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
 			'quantity': consumable_withdrawal.quantity
 		})
 	return result
