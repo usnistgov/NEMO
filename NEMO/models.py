@@ -1,11 +1,7 @@
 import datetime
 import os
-import socket
-import struct
 from datetime import timedelta
-from logging import getLogger
 
-from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -17,7 +13,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 
-from NEMO.utilities import format_datetime, send_mail, get_task_image_filename
+from NEMO.utilities import send_mail, get_task_image_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -656,9 +652,13 @@ class ConsumableWithdraw(models.Model):
 class InterlockCard(models.Model):
 	server = models.CharField(max_length=100)
 	port = models.PositiveIntegerField()
-	number = models.PositiveIntegerField()
-	even_port = models.PositiveIntegerField()
-	odd_port = models.PositiveIntegerField()
+	number = models.PositiveIntegerField(blank=True, null=True)
+	even_port = models.PositiveIntegerField(blank=True, null=True)
+	odd_port = models.PositiveIntegerField(blank=True, null=True)
+	category = models.ForeignKey('InterlockCardCategory', blank=False, null=False, on_delete=models.CASCADE, default=1)
+	username = models.CharField(max_length=100, blank=True, null=True)
+	password = models.CharField(max_length=100, blank=True, null=True)
+	enabled = models.BooleanField(blank=False, null=False, default=True)
 
 	class Meta:
 		ordering = ['server', 'number']
@@ -680,126 +680,17 @@ class Interlock(models.Model):
 		)
 
 	card = models.ForeignKey(InterlockCard, on_delete=models.CASCADE)
-	channel = models.PositiveIntegerField()
+	channel = models.PositiveIntegerField(blank=True, null=True)
 	state = models.IntegerField(choices=State.Choices, default=State.UNKNOWN)
 	most_recent_reply = models.TextField(default="None")
 
 	def unlock(self):
-		return self.__issue_command(self.State.UNLOCKED)
+		from NEMO import interlocks
+		return interlocks.get(self.card.category).unlock(self)
 
 	def lock(self):
-		return self.__issue_command(self.State.LOCKED)
-
-	def __issue_command(self, command_type):
-		if settings.DEBUG:
-			self.most_recent_reply = "Interlock interface mocked out because settings.DEBUG = True. Interlock last set on " + format_datetime(timezone.now()) + "."
-			self.state = command_type
-			self.save()
-			return True
-
-		interlocks_logger = getLogger("NEMO.interlocks")
-
-		# The string in this next function call identifies the format of the interlock message.
-		# '!' means use network byte order (big endian) for the contents of the message.
-		# '20s' means that the message begins with a 20 character string.
-		# Each 'i' is an integer field (4 bytes).
-		# Each 'b' is a byte field (1 byte).
-		# '18s' means that the message ends with a 18 character string.
-		# More information on Python structs can be found at:
-		# http://docs.python.org/library/struct.html
-		command_schema = struct.Struct('!20siiiiiiiiibbbbb18s')
-		command_message = command_schema.pack(
-			b'EQCNTL_BEGIN_COMMAND',
-			1,  # Instruction count
-			self.card.number,
-			self.card.even_port,
-			self.card.odd_port,
-			self.channel,
-			0,  # Command return value
-			command_type,  # Type
-			0,  # Command
-			0,  # Delay
-			0,  # SD overload
-			0,  # RD overload
-			0,  # ADC done
-			0,  # Busy
-			0,  # Instruction return value
-			b'EQCNTL_END_COMMAND'
-		)
-
-		reply_message = ""
-
-		# Create a TCP socket to send the interlock command.
-		sock = socket.socket()
-		try:
-			sock.settimeout(3.0)  # Set the send/receive timeout to be 3 seconds.
-			server_address = (self.card.server, self.card.port)
-			sock.connect(server_address)
-			sock.send(command_message)
-			# The reply schema is the same as the command schema except there are no start and end strings.
-			reply_schema = struct.Struct('!iiiiiiiiibbbbb')
-			reply = sock.recv(reply_schema.size)
-			reply = reply_schema.unpack(reply)
-
-			# Update the state of the interlock in the database if the command succeeded.
-			if reply[5]:
-				self.state = command_type
-			else:
-				self.state = self.State.UNKNOWN
-
-			# Compose the status message of the last command and write it to the database.
-			reply_message = f"Reply received at {format_datetime(timezone.now())}. "
-			if command_type == self.State.UNLOCKED:
-				reply_message += "Unlock"
-			elif command_type == self.State.LOCKED:
-				reply_message += "Lock"
-			else:
-				reply_message += "Unknown"
-			reply_message += " command "
-			if reply[5]:  # Index 5 of the reply is the return value of the whole command.
-				reply_message += "succeeded."
-			else:
-				reply_message += "failed. Response information: " +\
-								"Instruction count = " + str(reply[0]) + ", " +\
-								"card number = " + str(reply[1]) + ", " +\
-								"even port = " + str(reply[2]) + ", " +\
-								"odd port = " + str(reply[3]) + ", " +\
-								"channel = " + str(reply[4]) + ", " +\
-								"command return value = " + str(reply[5]) + ", " +\
-								"instruction type = " + str(reply[6]) + ", " +\
-								"instruction = " + str(reply[7]) + ", " +\
-								"delay = " + str(reply[8]) + ", " +\
-								"SD overload = " + str(reply[9]) + ", " +\
-								"RD overload = " + str(reply[10]) + ", " +\
-								"ADC done = " + str(reply[11]) + ", " +\
-								"busy = " + str(reply[12]) + ", " +\
-								"instruction return value = " + str(reply[13]) + "."
-
-		# Log any errors that occurred during the operation into the database.
-		except OSError as error:
-			reply_message = "Socket error"
-			if error.errno:
-				reply_message += " " + str(error.errno)
-			reply_message += ": " + str(error)
-			self.state = self.State.UNKNOWN
-		except struct.error as error:
-			reply_message = "Response format error. " + str(error)
-			self.state = self.State.UNKNOWN
-		except Exception as error:
-			reply_message = "General exception. " + str(error)
-			self.state = self.State.UNKNOWN
-		finally:
-			sock.close()
-			self.most_recent_reply = reply_message
-			self.save()
-			if self.state == self.State.UNKNOWN:
-				interlocks_logger.error(f"Interlock {self.id} is in an unknown state. Most recent reply at {format_datetime(timezone.now())}: {self.most_recent_reply}")
-			elif self.state == self.State.LOCKED:
-				interlocks_logger.debug(f"Interlock {self.id} locked successfully at {format_datetime(timezone.now())}")
-			elif self.state == self.State.UNLOCKED:
-				interlocks_logger.debug(f"Interlock {self.id} unlocked successfully at {format_datetime(timezone.now())}")
-			# If the command type equals the current state then the command worked which will return true:
-			return self.state == command_type
+		from NEMO import interlocks
+		return interlocks.get(self.card.category).lock(self)
 
 	class Meta:
 		unique_together = ('card', 'channel')
@@ -807,6 +698,17 @@ class Interlock(models.Model):
 
 	def __str__(self):
 		return str(self.card) + ", channel " + str(self.channel)
+
+
+class InterlockCardCategory(models.Model):
+	name = models.CharField(max_length=200)
+
+	class Meta:
+		verbose_name_plural = 'Interlock card categories'
+		ordering = ['name']
+
+	def __str__(self):
+		return str(self.name)
 
 
 class Task(models.Model):
