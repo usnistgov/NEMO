@@ -415,7 +415,7 @@ class Configuration(models.Model):
 		return range(0, len(self.current_settings.split(',')))
 
 	def user_is_maintainer(self, user):
-		if user in self.maintainers.all():
+		if user in self.maintainers.all() or user.is_staff:
 			return True
 		if self.qualified_users_are_maintainers and (user in self.tool.user_set.all() or user.is_staff):
 			return True
