@@ -49,13 +49,35 @@
 	</form>
 	<div style="height:350px"></div>
 	<script>
-		$('#date').pickadate({format: "dddd, mmmm d", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onStart: set_initial_date});
-		$('#start').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true});
-		$('#end').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true});
-		function set_initial_date()
-		{
-			if('{{ date }}')
-				this.set('select', '{{ date }}', {format: 'yyyy-mm-dd'})
-		}
+		var unavailable_times = [];
+		{% for item in tool_reservation_times %}
+		unavailable_times.push([{{ item.start|date:"U" }},{{ item.end|date:"U" }}]);
+		{% endfor %}
+		var date_picker = $('#date').pickadate({format: "dddd, mmmm d", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
+		var start_time_picker = $('#start').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
+		var end_time_picker = $('#end').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
+		// set initial date
+		if ('{{ date }}') {
+            date_picker.pickadate('picker').set('select', '{{ date }}', {format: 'yyyy-mm-dd'})
+        }
+		function refresh_times() {
+            start_time_picker.pickatime('picker').render();
+            end_time_picker.pickatime('picker').render();
+        }
+        function format_label(time) {
+		    if (date_picker.pickadate('picker').get('select') && unavailable_times.length > 0) {
+				var date_selected = date_picker.pickadate('picker').get('select').pick; // selected date in milliseconds
+				var time_selected = time.pick * 60 * 1000; // time in milliseconds
+				var date_time_selected = (date_selected + time_selected)/1000; // back to seconds to compare with python timestamp
+				for (var i=0 ; i < unavailable_times.length; i++)
+					var times = unavailable_times[0];
+				    var start = times[0];
+				    var end = times[1];
+				    if (date_time_selected >= start && date_time_selected < end) {
+                        return '<sp!an>h:i A</sp!an> <sm!all> !alre!ad!y re!serve!d</sm!all>';
+                    }
+			}
+		    return "h:i A";
+        }
 	</script>
 {% endblock %}

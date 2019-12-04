@@ -307,3 +307,14 @@ body.logout-warning {
 body.logout-success {
 	background-color: green;
 }
+
+/* Customization of time picker CSS */
+.picker__list small {
+    color: #999;
+    float: right;
+    line-height: 1.5;
+}
+
+.picker__list span {
+	color: #999;
+}
