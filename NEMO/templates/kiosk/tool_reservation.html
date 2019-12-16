@@ -1,0 +1,82 @@
+{% load static %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "pickadate/picker.js" %}"></script>
+	<script type="text/javascript" src="{% static "pickadate/picker.date.js" %}"></script>
+	<script type="text/javascript" src="{% static "pickadate/picker.time.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.date.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.time.css" %}"/>
+{% endblock %}
+<div class="row" style="margin-top:30px">
+	<div class="col-xs-offset-3 col-xs-6" onclick="tool_information('{% url 'kiosk_tool_information' tool.id customer.id back %}')">
+		<div class="alert alert-warning" style="text-align:center; margin-bottom:0; font-size:x-large">
+			Go back
+		</div>
+	</div>
+</div>
+<h2>Create a new reservation</h2>
+<form id="tool_reservation" method="post">
+	{% csrf_token %}
+	<input type="hidden" name="back" value="{{ back }}">
+	<input type="hidden" name="tool_id" value="{{ tool.id }}">
+	<input type="hidden" name="project_id" value="{{ project.id }}">
+	<input type="hidden" name="customer_id" value="{{ customer.id }}">
+	{% if configurations %}
+		<h4>Choose tool configuration settings</h4>
+		{% if notice_limit > 0 %}
+			<div class="alert alert-info">
+				<strong>Please note:</strong> {{ notice_limit }} hours of advance notice is required when reserving this tool in order to configure it properly. A tool is not guaranteed to be configured properly if a reservation is created or modified on short notice.
+			</div>
+		{% endif %}
+		{% include 'calendar/configuration_helper.html' %}
+	{% endif %}
+	<h4>When would you like to reserve the {{ tool }}?</h4>
+	<div class="form-group">
+		<input type="text" id="date" name="date" class="form-control" placeholder="Choose a date">
+	</div>
+	<div class="form-group">
+		<input type="text" id="start" name="start" class="form-control" placeholder="Choose a start time">
+	</div>
+	<div class="form-group">
+		<input type="text" id="end" name="end" class="form-control" placeholder="Choose an end time">
+	</div>
+	<div class="form-group text-center" style="margin-top:40px">
+		<div class="btn btn-success" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="reserve_tool()">
+			<span class="glyphicon glyphicon-play"></span> Create the reservation
+		</div>
+	</div>
+</form>
+<div style="height:350px"></div>
+<script>
+	var unavailable_times = [];
+	{% for item in tool_reservation_times %}
+	unavailable_times.push([{{ item.start|date:"U" }},{{ item.end|date:"U" }}]);
+	{% endfor %}
+	var date_picker = $('#date').pickadate({format: "dddd, mmmm d", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
+	var start_time_picker = $('#start').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
+	var end_time_picker = $('#end').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
+	// set initial date
+	if ('{{ date }}') {
+		date_picker.pickadate('picker').set('select', '{{ date }}', {format: 'yyyy-mm-dd'})
+	}
+	function refresh_times() {
+		start_time_picker.pickatime('picker').render();
+		end_time_picker.pickatime('picker').render();
+	}
+	function format_label(time) {
+		if (date_picker.pickadate('picker').get('select') && unavailable_times.length > 0) {
+			var date_selected = date_picker.pickadate('picker').get('select').pick; // selected date in milliseconds
+			var time_selected = time.pick * 60 * 1000; // time in milliseconds
+			var date_time_selected = (date_selected + time_selected)/1000; // back to seconds to compare with python timestamp
+			for (var i=0 ; i < unavailable_times.length; i++)
+				var times = unavailable_times[0];
+				var start = times[0];
+				var end = times[1];
+				if (date_time_selected >= start && date_time_selected < end) {
+					return '<sp!an>h:i A</sp!an> <sm!all> !alre!ad!y re!serve!d</sm!all>';
+				}
+		}
+		return "h:i A";
+	}
+	revert(120)
+</script>

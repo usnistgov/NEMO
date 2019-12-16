@@ -1,17 +1,20 @@
 from copy import deepcopy
-from datetime import timedelta
+from datetime import timedelta, datetime
 from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import Project, Reservation, Tool, UsageEvent, User
-from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
+from NEMO.views.calendar import determine_insufficient_notice, extract_configuration
+from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool, \
+	check_policy_to_save_reservation
 from NEMO.views.status_dashboard import create_tool_summary
-from NEMO.utilities import quiet_int
+from NEMO.utilities import quiet_int, localize
 from NEMO.widgets.dynamic_form import DynamicForm
 
 
@@ -96,6 +99,78 @@ def disable_tool(request):
 		'badge_number': customer.badge_number,
 	}
 	return render(request, 'kiosk/acknowledgement.html', dictionary)
+
+
+@login_required
+@permission_required('NEMO.kiosk')
+@require_POST
+def reserve_tool(request):
+	tool = Tool.objects.get(id=request.POST['tool_id'])
+	customer = User.objects.get(id=request.POST['customer_id'])
+	project = Project.objects.get(id=request.POST['project_id'])
+	back = request.POST['back']
+
+	error_dictionary = {
+		'back': back,
+		'tool': tool,
+		'project': project,
+		'customer': customer,
+	}
+
+	""" Create a reservation for a user. """
+	try:
+		date = parse_date(request.POST['date'])
+		start = localize(datetime.combine(date, parse_time(request.POST['start'])))
+		end = localize(datetime.combine(date, parse_time(request.POST['end'])))
+	except:
+		error_dictionary['message'] = 'Please enter a valid date, start time, and end time for the reservation.'
+		return render(request, 'kiosk/error.html', error_dictionary)
+	# Create the new reservation:
+	reservation = Reservation()
+	reservation.project = project
+	reservation.user = customer
+	reservation.creator = customer
+	reservation.tool = tool
+	reservation.start = start
+	reservation.end = end
+	reservation.short_notice = determine_insufficient_notice(tool, start)
+	policy_problems, overridable = check_policy_to_save_reservation(None, reservation, customer, False)
+
+	# If there was a problem in saving the reservation then return the error...
+	if policy_problems:
+		error_dictionary['message'] = policy_problems[0]
+		return render(request, 'kiosk/error.html', error_dictionary)
+
+	# All policy checks have passed.
+	if project is None and not customer.is_staff:
+		error_dictionary['message'] = 'You must specify a project for your reservation'
+		return render(request, 'kiosk/error.html', error_dictionary)
+
+	reservation.additional_information, reservation.self_configuration = extract_configuration(request)
+	# Reservation can't be short notice if the user is configuring the tool themselves.
+	if reservation.self_configuration:
+		reservation.short_notice = False
+	reservation.save_and_notify()
+	return render(request, 'kiosk/reservation_success.html', {'new_reservation': reservation})
+
+
+@login_required
+@permission_required('NEMO.kiosk')
+@require_POST
+def tool_reservation(request, tool_id, user_id, back):
+	tool = Tool.objects.get(id=tool_id)
+	customer = User.objects.get(id=user_id)
+	project = Project.objects.get(id=request.POST['project_id'])
+
+	dictionary = tool.get_configuration_information(user=customer, start=None)
+	dictionary['tool'] = tool
+	dictionary['date'] = None
+	dictionary['project'] = project
+	dictionary['customer'] = customer
+	dictionary['back'] = back
+	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(tool=tool, start__gte=datetime.now()))
+
+	return render(request, 'kiosk/tool_reservation.html', dictionary)
 
 
 @login_required

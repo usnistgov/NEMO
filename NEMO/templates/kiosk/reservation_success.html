@@ -1,0 +1,23 @@
+<div class="row" style="margin:30px 0">
+	<div class="col-xs-offset-1 col-xs-5" onclick="load_choices({{ new_reservation.user.badge_number }})">
+		<div class="alert alert-info" style="text-align:center; margin-bottom:0">
+			<span style="font-size:x-large">Keep using this kiosk</span>
+		</div>
+	</div>
+	<div class="col-xs-5" onclick="revert()">
+		<div class="alert alert-warning" style="text-align:center; margin-bottom:0">
+			<span style="font-size:x-large">I've finished using this kiosk</span>
+		</div>
+	</div>
+</div>
+
+<h2>Reservation confirmed!</h2>
+<div class="alert alert-success" role="alert">
+	<strong>{{ new_reservation.tool }}</strong><br>
+	{{ new_reservation.start|date:"l, F jS" }}<br>
+	Starting {{ new_reservation.start|time }}<br>
+	Ending {{ new_reservation.end|time }}<br>
+</div>
+<script>
+	revert(20);
+</script>

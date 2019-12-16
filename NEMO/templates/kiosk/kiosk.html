@@ -36,11 +36,13 @@
 	<div id="status" style="display: none"></div>
 	<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
 </div>
+<div id="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
 <script type="text/javascript">
 	$(window).keypress(on_keypress).keydown(on_keydown);
 	let record_badge_number = false;
 	let badge_number = "";
 	let timeout_handle = null;
+	let countdown_handle = null;
 	let occupancy = new URLSearchParams(window.location.search).get('occupancy');
 
 	if(occupancy)
@@ -87,8 +89,13 @@
 	function revert(delay)
 	{
 		clear_timeout();
+		var countdown = delay;
 		delay = delay * 1000;
 		timeout_handle = setTimeout(revert_to_default_content, delay);
+		countdown_handle = setInterval(function(){
+            $('#countdown').html(countdown);
+            countdown --;
+		}, 1000);
 	}
 	function revert_to_default_content()
 	{
@@ -104,13 +111,17 @@
 		if(timeout_handle != null)
 			clearTimeout(timeout_handle);
 		timeout_handle = null;
+		if (countdown_handle != null)
+		    clearInterval(countdown_handle);
+		countdown_handle = null;
+		$("#countdown").html("");
 	}
 	function select_project(element, project_id)
 	{
 		$(".project-choice").removeClass('active');
 		$(element).addClass('active');
 		$("#project_id").val(project_id);
-		$("#start").show();
+		$("#start_reserve").show();
 	}
 	function load_choices(badge_number)
 	{
@@ -133,6 +144,20 @@
 		$("#default_content").hide();
 		$("#error").hide();
 		$("#status").html("<h1>Loading category...</h1>").show().load(url, undefined, load_complete);
+	}
+	function tool_reservation(url)
+	{
+	    $("#default_content").hide();
+		$("#error").hide();
+		let data = serialize('#tool_control');
+		$("#status").html("<h1>Loading tool reservation...</h1>").show().load(url, data, load_complete);
+	}
+	function reserve_tool()
+	{
+	    $("#default_content").hide();
+		$("#error").hide();
+	    let data = serialize('#tool_reservation');
+	    $("#status").html("<h1>Reserving tool...</h1>").show().load('{% url 'reserve_tool_from_kiosk' %}', data, load_complete);
 	}
 	function enable_tool()
 	{

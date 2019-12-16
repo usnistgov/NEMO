@@ -132,6 +132,7 @@
 	<input type="hidden" name="tool_id" value="{{ tool.id }}">
 	<input type="hidden" name="customer_id" value="{{ customer.id }}">
 	{% if tool.in_use %}
+		<input type="hidden" name="project_id" value="{{ tool.get_current_usage_event.project.id }}">
 		{% if tool.get_current_usage_event.operator.id == customer.id or tool.get_current_usage_event.user.id == customer.id %}
 			{% if post_usage_questions %}
 				<h2>Post usage questions</h2>
@@ -153,6 +154,11 @@
 					{% endif %}
 				</div>
 			</div>
+			<div class="col-xs-offset-3 col-xs-6" style="margin-top:30px">
+				<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
+					<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }} for <b>{{ tool.get_current_usage_event.project.name }}</b>
+				</div>
+			</div>
 		{% endif %}
 	{% else %}
 		{% if customer.is_staff or tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and tool in customer.qualifications.all %}
@@ -163,7 +169,7 @@
 					<h2>Tool usage will be billed to the project named &quot;{{ active_projects.0 }}&quot;.</h2>
 					<input type="hidden" name="project_id" value="{{ active_projects.0.id }}">
 					<script>
-						$("#start").show();
+						$("#start_reserve").show();
 					</script>
 				{% else %}
 					<h2>Charge tool usage to which project?</h2>
@@ -175,9 +181,16 @@
 					<input type="hidden" name="project_id" id="project_id">
 				{% endif %}
 			{% endwith %}
-			<div id="start" class="col-xs-offset-3 col-xs-6" style="display:none; margin-top:20px">
-				<div class="alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="enable_tool()">
-					<span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}
+			<div id="start_reserve" class="row" style="display:none; margin-top:20px">
+				<div class="col-xs-offset-1 col-xs-5">
+					<div class="alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="enable_tool()">
+						<span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}
+					</div>
+				</div>
+				<div class="col-xs-5">
+					<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
+						<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }}
+					</div>
 				</div>
 			</div>
 		{% elif tool not in customer.qualifications.all %}
