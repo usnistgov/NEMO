@@ -69,13 +69,14 @@
 				var date_selected = date_picker.pickadate('picker').get('select').pick; // selected date in milliseconds
 				var time_selected = time.pick * 60 * 1000; // time in milliseconds
 				var date_time_selected = (date_selected + time_selected)/1000; // back to seconds to compare with python timestamp
-				for (var i=0 ; i < unavailable_times.length; i++)
-					var times = unavailable_times[0];
-				    var start = times[0];
-				    var end = times[1];
-				    if (date_time_selected >= start && date_time_selected < end) {
+				for (var i=0 ; i < unavailable_times.length; i++) {
+                    var times = unavailable_times[i];
+                    var start = times[0];
+                    var end = times[1];
+                    if (date_time_selected >= start && date_time_selected < end) {
                         return '<sp!an>h:i A</sp!an> <sm!all> !alre!ad!y re!serve!d</sm!all>';
                     }
+                }
 			}
 		    return "h:i A";
         }
