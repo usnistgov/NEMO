@@ -1,0 +1,19 @@
+<div>
+{% if active_projects|length == 0 %}
+	<h2>You cannot {% if tool.in_use %}reserve{% else %}use{% endif %} any tools because you are not a member of an active project. Please visit the NanoFab User Office to begin a project.</h2>
+{% elif active_projects|length == 1 %}
+	<h2>Tool {% if tool.in_use %}reservation will be associated with{% else %}usage will be billed to{% endif %} the project named &quot;{{ active_projects.0 }}&quot;.</h2>
+	<input type="hidden" name="project_id" value="{{ active_projects.0.id }}">
+	<script>
+		$("#start_reserve").show();
+	</script>
+{% else %}
+	<h2>{% if tool.in_use %}Associate tool reservation{% else %}Charge tool usage{% endif %} to which project?</h2>
+	<div class="list-group" style="display:table">
+		{% for project in active_projects %}
+			<a href="javascript:void(0)" class="list-group-item project-choice" style="font-size:large" onclick="select_project(this, {{ project.id }})">{{ project.name }}</a>
+		{% endfor %}
+	</div>
+	<input type="hidden" name="project_id" id="project_id">
+{% endif %}
+</div>

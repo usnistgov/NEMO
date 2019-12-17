@@ -132,7 +132,6 @@
 	<input type="hidden" name="tool_id" value="{{ tool.id }}">
 	<input type="hidden" name="customer_id" value="{{ customer.id }}">
 	{% if tool.in_use %}
-		<input type="hidden" name="project_id" value="{{ tool.get_current_usage_event.project.id }}">
 		{% if tool.get_current_usage_event.operator.id == customer.id or tool.get_current_usage_event.user.id == customer.id %}
 			{% if post_usage_questions %}
 				<h2>Post usage questions</h2>
@@ -145,42 +144,29 @@
 					<a id="delayed_logoff_help" class="pointer" tabindex="0" data-toggle="popover" data-placement="bottom" data-trigger="focus" data-content="Some tools may require downtime after you finish using them. (For example, to perform automated cleaning or pump-down). Once you click &quot;Stop using the {{ tool }}&quot; the tool interlock will immediately disable the tool and it will remain unusable for the specified duration. Leave the duration blank to indicate that no post-usage downtime is required.">What's this?</a>
 				</div>
 			{% endif %}
-			<div class="col-xs-offset-3 col-xs-6" style="margin-top:30px">
-				<h2 id="answer_to_proceed" style="text-align:center">Please answer the required questions (above) to stop using the {{ tool.name }}</h2>
-				<div id="stop_button" class="alert alert-danger" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="disable_tool()">
-					<span class="glyphicon glyphicon-stop"></span> Stop using the {{ tool.name }}
-					{% if remaining_reservation_duration %}
-						and relinquish the remaining {{ remaining_reservation_duration }} minutes of your reservation
-					{% endif %}
-				</div>
-			</div>
-			<div class="col-xs-offset-3 col-xs-6" style="margin-top:30px">
-				<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
-					<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }} for <b>{{ tool.get_current_usage_event.project.name }}</b>
+			<div class="row">
+				<div class="col-xs-offset-3 col-xs-6" style="margin-top:30px">
+					<h2 id="answer_to_proceed" style="text-align:center">Please answer the required questions (above) to stop using the {{ tool.name }}</h2>
+					<div id="stop_button" class="alert alert-danger" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="disable_tool()">
+						<span class="glyphicon glyphicon-stop"></span> Stop using the {{ tool.name }}
+						{% if remaining_reservation_duration %}
+							and relinquish the remaining {{ remaining_reservation_duration }} minutes of your reservation
+						{% endif %}
+					</div>
 				</div>
 			</div>
 		{% endif %}
+		<div style="width: 100%;padding-top: 40px;border-bottom: 1px dashed lightgray"></div>
+		<h1>Make a reservation</h1>
+		{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects project=project tool=tool %}
+		<div id="start_reserve" class="col-xs-offset-3 col-xs-6" style="display: none;margin-top:30px">
+			<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
+				<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }}
+			</div>
+		</div>
 	{% else %}
 		{% if customer.is_staff or tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and tool in customer.qualifications.all %}
-			{% with customer.active_projects as active_projects %}
-				{% if active_projects|length == 0 %}
-					<h2>You cannot use any tools because you are not a member of an active project. Please visit the NanoFab User Office to begin a project.</h2>
-				{% elif active_projects|length == 1 %}
-					<h2>Tool usage will be billed to the project named &quot;{{ active_projects.0 }}&quot;.</h2>
-					<input type="hidden" name="project_id" value="{{ active_projects.0.id }}">
-					<script>
-						$("#start_reserve").show();
-					</script>
-				{% else %}
-					<h2>Charge tool usage to which project?</h2>
-					<div class="list-group" style="display:table">
-						{% for project in active_projects %}
-							<a href="javascript:void(0)" class="list-group-item project-choice" style="font-size:large" onclick="select_project(this, {{ project.id }})">{{ project.name }}</a>
-						{% endfor %}
-					</div>
-					<input type="hidden" name="project_id" id="project_id">
-				{% endif %}
-			{% endwith %}
+			{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects project=project tool=tool %}
 			<div id="start_reserve" class="row" style="display:none; margin-top:20px">
 				<div class="col-xs-offset-1 col-xs-5">
 					<div class="alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="enable_tool()">
