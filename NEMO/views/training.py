@@ -100,4 +100,5 @@ def qualify(authorizer, user, tool):
 				'domain': user.domain,
 				'requested_area': tool.grant_badge_reader_access_upon_qualification,
 			}
-			requests.put(urljoin(settings.IDENTITY_SERVICE['url'], '/add/'), data=parameters, timeout=3)
+			timeout = settings.IDENTITY_SERVICE.get('timeout', 3)
+			requests.put(urljoin(settings.IDENTITY_SERVICE['url'], '/add/'), data=parameters, timeout=timeout)

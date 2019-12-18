@@ -60,7 +60,8 @@ def modify_qualifications(request):
 							'domain': user.domain,
 							'requested_area': tool.grant_badge_reader_access_upon_qualification,
 						}
-						requests.put(urljoin(settings.IDENTITY_SERVICE['url'], '/add/'), data=parameters, timeout=3)
+						timeout = settings.IDENTITY_SERVICE.get('timeout', 3)
+						requests.put(urljoin(settings.IDENTITY_SERVICE['url'], '/add/'), data=parameters, timeout=timeout)
 		elif action == 'disqualify':
 			user.qualifications.remove(*tools)
 		current_qualifications = set(user.qualifications.all())
