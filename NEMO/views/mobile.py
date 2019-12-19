@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
 from django.utils.dateparse import parse_time, parse_date
 from django.views.decorators.http import require_GET, require_POST
 
@@ -43,7 +44,7 @@ def new_reservation(request, tool_id, date=None):
 	dictionary = tool.get_configuration_information(user=request.user, start=None)
 	dictionary['tool'] = tool
 	dictionary['date'] = date
-	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(tool=tool, start__gte=datetime.now()))
+	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(tool=tool, start__gte=timezone.now()))
 
 	return render(request, 'mobile/new_reservation.html', dictionary)
 

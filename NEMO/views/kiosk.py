@@ -10,11 +10,11 @@ from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import Project, Reservation, Tool, UsageEvent, User
-from NEMO.views.calendar import determine_insufficient_notice, extract_configuration
+from NEMO.utilities import quiet_int, localize
+from NEMO.views.calendar import determine_insufficient_notice, extract_configuration, cancel_the_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool, \
 	check_policy_to_save_reservation
 from NEMO.views.status_dashboard import create_tool_summary
-from NEMO.utilities import quiet_int, localize
 from NEMO.widgets.dynamic_form import DynamicForm
 
 
@@ -151,7 +151,23 @@ def reserve_tool(request):
 	if reservation.self_configuration:
 		reservation.short_notice = False
 	reservation.save_and_notify()
-	return render(request, 'kiosk/reservation_success.html', {'new_reservation': reservation})
+	return render(request, 'kiosk/success.html', {'new_reservation': reservation, 'customer': customer})
+
+
+@login_required
+@permission_required('NEMO.kiosk')
+@require_POST
+def cancel_reservation(request, reservation_id):
+	""" Cancel a reservation for a user. """
+	reservation = Reservation.objects.get(id=reservation_id)
+	customer = User.objects.get(id=request.POST['customer_id'])
+
+	response = cancel_the_reservation(reservation=reservation, user=customer, reason=None)
+
+	if response.status_code == HTTPStatus.OK:
+		return render(request, 'kiosk/success.html', {'cancelled_reservation': reservation, 'customer': customer})
+	else:
+		return render(request, 'kiosk/error.html', {'message': response.content, 'customer': customer})
 
 
 @login_required
@@ -168,7 +184,7 @@ def tool_reservation(request, tool_id, user_id, back):
 	dictionary['project'] = project
 	dictionary['customer'] = customer
 	dictionary['back'] = back
-	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(tool=tool, start__gte=datetime.now()))
+	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(tool=tool, start__gte=timezone.now()))
 
 	return render(request, 'kiosk/tool_reservation.html', dictionary)
 
@@ -179,13 +195,15 @@ def tool_reservation(request, tool_id, user_id, back):
 def choices(request):
 	try:
 		customer = User.objects.get(badge_number=request.GET['badge_number'])
+		reservations = Reservation.objects.filter(start__gt=timezone.now(), user=customer, missed=False, cancelled=False, shortened=False)
+		reservations = reservations.reverse()
 	except:
 		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please visit the NanoFab user office to resolve the problem."}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
 	dictionary = {
 		'customer': customer,
 		'usage_events': UsageEvent.objects.filter(operator=customer.id, end=None).order_by('tool__name').prefetch_related('tool', 'project'),
-		'tools': Tool.objects.filter(visible=True, location=request.GET['location']),
+		'upcoming_reservations': reservations,
 		'tool_summary': create_tool_summary(),
 		'categories': [t[0] for t in Tool.objects.filter(visible=True).order_by('category').values_list('category').distinct()],
 	}

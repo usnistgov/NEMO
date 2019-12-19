@@ -152,6 +152,13 @@
 		let data = serialize('#tool_control');
 		$("#status").html("<h1>Loading tool reservation...</h1>").show().load(url, data, load_complete);
 	}
+	function cancel_reservation(url)
+	{
+	    $("#default_content").hide();
+		$("#error").hide();
+		let data = serialize('#cancel_reservation');
+		$("#status").html("<h1>Cancelling reservation...</h1>").show().load(url, data, load_complete);
+	}
 	function reserve_tool()
 	{
 	    $("#default_content").hide();

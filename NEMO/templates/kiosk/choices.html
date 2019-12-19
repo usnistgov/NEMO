@@ -33,42 +33,17 @@
 	{% endfor %}
 </div>
 
-<h1>Nearby tools</h1>
-<div class="row">
-	{% for tool in tools %}
-		<div class="col-xs-6">
-			<div class="panel panel-default" onclick="tool_information('{% url 'kiosk_tool_information' tool.id customer.id 'back_to_start' %}')">
-				<div class="panel-body">
-
-					<span style="font-size:x-large; margin-right:10px">{{ tool }}</span>
-
-					{% if tool.in_use %}
-						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-user primary-highlight"></span>
-					{% endif %}
-
-					{% if tool.delayed_logoff_in_progress %}
-						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-time primary-highlight"></span>
-					{% endif %}
-					{% if tool.scheduled_outages %}
-						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-time danger-highlight"></span>
-					{% endif %}
-
-					{% if tool.required_resource_is_unavailable %}
-						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-leaf danger-highlight"></span>
-					{% elif tool.nonrequired_resource_is_unavailable %}
-						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-leaf warning-highlight"></span>
-					{% endif %}
-
-					{% if tool.operational == False %}
-						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-fire danger-highlight"></span>
-					{% elif tool.problematic == True %}
-						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-wrench warning-highlight"></span>
-					{% endif %}
-
+{% if upcoming_reservations %}
+	<h1>Upcoming Reservations</h1>
+	<div class="reservation-group">
+		<div class="row">
+			{% for reservation in upcoming_reservations %}
+				<div class="col-xs-4" style="vertical-align: top;width: 30%">
+					{% include 'kiosk/individual_reservation.html' with reservation=reservation customer=customer %}
 				</div>
-			</div>
+			{% endfor %}
 		</div>
-	{% endfor %}
-</div>
+	</div>
+{% endif %}
 
-<script>revert(60);</script>
+<script>revert(75);</script>

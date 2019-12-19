@@ -1,0 +1,41 @@
+<div class="alert alert-success" role="alert" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}">
+	<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down"></span>
+		<strong>
+			{% if reservation.title %}{{ reservation.title }} ({% endif %}
+			<span style="cursor:pointer;text-decoration: underline" onclick="tool_information('{% url 'kiosk_tool_information' reservation.tool.id customer.id 'back_to_start' %}')">{{ reservation.tool }}</span>
+			{% if reservation.title %}){% endif %}
+		</strong>
+	<br>
+	{{ reservation.start|date:"l, F jS" }}<br>
+	Starting {{ reservation.start|time }}<br>
+	Ending {{ reservation.end|time }}<br>
+	<div id="extended_reservation_information_{{ reservation.id }}" class="collapse">
+		<div style="height:10px">{# Vertical spacer #}</div>
+		{% if reservation.project %}
+			For project {{ reservation.project }}<br>
+		{% endif %}
+		<span style="white-space: pre-line">Created by {{ reservation.creator }} {% if reservation.user != reservation.creator %} on behalf of {{ reservation.user }}{% endif %} on {{ reservation.creation_time}}</span><br>
+		{% if reservation.self_configuration %}
+			<strong>You have elected to configure this tool yourself.</strong><br>
+		{% else %}
+			{% if reservation.short_notice %}
+				<strong>This reservation was created on short notice. Tool configuration is not guaranteed upon start time.</strong><br>
+			{% endif %}
+		{% endif %}
+		{% if reservation.additional_information %}
+			Additional information:<br>
+			{{ reservation.additional_information|linebreaksbr }}
+		{% endif %}
+		{# Allow the user to cancel the reservation if they have that priviledge. #}
+		{% if not reservation.missed and not reservation.cancelled %}
+			{% if reservation.user.id == customer.id and reservation.has_not_ended %}
+				<div style="height:10px">{# Vertical spacer #}</div>
+				<form id="cancel_reservation" method="post">
+					{% csrf_token %}
+					<input type="hidden" name="customer_id" value="{{ customer.id }}">
+					<button type="submit" class="btn btn-danger" onclick="cancel_reservation('{% url 'cancel_reservation_from_kiosk' reservation.id %}')">Cancel this reservation</button>
+				</form>
+			{% endif %}
+		{% endif %}
+	</div>
+</div>

@@ -3,6 +3,7 @@ from collections import Iterable
 from datetime import timedelta, datetime
 from http import HTTPStatus
 from re import match
+from typing import Union
 
 from dateutil import rrule
 from django.contrib.admin.views.decorators import staff_member_required
@@ -498,39 +499,9 @@ def determine_insufficient_notice(tool, start):
 def cancel_reservation(request, reservation_id):
 	""" Cancel a reservation for a user. """
 	reservation = get_object_or_404(Reservation, id=reservation_id)
-	response = check_policy_to_cancel_reservation(reservation, request.user)
-	# Staff must provide a reason when cancelling a reservation they do not own.
+
 	reason = parse_parameter_string(request.POST, 'reason')
-	if reservation.user != request.user and not reason:
-		response = HttpResponseBadRequest("You must provide a reason when cancelling someone else's reservation.")
-
-	if response.status_code == HTTPStatus.OK:
-		# All policy checks passed, so cancel the reservation.
-		reservation.cancelled = True
-		reservation.cancellation_time = timezone.now()
-		reservation.cancelled_by = request.user
-
-		if reason:
-			''' don't notify in this case since we are sending a specific email for the cancellation '''
-			reservation.save()
-			dictionary = {
-				'staff_member': request.user,
-				'reservation': reservation,
-				'reason': reason,
-				'template_color': bootstrap_primary_color('info')
-			}
-			email_contents = get_media_file_contents('cancellation_email.html')
-			if email_contents:
-				cancellation_email = Template(email_contents).render(Context(dictionary))
-				if getattr(reservation.user.preferences, 'attach_cancelled_reservation', False):
-					attachment = create_ics_for_reservation(reservation, cancelled=True)
-					reservation.user.email_user('Your reservation was cancelled', cancellation_email, request.user.email, [attachment])
-				else:
-					reservation.user.email_user('Your reservation was cancelled', cancellation_email, request.user.email)
-
-		else:
-			''' here the user cancelled his own reservation so notify him '''
-			reservation.save_and_notify()
+	response = cancel_the_reservation(reservation=reservation, user=request.user, reason=reason)
 
 	if request.device == 'desktop':
 		return response
@@ -717,6 +688,43 @@ def cancel_unused_reservations(request):
 @require_GET
 def proxy_reservation(request):
 	return render(request, 'calendar/proxy_reservation.html', {'users': User.objects.filter(is_active=True)})
+
+
+def cancel_the_reservation(reservation: Reservation, user: User, reason: Union[str, None]):
+	response = check_policy_to_cancel_reservation(reservation, user)
+	# Staff must provide a reason when cancelling a reservation they do not own.
+	if reservation.user != user and not reason:
+		response = HttpResponseBadRequest("You must provide a reason when cancelling someone else's reservation.")
+
+	if response.status_code == HTTPStatus.OK:
+		# All policy checks passed, so cancel the reservation.
+		reservation.cancelled = True
+		reservation.cancellation_time = timezone.now()
+		reservation.cancelled_by = user
+
+		if reason:
+			''' don't notify in this case since we are sending a specific email for the cancellation '''
+			reservation.save()
+			dictionary = {
+				'staff_member': user,
+				'reservation': reservation,
+				'reason': reason,
+				'template_color': bootstrap_primary_color('info')
+			}
+			email_contents = get_media_file_contents('cancellation_email.html')
+			if email_contents:
+				cancellation_email = Template(email_contents).render(Context(dictionary))
+				if getattr(reservation.user.preferences, 'attach_cancelled_reservation', False):
+					attachment = create_ics_for_reservation(reservation, cancelled=True)
+					reservation.user.email_user('Your reservation was cancelled', cancellation_email, user.email, [attachment])
+				else:
+					reservation.user.email_user('Your reservation was cancelled', cancellation_email, user.email)
+
+		else:
+			''' here the user cancelled his own reservation so notify him '''
+			reservation.save_and_notify()
+
+	return response
 
 
 def send_missed_reservation_notification(reservation):

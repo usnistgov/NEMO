@@ -201,6 +201,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		url(r'^kiosk/enable_tool/$', kiosk.enable_tool, name='enable_tool_from_kiosk'),
 		url(r'^kiosk/disable_tool/$', kiosk.disable_tool, name='disable_tool_from_kiosk'),
 		url(r'^kiosk/reserve_tool/$', kiosk.reserve_tool, name='reserve_tool_from_kiosk'),
+		url(r'^kiosk/cancel_reservation/(?P<reservation_id>\d+)/$', kiosk.cancel_reservation, name='cancel_reservation_from_kiosk'),
 		url(r'^kiosk/choices/$', kiosk.choices, name='kiosk_choices'),
 		url(r'^kiosk/category_choices/(?P<category>.+)/(?P<user_id>\d+)/$', kiosk.category_choices, name='kiosk_category_choices'),
 		url(r'^kiosk/tool_information/(?P<tool_id>\d+)/(?P<user_id>\d+)/(?P<back>back_to_start|back_to_category)/$', kiosk.tool_information, name='kiosk_tool_information'),
