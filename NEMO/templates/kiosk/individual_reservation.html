@@ -1,4 +1,4 @@
-<div class="alert alert-success" role="alert" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}">
+<div class="alert alert-success" role="alert" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}" onclick="var that = this;setTimeout(function(){that.scrollIntoView()},250)">
 	<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down"></span>
 		<strong>
 			{% if reservation.title %}{{ reservation.title }} ({% endif %}
