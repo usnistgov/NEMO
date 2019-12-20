@@ -318,14 +318,3 @@ body.logout-success {
 .picker__list span {
 	color: #999;
 }
-
-/* Horizontal scroll for reservation on kiosk */
-.reservation-group > .row {
-	overflow-x: auto;
-	white-space: nowrap;
-}
-
-.reservation-group > .row > .col-xs-4 {
-	display: inline-block;
-	float: none;
-}

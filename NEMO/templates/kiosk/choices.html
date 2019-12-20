@@ -35,14 +35,12 @@
 
 {% if upcoming_reservations %}
 	<h1>Upcoming Reservations</h1>
-	<div class="reservation-group">
-		<div class="row">
-			{% for reservation in upcoming_reservations %}
-				<div class="col-xs-4" style="vertical-align: top;width: 30%">
-					{% include 'kiosk/individual_reservation.html' with reservation=reservation customer=customer %}
-				</div>
-			{% endfor %}
-		</div>
+	<div>
+		{% for reservation in upcoming_reservations %}
+			<div class="col-xs-6">
+				{% include 'kiosk/individual_reservation.html' with reservation=reservation customer=customer %}
+			</div>
+		{% endfor %}
 	</div>
 {% endif %}
 
