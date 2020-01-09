@@ -11,7 +11,7 @@
 	<div class="row">
 		{% for u in usage_events %}
 			<div class="col-xs-6">
-				<div class="alert alert-info" onclick="tool_information('{% url 'kiosk_tool_information' u.tool.id customer.id 'back_to_start' %}')">
+				<div class="alert alert-info" onclick="tool_information('{% url 'kiosk_tool_information' u.tool.tool_or_parent_id customer.id 'back_to_start' %}')">
 					<span style="font-size:x-large">{{ u.tool }}</span><br>
 					You are using this tool for the project named <strong>{{ u.project }}</strong> since <strong>{{ u.start|date:"l @ g:i A" }}</strong>
 				</div>

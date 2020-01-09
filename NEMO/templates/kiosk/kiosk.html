@@ -166,11 +166,14 @@
 	    let data = serialize('#tool_reservation');
 	    $("#status").html("<h1>Reserving tool...</h1>").show().load('{% url 'reserve_tool_from_kiosk' %}', data, load_complete);
 	}
-	function enable_tool()
+	function enable_tool(tool_id)
 	{
 		$("#default_content").hide();
 		$("#error").hide();
 		let data = serialize('#tool_control');
+		if (tool_id) {
+		    data['tool_id'] = tool_id
+		}
 		$("#status").html("<h1>Enabling tool...</h1>").show().load('{% url 'enable_tool_from_kiosk' %}', data, load_complete);
 	}
 	function disable_tool()

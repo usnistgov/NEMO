@@ -31,7 +31,7 @@ def tool_control(request, tool_id=None):
 	# The tool-choice sidebar is not available for mobile devices, so redirect the user to choose a tool to view.
 	if request.device == 'mobile' and tool_id is None:
 		return redirect('choose_tool', next_page='tool_control')
-	tools = Tool.objects.filter(visible=True).order_by('category', 'name')
+	tools = Tool.objects.filter(visible=True).order_by('_category', 'name')
 	dictionary = {
 		'tools': tools,
 		'selected_tool': tool_id,

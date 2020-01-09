@@ -46,7 +46,7 @@ class ToolTree(Widget):
 		tools: List[Tool] = value['tools']
 		for tool in tools:
 			is_qualified = (user and user.is_staff) or (user and tool in user.qualifications.all())
-			tree.add(tool.category + '/' + tool.name, tool.id,  is_qualified)
+			tree.add(tool.category + '/' + tool.name_or_child_in_use_name(), tool.id,  is_qualified)
 		return mark_safe(tree.render())
 
 

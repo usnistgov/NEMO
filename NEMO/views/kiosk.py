@@ -174,7 +174,7 @@ def cancel_reservation(request, reservation_id):
 @permission_required('NEMO.kiosk')
 @require_POST
 def tool_reservation(request, tool_id, user_id, back):
-	tool = Tool.objects.get(id=tool_id)
+	tool = Tool.objects.get(id=tool_id, visible=True)
 	customer = User.objects.get(id=user_id)
 	project = Project.objects.get(id=request.POST['project_id'])
 
@@ -205,7 +205,7 @@ def choices(request):
 		'usage_events': UsageEvent.objects.filter(operator=customer.id, end=None).order_by('tool__name').prefetch_related('tool', 'project'),
 		'upcoming_reservations': reservations,
 		'tool_summary': create_tool_summary(),
-		'categories': [t[0] for t in Tool.objects.filter(visible=True).order_by('category').values_list('category').distinct()],
+		'categories': [t[0] for t in Tool.objects.filter(visible=True).order_by('_category').values_list('_category').distinct()],
 	}
 	return render(request, 'kiosk/choices.html', dictionary)
 
@@ -219,7 +219,7 @@ def category_choices(request, category, user_id):
 	except:
 		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please visit the NanoFab user office to resolve the problem."}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
-	tools = Tool.objects.filter(visible=True, category=category)
+	tools = Tool.objects.filter(visible=True, _category=category)
 	dictionary = {
 		'customer': customer,
 		'category': category,
@@ -258,7 +258,7 @@ def tool_information(request, tool_id, user_id, back):
 @permission_required('NEMO.kiosk')
 @require_GET
 def kiosk(request, location=None):
-	if location and Tool.objects.filter(location=location, visible=True).exists():
+	if location and Tool.objects.filter(_location=location, visible=True).exists():
 		dictionary = {
 			'location': location,
 		}

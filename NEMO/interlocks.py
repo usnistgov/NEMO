@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from NEMO.forms import InterlockCardForm
+from NEMO.admin import InterlockCardAdminForm
 from NEMO.models import Interlock as Interlock_model, InterlockCardCategory
 from NEMO.utilities import format_datetime
 
@@ -34,7 +34,7 @@ class Interlock(ABC):
 	The interlock type should be set at the end of this file in the dictionary. The key is the key from InterlockCategory, the value is the Interlock implementation.
 	"""
 
-	def clean_interlock_card(self, interlock_card_form: InterlockCardForm):
+	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
 		pass
 
 	def lock(self, interlock: Interlock_model) -> {True, False}:
@@ -108,7 +108,7 @@ class NoOpInterlock(Interlock):
 
 class StanfordInterlock(Interlock):
 
-	def clean_interlock_card(self, interlock_card_form: InterlockCardForm):
+	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
 		even_port = interlock_card_form.cleaned_data['even_port']
 		odd_port = interlock_card_form.cleaned_data['odd_port']
 		number = interlock_card_form.cleaned_data['number']
@@ -209,7 +209,7 @@ class WebRelayHttpInterlock(Interlock):
 	WEB_RELAY_OFF = 0
 	WEB_RELAY_ON = 1
 
-	def clean_interlock_card(self, interlock_card_form: InterlockCardForm):
+	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
 		username = interlock_card_form.cleaned_data['username']
 		password = interlock_card_form.cleaned_data['password']
 		error = {}

@@ -19,7 +19,7 @@ from NEMO.views.policy import check_policy_to_save_reservation
 @require_GET
 def choose_tool(request, next_page):
 	dictionary = {
-		'tools': Tool.objects.filter(visible=True).order_by('category', 'name'),
+		'tools': Tool.objects.filter(visible=True).order_by('_category', 'name'),
 	}
 	if next_page == 'view_calendar':
 		# If the user has no active projects then they're not allowed to make reservations. Redirect them home.

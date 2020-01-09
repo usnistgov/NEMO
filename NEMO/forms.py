@@ -268,23 +268,6 @@ class UserPreferencesForm(ModelForm):
 		fields = ['attach_created_reservation', 'attach_cancelled_reservation']
 
 
-class InterlockCardForm(ModelForm):
-	class Meta:
-		model = InterlockCard
-		widgets = {
-			'password': PasswordInput(render_value=True),
-		}
-		fields = '__all__'
-
-	def clean(self):
-		if any(self.errors):
-			return
-		super(InterlockCardForm, self).clean()
-		category = self.cleaned_data['category']
-		from NEMO import interlocks
-		interlocks.get(category, False).clean_interlock_card(self)
-
-
 def nice_errors(form, non_field_msg='General form errors'):
 	result = ErrorDict()
 	if isinstance(form, BaseForm):

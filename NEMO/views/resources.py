@@ -19,7 +19,7 @@ def modify_resource(request, resource_id):
 	resource = get_object_or_404(Resource, id=resource_id)
 	dictionary = {'resource': resource}
 	if request.method == 'GET':
-		in_use = set(map(lambda t: t.tool.id, UsageEvent.objects.filter(end=None)))
+		in_use = set(map(lambda t: t.tool.tool_or_parent_id(), UsageEvent.objects.filter(end=None)))
 		fully_dependent_tools = set(map(lambda f: f.id, resource.fully_dependent_tools.all()))
 		fully_dependent_tools_in_use = Tool.objects.in_bulk(list(in_use & fully_dependent_tools)).values()
 		dictionary['fully_dependent_tools_in_use'] = fully_dependent_tools_in_use

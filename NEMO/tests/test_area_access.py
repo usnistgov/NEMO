@@ -115,9 +115,10 @@ class DoorInterlockTestCase(TestCase):
 		interlock_card_category = InterlockCardCategory.objects.get(key='stanford')
 		interlock_card = InterlockCard.objects.create(server="server.com", port=80, number=1, even_port=1, odd_port=2, category=interlock_card_category)
 		interlock = Interlock.objects.create(card=interlock_card, channel=1)
-		owner = User.objects.create(username='mctest', first_name='Testy', last_name='McTester')
-		door = Tool.objects.create(name='test_door', primary_owner=owner, interlock=interlock)
+		area = Area.objects.create(name="Test Area", welcome_message="Welcome")
+		door = Door.objects.create(name='test_door', area=area, interlock=interlock)
 
 	def test_door(self):
 		self.assertEquals(door.interlock.state, Interlock.State.UNKNOWN)
+		# unlocking door is an async action and creates problems when testing with SQLite (Database Table locked)
 

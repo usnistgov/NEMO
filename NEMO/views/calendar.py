@@ -51,7 +51,7 @@ def calendar(request, tool_id=None):
 		else:
 			return redirect('choose_tool', 'view_calendar')
 
-	tools = Tool.objects.filter(visible=True).order_by('category', 'name')
+	tools = Tool.objects.filter(visible=True).order_by('_category', 'name')
 	rendered_tool_tree_html = ToolTree().render(None, {'tools': tools, 'user': request.user})
 	dictionary = {
 		'rendered_tool_tree_html': rendered_tool_tree_html,
@@ -133,9 +133,9 @@ def usage_event_feed(request, start, end):
 	usage_events = usage_events.exclude(start__gt=end, end__gt=end)
 
 	# Filter events that only have to do with the relevant tool.
-	tool = request.GET.get('tool_id')
-	if tool:
-		usage_events = usage_events.filter(tool__id=tool)
+	tool_id = request.GET.get('tool_id')
+	if tool_id:
+		usage_events = usage_events.filter(tool__id__in=Tool.objects.get(pk=tool_id).get_family_tool_ids())
 
 	area_access_events = None
 	# Filter events that only have to do with the current user.
@@ -150,8 +150,8 @@ def usage_event_feed(request, start, end):
 	missed_reservations = None
 	if personal_schedule:
 		missed_reservations = Reservation.objects.filter(missed=True, user=request.user)
-	elif tool:
-		missed_reservations = Reservation.objects.filter(missed=True, tool=tool)
+	elif tool_id:
+		missed_reservations = Reservation.objects.filter(missed=True, tool=tool_id)
 	if missed_reservations:
 		missed_reservations = missed_reservations.exclude(start__lt=start, end__lt=start)
 		missed_reservations = missed_reservations.exclude(start__gt=end, end__gt=end)
@@ -656,7 +656,7 @@ def cancel_unused_reservations(request):
 	if not get_media_file_contents('missed_reservation_email.html'):
 		return HttpResponseNotFound('The missed reservation email template has not been customized for your organization yet. Please visit the NEMO customizable_key_values page to upload a template, then missed email notifications can be sent.')
 
-	tools = Tool.objects.filter(visible=True, operational=True, missed_reservation_threshold__isnull=False)
+	tools = Tool.objects.filter(visible=True, _operational=True, _missed_reservation_threshold__isnull=False)
 	missed_reservations = []
 	for tool in tools:
 		# If a tool is in use then there's no need to look for unused reservation time.
@@ -672,7 +672,7 @@ def cancel_unused_reservations(request):
 			if r.user.is_staff:
 				continue
 			# If there was no tool enable or disable event since the threshold timestamp then we assume the reservation has been missed.
-			if not (UsageEvent.objects.filter(tool=tool, start__gte=threshold).exists() or UsageEvent.objects.filter(tool=tool, end__gte=threshold).exists()):
+			if not (UsageEvent.objects.filter(tool_id__in=tool.get_family_tool_ids(), start__gte=threshold).exists() or UsageEvent.objects.filter(tool_id__in=tool.get_family_tool_ids(), end__gte=threshold).exists()):
 				# Mark the reservation as missed and notify the user & NanoFab staff.
 				r.missed = True
 				r.save()

@@ -52,8 +52,8 @@ def create(request):
 		# Shut down the tool.
 		task.tool.operational = False
 		task.tool.save()
-		# End any usage events in progress for the tool.
-		UsageEvent.objects.filter(tool=task.tool, end=None).update(end=timezone.now())
+		# End any usage events in progress for the tool or the tool's children.
+		UsageEvent.objects.filter(tool_id__in=task.tool.get_family_tool_ids(), end=None).update(end=timezone.now())
 		# Lock the interlock for this tool.
 		try:
 			tool_interlock = Interlock.objects.get(tool__id=task.tool.id)

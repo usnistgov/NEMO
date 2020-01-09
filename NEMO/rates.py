@@ -70,10 +70,22 @@ class NISTRates(Rates):
 		shared_cost_rate = self._get_rate_by_table_id_and_class(tool, self.tool_rate_class, self.shared_cost_rate_class)
 		if full_cost_rate or shared_cost_rate:
 			result = "Tool rates:"
+			if tool.is_parent_tool():
+				result += "<br> " + tool.name + ":"
 			if full_cost_rate:
 				result += " Full Cost <b>${:0,.2f}</b>".format(full_cost_rate)
 			if shared_cost_rate:
 				result += " Shared Cost <b>${:0,.2f}</b>".format(shared_cost_rate)
+			if tool.is_parent_tool():
+				for child_tool in tool.tool_children_set.all():
+					child_full_cost_rate = self._get_rate_by_table_id_and_class(child_tool, self.tool_rate_class, self.full_cost_rate_class)
+					child_shared_cost_rate = self._get_rate_by_table_id_and_class(child_tool, self.tool_rate_class, self.shared_cost_rate_class)
+					if child_full_cost_rate or child_shared_cost_rate:
+						result += "<br> " + child_tool.name + ":"
+						if child_full_cost_rate:
+							result += " Full Cost <b>${:0,.2f}</b>".format(child_full_cost_rate)
+						if child_shared_cost_rate:
+							result += " Shared Cost <b>${:0,.2f}</b>".format(child_shared_cost_rate)
 			training_rate = self._get_rate_by_table_id_and_class(tool, self.tool_training_rate_class, self.full_cost_rate_class)
 			training_group_rate = self._get_rate_by_table_id_and_class(tool, self.tool_training_group_rate_class, self.full_cost_rate_class)
 			if training_rate or training_group_rate:

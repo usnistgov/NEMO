@@ -88,7 +88,7 @@
 
 		function enable_tool(tool_id)
 		{
-			$("#start").prop("disabled", true);
+			$("#start button").prop("disabled", true);
 			var user_id = parseInt($("#user_id").val());
 			var project_id = parseInt($("#project_id").val());
 			var staff_charge = false;
@@ -101,7 +101,7 @@
 				success_callbacks = [reload_page]; {# If there's a new staff charge then we need to reload the whole page so it's displayed in the menu bar. #}
 			else
 				success_callbacks = [refresh_tool_status, ajax_success_callback];
-			var enable_start_button = function() { $("#start").prop("disabled", false); };
+			var enable_start_button = function() { $("#start button").prop("disabled", false); };
 			ajax_post(url, undefined, success_callbacks, failure_dialog, enable_start_button);
 		}
 

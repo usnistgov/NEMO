@@ -15,8 +15,9 @@ def check_policy_to_enable_tool(tool, operator, user, project, staff_charge):
 	Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
 	"""
 
-	# The tool must be visible to users.
-	if not tool.visible:
+	# The tool must be visible (or the parent if it's a child tool) to users.
+	visible = tool.parent_tool.visible if tool.is_child_tool() else tool.visible
+	if not visible:
 		return HttpResponseBadRequest("This tool is currently hidden from users.")
 
 	# The tool must be operational.
@@ -29,8 +30,9 @@ def check_policy_to_enable_tool(tool, operator, user, project, staff_charge):
 	if current_usage_event:
 		return HttpResponseBadRequest("The tool is currently being used by " + str(current_usage_event.user) + ".")
 
-	# The user must be qualified to use the tool.
-	if tool not in operator.qualifications.all() and not operator.is_staff:
+	# The user must be qualified to use the tool itself, or the parent tool in case of alternate tool.
+	tool_to_check_qualifications = tool.parent_tool if tool.is_child_tool() else tool
+	if tool_to_check_qualifications not in operator.qualifications.all() and not operator.is_staff:
 		return HttpResponseBadRequest("You are not qualified to use this tool.")
 
 	# Only staff members can operate a tool on behalf of another user.

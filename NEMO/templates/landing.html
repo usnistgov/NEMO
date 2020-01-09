@@ -56,7 +56,7 @@
 			<div class="col-lg-4">
 				<h3>Current NanoFab usage</h3>
 				{% for usage in usage_events %}
-					<a href="{% url 'tool_control' usage.tool.id %}" style="text-decoration: none">
+					<a href="{% url 'tool_control' usage.tool.tool_or_parent_id %}" style="text-decoration: none">
 						<div class="alert alert-info">
 							You are using the <b>{{ usage.tool }}</b> for the project named {{ usage.project }} since {{ usage.start }}.
 						</div>

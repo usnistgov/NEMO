@@ -18,7 +18,7 @@ def landing(request):
 	delete_expired_alerts()
 	delete_expired_notifications()
 	usage_events = UsageEvent.objects.filter(operator=request.user.id, end=None).prefetch_related('tool', 'project')
-	tools_in_use = [u.tool_id for u in usage_events]
+	tools_in_use = [u.tool.tool_or_parent_id() for u in usage_events]
 	fifteen_minutes_from_now = timezone.now() + timedelta(minutes=15)
 	landing_page_choices = LandingPageChoice.objects.all()
 	if request.device == 'desktop':

@@ -6,6 +6,9 @@ from requests import Response
 
 from NEMO.models import User
 
+def login_as(client: Client, user: User):
+	client.force_login(user)
+
 
 def login_as_staff(client: Client) -> User:
 	tester, created = User.objects.get_or_create(username='test_staff', first_name='Test', last_name='Staff', is_staff=True, badge_number=1)
@@ -15,6 +18,14 @@ def login_as_staff(client: Client) -> User:
 
 def login_as_user(client: Client) -> User:
 	user, created = User.objects.get_or_create(username="test_user", first_name="Testy", last_name="McTester", badge_number=2)
+	client.force_login(user=user)
+	return user
+
+def login_as_access_user(client: Client) -> User:
+	user, created = User.objects.get_or_create(username="area_access_user", first_name="Area", last_name="Access")
+	user.user_permissions.add(Permission.objects.get(codename="add_areaaccessrecord"))
+	user.user_permissions.add(Permission.objects.get(codename="change_areaaccessrecord"))
+	user.save()
 	client.force_login(user=user)
 	return user
 
