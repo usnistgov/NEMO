@@ -161,7 +161,6 @@ urlpatterns = [
 
 	# NanoFab usage:
 	url(r'^usage/$', usage.usage, name='usage'),
-	url(r'^billing/$', usage.billing, name='billing'),
 
 	# Alerts:
 	url(r'^alerts/$', alerts.alerts, name='alerts'),
@@ -257,6 +256,9 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		# Project Usage:
 		url(r'^project_usage/$', usage.project_usage, name='project_usage'),
 		url(r'^project_billing/$', usage.project_billing, name='project_billing'),
+
+		# NanoFab billing:
+		url(r'^billing/$', usage.billing, name='billing'),
 	]
 
 if settings.DEBUG:
