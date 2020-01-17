@@ -26,6 +26,9 @@
 			</h2>
 		{% endwith %}
 	</div>
+	{% if customer.is_staff and tool.in_use %}
+		<p>You may <a href="javascript:void(0)" onclick="disable_tool();">force {{ tool.get_current_usage_event.operator }} off this tool</a>.</p>
+	{% endif %}
 {% elif tool.delayed_logoff_in_progress %}
 	{% with tool.get_delayed_logoff_usage_event as delayed_logoff_event %}
 		<div class="primary-highlight">
@@ -158,7 +161,7 @@
 		{% endif %}
 		<div style="width: 100%;padding-top: 40px;border-bottom: 1px dashed lightgray"></div>
 		<h1>Make a reservation</h1>
-		{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects project=project tool=tool %}
+		{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
 		<div id="start_reserve" class="col-xs-offset-3 col-xs-6" style="display: none;margin-top:30px">
 			<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
 				<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }}
@@ -166,7 +169,7 @@
 		</div>
 	{% else %}
 		{% if customer.is_staff or tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and tool in customer.qualifications.all %}
-			{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects project=project tool=tool %}
+			{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
 			<div id="start_reserve" style="display:none; margin-top:20px">
 				{% if tool.is_parent_tool %}
 					<h4>You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:</h4>
