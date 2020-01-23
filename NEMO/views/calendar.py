@@ -319,7 +319,7 @@ def create_outage(request):
 	outage.start = start
 	outage.end = end
 
-	# If there was a problem in saving the reservation then return the error...
+	# If there is a policy problem for the outage then return the error...
 	policy_problem = check_policy_to_create_outage(outage)
 	if policy_problem:
 		return HttpResponseBadRequest(policy_problem)
@@ -337,7 +337,7 @@ def create_outage(request):
 	outage.details = request.POST.get('details', '')
 
 	if request.POST.get('recurring_outage') == 'on':
-		# we have to remove tz before creating rules otherwise 8am would become 7am after DST change.
+		# we have to remove tz before creating rules otherwise 8am would become 7am after DST change for example.
 		start_no_tz = outage.start.replace(tzinfo=None)
 		end_no_tz = outage.end.replace(tzinfo=None)
 
@@ -346,7 +346,7 @@ def create_outage(request):
 		date_until = end.replace(hour=0, minute=0, second=0)
 		if submitted_date_until:
 			date_until = localize(datetime.strptime(submitted_date_until, '%m/%d/%Y'))
-		date_until += timedelta(days=1, seconds=-1)
+		date_until += timedelta(days=1, seconds=-1) # set at the end of the day
 		by_week_day = None
 		if submitted_frequency == 'DAILY_WEEKDAYS':
 			by_week_day = (rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR)
@@ -469,7 +469,7 @@ def modify_reservation(request, start_delta, end_delta):
 
 def modify_outage(request, start_delta, end_delta):
 	try:
-		outage = ScheduledOutage.objects.get(pk=request.POST['id'])
+		outage = ScheduledOutage.objects.get(pk=request.POST.get('id'))
 	except ScheduledOutage.DoesNotExist:
 		return HttpResponseNotFound("The outage that you wish to modify doesn't exist!")
 	if start_delta:
