@@ -249,7 +249,7 @@ def create_reservation(request):
 	# Make sure the user is actually enrolled on the project. We wouldn't want someone
 	# forging a request to reserve against a project they don't belong to.
 	if new_reservation.project not in new_reservation.user.active_projects():
-		return render(request, 'calendar/project_choice.html', {'active_projects': active_projects()})
+		return render(request, 'calendar/project_choice.html', {'active_projects': active_projects})
 
 	configured = (request.POST.get('configured') == "true")
 	# If a reservation is requested and the tool does not require configuration...
@@ -421,7 +421,7 @@ def modify_reservation(request, start_delta, end_delta):
 	not be tied directly to a URL.
 	"""
 	try:
-		reservation_to_cancel = Reservation.objects.get(pk=request.POST['id'])
+		reservation_to_cancel = Reservation.objects.get(pk=request.POST.get('id'))
 	except Reservation.DoesNotExist:
 		return HttpResponseNotFound("The reservation that you wish to modify doesn't exist!")
 	response = check_policy_to_cancel_reservation(reservation_to_cancel, request.user)
