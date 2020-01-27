@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from NEMO.models import User, Tool, ScheduledOutage, Reservation, Account, Project
-from NEMO.tests.test_utilities import login_as_staff, login_as_user, login_as
+from NEMO.tests.test_utilities import login_as_user, login_as
 
 
 class ReservationTestCase(TestCase):
