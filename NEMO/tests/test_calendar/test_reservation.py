@@ -461,4 +461,6 @@ class ReservationTestCase(TestCase):
 		# TODO: create those tests
 		self.assertTrue(True)
 
-
+	def test_reservation_policy_off(self):
+		# TODO: create those tests
+		self.assertTrue(True)
