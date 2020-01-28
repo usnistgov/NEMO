@@ -195,12 +195,15 @@ def tool_reservation(request, tool_id, user_id, back):
 def choices(request):
 	try:
 		customer = User.objects.get(badge_number=request.GET['badge_number'])
-		reservations = Reservation.objects.filter(start__gt=timezone.now(), user=customer, missed=False, cancelled=False, shortened=False)
-		reservations = reservations.reverse()
+		usage_events = UsageEvent.objects.filter(operator=customer.id, end=None).prefetch_related('tool', 'project')
+		tools_in_use = [u.tool.tool_or_parent_id() for u in usage_events]
+		fifteen_minutes_from_now = timezone.now() + timedelta(minutes=15)
+		reservations = Reservation.objects.filter(end__gt=timezone.now(), user=customer, missed=False, cancelled=False, shortened=False).exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now).order_by('start')
 	except:
 		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please visit the NanoFab user office to resolve the problem."}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
 	dictionary = {
+		'now': timezone.now(),
 		'customer': customer,
 		'usage_events': UsageEvent.objects.filter(operator=customer.id, end=None).order_by('tool__name').prefetch_related('tool', 'project'),
 		'upcoming_reservations': reservations,
