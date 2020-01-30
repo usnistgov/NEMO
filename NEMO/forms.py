@@ -238,7 +238,7 @@ class EmailBroadcastForm(Form):
 	contents = CharField(required=False)
 	copy_me = BooleanField(initial=True)
 
-	audience = ChoiceField([('tool', 'tool'), ('project', 'project'), ('account', 'account')])
+	audience = ChoiceField(choices=[('tool', 'tool'), ('project', 'project'), ('account', 'account')])
 	selection = IntegerField()
 	only_active_users = BooleanField(initial=True)
 
