@@ -25,13 +25,13 @@ setup(
 	],
 	install_requires=[
 		'cryptography==2.8',
-		'Django==2.0.13',
+		'Django==2.1.15',
 		'django-filter==2.2.0',
 		'djangorestframework==3.11.0',
 		'ldap3==2.6.1',
 		'python-dateutil==2.8.1',
 		'requests==2.22.0',
-		'Pillow==6.2.0',
+		'Pillow==7.0.0',
 	],
 	entry_points={
 		'console_scripts': ['nemo=NEMO.provisioning:entry_point'],
