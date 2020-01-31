@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name='NEMO',
-	version='1.22.0',
+	version='2.0.0',
 	python_requires='>=3.6',
 	packages=find_packages(exclude=['NEMO.tests']),
 	include_package_data=True,
@@ -25,7 +25,7 @@ setup(
 	],
 	install_requires=[
 		'cryptography==2.8',
-		'Django==2.1.15',
+		'Django==2.2.9',
 		'django-filter==2.2.0',
 		'djangorestframework==3.11.0',
 		'ldap3==2.6.1',
