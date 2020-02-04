@@ -1,0 +1,14 @@
+body.logout-error {
+	background-color: red;
+	color: white;
+}
+
+body.logout-warning {
+	background-color: orange;
+	color: white;
+}
+
+body.logout-success {
+	background-color: green;
+	color: white;
+}

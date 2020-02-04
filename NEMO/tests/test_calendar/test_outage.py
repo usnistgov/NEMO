@@ -20,7 +20,7 @@ class OutageTestCase(TestCase):
 		tool = Tool.objects.create(name='test_tool', primary_owner=owner)
 
 	@staticmethod
-	def get_outage_data(title='', start: datetime = None, end: datetime = None, tool_name: str = None, outage: bool = False, frequency: str = None, interval: int = None, until: datetime = None):
+	def get_outage_data(title='', start: datetime = None, end: datetime = None, tool_name: str = '', outage: bool = False, frequency: str = '', interval: int = '', until: datetime = None):
 		if not start:
 			start = datetime.now()
 		if not end:

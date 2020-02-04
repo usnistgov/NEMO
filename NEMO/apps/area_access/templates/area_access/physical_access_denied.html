@@ -1,0 +1,5 @@
+<script>$('body').removeClass().addClass('logout-error')</script>
+<h1>Physical access denied</h1>
+<h2>{{ message }}</h2>
+<audio src="{% url 'media' 'error.mp3' %}" autoplay></audio>
+<script>revert(15);</script>
