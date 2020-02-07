@@ -247,7 +247,7 @@ class Tool(models.Model):
 	_maximum_future_reservation_time = models.PositiveIntegerField(db_column="maximum_future_reservation_time", null=True, blank=True, help_text="The maximum amount of time (in minutes) that a user may reserve from the current time onwards.")
 	_missed_reservation_threshold = models.PositiveIntegerField(db_column="missed_reservation_threshold", null=True, blank=True, help_text="The amount of time (in minutes) that a tool reservation may go unused before it is automatically marked as \"missed\" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.")
 	_allow_delayed_logoff = models.BooleanField(db_column="allow_delayed_logoff", default=False, help_text='Upon logging off users may enter a delay before another user may use the tool. Some tools require "spin-down" or cleaning time after use.')
-	_post_usage_questions = models.TextField(db_column="post_usage_questions", null=True, blank=True, help_text="")
+	_post_usage_questions = models.TextField(db_column="post_usage_questions", null=True, blank=True, help_text="Upon logging off a tool, questions can be asked such as how much consumables were used by the user. This field will only accept JSON format")
 	_policy_off_between_times = models.BooleanField(db_column="policy_off_between_times", default=False, help_text="Check this box to disable policy rules every day between the given times")
 	_policy_off_start_time = models.TimeField(db_column="policy_off_start_time", null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
 	_policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
@@ -472,17 +472,20 @@ class Tool(models.Model):
 		self.raise_setter_error_if_child_tool("policy_off_weekend")
 		self._policy_off_weekend = value
 
-	def name_or_child_in_use_name(self) -> str:
-		""" this method returns the tool name unless one of its children is in use """
-		if self.in_use():
+	def name_or_child_in_use_name(self, parent_ids = None) -> str:
+		""" This method returns the tool name unless one of its children is in use."""
+		""" When used in loops, provide the parent_ids list to avoid unnecessary db calls """
+		if self.is_parent_tool(parent_ids) and self.in_use():
 			return self.get_current_usage_event().tool.name
 		return self.name
 
 	def is_child_tool(self):
 		return self.parent_tool != None
 
-	def is_parent_tool(self):
-		return self.tool_children_set.all().exists()
+	def is_parent_tool(self, parent_ids = None):
+		if not parent_ids:
+			parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
+		return self.id in parent_ids
 
 	def tool_or_parent_id(self):
 		""" This method returns the tool id or the parent tool id if tool is a child """
@@ -493,7 +496,7 @@ class Tool(models.Model):
 
 	def get_family_tool_ids(self):
 		""" this method returns a list of children tool ids, parent and self id """
-		tool_ids = [child_tool.id for child_tool in self.tool_children_set.all()]
+		tool_ids = list(self.tool_children_set.values_list('id', flat=True))
 		# parent tool
 		if self.is_child_tool():
 			tool_ids.append(self.parent_tool.id)
