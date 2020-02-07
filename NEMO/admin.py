@@ -191,6 +191,7 @@ class ToolAdminForm(forms.ModelForm):
 					loads(post_usage_questions)
 				except ValueError as error:
 					self.add_error("_post_usage_questions", "This field needs to be a valid JSON string")
+					
 			policy_off_between_times = cleaned_data.get("_policy_off_between_times")
 			policy_off_start_time = cleaned_data.get("_policy_off_start_time")
 			policy_off_end_time = cleaned_data.get("_policy_off_end_time")
