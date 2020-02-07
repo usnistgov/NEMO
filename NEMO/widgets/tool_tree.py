@@ -44,9 +44,10 @@ class ToolTree(Widget):
 		tree = ToolTreeHelper(None)
 		user: User = value['user'] if 'user' in value else None
 		tools: List[Tool] = value['tools']
+		parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
 		for tool in tools:
 			is_qualified = (user and user.is_staff) or (user and tool in user.qualifications.all())
-			tree.add(tool.category + '/' + tool.name_or_child_in_use_name(), tool.id,  is_qualified)
+			tree.add(tool.category + '/' + tool.name_or_child_in_use_name(parent_ids=parent_ids), tool.id,  is_qualified)
 		return mark_safe(tree.render())
 
 
