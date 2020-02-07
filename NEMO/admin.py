@@ -1,3 +1,4 @@
+from json import loads
 from django import forms
 from django.contrib import admin
 from django.contrib.admin import register
@@ -182,6 +183,15 @@ class ToolAdminForm(forms.ModelForm):
 				self.add_error('_phone_number', 'This field is required.')
 			if not primary_owner:
 				self.add_error('_primary_owner', 'This field is required.')
+
+			post_usage_questions = cleaned_data.get("_post_usage_questions")
+			# Validate _post_usage_questions JSON format
+			if post_usage_questions:
+				try:
+					loads(post_usage_questions)
+				except ValueError as error:
+					self.add_error("_post_usage_questions", "This field needs to be a valid JSON string")
+					
 			policy_off_between_times = cleaned_data.get("_policy_off_between_times")
 			policy_off_start_time = cleaned_data.get("_policy_off_start_time")
 			policy_off_end_time = cleaned_data.get("_policy_off_end_time")
