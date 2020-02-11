@@ -472,17 +472,20 @@ class Tool(models.Model):
 		self.raise_setter_error_if_child_tool("policy_off_weekend")
 		self._policy_off_weekend = value
 
-	def name_or_child_in_use_name(self) -> str:
-		""" this method returns the tool name unless one of its children is in use """
-		if self.in_use():
+	def name_or_child_in_use_name(self, parent_ids = None) -> str:
+		""" This method returns the tool name unless one of its children is in use."""
+		""" When used in loops, provide the parent_ids list to avoid unnecessary db calls """
+		if self.is_parent_tool(parent_ids) and self.in_use():
 			return self.get_current_usage_event().tool.name
 		return self.name
 
 	def is_child_tool(self):
 		return self.parent_tool != None
 
-	def is_parent_tool(self):
-		return self.tool_children_set.all().exists()
+	def is_parent_tool(self, parent_ids = None):
+		if not parent_ids:
+			parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
+		return self.id in parent_ids
 
 	def tool_or_parent_id(self):
 		""" This method returns the tool id or the parent tool id if tool is a child """
@@ -493,7 +496,7 @@ class Tool(models.Model):
 
 	def get_family_tool_ids(self):
 		""" this method returns a list of children tool ids, parent and self id """
-		tool_ids = [child_tool.id for child_tool in self.tool_children_set.all()]
+		tool_ids = list(self.tool_children_set.values_list('id', flat=True))
 		# parent tool
 		if self.is_child_tool():
 			tool_ids.append(self.parent_tool.id)

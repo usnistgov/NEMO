@@ -52,9 +52,10 @@ def create_tool_summary():
 def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):
 	result = {}
 	tools_with_delayed_logoff_in_effect = [x.tool.tool_or_parent_id() for x in UsageEvent.objects.filter(end__gt=timezone.now())]
+	parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
 	for tool in tools:
 		result[tool.tool_or_parent_id()] = {
-			'name': tool.name_or_child_in_use_name(),
+			'name': tool.name_or_child_in_use_name(parent_ids=parent_ids),
 			'id': tool.id,
 			'user': '',
 			'operator': '',
