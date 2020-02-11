@@ -11,7 +11,7 @@ from django.urls import reverse, resolve
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_GET
-from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE
+from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, AUTO_BIND_NO_TLS, SIMPLE
 from ldap3.core.exceptions import LDAPBindError, LDAPExceptionError
 
 from NEMO.models import User
@@ -83,19 +83,28 @@ class LDAPAuthenticationBackend(ModelBackend):
 			user = User.objects.get(username=username)
 		except User.DoesNotExist:
 			auth_logger.warning(f"Username {username} attempted to authenticate with LDAP, but that username does not exist in the NEMO database. The user was denied access.")
+			print("Username "+username+" attempted to authenticate with LDAP, but that username does not exist in the NEMO database. The user was denied access.")
 			return None
 
 		# The user must be marked active.
 		if not user.is_active:
 			auth_logger.warning(f"User {username} successfully authenticated with LDAP, but that user is marked inactive in the NEMO database. The user was denied access.")
+			print("User "+username+" successfully authenticated with LDAP, but that user is marked inactive in the NEMO database. The user was denied access.")
 			return None
 
 		for server in settings.LDAP_SERVERS:
 			try:
-				t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=server['certificate'])
-				s = Server(server['url'], port=636, use_ssl=True, tls=t)
-				c = Connection(s, user='{}\\{}'.format(server['domain'], username), password=password, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, authentication=SIMPLE)
-				c.unbind()
+				s = Server('ldapserver.ipgp.fr', port=389, use_ssl=False)
+				c = Connection(s)  # define an ANONYMOUS connection
+				if not c.bind():
+					print('error in bind', c.result)
+				c.search('ou=people,dc=ipgp,dc=jussieu,dc=fr' , '(uid='+username+')',attributes=['cn' ])
+				print(username)
+				print(user)
+				nom_prenom_pour_login = c.response[0]['attributes']['cn'][0]
+				print(nom_prenom_pour_login)
+				bind_connection = Connection(s, 'cn='+nom_prenom_pour_login+',ou=people,dc=ipgp,dc=jussieu,dc=fr', password, auto_bind=AUTO_BIND_NO_TLS, authentication=SIMPLE)
+				bind_connection.unbind()
 				# At this point the user successfully authenticated to at least one LDAP server.
 				return user
 			except LDAPBindError as e:
