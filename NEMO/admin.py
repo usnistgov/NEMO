@@ -5,7 +5,8 @@ from django.contrib.admin import register
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 
-from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks
+from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks, \
+	duplicate_tool_configuration
 from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord, Comment, Configuration, \
 	ConfigurationHistory, Consumable, ConsumableCategory, ConsumableWithdraw, ContactInformation, \
 	ContactInformationCategory, Customization, Door, Interlock, InterlockCard, LandingPageChoice, MembershipHistory, \
@@ -206,6 +207,7 @@ class ToolAdminForm(forms.ModelForm):
 class ToolAdmin(admin.ModelAdmin):
 	list_display = ('name_display', '_category', 'visible', 'operational_display', 'problematic', 'is_configurable')
 	list_filter = ('visible', '_operational', '_category')
+	actions = [duplicate_tool_configuration]
 	form = ToolAdminForm
 	fieldsets = (
 		(None, {'fields': ('name', 'parent_tool', '_category', 'qualified_users', '_post_usage_questions'),}),
