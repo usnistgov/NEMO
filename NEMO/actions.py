@@ -23,7 +23,7 @@ def synchronize_with_tool_usage(model_admin, request, queryset):
 
 def duplicate_tool_configuration(model_admin, request, queryset):
 	for tool in queryset:
-		if not tool.is_parent_tool():
+		if not tool.is_child_tool():
 			old_required_resources = tool.required_resource_set.all()
 			old_nonrequired_resources = tool.nonrequired_resource_set.all()
 			old_backup_users = tool.backup_owners.all()
