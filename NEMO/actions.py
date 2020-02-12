@@ -30,6 +30,8 @@ def duplicate_tool_configuration(model_admin, request, queryset):
 			old_qualified_users = User.objects.filter(qualifications__id=tool.pk).distinct()
 			tool.pk = None
 			tool.interlock = None
+			tool.visible = False
+			tool.operational = False
 			tool.name = 'Copy of '+tool.name
 			tool.save()
 			tool.required_resource_set.set(old_required_resources)
