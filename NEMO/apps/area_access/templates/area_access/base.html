@@ -146,7 +146,7 @@
 		}
 		function fetch_occupancy()
 		{
-			ajax_get('{% url 'occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
+			ajax_get('{% url 'area_access_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 		}
 	</script>
 </body>

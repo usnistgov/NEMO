@@ -189,7 +189,7 @@
 	}
 	function fetch_occupancy()
 	{
-		ajax_get('{% url 'occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
+		ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 	}
 </script>
 </body>

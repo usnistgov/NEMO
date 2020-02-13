@@ -4,6 +4,7 @@ from NEMO.apps.kiosk import views
 
 urlpatterns = [
 	# Tablet kiosk
+	url(r'^occupancy/$', views.kiosk_occupancy, name='kiosk_occupancy'),
 	url(r'^enable_tool/$', views.enable_tool, name='enable_tool_from_kiosk'),
 	url(r'^disable_tool/$', views.disable_tool, name='disable_tool_from_kiosk'),
 	url(r'^reserve_tool/$', views.reserve_tool, name='reserve_tool_from_kiosk'),

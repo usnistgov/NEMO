@@ -2,11 +2,13 @@ from datetime import date
 from time import sleep
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent
+from NEMO.decorators import disable_session_expiry_refresh
+from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent, Area
 from NEMO.tasks import postpone
 
 
@@ -195,3 +197,15 @@ def open_door(request, door_id):
 	return render(request, 'area_access/not_logged_in.html', {'area': door.area})
 
 
+@login_required
+@require_GET
+@disable_session_expiry_refresh
+def area_access_occupancy(request):
+	area = request.GET.get('occupancy')
+	if area is None or not Area.objects.filter(name=area).exists():
+		return HttpResponse()
+	dictionary = {
+		'area': area,
+		'occupants': AreaAccessRecord.objects.filter(area__name=area, end=None, staff_charge=None).prefetch_related('customer'),
+	}
+	return render(request, 'kiosk/occupancy.html', dictionary)
