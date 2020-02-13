@@ -47,7 +47,7 @@ class ToolTestCase(TestCase):
 			'_maximum_future_reservation_time': 20,
 			'_missed_reservation_threshold': 30,
 			'_allow_delayed_logoff': True,
-			'_post_usage_questions': "Questions",
+			'_post_usage_questions': '[{"type": "textbox"}]',
 			'_policy_off_between_times': True,
 			'_policy_off_start_time': "5:00 PM",
 			'_policy_off_end_time': "4:00 PM",
