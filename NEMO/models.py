@@ -170,6 +170,9 @@ class User(models.Model):
 	def get_username(self):
 		return self.username
 
+	def has_usable_password(self):
+		return False
+
 	def email_user(self, subject, message, from_email, attachments=None):
 		""" Sends an email to this user. """
 		send_mail(subject=subject, message=message, from_email=from_email, recipient_list=[self.email], attachments=attachments)
