@@ -1,5 +1,5 @@
-(function ($) {
-    $(function () {
+window.addEventListener("load", function() {
+    (function ($) {
         var selector = $('#id_parent_tool');
 
         function hide_fields(){
@@ -15,5 +15,5 @@
         }
         selector.change(hide_fields);
         hide_fields()
-    });
-})(django.jQuery);
+    })(django.jQuery);
+});

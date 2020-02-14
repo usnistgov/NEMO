@@ -48,7 +48,7 @@ def record_remote_many_to_many_changes_and_save(request, obj, form, change, many
 	# If the object is being changed then it has already been assigned a primary key.
 	if not change:
 		save_function_pointer(request, obj, form, change)
-	obj.user_set = form.cleaned_data[many_to_many_field]
+	obj.user_set.set(form.cleaned_data[many_to_many_field])
 	save_function_pointer(request, obj, form, change)
 
 	# Record which members were added to the object.
@@ -239,9 +239,9 @@ class ToolAdmin(admin.ModelAdmin):
 		else:
 			record_remote_many_to_many_changes_and_save(request, obj, form, change, 'qualified_users', super(ToolAdmin, self).save_model)
 			if 'required_resources' in form.changed_data:
-				obj.required_resource_set = form.cleaned_data['required_resources']
+				obj.required_resource_set.set(form.cleaned_data['required_resources'])
 			if 'nonrequired_resources' in form.changed_data:
-				obj.nonrequired_resource_set = form.cleaned_data['nonrequired_resources']
+				obj.nonrequired_resource_set.set(form.cleaned_data['nonrequired_resources'])
 
 
 @register(TrainingSession)

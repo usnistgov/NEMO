@@ -2,10 +2,11 @@ from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
+from django.urls import path
 from django.views.static import serve
 from rest_framework import routers
 
-from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, kiosk, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
+from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
 
 # Use our custom login page instead of Django's built-in one.
 admin.site.login = login_required(admin.site.login)
@@ -183,37 +184,21 @@ urlpatterns = [
 	url(r'^user_preferences/$', users.user_preferences, name='user_preferences')
 ]
 
+if 'NEMO.apps.kiosk' in settings.INSTALLED_APPS:
+	urlpatterns += [path('kiosk/', include('NEMO.apps.kiosk.urls'))]
+
+if 'NEMO.apps.area_access' in settings.INSTALLED_APPS:
+	urlpatterns += [path('', include('NEMO.apps.area_access.urls'))]
+
 if settings.ALLOW_CONDITIONAL_URLS:
 	urlpatterns += [
-		url(r'^admin/', include(admin.site.urls)),
+		url(r'^admin/', admin.site.urls),
 		url(r'^api/', include(router.urls)),
 		url(r'^api/billing/?$', api.billing),
-
-		# Tablet area access
-		url(r'^welcome_screen/(?P<door_id>\d+)/$', area_access.welcome_screen, name='welcome_screen'),
-		url(r'^farewell_screen/(?P<door_id>\d+)/$', area_access.farewell_screen, name='farewell_screen'),
-		url(r'^login_to_area/(?P<door_id>\d+)/$', area_access.login_to_area, name='login_to_area'),
-		url(r'^logout_of_area/(?P<door_id>\d+)/$', area_access.logout_of_area, name='logout_of_area'),
-		url(r'^open_door/(?P<door_id>\d+)/$', area_access.open_door, name='open_door'),
-
-		# Tablet kiosk
-		url(r'^kiosk/enable_tool/$', kiosk.enable_tool, name='enable_tool_from_kiosk'),
-		url(r'^kiosk/disable_tool/$', kiosk.disable_tool, name='disable_tool_from_kiosk'),
-		url(r'^kiosk/reserve_tool/$', kiosk.reserve_tool, name='reserve_tool_from_kiosk'),
-		url(r'^kiosk/cancel_reservation/(?P<reservation_id>\d+)/$', kiosk.cancel_reservation, name='cancel_reservation_from_kiosk'),
-		url(r'^kiosk/choices/$', kiosk.choices, name='kiosk_choices'),
-		url(r'^kiosk/category_choices/(?P<category>.+)/(?P<user_id>\d+)/$', kiosk.category_choices, name='kiosk_category_choices'),
-		url(r'^kiosk/tool_information/(?P<tool_id>\d+)/(?P<user_id>\d+)/(?P<back>back_to_start|back_to_category)/$', kiosk.tool_information, name='kiosk_tool_information'),
-		url(r'^kiosk/tool_reservation/(?P<tool_id>\d+)/(?P<user_id>\d+)/(?P<back>back_to_start|back_to_category)/$', kiosk.tool_reservation, name='kiosk_tool_reservation'),
-		url(r'^kiosk/(?P<location>.+)/$', kiosk.kiosk, name='kiosk'),
-		url(r'^kiosk/$', kiosk.kiosk, name='kiosk'),
 
 		# Area access
 		url(r'^area_access/$', area_access.area_access, name='area_access'),
 		url(r'^new_area_access_record/$', area_access.new_area_access_record, name='new_area_access_record'),
-
-		# General area occupancy table, for use with Kiosk and Area Access tablets
-		url(r'^occupancy/$', status_dashboard.occupancy, name='occupancy'),
 
 		# Reminders and periodic events
 		url(r'^email_reservation_reminders/$', calendar.email_reservation_reminders, name='email_reservation_reminders'),

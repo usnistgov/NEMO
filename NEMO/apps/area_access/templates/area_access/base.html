@@ -16,6 +16,9 @@
 	<script type="text/javascript" src="{% static "nemo.js" %}"></script>
 	<link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}"/>
 
+	{# Area Access #}
+	<link rel="stylesheet" type="text/css" href="{% static "area_access/area_access.css" %}"/>
+
 	<!--suppress CssUnusedSymbol -->
 	<style>
 		.btn-extra-large
@@ -143,7 +146,7 @@
 		}
 		function fetch_occupancy()
 		{
-			ajax_get('{% url 'occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
+			ajax_get('{% url 'area_access_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 		}
 	</script>
 </body>

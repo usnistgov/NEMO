@@ -1,0 +1,30 @@
+{% if occupants|length > 0 %}
+	Staff members are highlighted in <span class="success-highlight">green</span>.<p>
+	{# Panel is used to make table borders rounded. #}
+	<div class="panel panel-default">
+		<table class="table table-bordered table-condensed">
+			<thead>
+			<tr>
+				<th colspan="4">
+					<span class="primary-highlight">{{ area }} occupancy</span>
+					{% if area.list|length > 1 %}<span class="light-grey pull-right">{{ area.list|length }} people</span>{% endif %}
+				</th>
+			</tr>
+			<tr>
+				<th>User</th>
+				<th>Since</th>
+				<th>Working on project...</th>
+			</tr>
+			</thead>
+			<tbody>
+			{% for o in occupants %}
+				<tr>
+					<td><span {% if o.customer.is_staff %}class="success-highlight"{% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span></td>
+					<td>{{ o.start|date:"l @ g:i A" }}</td>
+					<td>{{ o.project }}</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+	</div>
+{% endif %}

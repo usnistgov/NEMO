@@ -14,7 +14,7 @@ def get_media_file_contents(file_name):
 	if not storage.exists(file_name):
 		return ''
 	f = storage.open(file_name)
-	return f.read().strip()
+	return f.read().decode().strip()
 
 
 def store_media_file(content, file_name):
