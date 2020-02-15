@@ -56,74 +56,7 @@
 {% if 'no_header' in request.GET and request.GET.no_header %}
 	<div style="height: 15px;"></div>
 {% else %}
-	<nav class="navbar navbar-default navbar-static-top">
-		<div class="container">
-			<div class="navbar-header">
-				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#nemo-navigation">
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-				</button>
-				<a class="navbar-brand" href="{% url 'landing' %}">NEMO</a>
-			</div>
-			<div class="navbar-collapse collapse" id="nemo-navigation">
-				<ul class="nav navbar-nav">
-					<li><a href="{% url 'calendar' %}">Calendar</a></li>
-					<li><a href="{% url 'tool_control' %}">Tool control</a></li>
-					<li><a href="{% url 'status_dashboard' %}">Status dashboard</a></li>
-					{% if user.is_staff %}
-						<li class="dropdown">
-							<a href="#" class="dropdown-toggle" data-toggle="dropdown">Administration <b class="caret"></b></a>
-							<ul class="dropdown-menu">
-								{# The navigation_url tag will display the item if the URL name can be reversed. #}
-								{# This allows items to be easily removed from the public facing version of NEMO. #}
-								{% navigation_url 'abuse' 'Abuse' %}
-								{% navigation_url 'accounts_and_projects' 'Accounts and projects' %}
-								{% navigation_url 'alerts' 'Alerts' %}
-								{% navigation_url 'area_access' 'Area access' %}
-								{% navigation_url 'configuration_agenda' 'Configuration agenda' %}
-								{% navigation_url 'customization' 'Customization' %}
-								{% navigation_url 'admin:index' 'Detailed administration' %}
-								{% navigation_url 'email_broadcast' 'Email' %}
-								{% navigation_url 'maintenance' 'Maintenance' %}
-								{% navigation_url 'qualifications' 'Qualifications' %}
-								{% navigation_url 'remote_work' 'Remote work' %}
-								{% navigation_url 'resources' 'Resources' %}
-								{% navigation_url 'staff_charges' 'Staff charges' %}
-								{% navigation_url 'project_billing' 'Project billing' %}
-								{% navigation_url 'consumables' 'Supplies' %}
-								{% navigation_url 'training' 'Training' %}
-								{% navigation_url 'users' 'Users' %}
-							</ul>
-						</li>
-					{% endif %}
-					<li class="visible-xs"><a href="{%  url 'user_preferences' %}">Preferences</a></li>
-					{% if logout_allowed %}
-						<li class="visible-xs"><a href="{% url 'logout' %}">Logout</a></li>
-					{% endif %}
-				</ul>
-				<ul class="nav navbar-nav navbar-right hidden-xs">
-					{% if user.is_staff and user.charging_staff_time %}
-						<li class="hidden-sm">
-							<p class="navbar-text">
-								<a id="staff_charge_link" href="{% url 'staff_charges' %}" style="color:red; text-decoration: none" data-toggle="tooltip" data-placement="bottom" title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">
-									Charging staff time
-								</a>
-							</p>
-							<script>
-								$("#staff_charge_link").tooltip();
-							</script>
-						</li>
-					{% endif %}
-					<li class="hidden-sm"><p class="navbar-text">Welcome, {{ user.first_name }}</p></li>
-					<li class="navbar-preferences"><a href="{%  url 'user_preferences' %}"><img src="{% static 'icons/preferences.png' %}"/></a></li>
-					{% if logout_allowed %}
-						<li><a href="{% url 'logout' %}">Logout</a></li>
-					{% endif %}
-				</ul>
-			</div>
-		</div>
-	</nav>
+	{% include 'navbar.html' %}
 {% endif %}
 {% block body %}
     <div class="body-container">
