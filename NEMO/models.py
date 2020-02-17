@@ -227,6 +227,8 @@ class Tool(models.Model):
 	name = models.CharField(max_length=100, unique=True)
 	parent_tool = models.ForeignKey('Tool', related_name="tool_children_set", null=True, blank=True, help_text='Select a parent tool to allow alternate usage', on_delete=models.CASCADE)
 	visible = models.BooleanField(default=True, help_text="Specifies whether this tool is visible to users.")
+	_description = models.TextField(null=True, blank=True, default='', help_text="HTML syntax could be used")
+	image = models.ImageField(upload_to="tool_image", blank=True, help_text="An image that represent the tool. Maximum width is 500px")
 	_category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
 	_operational = models.BooleanField(db_column="operational", default=False, help_text="Marking the tool non-operational will prevent users from using the tool.")
 	_primary_owner = models.ForeignKey(User, db_column="primary_owner_id", null=True, blank=True, related_name="primary_tool_owner", help_text="The staff member who is responsible for administration of this tool.", on_delete=models.PROTECT)
@@ -264,6 +266,15 @@ class Tool(models.Model):
 	def category(self, value):
 		self.raise_setter_error_if_child_tool("category")
 		self._category = value
+
+	@property
+	def description(self):
+		return self.parent_tool.description if self.is_child_tool() else self._description
+
+	@description.setter
+	def description(self, value):
+		self.raise_setter_error_if_child_tool("description")
+		self._description = value
 
 	@property
 	def operational(self):
