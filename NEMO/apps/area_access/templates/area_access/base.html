@@ -19,6 +19,9 @@
 	{# Area Access #}
 	<link rel="stylesheet" type="text/css" href="{% static "area_access/area_access.css" %}"/>
 
+	{# Badge Reader #}
+	<script type="text/javascript" src="{% static "area_access/badge_reader.js" %}"></script>
+
 	<!--suppress CssUnusedSymbol -->
 	<style>
 		.btn-extra-large
@@ -39,11 +42,15 @@
 	<div id="status" style="display: none"></div>
 	<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
 	<script type="text/javascript">
-		$(window).keypress(on_keypress).keydown(on_keydown);
-		let record_badge_number = false;
-		let badge_number = "";
+		var area_access_badge_reader = new BadgeReader(send_badge_number);
 		let timeout_handle = null;
 		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
+
+		function send_badge_number(badge_number)
+		{
+		    clear_timeout();
+			{% block action %}{% endblock %}
+		}
 
 		if(occupancy)
 		{
@@ -51,30 +58,6 @@
 			setInterval(fetch_occupancy, 30000);
 		}
 
-		{# Note that keydown and keyup provide a code indicating which key is pressed, while keypress indicates which character was entered. For example, a lowercase "a" will be reported as 65 by keydown and keyup, but as 97 by keypress. An uppercase "A" is reported as 65 by all events. Because of this distinction, when catching special keystrokes such as F2, .keydown() or .keyup() is a better choice. #}
-
-		function on_keypress(event)
-		{
-			if(record_badge_number)
-			{
-				badge_number += String.fromCharCode(event.which);
-				$("#badge_number").html(badge_number);
-			}
-		}
-		function on_keydown(event)
-		{
-			if(event.which === 113) {# The F2 key activates badge number recording #}
-			{
-				record_badge_number = !record_badge_number;
-				if(!record_badge_number)
-				{
-					clear_timeout();
-					{% block action %}{% endblock %}
-					$("#badge_number").html(badge_number + ", sent");
-					badge_number = "";
-				}
-			}
-		}
 		function load_complete(response, status, xml_http_request)
 		{
 			if(status === "error")
