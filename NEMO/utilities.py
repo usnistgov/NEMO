@@ -210,6 +210,12 @@ def get_task_image_filename(task_images, filename):
 	ext = os.path.splitext(filename)[1]
 	return f"task_images/{year}/{tool_name}/{date}_{tool_name}_{number}{ext}"
 
+def get_tool_image_filename(tool, filename):
+	from django.template.defaultfilters import slugify
+	tool_name = tool.name
+	ext = os.path.splitext(filename)[1]
+	return f"tool_images/{tool_name}{ext}"
+
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
 	""" Returns a resized image based on the given maximum size """
