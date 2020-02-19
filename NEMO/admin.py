@@ -166,7 +166,6 @@ class ToolAdminForm(forms.ModelForm):
 		location = cleaned_data.get("_location")
 		phone_number = cleaned_data.get("_phone_number")
 		primary_owner = cleaned_data.get("_primary_owner")
-		description = cleaned_data.get("_description")
 		image = cleaned_data.get("_image")
 
 		if image:
