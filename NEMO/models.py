@@ -13,7 +13,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 
-from NEMO.utilities import send_mail, get_task_image_filename
+from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -1053,6 +1053,32 @@ class TaskImages(models.Model):
 	class Meta:
 		verbose_name_plural = "Task images"
 		ordering = ['-uploaded_at']
+
+		
+# These two auto-delete task images from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=Tool)
+def auto_delete_file_on_tool_delete(sender, instance: Tool, **kwargs):
+	"""	Deletes file from filesystem when corresponding `Tool` object is deleted.	"""
+	if instance.image:
+		if os.path.isfile(instance.image.path):
+			os.remove(instance.image.path)
+
+
+@receiver(models.signals.pre_save, sender=Tool)
+def auto_delete_file_on_tool_change(sender, instance: Tool, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `Tool` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = Tool.objects.get(pk=instance.pk).image
+	except Tool.DoesNotExist:
+		return False
+
+	new_file = instance.image
+	if not old_file == new_file:
+		if os.path.isfile(old_file.path):
+			os.remove(old_file.path)
 
 
 # These two auto-delete task images from filesystem when they are unneeded:
