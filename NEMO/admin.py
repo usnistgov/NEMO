@@ -169,6 +169,7 @@ class ToolAdminForm(forms.ModelForm):
 		image = cleaned_data.get("_image")
 
 		if image:
+			from NEMO.utilities import resize_image
 			# resize image to 500x500 maximum
 			cleaned_data['_image'] = resize_image(image, 500)
 
