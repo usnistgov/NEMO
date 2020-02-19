@@ -1055,7 +1055,7 @@ class TaskImages(models.Model):
 		ordering = ['-uploaded_at']
 
 		
-# These two auto-delete task images from filesystem when they are unneeded:
+# These two auto-delete tool images from filesystem when they are unneeded:
 @receiver(models.signals.post_delete, sender=Tool)
 def auto_delete_file_on_tool_delete(sender, instance: Tool, **kwargs):
 	"""	Deletes file from filesystem when corresponding `Tool` object is deleted.	"""
