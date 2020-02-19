@@ -212,7 +212,7 @@ def get_task_image_filename(task_images, filename):
 
 def get_tool_image_filename(tool, filename):
 	from django.template.defaultfilters import slugify
-	tool_name = tool.name
+	tool_name = slugify(tool.name)
 	ext = os.path.splitext(filename)[1]
 	return f"tool_images/{tool_name}{ext}"
 
