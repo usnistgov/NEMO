@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='tool',
             name='_description',
-            field=models.TextField(blank=True, default='', help_text='HTML syntax could be used', null=True),
+            field=models.TextField(blank=True, db_column='description', default='', help_text='HTML syntax could be used', null=True),
         ),
         migrations.AddField(
             model_name='tool',
