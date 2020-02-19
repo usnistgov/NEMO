@@ -280,6 +280,11 @@ class Tool(models.Model):
 	def image(self):
 		return self.parent_tool.image if self.is_child_tool() else self._image
 
+	@image.setter
+	def image(self, value):
+		self.raise_setter_error_if_child_tool("image")
+		self._image = value
+		
 	@property
 	def operational(self):
 		return self.parent_tool.operational if self.is_child_tool() else self._operational
