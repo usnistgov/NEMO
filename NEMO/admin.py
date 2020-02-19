@@ -171,7 +171,7 @@ class ToolAdminForm(forms.ModelForm):
 
 		if image:
 			# resize image to 500x500 maximum
-			resized_image = resize_image(image, 500)
+			cleaned_data['_image'] = resize_image(image, 500)
 			## Don't know how to save the resized image ! 
 
 		if parent_tool:
