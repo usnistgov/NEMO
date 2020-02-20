@@ -204,13 +204,17 @@ def choices(request):
 	except:
 		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please visit the NanoFab user office to resolve the problem."}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
+
+	categories = [t[0] for t in Tool.objects.filter(visible=True).order_by('_category').values_list('_category').distinct()]
+	unqualified_categories = [category for category in categories if not customer.is_staff and not Tool.objects.filter(visible=True, _category=category, id__in=customer.qualifications.all().values_list('id')).exists()]
 	dictionary = {
 		'now': timezone.now(),
 		'customer': customer,
 		'usage_events': UsageEvent.objects.filter(operator=customer.id, end=None).order_by('tool__name').prefetch_related('tool', 'project'),
 		'upcoming_reservations': reservations,
 		'tool_summary': create_tool_summary(),
-		'categories': [t[0] for t in Tool.objects.filter(visible=True).order_by('_category').values_list('_category').distinct()],
+		'categories': categories,
+		'unqualified_categories': unqualified_categories,
 	}
 	return render(request, 'kiosk/choices.html', dictionary)
 
@@ -229,6 +233,7 @@ def category_choices(request, category, user_id):
 		'customer': customer,
 		'category': category,
 		'tools': tools,
+		'unqualified_tools': [tool for tool in tools if not customer.is_staff and tool not in customer.qualifications.all()],
 		'tool_summary': create_tool_summary(),
 	}
 	return render(request, 'kiosk/category_choices.html', dictionary)
