@@ -17,6 +17,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='tool',
+            name='_serial',
+            field=models.CharField(blank=True, db_column='serial', default='', help_text='Serial Number', max_length=100, null=True),
+        ),   
+        migrations.AddField(
+            model_name='tool',
             name='_image',
             field=models.ImageField(blank=True, db_column='image', help_text='An image that represent the tool. Maximum width and height are 500px', upload_to='tool_image'),
         ),
