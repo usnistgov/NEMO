@@ -217,7 +217,7 @@ class ToolAdmin(admin.ModelAdmin):
 	form = ToolAdminForm
 	fieldsets = (
 		(None, {'fields': ('name', 'parent_tool', '_category', 'qualified_users', '_post_usage_questions'),}),
-		('Additional Information', {'fields': ('_description', '_image'),}),
+		('Additional Information', {'fields': ('_description', '_serial', '_image'),}),
 		('Current state', {'fields': ('visible', '_operational'),}),
 		('Contact information', {'fields': ('_primary_owner', '_backup_owners', '_notification_email_address', '_location', '_phone_number'),}),
 		('Reservation', {'fields': ('_reservation_horizon', '_missed_reservation_threshold'),}),
