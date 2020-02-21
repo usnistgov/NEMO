@@ -20,6 +20,9 @@
 
 <div class="tab-content">
 	<div class="tab-pane active" id="summary">
+		{% if tool.serial %}
+			<div style="text-align:left; font-size:x-small">s/n : {{tool.serial| safe }} </div>
+		{% endif %}
 		{# Display tool status... #}
 		{% if tool.in_use %}
 			<div class="primary-highlight">
