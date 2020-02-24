@@ -12,9 +12,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from NEMO.admin import record_local_many_to_many_changes, record_active_state
 from NEMO.forms import UserForm, UserPreferencesForm
-from NEMO.models import User, Project, Tool, PhysicalAccessLevel, Reservation, StaffCharge, UsageEvent, AreaAccessRecord, ActivityHistory, UserPreferences
+from NEMO.models import User, Project, Tool, PhysicalAccessLevel, Reservation, StaffCharge, UsageEvent, AreaAccessRecord, ActivityHistory, UserPreferences, record_local_many_to_many_changes, record_active_state
 
 users_logger = getLogger(__name__)
 

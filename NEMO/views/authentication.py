@@ -90,22 +90,29 @@ class LDAPAuthenticationBackend(ModelBackend):
 			auth_logger.warning(f"User {username} successfully authenticated with LDAP, but that user is marked inactive in the NEMO database. The user was denied access.")
 			return None
 
+		is_authenticated_with_ldap = False
+		errors = []
 		for server in settings.LDAP_SERVERS:
 			try:
-				t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=server['certificate'])
+				t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=server.get('certificate'))
 				s = Server(server['url'], port=636, use_ssl=True, tls=t)
 				c = Connection(s, user='{}\\{}'.format(server['domain'], username), password=password, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, authentication=SIMPLE)
 				c.unbind()
 				# At this point the user successfully authenticated to at least one LDAP server.
-				return user
+				is_authenticated_with_ldap = True
+				auth_logger.debug(f"User {username} was successfully authenticated with LDAP ({server['url']})")
+				break
 			except LDAPBindError as e:
-				auth_logger.warning(f"User {username} attempted to authenticate with LDAP, but entered an incorrect password. The user was denied access.")
-				pass  # When this error is caught it means the username and password were invalid against the LDAP server.
+				errors.append(f"User {username} attempted to authenticate with LDAP ({server['url']}), but entered an incorrect password. The user was denied access: {str(e)}")
 			except LDAPExceptionError as e:
-				exception(e)
+				errors.append(f"User {username} attempted to authenticate with LDAP ({server['url']}), but an error occurred. The user was denied access: {str(e)}")
 
-		# The user did not successfully authenticate to any of the LDAP servers.
-		return None
+		if is_authenticated_with_ldap:
+			return user
+		else:
+			for error in errors:
+				auth_logger.warning(error)
+			return None
 
 
 @require_http_methods(['GET', 'POST'])

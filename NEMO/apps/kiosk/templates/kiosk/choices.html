@@ -24,7 +24,7 @@
 <div class="row">
 	{% for category in categories %}
 		<div class="col-xs-6">
-			<div class="panel panel-default" onclick="view_category('{% url 'kiosk_category_choices' category customer.id %}')">
+			<div class="panel panel-default {% if category in unqualified_categories %}disabled{% endif %}" onclick="view_category('{% url 'kiosk_category_choices' category customer.id %}')">
 				<div class="panel-body">
 					<span style="font-size:x-large; margin-right:10px">{{ category }}</span>
 				</div>

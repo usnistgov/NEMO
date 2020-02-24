@@ -1465,3 +1465,91 @@ class News(models.Model):
 	class Meta:
 		ordering = ['-last_updated']
 		verbose_name_plural = 'News'
+
+
+def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):
+	"""
+	Record the changes in a many-to-many field that the model does not own. Then, save the many-to-many field.
+	"""
+	# If the model object is being changed then we can get the list of previous members.
+	if change:
+		original_members = set(obj.user_set.all())
+	else:  # The model object is being created (instead of changed) so we can assume there are no members (initially).
+		original_members = set()
+	current_members = set(form.cleaned_data[many_to_many_field])
+	added_members = []
+	removed_members = []
+
+	# Log membership changes if they occurred.
+	symmetric_difference = original_members ^ current_members
+	if symmetric_difference:
+		if change:  # the members have changed, so find out what was added and removed...
+			# We can can see the previous members of the object model by looking it up
+			# in the database because the member list hasn't been committed yet.
+			added_members = set(current_members) - set(original_members)
+			removed_members = set(original_members) - set(current_members)
+
+		else:  # a model object is being created (instead of changed) so we can assume all the members are new...
+			added_members = form.cleaned_data[many_to_many_field]
+
+	# A primary key for the object is required to make many-to-many field changes.
+	# If the object is being changed then it has already been assigned a primary key.
+	if not change:
+		save_function_pointer(request, obj, form, change)
+	obj.user_set.set(form.cleaned_data[many_to_many_field])
+	save_function_pointer(request, obj, form, change)
+
+	# Record which members were added to the object.
+	for user in added_members:
+		new_member = MembershipHistory()
+		new_member.authorizer = request.user
+		new_member.parent_content_object = obj
+		new_member.child_content_object = user
+		new_member.action = MembershipHistory.Action.ADDED
+		new_member.save()
+
+	# Record which members were removed from the object.
+	for user in removed_members:
+		ex_member = MembershipHistory()
+		ex_member.authorizer = request.user
+		ex_member.parent_content_object = obj
+		ex_member.child_content_object = user
+		ex_member.action = MembershipHistory.Action.REMOVED
+		ex_member.save()
+
+
+def record_local_many_to_many_changes(request, obj, form, many_to_many_field):
+	"""
+	Record the changes in a many-to-many field that the model owns.
+	"""
+	if many_to_many_field in form.changed_data:
+		original_members = set(getattr(obj, many_to_many_field).all())
+		current_members = set(form.cleaned_data[many_to_many_field])
+		added_members = set(current_members) - set(original_members)
+		for a in added_members:
+			p = MembershipHistory()
+			p.action = MembershipHistory.Action.ADDED
+			p.authorizer = request.user
+			p.child_content_object = obj
+			p.parent_content_object = a
+			p.save()
+		removed_members = set(original_members) - set(current_members)
+		for a in removed_members:
+			p = MembershipHistory()
+			p.action = MembershipHistory.Action.REMOVED
+			p.authorizer = request.user
+			p.child_content_object = obj
+			p.parent_content_object = a
+			p.save()
+
+
+def record_active_state(request, obj, form, field_name, is_initial_creation):
+	"""
+	Record whether the account, project, or user is active when the active state is changed.
+	"""
+	if field_name in form.changed_data or is_initial_creation:
+		activity_entry = ActivityHistory()
+		activity_entry.authorizer = request.user
+		activity_entry.action = getattr(obj, field_name)
+		activity_entry.content_object = obj
+		activity_entry.save()
