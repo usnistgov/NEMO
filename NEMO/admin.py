@@ -212,7 +212,7 @@ class ToolAdminForm(forms.ModelForm):
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
 	list_display = ('name_display', '_category', 'visible', 'operational_display', 'problematic', 'is_configurable')
-	list_filter = ('visible', '_operational', '_category')
+	list_filter = ('visible', '_operational', '_category', '_location')
 	actions = [duplicate_tool_configuration]
 	form = ToolAdminForm
 	fieldsets = (
