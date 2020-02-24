@@ -1225,6 +1225,18 @@ class MembershipHistory(models.Model):
 	def __str__(self):
 		return "Membership change for " + str(self.parent_content_type) + " " + str(self.parent_object_id)
 
+	def get_child_content_object(self):
+		if self.child_content_object is None:
+			return "<deleted>"
+		else:
+			return str(self.child_content_object)
+
+	def get_parent_content_object(self):
+		if self.parent_content_object is None:
+			return "<deleted>"
+		else:
+			return str(self.parent_content_object)
+
 
 def calculate_duration(start, end, unfinished_reason):
 	"""
