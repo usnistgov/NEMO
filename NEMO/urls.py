@@ -1,3 +1,4 @@
+from django.apps import apps
 from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
@@ -8,8 +9,9 @@ from rest_framework import routers
 
 from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
 
-# Use our custom login page instead of Django's built-in one.
-admin.site.login = login_required(admin.site.login)
+if apps.is_installed("django.contrib.admin"):
+	# Use our custom login page instead of Django's built-in one.
+	admin.site.login = login_required(admin.site.login)
 
 # REST API URLs
 router = routers.DefaultRouter()
@@ -184,10 +186,10 @@ urlpatterns = [
 	url(r'^user_preferences/$', users.user_preferences, name='user_preferences')
 ]
 
-if 'NEMO.apps.kiosk' in settings.INSTALLED_APPS:
+if apps.is_installed('NEMO.apps.kiosk'):
 	urlpatterns += [path('kiosk/', include('NEMO.apps.kiosk.urls'))]
 
-if 'NEMO.apps.area_access' in settings.INSTALLED_APPS:
+if apps.is_installed('NEMO.apps.area_access'):
 	urlpatterns += [path('', include('NEMO.apps.area_access.urls'))]
 
 if settings.ALLOW_CONDITIONAL_URLS:
