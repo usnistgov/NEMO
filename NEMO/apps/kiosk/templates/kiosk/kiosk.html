@@ -3,6 +3,7 @@
 <head>
 	<title>Kiosk</title>
 	{% load static %}
+	{% load custom_tags_and_filters %}
 
 	{# jQuery #}
 	<script type="text/javascript" src="{% static "jquery.js" %}"></script>
@@ -33,150 +34,159 @@
 	</style>
 </head>
 <body>
-<div class="container-fluid">
-	<div id="default_content">
-		<h1>Scan your badge to control tools</h1>
-		<div id="occupancy"></div>
+	<div id="kiosk-container">
+		<div class="container-fluid">
+			<div id="default_content">
+				<h1>Scan your badge to control tools</h1>
+				<div id="occupancy"></div>
+			</div>
+			<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1></div>
+			<div id="status" style="display: none"></div>
+			<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
+		</div>
+		<div id="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
 	</div>
-	<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1></div>
-	<div id="status" style="display: none"></div>
-	<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
-</div>
-<div id="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
-<script type="text/javascript">
-	var kiosk_badge_reader = new BadgeReader(send_badge_number);
-	let timeout_handle = null;
-	let countdown_handle = null;
-	let occupancy = new URLSearchParams(window.location.search).get('occupancy');
+	<!-- Version -->
+    <footer class="page-footer">
+        {% app_version as app_version %}
+        <div class="container">
+            {% if app_version %}v {% app_version %}{% else %}&nbsp;{% endif %}
+        </div>
+    </footer>
+	<script type="text/javascript">
+		var kiosk_badge_reader = new BadgeReader(send_badge_number);
+		let timeout_handle = null;
+		let countdown_handle = null;
+		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
 
-	function send_badge_number(badge_number)
-	{
-	    clear_timeout();
-		load_choices(badge_number);
-	}
+		function send_badge_number(badge_number)
+		{
+			clear_timeout();
+			load_choices(badge_number);
+		}
 
-	if(occupancy)
-	{
-		fetch_occupancy();
-		setInterval(fetch_occupancy, 30000);
-	}
+		if(occupancy)
+		{
+			fetch_occupancy();
+			setInterval(fetch_occupancy, 30000);
+		}
 
-	function load_complete(response, status, xml_http_request)
-	{
-		if(status === "error")
+		function load_complete(response, status, xml_http_request)
+		{
+			if(status === "error")
+			{
+				$("#default_content").hide();
+				$("#status").hide();
+				$("#error").show();
+				revert(15);
+			}
+			$("#badge_number").html("");
+		}
+		function revert(delay)
+		{
+			clear_timeout();
+			var countdown = delay;
+			delay = delay * 1000;
+			timeout_handle = setTimeout(revert_to_default_content, delay);
+			countdown_handle = setInterval(function(){
+				$('#countdown').html(countdown);
+				countdown --;
+			}, 1000);
+		}
+		function revert_to_default_content()
+		{
+			fetch_occupancy();
+			clear_timeout();
+			$("#status").hide();
+			$("#error").hide();
+			$("#badge_number").html("");
+			$("#default_content").show();
+		}
+		function clear_timeout()
+		{
+			if(timeout_handle != null)
+				clearTimeout(timeout_handle);
+			timeout_handle = null;
+			if (countdown_handle != null)
+				clearInterval(countdown_handle);
+			countdown_handle = null;
+			$("#countdown").html("");
+		}
+		function select_project(element, project_id)
+		{
+			$(".project-choice").removeClass('active');
+			$(element).addClass('active');
+			$("#project_id").val(project_id);
+			$("#start_reserve").show();
+		}
+		function load_choices(badge_number)
+		{
+			let data = {
+				'location': '{{ location }}',
+				'badge_number': badge_number
+			};
+			$("#default_content").hide();
+			$("#error").hide();
+			$("#status").html("<h1>Loading choices...</h1>").show().load('{% url 'kiosk_choices' %}?' + $.param(data), undefined, load_complete);
+		}
+		function tool_information(url)
 		{
 			$("#default_content").hide();
-			$("#status").hide();
-			$("#error").show();
-			revert(15);
+			$("#error").hide();
+			$("#status").html("<h1>Loading tool information...</h1>").show().load(url, undefined, load_complete);
 		}
-		$("#badge_number").html("");
-	}
-	function revert(delay)
-	{
-		clear_timeout();
-		var countdown = delay;
-		delay = delay * 1000;
-		timeout_handle = setTimeout(revert_to_default_content, delay);
-		countdown_handle = setInterval(function(){
-            $('#countdown').html(countdown);
-            countdown --;
-		}, 1000);
-	}
-	function revert_to_default_content()
-	{
-		fetch_occupancy();
-		clear_timeout();
-		$("#status").hide();
-		$("#error").hide();
-		$("#badge_number").html("");
-		$("#default_content").show();
-	}
-	function clear_timeout()
-	{
-		if(timeout_handle != null)
-			clearTimeout(timeout_handle);
-		timeout_handle = null;
-		if (countdown_handle != null)
-		    clearInterval(countdown_handle);
-		countdown_handle = null;
-		$("#countdown").html("");
-	}
-	function select_project(element, project_id)
-	{
-		$(".project-choice").removeClass('active');
-		$(element).addClass('active');
-		$("#project_id").val(project_id);
-		$("#start_reserve").show();
-	}
-	function load_choices(badge_number)
-	{
-		let data = {
-			'location': '{{ location }}',
-			'badge_number': badge_number
-		};
-		$("#default_content").hide();
-		$("#error").hide();
-		$("#status").html("<h1>Loading choices...</h1>").show().load('{% url 'kiosk_choices' %}?' + $.param(data), undefined, load_complete);
-	}
-	function tool_information(url)
-	{
-		$("#default_content").hide();
-		$("#error").hide();
-		$("#status").html("<h1>Loading tool information...</h1>").show().load(url, undefined, load_complete);
-	}
-	function view_category(url)
-	{
-		$("#default_content").hide();
-		$("#error").hide();
-		$("#status").html("<h1>Loading category...</h1>").show().load(url, undefined, load_complete);
-	}
-	function tool_reservation(url)
-	{
-	    $("#default_content").hide();
-		$("#error").hide();
-		let data = serialize('#tool_control');
-		$("#status").html("<h1>Loading tool reservation...</h1>").show().load(url, data, load_complete);
-	}
-	function cancel_reservation(url)
-	{
-	    $("#default_content").hide();
-		$("#error").hide();
-		let data = serialize('#cancel_reservation');
-		$("#status").html("<h1>Cancelling reservation...</h1>").show().load(url, data, load_complete);
-	}
-	function reserve_tool()
-	{
-	    $("#default_content").hide();
-		$("#error").hide();
-	    let data = serialize('#tool_reservation');
-	    $("#status").html("<h1>Reserving tool...</h1>").show().load('{% url 'reserve_tool_from_kiosk' %}', data, load_complete);
-	}
-	function enable_tool(tool_id)
-	{
-		$("#default_content").hide();
-		$("#error").hide();
-		let data = serialize('#tool_control');
-		if (tool_id) {
-		    data['tool_id'] = tool_id
+		function view_category(url)
+		{
+			$("#default_content").hide();
+			$("#error").hide();
+			$("#status").html("<h1>Loading category...</h1>").show().load(url, undefined, load_complete);
 		}
-		$("#status").html("<h1>Enabling tool...</h1>").show().load('{% url 'enable_tool_from_kiosk' %}', data, load_complete);
-	}
-	function disable_tool()
-	{
-		$("#default_content").hide();
-		$("#error").hide();
-		let data = serialize('#tool_control');
-		$("#status").html("<h1>Disabling tool...</h1>").show().load('{% url 'disable_tool_from_kiosk' %}', data, load_complete);
-	}
-	function csrf_token()
-	{
-		return '{{ csrf_token }}';
-	}
-	function fetch_occupancy()
-	{
-		ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
-	}
-</script>
+		function tool_reservation(url)
+		{
+			$("#default_content").hide();
+			$("#error").hide();
+			let data = serialize('#tool_control');
+			$("#status").html("<h1>Loading tool reservation...</h1>").show().load(url, data, load_complete);
+		}
+		function cancel_reservation(url)
+		{
+			$("#default_content").hide();
+			$("#error").hide();
+			let data = serialize('#cancel_reservation');
+			$("#status").html("<h1>Cancelling reservation...</h1>").show().load(url, data, load_complete);
+		}
+		function reserve_tool()
+		{
+			$("#default_content").hide();
+			$("#error").hide();
+			let data = serialize('#tool_reservation');
+			$("#status").html("<h1>Reserving tool...</h1>").show().load('{% url 'reserve_tool_from_kiosk' %}', data, load_complete);
+		}
+		function enable_tool(tool_id)
+		{
+			$("#default_content").hide();
+			$("#error").hide();
+			let data = serialize('#tool_control');
+			if (tool_id) {
+				data['tool_id'] = tool_id
+			}
+			$("#status").html("<h1>Enabling tool...</h1>").show().load('{% url 'enable_tool_from_kiosk' %}', data, load_complete);
+		}
+		function disable_tool()
+		{
+			$("#default_content").hide();
+			$("#error").hide();
+			let data = serialize('#tool_control');
+			$("#status").html("<h1>Disabling tool...</h1>").show().load('{% url 'disable_tool_from_kiosk' %}', data, load_complete);
+		}
+		function csrf_token()
+		{
+			return '{{ csrf_token }}';
+		}
+		function fetch_occupancy()
+		{
+			ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
+		}
+	</script>
 </body>
 </html>

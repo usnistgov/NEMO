@@ -2,3 +2,7 @@
 {
 	opacity: .4;
 }
+
+#kiosk-container {
+	min-height: calc(100vh - 61px);overflow: auto
+}

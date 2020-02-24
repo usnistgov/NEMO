@@ -3,6 +3,7 @@
 <head>
 	<title>{% block title %}{% endblock %}</title>
 	{% load static %}
+	{% load custom_tags_and_filters %}
 
 	{# jQuery #}
 	<script type="text/javascript" src="{% static "jquery.js" %}"></script>
@@ -32,15 +33,24 @@
 		}
 	</style>
 </head>
-<body style="padding-left:20px; padding-right:20px">
-	<div id="default_content">
-		{% block default_content %}
-		{% endblock %}
-		<div id="occupancy"></div>
+<body>
+	<div id="area-container">
+		<div id="default_content">
+			{% block default_content %}
+			{% endblock %}
+			<div id="occupancy"></div>
+		</div>
+		<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1><audio id="error-sound" src="{% url 'media' 'error.mp3' %}"></audio></div>
+		<div id="status" style="display: none"></div>
+		<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
 	</div>
-	<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1><audio id="error-sound" src="{% url 'media' 'error.mp3' %}"></audio></div>
-	<div id="status" style="display: none"></div>
-	<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
+	<!-- Version -->
+    <footer class="page-footer">
+        {% app_version as app_version %}
+        <div class="container">
+            {% if app_version %}v {% app_version %}{% else %}&nbsp;{% endif %}
+        </div>
+    </footer>
 	<script type="text/javascript">
 		var area_access_badge_reader = new BadgeReader(send_badge_number);
 		let timeout_handle = null;
