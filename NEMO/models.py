@@ -1076,10 +1076,11 @@ def auto_delete_file_on_tool_change(sender, instance: Tool, **kwargs):
 	except Tool.DoesNotExist:
 		return False
 
-	new_file = instance.image
-	if not old_file == new_file:
-		if os.path.isfile(old_file.path):
-			os.remove(old_file.path)
+	if old_file :
+		new_file = instance.image
+		if not old_file == new_file:
+			if os.path.isfile(old_file.path):
+				os.remove(old_file.path)
 
 
 # These two auto-delete task images from filesystem when they are unneeded:
