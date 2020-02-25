@@ -79,6 +79,12 @@ class ToolAdminForm(forms.ModelForm):
 		location = cleaned_data.get("_location")
 		phone_number = cleaned_data.get("_phone_number")
 		primary_owner = cleaned_data.get("_primary_owner")
+		image = cleaned_data.get("_image")
+
+		if image:
+			from NEMO.utilities import resize_image
+			# resize image to 500x500 maximum
+			cleaned_data['_image'] = resize_image(image, 500)
 
 		if parent_tool:
 			if parent_tool.id == self.instance.id:
@@ -119,11 +125,13 @@ class ToolAdminForm(forms.ModelForm):
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
 	list_display = ('name_display', '_category', 'visible', 'operational_display', 'problematic', 'is_configurable')
-	list_filter = ('visible', '_operational', '_category')
+	search_fields = ('name', '_description', '_serial')
+	list_filter = ('visible', '_operational', '_category', '_location')
 	actions = [duplicate_tool_configuration]
 	form = ToolAdminForm
 	fieldsets = (
 		(None, {'fields': ('name', 'parent_tool', '_category', 'qualified_users', '_post_usage_questions'),}),
+		('Additional Information', {'fields': ('_description', '_serial', '_image'),}),
 		('Current state', {'fields': ('visible', '_operational'),}),
 		('Contact information', {'fields': ('_primary_owner', '_backup_owners', '_notification_email_address', '_location', '_phone_number'),}),
 		('Reservation', {'fields': ('_reservation_horizon', '_missed_reservation_threshold'),}),

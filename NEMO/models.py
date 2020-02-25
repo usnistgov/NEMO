@@ -13,7 +13,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 
-from NEMO.utilities import send_mail, get_task_image_filename
+from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -230,6 +230,9 @@ class Tool(models.Model):
 	name = models.CharField(max_length=100, unique=True)
 	parent_tool = models.ForeignKey('Tool', related_name="tool_children_set", null=True, blank=True, help_text='Select a parent tool to allow alternate usage', on_delete=models.CASCADE)
 	visible = models.BooleanField(default=True, help_text="Specifies whether this tool is visible to users.")
+	_description = models.TextField(db_column="description", null=True, blank=True, default='', help_text="HTML syntax could be used")
+	_serial = models.CharField(db_column="serial", null=True, blank=True, max_length=100, default='', help_text="Serial Number")
+	_image = models.ImageField(db_column="image", upload_to=get_tool_image_filename, blank=True, help_text="An image that represent the tool. Maximum width and height are 500px")
 	_category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
 	_operational = models.BooleanField(db_column="operational", default=False, help_text="Marking the tool non-operational will prevent users from using the tool.")
 	_primary_owner = models.ForeignKey(User, db_column="primary_owner_id", null=True, blank=True, related_name="primary_tool_owner", help_text="The staff member who is responsible for administration of this tool.", on_delete=models.PROTECT)
@@ -268,6 +271,24 @@ class Tool(models.Model):
 		self.raise_setter_error_if_child_tool("category")
 		self._category = value
 
+	@property
+	def description(self):
+		return self.parent_tool.description if self.is_child_tool() else self._description
+
+	@description.setter
+	def description(self, value):
+		self.raise_setter_error_if_child_tool("description")
+		self._description = value
+
+	@property
+	def image(self):
+		return self.parent_tool.image if self.is_child_tool() else self._image
+
+	@image.setter
+	def image(self, value):
+		self.raise_setter_error_if_child_tool("image")
+		self._image = value
+		
 	@property
 	def operational(self):
 		return self.parent_tool.operational if self.is_child_tool() else self._operational
@@ -1036,6 +1057,33 @@ class TaskImages(models.Model):
 	class Meta:
 		verbose_name_plural = "Task images"
 		ordering = ['-uploaded_at']
+
+		
+# These two auto-delete tool images from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=Tool)
+def auto_delete_file_on_tool_delete(sender, instance: Tool, **kwargs):
+	"""	Deletes file from filesystem when corresponding `Tool` object is deleted.	"""
+	if instance.image:
+		if os.path.isfile(instance.image.path):
+			os.remove(instance.image.path)
+
+
+@receiver(models.signals.pre_save, sender=Tool)
+def auto_delete_file_on_tool_change(sender, instance: Tool, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `Tool` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = Tool.objects.get(pk=instance.pk).image
+	except Tool.DoesNotExist:
+		return False
+
+	if old_file :
+		new_file = instance.image
+		if not old_file == new_file:
+			if os.path.isfile(old_file.path):
+				os.remove(old_file.path)
 
 
 # These two auto-delete task images from filesystem when they are unneeded:

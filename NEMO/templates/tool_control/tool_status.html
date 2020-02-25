@@ -20,6 +20,9 @@
 
 <div class="tab-content">
 	<div class="tab-pane active" id="summary">
+		{% if tool.serial %}
+			<div style="text-align:left; font-size:x-small">s/n : {{tool.serial| safe }} </div>
+		{% endif %}
 		{# Display tool status... #}
 		{% if tool.in_use %}
 			<div class="primary-highlight">
@@ -245,6 +248,23 @@
 				{% endif %}
 			{% endif %}
 		</form>
+		
+		{% if tool.description or tool.image %}		
+			<div style="background-color: #f5f5f5; margin-top: 15px">
+				<div class="row" style="margin:0; padding: 15px 0">
+					{% if tool.description %}
+					<div class="col-md-8">
+						<p> {{tool.description| safe }} </p>
+					</div>
+				{% endif %}
+				{% if tool.image %}
+					<div class="col-md-4" style="text-align:center">
+						<img src="{{ tool.image.url }}" class="img-fluid img-thumbnail" style="max-width:300px ;max-height:300px" >
+					</div>
+				{% endif %}
+				</div>
+			</div>
+		{% endif %}
 		<div style="height:150px">{# Spacer #}</div>
 	</div>
 
