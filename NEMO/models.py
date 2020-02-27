@@ -281,6 +281,15 @@ class Tool(models.Model):
 		self._description = value
 
 	@property
+	def serial(self):
+		return self.parent_tool.description if self.is_child_tool() else self._serial
+
+	@serial.setter
+	def serial(self, value):
+		self.raise_setter_error_if_child_tool("serial")
+		self._serial = value
+
+	@property
 	def image(self):
 		return self.parent_tool.image if self.is_child_tool() else self._image
 
