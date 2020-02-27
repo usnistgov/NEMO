@@ -33,6 +33,9 @@ def duplicate_tool_configuration(model_admin, request, queryset):
 			tool.visible = False
 			tool.operational = False
 			tool.name = 'Copy of '+tool.name
+			tool.image = None
+			tool.description = None
+			tool.serial = None
 			tool.save()
 			tool.required_resource_set.set(old_required_resources)
 			tool.nonrequired_resource_set.set(old_nonrequired_resources)
