@@ -1208,6 +1208,12 @@ class Resource(models.Model):
 	class Meta:
 		ordering = ['name']
 
+	def visible_fully_dependent_tools(self):
+		return self.fully_dependent_tools.filter(visible=True)
+
+	def visible_partially_dependent_tools(self):
+		return self.partially_dependent_tools.filter(visible=True)
+
 	def __str__(self):
 		return self.name
 

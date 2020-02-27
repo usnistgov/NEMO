@@ -62,10 +62,10 @@
 		<input type="submit" id="submit" class="btn btn-info" value="Modify resource">
 		<a href="{% url 'resources' %}" class="btn btn-warning">Nevermind</a>
 	</form>
-	{% if resource.fully_dependent_tools.all %}
+	{% if resource.visible_fully_dependent_tools %}
 		<h3>Tools that fully depend on {{ resource }}</h3>
 		<ul>
-			{% for t in resource.fully_dependent_tools.all %}
+			{% for t in resource.visible_fully_dependent_tools %}
 				<li>
 					{% if t.in_use %}
 						{{ t }} - in use by <a href="{% url 'get_email_form_for_user' t.get_current_usage_event.operator.id %}"><span class="glyphicon glyphicon-send"></span> {{ t.get_current_usage_event.operator }}</a>
@@ -78,10 +78,10 @@
 	{% else %}
 		<h3>No tools fully depend on {{ resource }}</h3>
 	{% endif %}
-	{% if resource.partially_dependent_tools.all %}
+	{% if resource.visible_partially_dependent_tools %}
 		<h3>Tools that partially depend on {{ resource }}</h3>
 		<ul>
-			{% for t in resource.partially_dependent_tools.all %}
+			{% for t in resource.visible_partially_dependent_tools %}
 				<li>
 					{% if t.in_use %}
 						{{ t }} - in use by <a href="{% url 'get_email_form_for_user' t.get_current_usage_event.operator.id %}"><span class="glyphicon glyphicon-send"></span> {{ t.get_current_usage_event.operator }}</a>
