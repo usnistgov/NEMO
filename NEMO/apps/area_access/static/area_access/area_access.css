@@ -12,3 +12,9 @@ body.logout-success {
 	background-color: green;
 	color: white;
 }
+
+#area-container {
+	min-height: calc(100vh - 61px);
+	overflow: auto;
+	padding-left:20px; padding-right:20px;
+}

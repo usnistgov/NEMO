@@ -33,7 +33,7 @@ def history(request, item_type, item_id):
 			message += "deactivated."
 		action_list.append({'date': a.date, 'authorizer': str(a.authorizer), 'message': message})
 	for m in membership:
-		message = capfirst(m.child_content_type.name) + " \"" + str(m.child_content_object) + "\" "
+		message = capfirst(m.child_content_type.name) + " \"" + m.get_child_content_object() + "\" "
 		if m.action:
 			message += "added to"
 		else:
@@ -46,7 +46,7 @@ def history(request, item_type, item_id):
 			message += "now"
 		else:
 			message += "no longer"
-		message += " belongs to " + o.parent_content_type.name + " \"" + o.parent_content_object.name + "\"."
+		message += " belongs to " + o.parent_content_type.name + " \"" + o.get_parent_content_object() + "\"."
 		action_list.append({'date': o.date, 'authorizer': str(o.authorizer), 'message': message})
 	# Sort the list of actions by date:
 	action_list.sort(key=lambda x: x['date'])
