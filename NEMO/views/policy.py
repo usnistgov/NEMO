@@ -1,11 +1,13 @@
-from datetime import timedelta
+from datetime import timedelta, date
 
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import Template, Context
 from django.utils import timezone
 
-from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage
+from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
+	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError
+from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel
 from NEMO.utilities import format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 
@@ -335,3 +337,37 @@ def check_policy_to_create_outage(outage):
 
 	# No policy issues! The outage can be created...
 	return None
+
+
+def check_policy_to_enter_any_area(user: User):
+	"""
+	Checks the area access policy for a user.
+	"""
+	if not user.is_active:
+		raise InactiveUserError(user=user)
+
+	if user.active_project_count() < 1:
+		raise NoActiveProjectsForUserError(user=user)
+
+	if user.access_expiration is not None and user.access_expiration < date.today():
+		raise PhysicalAccessExpiredUserError(user=user)
+
+	user_has_access_to_at_least_one_area = user.physical_access_levels.all().exists()
+	staff_has_access_to_at_least_one_area = user.is_staff and PhysicalAccessLevel.objects.filter(allow_staff_access=True).exists()
+	if not (user_has_access_to_at_least_one_area or staff_has_access_to_at_least_one_area):
+		raise NoPhysicalAccessUserError(user=user)
+
+
+def check_policy_to_enter_this_area(area:Area, user:User):
+	# If explicitly set on the Physical Access Level, staff may be exempt from being granted explicit access
+	if user.is_staff and any([access_level.accessible() for access_level in PhysicalAccessLevel.objects.filter(allow_staff_access=True, area=area)]):
+		pass
+	else:
+		# Check if the user normally has access to this area door at the current time
+		if not any([access_level.accessible() for access_level in user.physical_access_levels.filter(area=area)]):
+			raise NoAccessiblePhysicalAccessUserError(user=user, area=area)
+
+	if not user.is_staff:
+		unavailable_resources = area.required_resources.filter(available=False)
+		if unavailable_resources:
+			raise UnavailableResourcesUserError(user=user, area=area, resources=unavailable_resources)

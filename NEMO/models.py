@@ -1333,6 +1333,7 @@ class PhysicalAccessLevel(models.Model):
 			(WEEKENDS, "Weekends"),
 		)
 	schedule = models.IntegerField(choices=Schedule.Choices)
+	allow_staff_access = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow access to Staff users without explicitly granting them access")
 
 	def accessible(self):
 		now = timezone.localtime(timezone.now())

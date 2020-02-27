@@ -25,4 +25,9 @@ class Migration(migrations.Migration):
             name='_image',
             field=models.ImageField(blank=True, db_column='image', help_text='An image that represent the tool. Maximum width and height are 500px', upload_to=NEMO.utilities.get_tool_image_filename),
         ),
+        migrations.AddField(
+            model_name='physicalaccesslevel',
+            name='allow_staff_access',
+            field=models.BooleanField(default=False, help_text='Check this box to allow access to Staff users without explicitly granting them access'),
+        ),
     ]

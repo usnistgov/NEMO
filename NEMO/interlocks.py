@@ -12,16 +12,12 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from NEMO.admin import InterlockCardAdminForm
+from NEMO.exceptions import InterlockError
 from NEMO.models import Interlock as Interlock_model, InterlockCardCategory
 from NEMO.utilities import format_datetime
 
 interlocks_logger = getLogger(__name__)
 
-class InterlockException(Exception):
-	message = None
-
-	def __init__(self, message):
-		self.message = message
 
 class Interlock(ABC):
 	"""
@@ -56,7 +52,7 @@ class Interlock(ABC):
 		# try to send the command to the interlock
 		try:
 			state = self._send_command(interlock, command_type)
-		except InterlockException as error:
+		except InterlockError as error:
 			interlocks_logger.error(error)
 			error_message = error.message
 		except Exception as error:
@@ -184,7 +180,7 @@ class StanfordInterlock(Interlock):
 								"ADC done = " + str(reply[11]) + ", " +\
 								"busy = " + str(reply[12]) + ", " +\
 								"instruction return value = " + str(reply[13]) + "."
-				raise InterlockException(reply_message)
+				raise InterlockError(interlock=interlock, msg=reply_message)
 
 		# Log any errors that occurred during the operation into the database.
 		except OSError as error:
@@ -192,15 +188,15 @@ class StanfordInterlock(Interlock):
 			if error.errno:
 				reply_message += " " + str(error.errno)
 			reply_message += ": " + str(error)
-			raise InterlockException(reply_message)
+			raise InterlockError(interlock=interlock, msg=reply_message)
 		except struct.error as error:
 			reply_message = "Response format error: " + str(error)
-			raise InterlockException(reply_message)
-		except InterlockException:
+			raise InterlockError(interlock=interlock, msg=reply_message)
+		except InterlockError:
 			raise
 		except Exception as error:
 			reply_message = "General exception: " + str(error)
-			raise InterlockException(reply_message)
+			raise InterlockError(interlock=interlock, msg=reply_message)
 		finally:
 			sock.close()
 
@@ -226,7 +222,7 @@ class WebRelayHttpInterlock(Interlock):
 			elif command_type == Interlock_model.State.UNLOCKED:
 				state = WebRelayHttpInterlock.setRelayState(interlock, WebRelayHttpInterlock.WEB_RELAY_ON)
 		except Exception as error:
-			raise InterlockException("General exception: " + str(error))
+			raise InterlockError(interlock=interlock, msg="General exception: " + str(error))
 		return state
 
 	@staticmethod

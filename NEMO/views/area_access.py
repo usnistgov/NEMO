@@ -1,5 +1,5 @@
-from datetime import date, timedelta
-from time import sleep
+from datetime import timedelta
+from typing import List
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
@@ -10,10 +10,13 @@ from django.utils import timezone
 from django.utils.http import urlencode
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.models import Area, AreaAccessRecord, Project, User
+from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, UserAccessError, \
+	InactiveUserError, NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError
+from NEMO.models import Area, AreaAccessRecord, Project, User, PhysicalAccessLevel
 
 from NEMO.utilities import parse_start_and_end_date
 from NEMO.views.customization import get_customization
+from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
 
 
 @staff_member_required(login_url=None)
@@ -44,41 +47,43 @@ def new_area_access_record(request):
 	}
 	if request.method == 'GET':
 		try:
-			customer = User.objects.get(id=request.GET['customer'], is_active=True)
+			customer = User.objects.get(id=request.GET['customer'])
 			dictionary['customer'] = customer
-			dictionary['areas'] = list(set([access_level.area for access_level in customer.physical_access_levels.all()]))
-			if customer.active_project_count() == 0:
-				dictionary['error_message'] = '{} does not have any active projects to bill area access'.format(customer)
+			error_message = check_policy_for_user(customer=customer)
+			if error_message:
+				dictionary['error_message'] = error_message
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
-			if not dictionary['areas']:
-				dictionary['error_message'] = '{} does not have access to any billable NanoFab areas'.format(customer)
-				return render(request, 'area_access/new_area_access_record.html', dictionary)
+
+			dictionary['areas'] = list(get_accessible_areas_for_user(user=customer))
 			return render(request, 'area_access/new_area_access_record_details.html', dictionary)
 		except:
 			pass
 		return render(request, 'area_access/new_area_access_record.html', dictionary)
 	if request.method == 'POST':
 		try:
-			user = User.objects.get(id=request.POST['customer'], is_active=True)
+			user = User.objects.get(id=request.POST['customer'])
 			project = Project.objects.get(id=request.POST['project'])
 			area = Area.objects.get(id=request.POST['area'])
 		except:
 			dictionary['error_message'] = 'Your request contained an invalid identifier.'
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
-		if user.access_expiration is not None and user.access_expiration < timezone.now().date():
-			dictionary['error_message'] = '{} does not have access to the {} because the user\'s physical access expired on {}. You must update the user\'s physical access expiration date before creating a new area access record.'.format(user, area.name.lower(), user.access_expiration.strftime('%B %m, %Y'))
-			return render(request, 'area_access/new_area_access_record.html', dictionary)
-		if not any([access_level.accessible() for access_level in user.physical_access_levels.filter(area=area)]):
+		try:
+			error_message = check_policy_for_user(customer=user)
+			if error_message:
+				dictionary['error_message'] = error_message
+				return render(request, 'area_access/new_area_access_record.html', dictionary)
+			check_policy_to_enter_this_area(area=area, user=user)
+		except NoAccessiblePhysicalAccessUserError:
 			dictionary['error_message'] = '{} does not have a physical access level that allows access to the {} at this time.'.format(user, area.name.lower())
+			return render(request, 'area_access/new_area_access_record.html', dictionary)
+		except UnavailableResourcesUserError:
+			dictionary['error_message'] = 'The {} is inaccessible because a required resource is unavailable. You must make all required resources for this area available before creating a new area access record.'.format(area.name.lower())
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		if user.billing_to_project():
 			dictionary['error_message'] = '{} is already billing area access to another area. The user must log out of that area before entering another.'.format(user)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		if project not in user.active_projects():
 			dictionary['error_message'] = '{} is not authorized to bill that project.'.format(user)
-			return render(request, 'area_access/new_area_access_record.html', dictionary)
-		if area.required_resources.filter(available=False).exists():
-			dictionary['error_message'] = 'The {} is inaccessible because a required resource is unavailable. You must make all required resources for this area available before creating a new area access record.'.format(area.name.lower())
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		record = AreaAccessRecord()
 		record.area = area
@@ -87,6 +92,21 @@ def new_area_access_record(request):
 		record.save()
 		dictionary['success'] = '{} is now logged in to the {}.'.format(user, area.name.lower())
 		return render(request, 'area_access/new_area_access_record.html', dictionary)
+
+
+def check_policy_for_user(customer: User):
+	error_message = None
+	try:
+		check_policy_to_enter_any_area(user=customer)
+	except InactiveUserError:
+		error_message = '{} is inactive'.format(customer)
+	except NoActiveProjectsForUserError:
+		error_message = '{} does not have any active projects to bill area access'.format(customer)
+	except NoPhysicalAccessUserError:
+		error_message = '{} does not have access to any billable NanoFab areas'.format(customer)
+	except PhysicalAccessExpiredUserError:
+		error_message = '{} does not have access to any areas because the user\'s physical access expired on {}. You must update the user\'s physical access expiration date before creating a new area access record.'.format(customer, customer.access_expiration.strftime('%B %m, %Y'))
+	return error_message
 
 
 @staff_member_required(login_url=None)
@@ -147,7 +167,7 @@ def self_log_in(request):
 		'projects': user.active_projects(),
 	}
 	areas = []
-	for access_level in user.physical_access_levels.all():
+	for access_level in get_accessible_areas_for_user(user):
 		unavailable_resources = access_level.area.required_resources.filter(available=False)
 		if access_level.accessible() and not unavailable_resources:
 			areas.append(access_level.area)
@@ -196,36 +216,35 @@ def able_to_self_log_in_to_area(user):
 	# 'Self log in' must be enabled
 	if not get_customization('self_log_in') == 'enabled':
 		return False
-	# Check if the user is active
-	if not user.is_active:
-		return False
-	# Check if the user has a billable project
-	if user.active_project_count() < 1:
-		return False
 	# Check if the user is already in an area. If so, the /change_project/ URL can be used to change their project.
 	if user.in_area():
 		return False
-	# Check if the user has any physical access levels
-	if not user.physical_access_levels.all().exists():
+	# Check policy for entering an area
+	try:
+		check_policy_to_enter_any_area(user=user)
+	except UserAccessError:
 		return False
-	# Check if the user normally has access to this area at the current time
-	accessible_areas = []
-	for access_level in user.physical_access_levels.all():
-		if access_level.accessible():
-			accessible_areas.append(access_level.area)
-	if not accessible_areas:
-		return False
-	# Check that the user's physical access has not expired
-	if user.access_expiration is not None and user.access_expiration < date.today():
-		return False
-	# Staff are exempt from the remaining rule checks
-	if user.is_staff:
-		return True
-	# Users may not access an area if a required resource is unavailable,
-	# so return true if there exists at least one area they are able to log in to.
-	for area in accessible_areas:
-		unavailable_resources = area.required_resources.filter(available=False)
-		if not unavailable_resources:
+
+	accessible_areas = get_accessible_areas_for_user(user)
+
+	# Check if the user normally has access to an area at the current time
+	try:
+		for accessible_area in accessible_areas:
+			check_policy_to_enter_this_area(area=accessible_area.area, user=user)
+			# Users may not access an area if it's not accessible at this time or if a required resource is unavailable,
+			# so return true if there exists at least one area they are able to log in to.
 			return True
+	except (NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError):
+		pass
+
 	# No areas are accessible...
 	return False
+
+
+def get_accessible_areas_for_user(user: User) -> List[PhysicalAccessLevel]:
+	accessible_areas = set(user.physical_access_levels.all())
+	# If staff user, add areas where physical access level allow staff access directly
+	if user.is_staff:
+		accessible_areas.update(PhysicalAccessLevel.objects.filter(allow_staff_access=True))
+
+	return accessible_areas

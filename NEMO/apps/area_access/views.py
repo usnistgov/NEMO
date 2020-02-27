@@ -1,4 +1,3 @@
-from datetime import date
 from time import sleep
 
 from django.contrib.auth.decorators import login_required, permission_required
@@ -8,8 +7,11 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
+from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
+	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError
 from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent, Area
 from NEMO.tasks import postpone
+from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
 
 
 @login_required
@@ -49,46 +51,46 @@ def login_to_area(request, door_id):
 	log.time = timezone.now()
 	log.result = PhysicalAccessType.DENY  # Assume the user does not have access
 
-	# Check if the user is active
-	if not user.is_active:
+	# Check policy for entering an area
+	try:
+		check_policy_to_enter_any_area(user=user)
+	except InactiveUserError:
 		log.details = "This user is not active, preventing them from entering any access controlled areas."
 		log.save()
 		return render(request, 'area_access/inactive.html')
 
-	# Check if the user has any physical access levels
-	if not user.physical_access_levels.all().exists():
-		log.details = "This user does not belong to ANY physical access levels."
+	except NoActiveProjectsForUserError:
+		log.details = "The user has no active projects, preventing them from entering an access controlled area."
 		log.save()
-		message = "You have not been granted physical access to any NanoFab area. Please visit the User Office if you believe this is an error."
-		return render(request, 'area_access/physical_access_denied.html', {'message': message})
+		return render(request, 'area_access/no_active_projects.html')
 
-	# Check if the user normally has access to this door at the current time
-	if not any([access_level.accessible() for access_level in user.physical_access_levels.filter(area=door.area)]):
-		log.details = "This user is not assigned to a physical access level that allows access to this door at this time."
-		log.save()
-		message = "You do not have access to this area of the NanoFab at this time. Please visit the User Office if you believe this is an error."
-		return render(request, 'area_access/physical_access_denied.html', {'message': message})
-
-	# Check that the user's physical access has not expired
-	if user.access_expiration is not None and user.access_expiration < date.today():
+	except PhysicalAccessExpiredUserError:
 		log.details = "This user was blocked from this physical access level because their physical access has expired."
 		log.save()
 		message = "Your physical access to the NanoFab has expired. Have you completed your safety training within the last year? Please visit the User Office to renew your access."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
-	# Users may not access an area if a required resource is unavailable.
-	# Staff are exempt from this rule.
-	unavailable_resources = door.area.required_resources.filter(available=False)
-	if unavailable_resources and not user.is_staff:
-		log.details = "The user was blocked from entering this area because a required resource was unavailable."
+	except NoPhysicalAccessUserError:
+		log.details = "This user does not belong to ANY physical access levels."
 		log.save()
-		return render(request, 'area_access/resource_unavailable.html', {'unavailable_resources': unavailable_resources})
+		message = "You have not been granted physical access to any NanoFab area. Please visit the User Office if you believe this is an error."
+		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
-	# Users must have at least one billable project in order to enter an area.
-	if user.active_project_count() == 0:
-		log.details = "The user has no active projects, preventing them from entering an access controlled area."
+	# Check policy to enter this area
+	try:
+		check_policy_to_enter_this_area(area=door.area, user=user)
+	except NoAccessiblePhysicalAccessUserError:
+		log.details = "This user is not assigned to a physical access level that allows access to this door at this time."
 		log.save()
-		return render(request, 'area_access/no_active_projects.html')
+		message = "You do not have access to this area of the NanoFab at this time. Please visit the User Office if you believe this is an error."
+		return render(request, 'area_access/physical_access_denied.html', {'message': message})
+
+	except UnavailableResourcesUserError:
+		unavailable_resources = door.area.required_resources.filter(available=False)
+		if unavailable_resources and not user.is_staff:
+			log.details = "The user was blocked from entering this area because a required resource was unavailable."
+			log.save()
+			return render(request, 'area_access/resource_unavailable.html', {'unavailable_resources': unavailable_resources})
 
 	current_area_access_record = user.area_access_record()
 	if current_area_access_record and current_area_access_record.area == door.area:
@@ -97,7 +99,24 @@ def login_to_area(request, door_id):
 		return render(request, 'area_access/already_logged_in.html', {'area': door.area, 'project': current_area_access_record.project, 'badge_number': user.badge_number})
 
 	previous_area = None
-	if user.active_project_count() == 1:
+	if user.active_project_count() >= 1:
+		if user.active_project_count() == 1:
+			project = user.active_projects()[0]
+		else:
+			project_id = request.POST.get('project_id')
+			if not project_id:
+				# No log entry necessary here because all validation checks passed, and the user must indicate which project
+				# the wish to login under. The log entry is captured when the subsequent choice is made by the user.
+				return render(request, 'area_access/choose_project.html', {'area': door.area, 'user': user})
+			else:
+				project = get_object_or_404(Project, id=project_id)
+				if project not in user.active_projects():
+					log.details = "The user attempted to bill the project named {}, but they are not a member of that project.".format(
+						project.name)
+					log.save()
+					message = "You are not authorized to bill this project."
+					return render(request, 'area_access/physical_access_denied.html', {'message': message})
+
 		log.result = PhysicalAccessType.ALLOW
 		log.save()
 
@@ -111,40 +130,10 @@ def login_to_area(request, door_id):
 		record = AreaAccessRecord()
 		record.area = door.area
 		record.customer = user
-		record.project = user.active_projects()[0]
+		record.project = project
 		record.save()
 		unlock_door(door.id)
 		return render(request, 'area_access/login_success.html', {'area': door.area, 'name': user.first_name, 'project': record.project, 'previous_area': previous_area})
-	elif user.active_project_count() > 1:
-		project_id = request.POST.get('project_id')
-		if project_id:
-			project = get_object_or_404(Project, id=project_id)
-			if project not in user.active_projects():
-				log.details = "The user attempted to bill the project named {}, but they are not a member of that project.".format(project.name)
-				log.save()
-				message = "You are not authorized to bill this project."
-				return render(request, 'area_access/physical_access_denied.html', {'message': message})
-			log.result = PhysicalAccessType.ALLOW
-			log.save()
-
-			# Automatically log the user out of any previous area before logging them in to the new area.
-			if user.in_area():
-				previous_area_access_record = user.area_access_record()
-				previous_area_access_record.end = timezone.now()
-				previous_area_access_record.save()
-				previous_area = previous_area_access_record.area
-
-			record = AreaAccessRecord()
-			record.area = door.area
-			record.customer = user
-			record.project = project
-			record.save()
-			unlock_door(door.id)
-			return render(request, 'area_access/login_success.html', {'area': door.area, 'name': user.first_name, 'project': record.project, 'previous_area': previous_area})
-		else:
-			# No log entry necessary here because all validation checks passed, and the user must indicate which project
-			# the wish to login under. The log entry is captured when the subsequent choice is made by the user.
-			return render(request, 'area_access/choose_project.html', {'area': door.area, 'user': user})
 
 
 @postpone
