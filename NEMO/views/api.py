@@ -10,7 +10,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from NEMO.filters import ReservationFilter, UsageEventFilter, AreaAccessRecordFilter, UserFilter
 from NEMO.models import User, Project, Account, Reservation, UsageEvent, AreaAccessRecord, Task, ScheduledOutage, Tool, \
-	ConsumableWithdraw
+	ConsumableWithdraw, TrainingSession
 from NEMO.serializers import UserSerializer, ProjectSerializer, AccountSerializer, ReservationSerializer, \
 	UsageEventSerializer, AreaAccessRecordSerializer, TaskSerializer, ScheduledOutageSerializer, ToolSerializer, \
 	BillableItemSerializer
@@ -103,9 +103,6 @@ class ScheduledOutageViewSet(ReadOnlyModelViewSet):
 	serializer_class = ScheduledOutageSerializer
 
 
-billing = [UsageEvent, AreaAccessRecord, 'Consumable', 'Missed Reservation']
-
-
 @api_view(["GET"])
 def billing(request):
 	form = BillingFilterForm(request.GET)
@@ -117,11 +114,13 @@ def billing(request):
 	area_access = get_area_access_for_billing(form)
 	consumables = get_consumables_for_billing(form)
 	missed_reservation = get_missed_reservations_for_billing(form)
+	training_sessions = get_training_sessions_for_billing(form)
 
 	data.extend(usage_events)
 	data.extend(area_access)
 	data.extend(consumables)
 	data.extend(missed_reservation)
+	data.extend(training_sessions)
 
 	serializer = BillableItemSerializer(data, many=True)
 	return Response(serializer.data)
@@ -144,6 +143,7 @@ def get_usage_events_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 		queryset = queryset.filter(project__application_identifier=billing_form.get_application_name())
 	if billing_form.get_username():
 		queryset = queryset.filter(user__username=billing_form.get_username())
+	usage_event: UsageEvent
 	for usage_event in queryset:
 		diff = usage_event.end - usage_event.start
 		result.append({
@@ -179,6 +179,7 @@ def get_area_access_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 		queryset = queryset.filter(project__application_identifier=billing_form.get_application_name())
 	if billing_form.get_username():
 		queryset = queryset.filter(customer__username=billing_form.get_username())
+	area_access_record: AreaAccessRecord
 	for area_access_record in queryset:
 		diff = area_access_record.end - area_access_record.start
 		result.append({
@@ -215,6 +216,7 @@ def get_missed_reservations_for_billing(billing_form: BillingFilterForm) -> List
 		queryset = queryset.filter(project__application_identifier=billing_form.get_application_name())
 	if billing_form.get_username():
 		queryset = queryset.filter(user__username=billing_form.get_username())
+	missed_reservation: Reservation
 	for missed_reservation in queryset:
 		result.append({
 			'type': 'missed_reservation',
@@ -250,6 +252,7 @@ def get_consumables_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 		queryset = queryset.filter(project__application_identifier=billing_form.get_application_name())
 	if billing_form.get_username():
 		queryset = queryset.filter(customer__username=billing_form.get_username())
+	consumable_withdrawal: ConsumableWithdraw
 	for consumable_withdrawal in queryset:
 		result.append({
 			'type': 'consumable',
@@ -264,5 +267,41 @@ def get_consumables_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 			'start': consumable_withdrawal.date.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
 			'end': consumable_withdrawal.date.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
 			'quantity': consumable_withdrawal.quantity
+		})
+	return result
+
+
+def get_training_sessions_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
+	result = []
+	queryset = TrainingSession.objects.filter()
+	start, end = billing_form.get_start_date(), billing_form.get_end_date()
+	queryset = queryset.filter(date__gte=start, date__lte=end)
+	if billing_form.get_account_id():
+		queryset = queryset.filter(project__account_id=billing_form.get_account_id())
+	if billing_form.get_account_name():
+		queryset = queryset.filter(project__account__name=billing_form.get_account_name())
+	if billing_form.get_project_id():
+		queryset = queryset.filter(project__id=billing_form.get_project_id())
+	if billing_form.get_project_name():
+		queryset = queryset.filter(project__name=billing_form.get_project_name())
+	if billing_form.get_application_name():
+		queryset = queryset.filter(project__application_identifier=billing_form.get_application_name())
+	if billing_form.get_username():
+		queryset = queryset.filter(trainee__username=billing_form.get_username())
+	training_session: TrainingSession
+	for training_session in queryset:
+		result.append({
+			'type': 'training_session',
+			'details': training_session.tool.name,
+			'account': training_session.project.account.name,
+			'account_id': training_session.project.account_id,
+			'project': training_session.project.name,
+			'project_id': training_session.project_id,
+			'application': training_session.project.application_identifier,
+			'username': training_session.trainee.username,
+			'user_id': training_session.trainee.id,
+			'start': training_session.date.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
+			'end': training_session.date.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
+			'quantity': training_session.duration
 		})
 	return result

@@ -1,6 +1,6 @@
 from _ssl import PROTOCOL_TLSv1_2, CERT_REQUIRED
 from base64 import b64decode
-from logging import exception, getLogger
+from logging import getLogger
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout

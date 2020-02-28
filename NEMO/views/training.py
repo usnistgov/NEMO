@@ -1,3 +1,4 @@
+from logging import getLogger
 from re import search
 from urllib.parse import urljoin
 
@@ -9,6 +10,9 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import User, Tool, TrainingSession, Project, MembershipHistory
+
+
+training_logger = getLogger(__name__)
 
 
 @staff_member_required(login_url=None)
@@ -57,7 +61,8 @@ def charge_training(request):
 					charges[index].qualified = (value == "on")
 		for c in charges.values():
 			c.full_clean()
-	except Exception:
+	except Exception as e:
+		training_logger.exception(e)
 		return HttpResponseBadRequest('An error occurred while processing the training charges. None of the charges were committed to the database. Please review the form for errors and omissions then submit the form again.')
 	else:
 		for c in charges.values():
