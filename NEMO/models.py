@@ -214,6 +214,10 @@ class User(models.Model):
 		except StaffCharge.DoesNotExist:
 			return None
 
+	@classmethod
+	def get_email_field_name(cls):
+		return 'email'
+
 	class Meta:
 		ordering = ['first_name']
 		permissions = (

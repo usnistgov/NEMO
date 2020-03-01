@@ -252,11 +252,7 @@ if settings.DEBUG:
 	# Static files
 	url(r'^static/(?P<path>.*$)', serve, {'document_root': settings.STATIC_ROOT}, name='static'),
 
-	try:
-		# Django debug toolbar
-		import debug_toolbar
+	if apps.is_installed('debug_toolbar'):
 		urlpatterns += [
-			url(r'^__debug__/', include(debug_toolbar.urls)),
+			url(r'^__debug__/', include('debug_toolbar.urls')),
 		]
-	except ImportError:
-		pass
