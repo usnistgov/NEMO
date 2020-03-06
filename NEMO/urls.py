@@ -1,3 +1,6 @@
+import logging
+from importlib import import_module
+
 from django.apps import apps
 from django.conf import settings
 from django.conf.urls import include, url
@@ -8,6 +11,10 @@ from django.views.static import serve
 from rest_framework import routers
 
 from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
+
+
+logger = logging.getLogger(__name__)
+
 
 if apps.is_installed("django.contrib.admin"):
 	# Use our custom login page instead of Django's built-in one.
@@ -186,12 +193,6 @@ urlpatterns = [
 	url(r'^user_preferences/$', users.user_preferences, name='user_preferences')
 ]
 
-if apps.is_installed('NEMO.apps.kiosk'):
-	urlpatterns += [path('kiosk/', include('NEMO.apps.kiosk.urls'))]
-
-if apps.is_installed('NEMO.apps.area_access'):
-	urlpatterns += [path('', include('NEMO.apps.area_access.urls'))]
-
 if settings.ALLOW_CONDITIONAL_URLS:
 	urlpatterns += [
 		url(r'^admin/', admin.site.urls),
@@ -247,6 +248,23 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		# NanoFab billing:
 		url(r'^billing/$', usage.billing, name='billing'),
 	]
+
+# Include urls for all NEMO plugins (that start with prefix NEMO)
+for app in apps.get_app_configs():
+	app_name = app.name
+	if app_name != 'NEMO' and app_name.startswith('NEMO'):
+		try:
+			mod = import_module('%s.urls' % app_name)
+		except ModuleNotFoundError:
+			logger.warning(f"no urls found for NEMO plugin: {app_name}")
+			pass
+		except Exception as e:
+			logger.warning(f"could not import urls for NEMO plugin: {app_name} {str(e)}")
+			pass
+		else:
+			urlpatterns += [path('', include('%s.urls' % app_name))]
+			logger.debug(f"automatically including urls for plugin: {app_name}")
+
 
 if settings.DEBUG:
 	# Static files
