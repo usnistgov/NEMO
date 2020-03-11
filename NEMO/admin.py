@@ -318,7 +318,7 @@ class InterlockCardAdminForm(forms.ModelForm):
 @register(InterlockCard)
 class InterlockCardAdmin(admin.ModelAdmin):
 	form = InterlockCardAdminForm
-	list_display = ('server', 'port', 'number', 'category', 'even_port', 'odd_port')
+	list_display = ('name', 'server', 'port', 'number', 'category', 'even_port', 'odd_port')
 
 
 @register(Interlock)

@@ -11,6 +11,11 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
+            model_name='interlockcard',
+            name='name',
+            field=models.CharField(blank=True, max_length=100, null=True),
+        ),
+        migrations.AddField(
             model_name='tool',
             name='_description',
             field=models.TextField(blank=True, db_column='description', help_text='HTML syntax could be used', null=True),

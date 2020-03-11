@@ -951,6 +951,7 @@ class ConsumableWithdraw(models.Model):
 
 
 class InterlockCard(models.Model):
+	name = models.CharField(max_length=100, blank=True, null=True)
 	server = models.CharField(max_length=100)
 	port = models.PositiveIntegerField()
 	number = models.PositiveIntegerField(blank=True, null=True)
@@ -965,7 +966,8 @@ class InterlockCard(models.Model):
 		ordering = ['server', 'number']
 
 	def __str__(self):
-		return str(self.server) + (', card ' + str(self.number) if self.number else '')
+		card_name = self.name + ': ' if self.name else ''
+		return card_name + str(self.server) + (', card ' + str(self.number) if self.number else '')
 
 
 class Interlock(models.Model):
