@@ -1416,8 +1416,20 @@ class SafetyIssue(models.Model):
 		return reverse('update_safety_issue', args=[self.id])
 
 
+class AlertCategory(models.Model):
+	name = models.CharField(max_length=200)
+
+	class Meta:
+		ordering = ['name']
+		verbose_name_plural = "Alert categories"
+
+	def __str__(self):
+		return self.name
+
+
 class Alert(models.Model):
 	title = models.CharField(blank=True, max_length=100)
+	category = models.CharField(blank=True, max_length=200,	help_text="A category/type for this alert.")
 	contents = models.CharField(max_length=500)
 	creation_time = models.DateTimeField(default=timezone.now)
 	creator = models.ForeignKey(User, null=True, blank=True, related_name='+', on_delete=models.SET_NULL)
@@ -1425,6 +1437,8 @@ class Alert(models.Model):
 	expiration_time = models.DateTimeField(null=True, blank=True, help_text='The alert can be deleted after the expiration time is reached.')
 	user = models.ForeignKey(User, null=True, blank=True, related_name='alerts', help_text='The alert will be visible for this user. The alert is visible to all users when this is empty.', on_delete=models.CASCADE)
 	dismissible = models.BooleanField(default=False, help_text="Allows the user to delete the alert. This is only valid when the 'user' field is set.")
+	expired = models.BooleanField(default=False, help_text="Indicates the alert has expired and won't be shown anymore")
+	deleted = models.BooleanField(default=False, help_text="Indicates the alert has been deleted and won't be shown anymore")
 
 	class Meta:
 		ordering = ['-debut_time']

@@ -41,7 +41,7 @@
 				{% for a in alerts %}
 					<div class="alert alert-danger">
 						{% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
-						{{ a.contents }}
+						{{ a.contents|linebreaks }}
 					</div>
 				{% endfor %}
 				{% for r in disabled_resources %}

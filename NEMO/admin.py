@@ -13,7 +13,7 @@ from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord,
 	News, Notification, PhysicalAccessLevel, PhysicalAccessLog, Project, Reservation, Resource, ResourceCategory, \
 	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
 	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences, TaskImages, InterlockCardCategory, \
-	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state
+	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory
 
 admin.site.site_header = "NEMO"
 admin.site.site_title = "NEMO"
@@ -452,9 +452,23 @@ class DoorAdmin(admin.ModelAdmin):
 	list_display = ('name', 'area', 'interlock', 'get_absolute_url')
 
 
+@register(AlertCategory)
+class AlertCategoryAdmin(admin.ModelAdmin):
+	list_display = ('name',)
+
+
+class AlertAdminForm(forms.ModelForm):
+	contents = forms.CharField(widget=forms.Textarea(attrs={'rows':3, 'cols': 50}),)
+
+	class Meta:
+		model = Alert
+		fields = '__all__'
+
+
 @register(Alert)
 class AlertAdmin(admin.ModelAdmin):
-	list_display = ('title', 'creation_time', 'creator', 'debut_time', 'expiration_time', 'user', 'dismissible')
+	list_display = ('title', 'category', 'creation_time', 'creator', 'debut_time', 'expiration_time', 'user', 'dismissible', 'expired', 'deleted')
+	form = AlertAdminForm
 
 
 @register(PhysicalAccessLevel)

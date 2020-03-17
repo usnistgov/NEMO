@@ -24,9 +24,20 @@
 			<label for="title">Title</label>{% if form.title.errors %} - <span style="color:red">{{ form.title.errors }}</span>{% endif %}
 			<input type="text" class="form-control" name="title" id="title" value="{{ form.title.value|default_if_none:"" }}" maxlength="{{ form.fields.title.max_length }}" autofocus>
 		</div>
+		{% if alert_categories %}
+			<div class="form-group">
+				<label for="category">Type</label>{% if form.category.errors %} - <span style="color:red">{{ form.category.errors|striptags }}</span>{% endif %}
+				<select id="category" name="category" class="form-control">
+					<option value="" disabled selected>Select an alert type</option>
+					{% for category in alert_categories %}
+						<option value="{{ category.name }}" {% if form.category.value == category.name %}selected{% endif %}>{{ category.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+		{% endif %}
 		<div class="form-group">
 			<label for="contents">Contents</label>{% if form.contents.errors %} - <span style="color:red">{{ form.contents.errors|striptags }}</span>{% endif %}
-			<input type="text" class="form-control" name="contents" id="contents" value="{{ form.contents.value|default_if_none:"" }}" maxlength="{{ form.fields.contents.max_length }}">
+			<textarea rows="3" class="form-control" name="contents" id="contents" maxlength="{{ form.fields.contents.max_length }}">{{ form.contents.value|default_if_none:"" }}</textarea>
 		</div>
 		<div class="form-group">
 			<div class="row">
@@ -62,7 +73,7 @@
 						<input type="hidden" name="alert_id" value="{{ a.id }}">
 					</form>
 					{% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
-					{{ a.contents }}<br>
+					{{ a.contents|linebreaks }}
 					Debuts on {{ a.debut_time }}<br>
 					{% if a.expiration_time %}Expires on {{ a.expiration_time }}{% else %}This alert will never expire{% endif %}<br>
 				</div>

@@ -1,11 +1,11 @@
 from datetime import datetime
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.forms import BaseForm, BooleanField, CharField, ChoiceField, DateField, Form, IntegerField, ModelChoiceField, ModelForm, ImageField, PasswordInput
+from django.forms import BaseForm, BooleanField, CharField, ChoiceField, DateField, Form, IntegerField, ModelChoiceField, ModelForm, ImageField
 from django.forms.utils import ErrorDict
 from django.utils import timezone
 
-from NEMO.models import Account, Alert, Comment, Consumable, ConsumableWithdraw, Project, SafetyIssue, ScheduledOutage,	Task, TaskCategory, User, UserPreferences, TaskImages, InterlockCard
+from NEMO.models import Account, Alert, Comment, Consumable, ConsumableWithdraw, Project, SafetyIssue, ScheduledOutage, Task, TaskCategory, User, UserPreferences, TaskImages, AlertCategory
 from NEMO.utilities import bootstrap_primary_color, format_datetime
 
 
@@ -249,7 +249,13 @@ class EmailBroadcastForm(Form):
 class AlertForm(ModelForm):
 	class Meta:
 		model = Alert
-		fields = ['title', 'contents', 'debut_time', 'expiration_time']
+		fields = ['title', 'category', 'contents', 'debut_time', 'expiration_time']
+
+	def clean_category(self):
+		category = self.cleaned_data['category']
+		if not category and AlertCategory.objects.exists():
+			raise ValidationError('Please select a category.')
+		return category
 
 
 class ScheduledOutageForm(ModelForm):

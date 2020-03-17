@@ -35,4 +35,30 @@ class Migration(migrations.Migration):
             name='allow_staff_access',
             field=models.BooleanField(default=False, help_text='Check this box to allow access to Staff users without explicitly granting them access'),
         ),
+        migrations.CreateModel(
+            name='AlertCategory',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=200)),
+            ],
+            options={
+                'verbose_name_plural': 'Alert categories',
+                'ordering': ['name'],
+            },
+        ),
+        migrations.AddField(
+            model_name='alert',
+            name='category',
+            field=models.CharField(blank=True, help_text='A category/type for this alert.', max_length=200),
+        ),
+        migrations.AddField(
+            model_name='alert',
+            name='deleted',
+            field=models.BooleanField(default=False, help_text="Indicates the alert has been deleted and won't be shown anymore"),
+        ),
+        migrations.AddField(
+            model_name='alert',
+            name='expired',
+            field=models.BooleanField(default=False, help_text="Indicates the alert has expired and won't be shown anymore"),
+        ),
     ]
