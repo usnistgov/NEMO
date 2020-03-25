@@ -222,7 +222,7 @@ def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryU
 	""" Returns a resized image based on the given maximum size """
 	with Image.open(image) as img:
 		width, height = img.size
-		# no need to resize if size is already under the max
+		# no need to resize if width or height is already less than the max
 		if width <= max or height <= max:
 			return image
 		if width > height:
