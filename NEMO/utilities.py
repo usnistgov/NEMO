@@ -210,6 +210,7 @@ def get_task_image_filename(task_images, filename):
 	ext = os.path.splitext(filename)[1]
 	return f"task_images/{year}/{tool_name}/{date}_{tool_name}_{number}{ext}"
 
+
 def get_tool_image_filename(tool, filename):
 	from django.template.defaultfilters import slugify
 	tool_name = slugify(tool)
