@@ -1094,7 +1094,7 @@ def auto_delete_file_on_tool_change(sender, instance: Tool, **kwargs):
 	except Tool.DoesNotExist:
 		return False
 
-	if old_file :
+	if old_file:
 		new_file = instance.image
 		if not old_file == new_file:
 			if os.path.isfile(old_file.path):

@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.admin import register
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
+from django.db.models.fields.files import FieldFile
 
 from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks, \
 	duplicate_tool_configuration
@@ -81,7 +82,8 @@ class ToolAdminForm(forms.ModelForm):
 		primary_owner = cleaned_data.get("_primary_owner")
 		image = cleaned_data.get("_image")
 
-		if image:
+		# only resize if an image is present and  has changed
+		if image and not isinstance(image, FieldFile):
 			from NEMO.utilities import resize_image
 			# resize image to 500x500 maximum
 			cleaned_data['_image'] = resize_image(image, 500)

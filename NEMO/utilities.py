@@ -219,16 +219,21 @@ def get_tool_image_filename(tool, filename):
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
 	""" Returns a resized image based on the given maximum size """
-	img: Image = Image.open(image)
-	if img.size[0] > img.size[1]:
-		width_ratio = (max / float(img.size[0]))
-		height = int((float(img.size[1]) * float(width_ratio)))
-		img = img.resize((max, height), Image.ANTIALIAS)
-	else:
-		height_ratio = (max / float(img.size[1]))
-		width = int((float(img.size[0]) * float(height_ratio)))
-		img = img.resize((width, max), Image.ANTIALIAS)
-	buffer = BytesIO()
-	img.save(fp=buffer, format='PNG', quality=quality)
-	resized_image = ContentFile(buffer.getvalue())
-	return InMemoryUploadedFile(resized_image,'ImageField', "%s.png" %image.name, 'image/png', resized_image.tell(), None)
+	with Image.open(image) as img:
+		width, height = img.size
+		# no need to resize if size is already under the max
+		if width <= max or height <= max:
+			return image
+		if width > height:
+			width_ratio = (max / float(width))
+			new_height = int((float(height) * float(width_ratio)))
+			img = img.resize((max, new_height), Image.ANTIALIAS)
+		else:
+			height_ratio = (max / float(height))
+			new_width = int((float(width) * float(height_ratio)))
+			img = img.resize((new_width, max), Image.ANTIALIAS)
+		with BytesIO() as buffer:
+			img.save(fp=buffer, format='PNG', quality=quality)
+			resized_image = ContentFile(buffer.getvalue())
+	file_name_without_ext = os.path.splitext(image.name)[0]
+	return InMemoryUploadedFile(resized_image, 'ImageField', "%s.png" %file_name_without_ext, 'image/png', resized_image.tell(), None)
