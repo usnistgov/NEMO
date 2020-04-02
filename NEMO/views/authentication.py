@@ -11,8 +11,8 @@ from django.urls import reverse, resolve
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_GET
-from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE
-from ldap3.core.exceptions import LDAPBindError, LDAPExceptionError
+from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE, AUTO_BIND_NO_TLS, ANONYMOUS
+from ldap3.core.exceptions import LDAPBindError, LDAPException
 
 from NEMO.models import User
 from NEMO.views.customization import get_media_file_contents
@@ -94,9 +94,37 @@ class LDAPAuthenticationBackend(ModelBackend):
 		errors = []
 		for server in settings.LDAP_SERVERS:
 			try:
+				port = server.get('port', 636)
+				use_ssl = server.get('use_ssl', True)
+				bind_as_authentication = server.get('bind_as_authentication', True)
+				domain = server.get('domain')
 				t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=server.get('certificate'))
-				s = Server(server['url'], port=636, use_ssl=True, tls=t)
-				c = Connection(s, user='{}\\{}'.format(server['domain'], username), password=password, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, authentication=SIMPLE)
+				s = Server(server['url'], port=port, use_ssl=use_ssl, tls=t)
+				auto_bind = AUTO_BIND_TLS_BEFORE_BIND if use_ssl else AUTO_BIND_NO_TLS
+				ldap_bind_user = f"{domain}\\{username}" if domain else username
+				if not bind_as_authentication:
+					# binding to LDAP first, then search for user
+					bind_username = server.get('bind_username', None)
+					bind_username = f"{domain}\\{bind_username}" if domain and bind_username else bind_username
+					bind_password = server.get('bind_password', None)
+					authentication = SIMPLE if bind_username and bind_password else ANONYMOUS
+					c = Connection(s, user=bind_username, password=bind_password, auto_bind=auto_bind, authentication=authentication, raise_exceptions=True)
+					search_username_field = server.get('search_username_field', 'uid')
+					search_attribute = server.get('search_attribute', 'cn')
+					search = c.search(server['base_dn'], f"({search_username_field}={username})", attributes=[search_attribute])
+					if not search or search_attribute not in c.response[0].get('attributes', []):
+						# no results, unbind and continue to next server
+						c.unbind()
+						errors.append(f"User {username} attempted to authenticate with LDAP ({server['url']}), but the search with dn:{server['base_dn']}, username_field:{search_username_field} and attribute:{search_attribute} did not return any results. The user was denied access")
+						continue
+					else:
+						# we got results, get the dn that will be used for binding authentication
+						response = c.response[0]
+						ldap_bind_user = response['dn']
+						c.unbind()
+
+				# let's proceed with binding using the user trying to authenticate
+				c = Connection(s, user=ldap_bind_user, password=password, auto_bind=auto_bind, authentication=SIMPLE, raise_exceptions=True)
 				c.unbind()
 				# At this point the user successfully authenticated to at least one LDAP server.
 				is_authenticated_with_ldap = True
@@ -104,7 +132,7 @@ class LDAPAuthenticationBackend(ModelBackend):
 				break
 			except LDAPBindError as e:
 				errors.append(f"User {username} attempted to authenticate with LDAP ({server['url']}), but entered an incorrect password. The user was denied access: {str(e)}")
-			except LDAPExceptionError as e:
+			except LDAPException as e:
 				errors.append(f"User {username} attempted to authenticate with LDAP ({server['url']}), but an error occurred. The user was denied access: {str(e)}")
 
 		if is_authenticated_with_ldap:
