@@ -78,6 +78,7 @@ urlpatterns = [
 	url(r'^cancel_reservation/(?P<reservation_id>\d+)/$', calendar.cancel_reservation, name='cancel_reservation'),
 	url(r'^cancel_outage/(?P<outage_id>\d+)/$', calendar.cancel_outage, name='cancel_outage'),
 	url(r'^set_reservation_title/(?P<reservation_id>\d+)/$', calendar.set_reservation_title, name='set_reservation_title'),
+	url(r'^change_reservation_project/(?P<reservation_id>\d+)/$', calendar.change_reservation_project, name='change_reservation_project'),
 	url(r'^event_details/reservation/(?P<reservation_id>\d+)/$', calendar.reservation_details, name='reservation_details'),
 	url(r'^event_details/outage/(?P<outage_id>\d+)/$', calendar.outage_details, name='outage_details'),
 	url(r'^event_details/usage/(?P<event_id>\d+)/$', calendar.usage_details, name='usage_details'),

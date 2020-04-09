@@ -535,6 +535,18 @@ def set_reservation_title(request, reservation_id):
 
 
 @login_required
+@require_POST
+def change_reservation_project(request, reservation_id):
+	""" Change reservation project for a user. """
+	reservation = get_object_or_404(Reservation, id=reservation_id)
+	project = get_object_or_404(Project, id=request.POST['project_id'])
+	if (request.user.is_staff or request.user == reservation.user) and reservation.has_not_ended() and reservation.has_not_started() and  project in reservation.user.active_projects():
+		reservation.project = project
+		reservation.save()
+	return HttpResponse()
+
+
+@login_required
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 @require_GET
 def email_reservation_reminders(request):
@@ -624,7 +636,8 @@ def reservation_details(request, reservation_id):
 	if reservation.cancelled:
 		error_message = 'This reservation was cancelled by {0} at {1}.'.format(reservation.cancelled_by, format_datetime(reservation.cancellation_time))
 		return HttpResponseNotFound(error_message)
-	return render(request, 'calendar/reservation_details.html', {'reservation': reservation})
+	reservation_project_can_be_changed = (request.user.is_staff or request.user == reservation.user) and reservation.has_not_ended and reservation.has_not_started and reservation.user.active_project_count() > 1
+	return render(request, 'calendar/reservation_details.html', {'reservation': reservation, 'reservation_project_can_be_changed': reservation_project_can_be_changed})
 
 
 @login_required

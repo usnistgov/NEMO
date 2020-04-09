@@ -214,7 +214,7 @@ class WebRelayHttpInterlock(Interlock):
 		if error:
 			raise ValidationError(error)
 
-	def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> (Interlock_model.State, str):
+	def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
 		state = Interlock_model.State.UNKNOWN
 		try:
 			if command_type == Interlock_model.State.LOCKED:

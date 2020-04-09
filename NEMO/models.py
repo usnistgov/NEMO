@@ -874,6 +874,9 @@ class Reservation(CalendarDisplay):
 	def has_not_ended(self):
 		return False if self.end < timezone.now() else True
 
+	def has_not_started(self):
+		return False if self.start <= timezone.now() else True
+
 	def save_and_notify(self):
 		self.save()
 		from NEMO.views.calendar import send_user_cancelled_reservation_notification, send_user_created_reservation_notification
