@@ -573,7 +573,11 @@ class Tool(models.Model):
 
 	def comments(self):
 		unexpired = Q(expiration_date__isnull=True) | Q(expiration_date__gt=timezone.now())
-		return self.parent_tool.comment_set.filter(visible=True).filter(unexpired) if self.is_child_tool() else self.comment_set.filter(visible=True).filter(unexpired)
+		return self.parent_tool.comment_set.filter(visible=True, staff_only=False).filter(unexpired) if self.is_child_tool() else self.comment_set.filter(visible=True, staff_only=False).filter(unexpired)
+
+	def staff_only_comments(self):
+		unexpired = Q(expiration_date__isnull=True) | Q(expiration_date__gt=timezone.now())
+		return self.parent_tool.comment_set.filter(visible=True, staff_only=True).filter(unexpired) if self.is_child_tool() else self.comment_set.filter(visible=True, staff_only=True).filter(unexpired)
 
 	def required_resource_is_unavailable(self):
 		return self.parent_tool.required_resource_set.filter(available=False).exists() if self.is_child_tool() else self.required_resource_set.filter(available=False).exists()
@@ -1186,6 +1190,7 @@ class Comment(models.Model):
 	hide_date = models.DateTimeField(blank=True, null=True, help_text="The date when this comment was hidden. If it is still visible or has expired then this date should be empty.")
 	hidden_by = models.ForeignKey(User, null=True, blank=True, related_name="hidden_comments", on_delete=models.SET_NULL)
 	content = models.TextField()
+	staff_only = models.BooleanField(default=False)
 
 	class Meta:
 		ordering = ['-creation_date']

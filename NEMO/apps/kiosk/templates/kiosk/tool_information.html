@@ -122,6 +122,29 @@
 	</div>
 {% endfor %}
 
+{# Display all staff comments #}
+{% if customer.is_staff and tool.staff_only_comments|length > 0 %}
+	<div class="media">
+		<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#staff_only_comments" class="pointer">
+			<span class="glyphicon glyphicon-eye-close pull-left notification-icon warning-highlight"></span><span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+		</a>
+		<div class="media-body">
+			Staff Only
+			<div id="staff_only_comments" class="collapse">
+				{% for c in tool.staff_only_comments %}
+					<div class="media">
+						<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"></span>
+						<div class="media-body">
+							{{ c.content }}<br>
+							<span style="font-size:x-small; color:grey; font-style:italic">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+		</div>
+	</div>
+{% endif %}
+
 {% if rendered_configuration_html %}
 	<div class="form-group">
 		<h2>Configuration</h2>

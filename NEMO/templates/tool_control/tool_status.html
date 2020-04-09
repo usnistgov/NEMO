@@ -191,6 +191,44 @@
 			</div>
 		{% endfor %}
 
+		{# Display all staff comments #}
+		{% if user.is_staff and tool.staff_only_comments|length > 0 %}
+			<div class="media">
+				<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#staff_only_comments" class="pointer">
+					<span class="glyphicon glyphicon-eye-close pull-left notification-icon warning-highlight"></span><span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+				</a>
+				<div class="media-body">
+					Staff Only
+					<div id="staff_only_comments" class="collapse">
+						{% for c in tool.staff_only_comments %}
+							<div class="media">
+								{% if user.id == c.author.id or user.is_staff %}
+									<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#comment_{{ c.id }}_actions" class="pointer">
+								{% endif %}
+								<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight" title="{% if c.expiration_date %}This comment will expire and become hidden on {{ c.expiration_date }}{% else %}This comment will be displayed indefinitely.{% endif %}"></span>
+								{% if user.id == c.author.id or user.is_staff %}
+									<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+									</a>
+								{% endif %}
+								<div class="media-body">
+									{{ c.content }}<br>
+									<span style="font-size:x-small; color:grey; font-style:italic">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
+									{% if user.id == c.author.id or user.is_staff %}
+										<div id="comment_{{ c.id }}_actions" class="collapse grey">
+											<form action="{% url 'hide_comment' c.id %}" method="post">
+												{% csrf_token %}
+												<a href="javascript:void(0)" onclick="$(this).closest('form').submit()">Hide this comment</a>.
+											</form>
+										</div>
+									{% endif %}
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+		{% endif %}
+
 		<div style="margin-top:10px">
 			{{ rendered_configuration_html }}
 		</div>
@@ -473,6 +511,12 @@
 				<label for="content">What would you like to say?</label>
 				<textarea name="content" id="content" class="form-control" rows="6" required></textarea>
 			</div>
+			{% if user.is_staff %}
+				<div class="form-group">
+					<input type="checkbox" id="staff_only" name="staff_only"/>
+					<label for="staff_only" style="padding-left: 5px">Make this comment only visible to staff users</label>
+				</div>
+			{% endif %}
 			<div class="form-group">
 				<button type="submit" class="btn btn-info">Post comment</button>
 			</div>

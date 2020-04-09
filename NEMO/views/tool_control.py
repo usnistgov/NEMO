@@ -251,7 +251,7 @@ def past_comments_and_tasks(request):
 	tool_id = request.GET.get('tool_id')
 	try:
 		tasks = Task.objects.filter(tool_id=tool_id, creation_time__gt=start, creation_time__lt=end)
-		comments = Comment.objects.filter(tool_id=tool_id, creation_date__gt=start, creation_date__lt=end)
+		comments = Comment.objects.filter(tool_id=tool_id, staff_only=False, creation_date__gt=start, creation_date__lt=end)
 	except:
 		return HttpResponseBadRequest('Task and comment lookup failed.')
 	past = list(chain(tasks, comments))
@@ -267,7 +267,7 @@ def past_comments_and_tasks(request):
 @require_GET
 def ten_most_recent_past_comments_and_tasks(request, tool_id):
 	tasks = Task.objects.filter(tool_id=tool_id).order_by('-creation_time')[:10]
-	comments = Comment.objects.filter(tool_id=tool_id).order_by('-creation_date')[:10]
+	comments = Comment.objects.filter(tool_id=tool_id, staff_only=False).order_by('-creation_date')[:10]
 	past = list(chain(tasks, comments))
 	past.sort(key=lambda x: getattr(x, 'creation_time', None) or getattr(x, 'creation_date', None))
 	past.reverse()

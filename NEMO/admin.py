@@ -371,8 +371,8 @@ class TaskImagesAdmin(admin.ModelAdmin):
 
 @register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-	list_display = ('id', 'tool', 'author', 'creation_date', 'expiration_date', 'visible', 'hidden_by', 'hide_date')
-	list_filter = ('visible', 'creation_date', 'tool')
+	list_display = ('id', 'tool', 'author', 'creation_date', 'expiration_date', 'visible', 'staff_only', 'hidden_by', 'hide_date')
+	list_filter = ('visible', 'creation_date', 'tool', 'staff_only')
 	date_hierarchy = 'creation_date'
 	search_fields = ('content',)
 
