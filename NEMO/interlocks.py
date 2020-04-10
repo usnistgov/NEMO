@@ -209,6 +209,10 @@ class ProXrInterlock(Interlock):
 	# supported proxr commands
 	PXR_CMD_B1_OFF = (254, 129, 1)
 	PXR_CMD_B1_ON = (254, 130, 1)
+	PXR_CMD_B1_STAT = (254, 124, 1)
+	# supported proxr responses
+	PXR_RSP_OFF = 0
+	PXR_RSP_ON = 255
 
 	def _send_bytes(self, relay, proxrcmd):
 		"""Returns the response from the relay controller.
@@ -223,6 +227,16 @@ class ProXrInterlock(Interlock):
 		# only the last byte of the response is important
 		return relay.recv(64)[-1]
 
+	def _get_status(self, relay):
+		"""Return current NEMO state of the relay."""
+		state = self._send_bytes(relay, self.PXR_CMD_B1_STAT)
+		if state == self.PXR_RSP_OFF:
+			return Interlock_model.State.LOCKED
+		elif state == self.PXR_RSP_ON:
+			return Interlock_model.State.UNLOCKED
+		else:
+			return Interlock_model.State.UNKNOWN
+
 	def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
 		"""Returns and sets NEMO locked/unlocked state."""
 		state = Interlock_model.State.UNKNOWN
@@ -230,10 +244,10 @@ class ProXrInterlock(Interlock):
 			with socket.create_connection((interlock.card.server, interlock.card.port), 10) as relay:
 				if command_type == Interlock_model.State.LOCKED:
 					self._send_bytes(relay, self.PXR_CMD_B1_OFF)
-					state = Interlock_model.State.LOCKED
+					state = self._get_status(relay)
 				elif command_type == Interlock_model.State.UNLOCKED:
 					self._send_bytes(relay, self.PXR_CMD_B1_ON)
-					state = Interlock_model.State.UNLOCKED
+					state = self._get_status(relay)
 		except Exception as error:
 			raise InterlockError(interlock=interlock, msg="Communication error: " + str(error))
 		return state
