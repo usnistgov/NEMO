@@ -9,10 +9,17 @@ class Migration(migrations.Migration):
         ('NEMO', '0013_version_2_1_0'),
     ]
 
+    def create_proxr_interlock_card_category(apps, schema_editor):
+        InterlockCardCategory = apps.get_model("NEMO", "InterlockCardCategory")
+        if not InterlockCardCategory.objects.filter(key="proxr").exists():
+            proxr_category = InterlockCardCategory.objects.create(name="ProXr", key="proxr")
+            proxr_category.save()
+
     operations = [
         migrations.AddField(
             model_name='comment',
             name='staff_only',
             field=models.BooleanField(default=False),
         ),
+        migrations.RunPython(create_proxr_interlock_card_category),
     ]
