@@ -209,10 +209,6 @@ class ProXrInterlock(Interlock):
 	# supported proxr commands
 	PXR_CMD_B1_OFF = (254, 129, 1)
 	PXR_CMD_B1_ON = (254, 130, 1)
-	PXR_CMD_B1_STAT = (254, 124, 1)
-	# supported proxr responses
-	PXR_RSP_OFF = 0
-	PXR_RSP_ON = 255
 
 	def _send_bytes(self, relay, proxrcmd):
 		"""Returns the response from the relay controller.
@@ -225,34 +221,24 @@ class ProXrInterlock(Interlock):
 			bytes_sent += relay.send(bytes(proxrcmd[bytes_sent:]))
 		# relay responses can include erroneous data
 		# only the last byte of the response is important
-		resp = relay.recv(64)[-1]
-		return resp
+		return relay.recv(64)[-1]
 
 	def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
 		"""Returns current NEMO locked/unlocked state.
 		Toggles the relay on/off.
 		"""
-		# get the proxr state before operation
-		# toggle the relay on/off
-		# get the proxr state after operation
-		# return the nemo state
-		after = None
+		state = Interlock_model.State.UNKNOWN
 		try:
 			with socket.create_connection((interlock.card.server, interlock.card.port), 10) as relay:
-				before = self._send_bytes(relay, self.PXR_CMD_B1_STAT)
-				if before == self.PXR_RSP_OFF:
-					self._send_bytes(relay, self.PXR_CMD_B1_ON)
-				elif before == self.PXR_RSP_ON:
+				if command_type == Interlock_model.State.LOCKED:
 					self._send_bytes(relay, self.PXR_CMD_B1_OFF)
-				after = self._send_bytes(relay, self.PXR_CMD_B1_STAT)
+					state = Interlock_model.State.LOCKED
+				elif command_type == Interlock_model.State.UNLOCKED:
+					self._send_bytes(relay, self.PXR_CMD_B1_ON)
+					state = Interlock_model.State.UNLOCKED
 		except Exception as error:
 			raise InterlockError(interlock=interlock, msg="Communication error: " + str(error))
-		if after == self.PXR_RSP_ON:
-			return Interlock_model.State.UNLOCKED
-		elif after == self.PXR_RSP_OFF:
-			return Interlock_model.State.LOCKED
-		else:
-			return Interlock_model.State.UNKNOWN
+		return state
 
 
 class WebRelayHttpInterlock(Interlock):
