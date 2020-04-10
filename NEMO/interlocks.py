@@ -214,25 +214,24 @@ class ProXrInterlock(Interlock):
 	PXR_RSP_OFF = 0
 	PXR_RSP_ON = 255
 
-	def __init__(self):
-		super().__init__()
-		self.relay_socket = None
-
-	def _send_bytes(self, proxrcmd):
+	def _send_bytes(self, relay_socket, proxrcmd):
 		"""Returns the response from the relay controller.
+		Argument relay_socket is a connected socket object.
 		Argument proxrcmd (the ProXR command) is an iterable of 8-bit integers.
 		"""
 		# make sure that all bytes get sent
 		bytes_sent = 0
 		while bytes_sent < len(proxrcmd):
-			bytes_sent += self.relay_socket.send(bytes(proxrcmd[bytes_sent:]))
+			bytes_sent += relay_socket.send(bytes(proxrcmd[bytes_sent:]))
 		# relay responses can include erroneous data
 		# only the last byte of the response is important
-		return self.relay_socket.recv(64)[-1]
+		return relay_socket.recv(64)[-1]
 
-	def _get_state(self):
-		"""Return current NEMO state of the relay."""
-		state = self._send_bytes(self.PXR_CMD_B1_STAT)
+	def _get_state(self, relay_socket):
+		"""Returns current NEMO state of the relay.
+		Argument relay_socket is a connected socket object.
+		"""
+		state = self._send_bytes(relay_socket, self.PXR_CMD_B1_STAT)
 		if state == self.PXR_RSP_OFF:
 			return Interlock_model.State.LOCKED
 		elif state == self.PXR_RSP_ON:
@@ -244,13 +243,13 @@ class ProXrInterlock(Interlock):
 		"""Returns and sets NEMO locked/unlocked state."""
 		state = Interlock_model.State.UNKNOWN
 		try:
-			with socket.create_connection((interlock.card.server, interlock.card.port), 10) as self.relay_socket:
+			with socket.create_connection((interlock.card.server, interlock.card.port), 10) as relay_socket:
 				if command_type == Interlock_model.State.LOCKED:
-					self._send_bytes(self.PXR_CMD_B1_OFF)
-					state = self._get_state()
+					self._send_bytes(relay_socket, self.PXR_CMD_B1_OFF)
+					state = self._get_state(relay_socket)
 				elif command_type == Interlock_model.State.UNLOCKED:
-					self._send_bytes(self.PXR_CMD_B1_ON)
-					state = self._get_state()
+					self._send_bytes(relay_socket, self.PXR_CMD_B1_ON)
+					state = self._get_state(relay_socket)
 		except Exception as error:
 			raise InterlockError(interlock=interlock, msg="Communication error: " + str(error))
 		return state
