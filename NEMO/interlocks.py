@@ -201,6 +201,60 @@ class StanfordInterlock(Interlock):
 			sock.close()
 
 
+class ProXrInterlock(Interlock):
+	"""Very basic support for ProXR relay controllers.
+	Supports on/off/status for all relays in bank 1.
+	See https://ncd.io/proxr-quick-start-guide/ for more about ProXR.
+	"""
+	# supported proxr commands
+	PXR_CMD_B1_OFF = (254, 129, 1)
+	PXR_CMD_B1_ON = (254, 130, 1)
+	PXR_CMD_B1_STAT = (254, 124, 1)
+	# supported proxr responses
+	PXR_RSP_OFF = 0
+	PXR_RSP_ON = 255
+
+	def _send_bytes(self, relay, proxrcmd):
+		"""Returns the response from the relay controller.
+		Argument relay is a connected socket object.
+		Argument proxrcmd (the ProXR command) is an iterable of 8-bit integers.
+		"""
+		# make sure that all bytes get sent
+		bytes_sent = 0
+		while bytes_sent < len(proxrcmd):
+			bytes_sent += relay.send(bytes(proxrcmd[bytes_sent:]))
+		# relay responses can include erroneous data
+		# only the last byte of the response is important
+		resp = relay.recv(64)[-1]
+		return resp
+
+	def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
+		"""Returns current NEMO locked/unlocked state.
+		Toggles the relay on/off.
+		"""
+		# get the proxr state before operation
+		# toggle the relay on/off
+		# get the proxr state after operation
+		# return the nemo state
+		after = None
+		try:
+			with socket.create_connection((interlock.card.server, interlock.card.port), 10) as relay:
+				before = self._send_bytes(relay, self.PXR_CMD_B1_STAT)
+				if before == self.PXR_RSP_OFF:
+					self._send_bytes(relay, self.PXR_CMD_B1_ON)
+				elif before == self.PXR_RSP_ON:
+					self._send_bytes(relay, self.PXR_CMD_B1_OFF)
+				after = self._send_bytes(relay, self.PXR_CMD_B1_STAT)
+		except Exception as error:
+			raise InterlockError(interlock=interlock, msg="Communication error: " + str(error))
+		if after == self.PXR_RSP_ON:
+			return Interlock_model.State.UNLOCKED
+		elif after == self.PXR_RSP_OFF:
+			return Interlock_model.State.LOCKED
+		else:
+			return Interlock_model.State.UNKNOWN
+
+
 class WebRelayHttpInterlock(Interlock):
 	WEB_RELAY_OFF = 0
 	WEB_RELAY_ON = 1
@@ -258,4 +312,5 @@ def get(category: InterlockCardCategory, raise_exception=True):
 interlocks: Dict[str, Interlock] = {
 	'stanford': StanfordInterlock(),
 	'web_relay_http': WebRelayHttpInterlock(),
+	'proxr': ProXrInterlock(),
 }
