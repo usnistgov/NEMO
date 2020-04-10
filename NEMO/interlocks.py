@@ -203,7 +203,7 @@ class StanfordInterlock(Interlock):
 
 class ProXrInterlock(Interlock):
 	"""Very basic support for ProXR relay controllers.
-	Supports on/off/status for all relays in bank 1.
+	Supports on/off for all relays in bank 1.
 	See https://ncd.io/proxr-quick-start-guide/ for more about ProXR.
 	"""
 	# supported proxr commands
@@ -224,9 +224,7 @@ class ProXrInterlock(Interlock):
 		return relay.recv(64)[-1]
 
 	def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
-		"""Returns current NEMO locked/unlocked state.
-		Toggles the relay on/off.
-		"""
+		"""Returns and sets NEMO locked/unlocked state."""
 		state = Interlock_model.State.UNKNOWN
 		try:
 			with socket.create_connection((interlock.card.server, interlock.card.port), 10) as relay:
