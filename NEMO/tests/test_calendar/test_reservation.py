@@ -44,7 +44,7 @@ class ReservationTestCase(TestCase):
 		login_as(self.client, user)
 
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("You do not belong to any active projects. Thus, you may not create any reservations." in response.content.decode())
 		self.assertTrue("You are blocked from making reservations for all tools in the NanoFab. Please complete the NanoFab rules tutorial in order to create new reservations." in response.content.decode())
 		self.assertTrue("You are not qualified to use this tool. Creating, moving, and resizing reservations is forbidden." in response.content.decode())
@@ -53,7 +53,7 @@ class ReservationTestCase(TestCase):
 		user.save()
 		login_as(self.client, user)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("You are blocked from making reservations for all tools in the NanoFab. Please complete the NanoFab rules tutorial in order to create new reservations." not in response.content.decode())
 		self.assertTrue("You do not belong to any active projects. Thus, you may not create any reservations." in response.content.decode())
 		self.assertTrue("You are not qualified to use this tool. Creating, moving, and resizing reservations is forbidden." in response.content.decode())
@@ -61,7 +61,7 @@ class ReservationTestCase(TestCase):
 		user.qualifications.add(tool)
 		login_as(self.client, user)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("You are not qualified to use this tool. Creating, moving, and resizing reservations is forbidden." not in response.content.decode())
 		self.assertTrue("You do not belong to any active projects. Thus, you may not create any reservations." in response.content.decode())
 
@@ -73,8 +73,8 @@ class ReservationTestCase(TestCase):
 		login_as(self.client, consumer)
 
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "The request parameters have an end time that precedes the start time.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "The request parameters have an end time that precedes the start time.")
 
 		# fix time
 		end = (start + timedelta(hours=1))
@@ -82,19 +82,19 @@ class ReservationTestCase(TestCase):
 		outage = ScheduledOutage.objects.create(title="Outage", tool=tool, start=start, end=end, creator=staff)
 		data = self.get_reservation_data(start, end, tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Your reservation coincides with a scheduled outage. Please choose a different time." in response.content.decode())
 
 		# try to schedule a reservation that starts before but ends slightly after the outage starts
 		data = self.get_reservation_data(start - timedelta(hours=1), end - timedelta(minutes=59), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Your reservation coincides with a scheduled outage. Please choose a different time." in response.content.decode())
 
 		# try to schedule a reservation that starts slightly before the outage ends
 		data = self.get_reservation_data(start + timedelta(minutes=59), end + timedelta(hours=1), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Your reservation coincides with a scheduled outage. Please choose a different time." in response.content.decode())
 
 		outage.delete()
@@ -102,7 +102,7 @@ class ReservationTestCase(TestCase):
 		# try to schedule a reservation in the past
 		data = self.get_reservation_data(start - timedelta(days=1), end - timedelta(days=1), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("start time" in response.content.decode() and  "is earlier than the current time" in response.content.decode())
 
 		# check tool horizon (days in advance to reserve tool)
@@ -114,9 +114,9 @@ class ReservationTestCase(TestCase):
 
 		login_as(self.client, consumer)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("You may not create reservations further than 2 days from now for this tool." in response.content.decode())
-		self.assertEquals(Reservation.objects.filter(tool=tool).count(), 0)
+		self.assertEqual(Reservation.objects.filter(tool=tool).count(), 0)
 
 		# minimum & maximum duration
 		tool.minimum_usage_block_time = 90
@@ -128,10 +128,10 @@ class ReservationTestCase(TestCase):
 
 		login_as(self.client, consumer)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Your reservation has a duration of 60 minutes. This tool requires a minimum reservation duration of 90 minutes." in response.content.decode())
 		self.assertTrue("Your reservation has a duration of 60 minutes. Reservations for this tool may not exceed 30 minutes." in response.content.decode())
-		self.assertEquals(Reservation.objects.filter(tool=tool).count(), 0)
+		self.assertEqual(Reservation.objects.filter(tool=tool).count(), 0)
 
 		# max reservations per day
 		first_of_the_day = Reservation.objects.create(tool=tool, start=start, end=end, creator=consumer, user=consumer, short_notice=False)
@@ -141,7 +141,7 @@ class ReservationTestCase(TestCase):
 		tool.save()
 		data = self.get_reservation_data(start + timedelta(hours=2), end + timedelta(hours=2), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("You may only have 1 reservations for this tool per day. Missed reservations are included when counting the number of reservations per day" in response.content.decode())
 
 		# even if the first one was missed, still counts towards the limit
@@ -149,7 +149,7 @@ class ReservationTestCase(TestCase):
 		first_of_the_day.save()
 		data = self.get_reservation_data(start + timedelta(hours=2), end + timedelta(hours=2), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("You may only have 1 reservations for this tool per day. Missed reservations are included when counting the number of reservations per day" in response.content.decode())
 
 		# test minimum time between reservations
@@ -161,12 +161,12 @@ class ReservationTestCase(TestCase):
 		tool.save()
 		data = self.get_reservation_data(start + timedelta(minutes=90), end + timedelta(minutes=90), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Separate reservations for this tool that belong to you must be at least 120 minutes apart from each other. The proposed reservation ends too close to another reservation." in response.content.decode())
 
 		data = self.get_reservation_data(start + timedelta(minutes=30), start + timedelta(minutes=90), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Separate reservations for this tool that belong to you must be at least 120 minutes apart from each other. The proposed reservation begins too close to another reservation." in response.content.decode())
 		self.assertTrue("Separate reservations for this tool that belong to you must be at least 120 minutes apart from each other. The proposed reservation ends too close to another reservation." in response.content.decode())
 
@@ -175,7 +175,7 @@ class ReservationTestCase(TestCase):
 		tool.save()
 		data = self.get_reservation_data(start + timedelta(minutes=90), end + timedelta(minutes=90), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue("You may only reserve up to 90 minutes of time on this tool, starting from the current time onward." in response.content.decode())
 
 		first_of_the_day.delete()
@@ -187,8 +187,8 @@ class ReservationTestCase(TestCase):
 
 		login_as(self.client, consumer)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(Reservation.objects.all().count(), 1)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(Reservation.objects.all().count(), 1)
 		self.assertTrue(Reservation.objects.get(tool=tool))
 
 	def test_create_reservation_multi_projects(self):
@@ -205,21 +205,21 @@ class ReservationTestCase(TestCase):
 		not_my_project = Project.objects.create(name="not my project", account=Account.objects.get(name="account1"))
 		data['project_id'] = not_my_project.id
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(Reservation.objects.all().count(), 0)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(Reservation.objects.all().count(), 0)
 		self.assertTrue("Associate your reservation with a project." in response.content.decode())
 
 		# test not sending project id
 		data['project_id'] = ''
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(Reservation.objects.all().count(), 0)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(Reservation.objects.all().count(), 0)
 		self.assertTrue("Associate your reservation with a project." in response.content.decode())
 
 		data['project_id'] = second_project.id
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(Reservation.objects.all().count(), 1)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(Reservation.objects.all().count(), 1)
 		self.assertTrue(Reservation.objects.get(tool=tool))
 
 	def test_create_reservation_for_somebody_else(self):
@@ -230,11 +230,11 @@ class ReservationTestCase(TestCase):
 
 		login_as(self.client, staff)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(Reservation.objects.all().count(), 1)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(Reservation.objects.all().count(), 1)
 		self.assertTrue(Reservation.objects.get(tool=tool))
-		self.assertEquals(Reservation.objects.get(tool=tool).user, consumer)
-		self.assertEquals(Reservation.objects.get(tool=tool).creator, staff)
+		self.assertEqual(Reservation.objects.get(tool=tool).user, consumer)
+		self.assertEqual(Reservation.objects.get(tool=tool).creator, staff)
 
 	def test_resize_reservation(self):
 		# create reservation
@@ -244,30 +244,30 @@ class ReservationTestCase(TestCase):
 
 		login_as(self.client, consumer)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		reservation = Reservation.objects.get(tool=tool)
 		self.assertTrue(reservation.id)
 
 		# test wrong delta
 		response = self.client.post(reverse('resize_reservation'), {'delta': 'asd', 'id': reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Invalid delta")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "Invalid delta")
 
 		# test no reservation id
 		response = self.client.post(reverse('resize_reservation'), {'delta': 10}, follow=True)
-		self.assertEquals(response.status_code, 404)
-		self.assertEquals(response.content.decode(), "The reservation that you wish to modify doesn't exist!")
+		self.assertEqual(response.status_code, 404)
+		self.assertEqual(response.content.decode(), "The reservation that you wish to modify doesn't exist!")
 
 		# test resize to less than original time
 		response = self.client.post(reverse('resize_reservation'), {'delta': -60, 'id': reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
+		self.assertEqual(response.status_code, 400)
 		self.assertTrue('Reservation start time' in response.content.decode())
 		self.assertTrue('must be before the end time' in response.content.decode())
 
 		# test resize to end before now
 		old_resa = Reservation.objects.create(tool=tool, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), creator=consumer, user=consumer, short_notice=False)
 		response = self.client.post(reverse('resize_reservation'), {'delta': -65, 'id': old_resa.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
+		self.assertEqual(response.status_code, 400)
 		self.assertTrue('Reservation start time' in response.content.decode())
 		self.assertTrue('is earlier than the current time' in response.content.decode())
 		old_resa.delete()

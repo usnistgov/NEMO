@@ -295,6 +295,8 @@ class WebRelayHttpInterlock(Interlock):
 			return Interlock_model.State.LOCKED
 		elif state == WebRelayHttpInterlock.WEB_RELAY_ON:
 			return Interlock_model.State.UNLOCKED
+		else:
+			raise Exception(f"Unexpected state received from interlock: {state}")
 
 
 def get(category: InterlockCardCategory, raise_exception=True):

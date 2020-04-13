@@ -57,14 +57,14 @@ class BillingAPITestCase(TestCase):
 		login_as_staff(self.client)
 
 		response = self.client.get('/api/billing', data, follow=True)
-		self.assertEquals(response.status_code, 403, "regular user or staff doesn't have permission")
+		self.assertEqual(response.status_code, 403, "regular user or staff doesn't have permission")
 
 		staff_user = User.objects.get(username='test_staff')
 		staff_user.user_permissions.add(Permission.objects.get(codename='use_billing_api'))
 		staff_user.save()
 		response = self.client.get('/api/billing', data, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(len(response.data), results_number)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(len(response.data), results_number)
 
 		date_format = api.date_time_format
 		for billing_item in response.data:

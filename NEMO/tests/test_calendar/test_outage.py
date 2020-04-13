@@ -50,8 +50,8 @@ class OutageTestCase(TestCase):
 		login_as_staff(self.client)
 
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "The request parameters have an end time that precedes the start time.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "The request parameters have an end time that precedes the start time.")
 
 		# fix time
 		end = (start + timedelta(hours=1))
@@ -59,28 +59,28 @@ class OutageTestCase(TestCase):
 		Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start, end=end, short_notice=False)
 		data = self.get_outage_data(start=start, end=end, tool_name=tool.name)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
 
 		# try to schedule an outage that starts before but ends slightly after the reservation starts
 		data = self.get_outage_data(start=start-timedelta(hours=1), end=end-timedelta(minutes=59), tool_name=tool.name)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
 
 		# try to schedule an outage that starts slightly before the reservation ends
 		data = self.get_outage_data(start=start + timedelta(minutes=59), end=end + timedelta(hours=1), tool_name=tool.name)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
 
 		# no title
 		start = start + timedelta(hours=2)
 		end = end + timedelta(hours=2)
 		data = self.get_outage_data(start=start, end=end, tool_name=tool.name)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 200) # response code valid but form is sent back. let's make sure the outage was indeed NOT created
-		self.assertEquals(ScheduledOutage.objects.all().count(), 0)
+		self.assertEqual(response.status_code, 200) # response code valid but form is sent back. let's make sure the outage was indeed NOT created
+		self.assertEqual(ScheduledOutage.objects.all().count(), 0)
 
 
 	def test_create_outage(self):
@@ -89,8 +89,8 @@ class OutageTestCase(TestCase):
 		data = self.get_outage_data(title="Outage", start=start, end=end, tool_name=tool.name)
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(ScheduledOutage.objects.all().count(), 1)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(ScheduledOutage.objects.all().count(), 1)
 		self.assertTrue(ScheduledOutage.objects.get(title="Outage"))
 
 
@@ -101,7 +101,7 @@ class OutageTestCase(TestCase):
 		data = self.get_outage_data(title="Outage", start=start, end=end, tool_name=tool.name)
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		outage = ScheduledOutage.objects.get(title="Outage")
 		self.assertTrue(outage.id)
 
@@ -115,17 +115,17 @@ class OutageTestCase(TestCase):
 
 		# test wrong delta
 		response = self.client.post(reverse('resize_outage'), {'delta':'asd', 'id': outage.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Invalid delta")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "Invalid delta")
 
 		# test no outage id
 		response = self.client.post(reverse('resize_outage'), {'delta': 10}, follow=True)
-		self.assertEquals(response.status_code, 404)
-		self.assertEquals(response.content.decode(), "The outage that you wish to modify doesn't exist!")
+		self.assertEqual(response.status_code, 404)
+		self.assertEqual(response.content.decode(), "The outage that you wish to modify doesn't exist!")
 
 		# test resize to less than original time
 		response = self.client.post(reverse('resize_outage'), {'delta': -60, 'id': outage.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
+		self.assertEqual(response.status_code, 400)
 		self.assertTrue('Outage start time' in response.content.decode())
 		self.assertTrue('must be before the end time' in response.content.decode())
 
@@ -134,19 +134,19 @@ class OutageTestCase(TestCase):
 		end_reservation = start_reservation + timedelta(hours=1)
 		Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start_reservation, end=end_reservation, short_notice=False)
 		response = self.client.post(reverse('resize_outage'), {'delta': 61, 'id': outage.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
 
 		# test reduce outage time by 10 min
 		response = self.client.post(reverse('resize_outage'), {'delta': -10, 'id':outage.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(ScheduledOutage.objects.get(pk=outage.id).end, outage.end - timedelta(minutes=10))
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(ScheduledOutage.objects.get(pk=outage.id).end, outage.end - timedelta(minutes=10))
 
 		# test increase outage time by 10 min
 		outage = ScheduledOutage.objects.get(pk=outage.id)
 		response = self.client.post(reverse('resize_outage'), {'delta': 10, 'id': outage.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(ScheduledOutage.objects.get(pk=outage.id).end, outage.end + timedelta(minutes=10))
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(ScheduledOutage.objects.get(pk=outage.id).end, outage.end + timedelta(minutes=10))
 
 	def test_move_outage(self):
 		# create outage
@@ -155,7 +155,7 @@ class OutageTestCase(TestCase):
 		data = self.get_outage_data(title="Outage", start=start, end=end, tool_name=tool.name)
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		outage = ScheduledOutage.objects.get(title="Outage")
 		self.assertTrue(outage.id)
 
@@ -169,13 +169,13 @@ class OutageTestCase(TestCase):
 
 		# test wrong delta
 		response = self.client.post(reverse('move_outage'), {'delta': 'asd', 'id': outage.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Invalid delta")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "Invalid delta")
 
 		# test no outage id
 		response = self.client.post(reverse('move_outage'), {'delta': 10}, follow=True)
-		self.assertEquals(response.status_code, 404)
-		self.assertEquals(response.content.decode(), "The outage that you wish to modify doesn't exist!")
+		self.assertEqual(response.status_code, 404)
+		self.assertEqual(response.content.decode(), "The outage that you wish to modify doesn't exist!")
 
 		# create a reservation and try to move outage to overlap reservation
 		start_reservation = end + timedelta(hours=1)
@@ -183,21 +183,21 @@ class OutageTestCase(TestCase):
 		Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start_reservation, end=end_reservation,
 								   short_notice=False)
 		response = self.client.post(reverse('move_outage'), {'delta': 61, 'id': outage.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
 
 		# test move outage 10 min earlier
 		response = self.client.post(reverse('move_outage'), {'delta': -10, 'id': outage.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(ScheduledOutage.objects.get(pk=outage.id).end, outage.end - timedelta(minutes=10))
-		self.assertEquals(ScheduledOutage.objects.get(pk=outage.id).start, outage.start - timedelta(minutes=10))
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(ScheduledOutage.objects.get(pk=outage.id).end, outage.end - timedelta(minutes=10))
+		self.assertEqual(ScheduledOutage.objects.get(pk=outage.id).start, outage.start - timedelta(minutes=10))
 
 		# test move outage 10 min later
 		outage = ScheduledOutage.objects.get(pk=outage.id)
 		response = self.client.post(reverse('move_outage'), {'delta': 10, 'id': outage.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(ScheduledOutage.objects.get(pk=outage.id).end, outage.end + timedelta(minutes=10))
-		self.assertEquals(ScheduledOutage.objects.get(pk=outage.id).start, outage.start + timedelta(minutes=10))
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(ScheduledOutage.objects.get(pk=outage.id).end, outage.end + timedelta(minutes=10))
+		self.assertEqual(ScheduledOutage.objects.get(pk=outage.id).start, outage.start + timedelta(minutes=10))
 
 	def test_cancel_outage(self):
 		# create outage
@@ -206,7 +206,7 @@ class OutageTestCase(TestCase):
 		data = self.get_outage_data(title="Outage", start=start, end=end, tool_name=tool.name)
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		outage = ScheduledOutage.objects.get(title="Outage")
 		self.assertTrue(outage.id)
 
@@ -219,15 +219,15 @@ class OutageTestCase(TestCase):
 
 		# get should fail
 		response = self.client.get(reverse('cancel_outage', kwargs={'outage_id': 999}), {}, follow=True)
-		self.assertEquals(response.status_code, 405)
+		self.assertEqual(response.status_code, 405)
 
 		# test wrong id
 		response = self.client.post(reverse('cancel_outage', kwargs={'outage_id':999}), {}, follow=True)
-		self.assertEquals(response.status_code, 404)
+		self.assertEqual(response.status_code, 404)
 
 		response = self.client.post(reverse('cancel_outage', kwargs={'outage_id': outage.id}), {}, follow=True)
-		self.assertEquals(response.status_code, 200)
-		self.assertEquals(ScheduledOutage.objects.all().count(), 0)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(ScheduledOutage.objects.all().count(), 0)
 
 	def test_outage_details(self):
 		# create outage
@@ -236,7 +236,7 @@ class OutageTestCase(TestCase):
 		data = self.get_outage_data(title="Outage", start=start, end=end, tool_name=tool.name)
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		outage = ScheduledOutage.objects.get(title="Outage")
 		self.assertTrue(outage.id)
 
@@ -245,14 +245,14 @@ class OutageTestCase(TestCase):
 
 		# post should fail
 		response = self.client.post(reverse('outage_details', kwargs={'outage_id': 999}), {}, follow=True)
-		self.assertEquals(response.status_code, 405)
+		self.assertEqual(response.status_code, 405)
 
 		# test wrong id
 		response = self.client.get(reverse('outage_details', kwargs={'outage_id':999}), {}, follow=True)
-		self.assertEquals(response.status_code, 404)
+		self.assertEqual(response.status_code, 404)
 
 		response = self.client.get(reverse('outage_details', kwargs={'outage_id': outage.id}), {}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 
 	def test_no_tool_name_404(self):
 		start = datetime.now()
@@ -263,7 +263,7 @@ class OutageTestCase(TestCase):
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
-		self.assertEquals(response.status_code, 404)
+		self.assertEqual(response.status_code, 404)
 
 	def test_every_day_for_a_week(self):
 		start = datetime.now()
@@ -275,7 +275,7 @@ class OutageTestCase(TestCase):
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		outages = ScheduledOutage.objects.filter(title='every day outage week', tool=tool)
 		self.assertEqual(len(outages), 7)
 
@@ -289,15 +289,15 @@ class OutageTestCase(TestCase):
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		outages = ScheduledOutage.objects.filter(title='every day outage year', tool=tool)
 		for outage in outages:
 			good_start = outage.start.astimezone(timezone.get_current_timezone())
 			good_end = outage.end.astimezone(timezone.get_current_timezone())
-			self.assertEquals(good_start.weekday(), start.weekday())
-			self.assertEquals(good_end.weekday(), end.weekday())
-			self.assertEquals(good_start.time(), start.time())
-			self.assertEquals(good_end.time(), end.time())
+			self.assertEqual(good_start.weekday(), start.weekday())
+			self.assertEqual(good_end.weekday(), end.weekday())
+			self.assertEqual(good_start.time(), start.time())
+			self.assertEqual(good_end.time(), end.time())
 
 	def test_week_day(self):
 		start = datetime.now()
@@ -309,7 +309,7 @@ class OutageTestCase(TestCase):
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		outages = ScheduledOutage.objects.filter(title='every week day outage', tool=tool)
 		for outage in outages:
 			# 0 is Monday, 5 & 6 are Saturday and Sunday
@@ -325,7 +325,7 @@ class OutageTestCase(TestCase):
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		outages = ScheduledOutage.objects.filter(title='every weekend day outage', tool=tool)
 		for outage in outages:
 			# 0 is Monday, 5 & 6 are Saturday and Sunday

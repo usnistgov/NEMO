@@ -15,6 +15,7 @@ LOCK_ERROR = 'lock: bad interlock'
 
 bad_interlock: Interlock = None
 wrong_response_interlock: Interlock = None
+wrong_state_interlock: Interlock = None
 disabled_interlock: Interlock = None
 
 def web_relay_response(relayNumber, state):
@@ -47,11 +48,13 @@ def mocked_requests_get(*args, **kwargs):
 	# interlock 2 on server 2 sends wrong response
 	elif args[0] == f'{wrong_response_interlock.card.server}:{wrong_response_interlock.card.port}/stateFull.xml?relay2State=0' or args[0] == f'{wrong_response_interlock.card.server}:{wrong_response_interlock.card.port}/stateFull.xml?relay2State=1':
 		return MockResponse('bad response', 200)
+	# interlock 5 on server 2 sends wrong state response
+	elif args[0] == f'{wrong_state_interlock.card.server}:{wrong_state_interlock.card.port}/stateFull.xml?relay2State=0' or args[0] == f'{wrong_state_interlock.card.server}:{wrong_state_interlock.card.port}/stateFull.xml?relay5State=1':
+		return MockResponse(web_relay_response(5, 10), 200)
 	elif 'stateFull.xml' in args[0]:
+		# grab the relay number and the state from the request, and return it to pretent it was successful
 		url_state = args[0][-8:]
-		numbers = [int(i) for i in url_state if i.isdigit()]
-		relay_number = numbers[0]
-		relay_state = numbers[1]
+		relay_number, relay_state = [int(i) for i in url_state if i.isdigit()]
 		return MockResponse(web_relay_response(relay_number, relay_state), 200)
 
 	return MockResponse(None, 404)
@@ -61,7 +64,7 @@ class WebRelayInterlockTestCase(TestCase):
 	tool: Tool = None
 
 	def setUp(self):
-		global tool, wrong_response_interlock, bad_interlock, disabled_interlock
+		global tool, wrong_response_interlock, wrong_state_interlock, bad_interlock, disabled_interlock
 		# enable interlock functionality
 		settings.__setattr__('INTERLOCKS_ENABLED', True)
 		interlock_card_category = InterlockCardCategory.objects.get(key='web_relay_http')
@@ -71,6 +74,7 @@ class WebRelayInterlockTestCase(TestCase):
 		disabled_interlock = Interlock.objects.create(card=interlock_card3, channel=3)
 		interlock = Interlock.objects.create(card=interlock_card, channel=1)
 		wrong_response_interlock = Interlock.objects.create(card=interlock_card2, channel=2)
+		wrong_state_interlock = Interlock.objects.create(card=interlock_card2, channel=5)
 		bad_interlock = Interlock.objects.create(card=interlock_card2, channel=3)
 		owner = User.objects.create(username='mctest', first_name='Testy', last_name='McTester')
 		tool = Tool.objects.create(name='test_tool', primary_owner=owner, interlock=interlock)
@@ -78,34 +82,41 @@ class WebRelayInterlockTestCase(TestCase):
 	@mock.patch('NEMO.interlocks.requests.get', side_effect=mocked_requests_get)
 	def test_disabled_card(self, mock_args):
 		self.assertTrue(disabled_interlock.unlock())
-		self.assertEquals(disabled_interlock.state, Interlock.State.UNLOCKED)
+		self.assertEqual(disabled_interlock.state, Interlock.State.UNLOCKED)
 		self.assertTrue('Interlock interface mocked out' in disabled_interlock.most_recent_reply)
 		self.assertTrue(disabled_interlock.lock())
-		self.assertEquals(disabled_interlock.state, Interlock.State.LOCKED)
+		self.assertEqual(disabled_interlock.state, Interlock.State.LOCKED)
 		self.assertTrue('Interlock interface mocked out' in disabled_interlock.most_recent_reply)
 
 	@mock.patch('NEMO.interlocks.requests.get', side_effect=mocked_requests_get)
 	def test_all_good(self, mock_args):
 		self.assertTrue(tool.interlock.unlock())
-		self.assertEquals(tool.interlock.state, Interlock.State.UNLOCKED)
+		self.assertEqual(tool.interlock.state, Interlock.State.UNLOCKED)
 		self.assertTrue(tool.interlock.lock())
-		self.assertEquals(tool.interlock.state, Interlock.State.LOCKED)
+		self.assertEqual(tool.interlock.state, Interlock.State.LOCKED)
 
 	@mock.patch('NEMO.interlocks.requests.get', side_effect=mocked_requests_get)
 	def test_error_response_from_interlock(self, mock_args):
 		self.assertFalse(bad_interlock.unlock())
 		self.assertTrue(ERROR_500 in bad_interlock.most_recent_reply)
 		self.assertTrue(UNLOCK_ERROR in bad_interlock.most_recent_reply)
-		self.assertEquals(bad_interlock.state, Interlock.State.UNKNOWN)
+		self.assertEqual(bad_interlock.state, Interlock.State.UNKNOWN)
 
 		self.assertFalse(bad_interlock.lock())
 		self.assertTrue(ERROR_500 in bad_interlock.most_recent_reply)
 		self.assertTrue(LOCK_ERROR in bad_interlock.most_recent_reply)
-		self.assertEquals(bad_interlock.state, Interlock.State.UNKNOWN)
+		self.assertEqual(bad_interlock.state, Interlock.State.UNKNOWN)
 
 	@mock.patch('NEMO.interlocks.requests.get', side_effect=mocked_requests_get)
 	def test_wrong_response_from_interlock(self, mock_args):
 		self.assertFalse(wrong_response_interlock.unlock())
 		self.assertTrue('General exception' in wrong_response_interlock.most_recent_reply)
 		self.assertTrue('syntax error' in wrong_response_interlock.most_recent_reply)
-		self.assertEquals(wrong_response_interlock.state, Interlock.State.UNKNOWN)
+		self.assertEqual(wrong_response_interlock.state, Interlock.State.UNKNOWN)
+
+	@mock.patch('NEMO.interlocks.requests.get', side_effect=mocked_requests_get)
+	def test_wrong_state_from_interlock(self, mock_args):
+		self.assertFalse(wrong_state_interlock.unlock())
+		self.assertTrue('General exception' in wrong_state_interlock.most_recent_reply)
+		self.assertTrue('Unexpected state received' in wrong_state_interlock.most_recent_reply)
+		self.assertEqual(wrong_state_interlock.state, Interlock.State.UNKNOWN)
