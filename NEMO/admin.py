@@ -323,8 +323,23 @@ class InterlockCardAdmin(admin.ModelAdmin):
 	list_display = ('name', 'server', 'port', 'number', 'category', 'even_port', 'odd_port')
 
 
+class InterlockAdminForm(forms.ModelForm):
+	class Meta:
+		model = Interlock
+		fields = '__all__'
+
+	def clean(self):
+		if any(self.errors):
+			return
+		super(InterlockAdminForm, self).clean()
+		from NEMO import interlocks
+		category = self.cleaned_data['card'].category
+		interlocks.get(category, False).clean_interlock(self)
+
+
 @register(Interlock)
 class InterlockAdmin(admin.ModelAdmin):
+	form = InterlockAdminForm
 	list_display = ('id', 'card', 'channel', 'state', 'tool', 'door')
 	actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage]
 	readonly_fields = ['state', 'most_recent_reply']
