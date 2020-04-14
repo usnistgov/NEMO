@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from NEMO.admin import InterlockCardAdminForm
+from NEMO.admin import InterlockCardAdminForm, InterlockAdminForm
 from NEMO.exceptions import InterlockError
 from NEMO.models import Interlock as Interlock_model, InterlockCardCategory
 from NEMO.utilities import format_datetime
@@ -31,6 +31,9 @@ class Interlock(ABC):
 	"""
 
 	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
+		pass
+
+	def clean_interlock(self, interlock_form: InterlockAdminForm):
 		pass
 
 	def lock(self, interlock: Interlock_model) -> {True, False}:
@@ -115,6 +118,14 @@ class StanfordInterlock(Interlock):
 			error['odd_port'] = _('This field is required.')
 		if not number and number != 0:
 			error['number'] = _('This field is required.')
+		if error:
+			raise ValidationError(error)
+
+	def clean_interlock(self, interlock_form: InterlockAdminForm):
+		channel = interlock_form.cleaned_data['channel']
+		error = {}
+		if not channel:
+			error['channel'] = _('This field is required.')
 		if error:
 			raise ValidationError(error)
 
