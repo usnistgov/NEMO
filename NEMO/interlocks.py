@@ -225,7 +225,7 @@ class ProXrInterlock(Interlock):
 		channel = interlock_form.cleaned_data['channel']
 		error = {}
 		if channel not in range(1, 9):
-			error['channel'] = _('Channel must be 1-8.')
+			error['channel'] = _('Relay must be 1-8.')
 		if error:
 			raise ValidationError(error)
 
