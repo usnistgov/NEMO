@@ -220,8 +220,9 @@ class ProXrInterlock(Interlock):
 	PXR_RELAY_OFF = 0
 	PXR_RELAY_ON = 1
 
-	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
-		channel = interlock_card_form.cleaned_data['channel']
+	def clean_interlock(self, interlock_form: InterlockAdminForm):
+		"""Validates NEMO interlock configuration."""
+		channel = interlock_form.cleaned_data['channel']
 		error = {}
 		if channel not in range(1, 9):
 			error['channel'] = _('Channel must be 1-8.')
@@ -244,7 +245,7 @@ class ProXrInterlock(Interlock):
 	def _get_state(self, relay_socket, channel):
 		"""Returns current NEMO state of the relay.
 		Argument relay_socket is a connected socket object.
-		Argument channel is the NEMO interlock.channel.
+		Argument interlock_channel is the NEMO interlock.channel.
 		"""
 		state = self._send_bytes(relay_socket, (254, 115 + channel, 1))
 		if state == self.PXR_RELAY_OFF:
