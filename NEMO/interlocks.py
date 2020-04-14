@@ -213,7 +213,8 @@ class StanfordInterlock(Interlock):
 
 
 class ProXrInterlock(Interlock):
-	"""Support for ProXR relay controllers.
+	"""
+	Support for ProXR relay controllers.
 	See https://ncd.io/proxr-quick-start-guide/ for more about ProXR.
 	"""
 	# proxr relay status
@@ -230,7 +231,8 @@ class ProXrInterlock(Interlock):
 			raise ValidationError(error)
 
 	def _send_bytes(self, relay_socket, proxrcmd):
-		"""Returns the response from the relay controller.
+		"""
+		Returns the response from the relay controller.
 		Argument relay_socket is a connected socket object.
 		Argument proxrcmd (the ProXR command) is an iterable of 8-bit integers.
 		"""
@@ -242,12 +244,13 @@ class ProXrInterlock(Interlock):
 		# only the last byte of the response is important
 		return relay_socket.recv(64)[-1]
 
-	def _get_state(self, relay_socket, channel):
-		"""Returns current NEMO state of the relay.
+	def _get_state(self, relay_socket, interlock_channel):
+		"""
+		Returns current NEMO state of the relay.
 		Argument relay_socket is a connected socket object.
 		Argument interlock_channel is the NEMO interlock.channel.
 		"""
-		state = self._send_bytes(relay_socket, (254, 115 + channel, 1))
+		state = self._send_bytes(relay_socket, (254, 115 + interlock_channel, 1))
 		if state == self.PXR_RELAY_OFF:
 			return Interlock_model.State.LOCKED
 		elif state == self.PXR_RELAY_ON:
