@@ -209,6 +209,14 @@ class ProXrInterlock(Interlock):
 	PXR_RELAY_OFF = 0
 	PXR_RELAY_ON = 1
 
+	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
+		channel = interlock_card_form.cleaned_data['channel']
+		error = {}
+		if channel not in range(1, 9):
+			error['channel'] = _('Channel must be 1-8.')
+		if error:
+			raise ValidationError(error)
+
 	def _send_bytes(self, relay_socket, proxrcmd):
 		"""Returns the response from the relay controller.
 		Argument relay_socket is a connected socket object.
@@ -237,9 +245,6 @@ class ProXrInterlock(Interlock):
 
 	def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
 		"""Returns and sets NEMO locked/unlocked state."""
-		if interlock.channel > 8:
-			# proxr relay controllers have a max of 8 relays (channels) per bank
-			raise InterlockError(interlock=interlock, msg="Invalid channel: " + str(interlock.channel))
 		state = Interlock_model.State.UNKNOWN
 		try:
 			with socket.create_connection((interlock.card.server, interlock.card.port), 10) as relay_socket:
