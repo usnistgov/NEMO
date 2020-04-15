@@ -1,0 +1,51 @@
+[
+  {
+    "item_id": 1,
+    "table_id": "primetime_eq_hourly_rate",
+    "rate_class": "cost shared",
+    "rate": 100.0,
+    "item": "Sinter"
+  },
+  {
+    "item_id": 1,
+    "table_id": "primetime_eq_hourly_rate",
+    "rate_class": "full cost",
+    "rate": 50.0,
+    "item": "Sinter"
+  },
+  {
+    "item_id": 1,
+    "table_id": "training_group_hourly_rate",
+    "rate_class": "full cost",
+    "rate": 106.0,
+    "item": "Sinter"
+  },
+  {
+    "item_id": 1,
+    "table_id": "training_individual_hourly_rate",
+    "rate_class": "full cost",
+    "rate": 212.0,
+    "item": "Sinter"
+  },
+  {
+    "item_id": 2,
+    "table_id": "primetime_eq_hourly_rate",
+    "rate_class": "cost shared",
+    "rate": 25.0,
+    "item": "PECVD"
+  },
+  {
+    "item_id": 2,
+    "table_id": "primetime_eq_hourly_rate",
+    "rate_class": "full cost",
+    "rate": 50.0,
+    "item": "PECVD"
+  },
+  {
+    "item_id": 1,
+    "table_id": "inventory_rate",
+    "rate_class": "full cost",
+    "rate": 5.0,
+    "item": "Tweezers"
+  }
+]

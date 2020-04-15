@@ -35,24 +35,25 @@ customizable_key_values = [
 ]
 
 customizable_content = [
-	'login_banner',
-	'safety_introduction',
-	'nanofab_rules_tutorial',
-	'cancellation_email',
-	'feedback_email',
-	'generic_email',
-	'missed_reservation_email',
-	'nanofab_rules_tutorial_email',
-	'new_task_email',
-	'reservation_reminder_email',
-	'reservation_warning_email',
-	'safety_issue_email',
-	'staff_charge_reminder_email',
-	'task_status_notification',
-	'unauthorized_tool_access_email',
-	'usage_reminder_email',
-	'reservation_cancelled_user_email',
-	'reservation_created_user_email',
+	('login_banner', '.html'),
+	('safety_introduction', '.html'),
+	('nanofab_rules_tutorial', '.html'),
+	('cancellation_email', '.html'),
+	('feedback_email', '.html'),
+	('generic_email', '.html'),
+	('missed_reservation_email', '.html'),
+	('nanofab_rules_tutorial_email', '.html'),
+	('new_task_email', '.html'),
+	('reservation_reminder_email', '.html'),
+	('reservation_warning_email', '.html'),
+	('safety_issue_email', '.html'),
+	('staff_charge_reminder_email', '.html'),
+	('task_status_notification', '.html'),
+	('unauthorized_tool_access_email', '.html'),
+	('usage_reminder_email', '.html'),
+	('reservation_cancelled_user_email', '.html'),
+	('reservation_created_user_email', '.html'),
+	('rates', '.json'),
 ]
 
 
@@ -82,7 +83,7 @@ def set_customization(name, value):
 @staff_member_required(login_url=None)
 @require_GET
 def customization(request):
-	dictionary = {x: get_media_file_contents(x + '.html') for x in customizable_content}
+	dictionary = {name: get_media_file_contents(name + extension) for name, extension in customizable_content}
 	dictionary.update({y: get_customization(y) for y in customizable_key_values})
 	return render(request, 'customizations.html', dictionary)
 
@@ -90,8 +91,16 @@ def customization(request):
 @staff_member_required(login_url=None)
 @require_POST
 def customize(request, element):
-	if element in customizable_content:
-		store_media_file(request.FILES.get(element, ''), element + '.html')
+	item = None
+	for name, extension in customizable_content:
+		if name == element:
+			item = (name, extension)
+			break
+	if item:
+		store_media_file(request.FILES.get(element, ''), item[0] + item[1])
+		if item[0] == 'rates':
+			from NEMO.rates import rate_class
+			rate_class.load_rates()
 	elif element == 'email_addresses':
 		set_customization('feedback_email_address', request.POST.get('feedback_email_address', ''))
 		set_customization('safety_email_address', request.POST.get('safety_email_address', ''))

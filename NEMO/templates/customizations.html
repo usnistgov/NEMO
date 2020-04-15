@@ -572,5 +572,37 @@
 				{% endif %}
 			</div>
 		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3>Tool Rates</h3>
+				<p>
+					You can upload a json file for NEMO to display tool rates. An example of a valid rates file can be found on <a target="_blank" href="https://github.com/usnistgov/NEMO/raw/master/resources/splash_pad_rates.json">Github</a>.
+					<br><br>It should be a JSON array of elements, and the following key/values are supported for each element:
+				</p>
+				<ul>
+					<li><b>item_id</b> - the id of the tool or supply</li>
+					<li><b>table_id</b> - the type of rate, one of "inventory_rate" (for supplies), "primetime_eq_hourly_rate" (for tool), "training_individual_hourly_rate" (for individual training rate), "training_group_hourly_rate" (for group training rate)</li>
+					<li><b>rate_class</b> - the class, one of "full cost" or "cost shared"</li>
+					<li><b>rate</b> - the rate amount</li>
+    				<li>item - the name of the item (optional)</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'rates' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="rates" class="customization-input-file" onchange="this.style.color = 'inherit';$('#rates_span').hide()">
+						{% if rates %}<span id="rates_span">rates.json</span>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload rates file" class="btn btn-success">
+					</div>
+				</form>
+				{% if rates %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#rates_render">Show current content</button>
+					<div id="rates_render" class="collapse customization-content">{{ rates }}</div>
+				{% endif %}
+			</div>
+		</div>
 	</div>
 {% endblock %}
