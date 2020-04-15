@@ -197,4 +197,4 @@ def area_access_occupancy(request):
 		'area': area,
 		'occupants': AreaAccessRecord.objects.filter(area__name=area, end=None, staff_charge=None).prefetch_related('customer'),
 	}
-	return render(request, 'kiosk/occupancy.html', dictionary)
+	return render(request, 'area_access/occupancy.html', dictionary)
