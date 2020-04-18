@@ -145,6 +145,29 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
+				<h3>&quot;<a href="{% url 'authorization_failed' %}" target="_blank">NanoFab failed login</a>&quot; page</h3>
+				<p>This page is displayed after authentication when either no matching username could be found in NEMO's database or if that user has been deactivated.
+					<br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.</p>
+				<form method="POST" action="{% url 'customize' 'authorization_failed' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="authorization_failed" class="customization-input-file" onchange="this.style.color = 'inherit';$('#authorization_failed_span').hide()">
+						{% if authorization_failed %}<span id="authorization_failed_span">authorization_failed.html</span>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload failed login page" class="btn btn-success">
+					</div>
+				</form>
+				{% if authorization_failed %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#authorization_failed_render">Show current content</button>
+					<div id="authorization_failed_render" class="collapse customization-content">{{ authorization_failed }}</div>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
 				<h3>Cancellation email</h3>
 				<p>This email is sent to a user when a staff member cancels the user's reservation. The following context variables are provided when the email is rendered:</p>
 				<ul>

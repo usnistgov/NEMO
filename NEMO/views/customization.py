@@ -38,6 +38,7 @@ customizable_content = [
 	('login_banner', '.html'),
 	('safety_introduction', '.html'),
 	('nanofab_rules_tutorial', '.html'),
+	('authorization_failed', '.html'),
 	('cancellation_email', '.html'),
 	('feedback_email', '.html'),
 	('generic_email', '.html'),

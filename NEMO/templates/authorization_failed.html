@@ -1,9 +1,25 @@
+{% load static %}
+{% load custom_tags_and_filters %}
+
 <!DOCTYPE html>
 <html>
 <head>
 	<title>Authorization failed</title>
+	{# jQuery #}
+	<script type="text/javascript" src="{% static "jquery.js" %}"></script>
+
+	{# Bootstrap #}
+	<script type="text/javascript" src="{% static "bootstrap/js/bootstrap.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.css" %}"/>
 </head>
 <body>
-	You do not have a NEMO user account or your user account has been deactivated. Please contact the NanoFab User Office for assistance.
+	{% if authorization_failed %}
+		{{ authorization_failed|safe }}
+	{% else %}
+		<div style="padding: 10px; font-size: 16px">
+			You do not have a NEMO user account or your user account has been deactivated. Please contact the NanoFab User Office for assistance.
+		</div>
+	{% endif %}
 </body>
 </html>

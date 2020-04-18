@@ -14,6 +14,7 @@ from django.views.decorators.http import require_http_methods, require_GET
 from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE, AUTO_BIND_NO_TLS, ANONYMOUS
 from ldap3.core.exceptions import LDAPBindError, LDAPException
 
+from NEMO.exceptions import InactiveUserError
 from NEMO.models import User
 from NEMO.views.customization import get_media_file_contents
 
@@ -83,12 +84,12 @@ class LDAPAuthenticationBackend(ModelBackend):
 			user = User.objects.get(username=username)
 		except User.DoesNotExist:
 			auth_logger.warning(f"Username {username} attempted to authenticate with LDAP, but that username does not exist in the NEMO database. The user was denied access.")
-			return None
+			raise
 
 		# The user must be marked active.
 		if not user.is_active:
 			auth_logger.warning(f"User {username} successfully authenticated with LDAP, but that user is marked inactive in the NEMO database. The user was denied access.")
-			return None
+			raise InactiveUserError(user=username)
 
 		is_authenticated_with_ldap = False
 		errors = []
@@ -146,6 +147,7 @@ class LDAPAuthenticationBackend(ModelBackend):
 @require_http_methods(['GET', 'POST'])
 @sensitive_post_parameters('password')
 def login_user(request):
+	# those authentication backends authenticate the user before arriving here (through middleware). so they need to be treated separately
 	if 'NEMO.views.authentication.RemoteUserAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS or 'NEMO.views.authentication.NginxKerberosAuthorizationHeaderAuthenticationBackend' in settings.AUTHENTICATION_BACKENDS:
 		if request.user.is_authenticated:
 			return HttpResponseRedirect(reverse('landing'))
@@ -153,7 +155,7 @@ def login_user(request):
 			backends = [backend for backend in settings.AUTHENTICATION_BACKENDS if backend not in ['NEMO.views.authentication.RemoteUserAuthenticationBackend','NEMO.views.authentication.NginxKerberosAuthorizationHeaderAuthenticationBackend']]
 			if len(backends) == 0:
 				# there are no other authentication backends in the list, send error. Otherwise keep going
-				return render(request, 'authorization_failed.html')
+				return authorization_failed(request)
 
 	dictionary = {
 		'login_banner': get_media_file_contents('login_banner.html'),
@@ -163,7 +165,12 @@ def login_user(request):
 		return render(request, 'login.html', dictionary)
 	username = request.POST.get('username', '')
 	password = request.POST.get('password', '')
-	user = authenticate(request, username=username, password=password)
+
+	try:
+		user = authenticate(request, username=username, password=password)
+	except (User.DoesNotExist, InactiveUserError):
+		return authorization_failed(request)
+
 	if user:
 		login(request, user)
 		try:
@@ -180,3 +187,8 @@ def login_user(request):
 def logout_user(request):
 	logout(request)
 	return HttpResponseRedirect(reverse('landing'))
+
+
+def authorization_failed(request):
+	authorization_page = get_media_file_contents('authorization_failed.html')
+	return render(request, 'authorization_failed.html', {'authorization_failed': authorization_page})
