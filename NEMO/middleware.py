@@ -1,11 +1,31 @@
 import re
+from logging import getLogger
 
 from django.http import HttpResponseForbidden
 from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.conf import settings
 
+from NEMO.exceptions import InactiveUserError
+from NEMO.models import User
 
-class HTTPHeaderAuthenticationMiddleware(RemoteUserMiddleware):
+middleware_logger = getLogger(__name__)
+
+
+class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
+	def process_request(self, request):
+		try:
+			try:
+				request.META[self.header]
+			except Exception:
+				middleware_logger.warning(f"Header: {self.header} not present or invalid")
+			super().process_request(request)
+		except (User.DoesNotExist, InactiveUserError):
+			from NEMO.views.authentication import authorization_failed
+
+			return authorization_failed(request)
+
+
+class HTTPHeaderAuthenticationMiddleware(RemoteUserAuthenticationMiddleware):
 	header = "HTTP_" + getattr(settings, "AUTHENTICATION_HEADER", "AUTHORIZATION")
 
 
@@ -37,7 +57,7 @@ class SessionTimeout:
 			return HttpResponseForbidden() if request.is_ajax() else None
 
 		# If the view is regularly polled by the webpage to update information then expiry refresh should be disabled.
-		refresh_disabled = getattr(view_function, 'disable_session_expiry_refresh', False)
+		refresh_disabled = getattr(view_function, "disable_session_expiry_refresh", False)
 		if not refresh_disabled:
 			request.session.modified = True
 
@@ -45,14 +65,14 @@ class SessionTimeout:
 class DeviceDetectionMiddleware:
 	def __init__(self, get_response):
 		self.get_response = get_response
-		self.mobile = re.compile('Mobile|Tablet|Android')
+		self.mobile = re.compile("Mobile|Tablet|Android")
 
 	def __call__(self, request):
-		request.device = 'desktop'
+		request.device = "desktop"
 
-		if 'HTTP_USER_AGENT' in request.META:
-			user_agent = request.META['HTTP_USER_AGENT']
+		if "HTTP_USER_AGENT" in request.META:
+			user_agent = request.META["HTTP_USER_AGENT"]
 			if self.mobile.search(user_agent):
-				request.device = 'mobile'
+				request.device = "mobile"
 
 		return self.get_response(request)

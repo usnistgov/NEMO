@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 
 from NEMO.models import User, Area, Resource, Interlock
 
@@ -32,7 +32,7 @@ class UserAccessError(NEMOException):
 
 	detailed_msg = ""
 
-	def __init__(self, user: User, msg=None):
+	def __init__(self, user: Any, msg=None):
 		message = f"An Error occurred with user access [{user}]"
 		if msg is not None:
 			message += f": {msg}"
@@ -59,13 +59,12 @@ class NoPhysicalAccessUserError(UserAccessError):
 
 
 class NoAccessiblePhysicalAccessUserError(UserAccessError):
-
-	def __init__(self, user: User, area:Area):
+	def __init__(self, user: User, area: Area):
 		details = f"This user is not assigned to a physical access that allow access to this area [{area}] at this time"
 		super(NoAccessiblePhysicalAccessUserError).__init__(user=user, msg=details)
 
 
 class UnavailableResourcesUserError(UserAccessError):
-	def __init__(self, user:User, area:Area, resources: List[Resource]):
+	def __init__(self, user: User, area: Area, resources: List[Resource]):
 		details = f"This user was blocked from entering this area [{area}] because a required resource was unavailable [{resources}"
 		super(NoAccessiblePhysicalAccessUserError).__init__(user=user, msg=details)

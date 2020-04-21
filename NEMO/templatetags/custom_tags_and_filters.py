@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 from django import template
-from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse, NoReverseMatch
 from django.utils import timezone
 from django.utils.html import escape, format_html
@@ -29,10 +28,10 @@ def to_int(value):
 
 @register.filter
 def json_search_base(items_to_search):
-	result = '['
+	result = "["
 	for item in items_to_search:
 		result += '{{"name":"{0}", "id":{1}}},'.format(escape(str(item)), item.id)
-	result = result.rstrip(',') + ']'
+	result = result.rstrip(",") + "]"
 	return mark_safe(result)
 
 
@@ -44,15 +43,15 @@ def json_search_base_with_extra_fields(items_to_search, *extra_fields):
 	of objects and differentiate them in your JavaScript. The extra fields are only added when an
 	object actually has that attribute. Otherwise, the code skips over the request.
 	"""
-	result = '['
+	result = "["
 	for item in items_to_search:
 		object_type = item.__class__.__name__.lower()
 		result += '{{"name":"{0}", "id":"{1}", "type":"{2}"'.format(escape(str(item)), item.id, object_type)
 		for x in extra_fields:
 			if hasattr(item, x):
 				result += ', "{0}":"{1}"'.format(x, getattr(item, x))
-		result += '},'
-	result = result.rstrip(',') + ']'
+		result += "},"
+	result = result.rstrip(",") + "]"
 	return mark_safe(result)
 
 
@@ -61,7 +60,7 @@ def navigation_url(url_name, description):
 	try:
 		return format_html('<li><a href="{}">{}</a></li>', reverse(url_name), description)
 	except NoReverseMatch:
-		return ''
+		return ""
 
 
 @register.filter
@@ -69,13 +68,13 @@ def get_item(dictionary, key):
 	return dictionary.get(key)
 
 
-dist_version: str = '0'
+dist_version: str = "0"
 
 
 @register.simple_tag()
 def app_version() -> str:
 	global dist_version
-	if dist_version != '0':
+	if dist_version != "0":
 		return dist_version
 	else:
 		try:
