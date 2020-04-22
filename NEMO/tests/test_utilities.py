@@ -41,6 +41,9 @@ def test_response_is_login_page(test_case: TestCase, response: Response):
 	test_case.assertEqual(response.status_code, 200)
 	test_case.assertTrue("login" in response.request['PATH_INFO'])
 
+def test_response_is_failed_login(test_case: TestCase, response: Response):
+	test_case.assertContains(response=response, text="There was an error pre-authenticating the user", status_code=400)
+
 def test_response_is_landing_page(test_case: TestCase, response: Response):
 	test_case.assertEqual(response.status_code, 200)
 	test_case.assertEqual(response.request['PATH_INFO'], "/")
