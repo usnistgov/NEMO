@@ -81,39 +81,44 @@ def get_month_timeframe(date=None):
 	return first_of_the_month, last_of_the_month
 
 
-def extract_times(parameters, input_timezone=None):
+def extract_times(parameters, input_timezone=None, start_required=True, end_required=True):
 	"""
 	Extract the "start" and "end" parameters from an HTTP request while performing a few logic validation checks.
 	The function assumes the UNIX timestamp is in the local timezone. Use input_timezone to specify the timezone.
 	"""
+	start, end, new_start, new_end = None, None, None, None
 	try:
 		start = parameters['start']
 	except:
-		raise Exception("The request parameters did not contain a start time.")
+		if start_required:
+			raise Exception("The request parameters did not contain a start time.")
 
 	try:
 		end = parameters['end']
 	except:
-		raise Exception("The request parameters did not contain an end time.")
+		if end_required:
+			raise Exception("The request parameters did not contain an end time.")
 
 	try:
-		start = float(start)
-		start = datetime.utcfromtimestamp(start)
-		start = localize(start, input_timezone)
+		new_start = float(start)
+		new_start = datetime.utcfromtimestamp(new_start)
+		new_start = localize(new_start, input_timezone)
 	except:
-		raise Exception("The request parameters did not have a valid start time.")
+		if start or start_required:
+			raise Exception("The request parameters did not have a valid start time.")
 
 	try:
-		end = float(end)
-		end = datetime.utcfromtimestamp(end)
-		end = localize(end, input_timezone)
+		new_end = float(end)
+		new_end = datetime.utcfromtimestamp(new_end)
+		new_end = localize(new_end, input_timezone)
 	except:
-		raise Exception("The request parameters did not have a valid end time.")
+		if end or end_required:
+			raise Exception("The request parameters did not have a valid end time.")
 
-	if end < start:
+	if start and end and start_required and end_required and new_end < new_start:
 		raise Exception("The request parameters have an end time that precedes the start time.")
 
-	return start, end
+	return new_start, new_end
 
 
 def extract_date(date):

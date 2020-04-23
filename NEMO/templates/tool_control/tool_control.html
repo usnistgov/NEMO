@@ -169,8 +169,8 @@
 		{
 			var failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
 			var data = serialize("#history_form");
-			data.start = moment(data.start, "MM/DD/YYYY").unix();
-			data.end = moment(data.end, "MM/DD/YYYY").add(1, 'day').unix();
+			if (data.start)	data.start = moment(data.start, "MM/DD/YYYY").unix();
+			if (data.end) data.end = moment(data.end, "MM/DD/YYYY").add(1, 'day').unix();
 			{# Add one day because by default the time is midnight the day of. We want to include the full duration of the last day. #}
 			$("#past_tasks_and_comments").load("{% url 'past_comments_and_tasks' %}?" + $.param(data), failure_dialog);
 		}

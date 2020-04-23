@@ -244,14 +244,23 @@ def disable_tool(request, tool_id):
 @login_required
 @require_GET
 def past_comments_and_tasks(request):
-	try:
-		start, end = extract_times(request.GET)
-	except:
-		return HttpResponseBadRequest('Please enter a start and end date.')
+	start, end = extract_times(request.GET, start_required=False, end_required=False)
+	search = request.GET.get('search')
+	if not start and not end and not search:
+		return HttpResponseBadRequest('Please enter a search keyword, start date or end date.')
 	tool_id = request.GET.get('tool_id')
 	try:
-		tasks = Task.objects.filter(tool_id=tool_id, creation_time__gt=start, creation_time__lt=end)
-		comments = Comment.objects.filter(tool_id=tool_id, staff_only=False, creation_date__gt=start, creation_date__lt=end)
+		tasks = Task.objects.filter(tool_id=tool_id)
+		comments = Comment.objects.filter(tool_id=tool_id, staff_only=False)
+		if start:
+			tasks = tasks.filter(creation_time__gt=start)
+			comments = comments.filter(creation_date__gt=start)
+		if end:
+			tasks = tasks.filter(creation_time__lt=end)
+			comments = comments.filter(creation_date__lt=end)
+		if search:
+			tasks = tasks.filter(problem_description__icontains=search)
+			comments = comments.filter(content__icontains=search)
 	except:
 		return HttpResponseBadRequest('Task and comment lookup failed.')
 	past = list(chain(tasks, comments))
