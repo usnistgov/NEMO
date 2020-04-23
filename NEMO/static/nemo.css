@@ -306,3 +306,8 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 .picker__list span {
 	color: #999;
 }
+
+/* Customization of search result group item */
+.list-group-item {
+	margin-bottom: 5px;
+}
