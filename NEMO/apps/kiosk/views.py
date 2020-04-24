@@ -31,7 +31,7 @@ def enable_tool(request):
 	response = check_policy_to_enable_tool(tool, operator=customer, user=customer, project=project, staff_charge=False)
 	if response.status_code != HTTPStatus.OK:
 		dictionary = {
-			'message': 'You are not authorized to enable this tool. {}'.format(response),
+			'message': 'You are not authorized to enable this tool. {}'.format(response.content.decode()),
 			'delay': 10,
 		}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
