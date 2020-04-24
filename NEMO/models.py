@@ -552,6 +552,9 @@ class Tool(models.Model):
 		from django.urls import reverse
 		return reverse('tool_control', args=[self.tool_or_parent_id()])
 
+	def ready_to_use(self):
+		return self.operational and not self.required_resource_is_unavailable and not self.delayed_logoff_in_progress and not self.scheduled_outage_in_progress
+
 	def name_display(self):
 		return f"{self.name} ({self.parent_tool.name})" if self.is_child_tool() else f"{self.name}"
 	name_display.admin_order_field = '_name'
@@ -579,10 +582,10 @@ class Tool(models.Model):
 		unexpired = Q(expiration_date__isnull=True) | Q(expiration_date__gt=timezone.now())
 		return self.parent_tool.comment_set.filter(visible=True, staff_only=True).filter(unexpired) if self.is_child_tool() else self.comment_set.filter(visible=True, staff_only=True).filter(unexpired)
 
-	def required_resource_is_unavailable(self):
+	def required_resource_is_unavailable(self) -> bool:
 		return self.parent_tool.required_resource_set.filter(available=False).exists() if self.is_child_tool() else self.required_resource_set.filter(available=False).exists()
 
-	def nonrequired_resource_is_unavailable(self):
+	def nonrequired_resource_is_unavailable(self) -> bool:
 		return self.parent_tool.nonrequired_resource_set.filter(available=False).exists() if self.is_child_tool() else self.nonrequired_resource_set.filter(available=False).exists()
 
 	def all_resources_available(self):
@@ -615,6 +618,10 @@ class Tool(models.Model):
 	def scheduled_outages(self):
 		""" Returns a QuerySet of scheduled outages that are in progress for this tool. This includes tool outages, and resources outages (when the tool fully depends on the resource). """
 		return ScheduledOutage.objects.filter(Q(tool=self.tool_or_parent_id()) | Q(resource__fully_dependent_tools__in=[self.tool_or_parent_id()]), start__lte=timezone.now(), end__gt=timezone.now())
+
+	def scheduled_partial_outages(self):
+		""" Returns a QuerySet of scheduled outages that are in progress for this tool. This includes resources outages when the tool partially depends on the resource. """
+		return ScheduledOutage.objects.filter(resource__partially_dependent_tools__in=[self.tool_or_parent_id()], start__lte=timezone.now(), end__gt=timezone.now())
 
 	def scheduled_outage_in_progress(self):
 		""" Returns a true if a tool or resource outage is currently in effect for this tool. Otherwise, returns false. """

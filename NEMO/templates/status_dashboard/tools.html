@@ -21,6 +21,9 @@
 				{% if tool.scheduled_outage %}
 					<span class="glyphicon glyphicon-time danger-highlight" title="A scheduled outage is in effect for this tool"></span>
 				{% endif %}
+				{% if tool.scheduled_partial_outage %}
+					<span class="glyphicon glyphicon-time warning-highlight" title="An optional resource for this tool has an outage in effect"></span>
+				{% endif %}
 				{% if tool.problematic %}
 					<span class="glyphicon glyphicon-wrench warning-highlight" title="This tool requires maintenance"></span>
 				{% endif %}

@@ -311,3 +311,65 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 .list-group-item {
 	margin-bottom: 5px;
 }
+
+.tool-status {
+	margin-bottom: 30px;
+}
+
+.danger-status {
+	margin-bottom: 30px;
+}
+
+.warning-status, .tool-problems {
+	margin-bottom: 30px;
+}
+
+.danger-status .media-heading, .danger-status .media-middle, .danger-status .media-bottom {
+	display: block;
+}
+
+.warning-status .media-heading, .warning-status .media-middle, .warning-status .media-bottom  {
+	display: block;
+}
+
+.tool-comments .media-heading, .tool-comments .media-middle, .tool-comments .media-bottom {
+	display: block;
+}
+
+.tool-problems .media-heading, .tool-problems .media-middle, .tool-problems .media-bottom {
+	display: block;
+}
+
+.danger-status .media-heading {
+	font-weight: 600;
+    line-height: 1.1;
+	font-size: x-large;
+}
+
+.warning-status .media-heading {
+	font-weight: 500;
+    line-height: 1.1;
+	font-size: large;
+}
+
+.danger-status .media-bottom, .warning-status .media-bottom, .tool-comments .media-bottom, .tool-problems .media-bottom {
+	color: grey;
+	font-style: italic;
+}
+
+.danger-status .media-middle {
+	font-size: large;
+}
+
+.warning-status .media-bottom, .tool-comments .media-bottom, .tool-problems .media-bottom {
+	font-size: small;
+}
+
+.tool-problems .media-heading {
+	font-size: medium;
+	font-weight: 500;
+}
+
+.tool-rates {
+	margin-top: 5px;
+}

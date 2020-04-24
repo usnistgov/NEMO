@@ -9,139 +9,183 @@
 <h1>{{ tool.name_or_child_in_use_name }}</h1>
 
 {# Display tool status... #}
-{% if tool.in_use %}
-	<div class="primary-highlight">
-		<span class="glyphicon glyphicon-user pull-left status-icon"></span>
-		{% with tool.get_current_usage_event as current_usage_event %}
-			<h2>
-				{% if current_usage_event.operator.id == customer.id %}
-					You are using this tool
-				{% else %}
-					{{ current_usage_event.operator }} is using this tool
-				{% endif %}
-				{% if current_usage_event.operator.id != current_usage_event.user.id %}
-					on behalf of {{ current_usage_event.user }}
-				{% endif %}
-				for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start }}.
-			</h2>
-		{% endwith %}
-	</div>
-	{% if customer.is_staff and tool.in_use %}
-		<p>You may <a href="javascript:void(0)" onclick="disable_tool();">force {{ tool.get_current_usage_event.operator }} off this tool</a>.</p>
-	{% endif %}
-{% elif tool.delayed_logoff_in_progress %}
-	{% with tool.get_delayed_logoff_usage_event as delayed_logoff_event %}
-		<div class="primary-highlight">
-			<span class="glyphicon glyphicon-time pull-left status-icon"></span>
-			<h2>{{ delayed_logoff_event.operator }} has finished using the {{ tool.name_or_child_in_use_name }} but delayed logoff is in effect. The tool will be available at {{ delayed_logoff_event.end|time }}.</h2>
+<div class="tool-status">
+	{% if tool.in_use %}
+		<div class="primary-highlight media">
+			<span class="glyphicon glyphicon-user pull-left notification-icon"></span>
+			{% with tool.get_current_usage_event as current_usage_event %}
+				<h2>
+					{% if current_usage_event.operator.id == customer.id %}
+						You are using this tool
+					{% else %}
+						{{ current_usage_event.operator }} is using this tool
+					{% endif %}
+					{% if current_usage_event.operator.id != current_usage_event.user.id %}
+						on behalf of {{ current_usage_event.user }}
+					{% endif %}
+					for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start }}.
+				</h2>
+			{% endwith %}
 		</div>
-	{% endwith %}
-{% elif not tool.operational or tool.required_resource_is_unavailable %}
-	<div class="danger-highlight">
-		<span class="glyphicon glyphicon-ban-circle pull-left status-icon"></span>
-		<h2>This tool is <strong>shut down</strong>.</h2>
-	</div>
-{% elif tool.nonrequired_resource_is_unavailable %}
-	<div class="warning-highlight">
-		<span class="glyphicon glyphicon-exclamation-sign pull-left status-icon"></span>
-		<h2>This tool is <strong>operational</strong> but not all resources are available.</h2>
-	</div>
-{% else %}
-	<div class="success-highlight">
-		<span class="glyphicon glyphicon-ok pull-left status-icon"></span>
-		<h2>This tool is <strong>operational</strong> and <strong>idle</strong>.</h2>
+		{% if customer.is_staff and tool.in_use %}
+			<p>You may <a href="javascript:void(0)" onclick="disable_tool();">force {{ tool.get_current_usage_event.operator }} off this tool</a>.</p>
+		{% endif %}
+	{% elif tool.delayed_logoff_in_progress %}
+		{% with tool.get_delayed_logoff_usage_event as delayed_logoff_event %}
+			<div class="primary-highlight media">
+				<span class="glyphicon glyphicon-time pull-left notification-icon"></span>
+				<h2>{{ delayed_logoff_event.operator }} has finished using the {{ tool.name_or_child_in_use_name }} but delayed logoff is in effect. The tool will be available at {{ delayed_logoff_event.end|time }}.</h2>
+			</div>
+		{% endwith %}
+	{% elif not tool.operational or tool.required_resource_is_unavailable or tool.scheduled_outages %}
+		<div class="danger-highlight media">
+			<span class="glyphicon glyphicon-ban-circle pull-left notification-icon"></span>
+			<h2>This tool is <strong>shut down</strong>.</h2>
+		</div>
+	{% elif tool.nonrequired_resource_is_unavailable %}
+		<div class="warning-highlight media">
+			<span class="glyphicon glyphicon-exclamation-sign pull-left notification-icon"></span>
+			<h2>This tool is <strong>operational</strong> but not all resources are available.</h2>
+		</div>
+	{% else %}
+		<div class="success-highlight media">
+			<span class="glyphicon glyphicon-ok pull-left notification-icon"></span>
+			<h2>This tool is <strong>operational</strong> and <strong>idle</strong>.</h2>
+		</div>
+	{% endif %}
+</div>
+
+{# dangers #}
+{% if tool.unavailable_required_resources or tool.scheduled_outages %}
+	<div class="danger-status">
+		{# Display any unavailable required resources... #}
+		{% for r in tool.unavailable_required_resources %}
+			<div class="media">
+				<span class="glyphicon glyphicon-leaf pull-left notification-icon danger-highlight"></span>
+				<div class="media-body">
+					<span class="media-heading">A required resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></span>
+					<span class="media-middle">{{ r.restriction_message }}</span>
+				</div>
+			</div>
+		{% endfor %}
+
+		{# Display any resources scheduled outages... #}
+		{% for o in tool.scheduled_outages %}
+			<div class="media">
+				<span class="glyphicon glyphicon-time pull-left notification-icon danger-highlight"></span>
+				<div class="media-body">
+					<span class="media-heading">{{ o.title }}<span class="light-grey"> ({{ o.resource.category }})</span></span>
+					{% if o.details %}<span class="media-middle">{{ o.details }}</span>{% endif %}
+					<span class="media-bottom">{{ o.creator }} scheduled this outage from {{ o.start }} until {{ o.end }}.</span>
+				</div>
+			</div>
+		{% endfor %}
 	</div>
 {% endif %}
 
-{# Display any unavailable required resources... #}
-{% for r in tool.unavailable_required_resources %}
-	<div class="media">
-		<span class="glyphicon glyphicon-leaf pull-left notification-icon danger-highlight"></span>
-		<div class="media-body">
-			<h4 class="media-heading">A required resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></h4>
-			{{ r.restriction_message }}
-		</div>
-	</div>
-{% endfor %}
-
-{# Display any unavailable non-required resources... #}
-{% for r in tool.unavailable_nonrequired_resources %}
-	<div class="media">
-		<span class="glyphicon glyphicon-leaf pull-left notification-icon warning-highlight"></span>
-		<div class="media-body">
-			<h4 class="media-heading">An optional resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></h4>
-			{{ r.restriction_message }}
-		</div>
-	</div>
-{% endfor %}
-
-{# Display all problems and shutdowns... #}
-{% for t in tool.problems %}
-	<div class="media">
-		<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#task_{{ t.id }}_details" class="pointer">
-			{% if t.force_shutdown %}
-				<span class="glyphicon glyphicon-fire pull-left notification-icon danger-highlight"></span>
-			{% else %}
-				<span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight"></span>
-			{% endif %}
-			<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-		</a>
-		<div class="media-body">
-			{% if t.problem_category %}<h4 class="media-heading">{{ t.problem_category }}</h4>{% endif %}
-			{{ t.problem_description }}
-			{% if t.estimated_resolution_time %}<br>Estimated resolution time is {{ t.estimated_resolution_time }}.{% endif %}
-			<div id="task_{{ t.id }}_details" class="collapse">
-						<span class="grey">
-							This task was created by {{ t.creator }} on {{ t.creation_time }}.
-							{% if t.force_shutdown %}
-								The tool will remain shut down until this task is resolved.
-							{% endif %}
-						</span>
-				{% if t.progress_description %}
-					<div class="media">
-						<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
-						<div class="media-body">
-							<h4 class="media-heading">Progress updates</h4>
-							{{ t.progress_description|linebreaksbr }}
-						</div>
-					</div>
-				{% endif %}
+{# warnings #}
+{% if tool.unavailable_nonrequired_resources or tool.scheduled_partial_outages or tool.problems %}
+	<div class="warning-status">
+		{# Display any unavailable non-required resources... #}
+		{% for r in tool.unavailable_nonrequired_resources %}
+			<div class="media">
+				<span class="glyphicon glyphicon-leaf pull-left notification-icon warning-highlight"></span>
+				<div class="media-body">
+					<span class="media-heading">An optional resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></span>
+					<span class="media-middle">{{ r.restriction_message }}</span>
+				</div>
 			</div>
-		</div>
-	</div>
-{% endfor %}
+		{% endfor %}
 
-{# Display all comments... #}
-{% for c in tool.comments %}
-	<div class="media">
-		<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"></span>
-		<div class="media-body">
-			{{ c.content }}<br>
-			<span style="color:grey; font-style:italic">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
-		</div>
-	</div>
-{% endfor %}
-
-{# Display all staff comments #}
-{% if customer.is_staff and tool.staff_only_comments|length > 0 %}
-	<div class="media">
-		<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#staff_only_comments" class="pointer">
-			<span class="glyphicon glyphicon-eye-close pull-left notification-icon warning-highlight"></span><span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-		</a>
-		<div class="media-body">
-			Staff Only
-			<div id="staff_only_comments" class="collapse">
-				{% for c in tool.staff_only_comments %}
-					<div class="media">
-						<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"></span>
-						<div class="media-body">
-							{{ c.content }}<br>
-							<span style="font-size:x-small; color:grey; font-style:italic">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
-						</div>
-					</div>
-				{% endfor %}
+		{# Display any non-required resources scheduled outages... #}
+		{% for o in tool.scheduled_partial_outages %}
+			<div class="media">
+				<span class="glyphicon glyphicon-time pull-left notification-icon warning-highlight"></span>
+				<div class="media-body">
+					<span class="media-heading">An optional resource has an outage: {{ o.resource.name }} <span class="light-grey">({{ o.resource.category }})</span></span>
+					<span class="media-middle">{{ o.title }}{% if o.details %}: {{ o.details }}{% endif %}</span>
+					<span class="media-bottom">{{ o.creator }} scheduled this outage from {{ o.start }} until {{ o.end }}.</span>
+				</div>
 			</div>
-		</div>
+		{% endfor %}
+	</div>
+{% endif %}
+
+{% if tool.problems %}
+	<div class="tool-problems">
+		{# Display all problems and shutdowns... #}
+		{% for t in tool.problems %}
+			<div class="media">
+				<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#task_{{ t.id }}_details" class="pointer">
+					{% if t.force_shutdown %}
+						<span class="glyphicon glyphicon-fire pull-left notification-icon danger-highlight"></span>
+					{% else %}
+						<span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight"></span>
+					{% endif %}
+					<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+				</a>
+				<div class="media-body">
+					{% if t.problem_category %}<span class="media-heading">{{ t.problem_category }}</span>{% endif %}
+					<span class="media-middle">{{ t.problem_description }}</span>
+					{% if t.estimated_resolution_time %}<span class="media-middle">Estimated resolution time is {{ t.estimated_resolution_time }}.</span>{% endif %}
+					<div id="task_{{ t.id }}_details" class="collapse">
+								<span class="media-bottom">
+									This task was created by {{ t.creator }} on {{ t.creation_time }}.
+									{% if t.force_shutdown %}
+										The tool will remain shut down until this task is resolved.
+									{% endif %}
+								</span>
+						{% if t.progress_description %}
+							<div class="media">
+								<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
+								<div class="media-body">
+									<span class="media-heading">Progress updates</span>
+									<span class="media-middle">{{ t.progress_description|linebreaksbr }}</span>
+								</div>
+							</div>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+{% endif %}
+
+{% if tool.comments or customer.is_staff and tool.staff_only_comments %}
+	<div class="tool-comments">
+		{# Display all comments... #}
+		{% for c in tool.comments %}
+			<div class="media">
+				<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"></span>
+				<div class="media-body">
+					<span class="media-middle">{{ c.content }}</span>
+					<span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
+				</div>
+			</div>
+		{% endfor %}
+
+		{# Display all staff comments #}
+		{% if customer.is_staff and tool.staff_only_comments %}
+			<div class="media">
+				<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#staff_only_comments" class="pointer">
+					<span class="glyphicon glyphicon-eye-close pull-left notification-icon warning-highlight"></span><span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+				</a>
+				<div class="media-body">
+					Staff Only
+					<div id="staff_only_comments" class="collapse">
+						{% for c in tool.staff_only_comments %}
+							<div class="media">
+								<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"></span>
+								<div class="media-body">
+									<span class="media-middle">{{ c.content }}</span>
+									<span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+		{% endif %}
 	</div>
 {% endif %}
 
@@ -204,7 +248,7 @@
 			</div>
 		</div>
 	{% else %}
-		{% if customer.is_staff or tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and tool in customer.qualifications.all %}
+		{% if customer.is_staff or tool.ready_to_use and tool in customer.qualifications.all %}
 			{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
 			<div id="start_reserve" style="display:none; margin-top:20px">
 				{% if tool.is_parent_tool %}

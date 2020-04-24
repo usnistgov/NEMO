@@ -22,8 +22,11 @@
 					{% if tool.delayed_logoff_in_progress %}
 						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-time primary-highlight"></span>
 					{% endif %}
+
 					{% if tool.scheduled_outages %}
 						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-time danger-highlight"></span>
+					{% elif tool.scheduled_partial_outages %}
+						<span style="font-size:x-large; margin-right:10px" class="glyphicon glyphicon-time warning-highlight"></span>
 					{% endif %}
 
 					{% if tool.required_resource_is_unavailable %}

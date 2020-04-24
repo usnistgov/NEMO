@@ -7,8 +7,11 @@ $('#sidebar .sidebar-status-icon').remove();
 	{% if tool.delayed_logoff_in_progress %}
 		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-time primary-highlight sidebar-status-icon" title="Delayed logoff is in effect for this tool"></span>');
 	{% endif %}
+
 	{% if tool.scheduled_outage %}
 		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-time danger-highlight sidebar-status-icon" title="A scheduled outage is in effect for this tool"></span>');
+	{% elif tool.scheduled_partial_outage %}
+		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-time warning-highlight sidebar-status-icon" title="An optional resource for this tool has an outage in effect"></span>');
 	{% endif %}
 
 	{% if tool.required_resource_is_unavailable %}
