@@ -105,5 +105,3 @@ IDENTITY_SERVICE = {
 	'url': 'https://identity.example.org/',
 	'domains': [],
 }
-
-RATES_FILE = MEDIA_ROOT + '/rates.json'

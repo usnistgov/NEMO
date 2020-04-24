@@ -48,7 +48,8 @@ class NISTRates(Rates):
 		if not self.rates:
 			json_data = None
 			try:
-				json_data = open(settings.RATES_FILE)
+				rates_file = getattr(settings, 'RATES_FILE', settings.MEDIA_ROOT + '/rates.json')
+				json_data = open(rates_file)
 				self.rates = json.load(json_data)
 				logger.info("found rates file and loaded rates")
 			except AttributeError:
