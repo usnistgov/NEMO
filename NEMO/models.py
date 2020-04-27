@@ -634,7 +634,7 @@ class Tool(models.Model):
 	is_configurable.short_description = 'Configurable'
 
 	def get_configuration_information(self, user, start):
-		configurations = self.parent_tool.configuration_set.all().order_by('display_priority') if self.is_child_tool() else self.configuration_set.all().order_by('display_priority')
+		configurations = self.current_ordered_configurations()
 		notice_limit = 0
 		able_to_self_configure = True
 		for config in configurations:
@@ -652,13 +652,17 @@ class Tool(models.Model):
 			results['sufficient_notice'] = (start - timedelta(hours=notice_limit) >= timezone.now())
 		return results
 
-	def configuration_widget(self, user):
+	def configuration_widget(self, user, render_as_form=None):
 		config_input = {
-			'configurations': self.parent_tool.configuration_set.all().order_by('display_priority') if self.is_child_tool() else self.configuration_set.all().order_by('display_priority'),
-			'user': user
+			'configurations': self.current_ordered_configurations(),
+			'user': user,
+			'render_as_form': render_as_form,
 		}
 		configurations = ConfigurationEditor()
 		return configurations.render(None, config_input)
+
+	def current_ordered_configurations(self):
+		return self.parent_tool.configuration_set.all().order_by('display_priority') if self.is_child_tool() else self.configuration_set.all().order_by('display_priority')
 
 	def get_current_usage_event(self):
 		""" Gets the usage event for the current user of this tool. """

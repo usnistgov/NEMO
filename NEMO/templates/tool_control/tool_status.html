@@ -4,6 +4,7 @@
 		<ul class="nav nav-pills" id="tabs" style="margin-bottom:10px">
 			<li style="width:48%; text-align:center" class="active"><a href="#summary" style="padding: 10px 5px">Summary</a></li>
 			<li style="width:48%; text-align:center"><a href="#details" style="padding: 10px 5px">Details</a></li>
+			{% if configs %}<li style="width:48%; text-align:center"><a href="#config" style="padding: 10px 5px">Config History</a></li>{% endif %}
 			<li style="width:48%; text-align:center"><a href="#problem" style="padding: 10px 5px">Report a problem</a></li>
 			<li style="width:48%; text-align:center"><a href="#comment" style="padding: 10px 5px">Post a comment</a></li>
 		</ul>
@@ -12,6 +13,7 @@
 		<ul class="nav nav-pills" id="tabs">
 			<li class="active"><a href="#summary">Summary</a></li>
 			<li><a href="#details">Details</a></li>
+			{% if configs %}<li><a href="#config">Config History</a></li>{% endif %}
 			<li><a href="#problem">Report a problem</a></li>
 			<li><a href="#comment">Post a comment</a></li>
 		</ul>
@@ -229,7 +231,7 @@
 							<span class="glyphicon glyphicon-eye-close pull-left notification-icon warning-highlight"></span><span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
 						</a>
 						<div class="media-body">
-							Staff Only
+							<div style="margin-bottom: 15px">Staff Only</div>
 							<div id="staff_only_comments" class="collapse">
 								{% for c in tool.staff_only_comments %}
 									<div class="media">
@@ -457,6 +459,20 @@
 			</div>
 		</div>
 		<div style="height:150px">{# Spacer #}</div>
+	</div>
+
+	<div class="tab-pane" id="config">
+		{% for config in configs %}
+			<div class="media" style="margin-top: 15px">
+				<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#config_{{ forloop.counter }}_details" class="pointer">
+					<span class="glyphicon pull-left chevron glyphicon-chevron-right"></span>
+				</a>
+				<div class="media-body">
+					<div class="media-heading">On <i style="font-size: small">{{ config.modification_time|default:'Current' }}</i> {{ config.user }} changed the configuration</div>
+					<div id="config_{{ forloop.counter }}_details" class="media-middle collapse" style="margin-top: 10px">{{ config.html }}</div>
+				</div>
+			</div>
+		{% endfor %}
 	</div>
 
 	<div class="tab-pane" id="problem">

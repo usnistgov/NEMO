@@ -320,7 +320,11 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 	margin-bottom: 30px;
 }
 
-.warning-status, .tool-problems {
+.warning-status {
+	margin-bottom: 30px;
+}
+
+.tool-comments, .tool-problems {
 	margin-bottom: 30px;
 }
 
