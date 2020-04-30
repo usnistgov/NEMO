@@ -285,11 +285,15 @@ def kiosk(request, location=None):
 @require_GET
 @disable_session_expiry_refresh
 def kiosk_occupancy(request):
-	area = request.GET.get('occupancy')
-	if area is None or not Area.objects.filter(name=area).exists():
+	area_name = request.GET.get('occupancy')
+	if area_name is None:
+		return HttpResponse()
+	try:
+		area = Area.objects.get(name=area_name)
+	except Area.DoesNotExist:
 		return HttpResponse()
 	dictionary = {
 		'area': area,
-		'occupants': AreaAccessRecord.objects.filter(area__name=area, end=None, staff_charge=None).prefetch_related('customer'),
+		'occupants': AreaAccessRecord.objects.filter(area__name=area.name, end=None, staff_charge=None).prefetch_related('customer'),
 	}
 	return render(request, 'kiosk/occupancy.html', dictionary)

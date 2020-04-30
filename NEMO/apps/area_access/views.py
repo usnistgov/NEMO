@@ -8,7 +8,8 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
-	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError
+	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
+	MaximumCapacityReachedError
 from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent, Area
 from NEMO.tasks import postpone
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
@@ -76,6 +77,7 @@ def login_to_area(request, door_id):
 		message = "You have not been granted physical access to any NanoFab area. Please visit the User Office if you believe this is an error."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
+	max_capacity_reached = False
 	# Check policy to enter this area
 	try:
 		check_policy_to_enter_this_area(area=door.area, user=user)
@@ -92,11 +94,21 @@ def login_to_area(request, door_id):
 			log.save()
 			return render(request, 'area_access/resource_unavailable.html', {'unavailable_resources': unavailable_resources})
 
+	except MaximumCapacityReachedError:
+		# deal with this error after checking if the user is already logged in
+		max_capacity_reached = True
+
 	current_area_access_record = user.area_access_record()
 	if current_area_access_record and current_area_access_record.area == door.area:
 		# No log entry necessary here because all validation checks passed.
 		# The log entry is captured when the subsequent choice is made by the user.
 		return render(request, 'area_access/already_logged_in.html', {'area': door.area, 'project': current_area_access_record.project, 'badge_number': user.badge_number})
+
+	if max_capacity_reached:
+		log.details = f"This area has reached its maximum capacity of {door.area} people at a time."
+		log.save()
+		message = "This area has reached its maximum capacity. Please wait for somebody to leave and try again."
+		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	previous_area = None
 	if user.active_project_count() >= 1:
@@ -190,11 +202,15 @@ def open_door(request, door_id):
 @require_GET
 @disable_session_expiry_refresh
 def area_access_occupancy(request):
-	area = request.GET.get('occupancy')
-	if area is None or not Area.objects.filter(name=area).exists():
+	area_name = request.GET.get('occupancy')
+	if area_name is None:
+		return HttpResponse()
+	try:
+		area = Area.objects.get(name=area_name)
+	except Area.DoesNotExist:
 		return HttpResponse()
 	dictionary = {
 		'area': area,
-		'occupants': AreaAccessRecord.objects.filter(area__name=area, end=None, staff_charge=None).prefetch_related('customer'),
+		'occupants': AreaAccessRecord.objects.filter(area__name=area.name, end=None, staff_charge=None).prefetch_related('customer'),
 	}
 	return render(request, 'area_access/occupancy.html', dictionary)

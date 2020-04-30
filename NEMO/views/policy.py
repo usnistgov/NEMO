@@ -6,7 +6,8 @@ from django.template import Template, Context
 from django.utils import timezone
 
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
-	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError
+	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
+	MaximumCapacityReachedError
 from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel
 from NEMO.utilities import format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
@@ -371,3 +372,8 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 		unavailable_resources = area.required_resources.filter(available=False)
 		if unavailable_resources:
 			raise UnavailableResourcesUserError(user=user, area=area, resources=unavailable_resources)
+
+		# If we reached maximum capacity (non-staff user), fail
+		area_occupancy = AreaAccessRecord.objects.filter(area=area, end=None, staff_charge=None).count()
+		if area_occupancy >= area.maximum_capacity:
+			raise MaximumCapacityReachedError(user=user, area=area)

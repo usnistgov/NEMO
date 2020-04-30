@@ -787,12 +787,19 @@ class StaffCharge(CalendarDisplay):
 class Area(models.Model):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
 	welcome_message = models.TextField(help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
+	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
 
 	class Meta:
 		ordering = ['name']
 
 	def __str__(self):
 		return self.name
+
+	def warning_capacity(self):
+		return .75 * self.maximum_capacity
+
+	def danger_capacity(self):
+		return self.maximum_capacity
 
 
 class AreaAccessRecord(CalendarDisplay):

@@ -61,10 +61,15 @@ class NoPhysicalAccessUserError(UserAccessError):
 class NoAccessiblePhysicalAccessUserError(UserAccessError):
 	def __init__(self, user: User, area: Area):
 		details = f"This user is not assigned to a physical access that allow access to this area [{area}] at this time"
-		super(NoAccessiblePhysicalAccessUserError).__init__(user=user, msg=details)
+		super(NoAccessiblePhysicalAccessUserError, self).__init__(user=user, msg=details)
 
 
 class UnavailableResourcesUserError(UserAccessError):
 	def __init__(self, user: User, area: Area, resources: List[Resource]):
-		details = f"This user was blocked from entering this area [{area}] because a required resource was unavailable [{resources}"
-		super(NoAccessiblePhysicalAccessUserError).__init__(user=user, msg=details)
+		details = f"This user was denied access to this area [{area}] because a required resource was unavailable [{resources}"
+		super(UnavailableResourcesUserError, self).__init__(user=user, msg=details)
+
+class MaximumCapacityReachedError(UserAccessError):
+	def __init__(self, user: User, area: Area):
+		details = f"This user was denied access to this area [{area}] because the area's maximum capacity of [{area.maximum_capacity}] has been reached"
+		super(MaximumCapacityReachedError, self).__init__(user=user, msg=details)

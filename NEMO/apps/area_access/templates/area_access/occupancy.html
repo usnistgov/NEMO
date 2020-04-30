@@ -6,8 +6,16 @@
 			<thead>
 			<tr>
 				<th colspan="4">
-					<span class="primary-highlight">{{ area }} occupancy</span>
-					{% if area.list|length > 1 %}<span class="light-grey pull-right">{{ area.list|length }} people</span>{% endif %}
+					<span class="primary-highlight">{{ area.name }} occupancy</span>
+					{% if occupants|length > 1 %}
+						<span class="pull-right">
+							{% if area.maximum_capacity != 0 and occupants|length >= area.danger_capacity %}<span style="color:red"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
+							{% elif area.maximum_capacity != 0 and occupants|length >= area.warning_capacity %}<span style="color:orange"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
+							{% else %}<span>{% endif %}
+								{{ occupants|length }}
+							</span>{% if area.maximum_capacity != 0 %} / {{ area.maximum_capacity }}{% endif %} people
+						</span>
+					{% endif %}
 				</th>
 			</tr>
 			<tr>
