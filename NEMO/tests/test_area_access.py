@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.urls import reverse
@@ -84,9 +86,9 @@ class KioskAreaAccess(TestCase):
 		response = self.client.post(reverse('login_to_area', kwargs={'door_id': 999}), follow=True)
 		self.assertEqual(response.status_code, 404)  # wrong door id
 		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), follow=True)
-		self.assertTrue("Your badge wasn\\'t recognized" in str(response.content))
+		self.assertContains(response, "Your badge wasn't recognized")
 		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), data={'badge_number':999}, follow=True)
-		self.assertTrue("Your badge wasn\\'t recognized" in str(response.content))
+		self.assertContains(response, "Your badge wasn't recognized")
 		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), data={'badge_number': user.badge_number}, follow=True)
 		self.assertTrue(f"login_to_area/{door.id}" in response.request['PATH_INFO'])
 		self.assertContains(response=response, text="You are not a member of any active projects", status_code=200)  # user does not have active projects
@@ -97,6 +99,28 @@ class KioskAreaAccess(TestCase):
 		self.assertContains(response=response, text="Physical access denied", status_code=200)  # user does not have access
 		user.physical_access_levels.add(PhysicalAccessLevel.objects.create(name="cleanroom access", area=door.area, schedule=PhysicalAccessLevel.Schedule.ALWAYS))
 		user.save()
+		door.area.maximum_capacity = 1
+		door.area.save()
+		# add a logged in person so capacity is reached
+		AreaAccessRecord.objects.create(area=door.area, customer=User.objects.create(username='test_staff2', first_name='Test', last_name='Staff', is_staff=True, badge_number=2222), project=Project.objects.get(name="Project1"), start=datetime.now())
+		staff = User.objects.create(username='test_staff1', first_name='Test', last_name='Staff', is_staff=True, badge_number=11111)
+		staff.projects.add(Project.objects.get(name="Project1"))
+		staff.physical_access_levels.add(PhysicalAccessLevel.objects.get(name="cleanroom access"))
+		staff.save()
+		self.client.force_login(user=user)
+		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), data={'badge_number': user.badge_number}, follow=True)
+		self.assertContains(response, "This area has reached its maximum capacity.")
+		# staff can still login
+		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), data={'badge_number': staff.badge_number}, follow=True)
+		self.assertTrue(f"login_to_area/{door.id}" in response.request['PATH_INFO'])
+		self.assertContains(response=response, text="You're logged in to the ", status_code=200)
+		self.assertTrue(AreaAccessRecord.objects.filter(area=door.area, customer=User.objects.get(badge_number=staff.badge_number)).exists())
+		# try again user, should fail
+		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), data={'badge_number': user.badge_number}, follow=True)
+		self.assertContains(response, "This area has reached its maximum capacity.")
+		# increase capacity so user can login
+		door.area.maximum_capacity = 5
+		door.area.save()
 		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), data={'badge_number': user.badge_number}, follow=True)
 		self.assertTrue(f"login_to_area/{door.id}" in response.request['PATH_INFO'])
 		self.assertContains(response=response, text="You're logged in to the ", status_code=200)
