@@ -66,9 +66,11 @@ class ReservationTestCase(TestCase):
 		self.assertTrue("You do not belong to any active projects. Thus, you may not create any reservations." in response.content.decode())
 
 	def test_reservation_policy_problems(self):
-		start = datetime.now() + timedelta(hours=1)
-		end = start - timedelta(hours=1)
-		data = self.get_reservation_data(start, end, tool)
+		# start tomorrow 2am
+		dt_now = datetime.now()
+		base_start = datetime(dt_now.year, dt_now.month, dt_now.day) + timedelta(days=1, hours=2)
+		end = base_start - timedelta(hours=1)
+		data = self.get_reservation_data(base_start, end, tool)
 
 		login_as(self.client, consumer)
 
@@ -77,22 +79,22 @@ class ReservationTestCase(TestCase):
 		self.assertEqual(response.content.decode(), "The request parameters have an end time that precedes the start time.")
 
 		# fix time
-		end = (start + timedelta(hours=1))
+		end = (base_start + timedelta(hours=1))
 		# Create a outage and try to schedule a reservation at the same time
-		outage = ScheduledOutage.objects.create(title="Outage", tool=tool, start=start, end=end, creator=staff)
-		data = self.get_reservation_data(start, end, tool)
+		outage = ScheduledOutage.objects.create(title="Outage", tool=tool, start=base_start, end=end, creator=staff)
+		data = self.get_reservation_data(base_start, end, tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Your reservation coincides with a scheduled outage. Please choose a different time." in response.content.decode())
 
 		# try to schedule a reservation that starts before but ends slightly after the outage starts
-		data = self.get_reservation_data(start - timedelta(hours=1), end - timedelta(minutes=59), tool)
+		data = self.get_reservation_data(base_start - timedelta(hours=1), end - timedelta(minutes=59), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Your reservation coincides with a scheduled outage. Please choose a different time." in response.content.decode())
 
 		# try to schedule a reservation that starts slightly before the outage ends
-		data = self.get_reservation_data(start + timedelta(minutes=59), end + timedelta(hours=1), tool)
+		data = self.get_reservation_data(base_start + timedelta(minutes=59), end + timedelta(hours=1), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Your reservation coincides with a scheduled outage. Please choose a different time." in response.content.decode())
@@ -100,7 +102,7 @@ class ReservationTestCase(TestCase):
 		outage.delete()
 
 		# try to schedule a reservation in the past
-		data = self.get_reservation_data(start - timedelta(days=1), end - timedelta(days=1), tool)
+		data = self.get_reservation_data(base_start - timedelta(days=1), end - timedelta(days=1), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertTrue("start time" in response.content.decode() and  "is earlier than the current time" in response.content.decode())
@@ -108,7 +110,7 @@ class ReservationTestCase(TestCase):
 		# check tool horizon (days in advance to reserve tool)
 		tool.reservation_horizon = 2
 		tool.save()
-		start = datetime.now() + timedelta(days=3)
+		start = base_start + timedelta(days=3)
 		end = start + timedelta(hours=1)
 		data = self.get_reservation_data(start, end, tool)
 
@@ -122,7 +124,7 @@ class ReservationTestCase(TestCase):
 		tool.minimum_usage_block_time = 90
 		tool.maximum_usage_block_time = 30
 		tool.save()
-		start = datetime.now() + timedelta(hours=1)
+		start = base_start + timedelta(hours=1)
 		end = start + timedelta(hours=1)
 		data = self.get_reservation_data(start, end, tool)
 
