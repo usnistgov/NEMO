@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
-from NEMO.models import AreaAccessRecord, UsageEvent, Alert, Resource
+from NEMO.models import AreaAccessRecord, UsageEvent, Alert, Resource, Area
 from NEMO.views.alerts import delete_expired_alerts
 
 
@@ -22,5 +22,6 @@ def jumbotron_content(request):
 		'usage_events': UsageEvent.objects.filter(end=None).prefetch_related('operator', 'user', 'tool'),
 		'alerts': Alert.objects.filter(user=None, debut_time__lte=timezone.now(), expired=False, deleted=False),
 		'disabled_resources': Resource.objects.filter(available=False),
+		'area_defined': Area.objects.exists(),
 	}
 	return render(request, 'jumbotron/jumbotron_content.html', dictionary)
