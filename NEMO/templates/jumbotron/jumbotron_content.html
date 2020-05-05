@@ -12,26 +12,26 @@
 					<div class="panel panel-default" style="background:transparent">
 						<table class="table table-bordered table-condensed" style="background:transparent">
 							<thead>
-							<tr>
-								<th colspan="4" style="font-size:large; background:rgba(255, 255, 255, 0.7)">
-									<span class="primary-highlight">{{ area.grouper }}</span>
-									{% if area.list|length > 1 %}<span class="light-grey pull-right">{{ area.list|length }} people</span>{% endif %}
-								</th>
-							</tr>
-							<tr>
-								<th style="text-align:center; background:rgba(255, 255, 255, 0.7)">User</th>
-								<th style="text-align:center; background:rgba(255, 255, 255, 0.7)">Since</th>
-								<th style="text-align:center; background:rgba(255, 255, 255, 0.7)">Working on project...</th>
-							</tr>
+								<tr>
+									<th colspan="4" style="font-size:large;">
+										<span class="primary-highlight">{{ area.grouper }}</span>
+										{% if area.list|length > 1 %}<span class="light-grey pull-right">{{ area.list|length }} people</span>{% endif %}
+									</th>
+								</tr>
+								<tr>
+									<th style="text-align:center;">User</th>
+									<th style="text-align:center;">Since</th>
+									<th style="text-align:center;">Working on project...</th>
+								</tr>
 							</thead>
 							<tbody>
 							{% for o in area.list %}
 								<tr>
-									<td style="background:rgba(255, 255, 255, 0.7)">
+									<td>
 										<span {% if o.customer.is_staff %}class="success-highlight"{% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
 									</td>
-									<td style="background:rgba(255, 255, 255, 0.7)">{{ o.start|date:"l @ g:i A" }}</td>
-									<td style="background:rgba(255, 255, 255, 0.7); max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ o.project }}</td>
+									<td>{{ o.start|date:"l @ g:i A" }}</td>
+									<td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ o.project }}</td>
 								</tr>
 							{% endfor %}
 							</tbody>
@@ -49,18 +49,18 @@
 			<div class="panel panel-default" style="background:transparent">
 				<table class="table table-bordered table-condensed" style="background:transparent">
 					<thead>
-					<tr>
-						<th style="text-align: center">Tool</th>
-						<th style="text-align: center">User</th>
-						<th style="text-align: center">In use since...</th>
-					</tr>
+						<tr>
+							<th style="text-align: center">Tool</th>
+							<th style="text-align: center">User</th>
+							<th style="text-align: center">In use since...</th>
+						</tr>
 					</thead>
 					<tbody style="background:transparent">
 					{% for u in usage_events %}
 						<tr style="background:transparent">
-							<td style="background:rgba(255, 255, 255, 0.7)">{{ u.tool }}</td>
-							<td style="background:rgba(255, 255, 255, 0.7)"><span {% if u.operator.is_staff %}class="success-highlight"{% endif %}>{{ u.operator.first_name }} {{ u.operator.last_name }}{% if u.user != u.operator %} on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}</span></td>
-							<td style="background:rgba(255, 255, 255, 0.7)">{{ u.start|date:"l @ g:i A" }}</td>
+							<td>{{ u.tool }}</td>
+							<td><span {% if u.operator.is_staff %}class="success-highlight"{% endif %}>{{ u.operator.first_name }} {{ u.operator.last_name }}{% if u.user != u.operator %} on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}</span></td>
+							<td>{{ u.start|date:"l @ g:i A" }}</td>
 						</tr>
 					{% endfor %}
 					</tbody>

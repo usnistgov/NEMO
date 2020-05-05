@@ -14,7 +14,11 @@ def get_media_file_contents(file_name):
 	if not storage.exists(file_name):
 		return ''
 	f = storage.open(file_name)
-	return f.read().decode().strip()
+	try:
+		return f.read().decode().strip()
+	except UnicodeDecodeError:
+		f = storage.open(file_name)
+		return f.read()
 
 
 def store_media_file(content, file_name):
@@ -55,6 +59,7 @@ customizable_content = [
 	('reservation_cancelled_user_email', '.html'),
 	('reservation_created_user_email', '.html'),
 	('rates', '.json'),
+	('jumbotron_watermark', '.png'),
 ]
 
 

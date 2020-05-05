@@ -377,3 +377,15 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 .tool-rates {
 	margin-top: 5px;
 }
+
+.jumbotron-body {
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: cover;
+	background-color: rgba(238, 238, 238, 0.50) !important;
+	background-blend-mode: color;
+}
+
+#jumbotron-container .table-bordered td, #jumbotron-container .table-bordered th {
+	background:rgba(255, 255, 255, 0.7)
+}

@@ -168,6 +168,32 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
+				<h3>&quot;<a href="{% url 'jumbotron' %}" target="_blank">Jumbotron</a>&quot; watermark</h3>
+				<p>This image is displayed as background for the Jumbotron. It is set as a full background screen, so your image needs to take that into account.
+					<br>The image you upload should be a valid image file (recommended size is 1500x1000).
+				</p>
+				<form method="POST" action="{% url 'customize' 'jumbotron_watermark' %}" enctype="multipart/form-data">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="jumbotron_watermark" class="customization-input-file" onchange="this.style.color = 'inherit';$('#jumbotron_watermark_span').hide()">
+						{% if jumbotron_watermark %}<span id="jumbotron_watermark_span">jumbotron_watermark.png</span>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload jumbotron Watermark image" class="btn btn-success">
+					</div>
+				</form>
+				{% if jumbotron_watermark %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#jumbotron_watermark_render">Show current content</button>
+					<div id="jumbotron_watermark_render" class="collapse customization-content" style="white-space: normal">
+						<img alt="jumbotron_watermark" src="{{ MEDIA_URL }}jumbotron_watermark.png" height="400px" style="border: 1px solid #ddd"/>
+					</div>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
 				<h3>Cancellation email</h3>
 				<p>This email is sent to a user when a staff member cancels the user's reservation. The following context variables are provided when the email is rendered:</p>
 				<ul>
