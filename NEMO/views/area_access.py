@@ -182,10 +182,15 @@ def self_log_in(request):
 		try:
 			a = Area.objects.get(id=request.POST['area'])
 			p = Project.objects.get(id=request.POST['project'])
+			check_policy_to_enter_this_area(a, request.user)
 			if a in dictionary['areas'] and p in dictionary['projects']:
 				AreaAccessRecord.objects.create(area=a, customer=request.user, project=p)
+		except MaximumCapacityReachedError:
+			dictionary['error_message'] = 'The {} is inaccessible because it has reached its maximum capacity. Wait for somebody to exit and try again.'.format(a.name.lower())
+			return render(request, 'area_access/self_login.html', dictionary)
 		except:
-			pass
+			dictionary['error_message'] = "error"
+			return render(request, 'area_access/self_login.html', dictionary)
 		return redirect(reverse('landing'))
 
 
@@ -232,14 +237,17 @@ def able_to_self_log_in_to_area(user):
 	accessible_areas = get_accessible_areas_for_user(user)
 
 	# Check if the user normally has access to an area at the current time
-	try:
-		for accessible_area in accessible_areas:
+	for accessible_area in accessible_areas:
+		try:
 			check_policy_to_enter_this_area(area=accessible_area.area, user=user)
 			# Users may not access an area if it's not accessible at this time or if a required resource is unavailable,
 			# so return true if there exists at least one area they are able to log in to.
 			return True
-	except (NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, MaximumCapacityReachedError):
-		pass
+		except (NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError):
+			pass
+		except MaximumCapacityReachedError:
+			# we don't want to deal with that error just yet. we'll let the user try to log in and get an error
+			return True
 
 	# No areas are accessible...
 	return False

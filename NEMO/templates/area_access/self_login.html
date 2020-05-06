@@ -2,6 +2,12 @@
 {% block title %}Log in to an area{% endblock %}
 {% block content %}
 	<h1>Log in to an access controlled area</h1>
+	{% if error_message %}
+		<div class="alert alert-danger">
+			You cannot login to this area because:<br>
+			{{ error_message }}
+		</div>
+	{% endif %}
 	<form method="post" action="{% url 'self_log_in' %}">
 		{% csrf_token %}
 		<div class="form-group">
