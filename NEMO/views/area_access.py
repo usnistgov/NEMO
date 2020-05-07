@@ -24,8 +24,9 @@ from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_e
 @require_GET
 def area_access(request):
 	""" Presents a page that displays audit records for all NanoFab areas. """
-	today = timezone.now().strftime('%m/%d/%Y')
-	yesterday = (timezone.now() - timedelta(days=1)).strftime('%m/%d/%Y')
+	now = timezone.now().astimezone()
+	today = now.strftime('%m/%d/%Y')
+	yesterday = (now - timedelta(days=1)).strftime('%m/%d/%Y')
 	dictionary = {
 		'today': reverse('area_access') + '?' + urlencode({'start': today, 'end': today}),
 		'yesterday': reverse('area_access') + '?' + urlencode({'start': yesterday, 'end': yesterday}),
