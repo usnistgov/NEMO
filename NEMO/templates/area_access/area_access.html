@@ -14,18 +14,32 @@
 		<li><a href="{{ yesterday }}">Yesterday</a></li>
 		<li>Or, enter a custom date range</li>
 	</ul>
-	<form id="view_records" action="{% url 'area_access' %}" class="form-inline" method="get">
+	<form id="view_records" action="{% url 'area_access' %}" class="form-inline" method="get" style="margin-top: 15px; width: 500px;">
+		<div class="form-group col-md-3">Date range:</div>
 		<div class="form-group">
-			<div class="datetimepicker-container">
-				<input type="text" id="start" name="start" class="form-control" autocomplete="off" placeholder="start" value="{{ start|date:"m/d/Y" }}">
+			<div class="form-group">
+				<div class="datetimepicker-container">
+					<input type="text" id="start" name="start" class="form-control" autocomplete="off" placeholder="start" value="{{ start|date:"m/d/Y" }}">
+				</div>
+			</div>
+			<div class="form-group">
+				<div class="datetimepicker-container">
+					<input type="text" id="end" name="end" class="form-control" autocomplete="off" placeholder="end" value="{{ end|date:"m/d/Y" }}">
+				</div>
 			</div>
 		</div>
-		<div class="form-group">
-			<div class="datetimepicker-container">
-				<input type="text" id="end" name="end" class="form-control" autocomplete="off" placeholder="end" value="{{ end|date:"m/d/Y" }}">
+		<div style="margin-top: 15px">
+			<div class="form-group col-md-3">Area:</div>
+			<div class="form-group">
+				<select name="area" id="area">
+					<option value=""></option>
+					{% for area in areas %}
+						<option {% if area_name == area.name %}selected{% endif %}>{{ area.name }}</option>
+					{% endfor %}
+				</select>
 			</div>
 		</div>
-		<div class="form-group">
+		<div class="form-group col-md-12" style="margin-top: 15px">
 			<input type="submit" class="btn btn-default" value="View access records">
 		</div>
 	</form>
@@ -34,6 +48,7 @@
 			<table class="table table-bordered table-condensed">
 				<thead>
 					<tr>
+						<th>Area</th>
 						<th>Identifier</th>
 						<th>User</th>
 						<th>Project</th>
@@ -44,6 +59,7 @@
 				<tbody>
 					{% for x in access_records %}
 						<tr>
+							<td>{{ x.area }}</td>
 							<td>{{ x.id }}</td>
 							<td>{{ x.customer }}</td>
 							<td>{{ x.project }}</td>

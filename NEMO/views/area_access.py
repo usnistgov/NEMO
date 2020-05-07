@@ -3,6 +3,7 @@ from typing import List
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
+from django.db.models import F
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -30,12 +31,21 @@ def area_access(request):
 	dictionary = {
 		'today': reverse('area_access') + '?' + urlencode({'start': today, 'end': today}),
 		'yesterday': reverse('area_access') + '?' + urlencode({'start': yesterday, 'end': yesterday}),
+		'areas': Area.objects.all(),
 	}
 	try:
 		start, end = parse_start_and_end_date(request.GET['start'], request.GET['end'])
+		area = request.GET.get('area')
 		dictionary['start'] = start
 		dictionary['end'] = end
-		dictionary['access_records'] = AreaAccessRecord.objects.filter(start__gte=start, start__lt=end, staff_charge=None)
+		area_access_records = AreaAccessRecord.objects.filter(start__gte=start, start__lt=end, staff_charge=None)
+		if area:
+			area_access_records = area_access_records.filter(area__name=area)
+			dictionary['area_name'] = area
+		area_access_records = area_access_records.order_by('area__name')
+		area_access_records.query.add_ordering(F('end').desc(nulls_first=True))
+		area_access_records.query.add_ordering(F('start').desc())
+		dictionary['access_records'] = area_access_records
 	except:
 		pass
 	return render(request, 'area_access/area_access.html', dictionary)
