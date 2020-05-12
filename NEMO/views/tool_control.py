@@ -86,7 +86,7 @@ def use_tool_for_other(request):
 def get_tool_full_config_history(tool: Tool):
 	# tool config by user and tool and time
 	configs = []
-	config_history = ConfigurationHistory.objects.filter(configuration__tool_id=tool.id).order_by('-modification_time')
+	config_history = ConfigurationHistory.objects.filter(configuration__tool_id=tool.id).order_by('-modification_time')[:20]
 	configurations = tool.current_ordered_configurations()
 	for c in config_history:
 		for co in configurations:
