@@ -196,7 +196,7 @@
 			</div>
 		{% endif %}
 
-		{% if tool.comments %}
+		{% if tool.comments or user.is_staff and tool.staff_only_comments|length > 0 %}
 			<div class="tool-comments">
 				{# Display all comments... #}
 				{% for c in tool.comments %}
