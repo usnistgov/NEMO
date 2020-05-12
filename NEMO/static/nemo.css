@@ -382,6 +382,7 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 	background-repeat: no-repeat;
 	background-position: center;
 	background-size: cover;
+	background-attachment: fixed;
 }
 
 #jumbotron-container .table-bordered td, #jumbotron-container .table-bordered th {
