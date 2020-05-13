@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django import template
+from django.conf import settings
 from django.urls import reverse, NoReverseMatch
 from django.utils import timezone
 from django.utils.html import escape, format_html
@@ -24,6 +25,11 @@ def is_soon(time):
 @register.filter()
 def to_int(value):
 	return int(value)
+
+
+@register.simple_tag
+def get_setting(name):
+    return getattr(settings, name, "")
 
 
 @register.filter

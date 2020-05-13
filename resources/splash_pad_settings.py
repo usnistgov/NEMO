@@ -105,3 +105,5 @@ IDENTITY_SERVICE = {
 	'url': 'https://identity.example.org/',
 	'domains': [],
 }
+
+SITE_TITLE = 'NEMO'
