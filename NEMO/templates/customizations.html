@@ -24,7 +24,7 @@
 							<div class="col-md-12">
 								<label class="control-label col-md-2" >First day of the week </label>
 								<div class="checkbox">
-									<label><input type="radio" id="calendar_first_day_of_week" name="calendar_first_day_of_week" {% if calendar_first_day_of_week == '1' %}checked{% endif %} value="1"> Monday </label>
+									<label><input type="radio" id="calendar_first_day_of_week" name="calendar_first_day_of_week" {% if not calendar_first_day_of_week or calendar_first_day_of_week == '1' %}checked{% endif %} value="1"> Monday </label>
 									<label><input type="radio" id="calendar_first_day_of_week" name="calendar_first_day_of_week" {% if calendar_first_day_of_week == '0' %}checked{% endif %} value="0"> Sunday</label>
 								</div>
 							</div>
