@@ -274,6 +274,17 @@ function on_browser_resize()
 
 function create_calendar()
 {
+	var day_columnFormat,week_columnFormat;
+	if('{{ calendar_date_format }}' === 'MDY')
+		{
+		day_columnFormat='dddd MM/DD/YYYY'
+		week_columnFormat='ddd MM/DD';
+		}
+	if('{{ calendar_date_format }}' === 'DMY')
+		{
+		day_columnFormat='dddd DD/MM/YYYY';
+		week_columnFormat='ddd DD/MM';
+		}
 	{# Documentation for properties: http://arshaw.com/fullcalendar/docs/ #}
 	var calendar_properties =
 	{
@@ -286,10 +297,12 @@ function create_calendar()
 		"views": {
 			"day": {
 				"titleFormat": ' ',
-				"columnFormat": 'dddd MM/DD/YYYY'
+				"columnFormat": day_columnFormat
 			},
 			"week": {
-				"titleFormat": ' '
+				"titleFormat": ' ',
+				"columnFormat": week_columnFormat
+
 			},
 			"month": {
 				"titleFormat": 'MMMM YYYY'
@@ -298,7 +311,7 @@ function create_calendar()
 		"firstDay": {{ calendar_first_day_of_week }}, {# Make Monday the first day of the week #}
 		"scrollTime": '07:00:00', {# The day starts at 7 AM #}
 		"defaultView": "{{ calendar_view }}",
-		"allDaySlot": false,
+		"allDaySlot": true,
 		"allDayDefault": false,
 		"slotDuration": '00:15:00', {# 15 minutes each row #}
 		"slotLabelInterval": '1:00', {# One hour intervals for label #}

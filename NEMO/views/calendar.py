@@ -64,12 +64,18 @@ def calendar(request, tool_id=None):
 	if not calendar_first_day_of_week:
 		calendar_first_day_of_week = 1
 
+	# default value for calendar_first_day_of_week is 1 (Monday) 
+	calendar_date_format = get_customization('calendar_date_format')
+	if calendar_date_format == '':
+		calendar_date_format = 'MDY'
+
 	dictionary = {
 		'rendered_tool_tree_html': rendered_tool_tree_html,
 		'tools': tools,
 		'auto_select_tool': tool_id,
 		'calendar_view' : calendar_view,
 		'calendar_first_day_of_week' : calendar_first_day_of_week,
+		'calendar_date_format' : calendar_date_format,
 	}
 	if request.user.is_staff:
 		dictionary['users'] = User.objects.all()

@@ -7,6 +7,47 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
+				<h3>Calendar settings</h3>
+					<form method="POST" action="{% url 'customize' 'calendar_settings' %}" class="form-horizontal">
+						{% csrf_token %}
+						<div class="form-group">
+							<div class="col-md-12">
+								<label class="control-label col-md-2" >Default view</label>
+								<div class="checkbox">
+									<label><input type="radio" id="calendar_view" name="calendar_view" {% if calendar_view == 'agendaWeek' %}checked{% endif %} value="agendaWeek"> Week view</label>
+									<label><input type="radio" id="calendar_view" name="calendar_view" {% if calendar_view == 'month' %}checked{% endif %} value="month"> Month view</label>
+									<label><input type="radio" id="calendar_view" name="calendar_view" {% if calendar_view == 'agendaDay' %}checked{% endif %} value="agendaDay"> Day view</label>
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="col-md-12">
+								<label class="control-label col-md-2" >First day of the week </label>
+								<div class="checkbox">
+									<label><input type="radio" id="calendar_first_day_of_week" name="calendar_first_day_of_week" {% if calendar_first_day_of_week == '1' %}checked{% endif %} value="1"> Monday </label>
+									<label><input type="radio" id="calendar_first_day_of_week" name="calendar_first_day_of_week" {% if calendar_first_day_of_week == '0' %}checked{% endif %} value="0"> Sunday</label>
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="col-md-12">
+								<label class="control-label col-md-2" >Date format</label>
+								<div class="checkbox">
+									<label><input type="radio" id="calendar_date_format" name="calendar_date_format" {% if calendar_date_format == 'DMY' %}checked{% endif %} value="DMY"> 16/03/2020</label>
+									<label><input type="radio" id="calendar_date_format" name="calendar_date_format" {% if calendar_date_format == 'MDY' %}checked{% endif %} value="MDY"> 03/16/2020</label>
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="col-md-3">
+								<input type="submit" value="Save settings" class="btn btn-success">
+							</div>
+						</div>
+				</form>
+			</div>
+		</div>
+		<div class="panel panel-default">
+			<div class="panel-body">
 				<h3>Email addresses</h3>
 				<form method="POST" action="{% url 'customize' 'email_addresses' %}" class="form-horizontal">
 					{% csrf_token %}

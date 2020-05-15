@@ -38,6 +38,7 @@ customizable_key_values = [
 	'self_log_out',
 	'calendar_view',
 	'calendar_first_day_of_week',
+	'calendar_date_format'
 	]
 
 customizable_content = [
@@ -120,6 +121,7 @@ def customize(request, element):
 	elif element == 'calendar_settings':
 		set_customization('calendar_view', request.POST.get('calendar_view', ''))
 		set_customization('calendar_first_day_of_week', request.POST.get('calendar_first_day_of_week', ''))
+		set_customization('calendar_date_format', request.POST.get('calendar_date_format', ''))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
 	return redirect('customization')
