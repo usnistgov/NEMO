@@ -36,7 +36,9 @@ customizable_key_values = [
 	'abuse_email_address',
 	'self_log_in',
 	'self_log_out',
-]
+	'calendar_view',
+	'calendar_first_day_of_week',
+	]
 
 customizable_content = [
 	('login_banner', '.html'),
@@ -115,6 +117,9 @@ def customize(request, element):
 	elif element == 'application_settings':
 		set_customization('self_log_in', request.POST.get('self_log_in', ''))
 		set_customization('self_log_out', request.POST.get('self_log_out', ''))
+	elif element == 'calendar_settings':
+		set_customization('calendar_view', request.POST.get('calendar_view', ''))
+		set_customization('calendar_first_day_of_week', request.POST.get('calendar_first_day_of_week', ''))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
 	return redirect('customization')
