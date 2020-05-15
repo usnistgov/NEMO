@@ -56,7 +56,7 @@ def calendar(request, tool_id=None):
 	
 	# default value for calendar_view is 'agendaWeek'
 	calendar_view = get_customization('calendar_view')
-	if calendar_view == '':
+	if not calendar_view:
 		calendar_view = 'agendaWeek'
 	
 	# default value for calendar_first_day_of_week is 1 (Monday) 
