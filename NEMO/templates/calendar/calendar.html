@@ -288,9 +288,9 @@ function create_calendar()
 				"titleFormat": 'MMMM YYYY'
 			}
 		},
-		"firstDay": 1, {# Make Monday the first day of the week #}
+		"firstDay": {{ calendar_first_day_of_week }}, {# Make Monday the first day of the week #}
 		"scrollTime": '07:00:00', {# The day starts at 7 AM #}
-		"defaultView": "agendaWeek",
+		"defaultView": "{{ calendar_view }}",
 		"allDaySlot": false,
 		"allDayDefault": false,
 		"slotDuration": '00:15:00', {# 15 minutes each row #}

@@ -57,6 +57,8 @@ def calendar(request, tool_id=None):
 		'rendered_tool_tree_html': rendered_tool_tree_html,
 		'tools': tools,
 		'auto_select_tool': tool_id,
+		'calendar_view' : get_customization('calendar_view'),
+		'calendar_first_day_of_week' : get_customization('calendar_first_day_of_week'),
 	}
 	if request.user.is_staff:
 		dictionary['users'] = User.objects.all()
