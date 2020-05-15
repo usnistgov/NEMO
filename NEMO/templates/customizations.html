@@ -14,7 +14,7 @@
 							<div class="col-md-12">
 								<label class="control-label col-md-2" >Default view</label>
 								<div class="checkbox">
-									<label><input type="radio" id="calendar_view" name="calendar_view" {% if calendar_view == 'agendaWeek' %}checked{% endif %} value="agendaWeek"> Week view</label>
+									<label><input type="radio" id="calendar_view" name="calendar_view" {% if not calendar_view or calendar_view == 'agendaWeek' %}checked{% endif %} value="agendaWeek"> Week view</label>
 									<label><input type="radio" id="calendar_view" name="calendar_view" {% if calendar_view == 'month' %}checked{% endif %} value="month"> Month view</label>
 									<label><input type="radio" id="calendar_view" name="calendar_view" {% if calendar_view == 'agendaDay' %}checked{% endif %} value="agendaDay"> Day view</label>
 								</div>
