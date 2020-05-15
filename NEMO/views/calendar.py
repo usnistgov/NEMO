@@ -61,7 +61,7 @@ def calendar(request, tool_id=None):
 	
 	# default value for calendar_first_day_of_week is 1 (Monday) 
 	calendar_first_day_of_week = get_customization('calendar_first_day_of_week')
-	if calendar_first_day_of_week == '':
+	if not calendar_first_day_of_week:
 		calendar_first_day_of_week = 1
 
 	dictionary = {
