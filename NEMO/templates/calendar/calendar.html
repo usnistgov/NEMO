@@ -106,6 +106,13 @@ function event_creation_success_callback(response, status, xml_http_request, aja
 	{# If the response is empty then the reservation was successfully created. #}
 	if(response === "")
 		refresh_calendar_and_sidebar();
+	else if (xml_http_request.status === 201)
+	{
+	    {# reservation was created but there is some extra information to display #}
+		refresh_calendar_and_sidebar();
+		$("#dialog .modal-content").html(response);
+		$("#dialog").modal('show');
+	}
 	else {# the response was non-empty so the tool requires configuration details before the reservation is created. #}
 	{
 		{# Construct the configuration dialog that is contained in the server response. #}
@@ -196,7 +203,7 @@ function resize(event, delta, revertFunc, jsEvent, ui, view)
 		"delta": delta.asMinutes()
 	};
 	if(type === "Reservation")
-		ajax_post("{% url 'resize_reservation' %}", event_changes, undefined, [revertFunc, ajax_failure_callback("Reservation resize failed")], refresh_calendar_and_sidebar);
+		ajax_post("{% url 'resize_reservation' %}", event_changes, event_creation_success_callback, [revertFunc, ajax_failure_callback("Reservation resize failed")], refresh_calendar_and_sidebar);
 	else if(type === "Outage")
 		ajax_post("{% url 'resize_outage' %}", event_changes, undefined, [revertFunc, ajax_failure_callback("Outage resize failed")], refresh_calendar_and_sidebar);
 }
@@ -213,7 +220,7 @@ function move(event, delta, revertFunc, jsEvent, ui, view)
 		"delta": delta.asMinutes()
 	};
 	if(type === "Reservation")
-		ajax_post("{% url 'move_reservation' %}", event_changes, undefined, [revertFunc, ajax_failure_callback("Reservation move failed")], refresh_calendar_and_sidebar);
+		ajax_post("{% url 'move_reservation' %}", event_changes, event_creation_success_callback, [revertFunc, ajax_failure_callback("Reservation move failed")], refresh_calendar_and_sidebar);
 	else if(type === "Outage")
 		ajax_post("{% url 'move_outage' %}", event_changes, undefined, [revertFunc, ajax_failure_callback("Outage move failed")], refresh_calendar_and_sidebar);
 }

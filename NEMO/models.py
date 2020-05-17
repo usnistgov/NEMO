@@ -1,5 +1,6 @@
 import datetime
 import os
+import sys
 from datetime import timedelta
 
 from django.contrib import auth
@@ -788,6 +789,7 @@ class Area(models.Model):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
 	welcome_message = models.TextField(help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
+	reservation_warning = models.PositiveIntegerField(null=True, help_text='The number of simultaneous reservations allowed in this area before a warning is displayed.')
 
 	class Meta:
 		ordering = ['name']
@@ -796,7 +798,7 @@ class Area(models.Model):
 		return self.name
 
 	def warning_capacity(self):
-		return .75 * self.maximum_capacity
+		return self.reservation_warning if self.reservation_warning is not None else sys.maxsize
 
 	def danger_capacity(self):
 		return self.maximum_capacity

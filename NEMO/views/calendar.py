@@ -3,7 +3,7 @@ from collections import Iterable
 from datetime import timedelta, datetime
 from http import HTTPStatus
 from re import match
-from typing import Union
+from typing import Union, List
 
 from dateutil import rrule
 from django.contrib.admin.views.decorators import staff_member_required
@@ -269,7 +269,7 @@ def create_reservation(request):
 	# If a reservation is requested and the tool does not require configuration...
 	if not tool.is_configurable():
 		new_reservation.save_and_notify()
-		return HttpResponse()
+		return reservation_success(request, new_reservation)
 
 	# If a reservation is requested and the tool requires configuration that has not been submitted...
 	elif tool.is_configurable() and not configured:
@@ -283,9 +283,63 @@ def create_reservation(request):
 		if new_reservation.self_configuration:
 			new_reservation.short_notice = False
 		new_reservation.save_and_notify()
-		return HttpResponse()
+		return reservation_success(request, new_reservation)
 
 	return HttpResponseBadRequest("Reservation creation failed because invalid parameters were sent to the server.")
+
+
+def reservation_success(request, reservation: Reservation):
+	""" Checks area capacity and display warning message if capacity is high """
+	reservations_in_same_area, reservations_in_same_location = ([], [])
+	max_area_overlap, max_location_overlap = (0,0)
+	max_area_time, max_location_time = (None, None)
+	area = reservation.tool.requires_area_access
+	location = reservation.tool.location
+	if area and area.reservation_warning:
+		reservations_in_same_area = Reservation.objects.filter(cancelled=False, end__gte=reservation.start, start__lte=reservation.end, tool__in=Tool.objects.filter(_requires_area_access=area))
+		max_area_overlap, max_area_time = maximum_overlap(reservations_in_same_area)
+		if reservation.tool.location:
+			reservations_in_same_location = reservations_in_same_area.filter(tool__in=Tool.objects.filter(_location=location))
+			max_location_overlap, max_location_time = maximum_overlap(reservations_in_same_location)
+	if max_area_overlap and max_area_overlap >= area.warning_capacity():
+		dictionary = {
+			'same_area_count': len(reservations_in_same_area)-1,
+			'same_location_count': len(reservations_in_same_location)-1,
+			'area': area,
+			'location': location,
+			'max_area_count': max_area_overlap-1,
+			'max_location_count': max_location_overlap-1,
+			'max_area_time': max(max_area_time, reservation.start),
+			'max_location_time': max(max_location_time, reservation.start),
+		}
+		return render(request, 'calendar/reservation_warning.html', dictionary, status=201) # send 201 code CREATED to indicate success but with more information to come
+	else:
+		return HttpResponse()
+
+
+def maximum_overlap(reservations: List[Reservation]) -> (int, datetime):
+	""" Returns the maximum number of overlapping reservations and the earlier time the maximum is reached """
+	times = []
+	for reservation in reservations:
+		startTime, endTime = reservation.start, reservation.end
+		times.append((startTime, 'start'))
+		times.append((endTime, 'end'))
+	times = sorted(times)
+
+	count = 0
+	max_count = 0
+	max_time = None
+	for time in times:
+		if time[1] == 'start':
+			count += 1  # increment on arrival/start
+		else:
+			count -= 1  # decrement on departure/end
+		# maintain maximum
+		max_count = max(count, max_count)
+		# maintain earlier time max is reached
+		if max_count == count:
+			max_time = time[0]
+	return max_count, max_time
 
 
 def extract_configuration(request):
@@ -478,7 +532,7 @@ def modify_reservation(request, start_delta, end_delta):
 		new_reservation.save_and_notify()
 		reservation_to_cancel.descendant = new_reservation
 		reservation_to_cancel.save_and_notify()
-	return response
+	return reservation_success(request, new_reservation)
 
 
 def modify_outage(request, start_delta, end_delta):

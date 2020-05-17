@@ -1,0 +1,20 @@
+<div class="alert alert-warning" style="margin-bottom: 0">
+	<table style="width: 100%">
+		<tr>
+			<td style="width:50px"><span class="glyphicon glyphicon-alert warning-highlight notification-icon"></span></td>
+			<td>
+				At <b>{{ max_area_time|time:"g:i A" }}</b>, there are {{ max_area_count }} other reservations expected in the {{ area.name }} area.
+				<br>
+				<b>The maximum capacity is {{ area.maximum_capacity }} people.</b>
+				{% if same_location_count %}<br><br>At <b>{{ max_location_time|time:"g:i A" }}</b>, {{ max_location_count }} of those reservations are in the same location ({{ location }}){% endif %}
+				<br><br>
+				Please consider rescheduling to another less busy time.<br>
+			</td>
+		</tr>
+	</table>
+	<div style="text-align: center; margin-top: 15px">
+		<button type="button" class="btn btn-default" data-dismiss="modal" aria-label="Ok">
+			<span aria-hidden="true">Ok</span>
+		</button>
+	</div>
+</div>
