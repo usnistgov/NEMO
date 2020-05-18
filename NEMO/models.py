@@ -554,7 +554,7 @@ class Tool(models.Model):
 		return reverse('tool_control', args=[self.tool_or_parent_id()])
 
 	def ready_to_use(self):
-		return self.operational and not self.required_resource_is_unavailable and not self.delayed_logoff_in_progress and not self.scheduled_outage_in_progress
+		return self.operational and not self.required_resource_is_unavailable() and not self.delayed_logoff_in_progress() and not self.scheduled_outage_in_progress()
 
 	def name_display(self):
 		return f"{self.name} ({self.parent_tool.name})" if self.is_child_tool() else f"{self.name}"
