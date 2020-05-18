@@ -33,8 +33,11 @@
 							<div class="col-md-12">
 								<label class="control-label col-md-2" >Date format</label>
 								<div class="checkbox">
-									<label><input type="radio" id="calendar_date_format" name="calendar_date_format" {% if not calendar_date_format or calendar_date_format == 'DMY' %}checked{% endif %} value="DMY"> 16/03/2020</label>
+								<label><input type="radio" id="calendar_date_format" name="calendar_date_format" {% if not calendar_date_format or calendar_date_format == 'DMY' %}checked{% endif %} value="DMY"> 16/03/2020</label> 
 									<label><input type="radio" id="calendar_date_format" name="calendar_date_format" {% if calendar_date_format == 'MDY' %}checked{% endif %} value="MDY"> 03/16/2020</label>
+									<label><input type="radio" id="calendar_date_format" name="calendar_date_format" {% if calendar_date_format == 'custom' %}checked{% endif %} value="custom"> Custom values </label>
+										<label> Day Format </label> <input type="text"  id="calendar_custom_date_day_format" name="calendar_custom_date_day_format" value="{{calendar_custom_date_day_format }}" size="18" placeholder="dddd MM/DD/YYYY">
+										<label> Week Format </label> <input type="text"  id="calendar_custom_date_week_format" name="calendar_custom_date_week_format" value="{{calendar_custom_date_week_format }}" size="18" placeholder="ddd MM/DD"> 
 								</div>
 							</div>
 						</div>

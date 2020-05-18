@@ -280,11 +280,16 @@ function create_calendar()
 		day_columnFormat='dddd MM/DD/YYYY'
 		week_columnFormat='ddd MM/DD';
 		}
-	if('{{ calendar_date_format }}' === 'DMY')
+	else if('{{ calendar_date_format }}' === 'DMY')
 		{
 		day_columnFormat='dddd DD/MM/YYYY';
 		week_columnFormat='ddd DD/MM';
 		}
+	else if('{{ calendar_date_format }}' === 'custom')
+		{
+		day_columnFormat= "{{ calendar_custom_date_day_format }}";
+		week_columnFormat= "{{ calendar_custom_date_week_format }}";
+		}		
 	{# Documentation for properties: http://arshaw.com/fullcalendar/docs/ #}
 	var calendar_properties =
 	{

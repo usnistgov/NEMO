@@ -69,6 +69,9 @@ def calendar(request, tool_id=None):
 	if not calendar_date_format:
 		calendar_date_format = 'MDY'
 
+	calendar_custom_date_week_format = get_customization('calendar_custom_date_week_format')
+	calendar_custom_date_day_format = get_customization('calendar_custom_date_day_format')
+
 	dictionary = {
 		'rendered_tool_tree_html': rendered_tool_tree_html,
 		'tools': tools,
@@ -76,6 +79,8 @@ def calendar(request, tool_id=None):
 		'calendar_view' : calendar_view,
 		'calendar_first_day_of_week' : calendar_first_day_of_week,
 		'calendar_date_format' : calendar_date_format,
+		'calendar_custom_date_week_format' : calendar_custom_date_week_format,
+		'calendar_custom_date_day_format' : calendar_custom_date_day_format,
 	}
 	if request.user.is_staff:
 		dictionary['users'] = User.objects.all()
