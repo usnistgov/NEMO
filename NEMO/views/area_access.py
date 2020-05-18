@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import List
+from typing import Set
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
@@ -66,7 +66,7 @@ def new_area_access_record(request):
 				dictionary['error_message'] = error_message
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
 
-			dictionary['areas'] = list(get_accessible_areas_for_user(user=customer))
+			dictionary['areas'] = set([access_level.area for access_level in get_accessible_access_levels_for_user(user=customer)])
 			return render(request, 'area_access/new_area_access_record_details.html', dictionary)
 		except:
 			pass
@@ -182,7 +182,7 @@ def self_log_in(request):
 		'projects': user.active_projects(),
 	}
 	areas = []
-	for access_level in get_accessible_areas_for_user(user):
+	for access_level in get_accessible_access_levels_for_user(user):
 		unavailable_resources = access_level.area.required_resources.filter(available=False)
 		if access_level.accessible() and not unavailable_resources:
 			areas.append(access_level.area)
@@ -245,12 +245,12 @@ def able_to_self_log_in_to_area(user):
 	except UserAccessError:
 		return False
 
-	accessible_areas = get_accessible_areas_for_user(user)
+	accessible_access_levels = get_accessible_access_levels_for_user(user)
 
 	# Check if the user normally has access to an area at the current time
-	for accessible_area in accessible_areas:
+	for access_level in accessible_access_levels:
 		try:
-			check_policy_to_enter_this_area(area=accessible_area.area, user=user)
+			check_policy_to_enter_this_area(area=access_level.area, user=user)
 			# Users may not access an area if it's not accessible at this time or if a required resource is unavailable,
 			# so return true if there exists at least one area they are able to log in to.
 			return True
@@ -264,7 +264,7 @@ def able_to_self_log_in_to_area(user):
 	return False
 
 
-def get_accessible_areas_for_user(user: User) -> List[PhysicalAccessLevel]:
+def get_accessible_access_levels_for_user(user: User) -> Set[PhysicalAccessLevel]:
 	accessible_areas = set(user.physical_access_levels.all())
 	# If staff user, add areas where physical access level allow staff access directly
 	if user.is_staff:

@@ -32,7 +32,7 @@
 		<div class="form-group">
 			<div class="col-sm-12">
 				{% if areas|length == 1 %}
-					The customer only has access to the {{ areas.0|lower }}. Access will be billed for that area.
+					The customer only has access to the {{ areas.0 }}. Access will be billed for that area.
 					<input type="hidden" name="area" value="{{ areas.0.id }}">
 				{% else %}
 					{{ customer }} has access to the following areas. Which would you like to bill for access?
