@@ -28,6 +28,9 @@
 			<div style="height:50px"></div>
 		</div>
 		<div id="content" class="application-content" style="padding-right: 20px; overflow-y:scroll"></div>
+		<div id="loading-div" class="application-content spinner-container" style="display: none">
+			<div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
+		</div>
 	{% endif %}
 
 	<script>
@@ -36,6 +39,9 @@
 		{
 			var selected_item = {% if device == 'mobile' %}{{ selected_tool }}{% else %}get_selected_item(){% endif %};
 			if(selected_item)
+			    {% if device == 'desktop' %}
+					$('#loading-div').show()
+				{% endif %}
 				$("#content").load('/tool_status/' + selected_item + "/", undefined, refresh_tool_completion_callback);
 			{% if device == 'desktop' %}
 				refresh_sidebar_icons();
@@ -49,6 +55,9 @@
 
 		function refresh_tool_completion_callback(response, status, xml_http_request)
 		{
+		    {% if device == 'desktop' %}
+				$('#loading-div').hide()
+			{% endif %}
 			if(status == "error")
 			{
 				var content = "<div class='alert alert-danger'><span class='glyphicon glyphicon-remove'></span> Unable to retrieve tool status.";
