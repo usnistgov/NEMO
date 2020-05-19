@@ -66,7 +66,7 @@ def new_area_access_record(request):
 				dictionary['error_message'] = error_message
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
 
-			dictionary['areas'] = set([access_level.area for access_level in get_accessible_access_levels_for_user(user=customer)])
+			dictionary['areas'] = list(set([access_level.area for access_level in get_accessible_access_levels_for_user(user=customer)]))
 			return render(request, 'area_access/new_area_access_record_details.html', dictionary)
 		except:
 			pass
