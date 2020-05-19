@@ -1,5 +1,5 @@
 import io
-from collections import Iterable
+from collections import Iterable, defaultdict
 from datetime import timedelta, datetime
 from http import HTTPStatus
 from re import match
@@ -290,56 +290,28 @@ def create_reservation(request):
 
 def reservation_success(request, reservation: Reservation):
 	""" Checks area capacity and display warning message if capacity is high """
-	reservations_in_same_area, reservations_in_same_location = ([], [])
 	max_area_overlap, max_location_overlap = (0,0)
 	max_area_time, max_location_time = (None, None)
 	area = reservation.tool.requires_area_access
 	location = reservation.tool.location
 	if area and area.reservation_warning:
-		reservations_in_same_area = Reservation.objects.filter(cancelled=False, end__gte=reservation.start, start__lte=reservation.end, tool__in=Tool.objects.filter(_requires_area_access=area))
-		max_area_overlap, max_area_time = maximum_overlap(reservations_in_same_area)
+		overlapping_reservations_in_same_area = Reservation.objects.filter(cancelled=False, end__gte=reservation.start, start__lte=reservation.end, tool__in=Tool.objects.filter(_requires_area_access=area))
+		max_area_overlap, max_area_time = maximum_overlap_users(overlapping_reservations_in_same_area)
 		if reservation.tool.location:
-			reservations_in_same_location = reservations_in_same_area.filter(tool__in=Tool.objects.filter(_location=location))
-			max_location_overlap, max_location_time = maximum_overlap(reservations_in_same_location)
+			overlapping_reservations_in_same_location = overlapping_reservations_in_same_area.filter(tool__in=Tool.objects.filter(_location=location))
+			max_location_overlap, max_location_time = maximum_overlap_users(overlapping_reservations_in_same_location)
 	if max_area_overlap and max_area_overlap >= area.warning_capacity():
 		dictionary = {
-			'same_area_count': len(reservations_in_same_area)-1,
-			'same_location_count': len(reservations_in_same_location)-1,
 			'area': area,
 			'location': location,
-			'max_area_count': max_area_overlap-1,
-			'max_location_count': max_location_overlap-1,
+			'max_area_count': max_area_overlap,
+			'max_location_count': max_location_overlap,
 			'max_area_time': max(max_area_time, reservation.start),
 			'max_location_time': max(max_location_time, reservation.start),
 		}
 		return render(request, 'calendar/reservation_warning.html', dictionary, status=201) # send 201 code CREATED to indicate success but with more information to come
 	else:
 		return HttpResponse()
-
-
-def maximum_overlap(reservations: List[Reservation]) -> (int, datetime):
-	""" Returns the maximum number of overlapping reservations and the earlier time the maximum is reached """
-	times = []
-	for reservation in reservations:
-		startTime, endTime = reservation.start, reservation.end
-		times.append((startTime, 'start'))
-		times.append((endTime, 'end'))
-	times = sorted(times)
-
-	count = 0
-	max_count = 0
-	max_time = None
-	for time in times:
-		if time[1] == 'start':
-			count += 1  # increment on arrival/start
-		else:
-			count -= 1  # decrement on departure/end
-		# maintain maximum
-		max_count = max(count, max_count)
-		# maintain earlier time max is reached
-		if max_count == count:
-			max_time = time[0]
-	return max_count, max_time
 
 
 def extract_configuration(request):
@@ -854,3 +826,54 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	filename = 'cancelled_nemo_reservation.ics' if cancelled else 'nemo_reservation.ics'
 
 	return create_email_attachment(ics, filename)
+
+
+def maximum_overlap_users(reservations: List[Reservation]) -> (int, datetime):
+	"""
+	Returns the maximum number of overlapping reservations and the earlier time the maximum is reached
+	This will only count reservations made by different users. i.e. if a user has 3 reservations at the same
+	time for different tools, it will only count as one.
+	"""
+	# First we need to merge reservations by user, since one user could have more than one at the same time. (and we should only count it as one)
+	intervals_by_user = defaultdict(list)
+	for r in reservations:
+		intervals_by_user[r.user.id].append((r.start, r.end))
+
+	merged_intervals = []
+	for user, intervals in intervals_by_user.items():
+		merged_intervals.extend(recursive_merge(sorted(intervals).copy()))
+
+	# Now let's count the maximum overlapping reservations
+	times = []
+	for interval in merged_intervals:
+		startTime, endTime = interval[0], interval[1]
+		times.append((startTime, 'start'))
+		times.append((endTime, 'end'))
+	times = sorted(times)
+
+	count = 0
+	max_count = 0
+	max_time = None
+	for time in times:
+		if time[1] == 'start':
+			count += 1  # increment on arrival/start
+		else:
+			count -= 1  # decrement on departure/end
+		# maintain maximum
+		prev_count = max_count
+		max_count = max(count, max_count)
+		# maintain earlier time max is reached
+		if max_count > prev_count:
+			max_time = time[0]
+	return max_count, max_time
+
+
+def recursive_merge(intervals: List[tuple], start_index=0) -> List[tuple]:
+	for i in range(start_index, len(intervals) - 1):
+		if intervals[i][1] > intervals[i + 1][0]:
+			new_start = intervals[i][0]
+			new_end = intervals[i + 1][1]
+			intervals[i] = (new_start, new_end)
+			del intervals[i + 1]
+			return recursive_merge(intervals.copy(), start_index=i)
+	return intervals

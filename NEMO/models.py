@@ -789,7 +789,7 @@ class Area(models.Model):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
 	welcome_message = models.TextField(help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
-	reservation_warning = models.PositiveIntegerField(blank=True, null=True, help_text='The number of simultaneous reservations allowed in this area before a warning is displayed.')
+	reservation_warning = models.PositiveIntegerField(blank=True, null=True, help_text='The number of simultaneous users (with at least one reservation in this area) allowed before a warning is displayed when creating a reservation.')
 
 	class Meta:
 		ordering = ['name']

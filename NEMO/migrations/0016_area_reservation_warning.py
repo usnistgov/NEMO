@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='area',
             name='reservation_warning',
-            field=models.PositiveIntegerField(blank=True, help_text='The number of simultaneous reservations allowed in this area before a warning is displayed.', null=True),
+            field=models.PositiveIntegerField(blank=True, help_text='The number of simultaneous users (with at least one reservation in this area) allowed before a warning is displayed when creating a reservation.', null=True),
         ),
     ]
