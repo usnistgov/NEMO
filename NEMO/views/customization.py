@@ -5,6 +5,7 @@ from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.exceptions import InvalidCustomizationException
 from NEMO.models import Customization
 
 
@@ -29,16 +30,21 @@ def store_media_file(content, file_name):
 		storage.save(file_name, content)
 
 
-customizable_key_values = [
-	'feedback_email_address',
-	'user_office_email_address',
-	'safety_email_address',
-	'abuse_email_address',
-	'self_log_in',
-	'self_log_out',
-	'calendar_view',
-	'calendar_first_day_of_week',
-	]
+# Dictionary of customizable keys with default value
+customizable_key_values = {
+	'feedback_email_address': '',
+	'user_office_email_address': '',
+	'safety_email_address': '',
+	'abuse_email_address': '',
+	'self_log_in': '',
+	'self_log_out': '',
+	'calendar_view': 'agendaWeek',
+	'calendar_first_day_of_week': '1',
+	'calendar_day_column_format': 'dddd MM/DD/YYYY',
+	'calendar_week_column_format': 'ddd M/DD',
+	'calendar_month_column_format': 'ddd',
+	'calendar_start_of_the_day': '07:00:00',
+}
 
 customizable_content = [
 	('login_banner', '.html'),
@@ -66,17 +72,18 @@ customizable_content = [
 
 
 def get_customization(name):
-	if name not in customizable_key_values:
-		raise Exception('Invalid customization')
+	if name not in customizable_key_values.keys():
+		raise InvalidCustomizationException(name)
 	try:
 		return Customization.objects.get(name=name).value
 	except Customization.DoesNotExist:
-		return ''
+		# return default value
+		return customizable_key_values[name]
 
 
 def set_customization(name, value):
-	if name not in customizable_key_values:
-		raise Exception(f'Invalid customization: {value}')
+	if name not in customizable_key_values.keys():
+		raise InvalidCustomizationException(name, value)
 	if value:
 		if name in ['feedback_email_address', 'user_office_email_address', 'safety_email_address', 'abuse_email_address']:
 			validate_email(value)
@@ -92,7 +99,7 @@ def set_customization(name, value):
 @require_GET
 def customization(request):
 	dictionary = {name: get_media_file_contents(name + extension) for name, extension in customizable_content}
-	dictionary.update({y: get_customization(y) for y in customizable_key_values})
+	dictionary.update({name: get_customization(name) for name in customizable_key_values.keys()})
 	return render(request, 'customizations.html', dictionary)
 
 
@@ -120,6 +127,10 @@ def customize(request, element):
 	elif element == 'calendar_settings':
 		set_customization('calendar_view', request.POST.get('calendar_view', ''))
 		set_customization('calendar_first_day_of_week', request.POST.get('calendar_first_day_of_week', ''))
+		set_customization('calendar_start_of_the_day', request.POST.get('calendar_start_of_the_day', ''))
+		set_customization('calendar_day_column_format', request.POST.get('calendar_day_column_format', ''))
+		set_customization('calendar_week_column_format', request.POST.get('calendar_week_column_format', ''))
+		set_customization('calendar_month_column_format', request.POST.get('calendar_month_column_format', ''))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
 	return redirect('customization')

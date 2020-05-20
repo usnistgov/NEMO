@@ -54,15 +54,12 @@ def calendar(request, tool_id=None):
 	tools = Tool.objects.filter(visible=True).order_by('_category', 'name')
 	rendered_tool_tree_html = ToolTree().render(None, {'tools': tools, 'user': request.user})
 	
-	# default value for calendar_view is 'agendaWeek'
 	calendar_view = get_customization('calendar_view')
-	if not calendar_view:
-		calendar_view = 'agendaWeek'
-	
-	# default value for calendar_first_day_of_week is 1 (Monday) 
 	calendar_first_day_of_week = get_customization('calendar_first_day_of_week')
-	if not calendar_first_day_of_week:
-		calendar_first_day_of_week = 1
+	calendar_day_column_format = get_customization('calendar_day_column_format')
+	calendar_week_column_format = get_customization('calendar_week_column_format')
+	calendar_month_column_format = get_customization('calendar_month_column_format')
+	calendar_start_of_the_day = get_customization('calendar_start_of_the_day')
 
 	dictionary = {
 		'rendered_tool_tree_html': rendered_tool_tree_html,
@@ -70,6 +67,10 @@ def calendar(request, tool_id=None):
 		'auto_select_tool': tool_id,
 		'calendar_view' : calendar_view,
 		'calendar_first_day_of_week' : calendar_first_day_of_week,
+		'calendar_day_column_format' : calendar_day_column_format,
+		'calendar_week_column_format' : calendar_week_column_format,
+		'calendar_month_column_format' : calendar_month_column_format,
+		'calendar_start_of_the_day' : calendar_start_of_the_day,
 	}
 	if request.user.is_staff:
 		dictionary['users'] = User.objects.all()

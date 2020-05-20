@@ -80,6 +80,47 @@
 						</div>
 					</div>
 					<div class="form-group">
+						<label class="control-label col-md-2" for="calendar_start_of_the_day">Start of the day</label>
+						<div class="col-md-3">
+							<input type="text" id="calendar_start_of_the_day" name="calendar_start_of_the_day" class="form-control" value="{{ calendar_start_of_the_day }}">
+						</div>
+						<div class="col-md-7 form-control-static light-grey">
+							The time the day starts in the calendar view (24h format).
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-md-12" style="margin-top: 15px">
+							The following settings allow to customize the date format in the different calendar views. See <a href="https://fullcalendar.io/docs/v1/formatDate" target="_blank">FullCalendar documentation</a> for more information on the syntax.
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="control-label col-md-2" for="calendar_day_column_format">Day column format</label>
+						<div class="col-md-3">
+							<input type="text" id="calendar_day_column_format" name="calendar_day_column_format" class="form-control" value="{{ calendar_day_column_format }}">
+						</div>
+						<div class="col-md-7 form-control-static light-grey">
+							The column date format for the day view.
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="control-label col-md-2" for="calendar_week_column_format">Week column format</label>
+						<div class="col-md-3">
+							<input type="text" id="calendar_week_column_format" name="calendar_week_column_format" class="form-control" value="{{ calendar_week_column_format }}">
+						</div>
+						<div class="col-md-7 form-control-static light-grey">
+							The column date format for the week view.
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="control-label col-md-2" for="calendar_month_column_format">Month column format</label>
+						<div class="col-md-3">
+							<input type="text" id="calendar_month_column_format" name="calendar_month_column_format" class="form-control" value="{{ calendar_month_column_format }}">
+						</div>
+						<div class="col-md-7 form-control-static light-grey">
+							The column date format for the month view.
+						</div>
+					</div>
+					<div class="form-group">
 						<div class="col-md-3">
 							<input type="submit" value="Save settings" class="btn btn-success">
 						</div>

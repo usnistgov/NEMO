@@ -15,6 +15,14 @@ class NEMOException(Exception):
 		super(NEMOException, self).__init__(msg)
 
 
+class InvalidCustomizationException(NEMOException):
+	def __init__(self, name: str, value: str = None):
+		msg = f"Invalid customization ({name})"
+		if value is not None:
+			msg += f" for value: [{value}]"
+		super(InvalidCustomizationException, self).__init__(msg)
+
+
 class InterlockError(NEMOException):
 	""" Interlock related errors """
 

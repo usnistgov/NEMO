@@ -286,18 +286,20 @@ function create_calendar()
 		"views": {
 			"day": {
 				"titleFormat": ' ',
-				"columnFormat": 'dddd MM/DD/YYYY'
+				"columnFormat": '{{ calendar_day_column_format }}'
 			},
 			"week": {
-				"titleFormat": ' '
+				"titleFormat": ' ',
+				"columnFormat": '{{ calendar_week_column_format }}'
 			},
 			"month": {
-				"titleFormat": 'MMMM YYYY'
+				"titleFormat": 'MMMM YYYY',
+				"columnFormat": '{{ calendar_month_column_format }}'
 			}
 		},
-		"firstDay": {{ calendar_first_day_of_week }}, {# Make Monday the first day of the week #}
-		"scrollTime": '07:00:00', {# The day starts at 7 AM #}
-		"defaultView": "{{ calendar_view }}",
+		"firstDay": '{{ calendar_first_day_of_week }}',
+		"scrollTime": '{{ calendar_start_of_the_day }}',
+		"defaultView": '{{ calendar_view }}',
 		"allDaySlot": false,
 		"allDayDefault": false,
 		"slotDuration": '00:15:00', {# 15 minutes each row #}
