@@ -103,7 +103,7 @@ def event_feed(request):
 	elif event_type == 'specific user' and request.user.is_staff:
 		user = get_object_or_404(User, id=request.GET.get('user'))
 		return specific_user_feed(request, user, start, end)
-	# Only staff may request a all users history...
+	# Only staff may request all users history...
 	elif event_type == 'all users' and request.user.is_staff:
 		return all_users_feed(request, start, end)
 	else:
@@ -187,7 +187,7 @@ def specific_user_feed(request, user, start, end):
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
-	usage_events = UsageEvent.objects.filter(user='user')
+	usage_events = UsageEvent.objects.filter(user=user)
 	usage_events = usage_events.exclude(start__lt=start, end__lt=start)
 	usage_events = usage_events.exclude(start__gt=end, end__gt=end)
 
