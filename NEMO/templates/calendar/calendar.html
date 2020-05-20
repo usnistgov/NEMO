@@ -20,6 +20,7 @@
 			<li data-toggle="tooltip" data-placement="right" title="Displays your NanoFab usage. This includes area access, tool usage, and missed reservations (which are all billable items)."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">NanoFab usage</a></li>
 			{% if user.is_staff %}
 				<li data-toggle="tooltip" data-placement="right" title="Displays NanoFab reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Specific user</a></li>
+				<li data-toggle="tooltip" data-placement="right" title="Displays reservations and usage for all users. This includes reservations, area access, tool usage, and missed reservations."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">All users</a></li>
 			{% endif %}
 		</ul>
 	</div>
@@ -421,6 +422,18 @@ function change_calendar_event_type(calling_element)
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
 		clear_specific_user();
+	}
+	else if(event_type === "all users")
+	{
+		user_search.hide();
+		chosen_user_button.hide();
+		extra_links.hide();
+		expand_collapse.hide();
+		tool_search.hide();
+		tool_tree.hide();
+		$(proxy_reservation_button).hide();
+		$(scheduled_outage_button).hide();
+		update_event_sources();
 	}
 }
 

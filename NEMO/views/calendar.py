@@ -103,6 +103,9 @@ def event_feed(request):
 	elif event_type == 'specific user' and request.user.is_staff:
 		user = get_object_or_404(User, id=request.GET.get('user'))
 		return specific_user_feed(request, user, start, end)
+	# Only staff may request a all users history...
+	elif event_type == 'all users' and request.user.is_staff:
+		return all_users_feed(request, start, end)
 	else:
 		return HttpResponseBadRequest('Invalid event type or operation not authorized.')
 
@@ -184,7 +187,7 @@ def specific_user_feed(request, user, start, end):
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
-	usage_events = UsageEvent.objects.filter(user=user)
+	usage_events = UsageEvent.objects.filter(user='user')
 	usage_events = usage_events.exclude(start__lt=start, end__lt=start)
 	usage_events = usage_events.exclude(start__gt=end, end__gt=end)
 
@@ -200,6 +203,38 @@ def specific_user_feed(request, user, start, end):
 
 	# Find all missed reservations for the user.
 	missed_reservations = Reservation.objects.filter(user=user, missed=True)
+	missed_reservations = missed_reservations.exclude(start__lt=start, end__lt=start)
+	missed_reservations = missed_reservations.exclude(start__gt=end, end__gt=end)
+
+	dictionary = {
+		'usage_events': usage_events,
+		'area_access_events': area_access_events,
+		'reservations': reservations,
+		'missed_reservations': missed_reservations,
+	}
+	return render(request, 'calendar/specific_user_feed.html', dictionary)
+
+def all_users_feed(request, start, end):
+	# Find all tool usage events for all users.
+	# Exclude events for which the following is true:
+	# The event starts and ends before the time-window, and...
+	# The event starts and ends after the time-window.
+	usage_events = UsageEvent.objects
+	usage_events = usage_events.exclude(start__lt=start, end__lt=start)
+	usage_events = usage_events.exclude(start__gt=end, end__gt=end)
+
+	# Find all area access events for all users.
+	area_access_events = AreaAccessRecord.objects
+	area_access_events = area_access_events.exclude(start__lt=start, end__lt=start)
+	area_access_events = area_access_events.exclude(start__gt=end, end__gt=end)
+
+	# Find all reservations for all users that were not missed or cancelled.
+	reservations = Reservation.objects
+	reservations = reservations.exclude(start__lt=start, end__lt=start)
+	reservations = reservations.exclude(start__gt=end, end__gt=end)
+
+	# Find all missed reservations for all users.
+	missed_reservations = Reservation.objects
 	missed_reservations = missed_reservations.exclude(start__lt=start, end__lt=start)
 	missed_reservations = missed_reservations.exclude(start__gt=end, end__gt=end)
 
