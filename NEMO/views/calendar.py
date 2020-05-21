@@ -234,7 +234,7 @@ def all_users_feed(request, start, end):
 	reservations = reservations.exclude(start__gt=end, end__gt=end)
 
 	# Find all missed reservations for all users.
-	missed_reservations = Reservation.objects
+	missed_reservations = Reservation.objects.filter(missed=True)
 	missed_reservations = missed_reservations.exclude(start__lt=start, end__lt=start)
 	missed_reservations = missed_reservations.exclude(start__gt=end, end__gt=end)
 
