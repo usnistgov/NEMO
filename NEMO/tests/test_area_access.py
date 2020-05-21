@@ -270,7 +270,7 @@ class NewAreaAccessTestCase(TestCase):
 		response = self.client.get(reverse('new_area_access_record'), data={'customer': user.id}, follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Oops! Something went wrong" in str(response.content))
-		self.assertTrue("does not have access to any billable NanoFab areas" in str(response.content))  # user does not have access
+		self.assertTrue("does not have access to any billable areas" in str(response.content))  # user does not have access
 		user.physical_access_levels.add(PhysicalAccessLevel.objects.create(name="cleanroom access", area=area, schedule=PhysicalAccessLevel.Schedule.ALWAYS))
 		user.save()
 		response = self.client.get(reverse('new_area_access_record'), data={'customer': user.id}, follow=True)
@@ -300,7 +300,7 @@ class NewAreaAccessTestCase(TestCase):
 		response = self.client.post(reverse('new_area_access_record'), data={'customer': user.id, 'area': area.id, 'project': project.id}, follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertTrue("Oops! Something went wrong" in str(response.content))
-		self.assertTrue("does not have access to any billable NanoFab areas" in str(response.content))  # user does not have access
+		self.assertTrue("does not have access to any billable areas" in str(response.content))  # user does not have access
 		user.physical_access_levels.add(PhysicalAccessLevel.objects.create(name="cleanroom access", area=area, schedule=PhysicalAccessLevel.Schedule.ALWAYS))
 		user.save()
 		response = self.client.post(reverse('new_area_access_record'), data={'customer': user.id, 'area': area.id, 'project': project.id}, follow=True)
