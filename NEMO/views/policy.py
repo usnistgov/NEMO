@@ -17,6 +17,7 @@ def check_policy_to_enable_tool(tool, operator, user, project, staff_charge):
 	"""
 	Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
 	"""
+	facility_name = get_customization('facility_name')
 
 	# The tool must be visible (or the parent if it's a child tool) to users.
 	visible = tool.parent_tool.visible if tool.is_child_tool() else tool.visible
@@ -74,7 +75,7 @@ def check_policy_to_enable_tool(tool, operator, user, project, staff_charge):
 
 	# The tool operator must not have a lock on usage
 	if operator.training_required:
-		return HttpResponseBadRequest("You are blocked from using all tools in the NanoFab. Please complete the NanoFab rules tutorial in order to use tools.")
+		return HttpResponseBadRequest(f"You are blocked from using all tools in the {facility_name}. Please complete the {facility_name} rules tutorial in order to use tools.")
 
 	# Users may only use a tool when delayed logoff is not in effect. Staff are exempt from this rule.
 	if tool.delayed_logoff_in_progress() and not operator.is_staff:
@@ -105,6 +106,7 @@ def check_policy_to_disable_tool(tool, operator, downtime):
 
 def check_policy_to_save_reservation(cancelled_reservation, new_reservation, user, explicit_policy_override):
 	""" Check the reservation creation policy and return a list of policy problems """
+	facility_name = get_customization('facility_name')
 
 	# The function will check all policies. Policy problems are placed in the policy_problems list. overridable is True if the policy problems can be overridden by a staff member.
 	policy_problems = []
@@ -167,7 +169,7 @@ def check_policy_to_save_reservation(cancelled_reservation, new_reservation, use
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
 	if user.training_required:
-		policy_problems.append("You are blocked from making reservations for all tools in the NanoFab. Please complete the NanoFab rules tutorial in order to create new reservations.")
+		policy_problems.append(f"You are blocked from making reservations for all tools in the {facility_name}. Please complete the {facility_name} rules tutorial in order to create new reservations.")
 
 	# Users may only change their own reservations.
 	# Staff may break this rule.

@@ -24,7 +24,7 @@
 				<input type="hidden" name="action" value="update">
 				<div class="form-group">
 					<label class="control-label" for="urgency">
-						Would you like to change the urgency of this task? This will help staff prioritize tasks in the NanoFab.
+						Would you like to change the urgency of this task? This will help staff prioritize tasks in the {{ facility_name }}.
 					</label>
 					<select name="urgency" id="urgency" class="form-control">
 						{% for level in urgency %}
@@ -35,7 +35,7 @@
 				{% if categories %}
 					<div class="form-group">
 						<label class="control-label" for="problem_category">
-							Would you like to change this task's initial classification to more accurately reflect the nature of the problem? Proper classification helps the NanoFab staff analyze long-term maintenance trends.
+							Would you like to change this task's initial classification to more accurately reflect the nature of the problem? Proper classification helps the staff analyze long-term maintenance trends.
 						</label>
 						<select name="problem_category" id="problem_category" class="form-control">
 							<option value="">&nbsp;</option>
@@ -72,7 +72,7 @@
 				</div>
 				<div class="form-group">
 					<div class="checkbox"><label><input type="checkbox" name="force_shutdown" {% if task.force_shutdown %}checked{% endif %}> This task requires the {{ task.tool.name }} to be shutdown</label></div>
-					<div class="checkbox"><label><input type="checkbox" name="safety_hazard" {% if task.safety_hazard %}checked{% endif %}> This task is considered a potential safety hazard to the NanoFab</label></div>
+					<div class="checkbox"><label><input type="checkbox" name="safety_hazard" {% if task.safety_hazard %}checked{% endif %}> This task is considered a potential safety hazard to the {{ facility_name }}</label></div>
 				</div>
 				<div class="form-group">
 					<label for="description">Please describe any actions being taken to resolve this task. This information will be visible to all users in order to keep everyone apprised of the tool's status.</label>

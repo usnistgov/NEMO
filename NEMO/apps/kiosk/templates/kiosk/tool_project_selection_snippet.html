@@ -1,6 +1,6 @@
 <div>
 {% if active_projects|length == 0 %}
-	<h2>You cannot {% if tool.in_use %}reserve{% else %}use{% endif %} any tools because you are not a member of an active project. Please visit the NanoFab User Office to begin a project.</h2>
+	<h2>You cannot {% if tool.in_use %}reserve{% else %}use{% endif %} any tools because you are not a member of an active project. Please visit the {{ facility_name }} staff to begin a project.</h2>
 {% elif active_projects|length == 1 %}
 	<h2>Tool {% if tool.in_use %}reservation will be associated with{% else %}usage will be billed to{% endif %} the project named &quot;{{ active_projects.0 }}&quot;.</h2>
 	<input type="hidden" name="project_id" value="{{ active_projects.0.id }}">

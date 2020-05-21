@@ -4,7 +4,7 @@
 </div>
 <div class="modal-body">
 	{% if reservation.short_notice %}
-		<div class="alert alert-danger">NanoFab staff were not given sufficient notice to configure this tool. There is no guarantee that this tool will be configured properly at time of use.</div>
+		<div class="alert alert-danger">{{ facility_name }} staff were not given sufficient notice to configure this tool. There is no guarantee that this tool will be configured properly at time of use.</div>
 	{% endif %}
 	{% if reservation.missed %}
 		<div class="alert alert-danger">This reservation was automatically removed from the tool calendar due to tool inactivity.</div>

@@ -202,7 +202,7 @@ def choices(request):
 		fifteen_minutes_from_now = timezone.now() + timedelta(minutes=15)
 		reservations = Reservation.objects.filter(end__gt=timezone.now(), user=customer, missed=False, cancelled=False, shortened=False).exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now).order_by('start')
 	except:
-		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please visit the NanoFab user office to resolve the problem."}
+		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please contact staff to resolve the problem."}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
 
 	categories = [t[0] for t in Tool.objects.filter(visible=True).order_by('_category').values_list('_category').distinct()]
@@ -226,7 +226,7 @@ def category_choices(request, category, user_id):
 	try:
 		customer = User.objects.get(id=user_id)
 	except:
-		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please visit the NanoFab user office to resolve the problem."}
+		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please contact staff to resolve the problem."}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
 	tools = Tool.objects.filter(visible=True, _category=category)
 	dictionary = {

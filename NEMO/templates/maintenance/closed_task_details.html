@@ -6,7 +6,7 @@ Urgency: {{ task.get_urgency_display|lower }}<br>
 	<span class="danger-highlight glyphicon glyphicon-fire"></span> This task forced the tool to remain shut down.<br>
 {% endif %}
 {% if task.safety_hazard %}
-	<span class="danger-highlight glyphicon glyphicon-fire"></span> This task was considered a safety hazard to the NanoFab.<br>
+	<span class="danger-highlight glyphicon glyphicon-fire"></span> This task was considered a safety hazard to the {{ facility_name }}.<br>
 {% endif %}
 {% if task.problem_category %}
 	Problem category: {{ task.problem_category|lower }}<br>

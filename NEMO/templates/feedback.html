@@ -11,10 +11,10 @@
 			{% endif %}
 		</p>
 	{% else %}
-		<h1>Submit feedback about the NanoFab</h1>
+		<h1>Submit feedback about the {{ facility_name }}</h1>
 		<p>
-			We're continually working to improve the NanoFab experience for everyone.<br>
-			Do you have an idea to make the NanoFab better? Send us your feedback!
+			We're continually working to improve the {{ facility_name }} experience for everyone.<br>
+			Do you have an idea to make the {{ facility_name }} better? Send us your feedback!
 		</p>
 		<form class="form" id="feedback_form" action="{% url 'feedback' %}" method="post">
 			{% csrf_token %}

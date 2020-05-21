@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}{{ facility_name }} Rules{% endblock %}
+{% block content %}
+	{% if facility_rules_tutorial %}
+		{{ facility_rules_tutorial|safe }}
+	{% else %}
+		The {{ facility_name }} rules tutorial has not been customized for your organization yet. {% if user.is_staff %}Visit the <a href="{% url 'customization' %}">customizations page</a> to set it up.{% endif %}
+	{% endif %}
+{% endblock %}

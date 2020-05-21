@@ -109,12 +109,12 @@ urlpatterns = [
 	# Utility functions:
 	url(r'^refresh_sidebar_icons/$', sidebar.refresh_sidebar_icons, name='refresh_sidebar_icons'),
 
-	# NanoFab feedback
+	# Facility feedback
 	url(r'^feedback/$', feedback.feedback, name='feedback'),
 
-	# NanoFab rules tutorial
+	# Facility rules tutorial
 	# TODO: this should be removed, since this is really a job for a Learning Management System...
-	url(r'^nanofab_rules_tutorial/$', tutorials.nanofab_rules, name='nanofab_rules'),
+	url(r'^facility_rules_tutorial/$', tutorials.facility_rules, name='facility_rules'),
 
 	# Configuration agenda for staff:
 	url(r'^configuration_agenda/$', configuration_agenda.configuration_agenda, name='configuration_agenda'),
@@ -171,7 +171,7 @@ urlpatterns = [
 	url(r'^self_log_in/$', area_access.self_log_in, name='self_log_in'),
 	url(r'^self_log_out/(?P<user_id>\d+)$', area_access.self_log_out, name='self_log_out'),
 
-	# NanoFab usage:
+	# Facility usage:
 	url(r'^usage/$', usage.usage, name='usage'),
 
 	# Alerts:
@@ -247,7 +247,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		url(r'^project_usage/$', usage.project_usage, name='project_usage'),
 		url(r'^project_billing/$', usage.project_billing, name='project_billing'),
 
-		# NanoFab billing:
+		# Billing:
 		url(r'^billing/$', usage.billing, name='billing'),
 	]
 

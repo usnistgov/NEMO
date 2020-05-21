@@ -36,6 +36,7 @@ customizable_key_values = {
 	'user_office_email_address': '',
 	'safety_email_address': '',
 	'abuse_email_address': '',
+	'facility_name': 'NanoFab',
 	'self_log_in': '',
 	'self_log_out': '',
 	'calendar_view': 'agendaWeek',
@@ -49,13 +50,13 @@ customizable_key_values = {
 customizable_content = [
 	('login_banner', '.html'),
 	('safety_introduction', '.html'),
-	('nanofab_rules_tutorial', '.html'),
+	('facility_rules_tutorial', '.html'),
 	('authorization_failed', '.html'),
 	('cancellation_email', '.html'),
 	('feedback_email', '.html'),
 	('generic_email', '.html'),
 	('missed_reservation_email', '.html'),
-	('nanofab_rules_tutorial_email', '.html'),
+	('facility_rules_tutorial_email', '.html'),
 	('new_task_email', '.html'),
 	('reservation_reminder_email', '.html'),
 	('reservation_warning_email', '.html'),
@@ -124,6 +125,7 @@ def customize(request, element):
 	elif element == 'application_settings':
 		set_customization('self_log_in', request.POST.get('self_log_in', ''))
 		set_customization('self_log_out', request.POST.get('self_log_out', ''))
+		set_customization('facility_name', request.POST.get('facility_name', ''))
 	elif element == 'calendar_settings':
 		set_customization('calendar_view', request.POST.get('calendar_view', ''))
 		set_customization('calendar_first_day_of_week', request.POST.get('calendar_first_day_of_week', ''))

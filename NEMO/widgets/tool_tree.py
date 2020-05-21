@@ -53,7 +53,7 @@ class ToolTree(Widget):
 
 class ToolTreeHelper:
 	"""
-	This class reads in a textual representation of the organization of each NanoFab tool and renders it to equivalent
+	This class reads in a textual representation of the organization of each tool and renders it to equivalent
 	unordered HTML lists.
 	"""
 	def __init__(self, name):

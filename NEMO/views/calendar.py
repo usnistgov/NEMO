@@ -53,7 +53,7 @@ def calendar(request, tool_id=None):
 
 	tools = Tool.objects.filter(visible=True).order_by('_category', 'name')
 	rendered_tool_tree_html = ToolTree().render(None, {'tools': tools, 'user': request.user})
-	
+
 	calendar_view = get_customization('calendar_view')
 	calendar_first_day_of_week = get_customization('calendar_first_day_of_week')
 	calendar_day_column_format = get_customization('calendar_day_column_format')
@@ -95,9 +95,10 @@ def event_feed(request):
 
 	event_type = request.GET.get('event_type')
 
+	facility_name = get_customization('facility_name')
 	if event_type == 'reservations':
 		return reservation_event_feed(request, start, end)
-	elif event_type == 'nanofab usage':
+	elif event_type == f"{facility_name} usage":
 		return usage_event_feed(request, start, end)
 	# Only staff may request a specific user's history...
 	elif event_type == 'specific user' and request.user.is_staff:
@@ -526,8 +527,8 @@ def modify_outage(request, start_delta, end_delta):
 
 
 def determine_insufficient_notice(tool, start):
-	""" Determines if a reservation is created that does not give the
-	NanoFab staff sufficient advance notice to configure a tool. """
+	""" Determines if a reservation is created that does not give
+	the staff sufficient advance notice to configure a tool. """
 	for config in tool.configuration_set.all():
 		advance_notice = start - timezone.now()
 		if advance_notice < timedelta(hours=config.advance_notice_limit):
@@ -653,8 +654,9 @@ def email_usage_reminders(request):
 	user_office_email = get_customization('user_office_email_address')
 
 	message = get_media_file_contents('usage_reminder_email.html')
+	facility_name = get_customization('facility_name')
 	if message:
-		subject = "NanoFab usage"
+		subject = f"{facility_name} usage"
 		for user in aggregate.values():
 			rendered_message = Template(message).render(Context({'user': user}))
 			send_mail(subject, rendered_message, user_office_email, [user['email']])
@@ -727,7 +729,7 @@ def cancel_unused_reservations(request):
 				continue
 			# If there was no tool enable or disable event since the threshold timestamp then we assume the reservation has been missed.
 			if not (UsageEvent.objects.filter(tool_id__in=tool.get_family_tool_ids(), start__gte=threshold).exists() or UsageEvent.objects.filter(tool_id__in=tool.get_family_tool_ids(), end__gte=threshold).exists()):
-				# Mark the reservation as missed and notify the user & NanoFab staff.
+				# Mark the reservation as missed and notify the user & staff.
 				r.missed = True
 				r.save()
 				missed_reservations.append(r)

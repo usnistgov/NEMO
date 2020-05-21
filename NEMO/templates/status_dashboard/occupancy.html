@@ -1,8 +1,8 @@
-{% if nanofab_occupants|length == 0 %}
-	Nobody is in an access controlled NanoFab area.
+{% if facility_occupants|length == 0 %}
+	Nobody is in an access controlled {{ facility_name }} area.
 {% else %}
 	Staff members are highlighted in <span class="success-highlight">green</span>.<p>
-	{% regroup nanofab_occupants|dictsort:"area.name" by area as area_occupants %}
+	{% regroup facility_occupants|dictsort:"area.name" by area as area_occupants %}
 	{% for area in area_occupants %}
 		{# Panel is used to make table borders rounded. #}
 		<div class="panel panel-default">
