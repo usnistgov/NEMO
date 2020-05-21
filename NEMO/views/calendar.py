@@ -229,7 +229,7 @@ def all_users_feed(request, start, end):
 	area_access_events = area_access_events.exclude(start__gt=end, end__gt=end)
 
 	# Find all reservations for all users that were not missed or cancelled.
-	reservations = Reservation.objects
+	reservations = Reservation.objects.filter(missed=False, cancelled=False, shortened=False)
 	reservations = reservations.exclude(start__lt=start, end__lt=start)
 	reservations = reservations.exclude(start__gt=end, end__gt=end)
 
