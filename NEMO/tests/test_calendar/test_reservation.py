@@ -102,7 +102,7 @@ class ReservationTestCase(TestCase):
 		outage.delete()
 
 		# try to schedule a reservation in the past
-		data = self.get_reservation_data(base_start - timedelta(days=1), end - timedelta(days=1), tool)
+		data = self.get_reservation_data(base_start - timedelta(days=1, hours=2), end - timedelta(days=1), tool)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertTrue("start time" in response.content.decode() and  "is earlier than the current time" in response.content.decode())
