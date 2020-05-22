@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.utils.http import urlencode
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
+from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, UserAccessError, \
 	InactiveUserError, NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError, \
 	MaximumCapacityReachedError
@@ -216,6 +217,24 @@ def self_log_out(request, user_id):
 		record.end = timezone.now()
 		record.save()
 	return redirect(reverse('landing'))
+
+
+@login_required
+@require_GET
+@disable_session_expiry_refresh
+def occupancy(request):
+	area_name = request.GET.get('occupancy')
+	if area_name is None:
+		return HttpResponse()
+	try:
+		area = Area.objects.get(name=area_name)
+	except Area.DoesNotExist:
+		return HttpResponse()
+	dictionary = {
+		'area': area,
+		'occupants': AreaAccessRecord.objects.filter(area__name=area.name, end=None, staff_charge=None).prefetch_related('customer'),
+	}
+	return render(request, 'occupancy.html', dictionary)
 
 
 def able_to_self_log_out_of_area(user):

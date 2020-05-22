@@ -375,7 +375,6 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 		if unavailable_resources:
 			raise UnavailableResourcesUserError(user=user, area=area, resources=unavailable_resources)
 
-		# If we reached maximum capacity (non-staff user), fail
-		area_occupancy = AreaAccessRecord.objects.filter(area=area, end=None, staff_charge=None).count()
-		if 0 < area.maximum_capacity <= area_occupancy:
+		# If we reached maximum capacity, fail (only for non staff users)
+		if 0 < area.maximum_capacity <= area.occupancy_count():
 			raise MaximumCapacityReachedError(user=user, area=area)

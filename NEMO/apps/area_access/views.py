@@ -1,16 +1,14 @@
 from time import sleep
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
 	MaximumCapacityReachedError
-from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent, Area
+from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent
 from NEMO.tasks import postpone
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
@@ -199,21 +197,3 @@ def open_door(request, door_id):
 		unlock_door(door.id)
 		return render(request, 'area_access/door_is_open.html')
 	return render(request, 'area_access/not_logged_in.html', {'area': door.area})
-
-
-@login_required
-@require_GET
-@disable_session_expiry_refresh
-def area_access_occupancy(request):
-	area_name = request.GET.get('occupancy')
-	if area_name is None:
-		return HttpResponse()
-	try:
-		area = Area.objects.get(name=area_name)
-	except Area.DoesNotExist:
-		return HttpResponse()
-	dictionary = {
-		'area': area,
-		'occupants': AreaAccessRecord.objects.filter(area__name=area.name, end=None, staff_charge=None).prefetch_related('customer'),
-	}
-	return render(request, 'area_access/occupancy.html', dictionary)

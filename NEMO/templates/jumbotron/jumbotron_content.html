@@ -17,11 +17,18 @@
 										<span class="primary-highlight">{{ area.grouper }}</span>
 										{% if area.list|length > 1 %}
 											<span class="pull-right">
-												{% if area.grouper.maximum_capacity != 0 and area.list|length >= area.grouper.danger_capacity %}<span style="color:red"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
-												{% elif area.grouper.maximum_capacity != 0 and area.list|length >= area.grouper.warning_capacity %}<span style="color:orange"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
+												{% if area.grouper.maximum_capacity != 0 and area.grouper.occupancy_count >= area.grouper.danger_capacity %}<span style="color:red"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
+												{% elif area.grouper.maximum_capacity != 0 and area.grouper.occupancy_count >= area.grouper.warning_capacity %}<span style="color:orange"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
 												{% else %}<span>{% endif %}
-													{{ area.list|length }}
+													{{ area.grouper.occupancy_count }}
 												</span>{% if area.grouper.maximum_capacity != 0 %} / {{ area.grouper.maximum_capacity }}{% endif %} people
+												{% if area.list|length != area.grouper.occupancy_count %}
+													{% with occupancy=area.grouper.occupancy_count|stringformat:"d"  %}
+														{% with negative_occupancy="-"|add:occupancy %}
+															(+ {{ area.list|length|add:negative_occupancy }} staff)
+														{% endwith %}
+													{% endwith %}
+												{% endif %}
 											</span>
 										{% endif %}
 									</th>

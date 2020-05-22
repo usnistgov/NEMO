@@ -789,6 +789,7 @@ class Area(models.Model):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
 	welcome_message = models.TextField(help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
+	count_staff_in_occupancy = models.BooleanField(default=True, help_text='Indicates that staff users will count towards maximum capacity.')
 	reservation_warning = models.PositiveIntegerField(blank=True, null=True, help_text='The number of simultaneous users (with at least one reservation in this area) allowed before a warning is displayed when creating a reservation.')
 
 	class Meta:
@@ -802,6 +803,13 @@ class Area(models.Model):
 
 	def danger_capacity(self):
 		return self.maximum_capacity
+
+	def occupancy_count(self):
+		""" Returns the occupancy used to determine if the area is at capacity """
+		area_occupancy = AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None)
+		if not self.count_staff_in_occupancy:
+			area_occupancy = area_occupancy.filter(customer__is_staff=False)
+		return area_occupancy.count()
 
 
 class AreaAccessRecord(CalendarDisplay):

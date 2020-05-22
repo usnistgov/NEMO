@@ -2,11 +2,12 @@ from django.conf.urls import url
 from django.urls import path, include
 
 from NEMO.apps.kiosk import views
+from NEMO.views import area_access
 
 urlpatterns = [
 	# Tablet kiosk
 	path('kiosk/', include([
-		url(r'^occupancy/$', views.kiosk_occupancy, name='kiosk_occupancy'),
+		url(r'^occupancy/$', area_access.occupancy, name='kiosk_occupancy'),
 		url(r'^enable_tool/$', views.enable_tool, name='enable_tool_from_kiosk'),
 		url(r'^disable_tool/$', views.disable_tool, name='disable_tool_from_kiosk'),
 		url(r'^reserve_tool/$', views.reserve_tool, name='reserve_tool_from_kiosk'),

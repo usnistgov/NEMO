@@ -3,15 +3,13 @@ from datetime import timedelta, datetime
 from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.models import Project, Reservation, Tool, UsageEvent, User, Area, AreaAccessRecord
+from NEMO.models import Project, Reservation, Tool, UsageEvent, User
 from NEMO.utilities import quiet_int, localize
 from NEMO.views.calendar import determine_insufficient_notice, extract_configuration, cancel_the_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool, \
@@ -279,21 +277,3 @@ def kiosk(request, location=None):
 			'locations': [{'url': reverse('kiosk', kwargs={'location': location}), 'name': location} for location in locations]
 		}
 		return render(request, 'kiosk/location_directory.html', dictionary)
-
-
-@login_required
-@require_GET
-@disable_session_expiry_refresh
-def kiosk_occupancy(request):
-	area_name = request.GET.get('occupancy')
-	if area_name is None:
-		return HttpResponse()
-	try:
-		area = Area.objects.get(name=area_name)
-	except Area.DoesNotExist:
-		return HttpResponse()
-	dictionary = {
-		'area': area,
-		'occupants': AreaAccessRecord.objects.filter(area__name=area.name, end=None, staff_charge=None).prefetch_related('customer'),
-	}
-	return render(request, 'kiosk/occupancy.html', dictionary)

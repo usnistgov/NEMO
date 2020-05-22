@@ -14,8 +14,10 @@
 		<tr>
 			<td class="text-center">
 				At <b>{{ max_area_time|time:"g:i A" }}</b>, {{ max_area_count }} people (including you) are expected in the {{ area.name }} area.
-				<br>
-				<b>The maximum capacity is {{ area.maximum_capacity }} people.</b>
+				{% if area.maximum_capacity %}
+					<br>
+					<b>The maximum capacity is {{ area.maximum_capacity }} people.</b>
+				{% endif %}
 				{% if max_location_count > 1 %}<br><br>In addition, at <b>{{ max_location_time|time:"g:i A" }}</b>, {{ max_location_count }} of those people are expected in the same location ({{ location }}){% endif %}
 				<br><br>
 				Please consider rescheduling to another less busy time.<br>
