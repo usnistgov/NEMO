@@ -3,7 +3,7 @@
 {% block content %}
 	<div class="container-fluid">
 		<h1>Customizations</h1>
-		<p>You can customize portions of NEMO to suit your organization's needs.</p>
+		<p>You can customize portions of {{ site_title }} to suit your organization's needs.</p>
 
 		<div class="panel panel-default">
 			<div class="panel-body">
@@ -43,7 +43,7 @@
 							<input type="email" id="user_office_email_address" name="user_office_email_address" class="form-control" value="{{ user_office_email_address }}" placeholder="information@example.org">
 						</div>
 						<div class="col-md-7 form-control-static light-grey">
-							The main point of contact for users to obtain {{ facility_name }} information. Automated emails sent from NEMO are typically 'from' this address.
+							The main point of contact for users to obtain {{ facility_name }} information. Automated emails sent from {{ site_title }} are typically 'from' this address.
 						</div>
 					</div>
 					<div class="form-group">
@@ -152,6 +152,15 @@
 						</div>
 					</div>
 					<div class="form-group">
+						<label class="control-label col-md-2" for="site_title">Site Title</label>
+						<div class="col-md-5">
+							<input type="text" id="site_title" name="site_title" class="form-control" value="{{ site_title }}">
+						</div>
+						<div class="col-md-5 form-control-static light-grey">
+							The name of the site to use in all templates/headers.
+						</div>
+					</div>
+					<div class="form-group">
 						<div class="col-md-3">
 							<input type="submit" value="Save settings" class="btn btn-success">
 						</div>
@@ -163,7 +172,7 @@
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<h3>Login banner</h3>
-				<p>The login banner is an informational message displayed underneath the username and password text boxes on the login page. You can customize this to convey rules for NEMO users at your organization.</p>
+				<p>The login banner is an informational message displayed underneath the username and password text boxes on the login page. You can customize this to convey rules for {{ site_title }} users at your organization.</p>
 				<form method="POST" action="{% url 'customize' 'login_banner' %}" enctype="multipart/form-data">
 					{% csrf_token %}
 					<div class="form-group">
@@ -229,7 +238,7 @@
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<h3>&quot;<a href="{% url 'authorization_failed' %}" target="_blank">{{ facility_name }} failed login</a>&quot; page</h3>
-				<p>This page is displayed after authentication when either no matching username could be found in NEMO's database or if that user has been deactivated.
+				<p>This page is displayed after authentication when either no matching username could be found in the database or if that user has been deactivated.
 					<br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.</p>
 				<form method="POST" action="{% url 'customize' 'authorization_failed' %}" enctype="multipart/form-data">
 					{% csrf_token %}
@@ -709,7 +718,7 @@
 			<div class="panel-body">
 				<h3>Tool Rates</h3>
 				<p>
-					You can upload a json file for NEMO to display tool rates. An example of a valid rates file can be found on <a target="_blank" href="https://github.com/usnistgov/NEMO/raw/master/resources/splash_pad_rates.json">Github</a>.
+					You can upload a json file to display tool rates. An example of a valid rates file can be found on <a target="_blank" href="https://github.com/usnistgov/NEMO/raw/master/resources/splash_pad_rates.json">Github</a>.
 					<br><br>It should be a JSON array of elements, and the following key/values are supported for each element:
 				</p>
 				<ul>

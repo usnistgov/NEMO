@@ -12,8 +12,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import EmailBroadcastForm
 from NEMO.models import Tool, Account, Project, User
-from NEMO.views.customization import get_media_file_contents
-
+from NEMO.views.customization import get_media_file_contents, get_customization
 
 logger = getLogger(__name__)
 
@@ -55,7 +54,8 @@ def send_email(request):
 		email.attach_alternative(body, 'text/html')
 		email.send()
 	except SMTPException as error:
-		error_message = 'NEMO was unable to send the email through the email server. The error message that NEMO received is: ' + str(error)
+		site_title = get_customization('site_title')
+		error_message = f'{site_title} was unable to send the email through the email server. The error message that was received is: ' + str(error)
 		logger.exception(error_message)
 		dictionary = {
 			'title': 'Email not sent',
@@ -122,7 +122,7 @@ def compose_email(request):
 @require_POST
 def send_broadcast_email(request):
 	if not get_media_file_contents('generic_email.html'):
-		return HttpResponseBadRequest('Generic email template not defined. Visit the NEMO customizable_key_values page to upload a template.')
+		return HttpResponseBadRequest('Generic email template not defined. Visit the customization page to upload a template.')
 	form = EmailBroadcastForm(request.POST)
 	if not form.is_valid():
 		return render(request, 'email/compose_email.html', {'form': form})
@@ -150,7 +150,7 @@ def send_broadcast_email(request):
 	except Exception as error:
 		warning_message = 'Your email was not sent. There was a problem finding the users to send the email to.'
 		dictionary = {'error': warning_message}
-		logger.warning(warning_message + ' audience: {}, only_active: {}. The error message that NEMO received is: {}'.format(audience, active_choice, str(error)))
+		logger.warning(warning_message + ' audience: {}, only_active: {}. The error message that was received is: {}'.format(audience, active_choice, str(error)))
 		return render(request, 'email/compose_email.html', dictionary)
 	if not users:
 		dictionary = {'error': 'The audience you specified is empty. You must send the email to at least one person.'}
@@ -164,7 +164,8 @@ def send_broadcast_email(request):
 		email.attach_alternative(content, 'text/html')
 		email.send()
 	except SMTPException as error:
-		error_message = 'NEMO was unable to send the email through the email server. The error message that NEMO received is: ' + str(error)
+		site_title = get_customization('site_title')
+		error_message = f"{site_title} was unable to send the email through the email server. The error message that was received is: " + str(error)
 		logger.exception(error_message)
 		dictionary = {
 			'title': 'Email not sent',

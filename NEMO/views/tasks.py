@@ -41,10 +41,11 @@ def create(request):
 	task_images = save_task_images(request, task)
 
 	if not settings.ALLOW_CONDITIONAL_URLS and task.force_shutdown:
+		site_title = get_customization('site_title')
 		dictionary = {
 			'title': 'Task creation failed',
 			'heading': 'Something went wrong while reporting the problem',
-			'content': "Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using NEMO off campus.",
+			'content': f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus.",
 		}
 		return render(request, 'acknowledgement.html', dictionary)
 
@@ -190,7 +191,8 @@ def update(request, task_id):
 	try:
 		send_task_updated_email(task, request.build_absolute_uri(task.tool.get_absolute_url()), task_images)
 	except Exception as error:
-		error_message = 'NEMO was unable to send the task updated email. The error message that NEMO received is: ' + str(error)
+		site_title = get_customization('site_title')
+		error_message = f"{site_title} was unable to send the task updated email. The error message that was received is: " + str(error)
 		tasks_logger.exception(error_message)
 		pass
 	if next_page == 'maintenance':

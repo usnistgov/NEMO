@@ -8,7 +8,7 @@
 				{% csrf_token %}
 				<div class="col-sm-6">
 					<h3>Recipients</h3>
-					Active NEMO users are listed below in black. Inactive users are <span style="color:lightgrey">gray</span>.
+					Active users are listed below in black. Inactive users are <span style="color:lightgrey">gray</span>.
 					<div class="checkbox">
 						<label><input type="checkbox" name="only_active_users" checked> Only send this email to active users</label>
 					</div>
@@ -74,6 +74,6 @@
 			</form>
 		</div>
 	{% else %}
-		A generic email format has not been customized for your organization yet. You'll need to create one before you can send email broadcasts from within NEMO. Please visit the <a href="{% url 'customization' %}">customizations page</a> to upload a template.
+		A generic email format has not been customized for your organization yet. You'll need to create one before you can send email broadcasts from within {{ site_title }}. Please visit the <a href="{% url 'customization' %}">customizations page</a> to upload a template.
 	{% endif %}
 {% endblock %}

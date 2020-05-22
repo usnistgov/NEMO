@@ -35,4 +35,21 @@ class Migration(migrations.Migration):
             name='badge_number',
             field=models.PositiveIntegerField(blank=True, help_text='The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.', null=True, unique=True),
         ),
+        migrations.AlterField(
+            model_name='landingpagechoice',
+            name='secure_referral',
+            field=models.BooleanField(default=True, help_text="Improves security by blocking HTTP referer [sic] information from the targeted page. Enabling this prevents the target page from manipulating the calling page's DOM with JavaScript. This should always be used for external links. It is safe to uncheck this when linking within the site. Leave this box checked if you don't know what this means"),
+        ),
+        migrations.AlterField(
+            model_name='landingpagechoice',
+            name='url',
+            field=models.CharField(
+                help_text='The URL that the choice leads to when clicked. Relative paths such as /calendar/ are used when linking within the site. Use fully qualified URL paths such as https://www.google.com/ to link to external sites.',
+                max_length=200, verbose_name='URL'),
+        ),
+        migrations.AlterField(
+            model_name='user',
+            name='is_active',
+            field=models.BooleanField(default=True, help_text='Designates whether this user can log in. Unselect this instead of deleting accounts.', verbose_name='active'),
+        ),
     ]

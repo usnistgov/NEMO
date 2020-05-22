@@ -6,11 +6,13 @@ from NEMO.models import User, Area, Resource, Interlock
 class NEMOException(Exception):
 	""" Basic NEMO exception """
 
-	default_msg = "A NEMO error occurred"
+	default_msg = "A {} error occurred"
 
 	def __init__(self, msg=None):
 		if msg is None:
-			msg = self.default_msg
+			from NEMO.views.customization import get_customization
+			site_title = get_customization('site_title')
+			msg = self.default_msg.format(site_title)
 		self.msg = msg
 		super(NEMOException, self).__init__(msg)
 

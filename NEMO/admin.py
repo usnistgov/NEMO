@@ -15,11 +15,6 @@ from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord,
 	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
 	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences, TaskImages, InterlockCardCategory, \
 	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory
-from NEMO.views.customization import get_customization
-
-admin.site.site_header = "NEMO"
-admin.site.site_title = "NEMO"
-admin.site.index_title = "Detailed administration"
 
 
 class ToolAdminForm(forms.ModelForm):

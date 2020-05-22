@@ -4,7 +4,7 @@
 	{% if customization_required %}
 		<h1>The Feedback page has not been customized yet</h1>
 		<p>
-			Feedback is emailed to an address specified by the NEMO site administrator.
+			Feedback is emailed to an address specified by the {{ site_title }} site administrator.
 			{% if user.is_staff %}
 				Use the <a href="{% url 'customization' %}">customizations page</a>
 				to enter an email address, then all users will be able to send feedback.

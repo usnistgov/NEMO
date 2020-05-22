@@ -23,7 +23,7 @@
 			top.location = self.location;
 	</script>
 
-	<title>NEMO - NanoFab Equipment Management and Operations website</title>
+	<title>{{ site_title }}</title>
 	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.css" %}"/>
 	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.css" %}"/>
 </head>
@@ -54,7 +54,7 @@
 		</form>
 
 		<div class="alert alert-danger" style="display:none" id="cookie_error">
-			NEMO relies on cookies to work properly. Please modify your web browser settings
+			{{ site_title }} relies on cookies to work properly. Please modify your web browser settings
 			to allow this site to use cookies. Reload this page after modifying the settings
 			and you will be able to log in.
 		</div>

@@ -11,7 +11,7 @@ from django.views.static import serve
 from rest_framework import routers
 
 from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
-
+from NEMO.views.customization import get_customization
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,11 @@ logger = logging.getLogger(__name__)
 if apps.is_installed("django.contrib.admin"):
 	# Use our custom login page instead of Django's built-in one.
 	admin.site.login = login_required(admin.site.login)
+	# customize the site
+	site_title = get_customization("site_title")
+	admin.site.site_header = site_title
+	admin.site.site_title = site_title
+	admin.site.index_title = "Detailed administration"
 
 # REST API URLs
 router = routers.DefaultRouter()

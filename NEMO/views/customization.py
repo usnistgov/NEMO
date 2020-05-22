@@ -37,6 +37,7 @@ customizable_key_values = {
 	'safety_email_address': '',
 	'abuse_email_address': '',
 	'facility_name': 'NanoFab',
+	'site_title': 'NEMO',
 	'self_log_in': '',
 	'self_log_out': '',
 	'calendar_view': 'agendaWeek',
@@ -126,6 +127,7 @@ def customize(request, element):
 		set_customization('self_log_in', request.POST.get('self_log_in', ''))
 		set_customization('self_log_out', request.POST.get('self_log_out', ''))
 		set_customization('facility_name', request.POST.get('facility_name', ''))
+		set_customization('site_title', request.POST.get('site_title', ''))
 	elif element == 'calendar_settings':
 		set_customization('calendar_view', request.POST.get('calendar_view', ''))
 		set_customization('calendar_first_day_of_week', request.POST.get('calendar_first_day_of_week', ''))

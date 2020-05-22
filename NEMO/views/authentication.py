@@ -18,7 +18,7 @@ from ldap3.core.exceptions import LDAPBindError, LDAPException
 from NEMO.exceptions import InactiveUserError
 from NEMO.middleware import HTTPHeaderAuthenticationMiddleware, RemoteUserAuthenticationMiddleware
 from NEMO.models import User
-from NEMO.views.customization import get_media_file_contents
+from NEMO.views.customization import get_media_file_contents, get_customization
 
 auth_logger = getLogger(__name__)
 
@@ -32,14 +32,14 @@ def check_user_exists_and_active(backend: ModelBackend, username: str) -> User:
 	try:
 		user = User.objects.get(username=username)
 	except User.DoesNotExist:
-		auth_logger.warning(f"Username {username} attempted to authenticate with {type(backend).__name__}, but that username does not exist in the NEMO database. The user was denied access.")
+		auth_logger.warning(f"Username {username} attempted to authenticate with {type(backend).__name__}, but that username does not exist in the database. The user was denied access.")
 		raise
 	# The user must be marked active.
 	if not user.is_active:
-		auth_logger.warning(f"User {username} successfully authenticated with {type(backend).__name__}, but that user is marked inactive in the NEMO database. The user was denied access.")
+		auth_logger.warning(f"User {username} successfully authenticated with {type(backend).__name__}, but that user is marked inactive in the database. The user was denied access.")
 		raise InactiveUserError(user=username)
 	# All security checks passed so let the user in.
-	auth_logger.debug(f"User {username} successfully authenticated with {type(backend).__name__} and was granted access to NEMO.")
+	auth_logger.debug(f"User {username} successfully authenticated with {type(backend).__name__} and was granted access.")
 	return user
 
 

@@ -9,13 +9,17 @@ def hide_logout_button(request):
 	return {"logout_allowed": False}
 
 
-def device(request):
-	return {"device": request.device}
-
-
-def facility_name(request):
+def base_context(request):
 	try:
-		name = get_customization("facility_name")
+		facility_name = get_customization("facility_name")
 	except:
-		name = "Facility"
-	return {"facility_name": name}
+		facility_name = "Facility"
+	try:
+		site_title = get_customization("site_title")
+	except:
+		site_title = ""
+	return {
+		"facility_name": facility_name,
+		"site_title": site_title,
+		"device": request.device
+	}

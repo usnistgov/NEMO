@@ -596,7 +596,7 @@ def email_reservation_reminders(request):
 	reservation_reminder_message = get_media_file_contents('reservation_reminder_email.html')
 	reservation_warning_message = get_media_file_contents('reservation_warning_email.html')
 	if not reservation_reminder_message or not reservation_warning_message:
-		return HttpResponseNotFound('The reservation reminder email template has not been customized for your organization yet. Please visit the NEMO customizable_key_values page to upload a template, then reservation reminder email notifications can be sent.')
+		return HttpResponseNotFound('The reservation reminder email template has not been customized for your organization yet. Please visit the customization page to upload a template, then reservation reminder email notifications can be sent.')
 
 	# Find all reservations that are two hours from now, plus or minus 5 minutes to allow for time skew.
 	preparation_time = 120
@@ -710,7 +710,7 @@ def area_access_details(request, event_id):
 def cancel_unused_reservations(request):
 	# Exit early if the missed reservation email template has not been customized for the organization yet.
 	if not get_media_file_contents('missed_reservation_email.html'):
-		return HttpResponseNotFound('The missed reservation email template has not been customized for your organization yet. Please visit the NEMO customizable_key_values page to upload a template, then missed email notifications can be sent.')
+		return HttpResponseNotFound('The missed reservation email template has not been customized for your organization yet. Please visit the customization page to upload a template, then missed email notifications can be sent.')
 
 	tools = Tool.objects.filter(visible=True, _operational=True, _missed_reservation_threshold__isnull=False)
 	missed_reservations = []
@@ -793,8 +793,9 @@ def send_missed_reservation_notification(reservation):
 
 
 def send_user_created_reservation_notification(reservation: Reservation):
+	site_title = get_customization('site_title')
 	if getattr(reservation.user.preferences, 'attach_created_reservation', False):
-		subject = "[NEMO] Reservation for the " + str(reservation.tool)
+		subject = f"[{site_title}] Reservation for the " + str(reservation.tool)
 		message = get_media_file_contents('reservation_created_user_email.html')
 		message = Template(message).render(Context({'reservation': reservation}))
 		user_office_email = get_customization('user_office_email_address')
@@ -803,8 +804,9 @@ def send_user_created_reservation_notification(reservation: Reservation):
 
 
 def send_user_cancelled_reservation_notification(reservation: Reservation):
+	site_title = get_customization('site_title')
 	if getattr(reservation.user.preferences, 'attach_cancelled_reservation', False):
-		subject = "[NEMO] Cancelled Reservation for the " + str(reservation.tool)
+		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.tool)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
 		message = Template(message).render(Context({'reservation': reservation}))
 		user_office_email = get_customization('user_office_email_address')
@@ -813,6 +815,7 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
 
 
 def create_ics_for_reservation(reservation: Reservation, cancelled=False):
+	site_title = get_customization('site_title')
 	method = 'METHOD:CANCEL\n' if cancelled else 'METHOD:PUBLISH\n'
 	status = 'STATUS:CANCELLED\n' if cancelled else 'STATUS:CONFIRMED\n'
 	uid = 'UID:'+str(reservation.id)+'\n'
@@ -821,12 +824,12 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	now = datetime.now().strftime('%Y%m%dT%H%M%S')
 	start = reservation.start.astimezone(timezone.get_current_timezone()).strftime('%Y%m%dT%H%M%S')
 	end = reservation.end.astimezone(timezone.get_current_timezone()).strftime('%Y%m%dT%H%M%S')
-	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'SUMMARY:[NEMO] {reservation.tool.name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
+	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'SUMMARY:[{site_title}] {reservation.tool.name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
 	ics = io.StringIO('')
 	ics.writelines(lines)
 	ics.seek(0)
 
-	filename = 'cancelled_nemo_reservation.ics' if cancelled else 'nemo_reservation.ics'
+	filename = 'cancelled_reservation.ics' if cancelled else 'reservation.ics'
 
 	return create_email_attachment(ics, filename)
 
