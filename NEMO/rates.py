@@ -52,8 +52,11 @@ class NISTRates(Rates):
 				json_data = open(rates_file)
 				self.rates = json.load(json_data)
 				logger.info("found rates file and loaded rates")
-			except AttributeError:
-				logger.info("no rates file, skipping loading rates")
+			except FileNotFoundError as e:
+				if hasattr(settings, 'RATES_FILE'):
+					logger.exception(e)
+				else:
+					logger.debug("no rates file, skipping loading rates")
 			except Exception as e:
 				logger.error("error loading rates")
 				logger.exception(e)
