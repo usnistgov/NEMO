@@ -91,8 +91,9 @@ def disable_tool(request):
 	current_usage_event.end = timezone.now() + downtime
 
 	# Collect post-usage questions
-	current_usage_event.run_data = DynamicForm(tool.post_usage_questions).extract(request)
-	current_usage_event.save()
+	dynamic_form = DynamicForm(tool.post_usage_questions)
+	current_usage_event.run_data = dynamic_form.extract(request)
+	dynamic_form.charge_for_consumables(current_usage_event.user, current_usage_event.operator, current_usage_event.project, current_usage_event.run_data)
 
 	dictionary = {
 		'message': 'You are no longer using the {}'.format(tool),
