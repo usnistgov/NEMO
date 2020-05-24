@@ -26,7 +26,7 @@ class DynamicForm:
 					result += f'<label><input type="radio" name="{question["name"]}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
 					result += '</div>'
 				result += '</div>'
-			elif question['type'] == "textbox":
+			elif question['type'] == "textbox" or question['type'] == "number":
 				result += '<div class="form-group">'
 				result += f'<label for="{question["name"]}">{question["title"]}</label>'
 				input_group_required = True if 'prefix' in question or 'suffix' in question else False
@@ -35,7 +35,14 @@ class DynamicForm:
 				if 'prefix' in question:
 					result += f'<span class="input-group-addon">{question["prefix"]}</span>'
 				required = 'required' if question['required'] is True else ''
-				result += f'<input type="text" class="form-control" name="{question["name"]}" id="{question["name"]}" placeholder="{question["placeholder"]}" {required} style="max-width:{question["max-width"]}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+				pattern = f'pattern="{question["pattern"]}"' if 'pattern' in question else ''
+				placeholder = f'placeholder="{question["placeholder"]}"' if 'placeholder' in question else ''
+				if question['type'] == "textbox":
+					result += f'<input type="text" class="form-control" name="{question["name"]}" id="{question["name"]}" {placeholder} {pattern} {required} style="max-width:{question["max-width"]}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+				elif question['type'] == "number":
+					minimum = f'min="{question["min"]}"' if 'min' in question else ''
+					maximum = f'max="{question["max"]}"' if 'max' in question else ''
+					result += f'<input type="number" class="form-control" name="{question["name"]}" id="{question["name"]}" {placeholder} {pattern} {minimum} {maximum} {required} style="max-width:{question["max-width"]}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 				if 'suffix' in question:
 					result += f'<span class="input-group-addon">{question["suffix"]}</span>'
 				if input_group_required:
@@ -55,7 +62,7 @@ class DynamicForm:
 				results[question['name']] = request.POST[question['name']]
 		return dumps(results, indent='\t', sort_keys=True) if len(results) else ''
 
-	def charge_for_consumable(self, customer, merchant, project, run_data):
+	def charge_for_consumables(self, customer, merchant, project, run_data):
 		try:
 			run_data = loads(run_data)
 		except:
@@ -66,6 +73,9 @@ class DynamicForm:
 					consumable = Consumable.objects.get(name=question['consumable'])
 					quantity = 0
 					if question['type'] == 'textbox':
+						if question['name'] in run_data:
+							quantity = quiet_int(run_data[question['name']])
+					elif question['type'] == 'number':
 						if question['name'] in run_data:
 							quantity = quiet_int(run_data[question['name']])
 					elif question['type'] == 'radio':

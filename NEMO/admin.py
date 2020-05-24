@@ -5,6 +5,7 @@ from django.contrib.admin import register
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models.fields.files import FieldFile
+from django.utils.html import format_html
 
 from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks, \
 	duplicate_tool_configuration
@@ -15,6 +16,7 @@ from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord,
 	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
 	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences, TaskImages, InterlockCardCategory, \
 	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory
+from NEMO.widgets.dynamic_form import DynamicForm
 
 
 class ToolAdminForm(forms.ModelForm):
@@ -24,6 +26,7 @@ class ToolAdminForm(forms.ModelForm):
 
 	class Media:
 		js = ("tool_form_admin.js",)
+		css = {'':('tool_form_admin.css',),}
 
 	qualified_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
@@ -125,10 +128,11 @@ class ToolAdmin(admin.ModelAdmin):
 	list_display = ('name_display', 'id', '_category', 'visible', 'operational_display', 'problematic', 'is_configurable')
 	search_fields = ('name', '_description', '_serial')
 	list_filter = ('visible', '_operational', '_category', '_location')
+	readonly_fields = ('_post_usage_preview',)
 	actions = [duplicate_tool_configuration]
 	form = ToolAdminForm
 	fieldsets = (
-		(None, {'fields': ('name', 'parent_tool', '_category', 'qualified_users', '_post_usage_questions'),}),
+		(None, {'fields': ('name', 'parent_tool', '_category', 'qualified_users', '_post_usage_questions', '_post_usage_preview'),}),
 		('Additional Information', {'fields': ('_description', '_serial', '_image'),}),
 		('Current state', {'fields': ('visible', '_operational'),}),
 		('Contact information', {'fields': ('_primary_owner', '_backup_owners', '_notification_email_address', '_location', '_phone_number'),}),
@@ -137,6 +141,10 @@ class ToolAdmin(admin.ModelAdmin):
 		('Area Access', {'fields': ('_requires_area_access', '_grant_physical_access_level_upon_qualification', '_grant_badge_reader_access_upon_qualification', '_interlock', '_allow_delayed_logoff'),}),
 		('Dependencies', {'fields': ('required_resources', 'nonrequired_resources'),}),
 	)
+
+	def _post_usage_preview(self, obj):
+		form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ''
+		return format_html('<div class="post_usage_preview">{}{}</div><div class="help post_usage_preview_help">Save form to preview post usage questions</div>'.format(DynamicForm(obj.post_usage_questions).render(), form_validity_div))
 
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):
 		""" We only want non children tool to be eligible as parents """

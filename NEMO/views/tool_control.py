@@ -257,7 +257,7 @@ def disable_tool(request, tool_id):
 	# Collect post-usage questions
 	dynamic_form = DynamicForm(tool.post_usage_questions)
 	current_usage_event.run_data = dynamic_form.extract(request)
-	dynamic_form.charge_for_consumable(current_usage_event.user, current_usage_event.operator, current_usage_event.project, current_usage_event.run_data)
+	dynamic_form.charge_for_consumables(current_usage_event.user, current_usage_event.operator, current_usage_event.project, current_usage_event.run_data)
 
 	current_usage_event.save()
 	if request.user.charging_staff_time():
