@@ -1,10 +1,10 @@
 from json import dumps, loads
 
-from django.utils import timezone
 from django.utils.safestring import mark_safe
 
-from NEMO.models import Consumable, ConsumableWithdraw
+from NEMO.models import Consumable
 from NEMO.utilities import quiet_int
+from NEMO.views.consumables import make_withdrawal
 
 
 class DynamicForm:
@@ -82,6 +82,6 @@ class DynamicForm:
 						quantity = 1
 
 					if quantity > 0:
-						ConsumableWithdraw.objects.create(customer=customer, merchant=merchant, consumable=consumable, quantity=quantity, project=project, date=timezone.now())
+						make_withdrawal(consumable=consumable, customer=customer, merchant=merchant, quantity=quantity, project=project)
 				except:
 					pass

@@ -1,12 +1,11 @@
-from logging import getLogger
-
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 
 from NEMO import rates
 from NEMO.forms import ConsumableWithdrawForm
-from NEMO.models import Consumable, User
+from NEMO.models import Consumable, User, ConsumableWithdraw, Project
+
 
 @staff_member_required(login_url=None)
 @require_http_methods(['GET', 'POST'])
@@ -22,10 +21,7 @@ def consumables(request):
 
 	if form.is_valid():
 		withdraw = form.save(commit=False)
-		withdraw.merchant = request.user
-		withdraw.save()
-		withdraw.consumable.quantity -= withdraw.quantity
-		withdraw.consumable.save()
+		make_withdrawal(consumable=withdraw.consumable, merchant=request.user, customer=withdraw.customer, quantity=withdraw.quantity, project=withdraw.project)
 		dictionary['success'] = 'The withdraw for {} was successfully logged.'.format(withdraw.customer)
 		form = ConsumableWithdrawForm(initial={'quantity': 1})
 	else:
@@ -34,3 +30,9 @@ def consumables(request):
 
 	dictionary['form'] = form
 	return render(request, 'consumables.html', dictionary)
+
+
+def make_withdrawal(consumable: Consumable, quantity: int, project: Project, merchant:User, customer:User):
+	withdraw = ConsumableWithdraw.objects.create(consumable=consumable, quantity=quantity, merchant=merchant, customer=customer, project=project)
+	withdraw.consumable.quantity -= withdraw.quantity
+	withdraw.consumable.save()
