@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404, redirect
@@ -67,7 +69,7 @@ def schedule_outage(request):
 		'form': form,
 		'editing': True if form.instance.id else False,
 		'resources': Resource.objects.all().prefetch_related('category').order_by('category__name', 'name'),
-		'outages': ScheduledOutage.objects.filter(resource__isnull=False),
+		'outages': ScheduledOutage.objects.filter(resource__isnull=False, end__gt=datetime.now()),
 		'outage_categories': ScheduledOutageCategory.objects.all(),
 	}
 	return render(request, 'resources/scheduled_outage.html', dictionary)
