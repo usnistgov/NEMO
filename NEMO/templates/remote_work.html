@@ -62,6 +62,15 @@
 				<td>{{ c.end }}</td>
 				<td>{% if not c.validated %}<button class="btn btn-success" onclick="validate_charge('{% url 'validate_staff_charge' c.id %}', this, '#staff_charge_row_{{ forloop.counter }}')">Validate</button>{% endif %}</td>
 			</tr>
+			{% for area_access_record in c.areaaccessrecord_set.all %}
+				<tr style="font-size: smaller">
+					<td style="border-top: none"></td>
+					<td colspan="3" style="border-top-style: dotted">{{ area_access_record.area.name }} access</td>
+					<td style="border-top-style: dotted">{{ area_access_record.start }}</td>
+					<td style="border-top-style: dotted">{{ area_access_record.end }}</td>
+					<td style="border-top: none"></td>
+				</tr>
+			{%  endfor %}
 		{% endfor %}
 		</tbody>
 	</table>
