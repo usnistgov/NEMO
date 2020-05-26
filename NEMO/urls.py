@@ -131,6 +131,7 @@ urlpatterns = [
 	url(r'^send_email/$', email.send_email, name='send_email'),
 	url(r'^email_broadcast/$', email.email_broadcast, name='email_broadcast'),
 	url(r'^email_broadcast/(?P<audience>tool|account|project)/$', email.email_broadcast, name='email_broadcast'),
+	url(r'^email_preview/$', email.email_preview, name='email_preview'),
 	url(r'^compose_email/$', email.compose_email, name='compose_email'),
 	url(r'^send_broadcast_email/$', email.send_broadcast_email, name='send_broadcast_email'),
 

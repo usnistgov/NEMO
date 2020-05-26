@@ -5,9 +5,10 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMultiAlternatives
 from django.core.validators import validate_email
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.template import Template, Context
+from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import EmailBroadcastForm
@@ -113,6 +114,7 @@ def compose_email(request):
 			'title': 'TITLE',
 			'greeting': 'Greeting',
 			'contents': 'Contents',
+			'template_color': '#5bc0de',
 		}
 		dictionary['generic_email_sample'] = Template(generic_email_sample).render(Context(generic_email_context))
 	return render(request, 'email/compose_email.html', dictionary)
@@ -178,3 +180,20 @@ def send_broadcast_email(request):
 		'heading': 'Your email was sent',
 	}
 	return render(request, 'acknowledgement.html', dictionary)
+
+
+@staff_member_required(login_url=None)
+@require_POST
+def email_preview(request):
+	generic_email_template = get_media_file_contents('generic_email.html')
+	if generic_email_template:
+		form = EmailBroadcastForm(request.POST)
+		email_context = {
+			'title': form.data['title'],
+			'greeting': form.data['greeting'],
+			'contents': form.data['contents'],
+			'template_color': form.data['color'],
+		}
+		email_content = Template(generic_email_template).render(Context(email_context))
+		return HttpResponse(mark_safe(email_content))
+	return HttpResponse()

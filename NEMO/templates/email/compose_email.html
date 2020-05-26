@@ -2,9 +2,11 @@
 {% block title %}Compose email{% endblock %}
 {% block content %}
 	<h1>Compose an email</h1>
-	{% if generic_email_sample %}
+	{% if error %}
+		{{ error }}
+	{% elif generic_email_sample %}
 		<div class="row">
-			<form action="{% url 'send_broadcast_email' %}" method="post">
+			<form action="{% url 'send_broadcast_email' %}" id="email_form" method="post">
 				{% csrf_token %}
 				<div class="col-sm-6">
 					<h3>Recipients</h3>
@@ -24,7 +26,7 @@
 					<input type="hidden" name="audience" value="{{ audience }}">
 					<input type="hidden" name="selection" value="{{ selection }}">
 					<div class="form-group">
-						<input type="text" name="subject" class="form-control" placeholder="Subject line" autofocus>
+						<input type="text" name="subject" class="form-control" placeholder="Subject line" autofocus required>
 					</div>
 					<div class="form-group">
 						Title background color:
@@ -60,14 +62,15 @@
 						<input type="text" name="greeting" class="form-control" placeholder="Greeting">
 					</div>
 					<div class="form-group">
-						<textarea class="form-control" name="contents" rows="6" placeholder="What would you like to say?"></textarea>
+						<textarea class="form-control" name="contents" rows="6" placeholder="What would you like to say?" required></textarea>
 					</div>
+					<button type="button" class="btn btn-default" onclick="update_preview()">Preview</button>
 					<input type="submit" class="btn btn-success" value="Send">
 					<div style="height:50px"></div>
 					<h3>Your email will look like this...</h3>
-					<table width="100%" border="1">
+					<table style="width:100%; border-width: 1px;border-style: solid;">
 						<tr>
-							<td>{{ generic_email_sample|safe }}</td>
+							<td id="email_preview">{{ generic_email_sample|safe }}</td>
 						</tr>
 					</table>
 				</div>
@@ -76,4 +79,14 @@
 	{% else %}
 		A generic email format has not been customized for your organization yet. You'll need to create one before you can send email broadcasts from within {{ site_title }}. Please visit the <a href="{% url 'customization' %}">customizations page</a> to upload a template.
 	{% endif %}
+	<script type="application/javascript">
+		function update_preview() {
+			ajax_post('{% url 'email_preview' %}', $('#email_form').serialize(), refresh_preview)
+        }
+        function refresh_preview(response, status, xml_http_request) {
+			if(response) {
+			    $('#email_preview').html(response)
+			}
+        }
+	</script>
 {% endblock %}
