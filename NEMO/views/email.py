@@ -123,7 +123,8 @@ def compose_email(request):
 @staff_member_required(login_url=None)
 @require_POST
 def send_broadcast_email(request):
-	if not get_media_file_contents('generic_email.html'):
+	content = get_media_file_contents('generic_email.html')
+	if not content:
 		return HttpResponseBadRequest('Generic email template not defined. Visit the customization page to upload a template.')
 	form = EmailBroadcastForm(request.POST)
 	if not form.is_valid():
@@ -134,7 +135,6 @@ def send_broadcast_email(request):
 		'contents': form.cleaned_data['contents'],
 		'template_color': form.cleaned_data['color'],
 	}
-	content = get_media_file_contents('generic_email.html')
 	content = Template(content).render(Context(dictionary))
 	users = None
 	audience = form.cleaned_data['audience']
