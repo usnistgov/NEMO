@@ -109,4 +109,3 @@ class NISTRates(Rates):
 
 
 rate_class = NISTRates()
-rate_class.load_rates()

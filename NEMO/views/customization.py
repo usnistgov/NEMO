@@ -73,14 +73,20 @@ customizable_content = [
 ]
 
 
-def get_customization(name):
+def get_customization(name, raise_exception=True):
+	default_value = customizable_key_values[name]
 	if name not in customizable_key_values.keys():
 		raise InvalidCustomizationException(name)
 	try:
 		return Customization.objects.get(name=name).value
 	except Customization.DoesNotExist:
 		# return default value
-		return customizable_key_values[name]
+		return default_value
+	except Exception:
+		if raise_exception:
+			raise
+		else:
+			return default_value
 
 
 def set_customization(name, value):
