@@ -4,7 +4,7 @@ from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.utils import timezone
 
-from NEMO.models import User, Tool, UsageEvent, Project, Account
+from NEMO.models import User, Tool, UsageEvent, Project, Account, AreaAccessRecord, Area
 from NEMO.tests.test_utilities import login_as_staff
 from NEMO.views import api
 
@@ -24,28 +24,34 @@ class BillingAPITestCase(TestCase):
 		UsageEvent.objects.create(operator=owner2, user=owner2, tool=tool1, project=project, end=datetime.now().astimezone(timezone.get_current_timezone()))
 		UsageEvent.objects.create(operator=owner2, user=owner2, tool=tool2, project=project, end=datetime.now().astimezone(timezone.get_current_timezone()))
 
+		# create a few area access records
+		area = Area.objects.create(name='Cleanroom', welcome_message='')
+		AreaAccessRecord.objects.create(area=area, customer=owner2, project=project, end=datetime.now().astimezone(timezone.get_current_timezone()))
+
+		# add staff charges, consumable, missed reservation, training
+
 	def test_billing_by_username(self):
-		self.billing_by_attribute('username', 'mctest2', 'username', 2)
+		self.billing_by_attribute('username', 'mctest2', 'username', 3)
 
 
 	def test_billing_by_account_name(self):
-		self.billing_by_attribute('account_name', 'Test Account', 'account', 3)
+		self.billing_by_attribute('account_name', 'Test Account', 'account', 4)
 
 
 	def test_billing_by_account_id(self):
-		self.billing_by_attribute('account_id', 1, 'account_id', 3)
+		self.billing_by_attribute('account_id', 1, 'account_id', 4)
 
 
 	def test_billing_by_project_name(self):
-		self.billing_by_attribute('project_name', 'Test Project', 'project', 3)
+		self.billing_by_attribute('project_name', 'Test Project', 'project', 4)
 
 
 	def test_billing_by_project_id(self):
-		self.billing_by_attribute('project_id', 1, 'project_id', 3)
+		self.billing_by_attribute('project_id', 1, 'project_id', 4)
 
 
 	def test_billing_by_application_name(self):
-		self.billing_by_attribute('application_name', 'N19.0001', 'application', 3)
+		self.billing_by_attribute('application_name', 'N19.0001', 'application', 4)
 
 
 	def billing_by_attribute(self, attribute_name, attribute_value, result_attribute_name, results_number):
