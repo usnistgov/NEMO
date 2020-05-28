@@ -60,8 +60,9 @@
 			{% if area_access %}
 				<h3>Area access</h3>
 				{% for a in area_access %}
-					<div class="alert alert-info">
+					<div class="alert {% if not a.staff_charge %}alert-info{% else %}alert-warning{% endif %}">
 						<span style="font-weight:bold">{{ a.area }}</span><br>
+						{% if a.staff_charge %}<span style="font-weight:bold">Area accessed by {{ a.staff_charge.staff_member }} on your behalf</span><br>{% endif %}
 						{{ a.start }}<br>
 						{{ a.end|default_if_none:"In progress" }}<br>
 						Charged to project {{ a.project }}

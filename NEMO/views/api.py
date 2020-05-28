@@ -10,7 +10,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from NEMO.filters import ReservationFilter, UsageEventFilter, AreaAccessRecordFilter, UserFilter
 from NEMO.models import User, Project, Account, Reservation, UsageEvent, AreaAccessRecord, Task, ScheduledOutage, Tool, \
-	ConsumableWithdraw, TrainingSession
+	ConsumableWithdraw, TrainingSession, StaffCharge
 from NEMO.serializers import UserSerializer, ProjectSerializer, AccountSerializer, ReservationSerializer, \
 	UsageEventSerializer, AreaAccessRecordSerializer, TaskSerializer, ScheduledOutageSerializer, ToolSerializer, \
 	BillableItemSerializer
@@ -114,11 +114,13 @@ def billing(request):
 	area_access = get_area_access_for_billing(form)
 	consumables = get_consumables_for_billing(form)
 	missed_reservation = get_missed_reservations_for_billing(form)
+	staff_charges = get_staff_charges_for_billing(form)
 	training_sessions = get_training_sessions_for_billing(form)
 
 	data.extend(usage_events)
 	data.extend(area_access)
 	data.extend(consumables)
+	data.extend(staff_charges)
 	data.extend(missed_reservation)
 	data.extend(training_sessions)
 
@@ -148,7 +150,8 @@ def get_usage_events_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 		diff = usage_event.end - usage_event.start
 		result.append({
 			'type': 'tool_usage',
-			'details': usage_event.tool.name,
+			'name': usage_event.tool.name,
+			'details': f'Work performed by {usage_event.operator} on your behalf' if usage_event.operator != usage_event.user else '',
 			'account': usage_event.project.account.name,
 			'account_id': usage_event.project.account_id,
 			'project': usage_event.project.name,
@@ -183,8 +186,9 @@ def get_area_access_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 	for area_access_record in queryset:
 		diff = area_access_record.end - area_access_record.start
 		result.append({
-			'type': 'area_acess',
-			'details': area_access_record.area.name,
+			'type': 'area_access',
+			'name': area_access_record.area.name,
+			'details': f'Area accessed by {area_access_record.staff_charge.staff_member} on your behalf' if area_access_record.staff_charge else '',
 			'account': area_access_record.project.account.name,
 			'account_id': area_access_record.project.account_id,
 			'project': area_access_record.project.name,
@@ -220,7 +224,8 @@ def get_missed_reservations_for_billing(billing_form: BillingFilterForm) -> List
 	for missed_reservation in queryset:
 		result.append({
 			'type': 'missed_reservation',
-			'details': missed_reservation.tool.name,
+			'name': missed_reservation.tool.name,
+			'details': '',
 			'account': missed_reservation.project.account.name,
 			'account_id': missed_reservation.project.account_id,
 			'project': missed_reservation.project.name,
@@ -234,6 +239,43 @@ def get_missed_reservations_for_billing(billing_form: BillingFilterForm) -> List
 		})
 	return result
 
+
+def get_staff_charges_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
+	result = []
+	queryset = StaffCharge.objects.filter()
+	start, end = billing_form.get_start_date(), billing_form.get_end_date()
+	queryset = queryset.filter(start__gte=start, end__lte=end, start__lte=end, end__gte=start)
+	if billing_form.get_account_id():
+		queryset = queryset.filter(project__account_id=billing_form.get_account_id())
+	if billing_form.get_account_name():
+		queryset = queryset.filter(project__account__name=billing_form.get_account_name())
+	if billing_form.get_project_id():
+		queryset = queryset.filter(project__id=billing_form.get_project_id())
+	if billing_form.get_project_name():
+		queryset = queryset.filter(project__name=billing_form.get_project_name())
+	if billing_form.get_application_name():
+		queryset = queryset.filter(project__application_identifier=billing_form.get_application_name())
+	if billing_form.get_username():
+		queryset = queryset.filter(customer__username=billing_form.get_username())
+	staff_charge: StaffCharge
+	for staff_charge in queryset:
+		diff = staff_charge.end - staff_charge.start
+		result.append({
+			'type': 'staff_charge',
+			'name': f'Work performed by {staff_charge.staff_member}',
+			'details': '',
+			'account': staff_charge.project.account.name,
+			'account_id': staff_charge.project.account_id,
+			'project': staff_charge.project.name,
+			'project_id': staff_charge.project_id,
+			'application': staff_charge.project.application_identifier,
+			'username': staff_charge.customer.username,
+			'user_id': staff_charge.customer_id,
+			'start': staff_charge.start.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
+			'end': staff_charge.end.astimezone(timezone.get_current_timezone()).strftime(date_time_format),
+			'quantity': str(round(diff.days * 1440 + diff.seconds / 60, 2))
+		})
+	return result
 
 def get_consumables_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 	result = []
@@ -256,7 +298,8 @@ def get_consumables_for_billing(billing_form: BillingFilterForm) -> List[Dict]:
 	for consumable_withdrawal in queryset:
 		result.append({
 			'type': 'consumable',
-			'details': consumable_withdrawal.consumable.name,
+			'name': consumable_withdrawal.consumable.name,
+			'details': '',
 			'account': consumable_withdrawal.project.account.name,
 			'account_id': consumable_withdrawal.project.account_id,
 			'project': consumable_withdrawal.project.name,
@@ -292,7 +335,8 @@ def get_training_sessions_for_billing(billing_form: BillingFilterForm) -> List[D
 	for training_session in queryset:
 		result.append({
 			'type': 'training_session',
-			'details': training_session.tool.name,
+			'name': training_session.tool.name,
+			'details': f'{training_session.get_type_display()} training provided by {training_session.trainer}',
 			'account': training_session.project.account.name,
 			'account_id': training_session.project.account_id,
 			'project': training_session.project.name,
