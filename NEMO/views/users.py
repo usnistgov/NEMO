@@ -28,24 +28,25 @@ def users(request):
 @staff_member_required(login_url=None)
 @require_http_methods(['GET', 'POST'])
 def create_or_modify_user(request, user_id):
+	identity_service = get_identity_service()
 	dictionary = {
 		'projects': Project.objects.filter(active=True, account__active=True),
 		'tools': Tool.objects.filter(visible=True),
 		'physical_access_levels': PhysicalAccessLevel.objects.all(),
 		'one_year_from_now': timezone.now() + timedelta(days=365),
-		'identity_service_available': settings.IDENTITY_SERVICE['available'],
-		'identity_service_domains': settings.IDENTITY_SERVICE['domains'],
+		'identity_service_available': identity_service.get('available', False),
+		'identity_service_domains': identity_service.get('domains', []),
 	}
 	try:
 		user = User.objects.get(id=user_id)
 	except:
 		user = None
 
-	timeout = settings.IDENTITY_SERVICE.get('timeout', 3)
+	timeout = identity_service.get('timeout', 3)
 	if dictionary['identity_service_available']:
 		site_title = get_customization('site_title')
 		try:
-			result = requests.get(urljoin(settings.IDENTITY_SERVICE['url'], '/areas/'), timeout=timeout)
+			result = requests.get(urljoin(identity_service['url'], '/areas/'), timeout=timeout)
 			if result.status_code == HTTPStatus.OK:
 				dictionary['externally_managed_physical_access_levels'] = result.json()
 			else:
@@ -60,7 +61,8 @@ def create_or_modify_user(request, user_id):
 			dictionary['warning'] = warning_message
 			warning_message += ' An exception was encountered: ' + type(e).__name__ + ' - ' + str(e)
 			users_logger.error(warning_message)
-	else:
+	elif identity_service:
+		# display warning if identity service is defined but disabled
 		dictionary['warning'] = 'The identity service is disabled. You will not be able to modify externally managed physical access levels, reset account passwords, or unlock accounts.'
 
 	if request.method == 'GET':
@@ -71,7 +73,7 @@ def create_or_modify_user(request, user_id):
 					'username': user.username,
 					'domain': user.domain,
 				}
-				result = requests.get(settings.IDENTITY_SERVICE['url'], parameters, timeout=timeout)
+				result = requests.get(identity_service['url'], parameters, timeout=timeout)
 				if result.status_code == HTTPStatus.OK:
 					dictionary['user_identity_information'] = result.json()
 				elif result.status_code == HTTPStatus.NOT_FOUND:
@@ -107,7 +109,7 @@ def create_or_modify_user(request, user_id):
 					'domain': form.initial['domain'],
 				}
 				try:
-					result = requests.delete(settings.IDENTITY_SERVICE['url'], data=parameters, timeout=timeout)
+					result = requests.delete(identity_service['url'], data=parameters, timeout=timeout)
 					# If the delete succeeds, or the user is not found, then everything is ok.
 					if result.status_code not in (HTTPStatus.OK, HTTPStatus.NOT_FOUND):
 						dictionary['identity_service_available'] = False
@@ -134,7 +136,7 @@ def create_or_modify_user(request, user_id):
 				if len(parameters['requested_areas']) > 0 and not parameters['badge_number']:
 					dictionary['warning'] = 'A user must have a badge number in order to have area access. Please enter the badge number first, then grant access to areas.'
 					return render(request, 'users/create_or_modify_user.html', dictionary)
-				result = requests.put(settings.IDENTITY_SERVICE['url'], data=parameters, timeout=timeout)
+				result = requests.put(identity_service['url'], data=parameters, timeout=timeout)
 				if result.status_code == HTTPStatus.NOT_FOUND:
 					dictionary['warning'] = 'The username was not found on this domain. Did you spell the username correctly in this form and did you select the correct domain? Ensure the user exists on the domain in order to proceed.'
 					return render(request, 'users/create_or_modify_user.html', dictionary)
@@ -179,14 +181,15 @@ def deactivate(request, user_id):
 	if request.method == 'GET':
 		return render(request, 'users/safe_deactivation.html', dictionary)
 	elif request.method == 'POST':
-		if settings.IDENTITY_SERVICE['available']:
+		identity_service = get_identity_service()
+		if identity_service['available']:
 			parameters = {
 				'username': user_to_deactivate.username,
 				'domain': user_to_deactivate.domain,
 			}
 			try:
-				timeout = settings.IDENTITY_SERVICE.get('timeout', 3)
-				result = requests.delete(settings.IDENTITY_SERVICE['url'], data=parameters, timeout=timeout)
+				timeout = identity_service.get('timeout', 3)
+				result = requests.delete(identity_service['url'], data=parameters, timeout=timeout)
 				# If the delete succeeds, or the user is not found, then everything is ok.
 				if result.status_code not in (HTTPStatus.OK, HTTPStatus.NOT_FOUND):
 					users_logger.error(f'The identity service encountered a problem while attempting to delete a user. The HTTP error is {result.status_code}: {result.text}')
@@ -253,9 +256,10 @@ def deactivate(request, user_id):
 @require_POST
 def reset_password(request, user_id):
 	try:
+		identity_service = get_identity_service()
 		user = get_object_or_404(User, id=user_id)
-		timeout = settings.IDENTITY_SERVICE.get('timeout', 3)
-		result = requests.post(urljoin(settings.IDENTITY_SERVICE['url'], '/reset_password/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
+		timeout = identity_service.get('timeout', 3)
+		result = requests.post(urljoin(identity_service['url'], '/reset_password/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
 		if result.status_code == HTTPStatus.OK:
 			dictionary = {
 				'title': 'Password reset',
@@ -280,9 +284,10 @@ def reset_password(request, user_id):
 @require_POST
 def unlock_account(request, user_id):
 	try:
+		identity_service = get_identity_service()
 		user = get_object_or_404(User, id=user_id)
-		timeout = settings.IDENTITY_SERVICE.get('timeout', 3)
-		result = requests.post(urljoin(settings.IDENTITY_SERVICE['url'], '/unlock_account/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
+		timeout = identity_service.get('timeout', 3)
+		result = requests.post(urljoin(identity_service['url'], '/unlock_account/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
 		if result.status_code == HTTPStatus.OK:
 			dictionary = {
 				'title': 'Account unlocked',
@@ -321,3 +326,7 @@ def user_preferences(request):
 		'user_preferences': user.preferences,
 	}
 	return render(request, 'users/preferences.html', dictionary)
+
+
+def get_identity_service():
+	return getattr(settings, 'IDENTITY_SERVICE', {})
