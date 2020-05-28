@@ -179,15 +179,27 @@ def self_log_in(request):
 	user: User = request.user
 	if not able_to_self_log_in_to_area(user):
 		return redirect(reverse('landing'))
+
 	dictionary = {
 		'projects': user.active_projects(),
 	}
-	areas = []
-	for access_level in get_accessible_access_levels_for_user(user):
-		unavailable_resources = access_level.area.required_resources.filter(available=False)
-		if access_level.accessible() and not unavailable_resources:
-			areas.append(access_level.area)
-	dictionary['areas'] = areas
+	facility_name = get_customization('facility_name')
+	try:
+		check_policy_to_enter_any_area(user)
+	except InactiveUserError:
+		dictionary['error_message'] = f'Your account has been deactivated. Please visit the {facility_name} staff to resolve the problem.'
+		return render(request, 'area_access/self_login.html', dictionary)
+	except NoActiveProjectsForUserError:
+		dictionary['error_message'] = f"You are not a member of any active projects. You won't be able to use any interlocked {facility_name} tools. Please visit the {facility_name} user office for more information."
+		return render(request, 'area_access/self_login.html', dictionary)
+	except PhysicalAccessExpiredUserError:
+		dictionary['error_message'] = f"Your physical access to the {facility_name} has expired. Have you completed your safety training within the last year? Please visit the User Office to renew your access."
+		return render(request, 'area_access/self_login.html', dictionary)
+	except NoPhysicalAccessUserError:
+		dictionary['error_message'] = f"You have not been granted physical access to any {facility_name} area. Please visit the User Office if you believe this is an error."
+		return render(request, 'area_access/self_login.html', dictionary)
+
+	dictionary['areas'] = list(set([access_level.area for access_level in get_accessible_access_levels_for_user(user=user)]))
 	if request.method == 'GET':
 		return render(request, 'area_access/self_login.html', dictionary)
 	if request.method == 'POST':
@@ -197,11 +209,17 @@ def self_log_in(request):
 			check_policy_to_enter_this_area(a, request.user)
 			if a in dictionary['areas'] and p in dictionary['projects']:
 				AreaAccessRecord.objects.create(area=a, customer=request.user, project=p)
-		except MaximumCapacityReachedError:
-			dictionary['error_message'] = 'The {} is inaccessible because it has reached its maximum capacity. Wait for somebody to exit and try again.'.format(a.name.lower())
+		except NoAccessiblePhysicalAccessUserError as error:
+			dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time. Please visit the User Office if you believe this is an error."
+			return render(request, 'area_access/self_login.html', dictionary)
+		except UnavailableResourcesUserError as error:
+			dictionary['area_error_message'] = f'The {error.area.name} is inaccessible because a required resource is unavailable ({error.resources[0]}).'
+			return render(request, 'area_access/self_login.html', dictionary)
+		except MaximumCapacityReachedError as error:
+			dictionary['area_error_message'] = f'The {error.area.name} is inaccessible because it has reached its maximum capacity. Wait for somebody to exit and try again.'
 			return render(request, 'area_access/self_login.html', dictionary)
 		except:
-			dictionary['error_message'] = "error"
+			dictionary['area_error_message'] = "unexpected error"
 			return render(request, 'area_access/self_login.html', dictionary)
 		return redirect(reverse('landing'))
 
@@ -244,7 +262,7 @@ def able_to_self_log_out_of_area(user):
 	# Check if the user is active
 	if not user.is_active:
 		return False
-	# Check if the user is already in an area.
+	# Make sure the user is already in an area.
 	if not user.in_area():
 		return False
 	# Otherwise we are good to log out
@@ -258,29 +276,9 @@ def able_to_self_log_in_to_area(user):
 	# Check if the user is already in an area. If so, the /change_project/ URL can be used to change their project.
 	if user.in_area():
 		return False
-	# Check policy for entering an area
-	try:
-		check_policy_to_enter_any_area(user=user)
-	except UserAccessError:
-		return False
 
-	accessible_access_levels = get_accessible_access_levels_for_user(user)
-
-	# Check if the user normally has access to an area at the current time
-	for access_level in accessible_access_levels:
-		try:
-			check_policy_to_enter_this_area(area=access_level.area, user=user)
-			# Users may not access an area if it's not accessible at this time or if a required resource is unavailable,
-			# so return true if there exists at least one area they are able to log in to.
-			return True
-		except (NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError):
-			pass
-		except MaximumCapacityReachedError:
-			# we don't want to deal with that error just yet. we'll let the user try to log in and get an error
-			return True
-
-	# No areas are accessible...
-	return False
+	# Otherwise user can try to self log in
+	return True
 
 
 def get_accessible_access_levels_for_user(user: User) -> Set[PhysicalAccessLevel]:

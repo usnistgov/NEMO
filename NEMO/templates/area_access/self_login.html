@@ -4,38 +4,43 @@
 	<h1>Log in to an access controlled area</h1>
 	{% if error_message %}
 		<div class="alert alert-danger">
-			You cannot login to this area because:<br>
 			{{ error_message }}
 		</div>
+	{% elif area_error_message %}
+		<div class="alert alert-danger">
+			{{ area_error_message }}
+		</div>
 	{% endif %}
-	<form method="post" action="{% url 'self_log_in' %}">
-		{% csrf_token %}
-		<div class="form-group">
-			{% if projects|length == 1 %}
-				You only have one active project. Area access will be billed to: {{ projects.0 }}
-				<input type="hidden" name="project" value="{{ projects.0.id }}">
+	{% if not error_message %}
+		<form method="post" action="{% url 'self_log_in' %}">
+			{% csrf_token %}
+			<div class="form-group">
+				{% if projects|length == 1 %}
+					You only have one active project. Area access will be billed to: {{ projects.0 }}
+					<input type="hidden" name="project" value="{{ projects.0.id }}">
+				{% else %}
+					<p>Charge area access to which project?</p>
+					{% for p in projects %}
+						<div class="radio">
+							<label><input type="radio" name="project" value="{{ p.id }}" required>{{ p }}</label>
+						</div>
+					{% endfor %}
+				{% endif %}
+			</div>
+			<div class="form-group">
+			{% if areas|length == 1 %}
+				You are only able to access one area: {{ areas.0 }}
+				<input type="hidden" name="area" value="{{ areas.0.id }}">
 			{% else %}
-				<p>Charge area access to which project?</p>
-				{% for p in projects %}
+				<p>Log in to which area?</p>
+				{% for a in areas %}
 					<div class="radio">
-						<label><input type="radio" name="project" value="{{ p.id }}" required>{{ p }}</label>
+						<label><input type="radio" name="area" value="{{ a.id }}" required>{{ a }}</label>
 					</div>
 				{% endfor %}
 			{% endif %}
-		</div>
-		<div class="form-group">
-		{% if areas|length == 1 %}
-			You are only able to access one area: {{ areas.0 }}
-			<input type="hidden" name="area" value="{{ areas.0.id }}">
-		{% else %}
-			<p>Log in to which area?</p>
-			{% for a in areas %}
-				<div class="radio">
-					<label><input type="radio" name="area" value="{{ a.id }}" required>{{ a }}</label>
-				</div>
-			{% endfor %}
-		{% endif %}
-		</div>
-		<input type="submit" class="btn btn-success" value="Log in">
-	</form>
+			</div>
+			<input id="self_login_submit" type="submit" class="btn btn-success" value="Log in">
+		</form>
+	{% endif %}
 {% endblock %}
