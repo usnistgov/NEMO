@@ -42,3 +42,27 @@ def duplicate_tool_configuration(model_admin, request, queryset):
 			tool.backup_owners.set(old_backup_users)
 			for user in old_qualified_users:
 				user.qualifications.add(tool)
+
+def make_non_visible_selected_tools(model_admin, request, queryset):
+	for tool in queryset:
+		if not tool.is_child_tool():
+			tool.visible = False
+			tool.save()
+ 
+def make_visible_selected_tools(model_admin, request, queryset):
+	for tool in queryset:
+		if not tool.is_child_tool():
+			tool.visible = True
+			tool.save()
+
+def make_non_operational_selected_tools(model_admin, request, queryset):
+	for tool in queryset:
+		if not tool.is_child_tool():
+			tool.operational = False
+			tool.save()
+
+def make_operational_selected_tools(model_admin, request, queryset):
+	for tool in queryset:
+		if not tool.is_child_tool():
+			tool.operational = True
+			tool.save()
