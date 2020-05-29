@@ -61,6 +61,14 @@
 {% block body %}
     <div class="body-container">
         <div class="container">
+			{% if messages %}
+				{% for message in messages %}
+					<div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" style="display: none">
+						<button type="button" class="close" data-dismiss="alert">&times;</button>
+						{{message}}
+					</div>
+				{% endfor %}
+			{% endif %}
             {% block content %}{% endblock %}
         </div>
         {% block extra_whitespace %}
@@ -95,6 +103,16 @@
 	{% if logout_allowed %}
 		$(document).ajaxComplete(navigate_to_login_on_session_expiration);
 	{% endif %}
+	function show_alerts()
+	{
+		var alert_users = $(".alert.show-on-load");
+		alert_users.each(function(index, element) {
+			$(element).fadeTo(3500, 500).slideUp(500, function () {
+				$(element).slideUp(500);
+			});
+		});
+	}
+    $(show_alerts());
 </script>
 
 </body>

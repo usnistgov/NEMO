@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
@@ -43,8 +44,8 @@ def create_or_modify_user(request, user_id):
 		user = None
 
 	timeout = identity_service.get('timeout', 3)
+	site_title = get_customization('site_title')
 	if dictionary['identity_service_available']:
-		site_title = get_customization('site_title')
 		try:
 			result = requests.get(urljoin(identity_service['url'], '/areas/'), timeout=timeout)
 			if result.status_code == HTTPStatus.OK:
@@ -163,6 +164,8 @@ def create_or_modify_user(request, user_id):
 		record_local_many_to_many_changes(request, user, form, 'projects')
 		form.save_m2m()
 
+		message = f"{user} has been added successfully to {site_title}" if user_id == 'new' else f"{user} has been updated successfully"
+		messages.success(request, message)
 		return redirect('users')
 	else:
 		return HttpResponseBadRequest('Invalid method')
@@ -249,6 +252,9 @@ def deactivate(request, user_id):
 		activity_entry.action = ActivityHistory.Action.DEACTIVATED
 		activity_entry.content_object = user_to_deactivate
 		activity_entry.save()
+
+		message = f"{user_to_deactivate} has been successfully deactivated"
+		messages.success(request, message)
 		return redirect('users')
 
 

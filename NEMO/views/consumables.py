@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
@@ -22,8 +23,8 @@ def consumables(request):
 	if form.is_valid():
 		withdraw = form.save(commit=False)
 		make_withdrawal(consumable=withdraw.consumable, merchant=request.user, customer=withdraw.customer, quantity=withdraw.quantity, project=withdraw.project)
-		dictionary['success'] = 'The withdraw for {} was successfully logged.'.format(withdraw.customer)
 		form = ConsumableWithdrawForm(initial={'quantity': 1})
+		messages.success(request, f'The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer} was successfully logged.')
 	else:
 		if hasattr(form, 'cleaned_data') and 'customer' in form.cleaned_data:
 			dictionary['projects'] = form.cleaned_data['customer'].active_projects()

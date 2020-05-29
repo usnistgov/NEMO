@@ -83,7 +83,7 @@ class User(models.Model):
 	first_name = models.CharField(max_length=100)
 	last_name = models.CharField(max_length=100)
 	email = models.EmailField(verbose_name='email address')
-	type = models.ForeignKey(UserType, null=True, on_delete=models.SET_NULL)
+	type = models.ForeignKey(UserType, null=True, blank=True, on_delete=models.SET_NULL)
 	domain = models.CharField(max_length=100, blank=True, help_text="The Active Directory domain that the account resides on")
 
 	# Physical access fields

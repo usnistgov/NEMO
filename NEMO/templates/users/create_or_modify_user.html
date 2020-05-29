@@ -77,16 +77,18 @@
 				</div>
 			{% endif %}
 		</div>
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="type"><strong>Type</strong></label>
-			<div class="col-sm-4">
-				<select id="type" name="type" class="form-control" required>
-					{% for t in form.fields.type.choices %}
-						<option value="{{ t.0 }}" {% if t.0 == form.type.value|to_int %}selected{% endif %}>{{ t.1 }}</option>
-					{% endfor %}
-				</select>
+		{% if form.fields.type.choices.queryset %}
+			<div class="form-group">
+				<label class="control-label col-sm-2" for="type">Type</label>
+				<div class="col-sm-4">
+					<select id="type" name="type" class="form-control">
+						{% for t in form.fields.type.choices %}
+							<option value="{{ t.0 }}" {% if t.0 == form.type.value|to_int %}selected{% endif %}>{{ t.1 }}</option>
+						{% endfor %}
+					</select>
+				</div>
 			</div>
-		</div>
+		{% endif %}
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="badge_number">Badge number</label>
 			<div class="col-sm-4">
@@ -113,13 +115,18 @@
 			{% endif %}
 		</div>
 		<div class="form-group">
-			<div class="col-sm-offset-2 col-sm-10">
+			<div class="col-sm-offset-2 {% if form.instance.id and form.is_active.value %}col-sm-2{% else %}col-sm-10{% endif %}">
 				<div class="checkbox">
-					<label {% if form.is_active.value %}data-toggle="tooltip" data-placement="left" title="Pro-tip: you can safely deactivate this user using the link at the top of this page so that no future costs are incurred (such as missed reservations)."{% endif %}>
+					<label {% if form.instance.id and form.is_active.value %}data-toggle="tooltip" data-placement="left" title="Pro-tip: you can safely deactivate this user using the link on the right so that no future costs are incurred (such as missed reservations)."{% endif %}>
 						<input id="is_active" name="is_active" type="checkbox" {% if form.is_active.value %}checked{% endif %}> Active
 					</label>
 				</div>
 			</div>
+			{% if form.instance.id and form.is_active.value %}
+				<div class="control-label col-sm-8" style="text-align: left">
+					<a href="{% url 'deactivate_user' form.instance.id %}">Safely deactivate this user</a>
+				</div>
+			{% endif %}
 			<div class="col-sm-offset-2 col-sm-2">
 				<div class="checkbox">
 					<label><input id="training_required" name="training_required" type="checkbox" {% if form.training_required.value %}checked{% endif %}> Training required</label>

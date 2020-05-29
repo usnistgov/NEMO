@@ -8,9 +8,6 @@
 			{{ form.non_field_errors }}
 		</div>
 	{% endif %}
-	{% if success %}
-		<div class="alert alert-success">{{ success }}</div>
-	{% endif %}
 	<h1>Withdraw consumables</h1>
 	<p>Use this form to charge users for consumable items & supplies.</p>
 	<form action="{% url 'consumables' %}" class="form-horizontal" method="post">
