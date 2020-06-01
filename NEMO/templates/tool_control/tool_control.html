@@ -39,10 +39,12 @@
 		{
 			var selected_item = {% if device == 'mobile' %}{{ selected_tool }}{% else %}get_selected_item(){% endif %};
 			if(selected_item)
-			    {% if device == 'desktop' %}
+			{
+			 	{% if device == 'desktop' %}
 					$('#loading-div').show()
 				{% endif %}
 				$("#content").load('/tool_status/' + selected_item + "/", undefined, refresh_tool_completion_callback);
+			}
 			{% if device == 'desktop' %}
 				refresh_sidebar_icons();
 			{% endif %}
