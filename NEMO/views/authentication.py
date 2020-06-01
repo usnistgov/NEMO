@@ -59,7 +59,7 @@ def check_pre_authentication_backends(request):
 
 
 class RemoteUserAuthenticationBackend(ModelBackend):
-	""" The web server performs Kerberos authentication and passes the user name in via the REMOTE_USER environment variable. """
+	""" The web server performs authentication and passes the user name remotely. (header or env) """
 
 	def authenticate(self, request, remote_user):
 		if not remote_user:

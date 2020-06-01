@@ -12,13 +12,24 @@ middleware_logger = getLogger(__name__)
 
 
 class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
+	# This value allows for more validation on the header received. Use it to check for Basic or Token prefixes for example
+	header_value_prefix = getattr(settings, "AUTHENTICATION_HEADER_VALUE_PREFIX", None)
+
 	def process_request(self, request):
 		try:
 			try:
-				request.META[self.header]
-			except Exception:
+				header_value = request.META[self.header]
+			except KeyError:
+				# If header is not present, log a warning and continue with processing of base class
 				middleware_logger.warning(f"Header: {self.header} not present or invalid")
-			super().process_request(request)
+				super().process_request(request)
+			else:
+				# We have a header, check for prefix if present.
+				prefix_valid = self.header_value_prefix and header_value.startswith(self.header_value_prefix)
+				if self.header_value_prefix and not prefix_valid:
+					middleware_logger.warning(f"Prefix: {self.header_value_prefix} not present in header value")
+				else:
+					super().process_request(request)
 		except (User.DoesNotExist, InactiveUserError):
 			from NEMO.views.authentication import authorization_failed
 
