@@ -5,6 +5,7 @@ from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO import init_admin_site
 from NEMO.exceptions import InvalidCustomizationException
 from NEMO.models import Customization
 
@@ -134,6 +135,7 @@ def customize(request, element):
 		set_customization('self_log_out', request.POST.get('self_log_out', ''))
 		set_customization('facility_name', request.POST.get('facility_name', ''))
 		set_customization('site_title', request.POST.get('site_title', ''))
+		init_admin_site()
 	elif element == 'calendar_settings':
 		set_customization('calendar_view', request.POST.get('calendar_view', ''))
 		set_customization('calendar_first_day_of_week', request.POST.get('calendar_first_day_of_week', ''))
