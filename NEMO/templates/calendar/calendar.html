@@ -73,7 +73,7 @@ function update_event_sources()
 		}
 	};
 
-	if(event_type === 'reservations' || event_type === '{{ facility_name }} usage')
+	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage')
 	{
 		var item = get_selected_item();
 		if(item === 'personal_schedule')
@@ -400,7 +400,7 @@ function change_calendar_event_type(calling_element)
 		$(scheduled_outage_button).show();
 		update_event_sources();
 	}
-	else if(event_type === "{{ facility_name }} usage")
+	else if(event_type === "{{ facility_name|lower }} usage")
 	{
 		user_search.hide();
 		chosen_user_button.hide();

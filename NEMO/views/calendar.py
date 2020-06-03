@@ -98,7 +98,7 @@ def event_feed(request):
 	facility_name = get_customization('facility_name')
 	if event_type == 'reservations':
 		return reservation_event_feed(request, start, end)
-	elif event_type == f"{facility_name} usage":
+	elif event_type == f"{facility_name.lower()} usage":
 		return usage_event_feed(request, start, end)
 	# Only staff may request a specific user's history...
 	elif event_type == 'specific user' and request.user.is_staff:
