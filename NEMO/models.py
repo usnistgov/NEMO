@@ -518,7 +518,7 @@ class Tool(models.Model):
 		return self.name
 
 	def is_child_tool(self):
-		return self.parent_tool != None
+		return self.parent_tool is not None
 
 	def is_parent_tool(self, parent_ids = None):
 		if not parent_ids:
@@ -672,25 +672,6 @@ class Tool(models.Model):
 		except UsageEvent.DoesNotExist:
 			return None
 
-	def should_enforce_policy(self, reservation):
-		""" Returns whether or not the policy rules should be enforced. """
-		should_enforce = True
-
-		start_time = reservation.start.astimezone(timezone.get_current_timezone())
-		end_time = reservation.end.astimezone(timezone.get_current_timezone())
-		if self.policy_off_weekend and start_time.weekday() >= 5 and end_time.weekday() >= 5:
-			should_enforce = False
-		if self.policy_off_between_times and self.policy_off_start_time and self.policy_off_end_time:
-			if self.policy_off_start_time <= self.policy_off_end_time:
-				""" Range something like 6am-6pm """
-				if self.policy_off_start_time <= start_time.time() <= self.policy_off_end_time and self.policy_off_start_time <= end_time.time() <= self.policy_off_end_time:
-					should_enforce = False
-			else:
-				""" Range something like 6pm-6am """
-				if (self.policy_off_start_time <= start_time.time() or start_time.time() <= self.policy_off_end_time) and (self.policy_off_start_time <= end_time.time() or end_time.time() <= self.policy_off_end_time):
-					should_enforce = False
-		return should_enforce
-
 
 class Configuration(models.Model):
 	tool = models.ForeignKey(Tool, help_text="The tool that this configuration option applies to.", on_delete=models.CASCADE)
@@ -787,10 +768,25 @@ class StaffCharge(CalendarDisplay):
 
 class Area(models.Model):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
+	category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
 	welcome_message = models.TextField(help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
+	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login")
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
 	count_staff_in_occupancy = models.BooleanField(default=True, help_text='Indicates that staff users will count towards maximum capacity.')
 	reservation_warning = models.PositiveIntegerField(blank=True, null=True, help_text='The number of simultaneous users (with at least one reservation in this area) allowed before a warning is displayed when creating a reservation.')
+
+	# policy rules
+	reservation_horizon = models.PositiveIntegerField(db_column="reservation_horizon", default=14, null=True, blank=True, help_text="Users may create reservations this many days in advance. Leave this field blank to indicate that no reservation horizon exists for this area.")
+	missed_reservation_threshold = models.PositiveIntegerField(db_column="missed_reservation_threshold", null=True, blank=True, help_text="The amount of time (in minutes) that a area reservation may go unused before it is automatically marked as \"missed\" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.")
+	minimum_usage_block_time = models.PositiveIntegerField(db_column="minimum_usage_block_time", null=True, blank=True, help_text="The minimum amount of time (in minutes) that a user must reserve this area for a single reservation. Leave this field blank to indicate that no minimum usage block time exists for this area.")
+	maximum_usage_block_time = models.PositiveIntegerField(db_column="maximum_usage_block_time", null=True, blank=True,	help_text="The maximum amount of time (in minutes) that a user may reserve this area for a single reservation. Leave this field blank to indicate that no maximum usage block time exists for this area.")
+	maximum_reservations_per_day = models.PositiveIntegerField(db_column="maximum_reservations_per_day", null=True,	blank=True, help_text="The maximum number of reservations a user may make per day for this area.")
+	minimum_time_between_reservations = models.PositiveIntegerField(db_column="minimum_time_between_reservations", null=True, blank=True, help_text="The minimum amount of time (in minutes) that the same user must have between any two reservations for this area.")
+	maximum_future_reservation_time = models.PositiveIntegerField(db_column="maximum_future_reservation_time", null=True, blank=True, help_text="The maximum amount of time (in minutes) that a user may reserve from the current time onwards.")
+	policy_off_between_times = models.BooleanField(db_column="policy_off_between_times", default=False, help_text="Check this box to disable policy rules every day between the given times")
+	policy_off_start_time = models.TimeField(db_column="policy_off_start_time", null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
+	policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
+	policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
 
 	class Meta:
 		ordering = ['name']
@@ -885,7 +881,8 @@ class Reservation(CalendarDisplay):
 	user = models.ForeignKey(User, related_name="reservation_user", on_delete=models.CASCADE)
 	creator = models.ForeignKey(User, related_name="reservation_creator", on_delete=models.CASCADE)
 	creation_time = models.DateTimeField(default=timezone.now)
-	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+	tool = models.ForeignKey(Tool, null=True, blank=True, on_delete=models.CASCADE)
+	area = models.ForeignKey(Area, null=True, blank=True, on_delete=models.CASCADE)
 	project = models.ForeignKey(Project, null=True, blank=True, help_text="Indicates the intended project for this reservation. A missed reservation would be billed to this project.", on_delete=models.CASCADE)
 	start = models.DateTimeField('start')
 	end = models.DateTimeField('end')
@@ -899,6 +896,13 @@ class Reservation(CalendarDisplay):
 	additional_information = models.TextField(null=True, blank=True)
 	self_configuration = models.BooleanField(default=False, help_text="When checked, indicates that the user will perform their own tool configuration (instead of requesting that the staff configure it for them).")
 	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
+
+	@property
+	def reservation_item(self):
+		if self.tool:
+			return self.tool
+		elif self.area:
+			return self.area
 
 	def duration(self):
 		return self.end - self.start

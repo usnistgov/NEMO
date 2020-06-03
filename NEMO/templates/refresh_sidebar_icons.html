@@ -1,28 +1,43 @@
 $('#sidebar .sidebar-status-icon').remove();
+$('#sidebar .sidebar-status-occupancy').remove();
 {% for tool in tool_summary %}
 	{% if tool.in_use %}
-		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-user primary-highlight sidebar-status-icon" title="{{ tool.user }} is using this tool"></span>');
+		$('a[data-item-id={{ tool.id }}][data-item-type=tool]').append('<span class="glyphicon glyphicon-user primary-highlight sidebar-status-icon" title="{{ tool.user }} is using this tool"></span>');
 	{% endif %}
 
 	{% if tool.delayed_logoff_in_progress %}
-		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-time primary-highlight sidebar-status-icon" title="Delayed logoff is in effect for this tool"></span>');
+		$('a[data-item-id={{ tool.id }}][data-item-type=tool]').append('<span class="glyphicon glyphicon-time primary-highlight sidebar-status-icon" title="Delayed logoff is in effect for this tool"></span>');
 	{% endif %}
 
 	{% if tool.scheduled_outage %}
-		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-time danger-highlight sidebar-status-icon" title="A scheduled outage is in effect for this tool"></span>');
+		$('a[data-item-id={{ tool.id }}][data-item-type=tool]').append('<span class="glyphicon glyphicon-time danger-highlight sidebar-status-icon" title="A scheduled outage is in effect for this tool"></span>');
 	{% elif tool.scheduled_partial_outage %}
-		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-time warning-highlight sidebar-status-icon" title="An optional resource for this tool has an outage in effect"></span>');
+		$('a[data-item-id={{ tool.id }}][data-item-type=tool]').append('<span class="glyphicon glyphicon-time warning-highlight sidebar-status-icon" title="An optional resource for this tool has an outage in effect"></span>');
 	{% endif %}
 
 	{% if tool.required_resource_is_unavailable %}
-		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-leaf danger-highlight sidebar-status-icon" title="This tool is unavailable because a required resource is unavailable"></span>');
+		$('a[data-item-id={{ tool.id }}][data-item-type=tool]').append('<span class="glyphicon glyphicon-leaf danger-highlight sidebar-status-icon" title="This tool is unavailable because a required resource is unavailable"></span>');
 	{% elif tool.nonrequired_resource_is_unavailable %}
-		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-leaf warning-highlight sidebar-status-icon" title="This tool is operating in a diminished capacity because an optional resource is unavailable"></span>');
+		$('a[data-item-id={{ tool.id }}][data-item-type=tool]').append('<span class="glyphicon glyphicon-leaf warning-highlight sidebar-status-icon" title="This tool is operating in a diminished capacity because an optional resource is unavailable"></span>');
 	{% endif %}
 
 	{% if tool.operational == False %}
-		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-fire danger-highlight sidebar-status-icon" title="This tool is shut down"></span>');
+		$('a[data-item-id={{ tool.id }}][data-item-type=tool]').append('<span class="glyphicon glyphicon-fire danger-highlight sidebar-status-icon" title="This tool is shut down"></span>');
 	{% elif tool.problematic == True %}
-		$('a[data-tool-id={{ tool.id }}]').append('<span class="glyphicon glyphicon-wrench warning-highlight sidebar-status-icon" title="This tool requires maintenance"></span>');
+		$('a[data-item-id={{ tool.id }}][data-item-type=tool]').append('<span class="glyphicon glyphicon-wrench warning-highlight sidebar-status-icon" title="This tool requires maintenance"></span>');
+	{% endif %}
+{% endfor %}
+
+{% for area in area_summary %}
+	{% if area.maximum_capacity %}
+		$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="sidebar-status-occupancy"> -</span>');
+		{% if area.occupancy_count >= area.danger_capacity %}
+			$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-user danger-highlight sidebar-status-icon"></span>');
+		{% elif area.occupancy_count >= area.warning_capacity %}
+			$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-user warning-highlight sidebar-status-icon"></span>');
+		{% else %}
+			$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-user success-highlight sidebar-status-icon"></span>');
+		{% endif %}
+		$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="sidebar-status-occupancy" title="There are {{ area.occupancy_count }} people in this area"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
 	{% endif %}
 {% endfor %}

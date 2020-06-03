@@ -1,10 +1,15 @@
 [
 	{% for x in events %}
 	{
-		{% if personal_schedule %}
+		{% if personal_schedule and x.tool %}
 			"title": "{{ x.title|default:x.tool.name|escapejs }}",
+			"color": "#33ad33",
+		{% elif personal_schedule and x.area %}
+			"title": "{{ x.title|default:x.area.name|escapejs }}",
+			"color": "#84CD84",
 		{% else %}
 			"title": "{{ x.title|default:x.user|escapejs }}",
+			"color": {% if x.tool %}"#3a87ad"{% elif x.area %}"#88B7CD"{% endif %},
 		{% endif %}
 		"id": "Reservation {{ x.id }}",
 		{# The reservation creator or staff may edit the event: #}

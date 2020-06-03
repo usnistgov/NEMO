@@ -6,9 +6,9 @@ function switch_tab(element)
 	$(this).tab('show')
 }
 
-function set_tool_link_callback(callback)
+function set_item_link_callback(callback)
 {
-	$("a[data-type='tool link']").each(function()
+	$("a[data-item-type='tool'], a[data-item-type='area']").each(function()
 	{
 		$(this).click({"callback": callback}, callback);
 	});
@@ -16,7 +16,7 @@ function set_tool_link_callback(callback)
 
 // This function allows categories in the tool tree sidebar to be expanded and collapsed.
 // It must be called upon loading any page that uses the tool tree.
-function enable_tool_tree_toggling()
+function enable_item_tree_toggling()
 {
 	$('label.tree-toggler').click(toggle_branch);
 }
@@ -30,21 +30,22 @@ function toggle_branch()
 function on_tool_search_selection(jquery_event, search_selection, dataset_name)
 {
 	$('#tool_search').typeahead('val', '');
-	expand_to_tool(search_selection.id);
+	expand_to_item(search_selection.id, 'tool');
 }
 
-// This function toggles all parent categories of a tool and selects the tool.
-function expand_to_tool(id)
+// This function toggles all parent categories of a tool/area and selects the tool.
+function expand_to_item(id, type)
 {
 	$("#sidebar a").removeClass('selected');
-	$("a[data-tool-id='" + id + "']").addClass('selected').click().parents('ul.tree').show();
+	$("a[data-item-id='" + id + "'][data-item-type='" + type + "']").addClass('selected').click().parents('ul.tree').show();
 	save_sidebar_state();
 }
 
 // This function expands all tool category branches for the sidebar in the calendar & tool control pages.
 function expand_all_categories()
 {
-	$("#tool_tree ul.tree").show();
+	$(".item_tree ul.tree.area-list").hide();
+	$(".item_tree ul.tree.tool-list").show();
 	$("#search").focus();
 	save_sidebar_state();
 }
@@ -52,21 +53,25 @@ function expand_all_categories()
 // This function collapses all tool category branches for the sidebar in the calendar & tool control pages.
 function collapse_all_categories()
 {
-	$("#tool_tree ul.tree").hide();
+	$(".item_tree ul.tree.tool-list").hide();
+	$(".item_tree ul.tree.area-list").show();
 	$("#search").focus();
 	save_sidebar_state();
 }
 
-function get_selected_item()
-{
+function get_selected_item() {
 	let selected_item = $(".selected");
 	// Exactly one thing should be selected at a time, otherwise there's an error.
-	if(!(selected_item && selected_item.length === 1))
-		return undefined;
-	// Check if the selected item is a special link. Otherwise, get its tool ID.
+	if (!(selected_item && selected_item.length === 1))
+	{
+	return undefined;
+	}
+	// Check if the selected item is a special link. Otherwise, get its item ID.
 	if($(selected_item[0]).hasClass('personal_schedule'))
+	{
 		return 'personal_schedule';
-	return $(selected_item[0]).data('tool-id');
+	}
+	return JSON.stringify({'id': $(selected_item[0]).data('item-id'), 'type': $(selected_item[0]).data('item-type')});
 }
 
 // This function visually highlights a clicked link with a gray background.
@@ -77,44 +82,51 @@ function set_selected_item(element)
 	save_sidebar_state();
 }
 
-function set_selected_item_by_id(tool_id)
+function set_selected_item_by_id(item_id, item_type)
 {
-	let tool = $("#tool_tree [data-tool-id=" + tool_id + "]");
-	if(tool.length === 1)
+	let item = $(".item_tree [data-item-id=" + item_id + "][data-item-type=" + item_type + "]");
+	if(item.length === 1)
 	{
 		$("#sidebar a").removeClass('selected');
-		tool.addClass('selected');
+		item.addClass('selected');
 	}
 }
 
 function save_sidebar_state()
 {
 	localStorage.clear();
-	let categories = $("#tool_tree ul.tree");
+	let categories = $(".item_tree ul.tree");
 	for(let c = 0; c < categories.length; c++)
 	{
 		let category = categories[c].getAttribute('data-category');
 		localStorage[category] = $(categories[c]).is(':visible');
 	}
-	localStorage['Selected tool ID'] = get_selected_item();
+	localStorage['Selected item ID'] = get_selected_item();
 }
 
 function load_sidebar_state()
 {
-	let categories = $("#tool_tree ul.tree");
+	let categories = $(".item_tree ul.tree");
 	for(let c = 0; c < categories.length; c++)
 	{
 		let category = categories[c];
 		let name = category.getAttribute('data-category');
 		let state = localStorage[name];
 		if(state === "true")
+		{
 			$(category).show();
+		}
 		else
+		{
 			$(category).hide();
+		}
 	}
-	let selected = localStorage['Selected tool ID'];
-	if(selected)
-		set_selected_item_by_id(selected);
+	let selected = localStorage['Selected item ID'];
+	if(selected && selected !== 'personal_schedule')
+	{
+		let selected_item = JSON.parse(selected)
+		set_selected_item_by_id(selected_item.id, selected_item.type);
+	}
 }
 
 function refresh_sidebar_icons()
@@ -161,8 +173,10 @@ function ajax_complete_callback(title, preface)
 	preface = preface || "";
 	function callback(response, status, xml_header_request)
 	{
-		if(status !== "error")
+		if (status !== "error")
+		{
 			return;
+		}
 		let dialog_contents =
 			"<div class='modal-header'>" +
 			"<button type='button' class='close' data-dismiss='modal'>&times;</button>" +
@@ -181,8 +195,10 @@ function ajax_complete_callback(title, preface)
 // Take all the elements in a form and put them in a JavaScript object.
 function serialize(form_selector, ajax_message)
 {
-	if(ajax_message === undefined)
+	if (ajax_message === undefined)
+	{
 		ajax_message = {};
+	}
 	let form_values = $(form_selector).serializeArray();
 	for(let c = 0; c < form_values.length; c++)
 		ajax_message[form_values[c].name] = form_values[c].value;
@@ -197,7 +213,9 @@ function ajax_get(url, contents, success_callback, failure_callback, always_call
 function ajax_post(url, contents, success_callback, failure_callback, always_callback, traditional_serialization)
 {
 	if(contents === undefined)
+	{
 		contents = {};
+	}
 	//noinspection JSUnresolvedFunction
 	contents.csrfmiddlewaretoken = csrf_token();
 	ajax_message(url, "POST", contents, success_callback, failure_callback, always_callback, traditional_serialization)
@@ -213,11 +231,17 @@ function ajax_message(url, type, contents, success_callback, failure_callback, a
 	};
 	let message = jQuery.ajax(url, options);
 	if(success_callback !== undefined)
+	{
 		message.done(success_callback);
+	}
 	if(failure_callback !== undefined)
+	{
 		message.fail(failure_callback);
+	}
 	if(always_callback !== undefined)
+	{
 		message.always(always_callback);
+	}
 }
 
 //noinspection JSUnusedGlobalSymbols
@@ -259,16 +283,22 @@ function add_to_list(list_selector, on_click, id, text, removal_title, input_nam
 		'<input type="hidden" name="' + input_name + '" value="' + id + '"><br>' +
 		'</div>';
 	if($(list_selector).find('input').length === 0) // If the list is empty then replace the empty message with the list item.
+	{
 		$(list_selector).html(addition);
+	}
 	else if($(div_id_selector).length === 0) // Only add the element if it's not already in the list.
+	{
 		$(list_selector).append(addition);
+	}
 }
 
 function remove_from_list(list_selector, div_id_selector, emptyMessage)
 {
 	$(list_selector + " > " + div_id_selector).remove();
 	if($(list_selector).find('input').length === 0) // If the list is empty then replace it with the empty message.
+	{
 		$(list_selector).html(emptyMessage);
+	}
 }
 
 // From http://twitter.github.io/typeahead.js/examples/
@@ -326,9 +356,13 @@ function matcher(items, search_fields)
 			{
 				let result = data['name'];
 				if(data['type'])
+				{
 					result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'] + '</span>';
+				}
 				if(data['application_identifier'])
+				{
 					result += '<span style="font-size:small; font-weight:bold; color:#bbbbbb" class="pull-right">' + data['application_identifier'] + '</span>';
+				}
 				return result;
 			}
 		};
@@ -356,5 +390,7 @@ function matcher(items, search_fields)
 function navigate_to_login_on_session_expiration(event, xhr, status, error)
 {
 	if(xhr.status === 403)
+	{
 		window.location.href = '/logout/';
+	}
 }

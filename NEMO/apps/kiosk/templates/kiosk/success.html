@@ -14,7 +14,7 @@
 {% if new_reservation %}
 	<h2>Reservation confirmed!</h2>
 	<div class="alert alert-success" role="alert">
-		<strong>{{ new_reservation.tool }}</strong><br>
+		<strong>{{ new_reservation.reservation_item }}</strong><br>
 		{{ new_reservation.start|date:"l, F jS" }}<br>
 		Starting {{ new_reservation.start|time }}<br>
 		Ending {{ new_reservation.end|time }}<br>

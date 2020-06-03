@@ -19,7 +19,7 @@ from NEMO.utilities import extract_times, quiet_int
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import DynamicForm
-from NEMO.widgets.tool_tree import ToolTree
+from NEMO.widgets.item_tree import ItemTree
 
 tool_control_logger = getLogger(__name__)
 
@@ -39,7 +39,7 @@ def tool_control(request, tool_id=None):
 	}
 	# The tool-choice sidebar only needs to be rendered for desktop devices, not mobile devices.
 	if request.device == 'desktop':
-		dictionary['rendered_tool_tree_html'] = ToolTree().render(None, {'tools': tools, 'user':request.user})
+		dictionary['rendered_item_tree_html'] = ItemTree().render(None, {'tools': tools, 'user':request.user})
 	return render(request, 'tool_control/tool_control.html', dictionary)
 
 

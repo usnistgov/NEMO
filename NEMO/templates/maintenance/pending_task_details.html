@@ -26,7 +26,7 @@
 			</div>
 		{% endif %}
 	{% endif %}
-	<a href="{% url 'calendar' task.tool.id %}" class="btn btn-default" target="_blank">
+	<a href="{% url 'calendar' item_type='tool' item_id=task.tool.id %}" class="btn btn-default" target="_blank">
 		<span class="glyphicon glyphicon-share-alt"></span>
 		Calendar
 	</a>

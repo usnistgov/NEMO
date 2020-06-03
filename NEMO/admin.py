@@ -171,6 +171,18 @@ class ToolAdmin(admin.ModelAdmin):
 				obj.nonrequired_resource_set.set(form.cleaned_data['nonrequired_resources'])
 
 
+@register(Area)
+class AreaAdmin(admin.ModelAdmin):
+	list_display = ('name', 'category', 'maximum_capacity', 'reservation_warning')
+	fieldsets = (
+		(None, {'fields': ('name', 'category'),}),
+		('Area access', {'fields': ('requires_reservation', 'welcome_message'),}),
+		('Occupancy', {'fields': ('maximum_capacity', 'count_staff_in_occupancy', 'reservation_warning'),}),
+		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
+		('Policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time',),}),
+	)
+
+
 @register(TrainingSession)
 class TrainingSessionAdmin(admin.ModelAdmin):
 	list_display = ('id', 'trainer', 'trainee', 'tool', 'project', 'type', 'date', 'duration', 'qualified')
@@ -540,5 +552,4 @@ class NotificationAdmin(admin.ModelAdmin):
 
 
 admin.site.register(ResourceCategory)
-admin.site.register(Area)
 admin.site.register(Permission)

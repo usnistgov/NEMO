@@ -70,14 +70,14 @@ label
 	margin: 0;
 }
 
-#tool_tree div, #extra-links div
+.item_tree div, #extra-links div
 {
 	width: 100%;
 	cursor: pointer;
 	font-weight: normal;
 }
 
-#tool_tree div:hover
+.item_tree div:hover
 {
 	background-color: #eeeeee;
 }
@@ -90,6 +90,16 @@ label
 #sidebar .disabled
 {
 	opacity: .4;
+}
+
+#area_tree
+{
+	padding-top: 7px;
+	border-top: 1px dotted slategray;
+	margin-top: 7px;
+	padding-bottom: 7px;
+	border-bottom: 1px dotted slategray;
+	margin-bottom: 7px;
 }
 
 .status-icon

@@ -11,6 +11,7 @@ from django.views.static import serve
 from rest_framework import routers
 
 from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
+from NEMO.views.calendar import ReservationItemType
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,8 @@ router.register(r'usage_events', api.UsageEventViewSet)
 router.register(r'area_access_records', api.AreaAccessRecordViewSet)
 router.register(r'tasks', api.TaskViewSet)
 router.register(r'scheduled_outages', api.ScheduledOutageViewSet)
+
+reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
 
 urlpatterns = [
 	# Authentication & error pages:
@@ -66,7 +69,7 @@ urlpatterns = [
 	url(r'^task_resolution_form/(?P<task_id>\d+)/$', tasks.task_resolution_form, name='task_resolution_form'),
 
 	# Calendar:
-	url(r'^calendar/(?P<tool_id>\d+)/$', calendar.calendar, name='calendar'),
+	url(r'^calendar/'+ reservation_item_types + '/(?P<item_id>\d+)/$', calendar.calendar, name='calendar'),
 	url(r'^calendar/$', calendar.calendar, name='calendar'),
 	url(r'^event_feed/$', calendar.event_feed, name='event_feed'),
 	url(r'^create_reservation/$', calendar.create_reservation, name='create_reservation'),

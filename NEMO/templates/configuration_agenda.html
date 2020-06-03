@@ -24,7 +24,7 @@
 				<thead>
 				<tr style="border:2px solid black" class="info">
 					<th colspan="2" style="text-align:center; font-size:large; border:2px solid black">
-						<a href="{% url 'calendar' tool.id %}" title="View the {{ tool }} calendar" target="_blank">
+						<a href="{% url 'calendar' item_type='tool' item_id=tool.id %}" title="View the {{ tool }} calendar" target="_blank">
 							{{ tool.name }}
 						</a>
 					</th>

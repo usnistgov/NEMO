@@ -16,7 +16,7 @@
 		</button>
 		<ul class="dropdown-menu">
 			<li class="dropdown-header">Which type of events would you like<br>to view on the calendar?</li>
-			<li data-toggle="tooltip" data-placement="right" title="Displays tool reservations. While viewing reservations, the 'Personal schedule' link shows your reservations for all tools. Select a tool to view everyone's reservations for that tool."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Reservations</a></li>
+			<li data-toggle="tooltip" data-placement="right" title="Displays tool/area reservations. While viewing reservations, the 'Personal schedule' link shows your reservations for all tools/areas. Select a tool/area to view everyone's reservations for that tool/area."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Reservations</a></li>
 			<li data-toggle="tooltip" data-placement="right" title="Displays your {{ facility_name }} usage. This includes area access, tool usage, and missed reservations (which are all billable items)."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">{{ facility_name }} usage</a></li>
 			{% if user.is_staff %}
 				<li data-toggle="tooltip" data-placement="right" title="Displays {{ facility_name }} reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Specific user</a></li>
@@ -33,10 +33,10 @@
 
 	{# The following menu tree code was take from an example at http://www.bootply.com/120625 #}
 	<ul id="extra-links" class="nav nav-list" style="margin-top: 10px; margin-bottom: 8px;">
-		<li><a href="javascript:void(0)" class="selected personal_schedule" data-tool-id="personal_schedule" onclick="set_selected_item(this); update_event_sources()">Personal schedule</a></li>
+		<li><a href="javascript:void(0)" class="selected personal_schedule" data-item-id="personal_schedule" onclick="set_selected_item(this); update_event_sources()">Personal schedule</a></li>
 	</ul>
-	{# The tool tree has the HTML ID tag "tool_tree". See the widgets/tool_tree.py file for more information. #}
-	{{ rendered_tool_tree_html }}
+	{# The item tree has the HTML class tag "item_tree". See the widgets/item_tree.py file for more information. #}
+	{{ rendered_item_tree_html }}
 	<div style="height:50px"></div>
 </div>
 
@@ -55,16 +55,16 @@ function set_event_type(text)
 	$("#event_type").html(text);
 }
 
-{# Check which tool we want to display information for and establish the calendar feed. #}
+{# Check which tool/area we want to display information for and establish the calendar feed. #}
 {# This function also checks if the user wishes to display their personal calendar feed (that is, all events #}
-{# specific to them for all tools). #}
+{# specific to them for all tools/areas). #}
 function update_event_sources()
 {
 	{# Remove all event sources from the calendar. #}
 	$("#calendar").fullCalendar("removeEventSource", "{% url 'event_feed' %}");
 
 	var event_type = get_event_type();
-	var tool_event_source =
+	var item_event_source =
 	{
 		url: "{% url 'event_feed' %}",
 		data:
@@ -75,25 +75,34 @@ function update_event_sources()
 
 	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage')
 	{
-		var item = get_selected_item();
+		let item = get_selected_item();
 		if(item === 'personal_schedule')
 		{
-			tool_event_source.color = "#33ad33";
-			{# Use green for calendar events of the user's personal schedule. #}
-			tool_event_source.data.personal_schedule = true;
+			item_event_source.data.personal_schedule = true;
 		}
-		else if(item)
-			tool_event_source.data.tool_id = item;
+		else if(item) {
+		    item = JSON.parse(item)
+            item_event_source.data.item_id = item.id;
+            item_event_source.data.item_type = item.type;
+            if (item.type === 'area')
+			{
+				$($(".fc-scheduledOutage-button")[0]).addClass('fc-state-disabled');
+            }
+            else if (item.type === 'tool')
+			{
+				$($(".fc-scheduledOutage-button")[0]).removeClass('fc-state-disabled');
+            }
+        }
 	}
 	else if(event_type === 'specific user')
 	{
 		if($("#user_search").typeahead('val'))
-			tool_event_source.data.user = $("#user_search").typeahead('val');
+			item_event_source.data.user = $("#user_search").typeahead('val');
 		else
 			return;
 	}
 
-	$("#calendar").fullCalendar("addEventSource", tool_event_source);
+	$("#calendar").fullCalendar("addEventSource", item_event_source);
 
 	refresh_sidebar_icons();
 }
@@ -147,9 +156,9 @@ function submit_event_with_more_information(ajax_post)
 {# This function is called when the user clicks and drags on the calendar to create a reservation. #}
 function create(start, end, jsEvent, view)
 {
-	{# Find out which tool is selected in the tool tree. #}
+	{# Find out which tool/area is selected in the item tree. #}
 	var item = $(".selected");
-	{# Only allow reservations to be created when a tool has been selected. #}
+	{# Only allow reservations to be created when a item has been selected. #}
 	var item_selected = (item != null);
 	{# Only allow selection to proceed when we're in reservation view (instead of usage view). #}
 	var reservation_view = get_event_type() === 'reservations';
@@ -164,14 +173,21 @@ function create(start, end, jsEvent, view)
 	{
 		"start": start.unix(),
 		"end": end.unix(),
-		"tool_name": item.text(),
+        "item_type": item.data('item-type'),
+        "item_id": item.data('item-id'),
 		"csrfmiddlewaretoken": "{{ csrf_token }}"
 	};
 	{# If the user is trying to create a scheduled outage, then put that in the event_properties. #}
 	{# Otherwise, create a reservation (which is the normal case). #}
 	var url;
 	if($('.fc-scheduledOutage-button').html() === "I've finished creating scheduled outages")
+	{
+	    if (item.data('item-type') === 'area') {
+	        $("#calendar").fullCalendar("unselect");
+			return;
+		}
 		url = "{% url 'create_outage' %}";
+	}
 	else
 	{
 		url = "{% url 'create_reservation' %}";
@@ -339,7 +355,9 @@ function reserve_for_someone_else()
 {
 	var proxy_reservation_button = $(".fc-proxyReservation-button")[0];
 	if($(proxy_reservation_button).html() === "Reserve for someone else")
+	{
 		ajax_get('{% url 'proxy_reservation' %}', undefined, reserve_for_someone_else_callback);
+	}
 	else
 	{
 		$(proxy_reservation_button).blur().html("Reserve for someone else");
@@ -381,7 +399,7 @@ function change_calendar_event_type(calling_element)
 	set_event_type(calling_element.text);
 	var expand_collapse = $("#expand-collapse").hide();
 	var tool_search = $("#tool_search").hide();
-	var tool_tree = $("#tool_tree").hide();
+	var item_tree = $(".item_tree").hide();
 	var event_type = get_event_type();
 	var extra_links = $("#extra-links");
 	var user_search = $("#user_search").hide();
@@ -395,7 +413,7 @@ function change_calendar_event_type(calling_element)
 		extra_links.show();
 		expand_collapse.show();
 		tool_search.show();
-		tool_tree.show();
+		item_tree.show();
 		$(proxy_reservation_button).show();
 		$(scheduled_outage_button).show();
 		update_event_sources();
@@ -407,7 +425,7 @@ function change_calendar_event_type(calling_element)
 		extra_links.show();
 		expand_collapse.show();
 		tool_search.show();
-		tool_tree.show();
+		item_tree.show();
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
 		update_event_sources();
@@ -417,7 +435,7 @@ function change_calendar_event_type(calling_element)
 		extra_links.hide();
 		expand_collapse.hide();
 		tool_search.hide();
-		tool_tree.hide();
+		item_tree.hide();
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
 		clear_specific_user();
@@ -442,14 +460,14 @@ function on_load()
 {
 	create_calendar();
 	setInterval(refresh_calendar_and_sidebar, 30000);
-	set_tool_link_callback(update_event_sources);
-	enable_tool_tree_toggling();
+	set_item_link_callback(update_event_sources);
+	enable_item_tree_toggling();
 	$('#tool_search').autocomplete('tools', on_tool_search_selection, {{ tools|json_search_base }});
 	$("#tool_search").focus();
 	load_sidebar_state();
-	$("#tool_tree").show(); {# Tool tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
-	{% if auto_select_tool %}
-		expand_to_tool({{ auto_select_tool }});
+	$(".item_tree").show(); {# Item tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
+	{% if auto_select_item_id %}
+		expand_to_item({{ auto_select_item_id }}, {{ auto_select_item_type }});
 	{% else %}
 		update_event_sources();
 	{% endif %}

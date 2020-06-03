@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import disable_session_expiry_refresh
+from NEMO.models import Area
 from NEMO.views.status_dashboard import create_tool_summary
 
 
@@ -11,4 +12,22 @@ from NEMO.views.status_dashboard import create_tool_summary
 @disable_session_expiry_refresh
 def refresh_sidebar_icons(request):
 	tool_summary = create_tool_summary()
-	return render(request, 'refresh_sidebar_icons.html', {'tool_summary': tool_summary})
+	area_summary = create_area_summary()
+	return render(request, 'refresh_sidebar_icons.html', {'tool_summary': tool_summary, 'area_summary': area_summary})
+
+
+def create_area_summary():
+	areas = Area.objects.filter(requires_reservation=True)
+	result = {}
+	for area in areas:
+		result[area.id] = {
+			'name': area.name,
+			'id': area.id,
+			'maximum_capacity': area.maximum_capacity,
+			'warning_capacity': area.warning_capacity(),
+			'danger_capacity': area.danger_capacity(),
+			'occupancy_count': area.occupancy_count(),
+		}
+	area_summary = list(result.values())
+	area_summary.sort(key=lambda x: x['name'])
+	return area_summary

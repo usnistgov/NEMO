@@ -31,7 +31,8 @@ class ReservationTestCase(TestCase):
 		return {
 			'start':calendar.timegm(start.utctimetuple()),
 			'end':calendar.timegm(end.utctimetuple()),
-			'tool_name':tool_param.name,
+			'item_id':tool_param.id,
+			'item_type':'tool',
 		}
 
 	def test_user_does_not_meet_conditions(self):

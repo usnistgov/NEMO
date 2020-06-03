@@ -23,9 +23,9 @@
 	{% endfor %}
 	{% for x in reservations %}
 	{
-		"title": "Reservation for the {{ x.tool.name }}{% if x.title %}, titled \"{{ x.title }}\"{% endif %}",
+		"title": "Reservation for the {% if x.tool %}{{ x.tool.name }}{% elif x.area %}{{ x.area.name }}{% endif %}{% if x.title %}, titled \"{{ x.title }}\"{% endif %}",
 		"id": {{ x.id }},
-		"color": "#3a87ad",
+		"color": {% if x.tool %}"#3a87ad"{% elif x.area %}"#88B7CD"{% endif %},
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'reservation_details' x.id %}"
@@ -33,9 +33,9 @@
 	{% endfor %}
 	{% for x in missed_reservations %}
 	{
-		"title": "Missed reservation for the {{ x.tool }}",
+		"title": "Missed reservation for the {% if x.tool %}{{ x.tool }}{% elif x.area %}{{ x.area }}{% endif %}",
 		"id": {{ x.id }},
-		"color": "#ff0000",
+		"color": {% if x.tool %}"#ff0000"{% elif x.area %}"#FF6666"{% endif %},
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'reservation_details' x.id %}"

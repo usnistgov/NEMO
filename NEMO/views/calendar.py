@@ -1,6 +1,7 @@
 import io
 from collections import Iterable, defaultdict
 from datetime import timedelta, datetime
+from enum import Enum
 from http import HTTPStatus
 from re import match
 from typing import Union, List
@@ -16,12 +17,26 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory
+from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage
-from NEMO.widgets.tool_tree import ToolTree
+
+
+class ReservationItemType(Enum):
+	TOOL = 'tool'
+	AREA = 'area'
+
+	def get_object_class(self):
+		if self == ReservationItemType.AREA:
+			return Area
+		elif self == ReservationItemType.TOOL:
+			return Tool
+
+	@staticmethod
+	def values():
+		return list(map(lambda c: c.value, ReservationItemType))
 
 
 recurrence_frequency_display = {
@@ -42,17 +57,20 @@ recurrence_frequencies = {
 
 @login_required
 @require_GET
-def calendar(request, tool_id=None):
+def calendar(request, item_type=None, item_id=None):
 	""" Present the calendar view to the user. """
 
 	if request.device == 'mobile':
-		if tool_id:
-			return redirect('view_calendar', tool_id)
+		if item_type and item_type == 'tool' and item_id:
+			return redirect('view_calendar', item_id)
 		else:
 			return redirect('choose_tool', 'view_calendar')
 
 	tools = Tool.objects.filter(visible=True).order_by('_category', 'name')
-	rendered_tool_tree_html = ToolTree().render(None, {'tools': tools, 'user': request.user})
+	areas = Area.objects.filter(requires_reservation=True).order_by('name')
+
+	from NEMO.widgets.item_tree import ItemTree
+	rendered_item_tree_html = ItemTree().render(None, {'tools': tools, 'areas':areas, 'user': request.user})
 
 	calendar_view = get_customization('calendar_view')
 	calendar_first_day_of_week = get_customization('calendar_first_day_of_week')
@@ -62,9 +80,10 @@ def calendar(request, tool_id=None):
 	calendar_start_of_the_day = get_customization('calendar_start_of_the_day')
 
 	dictionary = {
-		'rendered_tool_tree_html': rendered_tool_tree_html,
+		'rendered_item_tree_html': rendered_item_tree_html,
 		'tools': tools,
-		'auto_select_tool': tool_id,
+		'auto_select_item_id': item_id,
+		'auto_select_item_type': item_type,
 		'calendar_view' : calendar_view,
 		'calendar_first_day_of_week' : calendar_first_day_of_week,
 		'calendar_day_column_format' : calendar_day_column_format,
@@ -117,14 +136,19 @@ def reservation_event_feed(request, start, end):
 	events = events.exclude(start__lt=start, end__lt=start)
 	events = events.exclude(start__gt=end, end__gt=end)
 
-	# Filter events that only have to do with the relevant tool.
-	tool = request.GET.get('tool_id')
-	if tool:
-		events = events.filter(tool__id=tool)
-
-		outages = ScheduledOutage.objects.filter(Q(tool=tool) | Q(resource__fully_dependent_tools__in=[tool]))
-		outages = outages.exclude(start__lt=start, end__lt=start)
-		outages = outages.exclude(start__gt=end, end__gt=end)
+	# Filter events that only have to do with the relevant tool/area.
+	item_type = request.GET.get('item_type')
+	if item_type:
+		item_type = ReservationItemType(item_type)
+		item_id = request.GET.get('item_id')
+		if item_id:
+			if item_type == ReservationItemType.TOOL:
+				events = events.filter(tool__id=item_id)
+				outages = ScheduledOutage.objects.filter(Q(tool=item_id) | Q(resource__fully_dependent_tools__in=[item_id]))
+				outages = outages.exclude(start__lt=start, end__lt=start)
+				outages = outages.exclude(start__gt=end, end__gt=end)
+			elif item_type == ReservationItemType.AREA:
+				events = events.filter(area__id=item_id)
 
 	# Filter events that only have to do with the current user.
 	personal_schedule = request.GET.get('personal_schedule')
@@ -148,9 +172,10 @@ def usage_event_feed(request, start, end):
 	usage_events = usage_events.exclude(start__gt=end, end__gt=end)
 
 	# Filter events that only have to do with the relevant tool.
-	tool_id = request.GET.get('tool_id')
-	if tool_id:
-		usage_events = usage_events.filter(tool__id__in=Tool.objects.get(pk=tool_id).get_family_tool_ids())
+	item_id = request.GET.get('item_id')
+	item_type = ReservationItemType(request.GET.get('item_type')) if request.GET.get('item_type') else None
+	if item_id and item_type == ReservationItemType.TOOL:
+		usage_events = usage_events.filter(tool__id__in=Tool.objects.get(pk=item_id).get_family_tool_ids())
 
 	area_access_events = None
 	# Filter events that only have to do with the current user.
@@ -165,8 +190,9 @@ def usage_event_feed(request, start, end):
 	missed_reservations = None
 	if personal_schedule:
 		missed_reservations = Reservation.objects.filter(missed=True, user=request.user)
-	elif tool_id:
-		missed_reservations = Reservation.objects.filter(missed=True, tool=tool_id)
+	elif item_type:
+		reservation_filter = {item_type.value: item_id}
+		missed_reservations = Reservation.objects.filter(missed=True).filter(**reservation_filter)
 	if missed_reservations:
 		missed_reservations = missed_reservations.exclude(start__lt=start, end__lt=start)
 		missed_reservations = missed_reservations.exclude(start__gt=end, end__gt=end)
@@ -219,9 +245,15 @@ def create_reservation(request):
 	""" Create a reservation for a user. """
 	try:
 		start, end = extract_times(request.POST)
+		item_type = request.POST['item_type']
+		item_id = request.POST.get('item_id')
 	except Exception as e:
 		return HttpResponseBadRequest(str(e))
-	tool = get_object_or_404(Tool, name=request.POST.get('tool_name'))
+	return create_item_reservation(request, start, end, ReservationItemType(item_type), item_id)
+
+
+def create_item_reservation(request, start, end, item_type: ReservationItemType, item_id):
+	item = get_object_or_404(item_type.get_object_class(), id=item_id)
 	explicit_policy_override = False
 	if request.user.is_staff:
 		try:
@@ -238,10 +270,11 @@ def create_reservation(request):
 	new_reservation = Reservation()
 	new_reservation.user = user
 	new_reservation.creator = request.user
-	new_reservation.tool = tool
+	# set tool or area
+	setattr(new_reservation, item_type.value, item)
 	new_reservation.start = start
 	new_reservation.end = end
-	new_reservation.short_notice = determine_insufficient_notice(tool, start)
+	new_reservation.short_notice = determine_insufficient_notice(item, start) if item_type == ReservationItemType.TOOL else False
 	policy_problems, overridable = check_policy_to_save_reservation(None, new_reservation, user, explicit_policy_override)
 
 	# If there was a problem in saving the reservation then return the error...
@@ -267,31 +300,40 @@ def create_reservation(request):
 		if new_reservation.project not in new_reservation.user.active_projects():
 			return render(request, 'calendar/project_choice.html', {'active_projects': active_projects})
 
-	configured = (request.POST.get('configured') == "true")
-	# If a reservation is requested and the tool does not require configuration...
-	if not tool.is_configurable():
-		new_reservation.save_and_notify()
-		return reservation_success(request, new_reservation)
+	# Configuration rules only apply to tools
+	if item_type == ReservationItemType.TOOL:
+		configured = (request.POST.get('configured') == "true")
+		# If a reservation is requested and the tool does not require configuration...
+		if not item.is_configurable():
+			new_reservation.save_and_notify()
+			return reservation_success(request, new_reservation)
 
-	# If a reservation is requested and the tool requires configuration that has not been submitted...
-	elif tool.is_configurable() and not configured:
-		configuration_information = tool.get_configuration_information(user=user, start=start)
-		return render(request, 'calendar/configuration.html', configuration_information)
+		# If a reservation is requested and the tool requires configuration that has not been submitted...
+		elif item.is_configurable() and not configured:
+			configuration_information = item.get_configuration_information(user=user, start=start)
+			return render(request, 'calendar/configuration.html', configuration_information)
 
-	# If a reservation is requested and configuration information is present also...
-	elif tool.is_configurable() and configured:
-		new_reservation.additional_information, new_reservation.self_configuration = extract_configuration(request)
-		# Reservation can't be short notice if the user is configuring the tool themselves.
-		if new_reservation.self_configuration:
-			new_reservation.short_notice = False
+		# If a reservation is requested and configuration information is present also...
+		elif item.is_configurable() and configured:
+			new_reservation.additional_information, new_reservation.self_configuration = extract_configuration(request)
+			# Reservation can't be short notice if the user is configuring the tool themselves.
+			if new_reservation.self_configuration:
+				new_reservation.short_notice = False
+			new_reservation.save_and_notify()
+			return reservation_success(request, new_reservation)
+
+	elif item_type == ReservationItemType.AREA:
 		new_reservation.save_and_notify()
-		return reservation_success(request, new_reservation)
+		return HttpResponse()
 
 	return HttpResponseBadRequest("Reservation creation failed because invalid parameters were sent to the server.")
 
 
 def reservation_success(request, reservation: Reservation):
 	""" Checks area capacity and display warning message if capacity is high """
+	# Only applies to tool reservations
+	if not reservation.tool:
+		return HttpResponse()
 	max_area_overlap, max_location_overlap = (0,0)
 	max_area_time, max_location_time = (None, None)
 	area = reservation.tool.requires_area_access
@@ -299,7 +341,7 @@ def reservation_success(request, reservation: Reservation):
 	if area and area.reservation_warning:
 		overlapping_reservations_in_same_area = Reservation.objects.filter(cancelled=False, end__gte=reservation.start, start__lte=reservation.end, tool__in=Tool.objects.filter(_requires_area_access=area))
 		max_area_overlap, max_area_time = maximum_overlap_users(overlapping_reservations_in_same_area)
-		if reservation.tool.location:
+		if location:
 			overlapping_reservations_in_same_location = overlapping_reservations_in_same_area.filter(tool__in=Tool.objects.filter(_location=location))
 			max_location_overlap, max_location_time = maximum_overlap_users(overlapping_reservations_in_same_location)
 	if max_area_overlap and max_area_overlap >= area.warning_capacity():
@@ -490,11 +532,12 @@ def modify_reservation(request, start_delta, end_delta):
 	if new_reservation.self_configuration:
 		# Reservation can't be short notice since the user is configuring the tool themselves.
 		new_reservation.short_notice = False
-	else:
+	elif new_reservation.tool:
 		new_reservation.short_notice = determine_insufficient_notice(reservation_to_cancel.tool, new_reservation.start)
 	# A change in end time will always be provided for reservation move and resize operations.
 	new_reservation.end = reservation_to_cancel.end + end_delta
 	new_reservation.tool = reservation_to_cancel.tool
+	new_reservation.area = reservation_to_cancel.area
 	new_reservation.project = reservation_to_cancel.project
 	new_reservation.user = reservation_to_cancel.user
 	new_reservation.creation_time = now
@@ -712,6 +755,7 @@ def cancel_unused_reservations(request):
 	if not get_media_file_contents('missed_reservation_email.html'):
 		return HttpResponseNotFound('The missed reservation email template has not been customized for your organization yet. Please visit the customization page to upload a template, then missed email notifications can be sent.')
 
+	# Missed Tool Reservations
 	tools = Tool.objects.filter(visible=True, _operational=True, _missed_reservation_threshold__isnull=False)
 	missed_reservations = []
 	for tool in tools:
@@ -729,6 +773,25 @@ def cancel_unused_reservations(request):
 				continue
 			# If there was no tool enable or disable event since the threshold timestamp then we assume the reservation has been missed.
 			if not (UsageEvent.objects.filter(tool_id__in=tool.get_family_tool_ids(), start__gte=threshold).exists() or UsageEvent.objects.filter(tool_id__in=tool.get_family_tool_ids(), end__gte=threshold).exists()):
+				# Mark the reservation as missed and notify the user & staff.
+				r.missed = True
+				r.save()
+				missed_reservations.append(r)
+
+	# Missed Area Reservations
+	areas = Area.objects.filter(missed_reservation_threshold__isnull=False)
+	for area in areas:
+		# Calculate the timestamp of how long a user can be late for a reservation.
+		threshold = (timezone.now() - timedelta(minutes=area.missed_reservation_threshold))
+		threshold = datetime.replace(threshold, second=0, microsecond=0)  # Round down to the nearest minute.
+		# Find the reservations that began exactly at the threshold.
+		reservation = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, area=area, user__is_staff=False, start=threshold, end__gt=timezone.now())
+		for r in reservation:
+			# Staff may abandon reservations.
+			if r.user.is_staff:
+				continue
+			# if there was no area access starting or ending since the threshold timestamp then we assume the reservation was missed
+			if not (AreaAccessRecord.objects.filter(area__id=area.id, customer=r.user, start__gte=threshold).exists() or AreaAccessRecord.objects.filter(area__id=area.id, customer=r.user, end__gte=threshold).exists()):
 				# Mark the reservation as missed and notify the user & staff.
 				r.missed = True
 				r.save()
@@ -824,7 +887,8 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	now = datetime.now().strftime('%Y%m%dT%H%M%S')
 	start = reservation.start.astimezone(timezone.get_current_timezone()).strftime('%Y%m%dT%H%M%S')
 	end = reservation.end.astimezone(timezone.get_current_timezone()).strftime('%Y%m%dT%H%M%S')
-	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'SUMMARY:[{site_title}] {reservation.tool.name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
+	reservation_name = reservation.area.name if reservation.area else reservation.tool.name
+	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
 	ics = io.StringIO('')
 	ics.writelines(lines)
 	ics.seek(0)
