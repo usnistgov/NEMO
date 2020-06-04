@@ -337,7 +337,7 @@ def reservation_success(request, reservation: Reservation):
 			'max_area_count': max_area_overlap,
 			'max_location_count': max_location_overlap,
 			'max_area_time': max(max_area_time, reservation.start),
-			'max_location_time': max(max_location_time, reservation.start),
+			'max_location_time': max(max_location_time, reservation.start) if max_location_time else None,
 		}
 		return render(request, 'calendar/reservation_warning.html', dictionary, status=201) # send 201 code CREATED to indicate success but with more information to come
 	else:
@@ -902,9 +902,9 @@ def maximum_overlap_users(reservations: List[Reservation]) -> (int, datetime):
 	# Now let's count the maximum overlapping reservations
 	times = []
 	for interval in merged_intervals:
-		startTime, endTime = interval[0], interval[1]
-		times.append((startTime, 'start'))
-		times.append((endTime, 'end'))
+		start_time, end_time = interval[0], interval[1]
+		times.append((start_time, 'start'))
+		times.append((end_time, 'end'))
 	times = sorted(times)
 
 	count = 0
