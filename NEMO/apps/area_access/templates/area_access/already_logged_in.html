@@ -1,5 +1,11 @@
 <h1>According to our records, you're already logged into the {{ area|lower }} under the project named {{ project }}.</h1>
+{% if max_capacity_reached %}
+	<h2>However, this area has reached its maximum occupancy</h2>
+{% elif reservation_requirement_failed %}
+	<h2>However, you cannot enter since you don't have a current reservation for this area.</h2>
+{% endif %}
 <h2>Please visit the {{ facility_name}} staff if you believe this is an error.</h2>
+{% if not reservation_requirement_failed and not max_capacity_reached %}
 <h2>What would you like to do?</h2>
 <p>
 	<a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="revert_to_default_content()">
@@ -11,6 +17,7 @@
 		Open the door and keep me logged in
 	</a>
 </p>
+{% endif %}
 <p>
 	<a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="exit_area({{ badge_number }})">
 		Log out of the {{ area|lower }}

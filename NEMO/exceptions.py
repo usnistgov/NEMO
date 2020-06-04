@@ -87,3 +87,9 @@ class MaximumCapacityReachedError(UserAccessError):
 		self.area = area
 		details = f"This user was denied access to this area [{area}] because the area's maximum capacity of [{area.maximum_capacity}] has been reached"
 		super(MaximumCapacityReachedError, self).__init__(user=user, msg=details)
+
+class ReservationRequiredUserError(UserAccessError):
+	def __init__(self, user: User, area: Area):
+		self.area = area
+		details = f"This user was denied access to this area [{area}] because the user doesn't have a current reservation for that area"
+		super(ReservationRequiredUserError, self).__init__(user=user, msg=details)

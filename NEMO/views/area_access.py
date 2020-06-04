@@ -14,7 +14,7 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, UserAccessError, \
 	InactiveUserError, NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError, \
-	MaximumCapacityReachedError
+	MaximumCapacityReachedError, ReservationRequiredUserError
 from NEMO.models import Area, AreaAccessRecord, Project, User, PhysicalAccessLevel
 
 from NEMO.utilities import parse_start_and_end_date
@@ -94,6 +94,9 @@ def new_area_access_record(request):
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except MaximumCapacityReachedError:
 			dictionary['error_message'] = 'The {} is inaccessible because it has reached its maximum capacity. Wait for somebody to exit and try again.'.format(area.name.lower())
+			return render(request, 'area_access/new_area_access_record.html', dictionary)
+		except ReservationRequiredUserError:
+			dictionary['error_message'] = 'You do not have a current reservation for the {}. Please make a reservation before trying to access this area.'.format(area.name.lower())
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		if user.billing_to_project():
 			dictionary['error_message'] = '{} is already billing area access to another area. The user must log out of that area before entering another.'.format(user)
@@ -217,6 +220,9 @@ def self_log_in(request):
 			return render(request, 'area_access/self_login.html', dictionary)
 		except MaximumCapacityReachedError as error:
 			dictionary['area_error_message'] = f'The {error.area.name} is inaccessible because it has reached its maximum capacity. Wait for somebody to exit and try again.'
+			return render(request, 'area_access/self_login.html', dictionary)
+		except ReservationRequiredUserError as error:
+			dictionary['area_error_message'] = f'You do not have a current reservation for the {error.area.name}. Please make a reservation before trying to access this area.'
 			return render(request, 'area_access/self_login.html', dictionary)
 		except:
 			dictionary['area_error_message'] = "unexpected error"

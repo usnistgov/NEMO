@@ -7,7 +7,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
-	MaximumCapacityReachedError
+	MaximumCapacityReachedError, ReservationRequiredUserError
 from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent
 from NEMO.tasks import postpone
 from NEMO.views.customization import get_customization
@@ -79,6 +79,7 @@ def login_to_area(request, door_id):
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	max_capacity_reached = False
+	reservation_requirement_failed = False
 	# Check policy to enter this area
 	try:
 		check_policy_to_enter_this_area(area=door.area, user=user)
@@ -99,16 +100,32 @@ def login_to_area(request, door_id):
 		# deal with this error after checking if the user is already logged in
 		max_capacity_reached = True
 
+	except ReservationRequiredUserError:
+		# deal with this error after checking if the user is already logged in
+		reservation_requirement_failed = True
+
 	current_area_access_record = user.area_access_record()
 	if current_area_access_record and current_area_access_record.area == door.area:
 		# No log entry necessary here because all validation checks passed.
 		# The log entry is captured when the subsequent choice is made by the user.
-		return render(request, 'area_access/already_logged_in.html', {'area': door.area, 'project': current_area_access_record.project, 'badge_number': user.badge_number})
+		return render(request, 'area_access/already_logged_in.html', {
+			'area': door.area,
+			'project': current_area_access_record.project,
+			'badge_number': user.badge_number,
+			'reservation_requirement_failed': reservation_requirement_failed,
+			'max_capacity_reached': max_capacity_reached,
+		})
 
 	if max_capacity_reached:
-		log.details = f"This area has reached its maximum capacity of {door.area} people at a time."
+		log.details = f"The user was blocked from entering this area because this area has reached its maximum capacity of {door.area} people at a time."
 		log.save()
 		message = "This area has reached its maximum capacity. Please wait for somebody to leave and try again."
+		return render(request, 'area_access/physical_access_denied.html', {'message': message})
+
+	if reservation_requirement_failed:
+		log.details = f"The user was blocked from entering this area because the user does not have a current reservation for the {door.area}."
+		log.save()
+		message = "You do not have a current reservation for this area. Please make a reservation before trying to access this area."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	previous_area = None
