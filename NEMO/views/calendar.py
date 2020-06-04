@@ -17,26 +17,11 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area
+from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area, ReservationItemType
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage
-
-
-class ReservationItemType(Enum):
-	TOOL = 'tool'
-	AREA = 'area'
-
-	def get_object_class(self):
-		if self == ReservationItemType.AREA:
-			return Area
-		elif self == ReservationItemType.TOOL:
-			return Tool
-
-	@staticmethod
-	def values():
-		return list(map(lambda c: c.value, ReservationItemType))
 
 
 recurrence_frequency_display = {
@@ -331,15 +316,16 @@ def create_item_reservation(request, start, end, item_type: ReservationItemType,
 
 def reservation_success(request, reservation: Reservation):
 	""" Checks area capacity and display warning message if capacity is high """
-	# Only applies to tool reservations
-	if not reservation.tool:
-		return HttpResponse()
 	max_area_overlap, max_location_overlap = (0,0)
 	max_area_time, max_location_time = (None, None)
-	area = reservation.tool.requires_area_access
-	location = reservation.tool.location
+	area: Area = reservation.tool.requires_area_access if reservation.reservation_item_type == ReservationItemType.TOOL else reservation.area
+	location = reservation.tool.location if reservation.reservation_item_type == ReservationItemType.TOOL else None
 	if area and area.reservation_warning:
-		overlapping_reservations_in_same_area = Reservation.objects.filter(cancelled=False, end__gte=reservation.start, start__lte=reservation.end, tool__in=Tool.objects.filter(_requires_area_access=area))
+		overlapping_reservations_in_same_area = Reservation.objects.filter(cancelled=False, end__gte=reservation.start, start__lte=reservation.end)
+		if reservation.reservation_item_type == ReservationItemType.TOOL:
+			overlapping_reservations_in_same_area = overlapping_reservations_in_same_area.filter(tool__in=Tool.objects.filter(_requires_area_access=area))
+		elif reservation.reservation_item_type == ReservationItemType.AREA:
+			overlapping_reservations_in_same_area = overlapping_reservations_in_same_area.filter(area=area)
 		max_area_overlap, max_area_time = maximum_overlap_users(overlapping_reservations_in_same_area)
 		if location:
 			overlapping_reservations_in_same_location = overlapping_reservations_in_same_area.filter(tool__in=Tool.objects.filter(_location=location))

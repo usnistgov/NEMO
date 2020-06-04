@@ -3,8 +3,7 @@ from typing import List
 from django.forms import Widget
 from django.utils.safestring import mark_safe
 
-from NEMO.models import User, Tool, Area
-from NEMO.views.calendar import ReservationItemType
+from NEMO.models import User, Tool, Area, ReservationItemType
 
 
 class ItemTree(Widget):

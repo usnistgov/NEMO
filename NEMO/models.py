@@ -2,6 +2,8 @@ import datetime
 import os
 import sys
 from datetime import timedelta
+from enum import Enum
+from typing import Union
 
 from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
@@ -17,6 +19,21 @@ from django.utils import timezone
 from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
+
+
+class ReservationItemType(Enum):
+	TOOL = 'tool'
+	AREA = 'area'
+
+	def get_object_class(self):
+		if self == ReservationItemType.AREA:
+			return Area
+		elif self == ReservationItemType.TOOL:
+			return Tool
+
+	@staticmethod
+	def values():
+		return list(map(lambda c: c.value, ReservationItemType))
 
 
 class CalendarDisplay(models.Model):
@@ -898,11 +915,31 @@ class Reservation(CalendarDisplay):
 	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
 
 	@property
-	def reservation_item(self):
+	def reservation_item(self) -> Union[Tool, Area]:
 		if self.tool:
 			return self.tool
 		elif self.area:
 			return self.area
+
+	@reservation_item.setter
+	def reservation_item(self, item):
+		if isinstance(item, Tool):
+			self.tool = item
+		elif isinstance(item, Area):
+			self.area = item
+		else:
+			raise AttributeError(f"This item [{item}] isn't allowed on reservations.")
+
+	@property
+	def reservation_item_type(self) -> ReservationItemType:
+		if self.tool:
+			return ReservationItemType.TOOL
+		elif self.area:
+			return ReservationItemType.AREA
+
+	@property
+	def reservation_item_filter(self):
+		return {self.reservation_item_type.value: self.reservation_item}
 
 	def duration(self):
 		return self.end - self.start

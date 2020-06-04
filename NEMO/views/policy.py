@@ -1,4 +1,5 @@
 from datetime import timedelta, date
+from typing import Optional, List
 
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -8,7 +9,7 @@ from django.utils import timezone
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
 	MaximumCapacityReachedError
-from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel
+from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, ReservationItemType
 from NEMO.utilities import format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 
@@ -104,11 +105,9 @@ def check_policy_to_disable_tool(tool, operator, downtime):
 	return HttpResponse()
 
 
-def check_policy_to_save_reservation(cancelled_reservation, new_reservation, user, explicit_policy_override):
+def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation], new_reservation: Reservation, user: User, explicit_policy_override: bool):
 	""" Check the reservation creation policy and return a list of policy problems """
 	facility_name = get_customization('facility_name')
-	from NEMO.views.calendar import ReservationItemType
-	item_type = ReservationItemType.AREA if new_reservation.area is not None else ReservationItemType.TOOL
 
 	# The function will check all policies. Policy problems are placed in the policy_problems list. overridable is True if the policy problems can be overridden by a staff member.
 	policy_problems = []
@@ -118,31 +117,9 @@ def check_policy_to_save_reservation(cancelled_reservation, new_reservation, use
 	if new_reservation.start >= new_reservation.end:
 		policy_problems.append("Reservation start time (" + format_datetime(new_reservation.start) + ") must be before the end time (" + format_datetime(new_reservation.end) + ").")
 
-	# coincident events only apply to tool reservations
-	if item_type == ReservationItemType.TOOL:
-		# The user may not create, move, or resize a reservation to coincide with another user's reservation.
-		coincident_events = Reservation.objects.filter(tool=new_reservation.tool, cancelled=False, missed=False, shortened=False)
-		# Exclude the reservation we're cancelling in order to create a new one:
-		if cancelled_reservation and cancelled_reservation.id:
-			coincident_events = coincident_events.exclude(id=cancelled_reservation.id)
-		# Exclude events for which the following is true:
-		# The event starts and ends before the time-window, and...
-		# The event starts and ends after the time-window.
-		coincident_events = coincident_events.exclude(start__lt=new_reservation.start, end__lte=new_reservation.start)
-		coincident_events = coincident_events.exclude(start__gte=new_reservation.end, end__gt=new_reservation.end)
-		if coincident_events.count() > 0:
-			policy_problems.append("Your reservation coincides with another reservation that already exists. Please choose a different time.")
+	check_coincident_item_reservation_policy(cancelled_reservation, new_reservation, policy_problems)
 
-		# The user may not create, move, or resize a reservation to coincide with a scheduled outage.
-		coincident_events = ScheduledOutage.objects.filter(Q(tool=new_reservation.tool) | Q(resource__fully_dependent_tools__in=[new_reservation.tool]))
-		# Exclude events for which the following is true:
-		# The event starts and ends before the time-window, and...
-		# The event starts and ends after the time-window.
-		coincident_events = coincident_events.exclude(start__lt=new_reservation.start, end__lte=new_reservation.start)
-		coincident_events = coincident_events.exclude(start__gte=new_reservation.end, end__gt=new_reservation.end)
-		if coincident_events.count() > 0:
-			policy_problems.append("Your reservation coincides with a scheduled outage. Please choose a different time.")
-
+	item_type = new_reservation.reservation_item_type
 	# Reservations that have been cancelled may not be changed.
 	if new_reservation.cancelled:
 		policy_problems.append("This reservation has already been cancelled by " + str(new_reservation.cancelled_by) + " at " + format_datetime(new_reservation.cancellation_time) + ".")
@@ -202,27 +179,61 @@ def check_policy_to_save_reservation(cancelled_reservation, new_reservation, use
 	# The reservation start time may not exceed the item's reservation horizon.
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
-	item = getattr(new_reservation, item_type.value)
+	item = new_reservation.reservation_item
 	if item.reservation_horizon is not None:
 		reservation_horizon = timedelta(days=item.reservation_horizon)
 		if new_reservation.start > timezone.now() + reservation_horizon:
 			policy_problems.append("You may not create reservations further than " + str(reservation_horizon.days) + f" days from now for this {item_type.value}.")
 
-
 	# Check item policy rules
 	item_policy_problems = []
-	if should_enforce_policy(item_type, new_reservation):
-		item_policy_problems = check_policy_rules_for_item(item_type, cancelled_reservation, new_reservation, user)
+	if should_enforce_policy(new_reservation):
+		item_policy_problems = check_policy_rules_for_item(cancelled_reservation, new_reservation, user)
 
 	# Return the list of all policies that are not met.
 	return policy_problems + item_policy_problems, overridable
 
 
-def should_enforce_policy(item_type, reservation):
+def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Reservation], new_reservation: Reservation, policy_problems: List):
+	# For tools the user may not create, move, or resize a reservation to coincide with another user's reservation.
+	# For areas, it cannot coincide with another reservation for the same user, or with a number of other users greater than the area capacity
+	coincident_events = Reservation.objects.filter(cancelled=False, missed=False, shortened=False).filter(**new_reservation.reservation_item_filter)
+	# Exclude the reservation we're cancelling in order to create a new one:
+	if cancelled_reservation and cancelled_reservation.id:
+		coincident_events = coincident_events.exclude(id=cancelled_reservation.id)
+	# Exclude events for which the following is true:
+	# The event starts and ends before the time-window, and...
+	# The event starts and ends after the time-window.
+	coincident_events = coincident_events.exclude(start__lt=new_reservation.start, end__lte=new_reservation.start)
+	coincident_events = coincident_events.exclude(start__gte=new_reservation.end, end__gt=new_reservation.end)
+	if new_reservation.reservation_item_type == ReservationItemType.TOOL and coincident_events.count() > 0:
+		policy_problems.append("Your reservation coincides with another reservation that already exists. Please choose a different time.")
+	if new_reservation.reservation_item_type == ReservationItemType.AREA:
+		if coincident_events.filter(user=new_reservation.user).count() > 0:
+			policy_problems.append("You already have a reservation that coincides with this one. Please choose a different time.")
+		if new_reservation.area.maximum_capacity and coincident_events.count() >= new_reservation.area.maximum_capacity:
+			policy_problems.append(f"The {new_reservation.area} is already at its maximum capacity at this time. Please choose a different time.")
+
+	# The user may not create, move, or resize a reservation to coincide with a scheduled outage.
+	if new_reservation.reservation_item_type == ReservationItemType.TOOL:
+		coincident_events = ScheduledOutage.objects.filter(
+			Q(tool=new_reservation.tool) | Q(resource__fully_dependent_tools__in=[new_reservation.tool]))
+	elif new_reservation.reservation_item_type == ReservationItemType.AREA:
+		coincident_events = ScheduledOutage.objects.filter(resource__dependent_areas__in=[new_reservation.area])
+	# Exclude events for which the following is true:
+	# The event starts and ends before the time-window, and...
+	# The event starts and ends after the time-window.
+	coincident_events = coincident_events.exclude(start__lt=new_reservation.start, end__lte=new_reservation.start)
+	coincident_events = coincident_events.exclude(start__gte=new_reservation.end, end__gt=new_reservation.end)
+	if coincident_events.count() > 0:
+		policy_problems.append("Your reservation coincides with a scheduled outage. Please choose a different time.")
+
+
+def should_enforce_policy(reservation: Reservation):
 	""" Returns whether or not the policy rules should be enforced. """
 	should_enforce = True
 
-	item = getattr(reservation, item_type.value)
+	item = reservation.reservation_item
 	start_time = reservation.start.astimezone(timezone.get_current_timezone())
 	end_time = reservation.end.astimezone(timezone.get_current_timezone())
 	if item.policy_off_weekend and start_time.weekday() >= 5 and end_time.weekday() >= 5:
@@ -239,7 +250,7 @@ def should_enforce_policy(item_type, reservation):
 	return should_enforce
 
 
-def check_policy_rules_for_item(item_type, cancelled_reservation, new_reservation, user):
+def check_policy_rules_for_item(cancelled_reservation: Optional[Reservation], new_reservation: Reservation, user: User):
 	item_policy_problems = []
 	# Calculate the duration of the reservation:
 	duration = new_reservation.end - new_reservation.start
@@ -247,7 +258,8 @@ def check_policy_rules_for_item(item_type, cancelled_reservation, new_reservatio
 	# The reservation must be at least as long as the minimum block time for this item.
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
-	item = getattr(new_reservation, item_type.value)
+	item = new_reservation.reservation_item
+	item_type = new_reservation.reservation_item_type
 	if item.minimum_usage_block_time:
 		minimum_block_time = timedelta(minutes=item.minimum_usage_block_time)
 		if duration < minimum_block_time:
@@ -268,7 +280,6 @@ def check_policy_rules_for_item(item_type, cancelled_reservation, new_reservatio
 	# If there is a limit on number of reservations per user per day then verify that the user has not exceeded it.
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
-	reservation_item_filter_dict = {item_type.value: item}
 	if item.maximum_reservations_per_day:
 		start_of_day = new_reservation.start
 		start_of_day = start_of_day.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -352,7 +363,6 @@ def check_policy_to_cancel_reservation(reservation, user):
 
 
 def check_policy_to_create_outage(outage):
-	policy_problems = []
 	# Outages may not have a start time that is earlier than the end time.
 	if outage.start >= outage.end:
 		return "Outage start time (" + format_datetime(outage.start) + ") must be before the end time (" + format_datetime(outage.end) + ")."
