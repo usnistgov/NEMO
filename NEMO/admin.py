@@ -173,7 +173,7 @@ class ToolAdmin(admin.ModelAdmin):
 
 @register(Area)
 class AreaAdmin(admin.ModelAdmin):
-	list_display = ('name', 'category', 'maximum_capacity', 'reservation_warning')
+	list_display = ('name', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning')
 	fieldsets = (
 		(None, {'fields': ('name', 'category'),}),
 		('Area access', {'fields': ('requires_reservation', 'welcome_message'),}),
