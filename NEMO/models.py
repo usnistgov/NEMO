@@ -769,7 +769,7 @@ class StaffCharge(CalendarDisplay):
 class Area(models.Model):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
 	category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
-	welcome_message = models.TextField(help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
+	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login")
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
 	count_staff_in_occupancy = models.BooleanField(default=True, help_text='Indicates that staff users will count towards maximum capacity.')

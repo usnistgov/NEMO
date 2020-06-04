@@ -86,4 +86,9 @@ class Migration(migrations.Migration):
             name='tool',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.Tool'),
         ),
+        migrations.AlterField(
+            model_name='area',
+            name='welcome_message',
+            field=models.TextField(blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.', null=True),
+        ),
     ]
