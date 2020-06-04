@@ -321,7 +321,7 @@ def reservation_success(request, reservation: Reservation):
 	area: Area = reservation.tool.requires_area_access if reservation.reservation_item_type == ReservationItemType.TOOL else reservation.area
 	location = reservation.tool.location if reservation.reservation_item_type == ReservationItemType.TOOL else None
 	if area and area.reservation_warning:
-		overlapping_reservations_in_same_area = Reservation.objects.filter(cancelled=False, end__gte=reservation.start, start__lte=reservation.end)
+		overlapping_reservations_in_same_area = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, end__gte=reservation.start, start__lte=reservation.end)
 		if reservation.reservation_item_type == ReservationItemType.TOOL:
 			overlapping_reservations_in_same_area = overlapping_reservations_in_same_area.filter(tool__in=Tool.objects.filter(_requires_area_access=area))
 		elif reservation.reservation_item_type == ReservationItemType.AREA:

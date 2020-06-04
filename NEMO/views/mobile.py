@@ -44,7 +44,7 @@ def new_reservation(request, tool_id, date=None):
 	dictionary = tool.get_configuration_information(user=request.user, start=None)
 	dictionary['tool'] = tool
 	dictionary['date'] = date
-	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(tool=tool, start__gte=timezone.now()))
+	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(cancelled=False, missed=False, shortened=False, tool=tool, start__gte=timezone.now()))
 
 	return render(request, 'mobile/new_reservation.html', dictionary)
 

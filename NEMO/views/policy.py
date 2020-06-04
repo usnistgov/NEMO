@@ -106,20 +106,33 @@ def check_policy_to_disable_tool(tool, operator, downtime):
 
 
 def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation], new_reservation: Reservation, user: User, explicit_policy_override: bool):
-	""" Check the reservation creation policy and return a list of policy problems """
+	"""
+		Check the reservation creation policy and return a list of policy problems
+		user passed as argument is the person making the reservation (not necessarily the customer)
+	"""
+
 	facility_name = get_customization('facility_name')
 
 	# The function will check all policies. Policy problems are placed in the policy_problems list. overridable is True if the policy problems can be overridden by a staff member.
 	policy_problems = []
 	overridable = False
 
+	item_type = new_reservation.reservation_item_type
+
+	# Tool reservations requiring an area access that requires reservation themselves
+	if item_type == ReservationItemType.TOOL:
+		requires_area_access: Optional[Area] = new_reservation.tool.requires_area_access
+		if requires_area_access and requires_area_access.requires_reservation:
+			# Check that a reservation for the area has been made and contains the start time
+			if not Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=new_reservation.user, area=requires_area_access, start__lte=new_reservation.start, end__gt=new_reservation.start).exists():
+				policy_problems.append(f"This tool requires a {requires_area_access} reservation. Please make a reservation in the {requires_area_access} prior to reserving this tool.")
+
 	# Reservations may not have a start time that is earlier than the end time.
 	if new_reservation.start >= new_reservation.end:
 		policy_problems.append("Reservation start time (" + format_datetime(new_reservation.start) + ") must be before the end time (" + format_datetime(new_reservation.end) + ").")
 
-	check_coincident_item_reservation_policy(cancelled_reservation, new_reservation, policy_problems)
+	check_coincident_item_reservation_policy(cancelled_reservation, new_reservation, user, policy_problems)
 
-	item_type = new_reservation.reservation_item_type
 	# Reservations that have been cancelled may not be changed.
 	if new_reservation.cancelled:
 		policy_problems.append("This reservation has already been cancelled by " + str(new_reservation.cancelled_by) + " at " + format_datetime(new_reservation.cancellation_time) + ".")
@@ -194,7 +207,7 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	return policy_problems + item_policy_problems, overridable
 
 
-def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Reservation], new_reservation: Reservation, policy_problems: List):
+def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Reservation], new_reservation: Reservation, user: User, policy_problems: List):
 	# For tools the user may not create, move, or resize a reservation to coincide with another user's reservation.
 	# For areas, it cannot coincide with another reservation for the same user, or with a number of other users greater than the area capacity
 	coincident_events = Reservation.objects.filter(cancelled=False, missed=False, shortened=False).filter(**new_reservation.reservation_item_filter)
@@ -210,7 +223,10 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 		policy_problems.append("Your reservation coincides with another reservation that already exists. Please choose a different time.")
 	if new_reservation.reservation_item_type == ReservationItemType.AREA:
 		if coincident_events.filter(user=new_reservation.user).count() > 0:
-			policy_problems.append("You already have a reservation that coincides with this one. Please choose a different time.")
+			if new_reservation.user == user:
+				policy_problems.append("You already have a reservation that coincides with this one. Please choose a different time.")
+			else:
+				policy_problems.append(f"{str(new_reservation.user)} already has a reservation that coincides with this one. Please choose a different time.")
 		if new_reservation.area.maximum_capacity and coincident_events.count() >= new_reservation.area.maximum_capacity:
 			policy_problems.append(f"The {new_reservation.area} is already at its maximum capacity at this time. Please choose a different time.")
 
@@ -285,7 +301,7 @@ def check_policy_rules_for_item(cancelled_reservation: Optional[Reservation], ne
 		start_of_day = start_of_day.replace(hour=0, minute=0, second=0, microsecond=0)
 		end_of_day = start_of_day + timedelta(days=1)
 		reservations_for_that_day = Reservation.objects.filter(cancelled=False, shortened=False, start__gte=start_of_day, end__lte=end_of_day, user=user)
-		reservations_for_that_day = reservations_for_that_day.filter(**reservation_item_filter_dict)
+		reservations_for_that_day = reservations_for_that_day.filter(**new_reservation.reservation_item_filter)
 		# Exclude any reservation that is being cancelled.
 		if cancelled_reservation and cancelled_reservation.id:
 			reservations_for_that_day = reservations_for_that_day.exclude(id=cancelled_reservation.id)
@@ -299,18 +315,16 @@ def check_policy_rules_for_item(cancelled_reservation: Optional[Reservation], ne
 	if item.minimum_time_between_reservations:
 		buffer_time = timedelta(minutes=item.minimum_time_between_reservations)
 		must_end_before = new_reservation.start - buffer_time
-		too_close = Reservation.objects.filter(cancelled=False, shortened=False, user=user, end__gt=must_end_before,
-											   start__lt=new_reservation.start)
-		too_close = too_close.filter(**reservation_item_filter_dict)
+		too_close = Reservation.objects.filter(cancelled=False, shortened=False, user=user, end__gt=must_end_before, start__lt=new_reservation.start)
+		too_close = too_close.filter(**new_reservation.reservation_item_filter)
 		if cancelled_reservation and cancelled_reservation.id:
 			too_close = too_close.exclude(id=cancelled_reservation.id)
 		if too_close.exists():
 			item_policy_problems.append(f"Separate reservations for this {item_type.value} that belong to you must be at least " + str(
 				item.minimum_time_between_reservations) + " minutes apart from each other. The proposed reservation ends too close to another reservation.")
 		must_start_after = new_reservation.end + buffer_time
-		too_close = Reservation.objects.filter(cancelled=False, shortened=False, user=user, start__lt=must_start_after,
-											   end__gt=new_reservation.start)
-		too_close = too_close.filter(**reservation_item_filter_dict)
+		too_close = Reservation.objects.filter(cancelled=False, shortened=False, user=user, start__lt=must_start_after, end__gt=new_reservation.start)
+		too_close = too_close.filter(**new_reservation.reservation_item_filter)
 		if cancelled_reservation and cancelled_reservation.id:
 			too_close = too_close.exclude(id=cancelled_reservation.id)
 		if too_close.exists():
@@ -322,7 +336,7 @@ def check_policy_rules_for_item(cancelled_reservation: Optional[Reservation], ne
 	# An explicit policy override allows this rule to be broken.
 	if item.maximum_future_reservation_time:
 		reservations_after_now = Reservation.objects.filter(cancelled=False, user=user, start__gte=timezone.now())
-		reservations_after_now = reservations_after_now.filter(**reservation_item_filter_dict)
+		reservations_after_now = reservations_after_now.filter(**new_reservation.reservation_item_filter)
 		if cancelled_reservation and cancelled_reservation.id:
 			reservations_after_now = reservations_after_now.exclude(id=cancelled_reservation.id)
 		amount_reserved_in_the_future = new_reservation.duration()

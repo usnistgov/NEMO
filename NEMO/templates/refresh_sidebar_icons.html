@@ -1,6 +1,10 @@
 $('#sidebar .sidebar-status-icon').remove();
 $('#sidebar .sidebar-status-occupancy').remove();
 {% for tool in tool_summary %}
+	{% if tool.area_requires_reservation %}
+		$('a[data-item-id={{ tool.id }}][data-item-type=tool]').prepend('<span class="glyphicon glyphicon-calendar sidebar-status-icon" title="This tool requires prior reservation of the {{ tool.area }}"></span> ');
+	{% endif %}
+
 	{% if tool.in_use %}
 		$('a[data-item-id={{ tool.id }}][data-item-type=tool]').append('<span class="glyphicon glyphicon-user primary-highlight sidebar-status-icon" title="{{ tool.user }} is using this tool"></span>');
 	{% endif %}

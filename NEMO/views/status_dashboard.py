@@ -67,6 +67,8 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):
 			'nonrequired_resource_is_unavailable': False,
 			'scheduled_outage': False,
 			'scheduled_partial_outage': False,
+			'area': tool.requires_area_access,
+			'area_requires_reservation': tool.requires_area_access.requires_reservation if tool.requires_area_access else False,
 		}
 	for task in tasks:
 		result[task.tool.id]['problematic'] = True

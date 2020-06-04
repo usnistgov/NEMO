@@ -185,7 +185,7 @@ def tool_reservation(request, tool_id, user_id, back):
 	dictionary['project'] = project
 	dictionary['customer'] = customer
 	dictionary['back'] = back
-	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(tool=tool, start__gte=timezone.now()))
+	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(cancelled=False, missed=False, shortened=False, tool=tool, start__gte=timezone.now()))
 
 	return render(request, 'kiosk/tool_reservation.html', dictionary)
 
