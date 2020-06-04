@@ -612,12 +612,17 @@
 			<div class="panel-body">
 				<h3>Unauthorized tool access email</h3>
 				<p>
-					This email is sent when a user tries to access a tool without being logged in to the area in which the tool resides.
+					This email is sent when a user tries to access a tool:
+					<ul>
+						<li>without being logged in to the area in which the tool resides (type 'area').</li>
+						<li>without having a current area reservation (type 'reservation')</li>
+					</ul>
 					The following context variables are provided when the email is rendered:
 				</p>
 				<ul>
 					<li><b>operator</b> - the person who attempted to use the tool</li>
 					<li><b>tool</b> - the tool that the user was denied access to</li>
+					<li><b>type</b> - the type of abuse ('area' or 'reservation')</li>
 				</ul>
 				<form method="POST" action="{% url 'customize' 'unauthorized_tool_access_email' %}" enctype="multipart/form-data">
 					{% csrf_token %}

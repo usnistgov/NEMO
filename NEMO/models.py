@@ -689,6 +689,9 @@ class Tool(models.Model):
 		except UsageEvent.DoesNotExist:
 			return None
 
+	def requires_area_reservation(self):
+		return self.requires_area_access and self.requires_area_access.requires_reservation
+
 
 class Configuration(models.Model):
 	tool = models.ForeignKey(Tool, help_text="The tool that this configuration option applies to.", on_delete=models.CASCADE)
@@ -823,6 +826,10 @@ class Area(models.Model):
 		if not self.count_staff_in_occupancy:
 			area_occupancy = area_occupancy.filter(customer__is_staff=False)
 		return area_occupancy.count()
+
+	def get_current_reservation_for_user(self, user):
+		if self.requires_reservation:
+			return Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=user, area=self, start__lte=timezone.now(), end__gt=timezone.now())
 
 
 class AreaAccessRecord(CalendarDisplay):

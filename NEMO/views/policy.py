@@ -9,12 +9,12 @@ from django.utils import timezone
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
 	MaximumCapacityReachedError
-from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, ReservationItemType
+from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, ReservationItemType, Tool, Project
 from NEMO.utilities import format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 
 
-def check_policy_to_enable_tool(tool, operator, user, project, staff_charge):
+def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project: Project, staff_charge: bool):
 	"""
 	Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
 	"""
@@ -54,6 +54,7 @@ def check_policy_to_enable_tool(tool, operator, user, project, staff_charge):
 		dictionary = {
 			'operator': operator,
 			'tool': tool,
+			'type': 'access'
 		}
 		abuse_email_address = get_customization('abuse_email_address')
 		message = get_media_file_contents('unauthorized_tool_access_email.html')
@@ -61,6 +62,21 @@ def check_policy_to_enable_tool(tool, operator, user, project, staff_charge):
 			rendered_message = Template(message).render(Context(dictionary))
 			send_mail("Area access requirement", rendered_message, abuse_email_address, [abuse_email_address])
 		return HttpResponseBadRequest("You must be logged in to the {} to operate this tool.".format(tool.requires_area_access.name.lower()))
+
+	# The tool operator may not activate tools in a particular area unless they are still within that area reservation window
+	if not operator.is_staff and tool.requires_area_reservation():
+		if not tool.requires_area_access.get_current_reservation_for_user(operator):
+			dictionary = {
+				'operator': operator,
+				'tool': tool,
+				'type': 'reservation',
+			}
+			abuse_email_address = get_customization('abuse_email_address')
+			message = get_media_file_contents('unauthorized_tool_access_email.html')
+			if abuse_email_address and message:
+				rendered_message = Template(message).render(Context(dictionary))
+				send_mail("Area reservation requirement", rendered_message, abuse_email_address, [abuse_email_address])
+			return HttpResponseBadRequest("You must have a current reservation for the {} to operate this tool.".format(tool.requires_area_access.name.lower()))
 
 	# Staff may only charge staff time for one user at a time.
 	if staff_charge and operator.charging_staff_time():
@@ -119,13 +135,13 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 
 	item_type = new_reservation.reservation_item_type
 
-	# Tool reservations requiring an area access that requires reservation themselves
+	# Some tool reservations require a prior area reservation
 	if item_type == ReservationItemType.TOOL:
-		requires_area_access: Optional[Area] = new_reservation.tool.requires_area_access
-		if requires_area_access and requires_area_access.requires_reservation:
+		if new_reservation.tool.requires_area_reservation():
+			area: Area = new_reservation.tool.requires_area_access
 			# Check that a reservation for the area has been made and contains the start time
-			if not Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=new_reservation.user, area=requires_area_access, start__lte=new_reservation.start, end__gt=new_reservation.start).exists():
-				policy_problems.append(f"This tool requires a {requires_area_access} reservation. Please make a reservation in the {requires_area_access} prior to reserving this tool.")
+			if not Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=new_reservation.user, area=area, start__lte=new_reservation.start, end__gt=new_reservation.start).exists():
+				policy_problems.append(f"This tool requires a {area} reservation. Please make a reservation in the {area} prior to reserving this tool.")
 
 	# Reservations may not have a start time that is earlier than the end time.
 	if new_reservation.start >= new_reservation.end:
