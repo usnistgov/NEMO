@@ -48,8 +48,9 @@ class ItemTree(Widget):
 		tools: List[Tool] = value.get('tools',[])
 		parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
 		for area in areas:
+			area_category = area.category + '/' if area.category else ''
 			is_qualified = (user and user.is_staff) or (user and area in [access.area for access in user.physical_access_levels.all()])
-			area_tree.add(ReservationItemType.AREA, area.category + "/" + area.name, area.id, is_qualified)
+			area_tree.add(ReservationItemType.AREA, area_category + area.name, area.id, is_qualified)
 		for tool in tools:
 			is_qualified = (user and user.is_staff) or (user and tool in user.qualifications.all())
 			tool_tree.add(ReservationItemType.TOOL, tool.category + '/' + tool.name_or_child_in_use_name(parent_ids=parent_ids), tool.id,  is_qualified)
