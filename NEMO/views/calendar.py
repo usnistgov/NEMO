@@ -52,7 +52,7 @@ def calendar(request, item_type=None, item_id=None):
 			return redirect('choose_tool', 'view_calendar')
 
 	tools = Tool.objects.filter(visible=True).order_by('_category', 'name')
-	areas = Area.objects.filter(requires_reservation=True).order_by('name')
+	areas = Area.objects.filter(requires_reservation=True).order_by('category', 'name')
 
 	from NEMO.widgets.item_tree import ItemTree
 	rendered_item_tree_html = ItemTree().render(None, {'tools': tools, 'areas':areas, 'user': request.user})
