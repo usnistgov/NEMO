@@ -124,7 +124,7 @@ def check_policy_to_disable_tool(tool, operator, downtime):
 def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation], new_reservation: Reservation, user: User, explicit_policy_override: bool):
 	"""
 		Check the reservation creation policy and return a list of policy problems
-		user passed as argument is the person making the reservation (not necessarily the customer)
+		The user passed as argument is the person making the reservation (not necessarily the customer)
 	"""
 
 	facility_name = get_customization('facility_name')
@@ -243,7 +243,7 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 				policy_problems.append("You already have a reservation that coincides with this one. Please choose a different time.")
 			else:
 				policy_problems.append(f"{str(new_reservation.user)} already has a reservation that coincides with this one. Please choose a different time.")
-		if new_reservation.area.maximum_capacity and coincident_events.count() >= new_reservation.area.maximum_capacity:
+		if (not new_reservation.user.is_staff or new_reservation.area.count_staff_in_occupancy) and (new_reservation.area.maximum_capacity and coincident_events.count() >= new_reservation.area.maximum_capacity):
 			policy_problems.append(f"The {new_reservation.area} is already at its maximum capacity at this time. Please choose a different time.")
 
 	# The user may not create, move, or resize a reservation to coincide with a scheduled outage.

@@ -737,6 +737,12 @@ def area_access_details(request, event_id):
 @require_GET
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def cancel_unused_reservations(request):
+	"""
+	Missed reservation for tools is when there is no tool activity during the reservation time + missed reservation threshold.
+	Any tool usage will count, since we don't want to charge for missed reservation when users swap reservation or somebody else gets to use the tool.
+
+	Missed reservation for areas is then there is no area access login during the reservation time + missed reservation threshold
+	"""
 	# Exit early if the missed reservation email template has not been customized for the organization yet.
 	if not get_media_file_contents('missed_reservation_email.html'):
 		return HttpResponseNotFound('The missed reservation email template has not been customized for your organization yet. Please visit the customization page to upload a template, then missed email notifications can be sent.')
