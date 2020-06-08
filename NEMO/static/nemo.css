@@ -50,14 +50,21 @@ label
 	padding-right: 0;
 }
 
-#sidebar li.area-category a, #sidebar li.tool-category a
-{
-	padding: 0 4px 0 15px !important;
-}
-
 #sidebar a
 {
-	padding: 0 4px 0 0 !important;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-right: 4px;
+}
+
+#sidebar li.area-category a, #sidebar li.tool-category a
+{
+	padding-left: 15px !important;
+}
+
+#sidebar #tool_tree a, #sidebar #area_tree a
+{
+	padding-left: 0;
 }
 
 #extra-links a
