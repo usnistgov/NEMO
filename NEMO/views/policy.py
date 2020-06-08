@@ -135,14 +135,6 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 
 	item_type = new_reservation.reservation_item_type
 
-	# Some tool reservations require a prior area reservation
-	if item_type == ReservationItemType.TOOL:
-		if new_reservation.tool.requires_area_reservation():
-			area: Area = new_reservation.tool.requires_area_access
-			# Check that a reservation for the area has been made and contains the start time
-			if not Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=new_reservation.user, area=area, start__lte=new_reservation.start, end__gt=new_reservation.start).exists():
-				policy_problems.append(f"This tool requires a {area} reservation. Please make a reservation in the {area} prior to reserving this tool.")
-
 	# Reservations may not have a start time that is earlier than the end time.
 	if new_reservation.start >= new_reservation.end:
 		policy_problems.append("Reservation start time (" + format_datetime(new_reservation.start) + ") must be before the end time (" + format_datetime(new_reservation.end) + ").")
@@ -174,6 +166,22 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	# If there are no blocking policy conflicts at this point, the rest of the policies can be overridden.
 	if not policy_problems:
 		overridable = True
+
+	# Some tool reservations require a prior area reservation
+	# Staff may break this rule.
+	# An explicit policy override allows this rule to be broken.
+	if item_type == ReservationItemType.TOOL:
+		if new_reservation.tool.requires_area_reservation():
+			area: Area = new_reservation.tool.requires_area_access
+			# Check that a reservation for the area has been made and contains the start time
+			if not Reservation.objects.filter(missed=False, cancelled=False, shortened=False,
+											  user=new_reservation.user, area=area,
+											  start__lte=new_reservation.start,
+											  end__gt=new_reservation.start).exists():
+				if new_reservation.user == user:
+					policy_problems.append(f"This tool requires a {area} reservation. Please make a reservation in the {area} prior to reserving this tool.")
+				else:
+					policy_problems.append(f"This tool requires a {area} reservation. Please make sure to also create a reservation in the {area} or {str(new_reservation.user)} will not be able to enter the area.")
 
 	# The user must complete training to create reservations.
 	# Staff may break this rule.
