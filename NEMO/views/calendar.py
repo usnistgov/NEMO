@@ -1,10 +1,9 @@
 import io
 from collections import Iterable, defaultdict
 from datetime import timedelta, datetime
-from enum import Enum
 from http import HTTPStatus
 from re import match
-from typing import Union, List
+from typing import List, Optional
 
 from dateutil import rrule
 from django.contrib.admin.views.decorators import staff_member_required
@@ -260,7 +259,7 @@ def create_item_reservation(request, start, end, item_type: ReservationItemType,
 	new_reservation.start = start
 	new_reservation.end = end
 	new_reservation.short_notice = determine_insufficient_notice(item, start) if item_type == ReservationItemType.TOOL else False
-	policy_problems, overridable = check_policy_to_save_reservation(None, new_reservation, user, explicit_policy_override)
+	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 
 	# If there was a problem in saving the reservation then return the error...
 	if policy_problems:
@@ -527,7 +526,7 @@ def modify_reservation(request, start_delta, end_delta):
 	new_reservation.project = reservation_to_cancel.project
 	new_reservation.user = reservation_to_cancel.user
 	new_reservation.creation_time = now
-	policy_problems, overridable = check_policy_to_save_reservation(reservation_to_cancel, new_reservation, request.user, False)
+	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=reservation_to_cancel, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=False)
 	if policy_problems:
 		return HttpResponseBadRequest(policy_problems[0])
 	else:
@@ -572,7 +571,7 @@ def cancel_reservation(request, reservation_id):
 	reservation = get_object_or_404(Reservation, id=reservation_id)
 
 	reason = parse_parameter_string(request.POST, 'reason')
-	response = cancel_the_reservation(reservation=reservation, user=request.user, reason=reason)
+	response = cancel_the_reservation(reservation=reservation, user_cancelling_reservation=request.user, reason=reason)
 
 	if request.device == 'desktop':
 		return response
@@ -801,23 +800,23 @@ def proxy_reservation(request):
 	return render(request, 'calendar/proxy_reservation.html', {'users': User.objects.filter(is_active=True)})
 
 
-def cancel_the_reservation(reservation: Reservation, user: User, reason: Union[str, None]):
-	response = check_policy_to_cancel_reservation(reservation, user)
+def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation: User, reason: Optional[str]):
+	response = check_policy_to_cancel_reservation(reservation, user_cancelling_reservation)
 	# Staff must provide a reason when cancelling a reservation they do not own.
-	if reservation.user != user and not reason:
+	if reservation.user != user_cancelling_reservation and not reason:
 		response = HttpResponseBadRequest("You must provide a reason when cancelling someone else's reservation.")
 
 	if response.status_code == HTTPStatus.OK:
 		# All policy checks passed, so cancel the reservation.
 		reservation.cancelled = True
 		reservation.cancellation_time = timezone.now()
-		reservation.cancelled_by = user
+		reservation.cancelled_by = user_cancelling_reservation
 
 		if reason:
 			''' don't notify in this case since we are sending a specific email for the cancellation '''
 			reservation.save()
 			dictionary = {
-				'staff_member': user,
+				'staff_member': user_cancelling_reservation,
 				'reservation': reservation,
 				'reason': reason,
 				'template_color': bootstrap_primary_color('info')
@@ -827,9 +826,9 @@ def cancel_the_reservation(reservation: Reservation, user: User, reason: Union[s
 				cancellation_email = Template(email_contents).render(Context(dictionary))
 				if getattr(reservation.user.preferences, 'attach_cancelled_reservation', False):
 					attachment = create_ics_for_reservation(reservation, cancelled=True)
-					reservation.user.email_user('Your reservation was cancelled', cancellation_email, user.email, [attachment])
+					reservation.user.email_user('Your reservation was cancelled', cancellation_email, user_cancelling_reservation.email, [attachment])
 				else:
-					reservation.user.email_user('Your reservation was cancelled', cancellation_email, user.email)
+					reservation.user.email_user('Your reservation was cancelled', cancellation_email, user_cancelling_reservation.email)
 
 		else:
 			''' here the user cancelled his own reservation so notify him '''

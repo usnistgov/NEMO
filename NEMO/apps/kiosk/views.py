@@ -135,7 +135,7 @@ def reserve_tool(request):
 	reservation.start = start
 	reservation.end = end
 	reservation.short_notice = determine_insufficient_notice(tool, start)
-	policy_problems, overridable = check_policy_to_save_reservation(None, reservation, customer, False)
+	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=reservation, user_creating_reservation=customer, explicit_policy_override=False)
 
 	# If there was a problem in saving the reservation then return the error...
 	if policy_problems:
@@ -163,7 +163,7 @@ def cancel_reservation(request, reservation_id):
 	reservation = Reservation.objects.get(id=reservation_id)
 	customer = User.objects.get(id=request.POST['customer_id'])
 
-	response = cancel_the_reservation(reservation=reservation, user=customer, reason=None)
+	response = cancel_the_reservation(reservation=reservation, user_cancelling_reservation=customer, reason=None)
 
 	if response.status_code == HTTPStatus.OK:
 		return render(request, 'kiosk/success.html', {'cancelled_reservation': reservation, 'customer': customer})

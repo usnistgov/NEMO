@@ -68,7 +68,7 @@ def make_reservation(request):
 	reservation.start = start
 	reservation.end = end
 	reservation.short_notice = determine_insufficient_notice(tool, start)
-	policy_problems, overridable = check_policy_to_save_reservation(None, reservation, request.user, False)
+	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=reservation, user_creating_reservation=request.user, explicit_policy_override=False)
 
 	# If there was a problem in saving the reservation then return the error...
 	if policy_problems:
