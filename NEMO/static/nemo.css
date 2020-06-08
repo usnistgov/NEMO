@@ -82,7 +82,8 @@ label
 
 #sidebar fieldset
 {
-	margin-top: 10px;
+	margin-top: 15px;
+	margin-bottom: 5px;
 	border: none;
 	border-top: 1px dotted #c0c0c0;
 }
