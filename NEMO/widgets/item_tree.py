@@ -57,11 +57,13 @@ class ItemTree(Widget):
 		for tool in tools:
 			is_qualified = (user and user.is_staff) or (user and tool in user.qualifications.all())
 			tool_tree.add(ReservationItemType.TOOL, tool.category + '/' + tool.name_or_child_in_use_name(parent_ids=parent_ids), tool.id,  is_qualified)
+
+		legend = True if areas and tools else False
 		result = ""
 		if areas:
-			result += area_tree.render()
+			result += area_tree.render(legend=legend)
 		if tools:
-			result += tool_tree.render()
+			result += tool_tree.render(legend=legend)
 		return mark_safe(result)
 
 
@@ -96,16 +98,18 @@ class ItemTreeHelper:
 			self.children[-1].is_user_qualified = is_user_qualified
 			self.children[-1].item_type = item_type
 
-	def render(self):
+	def render(self, legend=False):
 		"""
 		This function cycles through the root node of the tool/area list and enumerates all the child nodes directly.
 		The function assumes that a tree structure of the tools/areas has already been created by calling 'add(...)' multiple
 		times. A string of unordered HTML lists is returned.
 		"""
-		result = f'<ul class="nav nav-list item_tree" id="{self.item_type.value}_tree" style="display:none">'
+		item_type = f"'{self.item_type.value}'"
+		result = f'<fieldset><legend onclick="toggle_item_categories({item_type})">{self.item_type.value.capitalize()}s</legend>' if legend else ''
+		result += f'<ul class="nav nav-list item_tree" id="{self.item_type.value}_tree" style="display:none">'
 		for child in self.children:
 			result += self.__render_helper(child, '')
-		result += '</ul>'
+		result += '</fieldset></ul>' if legend else '</ul>'
 		return result
 
 	def __render_helper(self, node, result):

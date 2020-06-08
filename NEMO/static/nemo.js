@@ -44,7 +44,7 @@ function expand_to_item(id, type)
 // This function expands all tool category branches for the sidebar in the calendar & tool control pages.
 function expand_all_categories()
 {
-	$(".item_tree ul.tree.area-list").hide();
+	$(".item_tree ul.tree.area-list").show();
 	$(".item_tree ul.tree.tool-list").show();
 	$("#search").focus();
 	save_sidebar_state();
@@ -54,7 +54,22 @@ function expand_all_categories()
 function collapse_all_categories()
 {
 	$(".item_tree ul.tree.tool-list").hide();
-	$(".item_tree ul.tree.area-list").show();
+	$(".item_tree ul.tree.area-list").hide();
+	$("#search").focus();
+	save_sidebar_state();
+}
+
+function toggle_item_categories(item_type)
+{
+	let one_visible = $(".item_tree ul.tree."+item_type+"-list li:visible").length >0;
+	if (one_visible)
+	{
+		$(".item_tree ul.tree."+item_type+"-list").hide();
+	}
+	else
+	{
+		$(".item_tree ul.tree."+item_type+"-list").show();
+	}
 	$("#search").focus();
 	save_sidebar_state();
 }

@@ -80,6 +80,26 @@ label
 	margin: 0;
 }
 
+#sidebar fieldset
+{
+	margin-top: 10px;
+	border: none;
+	border-top: 1px dotted #c0c0c0;
+}
+
+#sidebar fieldset legend
+{
+	color: #333;
+	padding: 0 10px;
+	margin: 0;
+	text-align: center;
+	position: relative;
+	width: initial;
+	border: 1px dotted #c0c0c0;
+	font-size: 16px;
+	cursor: pointer;
+}
+
 .item_tree div, #extra-links div
 {
 	width: 100%;
@@ -100,16 +120,6 @@ label
 #sidebar .disabled
 {
 	opacity: .4;
-}
-
-#area_tree
-{
-	padding-top: 7px;
-	border-top: 1px dotted slategray;
-	margin-top: 7px;
-	padding-bottom: 7px;
-	border-bottom: 1px dotted slategray;
-	margin-bottom: 7px;
 }
 
 .status-icon
