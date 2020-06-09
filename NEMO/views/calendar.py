@@ -266,7 +266,7 @@ def create_item_reservation(request, start, end, item_type: ReservationItemType,
 
 	# If there was a problem in saving the reservation then return the error...
 	if policy_problems:
-		return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': overridable and request.user.is_staff})
+		return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': overridable and request.user.is_staff, 'reservation_action': 'create'})
 
 	# All policy checks have passed.
 
@@ -496,6 +496,11 @@ def modify_reservation(request, start_delta, end_delta):
 		reservation_to_cancel = Reservation.objects.get(pk=request.POST.get('id'))
 	except Reservation.DoesNotExist:
 		return HttpResponseNotFound("The reservation that you wish to modify doesn't exist!")
+	explicit_policy_override = False
+	try:
+		explicit_policy_override = request.POST['explicit_policy_override'] == 'true'
+	except:
+		pass
 	response = check_policy_to_cancel_reservation(reservation_to_cancel, request.user)
 	# Do not move the reservation if the user was not authorized to cancel it.
 	if response.status_code != HTTPStatus.OK:
@@ -529,9 +534,10 @@ def modify_reservation(request, start_delta, end_delta):
 	new_reservation.project = reservation_to_cancel.project
 	new_reservation.user = reservation_to_cancel.user
 	new_reservation.creation_time = now
-	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=reservation_to_cancel, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=False)
+	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=reservation_to_cancel, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 	if policy_problems:
-		return HttpResponseBadRequest(policy_problems[0])
+		reservation_action = "resize" if start_delta is None else "move"
+		return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': overridable and request.user.is_staff, 'reservation_action': reservation_action})
 	else:
 		# All policy checks passed, so save the reservation.
 		new_reservation.save_and_notify()

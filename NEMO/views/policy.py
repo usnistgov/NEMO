@@ -388,7 +388,6 @@ def check_policy_rules_for_item(cancelled_reservation: Optional[Reservation], ne
 	return item_policy_problems
 
 
-
 def check_policy_to_cancel_reservation(reservation, user_cancelling_reservation):
 	"""
 	Checks the reservation deletion policy.
