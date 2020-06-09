@@ -399,7 +399,7 @@ function change_calendar_event_type(calling_element)
 	set_event_type(calling_element.text);
 	var expand_collapse = $("#expand-collapse").hide();
 	var tool_search = $("#tool_search").hide();
-	var item_tree = $(".item_tree").hide();
+	var item_tree = $(".item_tree, .item_tree_fieldset").hide();
 	var event_type = get_event_type();
 	var extra_links = $("#extra-links");
 	var user_search = $("#user_search").hide();
