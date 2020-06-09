@@ -5,7 +5,7 @@ from django.forms import BaseForm, BooleanField, CharField, ChoiceField, DateFie
 from django.forms.utils import ErrorDict
 from django.utils import timezone
 
-from NEMO.models import Account, Alert, Comment, Consumable, ConsumableWithdraw, Project, SafetyIssue, ScheduledOutage, Task, TaskCategory, User, UserPreferences, TaskImages, AlertCategory
+from NEMO.models import Account, Alert, Comment, Consumable, ConsumableWithdraw, Project, SafetyIssue, ScheduledOutage, Task, TaskCategory, User, UserPreferences, TaskImages, AlertCategory, ReservationItemType
 from NEMO.utilities import bootstrap_primary_color, format_datetime
 
 
@@ -213,7 +213,7 @@ class ConsumableWithdrawForm(ModelForm):
 class ReservationAbuseForm(Form):
 	cancellation_horizon = IntegerField(initial=6, min_value=1)
 	cancellation_penalty = IntegerField(initial=10)
-	target = IntegerField(required=False)
+	target = CharField(required=False)
 	start = DateField(initial=timezone.now().replace(day=1).date())
 	end = DateField(initial=timezone.now().date())
 
@@ -228,6 +228,10 @@ class ReservationAbuseForm(Form):
 	def clean_end(self):
 		end = self.cleaned_data['end']
 		return timezone.make_aware(datetime(year=end.year, month=end.month, day=end.day, hour=23, minute=59, second=59, microsecond=999999), timezone.get_current_timezone())
+
+	def get_target(self):
+		target = self.cleaned_data['target'].split('|',1)
+		return ReservationItemType(target[0]), int(target[1])
 
 
 class EmailBroadcastForm(Form):

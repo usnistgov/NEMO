@@ -131,7 +131,7 @@ def reserve_tool(request):
 	reservation.project = project
 	reservation.user = customer
 	reservation.creator = customer
-	reservation.tool = tool
+	reservation.reservation_item = tool
 	reservation.start = start
 	reservation.end = end
 	reservation.short_notice = determine_insufficient_notice(tool, start)

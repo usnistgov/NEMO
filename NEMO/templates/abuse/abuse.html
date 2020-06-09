@@ -43,8 +43,11 @@
 			<div class="col-sm-3">
 				<select id="target" name="target" class="form-control">
 					<option value="">Entire {{ facility_name }}</option>
+					{% for area in areas %}
+						<option value="area|{{ area.id }}">{{ area.name }} (Area)</option>
+					{% endfor %}
 					{% for tool in tools %}
-						<option value="{{ tool.id }}">{{ tool.name }}</option>
+						<option value="tool|{{ tool.id }}">{{ tool.name }}</option>
 					{% endfor %}
 				</select>
 			</div>
