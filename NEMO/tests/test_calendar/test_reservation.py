@@ -263,14 +263,14 @@ class ReservationTestCase(TestCase):
 
 		# test resize to less than original time
 		response = self.client.post(reverse('resize_reservation'), {'delta': -60, 'id': reservation.id}, follow=True)
-		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue('Reservation start time' in response.content.decode())
 		self.assertTrue('must be before the end time' in response.content.decode())
 
 		# test resize to end before now
 		old_resa = Reservation.objects.create(tool=tool, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), creator=consumer, user=consumer, short_notice=False)
 		response = self.client.post(reverse('resize_reservation'), {'delta': -65, 'id': old_resa.id}, follow=True)
-		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue('Reservation start time' in response.content.decode())
 		self.assertTrue('is earlier than the current time' in response.content.decode())
 		old_resa.delete()
@@ -280,8 +280,8 @@ class ReservationTestCase(TestCase):
 		end_reservation = start_reservation + timedelta(hours=1)
 		ScheduledOutage.objects.create(tool=tool, start=start_reservation, end=end_reservation, creator=staff)
 		response = self.client.post(reverse('resize_reservation'), {'delta': 61, 'id': reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Your reservation coincides with a scheduled outage. Please choose a different time.")
+		self.assertEquals(response.status_code, 200)
+		self.assertContains(response, "Your reservation coincides with a scheduled outage. Please choose a different time.")
 
 		# test reduce reservation time by 10 min
 		response = self.client.post(reverse('resize_reservation'), {'delta': -10, 'id': reservation.id}, follow=True)
@@ -331,13 +331,13 @@ class ReservationTestCase(TestCase):
 		self.assertEquals(response.status_code, 404)
 		self.assertEquals(response.content.decode(), "The reservation that you wish to modify doesn't exist!")
 
-		# create a outage and try to move reservation to overlap reservation
+		# create a outage and try to move reservation to overlap outage
 		start_reservation = end + timedelta(hours=1)
 		end_reservation = start_reservation + timedelta(hours=1)
 		ScheduledOutage.objects.create(tool=tool, start=start_reservation, end=end_reservation, creator=staff)
 		response = self.client.post(reverse('move_reservation'), {'delta': 61, 'id': reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Your reservation coincides with a scheduled outage. Please choose a different time.")
+		self.assertEquals(response.status_code, 200)
+		self.assertContains(response, "Your reservation coincides with a scheduled outage. Please choose a different time.")
 
 		# test move reservation 10 min earlier
 		response = self.client.post(reverse('move_reservation'), {'delta': -10, 'id': reservation.id}, follow=True)
