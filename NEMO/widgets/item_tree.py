@@ -4,6 +4,7 @@ from django.forms import Widget
 from django.utils.safestring import mark_safe
 
 from NEMO.models import User, Tool, Area, ReservationItemType
+from NEMO.views.customization import get_customization
 
 
 class ItemTree(Widget):
@@ -48,12 +49,14 @@ class ItemTree(Widget):
 		tools: List[Tool] = value.get('tools',[])
 		parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
 		# We want to remove areas the user doesn't have access to
-		if areas and user:
-			user_accessible_areas = [access.area for access in user.physical_access_levels.all()]
+		display_all_areas = get_customization('calendar_display_not_qualified_areas') == 'enabled'
+		user_accessible_areas = [] if not user else [access.area for access in user.physical_access_levels.all()]
+		if not display_all_areas and areas and user:
 			areas = [area for area in areas if user.is_staff or area in user_accessible_areas]
 		for area in areas:
 			area_category = area.category + '/' if area.category else ''
-			area_tree.add(ReservationItemType.AREA, area_category + area.name, area.id, True)
+			is_qualified = True if not display_all_areas else (user and user.is_staff) or (user and area in user_accessible_areas)
+			area_tree.add(ReservationItemType.AREA, area_category + area.name, area.id, is_qualified)
 		for tool in tools:
 			is_qualified = (user and user.is_staff) or (user and tool in user.qualifications.all())
 			tool_tree.add(ReservationItemType.TOOL, tool.category + '/' + tool.name_or_child_in_use_name(parent_ids=parent_ids), tool.id,  is_qualified)

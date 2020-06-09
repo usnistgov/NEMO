@@ -47,6 +47,7 @@ customizable_key_values = {
 	'calendar_week_column_format': 'ddd M/DD',
 	'calendar_month_column_format': 'ddd',
 	'calendar_start_of_the_day': '07:00:00',
+	'calendar_display_not_qualified_areas': '',
 }
 
 customizable_content = [
@@ -143,6 +144,7 @@ def customize(request, element):
 		set_customization('calendar_day_column_format', request.POST.get('calendar_day_column_format', ''))
 		set_customization('calendar_week_column_format', request.POST.get('calendar_week_column_format', ''))
 		set_customization('calendar_month_column_format', request.POST.get('calendar_month_column_format', ''))
+		set_customization('calendar_display_not_qualified_areas', request.POST.get('calendar_display_not_qualified_areas', ''))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
 	return redirect('customization')
