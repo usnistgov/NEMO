@@ -23,7 +23,7 @@
 	{% endfor %}
 	{% for x in reservations %}
 	{
-		"title": "Reservation for the {% if x.tool %}{{ x.tool.name }}{% elif x.area %}{{ x.area.name }}{% endif %}{% if x.title %}, titled \"{{ x.title }}\"{% endif %}",
+		"title": "Reservation for the {{ x.reservation_item.name }}{% if x.title %}, titled \"{{ x.title }}\"{% endif %}",
 		"id": {{ x.id }},
 		"color": {% if x.tool %}"#3a87ad"{% elif x.area %}"#88B7CD"{% endif %},
 		"start": "{{ x.start|date:"c" }}",
@@ -33,7 +33,7 @@
 	{% endfor %}
 	{% for x in missed_reservations %}
 	{
-		"title": "Missed reservation for the {% if x.tool %}{{ x.tool }}{% elif x.area %}{{ x.area }}{% endif %}",
+		"title": "Missed reservation for the {{ x.reservation_item.name }}",
 		"id": {{ x.id }},
 		"color": {% if x.tool %}"#ff0000"{% elif x.area %}"#FF6666"{% endif %},
 		"start": "{{ x.start|date:"c" }}",

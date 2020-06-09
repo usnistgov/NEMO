@@ -153,6 +153,15 @@ function submit_event_with_more_information(ajax_post)
 		});
 }
 
+function event_render(event, element)
+{
+    if ('tooltip' in event)
+    	element.attr('title', event.tooltip)
+	else if ('title' in event)
+	    element.attr('title', event.title)
+	$(element).tooltip({ container: 'body', delay: { "show": 1000, "hide": 100 }})
+}
+
 {# This function is called when the user clicks and drags on the calendar to create a reservation. #}
 function create(start, end, jsEvent, view)
 {
@@ -325,6 +334,7 @@ function create_calendar()
 		"selectHelper": true,
 		"select": create,
 		"eventResize": resize,
+		"eventRender": event_render,
 		"eventDrop": move,
 		"eventClick": details,
 		"height": $("#calendar").height(),
