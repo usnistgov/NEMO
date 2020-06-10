@@ -32,7 +32,8 @@ def create_area_summary():
 		}
 	for resource in unavailable_resources:
 		for area in resource.dependent_areas.all():
-			result[area.id]['required_resource_is_unavailable'] = True
+			if area.id in result:
+				result[area.id]['required_resource_is_unavailable'] = True
 	area_summary = list(result.values())
 	area_summary.sort(key=lambda x: x['name'])
 	return area_summary
