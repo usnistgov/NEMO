@@ -125,7 +125,7 @@ def customize(request, element):
 		store_media_file(request.FILES.get(element, ''), item[0] + item[1])
 		if item[0] == 'rates':
 			from NEMO.rates import rate_class
-			rate_class.load_rates()
+			rate_class.load_rates(force_reload=True)
 	elif element == 'email_addresses':
 		set_customization('feedback_email_address', request.POST.get('feedback_email_address', ''))
 		set_customization('safety_email_address', request.POST.get('safety_email_address', ''))

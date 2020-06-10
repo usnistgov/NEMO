@@ -44,7 +44,9 @@ class NISTRates(Rates):
 	full_cost_rate_class = 'full cost'
 	shared_cost_rate_class = 'cost shared'
 
-	def load_rates(self):
+	def load_rates(self, force_reload=False):
+		if force_reload:
+			self.rates = None
 		if not self.rates:
 			json_data = None
 			try:
