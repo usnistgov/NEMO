@@ -125,7 +125,7 @@ class ToolAdminForm(forms.ModelForm):
 
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
-	list_display = ('name_display', 'id', '_category', 'visible', 'operational_display', 'problematic', 'is_configurable')
+	list_display = ('name_display', '_category', 'visible', 'operational_display', 'problematic', 'is_configurable', 'id')
 	search_fields = ('name', '_description', '_serial')
 	list_filter = ('visible', '_operational', '_category', '_location')
 	readonly_fields = ('_post_usage_preview',)
@@ -173,7 +173,7 @@ class ToolAdmin(admin.ModelAdmin):
 
 @register(Area)
 class AreaAdmin(admin.ModelAdmin):
-	list_display = ('name', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning')
+	list_display = ('name', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
 	fieldsets = (
 		(None, {'fields': ('name', 'category'),}),
 		('Area access', {'fields': ('requires_reservation', 'welcome_message'),}),
@@ -300,7 +300,7 @@ class UsageEventAdmin(admin.ModelAdmin):
 
 @register(Consumable)
 class ConsumableAdmin(admin.ModelAdmin):
-	list_display = ('name', 'quantity', 'category', 'visible', 'reminder_threshold', 'reminder_email')
+	list_display = ('name', 'quantity', 'category', 'visible', 'reminder_threshold', 'reminder_email', 'id')
 	list_filter = ('visible', 'category')
 
 
