@@ -27,10 +27,10 @@ function toggle_branch()
 	$(this).parent().children('ul.tree').toggle(300, save_sidebar_state);
 }
 
-function on_tool_search_selection(jquery_event, search_selection, dataset_name)
+function on_item_search_selection(jquery_event, search_selection, dataset_name)
 {
-	$('#tool_search').typeahead('val', '');
-	expand_to_item(search_selection.id, 'tool');
+	$('#item_search').typeahead('val', '');
+	expand_to_item(search_selection.id, search_selection.type ? search_selection.type : 'tool');
 }
 
 // This function toggles all parent categories of a tool/area and selects the tool.

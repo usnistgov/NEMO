@@ -68,7 +68,8 @@ def calendar(request, item_type=None, item_id=None):
 
 	dictionary = {
 		'rendered_item_tree_html': rendered_item_tree_html,
-		'tools': tools,
+		'tools': list(tools),
+		'areas': list(areas),
 		'auto_select_item_id': item_id,
 		'auto_select_item_type': item_type,
 		'calendar_view' : calendar_view,

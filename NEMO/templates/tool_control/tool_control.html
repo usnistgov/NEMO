@@ -23,7 +23,7 @@
 				<button type="button" class="btn btn-default" style="width:50%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon glyphicon-resize-full"></span></button>
 				<button type="button" class="btn btn-default" style="width:50%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon glyphicon-resize-small"></span></button>
 			</div>
-			<input type="text" id="tool_search" placeholder="Search for a tool" class="form-control sidebar-item">
+			<input type="text" id="item_search" placeholder="Search for a tool" class="form-control sidebar-item">
 			{{ rendered_item_tree_html }}
 			<div style="height:50px"></div>
 		</div>
@@ -212,8 +212,8 @@
 			{% if device == 'desktop' %}
 				set_item_link_callback(refresh_tool_status);
 				enable_item_tree_toggling();
-				$('#tool_search').autocomplete('tools', on_tool_search_selection, {{ tools|json_search_base }});
-				$("#tool_search").focus();
+				$('#item_search').autocomplete('tools', on_item_search_selection, {{ tools|json_search_base }});
+				$("#item_search").focus();
 				load_sidebar_state();
 				$(".item_tree").show();
 				{# Tool tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}

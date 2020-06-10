@@ -27,7 +27,7 @@
 		<button type="button" class="btn btn-default" style="width:50%" onclick="expand_all_categories()" title="Expand all tool categories"><span class="glyphicon glyphicon-resize-full"></span></button>
 		<button type="button" class="btn btn-default" style="width:50%" onclick="collapse_all_categories()" title="Collapse all tool categories"><span class="glyphicon glyphicon-resize-small"></span></button>
 	</div>
-	<input type="text" id="tool_search" placeholder="Search for a tool" class="form-control sidebar-item" autocomplete="off">
+	<input type="text" id="item_search" placeholder="Search for{% if tools %} a tool{% endif %}{% if tools and areas %} or{% endif %}{% if areas %} an area{% endif %}" class="form-control sidebar-item" autocomplete="off">
 	<input type="text" id="user_search" placeholder="Search for a user" class="form-control sidebar-item" autocomplete="off" style="display:none">
 	<button id="chosen_user_button" type="button" class="btn btn-default" style="width:100%; display:none" onclick="clear_specific_user()"></button>
 
@@ -428,7 +428,7 @@ function change_calendar_event_type(calling_element)
 {
 	set_event_type(calling_element.text);
 	var expand_collapse = $("#expand-collapse").hide();
-	var tool_search = $("#tool_search").hide();
+	var item_search = $("#item_search").hide();
 	var item_tree = $(".item_tree, .item_tree_fieldset").hide();
 	var event_type = get_event_type();
 	var extra_links = $("#extra-links");
@@ -442,7 +442,7 @@ function change_calendar_event_type(calling_element)
 		chosen_user_button.hide();
 		extra_links.show();
 		expand_collapse.show();
-		tool_search.show();
+		item_search.show();
 		item_tree.show();
 		$(proxy_reservation_button).show();
 		$(scheduled_outage_button).show();
@@ -454,7 +454,7 @@ function change_calendar_event_type(calling_element)
 		chosen_user_button.hide();
 		extra_links.show();
 		expand_collapse.show();
-		tool_search.show();
+		item_search.show();
 		item_tree.show();
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
@@ -464,7 +464,7 @@ function change_calendar_event_type(calling_element)
 	{
 		extra_links.hide();
 		expand_collapse.hide();
-		tool_search.hide();
+		item_search.hide();
 		item_tree.hide();
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
@@ -492,8 +492,8 @@ function on_load()
 	setInterval(refresh_calendar_and_sidebar, 30000);
 	set_item_link_callback(update_event_sources);
 	enable_item_tree_toggling();
-	$('#tool_search').autocomplete('tools', on_tool_search_selection, {{ tools|json_search_base }});
-	$("#tool_search").focus();
+	$('#item_search').autocomplete('items', on_item_search_selection, {% json_search_base_with_extra_fields tools|add:areas %});
+	$("#item_search").focus();
 	load_sidebar_state();
 	$(".item_tree").show(); {# Item tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
 	{% if auto_select_item_id %}
