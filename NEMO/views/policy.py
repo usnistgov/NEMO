@@ -188,9 +188,9 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	# An explicit policy override allows this rule to be broken.
 	if user.training_required:
 		if user == user_creating_reservation:
-			policy_problems.append(f"You are blocked from making reservations for all tools in the {facility_name}. Please complete the {facility_name} rules tutorial in order to create new reservations.")
+			policy_problems.append(f"You are blocked from making reservations in the {facility_name}. Please complete the {facility_name} rules tutorial in order to create new reservations.")
 		else:
-			policy_problems.append(f"{str(user)} is blocked from making reservations for all tools in the {facility_name}. The user needs to complete the {facility_name} rules tutorial in order to create new reservations.")
+			policy_problems.append(f"{str(user)} is blocked from making reservations in the {facility_name}. The user needs to complete the {facility_name} rules tutorial in order to create new reservations.")
 
 	# Users may only change their own reservations.
 	# Staff may break this rule.
@@ -218,6 +218,15 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 			policy_problems.append("You are not qualified to use this tool. Creating, moving, and resizing reservations is forbidden.")
 		else:
 			policy_problems.append(f"{str(user)} is not qualified to use this tool. Creating, moving, and resizing reservations is forbidden.")
+
+	# The user must be authorized on the area in question in order to create, move, or resize a reservation.
+	# Staff may break this rule.
+	# An explicit policy override allows this rule to be broken.
+	if new_reservation.area and new_reservation.area not in [access.area for access in user.physical_access_levels.all()]:
+		if user == user_creating_reservation:
+			policy_problems.append("You are not authorized to access this area. Creating, moving, and resizing reservations is forbidden.")
+		else:
+			policy_problems.append(f"{str(user)} is not authorized to access this area. Creating, moving, and resizing reservations is forbidden.")
 
 	# The reservation start time may not exceed the item's reservation horizon.
 	# Staff may break this rule.
@@ -364,9 +373,9 @@ def check_policy_rules_for_item(cancelled_reservation: Optional[Reservation], ne
 			too_close = too_close.exclude(id=cancelled_reservation.id)
 		if too_close.exists():
 			if user == user_creating_reservation:
-				item_policy_problems.append(f"Separate reservations for this tool that belong to you must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation begins too close to another reservation.")
+				item_policy_problems.append(f"Separate reservations for this {item_type.value} that belong to you must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation begins too close to another reservation.")
 			else:
-				item_policy_problems.append(f"Separate reservations for this tool that belong to {str(user)} must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation begins too close to another reservation.")
+				item_policy_problems.append(f"Separate reservations for this {item_type.value} that belong to {str(user)} must be at least {str(item.minimum_time_between_reservations)} minutes apart from each other. The proposed reservation begins too close to another reservation.")
 
 	# Check that the user is not exceeding the maximum amount of time they may reserve in the future.
 	# Staff may break this rule.
