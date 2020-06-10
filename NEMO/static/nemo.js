@@ -30,7 +30,7 @@ function toggle_branch()
 function on_item_search_selection(jquery_event, search_selection, dataset_name)
 {
 	$('#item_search').typeahead('val', '');
-	expand_to_item(search_selection.id, search_selection.type ? search_selection.type : 'tool');
+	expand_to_item(search_selection.id, search_selection.type);
 }
 
 // This function toggles all parent categories of a tool/area and selects the tool.
@@ -356,8 +356,9 @@ function matcher(items, search_fields)
 // $('#search').autocomplete('fruits', on_select, [{name:'apple', id:1}, {name:'banana', id:2}, {name:'cherry', id:3}]);
 (function($)
 {
-	$.fn.autocomplete = function(dataset_name, select_callback, items_to_search)
+	$.fn.autocomplete = function(dataset_name, select_callback, items_to_search, hide_type)
 	{
+		hide_type = hide_type || false;
 		let search_fields = ['name', 'application_identifier'];
 		let datasets =
 		{
@@ -370,7 +371,7 @@ function matcher(items, search_fields)
 			'suggestion': function(data)
 			{
 				let result = data['name'];
-				if(data['type'])
+				if(!hide_type && data['type'])
 				{
 					result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'] + '</span>';
 				}

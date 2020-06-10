@@ -492,7 +492,7 @@ function on_load()
 	setInterval(refresh_calendar_and_sidebar, 30000);
 	set_item_link_callback(update_event_sources);
 	enable_item_tree_toggling();
-	$('#item_search').autocomplete('items', on_item_search_selection, {% json_search_base_with_extra_fields tools|add:areas %});
+	$('#item_search').autocomplete('items', on_item_search_selection, {% json_search_base_with_extra_fields tools|add:areas %}, {% if tools and areas %}false{% else %}true{% endif %});
 	$("#item_search").focus();
 	load_sidebar_state();
 	$(".item_tree").show(); {# Item tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}

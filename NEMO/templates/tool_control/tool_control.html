@@ -212,7 +212,7 @@
 			{% if device == 'desktop' %}
 				set_item_link_callback(refresh_tool_status);
 				enable_item_tree_toggling();
-				$('#item_search').autocomplete('tools', on_item_search_selection, {{ tools|json_search_base }});
+				$('#item_search').autocomplete('tools', on_item_search_selection, {% json_search_base_with_extra_fields tools %}, true);
 				$("#item_search").focus();
 				load_sidebar_state();
 				$(".item_tree").show();
