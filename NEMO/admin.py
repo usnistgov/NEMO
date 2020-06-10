@@ -504,9 +504,36 @@ class AlertAdmin(admin.ModelAdmin):
 	form = AlertAdminForm
 
 
+class PhysicalAccessLevelForm(forms.ModelForm):
+	class Meta:
+		model = PhysicalAccessLevel
+		fields = '__all__'
+
+	authorized_users = forms.ModelMultipleChoiceField(
+		queryset=User.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(
+			verbose_name='Users',
+			is_stacked=False
+		)
+	)
+
+	def __init__(self, *args, **kwargs):
+		super(PhysicalAccessLevelForm, self).__init__(*args, **kwargs)
+		if self.instance.pk:
+			self.fields['authorized_users'].initial = self.instance.user_set.all()
+
+
 @register(PhysicalAccessLevel)
 class PhysicalAccessLevelAdmin(admin.ModelAdmin):
+	form = PhysicalAccessLevelForm
 	list_display = ('name', 'area', 'schedule')
+
+	def save_model(self, request, obj, form, change):
+		"""
+		Explicitly record any membership changes.
+		"""
+		record_remote_many_to_many_changes_and_save(request, obj, form, change, 'authorized_users', super(PhysicalAccessLevelAdmin, self).save_model)
 
 
 @register(ContactInformationCategory)

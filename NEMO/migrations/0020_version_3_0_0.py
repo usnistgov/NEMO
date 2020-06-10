@@ -91,4 +91,9 @@ class Migration(migrations.Migration):
             name='welcome_message',
             field=models.TextField(blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.', null=True),
         ),
+        migrations.AlterField(
+            model_name='user',
+            name='physical_access_levels',
+            field=models.ManyToManyField(blank=True, to='NEMO.PhysicalAccessLevel'),
+        ),
     ]

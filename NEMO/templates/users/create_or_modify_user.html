@@ -199,7 +199,7 @@
 							<div class="panel-body">
 								{% for level in physical_access_levels %}
 									<div class="checkbox">
-										<label><input name="physical_access_levels" type="checkbox" value="{{ level.id }}" {% if form.instance in level.users.all %}checked{% endif %}> {{ level }}</label>
+										<label><input name="physical_access_levels" type="checkbox" value="{{ level.id }}" {% if form.instance in level.user_set.all %}checked{% endif %}> {{ level }}</label>
 									</div>
 								{% endfor %}
 							</div>

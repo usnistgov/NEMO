@@ -280,7 +280,7 @@ class OutageTestCase(TestCase):
 		self.assertEqual(len(outages), 7)
 
 	def test_every_week_for_a_year(self):
-		start = datetime.now().replace(microsecond=0)
+		start = (datetime.now() + timedelta(days=1)).replace(microsecond=0).replace(hour=7)
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(days=365)
 

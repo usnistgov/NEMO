@@ -219,14 +219,17 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 		else:
 			policy_problems.append(f"{str(user)} is not qualified to use this tool. Creating, moving, and resizing reservations is forbidden.")
 
-	# The user must be authorized on the area in question in order to create, move, or resize a reservation.
+	# The user must be authorized on the area in question at the start and end times of the reservation in order to create, move, or resize a reservation.
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
-	if new_reservation.area and new_reservation.area not in [access.area for access in user.physical_access_levels.all()]:
-		if user == user_creating_reservation:
-			policy_problems.append("You are not authorized to access this area. Creating, moving, and resizing reservations is forbidden.")
-		else:
-			policy_problems.append(f"{str(user)} is not authorized to access this area. Creating, moving, and resizing reservations is forbidden.")
+	if item_type == ReservationItemType.AREA:
+		user_access_levels = user.physical_access_levels.filter(area=new_reservation.area)
+		if not any([access_level.accessible_at(new_reservation.start) for access_level in user_access_levels]) or not any([access_level.accessible_at(new_reservation.end) for access_level in user_access_levels]):
+			details = f" (times allowed in this area are: {','.join([access.get_schedule_display() for access in user_access_levels])})" if user_access_levels else ''
+			if user == user_creating_reservation:
+				policy_problems.append(f"You are not authorized to access this area at this time{details}. Creating, moving, and resizing reservations is forbidden.")
+			else:
+				policy_problems.append(f"{str(user)} is not authorized to access this area at this time{details}. Creating, moving, and resizing reservations is forbidden.")
 
 	# The reservation start time may not exceed the item's reservation horizon.
 	# Staff may break this rule.
@@ -292,8 +295,8 @@ def should_enforce_policy(reservation: Reservation):
 	should_enforce = True
 
 	item = reservation.reservation_item
-	start_time = reservation.start.astimezone(timezone.get_current_timezone())
-	end_time = reservation.end.astimezone(timezone.get_current_timezone())
+	start_time = timezone.localtime(reservation.start)
+	end_time = timezone.localtime(reservation.end)
 	if item.policy_off_weekend and start_time.weekday() >= 5 and end_time.weekday() >= 5:
 		should_enforce = False
 	if item.policy_off_between_times and item.policy_off_start_time and item.policy_off_end_time:

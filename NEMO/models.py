@@ -106,7 +106,7 @@ class User(models.Model):
 	# Physical access fields
 	badge_number = models.PositiveIntegerField(null=True, blank=True, unique=True, help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.")
 	access_expiration = models.DateField(blank=True, null=True, help_text="The user will lose all access rights after this date. Typically this is used to ensure that safety training has been completed by the user every year.")
-	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True, related_name='users')
+	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True)
 
 	# Permissions
 	is_active = models.BooleanField('active', default=True, help_text='Designates whether this user can log in. Unselect this instead of deleting accounts.')
@@ -1431,22 +1431,28 @@ class PhysicalAccessLevel(models.Model):
 	schedule = models.IntegerField(choices=Schedule.Choices)
 	allow_staff_access = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow access to Staff users without explicitly granting them access")
 
-	def accessible(self):
-		now = timezone.localtime(timezone.now())
+	def accessible_at(self, time):
+		return self.accessible(time)
+
+	def accessible(self, time: datetime = None):
+		if time is not None:
+			accessible_time = timezone.localtime(time)
+		else:
+			accessible_time = timezone.localtime(timezone.now())
 		saturday = 6
 		sunday = 7
 		if self.schedule == self.Schedule.ALWAYS:
 			return True
 		elif self.schedule == self.Schedule.WEEKDAYS_7AM_TO_MIDNIGHT:
-			if now.isoweekday() == saturday or now.isoweekday() == sunday:
+			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
 				return False
 			seven_am = datetime.time(hour=7, tzinfo=timezone.get_current_timezone())
 			midnight = datetime.time(hour=23, minute=59, second=59, tzinfo=timezone.get_current_timezone())
-			current_time = now.time()
+			current_time = accessible_time.time()
 			if seven_am < current_time < midnight:
 				return True
 		elif self.schedule == self.Schedule.WEEKENDS:
-			if now.isoweekday() == saturday or now.isoweekday() == sunday:
+			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
 				return True
 		return False
 

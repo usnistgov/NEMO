@@ -49,7 +49,7 @@ class AreaReservationTestCase(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "You do not belong to any active projects. Thus, you may not create any reservations.")
 		self.assertContains(response, "You are blocked from making reservations in the NanoFab. Please complete the NanoFab rules tutorial in order to create new reservations.")
-		self.assertContains(response, "You are not authorized to access this area. Creating, moving, and resizing reservations is forbidden.")
+		self.assertContains(response, "You are not authorized to access this area at this time. Creating, moving, and resizing reservations is forbidden.")
 
 		user.training_required = False
 		user.save()
@@ -58,7 +58,7 @@ class AreaReservationTestCase(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertNotContains(response, "You are blocked from making reservations in the NanoFab. Please complete the NanoFab rules tutorial in order to create new reservations.")
 		self.assertContains(response, "You do not belong to any active projects. Thus, you may not create any reservations.")
-		self.assertContains(response, "You are not authorized to access this area. Creating, moving, and resizing reservations is forbidden.")
+		self.assertContains(response, "You are not authorized to access this area at this time. Creating, moving, and resizing reservations is forbidden.")
 
 		user.physical_access_levels.add(area_access_level)
 		login_as(self.client, user)
