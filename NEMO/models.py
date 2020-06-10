@@ -827,6 +827,9 @@ class Area(models.Model):
 			area_occupancy = area_occupancy.filter(customer__is_staff=False)
 		return area_occupancy.count()
 
+	def required_resource_is_unavailable(self) -> bool:
+		return self.required_resources.filter(available=False).exists()
+
 	def get_current_reservation_for_user(self, user):
 		if self.requires_reservation:
 			return Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=user, area=self, start__lte=timezone.now(), end__gt=timezone.now())

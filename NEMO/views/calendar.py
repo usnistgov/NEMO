@@ -529,8 +529,7 @@ def modify_reservation(request, start_delta, end_delta):
 		new_reservation.short_notice = determine_insufficient_notice(reservation_to_cancel.tool, new_reservation.start)
 	# A change in end time will always be provided for reservation move and resize operations.
 	new_reservation.end = reservation_to_cancel.end + end_delta
-	new_reservation.tool = reservation_to_cancel.tool
-	new_reservation.area = reservation_to_cancel.area
+	new_reservation.reservation_item = reservation_to_cancel.reservation_item
 	new_reservation.project = reservation_to_cancel.project
 	new_reservation.user = reservation_to_cancel.user
 	new_reservation.creation_time = now
@@ -633,6 +632,7 @@ def email_reservation_reminders(request):
 	reservation_reminder_message = get_media_file_contents('reservation_reminder_email.html')
 	reservation_warning_message = get_media_file_contents('reservation_warning_email.html')
 	if not reservation_reminder_message or not reservation_warning_message:
+		calendar_logger.error("Reservation reminder email couldn't be send because reservation_reminder_email.html is not defined")
 		return HttpResponseNotFound('The reservation reminder email template has not been customized for your organization yet. Please visit the customization page to upload a template, then reservation reminder email notifications can be sent.')
 
 	# Find all reservations that are two hours from now, plus or minus 5 minutes to allow for time skew.
@@ -643,15 +643,16 @@ def email_reservation_reminders(request):
 	upcoming_reservations = Reservation.objects.filter(cancelled=False, start__gt=earliest_start, start__lt=latest_start)
 	# Email a reminder to each user with an upcoming reservation.
 	for reservation in upcoming_reservations:
-		tool = reservation.tool
-		if tool.operational and not tool.problematic() and tool.all_resources_available():
-			subject = reservation.tool.name + " reservation reminder"
+		item = reservation.reservation_item
+		item_type = reservation.reservation_item_type
+		if item_type == ReservationItemType.TOOL and item.operational and not item.problematic() and item.all_resources_available():
+			subject = item.name + " reservation reminder"
 			rendered_message = Template(reservation_reminder_message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('success')}))
-		elif not tool.operational or tool.required_resource_is_unavailable():
-			subject = reservation.tool.name + " reservation problem"
+		elif (item_type == ReservationItemType.TOOL and not item.operational) or item.required_resource_is_unavailable():
+			subject = item.name + " reservation problem"
 			rendered_message = Template(reservation_warning_message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('danger'), 'fatal_error': True}))
 		else:
-			subject = reservation.tool.name + " reservation warning"
+			subject = item.name + " reservation warning"
 			rendered_message = Template(reservation_warning_message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}))
 		user_office_email = get_customization('user_office_email_address')
 		reservation.user.email_user(subject, rendered_message, user_office_email)
@@ -847,7 +848,7 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 
 
 def send_missed_reservation_notification(reservation):
-	subject = "Missed reservation for the " + str(reservation.tool)
+	subject = "Missed reservation for the " + str(reservation.reservation_item)
 	message = get_media_file_contents('missed_reservation_email.html')
 	user_office_email = get_customization('user_office_email_address')
 	abuse_email = get_customization('abuse_email_address')
@@ -861,7 +862,7 @@ def send_missed_reservation_notification(reservation):
 def send_user_created_reservation_notification(reservation: Reservation):
 	site_title = get_customization('site_title')
 	if getattr(reservation.user.preferences, 'attach_created_reservation', False):
-		subject = f"[{site_title}] Reservation for the " + str(reservation.tool)
+		subject = f"[{site_title}] Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_created_user_email.html')
 		user_office_email = get_customization('user_office_email_address')
 		if message and user_office_email:
@@ -875,7 +876,7 @@ def send_user_created_reservation_notification(reservation: Reservation):
 def send_user_cancelled_reservation_notification(reservation: Reservation):
 	site_title = get_customization('site_title')
 	if getattr(reservation.user.preferences, 'attach_cancelled_reservation', False):
-		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.tool)
+		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
 		user_office_email = get_customization('user_office_email_address')
 		if message and user_office_email:
@@ -896,7 +897,7 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	now = datetime.now().strftime('%Y%m%dT%H%M%S')
 	start = timezone.localtime(reservation.start).strftime('%Y%m%dT%H%M%S')
 	end = timezone.localtime(reservation.end).strftime('%Y%m%dT%H%M%S')
-	reservation_name = reservation.area.name if reservation.area else reservation.tool.name
+	reservation_name = reservation.reservation_item.name
 	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
 	ics = io.StringIO('')
 	ics.writelines(lines)
