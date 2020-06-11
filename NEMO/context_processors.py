@@ -27,11 +27,11 @@ def base_context(request):
 	except:
 		site_title = ""
 	try:
-		tools_exist = Tool.objects.filter(visible=True).exist()
+		tools_exist = Tool.objects.filter(visible=True).exists()
 	except:
 		tools_exist = False
 	try:
-		areas_exist = Area.objects.filter(requires_reservation=True).exist() and PhysicalAccessLevel.objects.exists()
+		areas_exist = Area.objects.filter(requires_reservation=True).exists() and PhysicalAccessLevel.objects.exists()
 	except:
 		areas_exist = False
 	return {
