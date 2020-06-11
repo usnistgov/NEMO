@@ -13,7 +13,7 @@
 			<div class="navbar-collapse collapse" id="site-navigation">
 				<ul class="nav navbar-nav">
 					<li><a href="{% url 'calendar' %}">Calendar</a></li>
-					<li><a href="{% url 'tool_control' %}">Tool control</a></li>
+					{% if tools_exist %}<li><a href="{% url 'tool_control' %}">Tool control</a></li>{% endif %}
 					<li><a href="{% url 'status_dashboard' %}">Status dashboard</a></li>
 					{% if user.is_staff %}
 						<li class="dropdown">
@@ -24,19 +24,19 @@
 								{% navigation_url 'abuse' 'Abuse' %}
 								{% navigation_url 'accounts_and_projects' 'Accounts and projects' %}
 								{% navigation_url 'alerts' 'Alerts' %}
-								{% navigation_url 'area_access' 'Area access' %}
-								{% navigation_url 'configuration_agenda' 'Configuration agenda' %}
+								{% if areas_exist %}{% navigation_url 'area_access' 'Area access' %}{% endif %}
+								{% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' %}{% endif %}
 								{% navigation_url 'customization' 'Customization' %}
 								{% navigation_url 'admin:index' 'Detailed administration' %}
 								{% navigation_url 'email_broadcast' 'Email' %}
-								{% navigation_url 'maintenance' 'Maintenance' %}
+								{% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' %}{% endif %}
 								{% navigation_url 'project_billing' 'Project billing' %}
-								{% navigation_url 'qualifications' 'Qualifications' %}
+								{% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' %}{% endif %}
 								{% navigation_url 'remote_work' 'Remote work' %}
 								{% navigation_url 'resources' 'Resources' %}
 								{% navigation_url 'staff_charges' 'Staff charges' %}
 								{% navigation_url 'consumables' 'Supplies' %}
-								{% navigation_url 'training' 'Training' %}
+								{% if tools_exist %}{% navigation_url 'training' 'Training' %}{% endif %}
 								{% navigation_url 'users' 'Users' %}
 							</ul>
 						</li>
