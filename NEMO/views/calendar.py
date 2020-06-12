@@ -137,6 +137,9 @@ def reservation_event_feed(request, start, end):
 				outages = outages.exclude(start__gt=end, end__gt=end)
 			elif item_type == ReservationItemType.AREA:
 				events = events.filter(area__id=item_id)
+				outages = ScheduledOutage.objects.filter(resource__dependent_areas__in=[item])
+				outages = outages.exclude(start__lt=start, end__lt=start)
+				outages = outages.exclude(start__gt=end, end__gt=end)
 
 	# Filter events that only have to do with the current user.
 	personal_schedule = request.GET.get('personal_schedule')

@@ -24,6 +24,7 @@ from NEMO.widgets.configuration_editor import ConfigurationEditor
 class ReservationItemType(Enum):
 	TOOL = 'tool'
 	AREA = 'area'
+	NONE = ''
 
 	def get_object_class(self):
 		if self == ReservationItemType.AREA:
@@ -34,6 +35,10 @@ class ReservationItemType(Enum):
 	@staticmethod
 	def values():
 		return list(map(lambda c: c.value, ReservationItemType))
+
+	@classmethod
+	def _missing_(cls, value):
+		return ReservationItemType.NONE
 
 
 class CalendarDisplay(models.Model):
