@@ -137,7 +137,7 @@ def reservation_event_feed(request, start, end):
 				outages = outages.exclude(start__gt=end, end__gt=end)
 			elif item_type == ReservationItemType.AREA:
 				events = events.filter(area__id=item_id)
-				outages = ScheduledOutage.objects.filter(resource__dependent_areas__in=[item])
+				outages = ScheduledOutage.objects.filter(resource__dependent_areas__in=[item_id])
 				outages = outages.exclude(start__lt=start, end__lt=start)
 				outages = outages.exclude(start__gt=end, end__gt=end)
 
