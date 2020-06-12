@@ -41,6 +41,7 @@ customizable_key_values = {
 	'site_title': 'NEMO',
 	'self_log_in': '',
 	'self_log_out': '',
+	'calendar_login_logout': '',
 	'calendar_view': 'agendaWeek',
 	'calendar_first_day_of_week': '1',
 	'calendar_day_column_format': 'dddd MM/DD/YYYY',
@@ -134,6 +135,7 @@ def customize(request, element):
 	elif element == 'application_settings':
 		set_customization('self_log_in', request.POST.get('self_log_in', ''))
 		set_customization('self_log_out', request.POST.get('self_log_out', ''))
+		set_customization('calendar_login_logout', request.POST.get('calendar_login_logout', ''))
 		set_customization('facility_name', request.POST.get('facility_name', ''))
 		set_customization('site_title', request.POST.get('site_title', ''))
 		init_admin_site()

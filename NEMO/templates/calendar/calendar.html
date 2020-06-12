@@ -76,6 +76,13 @@ function update_event_sources()
 	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage')
 	{
 		let item = get_selected_item();
+		let login_button = $(".fc-login-button")[0];
+		let logout_button = $(".fc-logout-button")[0];
+		let scheduled_outage_button = $(".fc-scheduledOutage-button")[0];
+		$(scheduled_outage_button).addClass('fc-state-disabled');
+		$(login_button).html("Login");
+		$(login_button).addClass('fc-state-disabled');
+		$(logout_button).removeClass('fc-state-disabled');
 		if(item === 'personal_schedule')
 		{
 			item_event_source.data.personal_schedule = true;
@@ -86,12 +93,13 @@ function update_event_sources()
             item_event_source.data.item_type = item.type;
             if (item.type === 'area')
 			{
-				$($(".fc-scheduledOutage-button")[0]).addClass('fc-state-disabled');
-            }
-            else if (item.type === 'tool')
+			    $(login_button).html("Login to the "+item.element_name);
+				$(login_button).removeClass('fc-state-disabled');
+			}
+			else if (item.type === 'tool')
 			{
-				$($(".fc-scheduledOutage-button")[0]).removeClass('fc-state-disabled');
-            }
+				$(scheduled_outage_button).removeClass('fc-state-disabled');
+			}
         }
 	}
 	else if(event_type === 'specific user')
@@ -109,24 +117,28 @@ function update_event_sources()
 
 {# This function is a callback for when a reservation is successfully created by the user. #}
 {# It renders the event to the calendar by refetching the event feed. #}
-function event_creation_success_callback(response, status, xml_http_request, ajax_post)
+function event_creation_success_callback(response, status, xml_http_request, ajax_post, success_callback)
 {
 	$("#calendar").fullCalendar("unselect");
 	{# If the response is empty then the reservation was successfully created. #}
 	if(response === "")
-		refresh_calendar_and_sidebar();
+	{
+        refresh_calendar_and_sidebar();
+        if (success_callback) success_callback()
+    }
 	else if (xml_http_request.status === 201)
 	{
 	    {# reservation was created but there is some extra information to display #}
-		refresh_calendar_and_sidebar();
 		$("#dialog .modal-content").html(response);
 		$("#dialog").modal('show');
+		refresh_calendar_and_sidebar();
+		if (success_callback) success_callback()
 	}
 	else {# the response was non-empty so the tool requires configuration details before the reservation is created. #}
 	{
 		{# Construct the configuration dialog that is contained in the server response. #}
 		$("#dialog .modal-content").html(response);
-		$("#dialog").one('hidden.bs.modal', function() { return submit_event_with_more_information(ajax_post) });
+		$("#dialog").one('hidden.bs.modal', function() { return submit_event_with_more_information(ajax_post, success_callback) });
 		$("#dialog").modal('show');
 	}
 }
@@ -140,7 +152,7 @@ function unselect_and_refresh()
 	refresh_calendar_and_sidebar();
 }
 
-function submit_event_with_more_information(ajax_post)
+function submit_event_with_more_information(ajax_post, success_callback)
 {
 	if($('#dialog_cancelled').val() === "true")
 		return;
@@ -149,7 +161,7 @@ function submit_event_with_more_information(ajax_post)
 		.fail(ajax_failure_callback("Oops, something went wrong!"))
 		.done(function(response, status, xml_http_request)
 		{
-			return event_creation_success_callback(response, status, xml_http_request, ajax_post)
+			return event_creation_success_callback(response, status, xml_http_request, ajax_post, success_callback)
 		});
 }
 
@@ -159,7 +171,12 @@ function event_render(event, element)
     	element.attr('title', event.tooltip)
 	else if ('title' in event)
 	    element.attr('title', event.title)
-	$(element).tooltip({ container: 'body', delay: { "show": 1000, "hide": 100 }})
+}
+
+function event_after_all_render()
+{
+    {# Show tooltips for events #}
+	$('a.fc-time-grid-event').tooltip({ container: 'body', delay: { "show": 1000, "hide": 100 }})
 }
 
 {# This function is called when the user clicks and drags on the calendar to create a reservation. #}
@@ -324,7 +341,7 @@ function create_calendar()
 	{
 		"header":
 		{
-			left: "prev,next today{% if user.is_staff %} proxyReservation scheduledOutage{% endif %}",
+			left: "prev,next today{% if user.is_staff %} proxyReservation scheduledOutage{% endif %} login logout",
 			center: "title",
 			right: "agendaDay,agendaWeek,month"
 		},
@@ -355,6 +372,7 @@ function create_calendar()
 		"select": create,
 		"eventResize": resize,
 		"eventRender": event_render,
+		"eventAfterAllRender": event_after_all_render,
 		"eventDrop": move,
 		"eventClick": details,
 		"height": $("#calendar").height(),
@@ -375,6 +393,14 @@ function create_calendar()
 			"scheduledOutage": {
 				"text": "Schedule an outage",
 				"click": scheduled_outage
+			},
+			"login": {
+				"text": "Login",
+				"click": login_to_area
+			},
+			"logout": {
+				"text": "Logout",
+				"click": logout_of_area
 			}
 		}
 	};
@@ -400,6 +426,67 @@ function reserve_for_someone_else_callback(response, status, xml_http_request)
 {
 	$("#dialog .modal-content").html(response);
 	$("#dialog").modal('show');
+}
+
+function login_to_area()
+{
+	let item = get_selected_item();
+	if (item && item !== "personal_schedule")
+	{
+	    item = JSON.parse(item)
+		var event_changes =
+		{
+			"area": item.id,
+			"csrfmiddlewaretoken": "{{ csrf_token }}"
+		};
+		let url = "{% url 'calendar_self_log_in' %}"
+		var post_data =
+		{
+			"url": url,
+			"data": event_changes,
+			"type": "POST",
+			"dataType": "html"
+		};
+		let callback = function() {
+		    $(".fc-login-button").hide()
+			{% if self_logout %}
+			$($(".fc-logout-button")[0]).html("Logout of the " + item.element_name)
+			$(".fc-logout-button").show()
+			{% endif %}
+        }
+		ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data, callback) }, [ajax_failure_callback("Login to area failed")], refresh_calendar_and_sidebar)
+	}
+}
+
+function logout_of_area()
+{
+    ajax_get("{% url 'self_log_out' user.id %}", null, function () {
+        let login_button = $($(".fc-login-button")[0])
+		$(".fc-logout-button").hide()
+		login_button.html("Login")
+		let item = get_selected_item()
+		if (item && item !== 'personal_schedule')
+		{
+		    item = JSON.parse(item)
+			if (item.type === 'area') login_button.html("Login to the " + item.element_name)
+		}
+		{% if self_login %}login_button.show(){% endif %}
+    }, ajax_failure_callback("Logout of area failed"), refresh_calendar_and_sidebar)
+}
+
+function initialize_login_logout_buttons()
+{
+    let login_button = $($(".fc-login-button")[0]);
+    let logout_button = $($(".fc-logout-button")[0]);
+    login_button.hide()
+	logout_button.hide()
+	{% if self_login and not user.in_area %}
+		login_button.show()
+	{% endif %}
+	{% if self_logout and user.in_area %}
+		logout_button.html("Logout of the {{ user.area_access_record.area.name }}")
+		logout_button.show()
+	{% endif %}
 }
 
 function scheduled_outage()
@@ -468,6 +555,8 @@ function change_calendar_event_type(calling_element)
 		item_tree.hide();
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
+		$($('.fc-login-button')[0]).html('Login')
+		$($('.fc-login-button')[0]).addClass('fc-state-disabled')
 		clear_specific_user();
 	}
 }
@@ -505,6 +594,7 @@ function on_load()
 		$("#user_search").autocomplete('users', get_specific_user_activity, {{ users|json_search_base }});
 	{% endif %}
 	$('[data-toggle~="tooltip"]').tooltip({ container: 'body' });
+	initialize_login_logout_buttons();
 }
 
 $(on_load);

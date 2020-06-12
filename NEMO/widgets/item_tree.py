@@ -123,7 +123,7 @@ class ItemTreeHelper:
 		if node.__is_leaf():
 			result += '<li>'
 			css_class = "" if node.is_user_qualified else 'class="disabled"'
-			result += f'<a href="javascript:void(0);" onclick="set_selected_item(this)" data-item-id="{node.id}" data-item-type="{node.item_type.value}" {css_class}>{node.name}</a>'
+			result += f'<a href="javascript:void(0);" onclick="set_selected_item(this)" data-item-id="{node.id}" data-item-type="{node.item_type.value}" data-item-name="{node.name}" {css_class}>{node.name}</a>'
 		if not node.__is_leaf():
 			node_li_class = "area-category" if node.item_type == ReservationItemType.AREA else 'tool-category'
 			node_list_class = "area-list" if node.item_type == ReservationItemType.AREA else 'tool-list'

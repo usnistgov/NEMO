@@ -1,8 +1,9 @@
 from datetime import timedelta
+from html.parser import HTMLParser
 from typing import Set
 
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required
 from django.db.models import F
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -20,6 +21,28 @@ from NEMO.models import Area, AreaAccessRecord, Project, User, PhysicalAccessLev
 from NEMO.utilities import parse_start_and_end_date
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
+
+
+# Utility parser to find error messages in rendered self_login view
+class ParseSelfLoginErrorMessage(HTMLParser):
+
+	record = False
+	data = None
+
+	def handle_starttag(self, startTag, attrs):
+		if startTag == "div" and ('class', 'alert alert-danger') in attrs:
+			self.record = True
+
+	def handle_data(self, data):
+		if self.record:
+			self.data = data.strip()
+
+	def handle_endtag(self, endTag):
+		if self.record and endTag == "div":
+			self.record = False
+
+	def error(self, message):
+		pass
 
 
 @staff_member_required(login_url=None)
@@ -174,6 +197,34 @@ def change_project(request, new_project=None):
 	record.project = new_project
 	record.save()
 	return redirect(reverse('landing'))
+
+
+@login_required
+@require_POST
+def calendar_self_login(request):
+	"""
+	This method is strongly dependent on the way self_log_in() works
+	It looks for a redirect to landing as success, and an error message in a <div class="alert alert-danger"></div> for failure
+	"""
+	dictionary = {
+		'projects': request.user.active_projects(),
+	}
+	try:
+		a = Area.objects.get(id=request.POST['area'])
+		dictionary['area'] = a
+		Project.objects.get(id=request.POST.get('project'))
+	except Project.DoesNotExist:
+		# We have not selected a project yet
+		return render(request, 'area_access/calendar_self_login.html', dictionary)
+	response = self_log_in(request)
+	if response.status_code == 302 and response.url == '/':
+		# We got redirect to landing page in return, which means it was successful
+		return HttpResponse()
+	elif response and response.content:
+		parser = ParseSelfLoginErrorMessage()
+		parser.feed(response.content.decode())
+		dictionary['error_message'] = parser.data
+		return render(request, 'area_access/calendar_self_login.html', dictionary)
 
 
 @login_required

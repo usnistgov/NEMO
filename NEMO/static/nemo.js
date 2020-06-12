@@ -81,12 +81,13 @@ function get_selected_item() {
 	{
 	return undefined;
 	}
+	let jq_selected_item = $(selected_item[0])
 	// Check if the selected item is a special link. Otherwise, get its item ID.
-	if($(selected_item[0]).hasClass('personal_schedule'))
+	if(jq_selected_item.hasClass('personal_schedule'))
 	{
 		return 'personal_schedule';
 	}
-	return JSON.stringify({'id': $(selected_item[0]).data('item-id'), 'type': $(selected_item[0]).data('item-type')});
+	return JSON.stringify({'id': jq_selected_item.data('item-id'), 'type': jq_selected_item.data('item-type'), 'element_name': jq_selected_item.data('item-name')});
 }
 
 // This function visually highlights a clicked link with a gray background.
