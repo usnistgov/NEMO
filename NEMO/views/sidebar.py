@@ -20,7 +20,7 @@ def refresh_sidebar_icons(request):
 
 
 def create_area_summary():
-	areas = Area.objects.filter(requires_reservation=True)
+	areas = Area.objects.filter(requires_reservation=True).only('name','maximum_capacity','reservation_warning','count_staff_in_occupancy')
 	# add occupancy and staff occupancy
 	areas = areas.annotate(occupancy_staff=Count('areaaccessrecord', filter=Q(areaaccessrecord__end=None, areaaccessrecord__staff_charge=None, areaaccessrecord__customer__is_staff=True)))
 	areas = areas.annotate(occupancy=Count('areaaccessrecord', filter=Q(areaaccessrecord__end=None, areaaccessrecord__staff_charge=None)))
