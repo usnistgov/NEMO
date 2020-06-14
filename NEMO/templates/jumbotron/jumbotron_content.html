@@ -1,5 +1,5 @@
 <div class="row" style="background:transparent">
-	{% if area_defined %}
+	{% if areas_exist %}
 		<div class="{% if alerts or disabled_resources %}col-lg-4{% else %}col-lg-6{% endif %}" style="text-align:center; background:transparent">
 			{% if not facility_occupants %}
 				<h2>Nobody is in an access controlled<br>{{ facility_name }} area</h2>
@@ -54,7 +54,7 @@
 			{% endif %}
 		</div>
 	{% endif %}
-	<div class="{% if alerts or disabled_resources %}{% if area_defined %}col-lg-4{% else %}col-lg-6{% endif %}{% else %}{% if area_defined %}col-lg-6{% else %}col-lg-12{% endif %}{% endif %}" style="text-align:center; background:transparent">
+	<div class="{% if alerts or disabled_resources %}{% if areas_exist %}col-lg-4{% else %}col-lg-6{% endif %}{% else %}{% if areas_exist %}col-lg-6{% else %}col-lg-12{% endif %}{% endif %}" style="text-align:center; background:transparent">
 		{% if usage_events %}
 			<h2>Tool usage</h2>
 			<p>{% if usage_events|length > 1 %}{{ usage_events|length }} tools are in use{% endif %}&nbsp;</p>
@@ -84,7 +84,7 @@
 		{% endif %}
 	</div>
 	{% if alerts or disabled_resources %}
-		<div class="{% if area_defined %}col-lg-4{% else %}col-lg-6{% endif %}" style="text-align:center">
+		<div class="{% if areas_exist %}col-lg-4{% else %}col-lg-6{% endif %}" style="text-align:center">
 			<h2>Alerts and outages</h2>
 			<p>{# For spacing #}&nbsp;</p>
 			{% for a in alerts %}
