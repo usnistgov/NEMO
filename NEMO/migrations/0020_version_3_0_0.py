@@ -18,6 +18,16 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='area',
+            name='parent_area',
+            field=models.ForeignKey(blank=True, help_text='Select a parent area, (building, floor etc.)', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='area_children_set', to='NEMO.Area'),
+        ),
+        migrations.AddField(
+            model_name='area',
+            name='logout_grace_period',
+            field=models.PositiveIntegerField(blank=True, help_text='Number of minutes users have to logout of this area after their reservation expired before being flagged and abuse email is sent.', null=True),
+        ),
+        migrations.AddField(
+            model_name='area',
             name='maximum_future_reservation_time',
             field=models.PositiveIntegerField(blank=True, db_column='maximum_future_reservation_time', help_text='The maximum amount of time (in minutes) that a user may reserve from the current time onwards.', null=True),
         ),
@@ -69,7 +79,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='area',
             name='requires_reservation',
-            field=models.BooleanField(default=False, help_text='Check this box to require a reservation for this area before a user can login'),
+            field=models.BooleanField(default=False, help_text='Check this box to require a reservation for this area before a user can login.'),
         ),
         migrations.AddField(
             model_name='area',
