@@ -40,18 +40,39 @@ def create_area_summary():
 			'occupants': '',
 			'required_resource_is_unavailable': False,
 		}
+	# Deal with all the parents
+	parent_areas = Area.objects.filter(area_children_set__isnull=False).only('name', 'maximum_capacity')
+	for parent_area in parent_areas:
+		if parent_area.id not in result:
+			result[parent_area.id] = {
+				'name': parent_area.name,
+				'id': parent_area.id,
+				'maximum_capacity': parent_area.maximum_capacity,
+				'warning_capacity': parent_area.warning_capacity(),
+				'danger_capacity': parent_area.danger_capacity(),
+				'count_staff_in_occupancy': parent_area.count_staff_in_occupancy,
+				'occupancy_count': parent_area.occupancy() if parent_area.count_staff_in_occupancy else parent_area.occupancy() - parent_area.occupancy_staff(),
+				'occupancy_staff_count': parent_area.occupancy_staff(),
+				'occupants': '',
+				'required_resource_is_unavailable': False,
+			}
 	for resource in unavailable_resources:
 		for area in resource.dependent_areas.all():
 			if area.id in result:
 				result[area.id]['required_resource_is_unavailable'] = True
 
 	for occupant in occupants:
-		if occupant.area.id in result:
-			if occupant.customer.is_staff:
-				customer_display = f'<span style="color:green">{str(occupant.customer)}</span>'
-			else:
-				customer_display = str(occupant.customer)
-			result[occupant.area.id]['occupants'] += customer_display if not result[occupant.area.id]['occupants'] else f'<br>{customer_display}'
+		# Get ids for area and all the parents (so we can add occupants info on parents)
+		area_ids = [area.id for area in occupant.area.self_and_parents()]
+		if occupant.customer.is_staff:
+			customer_display = f'<span style="color:green">{str(occupant.customer)}</span>'
+		elif occupant.customer.is_logged_in_area_without_reservation():
+			customer_display = f'<span style="color:red">{str(occupant.customer)}</span>'
+		else:
+			customer_display = str(occupant.customer)
+		for area_id in area_ids:
+			if area_id in result:
+				result[area_id]['occupants'] += customer_display if not result[area_id]['occupants'] else f'<br>{customer_display}'
 	area_summary = list(result.values())
 	area_summary.sort(key=lambda x: x['name'])
 	return area_summary

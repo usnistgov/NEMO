@@ -271,9 +271,10 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 				policy_problems.append("You already have a reservation that coincides with this one. Please choose a different time.")
 			else:
 				policy_problems.append(f"{str(user)} already has a reservation that coincides with this one. Please choose a different time.")
-		apply_to_user = not user.is_staff or user.is_staff and new_reservation.area.count_staff_in_occupancy
-		if apply_to_user and new_reservation.area.maximum_capacity and coincident_events.count() >= new_reservation.area.maximum_capacity:
-			policy_problems.append(f"The {new_reservation.area} is already at its maximum capacity at this time. Please choose a different time.")
+		for area in new_reservation.area.self_and_parents():
+			apply_to_user = not user.is_staff or user.is_staff and area.count_staff_in_occupancy
+			if apply_to_user and area.maximum_capacity and coincident_events.count() >= area.maximum_capacity:
+				policy_problems.append(f"The {area} is already at its maximum capacity at this time. Please choose a different time.")
 
 	# The user may not create, move, or resize a reservation to coincide with a scheduled outage.
 	if new_reservation.reservation_item_type == ReservationItemType.TOOL:
@@ -479,8 +480,9 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 			raise UnavailableResourcesUserError(user=user, area=area, resources=unavailable_resources)
 
 		# If we reached maximum capacity, fail (only for non staff users)
-		if 0 < area.maximum_capacity <= area.occupancy_count():
-			raise MaximumCapacityReachedError(user=user, area=area)
+		for a in area.self_and_parents():
+			if a.maximum_capacity and 0 < a.maximum_capacity <= a.occupancy_count():
+				raise MaximumCapacityReachedError(user=user, area=a)
 
 		if area.requires_reservation and not area.get_current_reservation_for_user(user):
 			raise ReservationRequiredUserError(user=user, area=area)

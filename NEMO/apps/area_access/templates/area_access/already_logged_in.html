@@ -1,6 +1,10 @@
 <h1>According to our records, you're already logged into the {{ area|lower }} under the project named {{ project }}.</h1>
 {% if max_capacity_reached %}
-	<h2>However, this area has reached its maximum occupancy</h2>
+	{% if max_capacity_reached.area == area %}
+		<h2>However, this area has reached its maximum occupancy</h2>
+	{% else %}
+		<h2>However, the {{ max_capacity_reached.area }} has reached its maximum occupancy</h2>
+	{% endif %}
 {% elif reservation_requirement_failed %}
 	<h2>However, you cannot enter since you don't have a current reservation for this area.</h2>
 {% endif %}

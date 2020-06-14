@@ -48,15 +48,22 @@ class ItemTree(Widget):
 		areas: List[Area] = value.get('areas',[])
 		tools: List[Tool] = value.get('tools',[])
 		parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
+		user_accessible_areas = set([] if not user or not areas else [item for item in user.physical_access_levels.all() for item in item.area.self_and_parents()])
+		areas_dict = {}
+		if areas:
+			# Create a lookup of area name to area with all the parents (in order to display info about category-parents)
+			areas_dict = {area.name: area for area in list(set([item for item in areas for item in item.parents()]))}
+			# Sort areas by root node first (no parent)
+			areas = list(areas)
+			areas.sort(key=lambda area: area.category_for_tree())
 		# We want to remove areas the user doesn't have access to
 		display_all_areas = get_customization('calendar_display_not_qualified_areas') == 'enabled'
-		user_accessible_areas = [] if not user else [access.area for access in user.physical_access_levels.all()]
 		if not display_all_areas and areas and user:
 			areas = [area for area in areas if user.is_staff or area in user_accessible_areas]
 		for area in areas:
-			area_category = area.category + '/' if area.category else ''
+			category = area.category_for_tree() + '/' if area.category_for_tree() else ''
 			is_qualified = True if not display_all_areas else (user and user.is_staff) or (user and area in user_accessible_areas)
-			area_tree.add(ReservationItemType.AREA, area_category + area.name, area.id, is_qualified)
+			area_tree.add(ReservationItemType.AREA, category + area.name, area.id, is_qualified)
 		for tool in tools:
 			is_qualified = (user and user.is_staff) or (user and tool in user.qualifications.all())
 			tool_tree.add(ReservationItemType.TOOL, tool.category + '/' + tool.name_or_child_in_use_name(parent_ids=parent_ids), tool.id,  is_qualified)
@@ -64,7 +71,7 @@ class ItemTree(Widget):
 		legend = True if areas and tools else False
 		result = ""
 		if areas:
-			result += area_tree.render(legend=legend)
+			result += area_tree.render(legend=legend, item_dict=areas_dict)
 		if tools:
 			result += tool_tree.render(legend=legend)
 		return mark_safe(result)
@@ -101,7 +108,7 @@ class ItemTreeHelper:
 			self.children[-1].is_user_qualified = is_user_qualified
 			self.children[-1].item_type = item_type
 
-	def render(self, legend=False):
+	def render(self, legend=False, item_dict=None):
 		"""
 		This function cycles through the root node of the tool/area list and enumerates all the child nodes directly.
 		The function assumes that a tree structure of the tools/areas has already been created by calling 'add(...)' multiple
@@ -111,11 +118,11 @@ class ItemTreeHelper:
 		result = f'<fieldset class="item_tree_fieldset"><legend align="center" onclick="toggle_item_categories({item_type})">{self.item_type.value.capitalize()}s</legend>' if legend else ''
 		result += f'<ul class="nav nav-list item_tree" id="{self.item_type.value}_tree" style="display:none">'
 		for child in self.children:
-			result += self.__render_helper(child, '')
+			result += self.__render_helper(child, '', item_dict)
 		result += '</fieldset></ul>' if legend else '</ul>'
 		return result
 
-	def __render_helper(self, node, result):
+	def __render_helper(self, node, result, item_dict=None):
 		"""
 		Recursively dive through the tree structure and convert it to unordered HTML lists.
 		Each node is output as an HTML list item. If the node has children then those are also output.
@@ -127,10 +134,15 @@ class ItemTreeHelper:
 		if not node.__is_leaf():
 			node_li_class = "area-category" if node.item_type == ReservationItemType.AREA else 'tool-category'
 			node_list_class = "area-list" if node.item_type == ReservationItemType.AREA else 'tool-list'
+			# If we can find this "category" in the list of items, then add id, type and name
+			extra_data = ''
+			if item_dict and node.name in item_dict:
+				data = item_dict.get(node.name)
+				extra_data = f'data-item-id="{data.id}" data-item-type="{node.item_type.value}" data-item-name="{data.name}"'
 			result += f'<li class="{node_li_class}">'
-			result += f'<label class="tree-toggler nav-header"><div>{node.name}</div></label><ul class="nav nav-list tree {node_list_class}" data-category="{node.name}">'
+			result += f'<label class="tree-toggler nav-header"><div {extra_data}>{node.name}</div></label><ul class="nav nav-list tree {node_list_class}" data-category="{node.name}">'
 			for child in node.children:
-				result = self.__render_helper(child, result)
+				result = self.__render_helper(child, result, item_dict)
 			result += '</ul>'
 		result += '</li>'
 		return result

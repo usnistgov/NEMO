@@ -96,9 +96,9 @@ def login_to_area(request, door_id):
 			log.save()
 			return render(request, 'area_access/resource_unavailable.html', {'unavailable_resources': unavailable_resources})
 
-	except MaximumCapacityReachedError:
+	except MaximumCapacityReachedError as error:
 		# deal with this error after checking if the user is already logged in
-		max_capacity_reached = True
+		max_capacity_reached = error
 
 	except ReservationRequiredUserError:
 		# deal with this error after checking if the user is already logged in
@@ -117,9 +117,9 @@ def login_to_area(request, door_id):
 		})
 
 	if max_capacity_reached:
-		log.details = f"The user was blocked from entering this area because this area has reached its maximum capacity of {door.area} people at a time."
+		log.details = f"The user was blocked from entering this area because the {max_capacity_reached.area.name} has reached its maximum capacity of {max_capacity_reached.area.maximum_capacity} people at a time."
 		log.save()
-		message = "This area has reached its maximum capacity. Please wait for somebody to leave and try again."
+		message = f"The {max_capacity_reached.area.name} has reached its maximum capacity. Please wait for somebody to leave and try again."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	if reservation_requirement_failed:

@@ -13,11 +13,10 @@ from django.utils.http import urlencode
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, UserAccessError, \
-	InactiveUserError, NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError, \
+from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, InactiveUserError, \
+	NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError, \
 	MaximumCapacityReachedError, ReservationRequiredUserError
 from NEMO.models import Area, AreaAccessRecord, Project, User, PhysicalAccessLevel
-
 from NEMO.utilities import parse_start_and_end_date
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
@@ -115,8 +114,8 @@ def new_area_access_record(request):
 		except UnavailableResourcesUserError:
 			dictionary['error_message'] = 'The {} is inaccessible because a required resource is unavailable. You must make all required resources for this area available before creating a new area access record.'.format(area.name.lower())
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
-		except MaximumCapacityReachedError:
-			dictionary['error_message'] = 'The {} is inaccessible because it has reached its maximum capacity. Wait for somebody to exit and try again.'.format(area.name.lower())
+		except MaximumCapacityReachedError as error:
+			dictionary['error_message'] = 'The {} is inaccessible because the {} has reached its maximum capacity. Wait for somebody to exit and try again.'.format(area.name.lower(), error.area.name.lower())
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except ReservationRequiredUserError:
 			dictionary['error_message'] = 'You do not have a current reservation for the {}. Please make a reservation before trying to access this area.'.format(area.name.lower())

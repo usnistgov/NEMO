@@ -34,22 +34,23 @@ $('#sidebar .sidebar-status-occupancy').remove();
 
 {% for area in area_summary %}
 	{% if area.required_resource_is_unavailable %}
-		$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-leaf danger-highlight sidebar-status-icon" title="This area is unavailable because a required resource is unavailable"></span>');
+		$('[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-leaf danger-highlight sidebar-status-icon" title="This area is unavailable because a required resource is unavailable"></span>');
 	{% endif %}
 	{% if area.maximum_capacity %}
-		$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="sidebar-status-occupancy"> -</span>');
+		$('[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="sidebar-status-occupancy"> -</span>');
 		{% if area.occupancy_count >= area.danger_capacity %}
-			$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-user danger-highlight sidebar-status-icon" data-toggle="tooltip" title="{{ area.occupants }}"></span>');
+			$('[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-user danger-highlight sidebar-status-icon" data-toggle="tooltip" title="{{ area.occupants }}"></span>');
 		{% elif area.occupancy_count >= area.warning_capacity %}
-			$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-user warning-highlight sidebar-status-icon" data-toggle="tooltip" title="{{ area.occupants }}"></span>');
+			$('[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-user warning-highlight sidebar-status-icon" data-toggle="tooltip" title="{{ area.occupants }}"></span>');
 		{% else %}
-			$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-user success-highlight sidebar-status-icon" data-toggle="tooltip" title="{{ area.occupants }}"></span>');
+			$('[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="glyphicon glyphicon-user success-highlight sidebar-status-icon" data-toggle="tooltip" title="{{ area.occupants }}"></span>');
 		{% endif %}
 		{% if area.count_staff_in_occupancy %}
-			$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="sidebar-status-occupancy" title="There are {{ area.occupancy_count }} people in this area"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
+			$('[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="sidebar-status-occupancy" title="There are {{ area.occupancy_count }} people in this area"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
 		{% else %}
-			$('a[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="sidebar-status-occupancy" title="There are {{ area.occupancy_count }} people in this area (+ {{ area.occupancy_staff_count }} staff)"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
+			$('[data-item-id={{ area.id }}][data-item-type=area]').append('<span class="sidebar-status-occupancy" title="There are {{ area.occupancy_count }} people in this area (+ {{ area.occupancy_staff_count }} staff)"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
 		{% endif %}
 	{% endif %}
 {% endfor %}
+$('.tooltip').remove();
 $('span[data-toggle~="tooltip"]').tooltip({ container: 'body', 'html': true });

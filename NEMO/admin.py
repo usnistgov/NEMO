@@ -173,14 +173,31 @@ class ToolAdmin(admin.ModelAdmin):
 
 @register(Area)
 class AreaAdmin(admin.ModelAdmin):
-	list_display = ('name', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
+	list_display = ('name', 'parent_area', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
 	fieldsets = (
-		(None, {'fields': ('name', 'category'),}),
-		('Area access', {'fields': ('requires_reservation', 'welcome_message'),}),
+		(None, {'fields': ('name', 'parent_area', 'category'),}),
+		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message'),}),
 		('Occupancy', {'fields': ('maximum_capacity', 'count_staff_in_occupancy', 'reservation_warning'),}),
 		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
 		('Policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time',),}),
 	)
+
+	def get_fieldsets(self, request, obj:Area=None):
+		"""
+		Remove some fieldsets if this area is a parent
+		"""
+		if obj and obj.area_children_set.all().exists():
+			return [i for i in self.fieldsets if i[0] not in ['Area access', 'Reservation', 'Policy']]
+		return super().get_fieldsets(request, obj)
+
+	def save_model(self, request, obj:Area, form, change):
+		"""
+		Explicitly record any project membership changes.
+		"""
+		if obj.parent_area:
+			# if this area has a parent, that parent needs to be cleaned and updated
+			obj.parent_area.is_now_a_parent()
+		super(AreaAdmin, self).save_model(request, obj, form, change)
 
 
 @register(TrainingSession)
@@ -482,7 +499,7 @@ class SafetyIssueAdmin(admin.ModelAdmin):
 
 @register(Door)
 class DoorAdmin(admin.ModelAdmin):
-	list_display = ('name', 'area', 'interlock', 'get_absolute_url')
+	list_display = ('name', 'area', 'interlock', 'get_absolute_url', 'id')
 
 
 @register(AlertCategory)

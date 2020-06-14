@@ -3,7 +3,7 @@ import os
 import sys
 from datetime import timedelta
 from enum import Enum
-from typing import Union
+from typing import Union, Optional, List
 
 from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
@@ -214,6 +214,13 @@ class User(models.Model):
 			return AreaAccessRecord.objects.get(customer=self, staff_charge=None, end=None)
 		except AreaAccessRecord.DoesNotExist:
 			return None
+
+	def is_logged_in_area_without_reservation(self):
+		if self.in_area():
+			area = self.area_access_record().area
+			end_time = timezone.now() if not area.logout_grace_period else timezone.now() - timedelta(minutes=area.logout_grace_period)
+			return not Reservation.objects.filter(cancelled=False, missed=False, shortened=False, area=area, user=self, start__lte=timezone.now(), end__gte=end_time).exists()
+		return False
 
 	def billing_to_project(self):
 		access_record = self.area_access_record()
@@ -793,9 +800,11 @@ class StaffCharge(CalendarDisplay):
 
 class Area(models.Model):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
+	parent_area = models.ForeignKey('Area', related_name="area_children_set", null=True, blank=True, help_text='Select a parent area, (building, floor etc.)', on_delete=models.CASCADE)
 	category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
-	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login")
+	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login.")
+	logout_grace_period = models.PositiveIntegerField(null=True, blank=True, help_text="Number of minutes users have to logout of this area after their reservation expired before being flagged and abuse email is sent.")
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
 	count_staff_in_occupancy = models.BooleanField(default=True, help_text='Indicates that staff users will count towards maximum capacity.')
 	reservation_warning = models.PositiveIntegerField(blank=True, null=True, help_text='The number of simultaneous users (with at least one reservation in this area) allowed before a warning is displayed when creating a reservation.')
@@ -819,6 +828,30 @@ class Area(models.Model):
 	def __str__(self):
 		return self.name
 
+	def is_now_a_parent(self):
+		""" This method is called when this area is a parent of another area """
+		if not self.area_children_set.all().exists():
+			# Only need to clean this area if it doesn't yet have children
+			self.requires_reservation = False
+			self.reservation_horizon = None
+			self.missed_reservation_threshold = None
+			self.minimum_usage_block_time = None
+			self.maximum_usage_block_time = None
+			self.maximum_reservations_per_day = None
+			self.minimum_time_between_reservations = None
+			self.maximum_future_reservation_time = None
+			self.policy_off_between_times = False
+			self.policy_off_start_time = None
+			self.policy_off_end_time = None
+			self.policy_off_weekend = False
+			self.save()
+
+	def category_for_tree(self):
+		category = '/'.join([area.name for area in self.parents()])
+		if self.category:
+			category += '/'+self.category if category else self.category
+		return category
+
 	def warning_capacity(self):
 		return self.reservation_warning if self.reservation_warning is not None else sys.maxsize
 
@@ -827,10 +860,22 @@ class Area(models.Model):
 
 	def occupancy_count(self):
 		""" Returns the occupancy used to determine if the area is at capacity """
-		area_occupancy = AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None)
-		if not self.count_staff_in_occupancy:
-			area_occupancy = area_occupancy.filter(customer__is_staff=False)
-		return area_occupancy.count()
+		if self.count_staff_in_occupancy:
+			return self.occupancy()
+		else:
+			return self.occupancy() - self.occupancy_staff()
+
+	def occupancy_staff(self):
+		if self.area_children_set.all().exists():
+			return sum([child.occupancy_staff() for child in self.area_children_set.all()])
+		else:
+			return AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None, customer__is_staff=True).count()
+
+	def occupancy(self):
+		if self.area_children_set.all().exists():
+			return sum([child.occupancy() for child in self.area_children_set.all()])
+		else:
+			return AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None).count()
 
 	def required_resource_is_unavailable(self) -> bool:
 		return self.required_resources.filter(available=False).exists()
@@ -838,6 +883,20 @@ class Area(models.Model):
 	def get_current_reservation_for_user(self, user):
 		if self.requires_reservation:
 			return Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=user, area=self, start__lte=timezone.now(), end__gt=timezone.now())
+
+	def parents(self) -> Optional[List]:
+		parent_list = []
+		parent = self
+		while parent.parent_area:
+			parent_list.append(parent.parent_area)
+			parent = parent.parent_area
+		parent_list.reverse()
+		return parent_list
+
+	def self_and_parents(self) -> List:
+		result = [self]
+		result.extend(self.parents())
+		return result
 
 
 class AreaAccessRecord(CalendarDisplay):
