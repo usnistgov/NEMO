@@ -21,7 +21,7 @@ def status_dashboard(request, tab=None):
 	show_not_qualified_areas = get_customization('dashboard_display_not_qualified_areas')
 	if interest is None:
 		areas = AreaAccessRecord.objects.filter(end=None, staff_charge=None)
-		if show_not_qualified_areas != 'enabled':
+		if not user.is_staff and show_not_qualified_areas != 'enabled':
 			areas = areas.filter(area__in=user.accessible_areas())
 		dictionary = {
 			'tab': tab if tab else "occupancy",
@@ -36,7 +36,7 @@ def status_dashboard(request, tab=None):
 		return render(request, 'status_dashboard/tools.html', dictionary)
 	elif interest == "occupancy":
 		areas = AreaAccessRecord.objects.filter(end=None, staff_charge=None)
-		if show_not_qualified_areas != 'enabled':
+		if not user.is_staff and show_not_qualified_areas != 'enabled':
 			areas = areas.filter(area__in=user.accessible_areas())
 		dictionary = {
 			'facility_occupants': areas.prefetch_related('customer', 'project', 'area'),
