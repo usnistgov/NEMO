@@ -40,4 +40,5 @@ def base_context(request):
 		"device": request.device,
 		"tools_exist": tools_exist,
 		"areas_exist": areas_exist,
+		"no_header": request.session.get('no_header', False),
 	}
