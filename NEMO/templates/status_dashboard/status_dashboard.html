@@ -5,16 +5,16 @@
 <div>
 	<h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">Status dashboard</h1>
 	<ul class="nav nav-pills" id="tabs" {% if no_header %}style="display:none"{% endif %}>
-		<li {% if tab == 'occupancy' %}class="active"{% endif %}><a href="#occupancy">Area occupancy</a></li>
-		<li {% if tab == 'tools' %}class="active"{% endif %}><a href="#tools">Tool status & usage</a></li>
+		{% if areas_exist %}<li {% if tab == 'occupancy' %}class="active"{% endif %}><a href="#occupancy">Area occupancy</a></li>{% endif %}
+		{% if tools_exist %}<li {% if tab == 'tools' %}class="active"{% endif %}><a href="#tools">Tool status & usage</a></li>{% endif %}
 	</ul>
 </div>
 
 <div id="content" class="tab-content" style="padding-top:10px">
-	<div class="tab-pane {% if tab == 'occupancy' %}active{% endif %}" id="occupancy">
+	<div class="tab-pane {% if areas_exist and tab == 'occupancy' %}active{% endif %}" id="occupancy">
 		{% include 'status_dashboard/occupancy.html' %}
 	</div>
-	<div class="tab-pane {% if tab == 'tools' %}active{% endif %}" id="tools">
+	<div class="tab-pane {% if tools_exist and tab == 'tools' %}active{% endif %}" id="tools">
 		<div class="btn-group sidebar-item">
 			<button id="filter" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" {% if no_header %}style="display:none;"{% endif %}>
 				Showing tools in use
@@ -88,13 +88,13 @@
 	function filter(show)
 	{
 		$("#filter").html("Showing " + show + " <span class='caret'></span>");
-		if(show == "all tools")
+		if(show === "all tools")
 			set_style('.in_use { display: table-row; } .idle { display: table-row; }');
-		else if(show == "tools in use")
+		else if(show === "tools in use")
 			set_style('.in_use { display: table-row; } .idle { display: none; }');
-		else if(show == "problematic tools")
+		else if(show === "problematic tools")
 			set_style('.problematic { display: table-row } .healthy { display: none; }');
-		else if(show == "idle tools")
+		else if(show === "idle tools")
 			set_style('.idle { display: table-row; } .in_use { display: none; }');
 	}
 </script>
