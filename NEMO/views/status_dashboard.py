@@ -5,7 +5,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.models import AreaAccessRecord, Resource, ScheduledOutage, Task, Tool, UsageEvent
+from NEMO.models import AreaAccessRecord, Resource, ScheduledOutage, Task, Tool, UsageEvent, User
+from NEMO.views.customization import get_customization
 
 
 @login_required
@@ -16,11 +17,16 @@ def status_dashboard(request, tab=None):
 	Present a web page to allow users to view the status and usage of all tools.
 	"""
 	interest = request.GET.get('interest')
+	user: User = request.user
+	show_not_qualified_areas = get_customization('dashboard_display_not_qualified_areas')
 	if interest is None:
+		areas = AreaAccessRecord.objects.filter(end=None, staff_charge=None)
+		if show_not_qualified_areas != 'enabled':
+			areas = areas.filter(area__in=user.accessible_areas())
 		dictionary = {
 			'tab': tab if tab else "occupancy",
 			'tool_summary': create_tool_summary(),
-			'facility_occupants': AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'project', 'area'),
+			'facility_occupants': areas.prefetch_related('customer', 'project', 'area'),
 		}
 		return render(request, 'status_dashboard/status_dashboard.html', dictionary)
 	elif interest == "tools":
@@ -29,8 +35,11 @@ def status_dashboard(request, tab=None):
 		}
 		return render(request, 'status_dashboard/tools.html', dictionary)
 	elif interest == "occupancy":
+		areas = AreaAccessRecord.objects.filter(end=None, staff_charge=None)
+		if show_not_qualified_areas != 'enabled':
+			areas = areas.filter(area__in=user.accessible_areas())
 		dictionary = {
-			'facility_occupants': AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'project', 'area'),
+			'facility_occupants': areas.prefetch_related('customer', 'project', 'area'),
 		}
 		return render(request, 'status_dashboard/occupancy.html', dictionary)
 

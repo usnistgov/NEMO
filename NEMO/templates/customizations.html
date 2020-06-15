@@ -123,7 +123,7 @@
 					<div class="form-group">
 						<div class="col-md-12">
 							<div class="checkbox">
-								<label><input type="checkbox" name="calendar_display_not_qualified_areas" {% if calendar_display_not_qualified_areas %}checked{% endif %} value="enabled">Show areas (for reservations) that the user is not allowed in (they will be grayed out)</label><br/>
+								<label><input type="checkbox" name="calendar_display_not_qualified_areas" {% if calendar_display_not_qualified_areas %}checked{% endif %} value="enabled">Also show areas (for reservations) that the user doesn't have access too (they will be grayed out)</label><br/>
 							</div>
 						</div>
 					</div>
@@ -147,6 +147,13 @@
 								<label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas</label><br/>
 								<label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas</label><br/>
 								<label><input type="checkbox" name="calendar_login_logout" {% if calendar_login_logout %}checked{% endif %} value="enabled">Allow login/logout in the calendar view</label>
+							</div>
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-md-12">
+							<div class="checkbox">
+								<label><input type="checkbox" name="dashboard_display_not_qualified_areas" {% if dashboard_display_not_qualified_areas %}checked{% endif %} value="enabled">Also show areas the user doesn't have access to in status dashboard</label><br/>
 							</div>
 						</div>
 					</div>

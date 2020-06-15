@@ -37,7 +37,7 @@
 					<span {% if o.customer.is_staff %}class="success-highlight" {% elif o.customer.is_logged_in_area_without_reservation %}class="danger-highlight" {% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
 				</td>
 				<td style="white-space: nowrap;width:25%">{{ o.start|date:"l @ g:i A" }}</td>
-				<td><div style="width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ o.project }} asdsadasdasdasd asda sd asd asd asd asd asdasd da sd asd asdasda</div></td>
+				<td><div style="width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ o.project }}</div></td>
 			</tr>
 		{% endfor %}
 		</tbody>
