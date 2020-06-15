@@ -544,7 +544,7 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 @register(PhysicalAccessLevel)
 class PhysicalAccessLevelAdmin(admin.ModelAdmin):
 	form = PhysicalAccessLevelForm
-	list_display = ('name', 'area', 'schedule')
+	list_display = ('name', 'area', 'schedule', 'allow_staff_access')
 
 	def save_model(self, request, obj, form, change):
 		"""

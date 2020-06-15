@@ -1,6 +1,5 @@
 from datetime import timedelta
 from html.parser import HTMLParser
-from typing import Set
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
@@ -16,7 +15,7 @@ from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, InactiveUserError, \
 	NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError, \
 	MaximumCapacityReachedError, ReservationRequiredUserError
-from NEMO.models import Area, AreaAccessRecord, Project, User, PhysicalAccessLevel
+from NEMO.models import Area, AreaAccessRecord, Project, User
 from NEMO.utilities import parse_start_and_end_date
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
@@ -89,7 +88,7 @@ def new_area_access_record(request):
 				dictionary['error_message'] = error_message
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
 
-			dictionary['areas'] = list(set([access_level.area for access_level in get_accessible_access_levels_for_user(user=customer)]))
+			dictionary['areas'] = customer.accessible_areas()
 			return render(request, 'area_access/new_area_access_record_details.html', dictionary)
 		except:
 			pass
@@ -252,7 +251,7 @@ def self_log_in(request):
 		dictionary['error_message'] = f"You have not been granted physical access to any {facility_name} area. Please visit the User Office if you believe this is an error."
 		return render(request, 'area_access/self_login.html', dictionary)
 
-	dictionary['areas'] = list(set([access_level.area for access_level in get_accessible_access_levels_for_user(user=user)]))
+	dictionary['areas'] = user.accessible_areas()
 	if request.method == 'GET':
 		return render(request, 'area_access/self_login.html', dictionary)
 	if request.method == 'POST':
@@ -335,12 +334,3 @@ def able_to_self_log_in_to_area(user):
 
 	# Otherwise user can try to self log in
 	return True
-
-
-def get_accessible_access_levels_for_user(user: User) -> Set[PhysicalAccessLevel]:
-	accessible_areas = set(user.physical_access_levels.all())
-	# If staff user, add areas where physical access level allow staff access directly
-	if user.is_staff:
-		accessible_areas.update(PhysicalAccessLevel.objects.filter(allow_staff_access=True))
-
-	return accessible_areas

@@ -223,7 +223,7 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
 	if item_type == ReservationItemType.AREA:
-		user_access_levels = user.physical_access_levels.filter(area=new_reservation.area)
+		user_access_levels = user.accessible_access_levels().filter(area=new_reservation.area)
 		if not any([access_level.accessible_at(new_reservation.start) for access_level in user_access_levels]) or not any([access_level.accessible_at(new_reservation.end) for access_level in user_access_levels]):
 			details = f" (times allowed in this area are: {','.join([access.get_schedule_display() for access in user_access_levels])})" if user_access_levels else ''
 			if user == user_creating_reservation:
@@ -459,9 +459,8 @@ def check_policy_to_enter_any_area(user: User):
 	if user.access_expiration is not None and user.access_expiration < date.today():
 		raise PhysicalAccessExpiredUserError(user=user)
 
-	user_has_access_to_at_least_one_area = user.physical_access_levels.all().exists()
-	staff_has_access_to_at_least_one_area = user.is_staff and PhysicalAccessLevel.objects.filter(allow_staff_access=True).exists()
-	if not (user_has_access_to_at_least_one_area or staff_has_access_to_at_least_one_area):
+	user_has_access_to_at_least_one_area = user.accessible_access_levels().all().exists()
+	if not user_has_access_to_at_least_one_area:
 		raise NoPhysicalAccessUserError(user=user)
 
 
@@ -471,7 +470,7 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 		pass
 	else:
 		# Check if the user normally has access to this area door at the current time
-		if not any([access_level.accessible() for access_level in user.physical_access_levels.filter(area=area)]):
+		if not any([access_level.accessible() for access_level in user.accessible_access_levels().filter(area=area)]):
 			raise NoAccessiblePhysicalAccessUserError(user=user, area=area)
 
 	if not user.is_staff:

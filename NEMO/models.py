@@ -206,6 +206,15 @@ class User(models.Model):
 	def get_short_name(self):
 		return self.first_name
 
+	def accessible_access_levels(self):
+		if not self.is_staff:
+			return self.physical_access_levels.all()
+		else:
+			return PhysicalAccessLevel.objects.filter(Q(id__in=self.physical_access_levels.all()) | Q(allow_staff_access=True)).distinct()
+
+	def accessible_areas(self):
+		return list(set([access.area for access in self.accessible_access_levels()]))
+
 	def in_area(self):
 		return AreaAccessRecord.objects.filter(customer=self, staff_charge=None, end=None).exists()
 
