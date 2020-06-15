@@ -437,6 +437,9 @@ function login_to_area()
 		var event_changes =
 		{
 			"area": item.id,
+		{% if user.active_project_count == 1 %}
+			"project": "{{ user.active_projects.0.id }}",
+		{% endif %}
 			"csrfmiddlewaretoken": "{{ csrf_token }}"
 		};
 		let url = "{% url 'calendar_self_log_in' %}"
