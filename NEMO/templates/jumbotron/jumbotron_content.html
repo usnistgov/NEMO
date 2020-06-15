@@ -6,7 +6,10 @@
 			{% else %}
 				{% regroup facility_occupants by area as area_occupants %}
 				<h2>Area occupancy</h2>
-				<p>Staff members are highlighted in <span class="success-highlight">green</span></p>
+				<p>
+					Staff members are highlighted in <span class="success-highlight">green</span>.<br>
+					Users with expired reservations are highlighted in <span class="danger-highlight">red</span>.
+				</p>
 				{% for area in area_occupants %}
 					{# Panel is used to make table borders rounded. #}
 					<div class="panel panel-default" style="background:transparent">
@@ -41,7 +44,7 @@
 							{% for o in area.list %}
 								<tr>
 									<td>
-										<span {% if o.customer.is_staff %}class="success-highlight"{% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
+										<span {% if o.customer.is_staff %}class="success-highlight" {% elif o.customer.is_logged_in_area_without_reservation %}class="danger-highlight" {% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
 									</td>
 									<td>{{ o.start|date:"l @ g:i A" }}</td>
 									<td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ o.project }}</td>

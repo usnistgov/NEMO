@@ -1,5 +1,8 @@
 {% if occupants|length > 0 %}
-	Staff members are highlighted in <span class="success-highlight">green</span>.<p>
+	<p>
+		Staff members are highlighted in <span class="success-highlight">green</span>.<br>
+		Users with expired reservations are highlighted in <span class="danger-highlight">red</span>.
+	</p>
 	{# Panel is used to make table borders rounded. #}
 	<div class="panel panel-default">
 		<table class="table table-bordered table-condensed">
@@ -32,7 +35,7 @@
 			<tbody>
 			{% for o in occupants %}
 				<tr>
-					<td><span {% if o.customer.is_staff %}class="success-highlight"{% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span></td>
+					<td><span {% if o.customer.is_staff %}class="success-highlight" {% elif o.customer.is_logged_in_area_without_reservation %}class="danger-highlight" {% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span></td>
 					<td>{{ o.start|date:"l @ g:i A" }}</td>
 					<td>{{ o.project }}</td>
 				</tr>

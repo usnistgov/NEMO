@@ -1,7 +1,10 @@
 {% if facility_occupants|length == 0 %}
 	Nobody is in an access controlled {{ facility_name }} area.
 {% else %}
-	Staff members are highlighted in <span class="success-highlight">green</span>.<p>
+	<p>
+		Staff members are highlighted in <span class="success-highlight">green</span>.<br>
+		Users with expired reservations are highlighted in <span class="danger-highlight">red</span>.
+	</p>
 	{% regroup facility_occupants|dictsort:"area.name" by area as area_occupants %}
 	{% for area in area_occupants %}
 		{# Panel is used to make table borders rounded. #}
@@ -40,7 +43,7 @@
 							{% if user.is_staff %}
 								<span class="glyphicon glyphicon-remove-circle grey pointer" onclick="force_user_out_of_the_area('{% url 'force_area_logout' o.customer_id %}')" title="Force {{ o.customer }} to log out of the {{ o.area }}"></span>
 							{% endif %}
-							<span {% if o.customer.is_staff %}class="success-highlight"{% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
+							<span {% if o.customer.is_staff %}class="success-highlight" {% elif o.customer.is_logged_in_area_without_reservation %}class="danger-highlight" {% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
 						</td>
 						<td>{{ o.start|date:"l @ g:i A" }}</td>
 						<td>{{ o.project }}</td>

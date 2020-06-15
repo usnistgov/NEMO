@@ -65,9 +65,9 @@ def create_area_summary():
 		# Get ids for area and all the parents (so we can add occupants info on parents)
 		area_ids = [area.id for area in occupant.area.self_and_parents()]
 		if occupant.customer.is_staff:
-			customer_display = f'<span style="color:green">{str(occupant.customer)}</span>'
+			customer_display = f'<span class="success-highlight">{str(occupant.customer)}</span>'
 		elif occupant.customer.is_logged_in_area_without_reservation():
-			customer_display = f'<span style="color:red">{str(occupant.customer)}</span>'
+			customer_display = f'<span class="danger-highlight">{str(occupant.customer)}</span>'
 		else:
 			customer_display = str(occupant.customer)
 		for area_id in area_ids:
