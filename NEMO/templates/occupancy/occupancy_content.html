@@ -1,0 +1,45 @@
+{# Panel is used to make table borders rounded. #}
+<div class="panel panel-default" {% if transparent_bg %}style="background:transparent"{% endif %}>
+	<table class="table table-bordered table-condensed" {% if transparent_bg %}style="background:transparent"{% endif %}>
+		<thead>
+			<tr>
+				<th colspan="4" style="font-size:large;">
+					<span class="primary-highlight">{{ area.name }}</span>
+					<span class="pull-right">
+						{% if area.maximum_capacity != 0 and area.occupancy_count >= area.danger_capacity %}<span style="color:red"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
+						{% elif area.maximum_capacity != 0 and area.occupancy_count >= area.warning_capacity %}<span style="color:orange"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
+						{% else %}<span>{% endif %}
+							{{ area.occupancy_count }}
+						</span>{% if area.maximum_capacity != 0 %} / {{ area.maximum_capacity }}{% endif %} people
+						{% if occupants|length != area.occupancy_count %}
+							{% with occupancy=area.occupancy_count|stringformat:"d"  %}
+								{% with negative_occupancy="-"|add:occupancy %}
+									(+ {{ occupants|length|add:negative_occupancy }} staff)
+								{% endwith %}
+							{% endwith %}
+						{% endif %}
+					</span>
+				</th>
+			</tr>
+			<tr>
+				<th {% if center_th %}style="text-align:center;"{% endif %}>User</th>
+				<th {% if center_th %}style="text-align:center;"{% endif %}>Since</th>
+				<th {% if center_th %}style="text-align:center;"{% endif %}>Working on project...</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for o in occupants %}
+			<tr>
+				<td style="white-space: nowrap;width:20%">
+					{% if show_force_logout and user.is_staff %}
+						<span class="glyphicon glyphicon-remove-circle grey pointer" onclick="force_user_out_of_the_area('{% url 'force_area_logout' o.customer_id %}')" title="Force {{ o.customer }} to log out of the {{ o.area }}"></span>
+					{% endif %}
+					<span {% if o.customer.is_staff %}class="success-highlight" {% elif o.customer.is_logged_in_area_without_reservation %}class="danger-highlight" {% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
+				</td>
+				<td style="white-space: nowrap;width:25%">{{ o.start|date:"l @ g:i A" }}</td>
+				<td><div style="width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ o.project }} asdsadasdasdasd asda sd asd asd asd asd asdasd da sd asd asdasda</div></td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</div>

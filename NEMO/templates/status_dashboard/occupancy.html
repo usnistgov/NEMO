@@ -7,50 +7,6 @@
 	</p>
 	{% regroup facility_occupants|dictsort:"area.name" by area as area_occupants %}
 	{% for area in area_occupants %}
-		{# Panel is used to make table borders rounded. #}
-		<div class="panel panel-default">
-			<table class="table table-bordered table-condensed">
-				<thead>
-				<tr>
-					<th colspan="4">
-						<span class="primary-highlight">{{ area.grouper }}</span>
-						<span class="pull-right">
-							{% if area.grouper.maximum_capacity != 0 and area.grouper.occupancy_count >= area.grouper.danger_capacity %}<span style="color:red"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
-							{% elif area.grouper.maximum_capacity != 0 and area.grouper.occupancy_count >= area.grouper.warning_capacity %}<span style="color:orange"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
-							{% else %}<span>{% endif %}
-								{{ area.grouper.occupancy_count }}
-							</span>{% if area.grouper.maximum_capacity != 0 %} / {{ area.grouper.maximum_capacity }}{% endif %} people
-							{% if area.list|length != area.grouper.occupancy_count %}
-								{% with occupancy=area.grouper.occupancy_count|stringformat:"d"  %}
-									{% with negative_occupancy="-"|add:occupancy %}
-										(+ {{ area.list|length|add:negative_occupancy }} staff)
-									{% endwith %}
-								{% endwith %}
-							{% endif %}
-						</span>
-					</th>
-				</tr>
-				<tr>
-					<th>User</th>
-					<th>Since</th>
-					<th>Working on project...</th>
-				</tr>
-				</thead>
-				<tbody>
-				{% for o in area.list %}
-					<tr>
-						<td>
-							{% if user.is_staff %}
-								<span class="glyphicon glyphicon-remove-circle grey pointer" onclick="force_user_out_of_the_area('{% url 'force_area_logout' o.customer_id %}')" title="Force {{ o.customer }} to log out of the {{ o.area }}"></span>
-							{% endif %}
-							<span {% if o.customer.is_staff %}class="success-highlight" {% elif o.customer.is_logged_in_area_without_reservation %}class="danger-highlight" {% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
-						</td>
-						<td>{{ o.start|date:"l @ g:i A" }}</td>
-						<td>{{ o.project }}</td>
-					</tr>
-				{% endfor %}
-				</tbody>
-			</table>
-		</div>
+		{% include 'occupancy/occupancy_content.html' with area=area.grouper occupants=area.list show_force_logout=True %}
 	{% endfor %}
 {% endif %}

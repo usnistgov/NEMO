@@ -308,7 +308,7 @@ def occupancy(request):
 		'area': area,
 		'occupants': AreaAccessRecord.objects.filter(area__name=area.name, end=None, staff_charge=None).prefetch_related('customer'),
 	}
-	return render(request, 'occupancy.html', dictionary)
+	return render(request, 'occupancy/occupancy.html', dictionary)
 
 
 def able_to_self_log_out_of_area(user):
