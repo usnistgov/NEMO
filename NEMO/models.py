@@ -218,8 +218,9 @@ class User(models.Model):
 	def is_logged_in_area_without_reservation(self):
 		if self.in_area():
 			area = self.area_access_record().area
-			end_time = timezone.now() if not area.logout_grace_period else timezone.now() - timedelta(minutes=area.logout_grace_period)
-			return not Reservation.objects.filter(cancelled=False, missed=False, shortened=False, area=area, user=self, start__lte=timezone.now(), end__gte=end_time).exists()
+			if area.requires_reservation:
+				end_time = timezone.now() if not area.logout_grace_period else timezone.now() - timedelta(minutes=area.logout_grace_period)
+				return not Reservation.objects.filter(cancelled=False, missed=False, shortened=False, area=area, user=self, start__lte=timezone.now(), end__gte=end_time).exists()
 		return False
 
 	def billing_to_project(self):
