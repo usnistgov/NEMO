@@ -60,7 +60,7 @@
 		function on_load()
 		{
 			refresh_jumbotron();
-			setInterval(refresh_jumbotron, 10000);
+			set_interval_when_visible(document, refresh_jumbotron, 10000);
 		}
 		$(on_load);
 	</script>

@@ -1,3 +1,17 @@
+// This function allows to make regular interval calls to a function only when the tab/window is visible.
+// It also gets called when the tab/window becomes visible (changing tabs, minimizing window etc.)
+function set_interval_when_visible(doc, function_to_repeat, time)
+{
+	doc.addEventListener("visibilitychange", function()
+	{
+		function_to_repeat();
+	});
+	setInterval(function()
+	{
+		if (!doc.hidden) function_to_repeat();
+	}, time)
+}
+
 // This function allows any page to switch between content tabs in
 // the Bootstrap framework. It is generally called upon loading the page.
 function switch_tab(element)

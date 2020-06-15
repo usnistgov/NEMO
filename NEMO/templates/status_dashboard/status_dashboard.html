@@ -43,7 +43,7 @@
 		filter('tools in use');
 		$("#tabs a").click(switch_tab);
 		$("#tabs a").click(refresh_status_dashboard);
-		setInterval(refresh_status_dashboard, 10000);
+		set_interval_when_visible(document, refresh_status_dashboard, 10000);
 	}
 	$(on_load);
 
