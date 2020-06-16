@@ -230,6 +230,11 @@ appear as a pointer (rather than text selector) when mousing over event text. */
 	pointer-events: none;
 }
 
+/* Adds more space between event and side so users can more easily click to create new events */
+div.fc-ltr .fc-time-grid .fc-event-container {
+    margin-right: 10%;
+}
+
 /* Twitter typeahead styles */
 .twitter-typeahead
 {
