@@ -212,10 +212,10 @@ class User(models.Model):
 		else:
 			return PhysicalAccessLevel.objects.filter(Q(id__in=self.physical_access_levels.all()) | Q(allow_staff_access=True)).distinct()
 
-	def accessible_areas(self):
+	def accessible_areas(self) -> List:
 		return list(set([access.area for access in self.accessible_access_levels()]))
 
-	def in_area(self):
+	def in_area(self) -> bool:
 		return AreaAccessRecord.objects.filter(customer=self, staff_charge=None, end=None).exists()
 
 	def area_access_record(self):
@@ -224,7 +224,7 @@ class User(models.Model):
 		except AreaAccessRecord.DoesNotExist:
 			return None
 
-	def is_logged_in_area_without_reservation(self):
+	def is_logged_in_area_without_reservation(self) -> bool:
 		if self.in_area():
 			area = self.area_access_record().area
 			if area.requires_reservation:
@@ -245,7 +245,7 @@ class User(models.Model):
 	def active_projects(self):
 		return self.projects.filter(active=True, account__active=True)
 
-	def charging_staff_time(self):
+	def charging_staff_time(self) -> bool:
 		return StaffCharge.objects.filter(staff_member=self.id, end=None).exists()
 
 	def get_staff_charge(self):

@@ -46,8 +46,13 @@ label
 /* Add left indents to each sub-list in the sidebar. */
 #sidebar .nav-list
 {
-	margin-left: 10px;
+	margin-left: 15px;
 	padding-right: 0;
+}
+
+#sidebar #tool_tree.nav-list, #sidebar #area_tree.nav-list, #sidebar #extra-links.nav-list
+{
+	margin-left: 0;
 }
 
 #sidebar a
@@ -55,11 +60,6 @@ label
     padding-top: 0;
     padding-bottom: 0;
     padding-right: 4px;
-}
-
-#sidebar li.area-category a, #sidebar li.tool-category a
-{
-	padding-left: 15px !important;
 }
 
 #sidebar #tool_tree a, #sidebar #area_tree a
@@ -284,158 +284,189 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 	background-color: #0097cf;
 }
 
-.page-footer {
+.page-footer
+{
 	margin-top: 20px;
   	border-top: 1px solid #eee;
 	line-height: 40px;
 	text-align: center;
 }
 
-.body-container {
+.body-container
+{
 	/* 100 viewport - header (height+border+margin) - footer (height+border+margin) */
 	min-height: calc(100vh - 71px - 61px);
 }
 
-.customization-separation {
+.customization-separation
+{
 	margin-bottom: 15px;
 	margin-left: -15px;
 	margin-right: -15px;
 	border-top: 1px solid #ddd
 }
 
-.customization-content {
+.customization-content
+{
 	margin-top: 10px;
 	white-space: pre-wrap;
 	font-family: monospace;
 	font-size: 12px;
 }
 
-.customization-input-file {
+.customization-input-file
+{
 	color: transparent;
 	display: inline-block !important;
 	margin-right: -170px;
 }
 
-.navbar-preferences > a {
+.navbar-preferences > a
+{
 	padding-left: 0 !important;
 	padding-right: 0 !important;
 }
 
-.navbar-preferences > a > img {
+.navbar-preferences > a > img
+{
 	width: 19px;
 	height: 19px;
 }
 
 /* Customization of time picker CSS */
-.picker__list small {
+.picker__list small
+{
     color: #999;
     float: right;
     line-height: 1.5;
 }
 
-.picker__list span {
+.picker__list span
+{
 	color: #999;
 }
 
 /* Customization of search result group item */
-.list-group-item {
+.list-group-item
+{
 	margin-bottom: 5px;
 }
 
-.tool-status {
+.tool-status
+{
 	margin-bottom: 30px;
 }
 
-.danger-status {
+.danger-status
+{
 	margin-bottom: 30px;
 }
 
-.warning-status {
+.warning-status
+{
 	margin-bottom: 30px;
 }
 
-.tool-comments, .tool-problems {
+.tool-comments, .tool-problems
+{
 	margin-bottom: 30px;
 }
 
-.danger-status .media-heading, .danger-status .media-middle, .danger-status .media-bottom {
+.danger-status .media-heading, .danger-status .media-middle, .danger-status .media-bottom
+{
 	display: block;
 }
 
-.warning-status .media-heading, .warning-status .media-middle, .warning-status .media-bottom  {
+.warning-status .media-heading, .warning-status .media-middle, .warning-status .media-bottom
+{
 	display: block;
 }
 
-.tool-comments .media-heading, .tool-comments .media-middle, .tool-comments .media-bottom {
+.tool-comments .media-heading, .tool-comments .media-middle, .tool-comments .media-bottom
+{
 	display: block;
 }
 
-.tool-problems .media-heading, .tool-problems .media-middle, .tool-problems .media-bottom {
+.tool-problems .media-heading, .tool-problems .media-middle, .tool-problems .media-bottom
+{
 	display: block;
 }
 
-.danger-status .media-heading {
+.danger-status .media-heading
+{
 	font-weight: 600;
     line-height: 1.1;
 	font-size: x-large;
 }
 
-.warning-status .media-heading {
+.warning-status .media-heading
+{
 	font-weight: 500;
     line-height: 1.1;
 	font-size: large;
 }
 
-.danger-status .media-bottom, .warning-status .media-bottom, .tool-comments .media-bottom, .tool-problems .media-bottom {
+.danger-status .media-bottom, .warning-status .media-bottom, .tool-comments .media-bottom, .tool-problems .media-bottom
+{
 	color: grey;
 	font-style: italic;
 }
 
-.danger-status .media-middle {
+.danger-status .media-middle
+{
 	font-size: large;
 }
 
-.warning-status .media-bottom, .tool-comments .media-bottom, .tool-problems .media-bottom {
+.warning-status .media-bottom, .tool-comments .media-bottom, .tool-problems .media-bottom
+{
 	font-size: small;
 }
 
-.tool-problems .media-heading {
+.tool-problems .media-heading
+{
 	font-size: medium;
 	font-weight: 500;
 }
 
-.tool-rates {
+.tool-rates
+{
 	margin-top: 5px;
 }
 
-.jumbotron-body {
+.jumbotron-body
+{
 	background-repeat: no-repeat;
 	background-position: center;
 	background-size: cover;
 	background-attachment: fixed;
 }
 
-#jumbotron-container .table-bordered td, #jumbotron-container .table-bordered th {
+#jumbotron-container .table-bordered td, #jumbotron-container .table-bordered th
+{
 	background:rgba(255, 255, 255, 0.7)
 }
 
-.spinner-container {
+.spinner-container
+{
 	text-align: center;
 	background-color: #ffffff;
 	font-size: 70px;
 	color: #bfbfbf;
 }
 
-.spinner-container .normal-right-spinner {
+.spinner-container .normal-right-spinner
+{
 	top: calc(50% - 70px);
 }
 
-.glyphicon.normal-right-spinner {
+.glyphicon.normal-right-spinner
+{
     -webkit-animation: glyphicon-spin-r 2s infinite linear;
     animation: glyphicon-spin-r 2s infinite linear;
 }
 
-@-webkit-keyframes glyphicon-spin-r {
+@-webkit-keyframes glyphicon-spin-r
+{
     0% {
         -webkit-transform: rotate(0deg);
         transform: rotate(0deg);
@@ -446,7 +477,8 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
     }
 }
 
-@keyframes glyphicon-spin-r {
+@keyframes glyphicon-spin-r
+{
     0% {
         -webkit-transform: rotate(0deg);
         transform: rotate(0deg);
@@ -455,4 +487,29 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
         -webkit-transform: rotate(359deg);
         transform: rotate(359deg);
     }
+}
+
+ul.area-tree-list
+{
+	list-style: none;
+	padding-left: 32px;
+}
+
+ul.area-tree-root > li.area-tree-node {
+	padding-left: 0;
+}
+
+li.area-tree-leaf
+{
+	list-style: none;
+}
+
+li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
+{
+	color: inherit;
+	text-decoration: none;
+	cursor: pointer;
+	display: inline-block;
+	margin-top: 5px;
+	margin-bottom: 20px;
 }
