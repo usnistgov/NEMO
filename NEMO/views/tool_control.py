@@ -1,4 +1,3 @@
-from copy import deepcopy
 from datetime import timedelta
 from http import HTTPStatus
 from itertools import chain
@@ -16,6 +15,7 @@ from NEMO import rates
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, TaskCategory, TaskStatus, Tool, UsageEvent, User
 from NEMO.utilities import extract_times, quiet_int
+from NEMO.views.calendar import shorten_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import DynamicForm
@@ -228,21 +228,9 @@ def disable_tool(request, tool_id):
 	response = check_policy_to_disable_tool(tool, request.user, downtime)
 	if response.status_code != HTTPStatus.OK:
 		return response
-	try:
-		current_reservation = Reservation.objects.get(start__lt=timezone.now(), end__gt=timezone.now(), cancelled=False, missed=False, shortened=False, user=request.user, tool=tool)
-		# Staff are exempt from mandatory reservation shortening when tool usage is complete.
-		if request.user.is_staff is False:
-			# Shorten the user's reservation to the current time because they're done using the tool.
-			new_reservation = deepcopy(current_reservation)
-			new_reservation.id = None
-			new_reservation.pk = None
-			new_reservation.end = timezone.now() + downtime
-			new_reservation.save()
-			current_reservation.shortened = True
-			current_reservation.descendant = new_reservation
-			current_reservation.save()
-	except Reservation.DoesNotExist:
-		pass
+
+	# Shorten the user's tool reservation since we are now done using the tool
+	shorten_reservation(user=request.user, item=tool, new_end=timezone.now() + downtime)
 
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():

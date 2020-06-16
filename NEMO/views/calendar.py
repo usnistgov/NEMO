@@ -1,10 +1,11 @@
 import io
 from collections import Iterable, defaultdict
+from copy import deepcopy
 from datetime import timedelta, datetime
 from http import HTTPStatus
 from logging import getLogger
 from re import match
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from dateutil import rrule
 from django.contrib.admin.views.decorators import staff_member_required
@@ -820,6 +821,27 @@ def cancel_unused_reservations(request):
 @require_GET
 def proxy_reservation(request):
 	return render(request, 'calendar/proxy_reservation.html', {'users': User.objects.filter(is_active=True)})
+
+
+def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime = None):
+	try:
+		if new_end is None:
+			new_end = timezone.now()
+		current_reservation = Reservation.objects.filter(start__lt=timezone.now(), end__gt=timezone.now(),
+														 cancelled=False, missed=False, shortened=False, user=user)
+		current_reservation = current_reservation.get(**{ReservationItemType.from_item(item).value: item})
+		# Staff are exempt from mandatory reservation shortening.
+		if user.is_staff is False:
+			new_reservation = deepcopy(current_reservation)
+			new_reservation.id = None
+			new_reservation.pk = None
+			new_reservation.end = new_end
+			new_reservation.save()
+			current_reservation.shortened = True
+			current_reservation.descendant = new_reservation
+			current_reservation.save()
+	except Reservation.DoesNotExist:
+		pass
 
 
 def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation: User, reason: Optional[str]):

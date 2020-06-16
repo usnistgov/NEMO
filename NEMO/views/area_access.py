@@ -17,6 +17,7 @@ from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableReso
 	MaximumCapacityReachedError, ReservationRequiredUserError
 from NEMO.models import Area, AreaAccessRecord, Project, User
 from NEMO.utilities import parse_start_and_end_date
+from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
 
@@ -289,6 +290,8 @@ def self_log_out(request, user_id):
 			return HttpResponseBadRequest('You are not logged into any areas.')
 		record.end = timezone.now()
 		record.save()
+		# Shorten the user's area reservation since the user is now leaving
+		shorten_reservation(request.user, record.area)
 	return redirect(reverse('landing'))
 
 

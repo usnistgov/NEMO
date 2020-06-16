@@ -40,6 +40,15 @@ class ReservationItemType(Enum):
 	def _missing_(cls, value):
 		return ReservationItemType.NONE
 
+	@classmethod
+	def from_item(cls, item):
+		if isinstance(item, Tool):
+			return ReservationItemType.TOOL
+		elif isinstance(item, Area):
+			return ReservationItemType.AREA
+		else:
+			return ReservationItemType.NONE
+
 
 class CalendarDisplay(models.Model):
 	"""
