@@ -95,6 +95,7 @@ def disable_tool(request):
 	current_usage_event.run_data = dynamic_form.extract(request)
 	dynamic_form.charge_for_consumables(current_usage_event.user, current_usage_event.operator, current_usage_event.project, current_usage_event.run_data)
 
+	current_usage_event.save()
 	dictionary = {
 		'message': 'You are no longer using the {}'.format(tool),
 		'badge_number': customer.badge_number,
