@@ -1,13 +1,14 @@
 from typing import List, Optional
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, QuerySet
+from django.db.models import Q, QuerySet, Count
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.models import AreaAccessRecord, Resource, ScheduledOutage, Task, Tool, UsageEvent, User, Area
+from NEMO.model_tree import get_area_model_tree, TreeItem, ModelTreeHelper
+from NEMO.models import AreaAccessRecord, Resource, ScheduledOutage, Task, Tool, UsageEvent, User
 from NEMO.views.customization import get_customization
 
 
@@ -44,42 +45,44 @@ def status_dashboard(request, tab=None):
 
 def process_area_access_record_with_parents(user: User):
 	show_not_qualified_areas = get_customization('dashboard_display_not_qualified_areas')
-	records = AreaAccessRecord.objects.filter(end=None, staff_charge=None)
+	records = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('area')
 	if not user.is_staff and show_not_qualified_areas != 'enabled':
 		records = records.filter(area__in=user.accessible_areas())
 	records = records.prefetch_related('customer', 'project', 'area')
 	no_occupants = not records.exists()
 	area_items = None
+	area_model_tree = get_area_model_tree()
 	if not no_occupants:
-		areas_and_parents = list(set([area for record in records for area in record.area.self_and_parents()]))
+		areas_and_parents = area_model_tree.get_ancestor_areas(area_model_tree.get_areas([record.area.id for record in records]), include_self=True)
 		# Sort to have area without children before others
-		areas_and_parents.sort(key=lambda x: f'{x.category_for_tree()}zz' if x.area_children_set.all().exists() else f'{x.category_for_tree()}/aa')
+		areas_and_parents.sort(key=lambda x: f'{x.tree_category}zz' if x.is_leaf else f'{x.tree_category}/aa')
+		area_summary = create_area_summary(area_model_tree, False, False)
+		area_summary_dict = {area['id']: area for area in area_summary}
+		for area_item in areas_and_parents:
+			area_item.item = area_summary_dict[area_item.id]
 		area_items = area_tree_helper(areas_and_parents, records)
 	return area_items, no_occupants
 
 
-def area_tree_helper(filtered_area: List[Area], records: QuerySet, areas: Optional[List[Area]] = None):
+def area_tree_helper(filtered_area: List[TreeItem], records: QuerySet, areas: Optional[List[TreeItem]] = None):
 	""" Recursively build a list of areas. The resulting list is meant to be iterated over in a view """
 	if areas is None:
 		# Get the root areas
-		areas = [area for area in filtered_area if area.parent_area is None]
-		areas[0].active = True
+		areas = [area for area in filtered_area if area.is_root]
 	else:
 		yield 'in'
 
 	for area in areas:
 		yield area
-		children = [area_child for area_child in filtered_area if area_child.parent_area == area]
+		children = [child for child in area.children if child in filtered_area]
 		if len(children):
 			area.leaf = False
 			for x in area_tree_helper(filtered_area, records, children):
 				yield x
 		else:
-			area.occupants = records.filter(area=area)
+			area.occupants = records.filter(area__id=area.id)
 			area.leaf = True
 	yield 'out'
-
-
 
 
 def create_tool_summary():
@@ -93,6 +96,58 @@ def create_tool_summary():
 	tool_summary = list(tool_summary.values())
 	tool_summary.sort(key=lambda x: x['name'])
 	return tool_summary
+
+
+def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=True, add_occupants=True):
+	if area_model_tree is None:
+		area_model_tree = get_area_model_tree()
+	area_items = area_model_tree.items.values()
+	# add occupancy and staff occupancy
+	areas_with_counts = area_model_tree.leaves_queryset.only('name').annotate(occupancy_staff=Count('areaaccessrecord', filter=Q(areaaccessrecord__end=None, areaaccessrecord__staff_charge=None, areaaccessrecord__customer__is_staff=True)))
+	areas_with_counts = areas_with_counts.annotate(occupancy=Count('areaaccessrecord', filter=Q(areaaccessrecord__end=None, areaaccessrecord__staff_charge=None)))
+	area_dict = {area.id: area for area in areas_with_counts}
+	result = {}
+	for area in area_items:
+		occupancy = area_dict[area.id].occupancy if area.is_leaf else sum(area_dict[child.id].occupancy for child in area.descendants if child.is_leaf)
+		occupancy_staff = area_dict[area.id].occupancy_staff if area.is_leaf else sum(area_dict[child.id].occupancy_staff for child in area.descendants if child.is_leaf)
+		result[area.id] = {
+			'name': area.name,
+			'id': area.id,
+			'maximum_capacity': area.maximum_capacity,
+			'warning_capacity': area.item.warning_capacity(),
+			'danger_capacity': area.item.danger_capacity(),
+			'count_staff_in_occupancy': area.count_staff_in_occupancy,
+			'occupancy_count': occupancy if area.count_staff_in_occupancy else occupancy-occupancy_staff,
+			'occupancy': occupancy,
+			'occupancy_staff': occupancy_staff,
+			'occupants': [],
+			'required_resource_is_unavailable': False,
+		}
+
+	if add_resources:
+		unavailable_resources = Resource.objects.filter(available=False).prefetch_related('dependent_areas')
+		for resource in unavailable_resources:
+			for area in resource.dependent_areas.all():
+				if area.id in result:
+					result[area.id]['required_resource_is_unavailable'] = True
+
+	if add_occupants:
+		occupants: List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('area', 'customer')
+		for occupant in occupants:
+			# Get ids for area and all the parents (so we can add occupants info on parents)
+			area_ids = area_model_tree.get_area(occupant.area.id).ancestor_ids(True)
+			if occupant.customer.is_staff:
+				customer_display = f'<span class="success-highlight">{str(occupant.customer)}</span>'
+			elif occupant.customer.is_logged_in_area_without_reservation():
+				customer_display = f'<span class="danger-highlight">{str(occupant.customer)}</span>'
+			else:
+				customer_display = str(occupant.customer)
+			for area_id in area_ids:
+				if area_id in result:
+					result[area_id]['occupants'] += customer_display if not result[area_id]['occupants'] else f'<br>{customer_display}'
+	area_summary = list(result.values())
+	area_summary.sort(key=lambda x: x['name'])
+	return area_summary
 
 
 def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):

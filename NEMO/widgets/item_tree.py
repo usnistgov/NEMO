@@ -3,7 +3,8 @@ from typing import List
 from django.forms import Widget
 from django.utils.safestring import mark_safe
 
-from NEMO.models import User, Tool, Area, ReservationItemType
+from NEMO.model_tree import get_area_model_tree, TreeItem
+from NEMO.models import User, Tool, ReservationItemType
 from NEMO.views.customization import get_customization
 
 
@@ -45,32 +46,33 @@ class ItemTree(Widget):
 		area_tree = ItemTreeHelper(None, ReservationItemType.AREA)
 		tool_tree = ItemTreeHelper(None, ReservationItemType.TOOL)
 		user: User = value['user'] if 'user' in value else None
-		areas: List[Area] = value.get('areas',[])
+		model_tree = get_area_model_tree()
+		area_tree_items: List[TreeItem] = model_tree.get_areas([area.id for area in value.get('areas',[])])
 		tools: List[Tool] = value.get('tools',[])
 		tool_parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
-		user_accessible_areas = [] if not user or not areas else user.accessible_areas()
+		user_accessible_areas = [] if not user or not area_tree_items else user.accessible_areas()
 		parent_areas_dict = {}
-		if areas:
+		if area_tree_items:
 			# Create a lookup of area name to area with all the parents (in order to display info about category-parents)
-			parent_areas_dict = {area.name: area for area in list(set([parent_area for area in areas for parent_area in area.parents()]))}
-			# Sort areas by root node first (no parent)
-			areas = list(areas)
-			areas.sort(key=lambda area: area.category_for_tree())
+			parent_areas_dict = {area_tree_item.name: area_tree_item for area_tree_item in model_tree.get_ancestor_areas(area_tree_items)}
+			# Sort areas by complete category
+			area_tree_items = list(area_tree_items)
+			area_tree_items.sort(key=lambda area: area.tree_category)
 		# We want to remove areas the user doesn't have access to
 		display_all_areas = get_customization('calendar_display_not_qualified_areas') == 'enabled'
-		if not display_all_areas and areas and user:
-			areas = [area for area in areas if user.is_staff or area in user_accessible_areas]
-		for area in areas:
-			category = area.category_for_tree() + '/' if area.category_for_tree() else ''
+		if not display_all_areas and area_tree_items and user:
+			area_tree_items = [area_tree_item for area_tree_item in area_tree_items if user.is_staff or area_tree_item.item in user_accessible_areas]
+		for area in area_tree_items:
+			category = area.tree_category + '/' if area.tree_category else ''
 			is_qualified = True if not display_all_areas else (user and user.is_staff) or (user and area in user_accessible_areas)
 			area_tree.add(ReservationItemType.AREA, category + area.name, area.id, is_qualified)
 		for tool in tools:
 			is_qualified = (user and user.is_staff) or (user and tool in user.qualifications.all())
 			tool_tree.add(ReservationItemType.TOOL, tool.category + '/' + tool.name_or_child_in_use_name(parent_ids=tool_parent_ids), tool.id,  is_qualified)
 
-		legend = True if areas and tools else False
+		legend = True if area_tree_items and tools else False
 		result = ""
-		if areas:
+		if area_tree_items:
 			result += area_tree.render(legend=legend, category_items_lookup=parent_areas_dict)
 		if tools:
 			result += tool_tree.render(legend=legend)

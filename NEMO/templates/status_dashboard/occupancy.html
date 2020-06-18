@@ -16,7 +16,7 @@
 				{% else %}
 					{% if area_item.leaf %}
 						<li class="area-tree-leaf">
-							{% include 'occupancy/occupancy_content.html' with area=area_item occupants=area_item.occupants show_force_logout=True %}
+							{% include 'occupancy/occupancy_content.html' with area=area_item.item occupants=area_item.occupants show_force_logout=True %}
 						</li>
 					{% else %}
 						<li class="area-tree-node">
@@ -24,7 +24,7 @@
 								<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
 								<span class="media-heading">{{ area_item.name }}</span>
 								{% if area_item.maximum_capacity %}
-									 <span style="font-size: large;padding-left: 40px">{% include 'occupancy/occupancy_count.html' with area=area_item %}</span>
+									 <span style="font-size: large;padding-left: 40px">{% include 'occupancy/occupancy_count.html' with area=area_item.item %}</span>
 								{% endif %}
 							</a>
 					{% endif %}

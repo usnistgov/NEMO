@@ -3,7 +3,7 @@ import os
 import sys
 from datetime import timedelta
 from enum import Enum
-from typing import Union, Optional, List
+from typing import Union, List, Optional
 
 from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
@@ -221,8 +221,11 @@ class User(models.Model):
 		else:
 			return PhysicalAccessLevel.objects.filter(Q(id__in=self.physical_access_levels.all()) | Q(allow_staff_access=True)).distinct()
 
-	def accessible_areas(self) -> List:
-		return list(set([access.area for access in self.accessible_access_levels()]))
+	def accessible_areas(self):
+		if not self.is_staff:
+			return Area.objects.filter(Q(physicalaccesslevel__user=self)).distinct()
+		else:
+			return Area.objects.filter(Q(physicalaccesslevel__user=self) | Q(physicalaccesslevel__allow_staff_access=True)).distinct()
 
 	def in_area(self) -> bool:
 		return AreaAccessRecord.objects.filter(customer=self, staff_charge=None, end=None).exists()
@@ -864,12 +867,6 @@ class Area(models.Model):
 			self.policy_off_end_time = None
 			self.policy_off_weekend = False
 			self.save()
-
-	def category_for_tree(self):
-		category = '/'.join([area.name for area in self.parents()])
-		if self.category:
-			category += '/'+self.category if category else self.category
-		return category
 
 	def warning_capacity(self):
 		return self.reservation_warning if self.reservation_warning is not None else sys.maxsize
