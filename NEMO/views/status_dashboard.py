@@ -120,7 +120,7 @@ def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=Tru
 			'occupancy_count': occupancy if area.count_staff_in_occupancy else occupancy-occupancy_staff,
 			'occupancy': occupancy,
 			'occupancy_staff': occupancy_staff,
-			'occupants': [],
+			'occupants': '',
 			'required_resource_is_unavailable': False,
 		}
 
