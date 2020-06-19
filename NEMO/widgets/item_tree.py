@@ -51,6 +51,7 @@ class ItemTree(Widget):
 		tools: List[Tool] = value.get('tools',[])
 		tool_parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
 		user_accessible_areas = [] if not user or not area_tree_items else user.accessible_areas()
+		user_qualified_tool_ids = [] if not user or not tools else user.qualifications.all().values_list('id', flat=True)
 		parent_areas_dict = {}
 		if area_tree_items:
 			# Create a lookup of area name to area with all the parents (in order to display info about category-parents)
@@ -67,7 +68,7 @@ class ItemTree(Widget):
 			is_qualified = True if not display_all_areas else (user and user.is_staff) or (user and area in user_accessible_areas)
 			area_tree.add(ReservationItemType.AREA, category + area.name, area.id, is_qualified)
 		for tool in tools:
-			is_qualified = (user and user.is_staff) or (user and tool in user.qualifications.all())
+			is_qualified = (user and user.is_staff) or (user and tool.id in user_qualified_tool_ids)
 			tool_tree.add(ReservationItemType.TOOL, tool.category + '/' + tool.name_or_child_in_use_name(parent_ids=tool_parent_ids), tool.id,  is_qualified)
 
 		legend = True if area_tree_items and tools else False
