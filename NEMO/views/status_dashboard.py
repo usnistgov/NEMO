@@ -1,14 +1,14 @@
 from typing import List, Optional
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, QuerySet, Count
+from django.db.models import Q, QuerySet, Count, Prefetch
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.model_tree import get_area_model_tree, TreeItem, ModelTreeHelper
-from NEMO.models import AreaAccessRecord, Resource, ScheduledOutage, Task, Tool, UsageEvent, User
+from NEMO.models import AreaAccessRecord, Resource, ScheduledOutage, Task, Tool, UsageEvent, User, Area
 from NEMO.views.customization import get_customization
 
 
@@ -86,7 +86,7 @@ def area_tree_helper(filtered_area: List[TreeItem], records: QuerySet, areas: Op
 
 
 def create_tool_summary():
-	tools = Tool.objects.filter(visible=True)
+	tools = Tool.objects.filter(visible=True).prefetch_related(Prefetch('_requires_area_access', queryset=Area.objects.all().only('name')))
 	tasks = Task.objects.filter(cancelled=False, resolved=False, tool__visible=True).prefetch_related('tool')
 	unavailable_resources = Resource.objects.filter(available=False).prefetch_related('fully_dependent_tools', 'partially_dependent_tools')
 	# also check for visibility on the parent if there is one (alternate tool are hidden)
