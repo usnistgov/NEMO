@@ -38,7 +38,7 @@
 					{{ customer }} has access to the following areas. Which would you like to bill for access?
 					<div class="radio">
 						{% for a in areas %}
-							<label class="control-label"><input type="radio" name="area" value="{{ a.id }}" required> {{ a }}</label><br>
+							<label class="control-label"><input type="radio" name="area" value="{{ a.id }}" required> {{ a.name }}</label><br>
 						{% endfor %}
 					</div>
 				{% endif %}

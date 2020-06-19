@@ -35,7 +35,7 @@
 				<p>Log in to which area?</p>
 				{% for a in areas %}
 					<div class="radio">
-						<label><input type="radio" name="area" value="{{ a.id }}" required>{{ a }}</label>
+						<label><input type="radio" name="area" value="{{ a.id }}" required>{{ a.name }}</label>
 					</div>
 				{% endfor %}
 			{% endif %}

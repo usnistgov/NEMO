@@ -89,7 +89,7 @@ def new_area_access_record(request):
 				dictionary['error_message'] = error_message
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
 
-			dictionary['areas'] = customer.accessible_areas()
+			dictionary['areas'] = customer.accessible_areas().only('name')
 			return render(request, 'area_access/new_area_access_record_details.html', dictionary)
 		except:
 			pass
@@ -252,7 +252,7 @@ def self_log_in(request):
 		dictionary['error_message'] = f"You have not been granted physical access to any {facility_name} area. Please visit the User Office if you believe this is an error."
 		return render(request, 'area_access/self_login.html', dictionary)
 
-	dictionary['areas'] = user.accessible_areas()
+	dictionary['areas'] = user.accessible_areas().only('name')
 	if request.method == 'GET':
 		return render(request, 'area_access/self_login.html', dictionary)
 	if request.method == 'POST':
