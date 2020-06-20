@@ -690,7 +690,11 @@
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<h3>User reservation created email</h3>
-				<p>This email is sent to a user when the user creates a reservation. The following context variables are provided when the email is rendered:</p>
+				<p>
+					This email is sent to a user when the user creates a reservation and has opted to receive ics calendar notification in his preferences.
+					<br>This is optional, the email will still be sent with only the calendar attachment if this is left blank.
+				    <br><br>The following context variables are provided when the email is rendered:
+				</p>
 				<ul>
 					<li><b>reservation</b> - the user's reservation that was created</li>
 				</ul>
@@ -715,7 +719,11 @@
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<h3 id="reservation_cancelled">User reservation cancelled email</h3>
-				<p>This email is sent to a user when the user cancels his own reservation. The following context variables are provided when the email is rendered:</p>
+				<p>
+					This email is sent to a user when the user cancels his own reservation and has opted to receive ics calendar notification in his preferences.
+					<br>This is optional, the email will still be sent with only the calendar attachment if this is left blank.
+				    <br><br>The following context variables are provided when the email is rendered:
+				</p>
 				<ul>
 					<li><b>reservation</b> - the user's reservation that was cancelled</li>
 				</ul>
