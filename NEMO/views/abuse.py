@@ -13,7 +13,7 @@ from NEMO.models import Reservation, Tool, User, Area
 @staff_member_required(login_url=None)
 @require_GET
 def abuse(request):
-	dictionary = {'tools': Tool.objects.filter(visible=True), 'areas': Area.objects.filter(requires_reservation=True)}
+	dictionary = {'tools': Tool.objects.filter(visible=True), 'areas': Area.objects.filter(requires_reservation=True).order_by('name')}
 	try:
 		form = ReservationAbuseForm(request.GET)
 		if form.is_valid():

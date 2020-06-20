@@ -54,7 +54,7 @@ def area_access(request):
 	dictionary = {
 		'today': reverse('area_access') + '?' + urlencode({'start': today, 'end': today}),
 		'yesterday': reverse('area_access') + '?' + urlencode({'start': yesterday, 'end': yesterday}),
-		'areas': Area.objects.all(),
+		'areas': Area.objects.all().order_by('name'),
 	}
 	try:
 		start, end = parse_start_and_end_date(request.GET['start'], request.GET['end'])

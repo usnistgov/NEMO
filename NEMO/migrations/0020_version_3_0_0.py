@@ -11,6 +11,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterModelOptions(
+            name='area',
+            options={},
+        ),
+        migrations.AlterField(
+            model_name='area',
+            name='name',
+            field=models.CharField(db_index=True, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.', max_length=200),
+        ),
         migrations.AddField(
             model_name='area',
             name='category',

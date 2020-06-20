@@ -17,7 +17,7 @@ def staff_charges(request):
 			area_access_record = AreaAccessRecord.objects.get(staff_charge=staff_charge.id, end=None)
 			return render(request, 'staff_charges/end_area_charge.html', {'area': area_access_record.area})
 		except AreaAccessRecord.DoesNotExist:
-			return render(request, 'staff_charges/change_status.html', {'areas': Area.objects.all()})
+			return render(request, 'staff_charges/change_status.html', {'areas': Area.objects.all().order_by('name')})
 	error = None
 	customer = None
 	try:
