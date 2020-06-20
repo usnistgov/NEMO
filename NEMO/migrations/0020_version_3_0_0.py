@@ -15,11 +15,6 @@ class Migration(migrations.Migration):
             name='area',
             options={},
         ),
-        migrations.AlterField(
-            model_name='area',
-            name='name',
-            field=models.CharField(db_index=True, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.', max_length=200),
-        ),
         migrations.AddField(
             model_name='area',
             name='category',
@@ -130,13 +125,16 @@ class Migration(migrations.Migration):
             options={},
         ),
         migrations.AlterField(
-            model_name='areaaccessrecord',
-            name='end',
-            field=models.DateTimeField(blank=True, db_index=True, null=True),
-        ),
-        migrations.AlterField(
             model_name='scheduledoutage',
             name='resource',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.Resource'),
+        ),
+        migrations.AddIndex(
+            model_name='area',
+            index=models.Index(fields=['name'], name='NEMO_area_name_1e7670_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='areaaccessrecord',
+            index=models.Index(fields=['end'], name='NEMO_areaac_end_fae061_idx'),
         ),
     ]

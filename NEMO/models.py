@@ -821,7 +821,7 @@ class StaffCharge(CalendarDisplay):
 
 
 class Area(models.Model):
-	name = models.CharField(db_index=True, max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
+	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
 	parent_area = models.ForeignKey('Area', related_name="area_children_set", null=True, blank=True, help_text='Select a parent area, (building, floor etc.)', on_delete=models.CASCADE)
 	category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
@@ -843,6 +843,11 @@ class Area(models.Model):
 	policy_off_start_time = models.TimeField(db_column="policy_off_start_time", null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
 	policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
 	policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
+
+	class Meta:
+		indexes = [
+			models.Index(fields=['name']),
+		]
 
 	def __str__(self):
 		return self.name
@@ -921,8 +926,13 @@ class AreaAccessRecord(CalendarDisplay):
 	customer = models.ForeignKey(User, on_delete=models.CASCADE)
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
 	start = models.DateTimeField(default=timezone.now)
-	end = models.DateTimeField(db_index=True, null=True, blank=True)
+	end = models.DateTimeField(null=True, blank=True)
 	staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
+
+	class Meta:
+		indexes = [
+			models.Index(fields=['end']),
+		]
 
 	def __str__(self):
 		return str(self.id)
