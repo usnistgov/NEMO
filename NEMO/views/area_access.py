@@ -308,7 +308,7 @@ def occupancy(request):
 		return HttpResponse()
 	dictionary = {
 		'area': area,
-		'occupants': AreaAccessRecord.objects.filter(area__name=area.name, end=None, staff_charge=None).prefetch_related('customer'),
+		'occupants': AreaAccessRecord.objects.filter(area__name=area.name, end=None, staff_charge=None).prefetch_related('customer').order_by('-start'),
 	}
 	return render(request, 'occupancy/occupancy.html', dictionary)
 

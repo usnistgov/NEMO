@@ -917,11 +917,8 @@ class AreaAccessRecord(CalendarDisplay):
 	customer = models.ForeignKey(User, on_delete=models.CASCADE)
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
 	start = models.DateTimeField(default=timezone.now)
-	end = models.DateTimeField(null=True, blank=True)
+	end = models.DateTimeField(db_index=True, null=True, blank=True)
 	staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
-
-	class Meta:
-		ordering = ['-start']
 
 	def __str__(self):
 		return str(self.id)

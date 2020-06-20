@@ -115,4 +115,13 @@ class Migration(migrations.Migration):
             name='physical_access_levels',
             field=models.ManyToManyField(blank=True, to='NEMO.PhysicalAccessLevel'),
         ),
+        migrations.AlterModelOptions(
+            name='areaaccessrecord',
+            options={},
+        ),
+        migrations.AlterField(
+            model_name='areaaccessrecord',
+            name='end',
+            field=models.DateTimeField(blank=True, db_index=True, null=True),
+        ),
     ]

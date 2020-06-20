@@ -19,4 +19,13 @@ class Migration(migrations.Migration):
             name='name',
             field=models.CharField(db_index=True, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.', max_length=200),
         ),
+        migrations.AlterModelOptions(
+            name='areaaccessrecord',
+            options={},
+        ),
+        migrations.AlterField(
+            model_name='areaaccessrecord',
+            name='end',
+            field=models.DateTimeField(blank=True, db_index=True, null=True),
+        ),
     ]

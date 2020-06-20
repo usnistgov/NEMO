@@ -88,7 +88,7 @@ class UsageEventViewSet(ReadOnlyModelViewSet):
 
 
 class AreaAccessRecordViewSet(ReadOnlyModelViewSet):
-	queryset = AreaAccessRecord.objects.all()
+	queryset = AreaAccessRecord.objects.all().order_by('-start')
 	serializer_class = AreaAccessRecordSerializer
 	filter_class = AreaAccessRecordFilter
 
