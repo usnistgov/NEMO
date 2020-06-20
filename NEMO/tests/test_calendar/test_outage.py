@@ -5,22 +5,24 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from NEMO.models import ScheduledOutage, Tool, User, Reservation
+from NEMO.models import ScheduledOutage, Tool, User, Reservation, Area, ReservationItemType
 from NEMO.tests.test_utilities import login_as_staff, login_as_user, test_response_is_landing_page
 from NEMO.utilities import localize
 
 
 class OutageTestCase(TestCase):
-	tool = None
-	owner = None
+	tool: Tool = None
+	area: Area = None
+	owner: User = None
 
 	def setUp(self):
-		global tool, owner
+		global tool, area, owner
 		owner = User.objects.create(username='mctest', first_name='Testy', last_name='McTester')
 		tool = Tool.objects.create(name='test_tool', primary_owner=owner)
+		area = Area.objects.create(name='Cleanroom', welcome_message='')
 
 	@staticmethod
-	def get_outage_data(title='', start: datetime = None, end: datetime = None, tool_name: str = '', outage: bool = False, frequency: str = '', interval: int = '', until: datetime = None):
+	def get_outage_data(title='', start: datetime = None, end: datetime = None, item_id: int = '', item_type: ReservationItemType = ReservationItemType.TOOL, outage: bool = False, frequency: str = '', interval: int = '', until: datetime = None):
 		if not start:
 			start = datetime.now()
 		if not end:
@@ -29,7 +31,8 @@ class OutageTestCase(TestCase):
 			'title': title,
 			'start': calendar.timegm(start.utctimetuple()),
 			'end': calendar.timegm(end.utctimetuple()),
-			'tool_name': tool_name,
+			'item_id': item_id if item_id else '',
+			'item_type': item_type.value,
 			'recurring_outage': 'on' if outage else '',
 			'recurrence_frequency': frequency,
 			'recurrence_interval': interval,
@@ -38,9 +41,13 @@ class OutageTestCase(TestCase):
 		return data
 
 	def test_outage_policy_problems(self):
+		self.outage_policy_problems(tool.id, ReservationItemType.TOOL)
+		self.outage_policy_problems(area.id, ReservationItemType.AREA)
+
+	def outage_policy_problems(self, item_id: int, item_type: ReservationItemType):
 		start = datetime.now()
 		end = start - timedelta(hours=1)
-		data = self.get_outage_data(start=start, end=end, tool_name=tool.name)
+		data = self.get_outage_data(start=start, end=end, item_id=item_id, item_type=item_type)
 
 		# regular user should not be able to create outage
 		login_as_user(self.client)
@@ -56,20 +63,23 @@ class OutageTestCase(TestCase):
 		# fix time
 		end = (start + timedelta(hours=1))
 		# Create a reservation and try to schedule an outage at the same time
-		Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start, end=end, short_notice=False)
-		data = self.get_outage_data(start=start, end=end, tool_name=tool.name)
+		if item_type == ReservationItemType.TOOL:
+			Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start, end=end, short_notice=False)
+		elif item_type == ReservationItemType.AREA:
+			Reservation.objects.create(user=owner, creator=owner, area=area, start=start, end=end, short_notice=False)
+		data = self.get_outage_data(start=start, end=end, item_id=item_id, item_type=item_type)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 400)
 		self.assertEqual(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
 
 		# try to schedule an outage that starts before but ends slightly after the reservation starts
-		data = self.get_outage_data(start=start-timedelta(hours=1), end=end-timedelta(minutes=59), tool_name=tool.name)
+		data = self.get_outage_data(start=start-timedelta(hours=1), end=end-timedelta(minutes=59), item_id=item_id, item_type=item_type)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 400)
 		self.assertEqual(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
 
 		# try to schedule an outage that starts slightly before the reservation ends
-		data = self.get_outage_data(start=start + timedelta(minutes=59), end=end + timedelta(hours=1), tool_name=tool.name)
+		data = self.get_outage_data(start=start + timedelta(minutes=59), end=end + timedelta(hours=1), item_id=item_id, item_type=item_type)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 400)
 		self.assertEqual(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
@@ -77,7 +87,7 @@ class OutageTestCase(TestCase):
 		# no title
 		start = start + timedelta(hours=2)
 		end = end + timedelta(hours=2)
-		data = self.get_outage_data(start=start, end=end, tool_name=tool.name)
+		data = self.get_outage_data(start=start, end=end, item_id=item_id, item_type=item_type)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 200) # response code valid but form is sent back. let's make sure the outage was indeed NOT created
 		self.assertEqual(ScheduledOutage.objects.all().count(), 0)
@@ -86,7 +96,7 @@ class OutageTestCase(TestCase):
 	def test_create_outage(self):
 		start = datetime.now()
 		end = start + timedelta(hours=1)
-		data = self.get_outage_data(title="Outage", start=start, end=end, tool_name=tool.name)
+		data = self.get_outage_data(title="Outage", start=start, end=end, item_id=tool.id)
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
@@ -94,11 +104,25 @@ class OutageTestCase(TestCase):
 		self.assertTrue(ScheduledOutage.objects.get(title="Outage"))
 
 
+	def test_create_area_outage(self):
+		start = datetime.now()
+		end = start + timedelta(hours=1)
+		data = self.get_outage_data(title="Outage", start=start, end=end, item_id=area.id, item_type=ReservationItemType.AREA)
+		login_as_staff(self.client)
+		response = self.client.post(reverse('create_outage'), data, follow=True)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(ScheduledOutage.objects.all().count(), 1)
+		self.assertTrue(ScheduledOutage.objects.get(title="Outage"))
+
 	def test_resize_outage(self):
+		self.resize_outage(item_id=tool.id, item_type=ReservationItemType.TOOL)
+		self.resize_outage(item_id=area.id, item_type=ReservationItemType.AREA)
+
+	def resize_outage(self, item_id:int, item_type:ReservationItemType):
 		# create outage
 		start = datetime.now()
 		end = start + timedelta(hours=1)
-		data = self.get_outage_data(title="Outage", start=start, end=end, tool_name=tool.name)
+		data = self.get_outage_data(title="Outage", start=start, end=end,  item_id=item_id, item_type=item_type)
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
@@ -132,7 +156,11 @@ class OutageTestCase(TestCase):
 		# create a reservation and try to resize outage to overlap reservation
 		start_reservation = end + timedelta(hours=1)
 		end_reservation = start_reservation + timedelta(hours=1)
-		Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start_reservation, end=end_reservation, short_notice=False)
+
+		if item_type == ReservationItemType.TOOL:
+			Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start_reservation, end=end_reservation, short_notice=False)
+		elif item_type == ReservationItemType.AREA:
+			Reservation.objects.create(user=owner, creator=owner, area=area, start=start_reservation, end=end_reservation, short_notice=False)
 		response = self.client.post(reverse('resize_outage'), {'delta': 61, 'id': outage.id}, follow=True)
 		self.assertEqual(response.status_code, 400)
 		self.assertEqual(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
@@ -148,11 +176,17 @@ class OutageTestCase(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(ScheduledOutage.objects.get(pk=outage.id).end, outage.end + timedelta(minutes=10))
 
+		outage.delete()
+
 	def test_move_outage(self):
+		self.move_outage(item_id=tool.id, item_type=ReservationItemType.TOOL)
+		self.move_outage(item_id=area.id, item_type=ReservationItemType.AREA)
+
+	def move_outage(self, item_id:int, item_type:ReservationItemType):
 		# create outage
 		start = datetime.now()
 		end = start + timedelta(hours=1)
-		data = self.get_outage_data(title="Outage", start=start, end=end, tool_name=tool.name)
+		data = self.get_outage_data(title="Outage", start=start, end=end, item_id=item_id, item_type=item_type)
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
@@ -180,8 +214,11 @@ class OutageTestCase(TestCase):
 		# create a reservation and try to move outage to overlap reservation
 		start_reservation = end + timedelta(hours=1)
 		end_reservation = start_reservation + timedelta(hours=1)
-		Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start_reservation, end=end_reservation,
-								   short_notice=False)
+		if item_type == ReservationItemType.TOOL:
+			Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start_reservation, end=end_reservation, short_notice=False)
+		elif item_type == ReservationItemType.AREA:
+			Reservation.objects.create(user=owner, creator=owner, area=area, start=start_reservation, end=end_reservation, short_notice=False)
+
 		response = self.client.post(reverse('move_outage'), {'delta': 61, 'id': outage.id}, follow=True)
 		self.assertEqual(response.status_code, 400)
 		self.assertEqual(response.content.decode(), "Your scheduled outage coincides with a reservation that already exists. Please choose a different time.")
@@ -198,12 +235,17 @@ class OutageTestCase(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(ScheduledOutage.objects.get(pk=outage.id).end, outage.end + timedelta(minutes=10))
 		self.assertEqual(ScheduledOutage.objects.get(pk=outage.id).start, outage.start + timedelta(minutes=10))
+		outage.delete()
 
 	def test_cancel_outage(self):
+		self.cancel_outage(item_id=tool.id, item_type=ReservationItemType.TOOL)
+		self.cancel_outage(item_id=area.id, item_type=ReservationItemType.AREA)
+
+	def cancel_outage(self, item_id:int, item_type:ReservationItemType):
 		# create outage
 		start = datetime.now()
 		end = start + timedelta(hours=1)
-		data = self.get_outage_data(title="Outage", start=start, end=end, tool_name=tool.name)
+		data = self.get_outage_data(title="Outage", start=start, end=end, item_id=item_id, item_type=item_type)
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
@@ -230,10 +272,14 @@ class OutageTestCase(TestCase):
 		self.assertEqual(ScheduledOutage.objects.all().count(), 0)
 
 	def test_outage_details(self):
+		self.outage_details(item_id=tool.id, item_type=ReservationItemType.TOOL)
+		self.outage_details(item_id=area.id, item_type=ReservationItemType.AREA)
+
+	def outage_details(self, item_id:int, item_type:ReservationItemType):
 		# create outage
 		start = datetime.now()
 		end = start + timedelta(hours=1)
-		data = self.get_outage_data(title="Outage", start=start, end=end, tool_name=tool.name)
+		data = self.get_outage_data(title="Outage", start=start, end=end, item_id=item_id, item_type=item_type)
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
@@ -254,23 +300,29 @@ class OutageTestCase(TestCase):
 		response = self.client.get(reverse('outage_details', kwargs={'outage_id': outage.id}), {}, follow=True)
 		self.assertEqual(response.status_code, 200)
 
-	def test_no_tool_name_404(self):
+		outage.delete()
+
+	def test_no_item_id_404(self):
 		start = datetime.now()
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(days=5)
 
-		data = self.get_outage_data(start=start, end=end, outage=True, frequency='DAILY', interval=1, until=until)
+		data = self.get_outage_data(start=start, end=end, outage=True, item_id=-1, frequency='DAILY', interval=1, until=until)
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 404)
 
 	def test_every_day_for_a_week(self):
+		self.every_day_for_a_week(item_id=tool.id, item_type=ReservationItemType.TOOL)
+		self.every_day_for_a_week(item_id=area.id, item_type=ReservationItemType.AREA)
+
+	def every_day_for_a_week(self, item_id: int, item_type: ReservationItemType):
 		start = datetime.now()
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(days=6)
 
-		data = self.get_outage_data(title='every day outage week', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY', interval=1, until=until)
+		data = self.get_outage_data(title='every day outage week', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency='DAILY', interval=1, until=until)
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
@@ -280,17 +332,21 @@ class OutageTestCase(TestCase):
 		self.assertEqual(len(outages), 7)
 
 	def test_every_week_for_a_year(self):
+		self.every_week_for_a_year(item_id=tool.id, item_type=ReservationItemType.TOOL)
+		self.every_week_for_a_year(item_id=area.id, item_type=ReservationItemType.AREA)
+
+	def every_week_for_a_year(self, item_id:int, item_type:ReservationItemType):
 		start = (datetime.now() + timedelta(days=1)).replace(microsecond=0).replace(hour=7)
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(days=365)
 
-		data = self.get_outage_data(title='every day outage year', start=start, end=end, tool_name=tool.name, outage=True, frequency='WEEKLY', interval=1, until=until)
+		data = self.get_outage_data(title='every day outage year', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency='WEEKLY', interval=1, until=until)
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 
 		self.assertEqual(response.status_code, 200)
-		outages = ScheduledOutage.objects.filter(title='every day outage year', tool=tool)
+		outages = ScheduledOutage.objects.filter(title='every day outage year').filter(**{f'{item_type.value}__id':item_id})
 		for outage in outages:
 			good_start = outage.start.astimezone(timezone.get_current_timezone())
 			good_end = outage.end.astimezone(timezone.get_current_timezone())
@@ -300,11 +356,15 @@ class OutageTestCase(TestCase):
 			self.assertEqual(good_end.time(), end.time())
 
 	def test_week_day(self):
+		self.week_day(item_id=tool.id, item_type=ReservationItemType.TOOL)
+		self.week_day(item_id=area.id, item_type=ReservationItemType.AREA)
+
+	def week_day(self, item_id:int, item_type:ReservationItemType):
 		start = datetime.now()
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(weeks=9)
 
-		data = self.get_outage_data(title='every week day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY_WEEKDAYS', interval=1, until=until)
+		data = self.get_outage_data(title='every week day outage', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency='DAILY_WEEKDAYS', interval=1, until=until)
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
@@ -316,11 +376,15 @@ class OutageTestCase(TestCase):
 			self.assertLess(outage.start.astimezone(timezone.get_current_timezone()).weekday(), 5)
 
 	def test_weekend(self):
+		self.weekend(item_id=tool.id, item_type=ReservationItemType.TOOL)
+		self.weekend(item_id=area.id, item_type=ReservationItemType.AREA)
+
+	def weekend(self, item_id:int, item_type:ReservationItemType):
 		start = datetime.now()
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(weeks=9)
 
-		data = self.get_outage_data(title='every weekend day outage', start=start, end=end, tool_name=tool.name, outage=True, frequency='DAILY_WEEKENDS', interval=1, until=until)
+		data = self.get_outage_data(title='every weekend day outage', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency='DAILY_WEEKENDS', interval=1, until=until)
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)

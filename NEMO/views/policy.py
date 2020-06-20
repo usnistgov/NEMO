@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
-	MaximumCapacityReachedError, ReservationRequiredUserError
+	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
 from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, ReservationItemType, Tool, Project
 from NEMO.utilities import format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
@@ -281,7 +281,8 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 		coincident_events = ScheduledOutage.objects.filter(
 			Q(tool=new_reservation.tool) | Q(resource__fully_dependent_tools__in=[new_reservation.tool]))
 	elif new_reservation.reservation_item_type == ReservationItemType.AREA:
-		coincident_events = ScheduledOutage.objects.filter(resource__dependent_areas__in=[new_reservation.area])
+		coincident_events = ScheduledOutage.objects.filter(
+			Q(area=new_reservation.area) | Q(resource__dependent_areas__in=[new_reservation.area]))
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
@@ -427,13 +428,13 @@ def check_policy_to_cancel_reservation(reservation, user_cancelling_reservation)
 	return HttpResponse()
 
 
-def check_policy_to_create_outage(outage):
+def check_policy_to_create_outage(outage: ScheduledOutage):
 	# Outages may not have a start time that is earlier than the end time.
 	if outage.start >= outage.end:
 		return "Outage start time (" + format_datetime(outage.start) + ") must be before the end time (" + format_datetime(outage.end) + ")."
 
 	# The user may not create, move, or resize an outage to coincide with another user's reservation.
-	coincident_events = Reservation.objects.filter(tool=outage.tool, cancelled=False, missed=False, shortened=False)
+	coincident_events = Reservation.objects.filter(**outage.outage_item_filter).filter(cancelled=False, missed=False, shortened=False)
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
@@ -477,6 +478,10 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 		unavailable_resources = area.required_resources.filter(available=False)
 		if unavailable_resources:
 			raise UnavailableResourcesUserError(user=user, area=area, resources=unavailable_resources)
+
+		# Non staff users may not enter an area during a scheduled outage
+		if area.scheduled_outage_in_progress():
+			raise ScheduledOutageInProgressError(user=user, area=area)
 
 		# If we reached maximum capacity, fail (only for non staff users)
 		for a in area.self_and_parents():

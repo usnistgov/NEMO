@@ -675,8 +675,8 @@ class Tool(models.Model):
 		""" Returns a QuerySet of scheduled outages that are in progress for this tool. This includes resources outages when the tool partially depends on the resource. """
 		return ScheduledOutage.objects.filter(resource__partially_dependent_tools__in=[self.tool_or_parent_id()], start__lte=timezone.now(), end__gt=timezone.now())
 
-	def scheduled_outage_in_progress(self):
-		""" Returns a true if a tool or resource outage is currently in effect for this tool. Otherwise, returns false. """
+	def scheduled_outage_in_progress(self) -> bool:
+		""" Returns true if a tool or resource outage is currently in effect for this tool. Otherwise, returns false. """
 		return ScheduledOutage.objects.filter(Q(tool=self.tool_or_parent_id()) | Q(resource__fully_dependent_tools__in=[self.tool_or_parent_id()]), start__lte=timezone.now(), end__gt=timezone.now()).exists()
 
 	def is_configurable(self):
@@ -892,6 +892,10 @@ class Area(models.Model):
 
 	def required_resource_is_unavailable(self) -> bool:
 		return self.required_resources.filter(available=False).exists()
+
+	def scheduled_outage_in_progress(self) -> bool:
+		""" Returns true if an area or resource outage is currently in effect for this area. Otherwise, returns false. """
+		return ScheduledOutage.objects.filter(Q(area=self.id) | Q(resource__dependent_areas__in=[self.id]), start__lte=timezone.now(), end__gt=timezone.now()).exists()
 
 	def get_current_reservation_for_user(self, user):
 		if self.requires_reservation:
@@ -1708,8 +1712,36 @@ class ScheduledOutage(models.Model):
 	title = models.CharField(max_length=100, help_text="A brief description to quickly inform users about the outage")
 	details = models.TextField(blank=True, help_text="A detailed description of why there is a scheduled outage, and what users can expect during the outage")
 	category = models.CharField(blank=True, max_length=200, help_text="A categorical reason for why this outage is scheduled. Useful for trend analytics.")
-	tool = models.ForeignKey(Tool, null=True, on_delete=models.CASCADE)
-	resource = models.ForeignKey(Resource, null=True, on_delete=models.CASCADE)
+	tool = models.ForeignKey(Tool, blank=True,  null=True, on_delete=models.CASCADE)
+	area = models.ForeignKey(Area, blank=True, null=True, on_delete=models.CASCADE)
+	resource = models.ForeignKey(Resource, blank=True, null=True, on_delete=models.CASCADE)
+
+	@property
+	def outage_item(self) -> Union[Tool, Area]:
+		if self.tool:
+			return self.tool
+		elif self.area:
+			return self.area
+
+	@outage_item.setter
+	def outage_item(self, item):
+		if isinstance(item, Tool):
+			self.tool = item
+		elif isinstance(item, Area):
+			self.area = item
+		else:
+			raise AttributeError(f"This item [{item}] isn't allowed on outages.")
+
+	@property
+	def outage_item_type(self) -> ReservationItemType:
+		if self.tool:
+			return ReservationItemType.TOOL
+		elif self.area:
+			return ReservationItemType.AREA
+
+	@property
+	def outage_item_filter(self):
+		return {self.outage_item_type.value: self.outage_item}
 
 	def __str__(self):
 		return str(self.title)

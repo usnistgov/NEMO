@@ -146,7 +146,7 @@ def reservation_event_feed(request, start, end):
 				outages = outages.exclude(start__gt=end, end__gt=end)
 			elif item_type == ReservationItemType.AREA:
 				events = events.filter(area__id=item_id)
-				outages = ScheduledOutage.objects.filter(resource__dependent_areas__in=[item_id])
+				outages = ScheduledOutage.objects.filter(Q(area=item_id) | Q(resource__dependent_areas__in=[item_id]))
 				outages = outages.exclude(start__lt=start, end__lt=start)
 				outages = outages.exclude(start__gt=end, end__gt=end)
 
@@ -393,14 +393,16 @@ def create_outage(request):
 	""" Create an outage. """
 	try:
 		start, end = extract_times(request.POST)
+		item_type = ReservationItemType(request.POST['item_type'])
+		item_id = request.POST.get('item_id')
 	except Exception as e:
 		return HttpResponseBadRequest(str(e))
-	tool = get_object_or_404(Tool, name=request.POST.get('tool_name'))
+	item = get_object_or_404(item_type.get_object_class(), id=item_id)
 	# Create the new reservation:
 	outage = ScheduledOutage()
 	outage.creator = request.user
 	outage.category = request.POST.get('category', '')[:200]
-	outage.tool = tool
+	outage.outage_item = item
 	outage.start = start
 	outage.end = end
 
@@ -443,7 +445,7 @@ def create_outage(request):
 			recurring_outage = ScheduledOutage()
 			recurring_outage.creator = outage.creator
 			recurring_outage.category = outage.category
-			recurring_outage.tool = outage.tool
+			recurring_outage.outage_item = outage.outage_item
 			recurring_outage.title = outage.title
 			recurring_outage.details = outage.details
 			recurring_outage.start = localize(start_no_tz.replace(year=rule.year, month=rule.month, day=rule.day))
@@ -611,7 +613,7 @@ def cancel_outage(request, outage_id):
 	if request.device == 'desktop':
 		return HttpResponse()
 	if request.device == 'mobile':
-		dictionary = {'event_type': 'Scheduled outage', 'tool': outage.tool}
+		dictionary = {'event_type': 'Scheduled outage', 'tool': outage.tool, 'area': outage.area}
 		return render(request, 'mobile/cancellation_result.html', dictionary)
 
 
@@ -795,6 +797,10 @@ def cancel_unused_reservations(request):
 	# Missed Area Reservations
 	areas = Area.objects.filter(missed_reservation_threshold__isnull=False)
 	for area in areas:
+		# if area has outage or required resource is unavailable, no need to look
+		if area.required_resource_is_unavailable() or area.scheduled_outage_in_progress():
+			continue
+
 		# Calculate the timestamp of how long a user can be late for a reservation.
 		threshold = (timezone.now() - timedelta(minutes=area.missed_reservation_threshold))
 		threshold = datetime.replace(threshold, second=0, microsecond=0)  # Round down to the nearest minute.

@@ -96,10 +96,7 @@ function update_event_sources()
 			    $(login_button).html("Login to the "+item.element_name);
 				$(login_button).removeClass('fc-state-disabled');
 			}
-			else if (item.type === 'tool')
-			{
-				$(scheduled_outage_button).removeClass('fc-state-disabled');
-			}
+			$(scheduled_outage_button).removeClass('fc-state-disabled');
         }
 	}
 	else if(event_type === 'specific user')
@@ -208,10 +205,6 @@ function create(start, end, jsEvent, view)
 	var url;
 	if($('.fc-scheduledOutage-button').html() === "I've finished creating scheduled outages")
 	{
-	    if (item.data('item-type') === 'area') {
-	        $("#calendar").fullCalendar("unselect");
-			return;
-		}
 		url = "{% url 'create_outage' %}";
 	}
 	else

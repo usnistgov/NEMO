@@ -96,9 +96,19 @@ class Migration(migrations.Migration):
             field=models.PositiveIntegerField(blank=True, db_column='reservation_horizon', default=14, help_text='Users may create reservations this many days in advance. Leave this field blank to indicate that no reservation horizon exists for this area.', null=True),
         ),
         migrations.AddField(
+            model_name='scheduledoutage',
+            name='area',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.Area'),
+        ),
+        migrations.AddField(
             model_name='reservation',
             name='area',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.Area'),
+        ),
+        migrations.AlterField(
+            model_name='scheduledoutage',
+            name='tool',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.Tool'),
         ),
         migrations.AlterField(
             model_name='reservation',
@@ -123,5 +133,10 @@ class Migration(migrations.Migration):
             model_name='areaaccessrecord',
             name='end',
             field=models.DateTimeField(blank=True, db_index=True, null=True),
+        ),
+        migrations.AlterField(
+            model_name='scheduledoutage',
+            name='resource',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.Resource'),
         ),
     ]

@@ -7,7 +7,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
-	MaximumCapacityReachedError, ReservationRequiredUserError
+	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
 from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent
 from NEMO.tasks import postpone
 from NEMO.views.calendar import shorten_reservation
@@ -81,6 +81,7 @@ def login_to_area(request, door_id):
 
 	max_capacity_reached = False
 	reservation_requirement_failed = False
+	scheduled_outage_in_progress = False
 	# Check policy to enter this area
 	try:
 		check_policy_to_enter_this_area(area=door.area, user=user)
@@ -101,6 +102,10 @@ def login_to_area(request, door_id):
 		# deal with this error after checking if the user is already logged in
 		max_capacity_reached = error
 
+	except ScheduledOutageInProgressError as error:
+		# deal with this error after checking if the user is already logged in
+		scheduled_outage_in_progress = error
+
 	except ReservationRequiredUserError:
 		# deal with this error after checking if the user is already logged in
 		reservation_requirement_failed = True
@@ -115,7 +120,14 @@ def login_to_area(request, door_id):
 			'badge_number': user.badge_number,
 			'reservation_requirement_failed': reservation_requirement_failed,
 			'max_capacity_reached': max_capacity_reached,
+			'scheduled_outage_in_progress': scheduled_outage_in_progress,
 		})
+
+	if scheduled_outage_in_progress:
+		log.details = f"The user was blocked from entering this area because the {scheduled_outage_in_progress.area.name} has a scheduled outage in progress."
+		log.save()
+		message = f"The {scheduled_outage_in_progress.area.name} is inaccessible because a scheduled outage is in progress."
+		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	if max_capacity_reached:
 		log.details = f"The user was blocked from entering this area because the {max_capacity_reached.area.name} has reached its maximum capacity of {max_capacity_reached.area.maximum_capacity} people at a time."

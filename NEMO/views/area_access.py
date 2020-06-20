@@ -14,7 +14,7 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, InactiveUserError, \
 	NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError, \
-	MaximumCapacityReachedError, ReservationRequiredUserError
+	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
 from NEMO.models import Area, AreaAccessRecord, Project, User
 from NEMO.utilities import parse_start_and_end_date
 from NEMO.views.calendar import shorten_reservation
@@ -116,6 +116,9 @@ def new_area_access_record(request):
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except MaximumCapacityReachedError as error:
 			dictionary['error_message'] = 'The {} is inaccessible because the {} has reached its maximum capacity. Wait for somebody to exit and try again.'.format(area.name.lower(), error.area.name.lower())
+			return render(request, 'area_access/new_area_access_record.html', dictionary)
+		except ScheduledOutageInProgressError as error:
+			dictionary['error_message'] = 'The {} is inaccessible because a scheduled outage is in effect. You must wait for the outage to end before creating a new area access record.'.format(error.area.name.lower())
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except ReservationRequiredUserError:
 			dictionary['error_message'] = 'You do not have a current reservation for the {}. Please make a reservation before trying to access this area.'.format(area.name.lower())
@@ -267,6 +270,9 @@ def self_log_in(request):
 			return render(request, 'area_access/self_login.html', dictionary)
 		except UnavailableResourcesUserError as error:
 			dictionary['area_error_message'] = f'The {error.area.name} is inaccessible because a required resource is unavailable ({error.resources[0]}).'
+			return render(request, 'area_access/self_login.html', dictionary)
+		except ScheduledOutageInProgressError as error:
+			dictionary['area_error_message'] = f'The {error.area.name} is inaccessible because a scheduled outage is in progress.'
 			return render(request, 'area_access/self_login.html', dictionary)
 		except MaximumCapacityReachedError as error:
 			dictionary['area_error_message'] = f'The {error.area.name} is inaccessible because it has reached its maximum capacity. Wait for somebody to exit and try again.'

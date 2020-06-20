@@ -181,6 +181,8 @@ class AreaAdmin(admin.ModelAdmin):
 		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
 		('Policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time',),}),
 	)
+	list_filter = ('requires_reservation', 'parent_area',)
+	search_fields = ('name',)
 
 	def get_fieldsets(self, request, obj:Area=None):
 		"""
@@ -581,7 +583,7 @@ class ScheduledOutageCategoryAdmin(admin.ModelAdmin):
 
 @register(ScheduledOutage)
 class ScheduledOutageAdmin(admin.ModelAdmin):
-	list_display = ('id', 'tool', 'resource', 'creator', 'title', 'start', 'end')
+	list_display = ('id', 'tool', 'area', 'resource', 'creator', 'title', 'start', 'end')
 
 
 @register(News)
