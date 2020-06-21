@@ -133,7 +133,7 @@ class ItemTreeHelper:
 		if node.__is_leaf():
 			result += '<li>'
 			css_class = "" if node.is_user_qualified else 'class="disabled"'
-			result += f'<a href="javascript:void(0);" onclick="set_selected_item(this)" data-item-id="{node.id}" data-item-type="{node.item_type.value}" data-item-name="{node.name}" {css_class}>{node.name}</a>'
+			result += f'<a id="{node.item_type.value}-{node.id}" href="javascript:void(0);" onclick="set_selected_item(this)" data-item-id="{node.id}" data-item-type="{node.item_type.value}" data-item-name="{node.name}" {css_class}>{node.name}</a>'
 		if not node.__is_leaf():
 			node_li_class = "area-category" if node.item_type == ReservationItemType.AREA else 'tool-category'
 			node_list_class = "area-list" if node.item_type == ReservationItemType.AREA else 'tool-list'
@@ -141,7 +141,7 @@ class ItemTreeHelper:
 			extra_data = ''
 			if category_items_lookup and node.name in category_items_lookup:
 				data = category_items_lookup.get(node.name)
-				extra_data = f'data-item-id="{data.id}" data-item-type="{node.item_type.value}" data-item-name="{data.name}"'
+				extra_data = f'id="{node.item_type.value}-{data.id}" data-item-id="{data.id}" data-item-type="{node.item_type.value}" data-item-name="{data.name}"'
 			result += f'<li class="{node_li_class}">'
 			result += f'<label class="tree-toggler nav-header"><div {extra_data}>{node.name}</div></label><ul class="nav nav-list tree {node_list_class}" data-category="{node.name}">'
 			for child in node.children:

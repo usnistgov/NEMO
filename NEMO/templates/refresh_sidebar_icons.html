@@ -1,0 +1,56 @@
+$('#sidebar .sidebar-status-icon').remove();
+$('#sidebar .sidebar-status-occupancy').remove();
+{% for tool in tool_summary %}
+	{% if tool.area_requires_reservation %}
+		$('#tool-{{ tool.id }}').prepend('<span class="glyphicon glyphicon-calendar sidebar-status-icon" title="This tool requires prior reservation of the {{ tool.area_name }}"></span> ');
+	{% endif %}
+
+	{% if tool.in_use %}
+		$('#tool-{{ tool.id }}').append('<span class="glyphicon glyphicon-user primary-highlight sidebar-status-icon" title="{{ tool.user }} is using this tool"></span>');
+	{% endif %}
+
+	{% if tool.delayed_logoff_in_progress %}
+		$('#tool-{{ tool.id }}').append('<span class="glyphicon glyphicon-time primary-highlight sidebar-status-icon" title="Delayed logoff is in effect for this tool"></span>');
+	{% endif %}
+
+	{% if tool.scheduled_outage %}
+		$('#tool-{{ tool.id }}').append('<span class="glyphicon glyphicon-time danger-highlight sidebar-status-icon" title="A scheduled outage is in effect for this tool"></span>');
+	{% elif tool.scheduled_partial_outage %}
+		$('#tool-{{ tool.id }}').append('<span class="glyphicon glyphicon-time warning-highlight sidebar-status-icon" title="An optional resource for this tool has an outage in effect"></span>');
+	{% endif %}
+
+	{% if tool.required_resource_is_unavailable %}
+		$('#tool-{{ tool.id }}').append('<span class="glyphicon glyphicon-leaf danger-highlight sidebar-status-icon" title="This tool is unavailable because a required resource is unavailable"></span>');
+	{% elif tool.nonrequired_resource_is_unavailable %}
+		$('#tool-{{ tool.id }}').append('<span class="glyphicon glyphicon-leaf warning-highlight sidebar-status-icon" title="This tool is operating in a diminished capacity because an optional resource is unavailable"></span>');
+	{% endif %}
+
+	{% if tool.operational == False %}
+		$('#tool-{{ tool.id }}').append('<span class="glyphicon glyphicon-fire danger-highlight sidebar-status-icon" title="This tool is shut down"></span>');
+	{% elif tool.problematic == True %}
+		$('#tool-{{ tool.id }}').append('<span class="glyphicon glyphicon-wrench warning-highlight sidebar-status-icon" title="This tool requires maintenance"></span>');
+	{% endif %}
+{% endfor %}
+
+{% for area in area_summary %}
+	{% if area.required_resource_is_unavailable %}
+		$('#area-{{ area.id }}').append('<span class="glyphicon glyphicon-leaf danger-highlight sidebar-status-icon" title="This area is unavailable because a required resource is unavailable"></span>');
+	{% endif %}
+	{% if area.maximum_capacity %}
+		$('#area-{{ area.id }}').append('<span class="sidebar-status-occupancy"> -</span>');
+		{% if area.occupancy_count >= area.danger_capacity %}
+			$('#area-{{ area.id }}').append('<span class="glyphicon glyphicon-user danger-highlight sidebar-status-icon" data-toggle="tooltip" title="{{ area.occupants }}"></span>');
+		{% elif area.occupancy_count >= area.warning_capacity %}
+			$('#area-{{ area.id }}').append('<span class="glyphicon glyphicon-user warning-highlight sidebar-status-icon" data-toggle="tooltip" title="{{ area.occupants }}"></span>');
+		{% else %}
+			$('#area-{{ area.id }}').append('<span class="glyphicon glyphicon-user success-highlight sidebar-status-icon" data-toggle="tooltip" title="{{ area.occupants }}"></span>');
+		{% endif %}
+		{% if area.count_staff_in_occupancy %}
+			$('#area-{{ area.id }}').append('<span class="sidebar-status-occupancy" title="There {% if area.occupancy_count == 1 %}is{% else %}are{% endif %} {{ area.occupancy_count }} {% if area.occupancy_count == 1 %}person{% else %}people{% endif %} in this area"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
+		{% else %}
+			$('#area-{{ area.id }}').append('<span class="sidebar-status-occupancy" title="There {% if area.occupancy_count == 1 %}is{% else %}are{% endif %} {{ area.occupancy_count }} {% if area.occupancy_count == 1 %}person{% else %}people{% endif %} in this area (+ {{ area.occupancy_staff }} staff)"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
+		{% endif %}
+	{% endif %}
+{% endfor %}
+$('.tooltip').remove();
+$('span[data-toggle~="tooltip"]').tooltip({ container: 'body', 'html': true });

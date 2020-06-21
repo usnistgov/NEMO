@@ -51,7 +51,7 @@ function on_item_search_selection(jquery_event, search_selection, dataset_name)
 function expand_to_item(id, type)
 {
 	$("#sidebar a").removeClass('selected');
-	$("a[data-item-id='" + id + "'][data-item-type='" + type + "']").addClass('selected').click().parents('ul.tree').show();
+	$("#"+type+"-"+id).addClass('selected').click().parents('ul.tree').show();
 	save_sidebar_state();
 }
 
@@ -114,7 +114,7 @@ function set_selected_item(element)
 
 function set_selected_item_by_id(item_id, item_type)
 {
-	let item = $(".item_tree [data-item-id=" + item_id + "][data-item-type=" + item_type + "]");
+	let item = $("#" + item_type + "-" + item_id);
 	if(item.length === 1)
 	{
 		$("#sidebar a").removeClass('selected');
