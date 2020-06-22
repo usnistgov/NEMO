@@ -921,6 +921,19 @@ class Area(models.Model):
 		result.extend(self.parents())
 		return result
 
+	def self_and_children(self, include_nodes=False):
+		stack = list(self.area_children_set.all())
+		result = [self]
+		while stack:
+			child = stack.pop()
+			if include_nodes:
+				result.append(child)
+			elif not child.area_children_set.exists():
+				result.append(child)
+			if child.area_children_set.exists():
+				stack.extend(children for children in list(child.area_children_set.all()))
+		return result
+
 
 class AreaAccessRecord(CalendarDisplay):
 	area = models.ForeignKey(Area, on_delete=models.CASCADE)

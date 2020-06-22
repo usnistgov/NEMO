@@ -254,7 +254,7 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 
 	# For tools the user may not create, move, or resize a reservation to coincide with another user's reservation.
 	# For areas, it cannot coincide with another reservation for the same user, or with a number of other users greater than the area capacity
-	coincident_events = Reservation.objects.filter(cancelled=False, missed=False, shortened=False).filter(**new_reservation.reservation_item_filter)
+	coincident_events = Reservation.objects.filter(cancelled=False, missed=False, shortened=False)
 	# Exclude the reservation we're cancelling in order to create a new one:
 	if cancelled_reservation and cancelled_reservation.id:
 		coincident_events = coincident_events.exclude(id=cancelled_reservation.id)
@@ -263,17 +263,19 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 	# The event starts and ends after the time-window.
 	coincident_events = coincident_events.exclude(start__lt=new_reservation.start, end__lte=new_reservation.start)
 	coincident_events = coincident_events.exclude(start__gte=new_reservation.end, end__gt=new_reservation.end)
-	if new_reservation.reservation_item_type == ReservationItemType.TOOL and coincident_events.count() > 0:
+	if new_reservation.reservation_item_type == ReservationItemType.TOOL and coincident_events.filter(**new_reservation.reservation_item_filter).count() > 0:
 		policy_problems.append("Your reservation coincides with another reservation that already exists. Please choose a different time.")
 	if new_reservation.reservation_item_type == ReservationItemType.AREA:
-		if coincident_events.filter(user=user).count() > 0:
+		if coincident_events.filter(**new_reservation.reservation_item_filter).filter(user=user).count() > 0:
 			if user == user_creating_reservation:
 				policy_problems.append("You already have a reservation that coincides with this one. Please choose a different time.")
 			else:
 				policy_problems.append(f"{str(user)} already has a reservation that coincides with this one. Please choose a different time.")
 		for area in new_reservation.area.self_and_parents():
+			# Check reservations for all other children of the parent areas
 			apply_to_user = not user.is_staff or user.is_staff and area.count_staff_in_occupancy
-			if apply_to_user and area.maximum_capacity and coincident_events.count() >= area.maximum_capacity:
+			children_events = coincident_events.filter(area_id__in=[area.id for area in area.self_and_children()])
+			if apply_to_user and area.maximum_capacity and children_events.count() >= area.maximum_capacity:
 				policy_problems.append(f"The {area} is already at its maximum capacity at this time. Please choose a different time.")
 
 	# The user may not create, move, or resize a reservation to coincide with a scheduled outage.
