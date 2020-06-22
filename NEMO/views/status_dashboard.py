@@ -45,7 +45,7 @@ def status_dashboard(request, tab=None):
 
 def process_area_access_record_with_parents(user: User):
 	show_not_qualified_areas = get_customization('dashboard_display_not_qualified_areas')
-	records = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('area')
+	records = AreaAccessRecord.objects.filter(end=None, staff_charge=None)
 	if not user.is_staff and show_not_qualified_areas != 'enabled':
 		records = records.filter(area__in=user.accessible_areas())
 	records = records.prefetch_related('customer', 'project', 'area')
@@ -56,7 +56,7 @@ def process_area_access_record_with_parents(user: User):
 		areas_and_parents = area_model_tree.get_ancestor_areas(area_model_tree.get_areas([record.area.id for record in records]), include_self=True)
 		# Sort to have area without children before others
 		areas_and_parents.sort(key=lambda x: f'{x.tree_category}zz' if x.is_leaf else f'{x.tree_category}/aa')
-		area_summary = create_area_summary(area_model_tree, False, False)
+		area_summary = create_area_summary(area_model_tree=area_model_tree, add_resources=False, add_occupants=True)
 		area_summary_dict = {area['id']: area for area in area_summary}
 		for area_item in areas_and_parents:
 			area_item.item = area_summary_dict[area_item.id]
@@ -102,14 +102,8 @@ def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=Tru
 	if area_model_tree is None:
 		area_model_tree = get_area_model_tree()
 	area_items = area_model_tree.items.values()
-	# add occupancy and staff occupancy
-	areas_with_counts = area_model_tree.leaves_queryset.only('name').annotate(occupancy_staff=Count('areaaccessrecord', filter=Q(areaaccessrecord__end=None, areaaccessrecord__staff_charge=None, areaaccessrecord__customer__is_staff=True)))
-	areas_with_counts = areas_with_counts.annotate(occupancy=Count('areaaccessrecord', filter=Q(areaaccessrecord__end=None, areaaccessrecord__staff_charge=None)))
-	area_dict = {area.id: area for area in areas_with_counts}
 	result = {}
 	for area in area_items:
-		occupancy = area_dict[area.id].occupancy if area.is_leaf else sum(area_dict[child.id].occupancy for child in area.descendants if child.is_leaf)
-		occupancy_staff = area_dict[area.id].occupancy_staff if area.is_leaf else sum(area_dict[child.id].occupancy_staff for child in area.descendants if child.is_leaf)
 		result[area.id] = {
 			'name': area.name,
 			'id': area.id,
@@ -117,25 +111,25 @@ def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=Tru
 			'warning_capacity': area.item.warning_capacity(),
 			'danger_capacity': area.item.danger_capacity(),
 			'count_staff_in_occupancy': area.count_staff_in_occupancy,
-			'occupancy_count': occupancy if area.count_staff_in_occupancy else occupancy-occupancy_staff,
-			'occupancy': occupancy,
-			'occupancy_staff': occupancy_staff,
+			'occupancy_count': 0,
+			'occupancy': 0,
+			'occupancy_staff': 0,
 			'occupants': '',
 			'required_resource_is_unavailable': False,
 		}
 
 	if add_resources:
-		unavailable_resources = Resource.objects.filter(available=False).prefetch_related('dependent_areas')
+		unavailable_resources = Resource.objects.filter(available=False).prefetch_related(Prefetch('dependent_areas', queryset=Area.objects.only('id')))
 		for resource in unavailable_resources:
 			for area in resource.dependent_areas.all():
 				if area.id in result:
 					result[area.id]['required_resource_is_unavailable'] = True
 
 	if add_occupants:
-		occupants: List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('area', 'customer')
+		occupants: List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related(Prefetch('customer', queryset=User.objects.all().only('first_name', 'last_name', 'username', 'is_staff')))
 		for occupant in occupants:
 			# Get ids for area and all the parents (so we can add occupants info on parents)
-			area_ids = area_model_tree.get_area(occupant.area.id).ancestor_ids(True)
+			area_ids = area_model_tree.get_area(occupant.area_id).ancestor_ids(include_self=True)
 			if occupant.customer.is_staff:
 				customer_display = f'<span class="success-highlight">{str(occupant.customer)}</span>'
 			elif occupant.customer.is_logged_in_area_without_reservation():
@@ -144,6 +138,11 @@ def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=Tru
 				customer_display = str(occupant.customer)
 			for area_id in area_ids:
 				if area_id in result:
+					result[area_id]['occupancy'] += 1
+					if occupant.customer.is_staff:
+						result[area_id]['occupancy_staff'] += 1
+					if not occupant.customer.is_staff or result[area_id]['count_staff_in_occupancy']:
+						result[area_id]['occupancy_count'] += 1
 					result[area_id]['occupants'] += customer_display if not result[area_id]['occupants'] else f'<br>{customer_display}'
 	area_summary = list(result.values())
 	area_summary.sort(key=lambda x: x['name'])
