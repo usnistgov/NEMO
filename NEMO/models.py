@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+from copy import deepcopy
 from datetime import timedelta
 from enum import Enum
 from typing import Union, List, Optional
@@ -1755,6 +1756,26 @@ class ScheduledOutage(models.Model):
 
 	def __str__(self):
 		return str(self.title)
+
+	def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+		if self.area_id:
+			if self.area.area_children_set.exists():
+				stack = list(self.area.area_children_set.all())
+				scheduled_outages = []
+				while stack:
+					child = stack.pop()
+					if not child.area_children_set.exists():
+						# leaf, create outage
+						child_outage = deepcopy(self)
+						child_outage.pk = None
+						child_outage.id = None
+						child_outage.area = child
+						scheduled_outages.append(child_outage)
+					else:
+						stack.extend(children for children in list(child.area_children_set.all()))
+				ScheduledOutage.objects.bulk_create(scheduled_outages)
+
+		super().save(force_insert, force_update, using, update_fields)
 
 
 class News(models.Model):

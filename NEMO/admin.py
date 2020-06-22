@@ -193,9 +193,6 @@ class AreaAdmin(admin.ModelAdmin):
 		return super().get_fieldsets(request, obj)
 
 	def save_model(self, request, obj:Area, form, change):
-		"""
-		Explicitly record any project membership changes.
-		"""
 		if obj.parent_area:
 			# if this area has a parent, that parent needs to be cleaned and updated
 			obj.parent_area.is_now_a_parent()
