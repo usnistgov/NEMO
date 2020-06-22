@@ -33,9 +33,14 @@ $('#sidebar .sidebar-status-occupancy').remove();
 {% endfor %}
 
 {% for area in area_summary %}
+	{% if area.scheduled_outage %}
+		$('#area-{{ area.id }}').append('<span class="glyphicon glyphicon-time danger-highlight sidebar-status-icon" title="A scheduled outage is in effect for this area"></span>');
+	{% endif %}
+
 	{% if area.required_resource_is_unavailable %}
 		$('#area-{{ area.id }}').append('<span class="glyphicon glyphicon-leaf danger-highlight sidebar-status-icon" title="This area is unavailable because a required resource is unavailable"></span>');
 	{% endif %}
+
 	{% if area.maximum_capacity %}
 		$('#area-{{ area.id }}').append('<span class="sidebar-status-occupancy"> -</span>');
 		{% if area.occupancy_count >= area.danger_capacity %}

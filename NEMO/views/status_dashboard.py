@@ -56,7 +56,7 @@ def process_area_access_record_with_parents(user: User):
 		areas_and_parents = area_model_tree.get_ancestor_areas(area_model_tree.get_areas([record.area.id for record in records]), include_self=True)
 		# Sort to have area without children before others
 		areas_and_parents.sort(key=lambda x: f'{x.tree_category}zz' if x.is_leaf else f'{x.tree_category}/aa')
-		area_summary = create_area_summary(area_model_tree=area_model_tree, add_resources=False, add_occupants=True)
+		area_summary = create_area_summary(area_model_tree=area_model_tree, add_resources=False, add_outages=False, add_occupants=True)
 		area_summary_dict = {area['id']: area for area in area_summary}
 		for area_item in areas_and_parents:
 			area_item.item = area_summary_dict[area_item.id]
@@ -91,14 +91,14 @@ def create_tool_summary():
 	unavailable_resources = Resource.objects.filter(available=False).prefetch_related('fully_dependent_tools', 'partially_dependent_tools')
 	# also check for visibility on the parent if there is one (alternate tool are hidden)
 	usage_events = UsageEvent.objects.filter(Q(end=None, tool__visible=True)|Q(end=None, tool__parent_tool__visible=True)).prefetch_related('operator', 'user', 'tool')
-	scheduled_outages = ScheduledOutage.objects.filter(start__lte=timezone.now(), end__gt=timezone.now())
+	scheduled_outages = ScheduledOutage.objects.filter(start__lte=timezone.now(), end__gt=timezone.now(), area__isnull=True)
 	tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages)
 	tool_summary = list(tool_summary.values())
 	tool_summary.sort(key=lambda x: x['name'])
 	return tool_summary
 
 
-def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=True, add_occupants=True):
+def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=True, add_occupants=True, add_outages=True):
 	if area_model_tree is None:
 		area_model_tree = get_area_model_tree()
 	area_items = area_model_tree.items.values()
@@ -116,6 +116,7 @@ def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=Tru
 			'occupancy_staff': 0,
 			'occupants': '',
 			'required_resource_is_unavailable': False,
+			'scheduled_outage': False,
 		}
 
 	if add_resources:
@@ -124,6 +125,14 @@ def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=Tru
 			for area in resource.dependent_areas.all():
 				if area.id in result:
 					result[area.id]['required_resource_is_unavailable'] = True
+	if add_outages:
+		scheduled_outages = ScheduledOutage.objects.filter(start__lte=timezone.now(), end__gt=timezone.now(), tool__isnull=True).only('area_id', 'resource_id')
+		for outage in scheduled_outages:
+			if outage.area_id:
+				result[outage.area_id]['scheduled_outage'] = True
+			elif outage.resource_id:
+				for t in outage.resource.dependent_areas.values_list('id', flat=True):
+					result[t]['scheduled_outage'] = True
 
 	if add_occupants:
 		occupants: List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related(Prefetch('customer', queryset=User.objects.all().only('first_name', 'last_name', 'username', 'is_staff')))
