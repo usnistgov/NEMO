@@ -159,9 +159,20 @@ function load_sidebar_state()
 	}
 }
 
-function refresh_sidebar_icons()
+function refresh_sidebar_area_icons()
 {
-	$.getScript('/refresh_sidebar_icons/');
+	refresh_sidebar_icons('area')
+}
+
+function refresh_sidebar_tool_icons()
+{
+	refresh_sidebar_icons('tool')
+}
+
+function refresh_sidebar_icons(items)
+{
+	if (items) $.getScript('/refresh_sidebar_icons/'+items+'/');
+	else $.getScript('/refresh_sidebar_icons/');
 }
 
 // Use this function to display a Bootstrap modal when an AJAX call is successful and contains content to render.

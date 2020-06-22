@@ -450,7 +450,7 @@ function login_to_area()
 			$(".fc-logout-button").show()
 			{% endif %}
         }
-		ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data, callback) }, [ajax_failure_callback("Login to area failed")], refresh_calendar_and_sidebar)
+		ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data, callback) }, [ajax_failure_callback("Login to area failed")], refresh_sidebar_area_icons)
 	}
 }
 
@@ -467,7 +467,7 @@ function logout_of_area()
 			if (item.type === 'area') login_button.html("Login to the " + item.element_name)
 		}
 		{% if self_login %}login_button.show(){% endif %}
-    }, ajax_failure_callback("Logout of area failed"), refresh_calendar_and_sidebar)
+    }, ajax_failure_callback("Logout of area failed"), refresh_sidebar_area_icons)
 }
 
 function initialize_login_logout_buttons()

@@ -110,6 +110,7 @@ urlpatterns = [
 
 	# Utility functions:
 	url(r'^refresh_sidebar_icons/$', sidebar.refresh_sidebar_icons, name='refresh_sidebar_icons'),
+	url(r'^refresh_sidebar_icons/'+reservation_item_types+'/$', sidebar.refresh_sidebar_icons, name='refresh_sidebar_icons'),
 
 	# Facility feedback
 	url(r'^feedback/$', feedback.feedback, name='feedback'),
