@@ -101,7 +101,7 @@ def compose_email(request):
 			user_filter = Q(physical_access_levels__in=access_levels)
 			if access_levels.filter(allow_staff_access=True).exists():
 				user_filter = user_filter | Q(is_staff=True)
-			users = User.objects.filter(user_filter)
+			users = User.objects.filter(user_filter).distinct()
 		elif audience == 'project':
 			users = User.objects.filter(projects__id=selection).distinct()
 		elif audience == 'account':
