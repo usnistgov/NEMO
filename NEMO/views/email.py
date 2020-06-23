@@ -5,6 +5,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMultiAlternatives
 from django.core.validators import validate_email
+from django.db.models import Q
 from django.http import HttpResponseBadRequest, HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.template import Template, Context
@@ -12,7 +13,7 @@ from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import EmailBroadcastForm
-from NEMO.models import Tool, Account, Project, User
+from NEMO.models import Tool, Account, Project, User, Area, PhysicalAccessLevel
 from NEMO.views.customization import get_media_file_contents, get_customization
 
 logger = getLogger(__name__)
@@ -77,6 +78,8 @@ def email_broadcast(request, audience=''):
 	dictionary = {}
 	if audience == 'tool':
 		dictionary['search_base'] = Tool.objects.filter(visible=True)
+	elif audience == 'area':
+		dictionary['search_base'] = Area.objects.all()
 	elif audience == 'project':
 		dictionary['search_base'] = Project.objects.filter(active=True, account__active=True)
 	elif audience == 'account':
@@ -93,6 +96,9 @@ def compose_email(request):
 	try:
 		if audience == 'tool':
 			users = User.objects.filter(qualifications__id=selection).distinct()
+		elif audience == 'area':
+			access_levels = PhysicalAccessLevel.objects.filter(area__in=selection)
+			users = User.objects.filter(Q(physical_access_levels__in=access_levels) | Q(is_staff=True, physical_access_levels__in=access_levels, physical_access_levels__allow_staff_access=True))
 		elif audience == 'project':
 			users = User.objects.filter(projects__id=selection).distinct()
 		elif audience == 'account':
