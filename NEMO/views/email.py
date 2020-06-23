@@ -97,8 +97,11 @@ def compose_email(request):
 		if audience == 'tool':
 			users = User.objects.filter(qualifications__id=selection).distinct()
 		elif audience == 'area':
-			access_levels = PhysicalAccessLevel.objects.filter(area__in=selection)
-			users = User.objects.filter(Q(physical_access_levels__in=access_levels) | Q(is_staff=True, physical_access_levels__in=access_levels, physical_access_levels__allow_staff_access=True))
+			access_levels = PhysicalAccessLevel.objects.filter(area_id__in=[selection])
+			user_filter = Q(physical_access_levels__in=access_levels)
+			if access_levels.filter(allow_staff_access=True).exists():
+				user_filter = user_filter | Q(is_staff=True)
+			users = User.objects.filter(user_filter)
 		elif audience == 'project':
 			users = User.objects.filter(projects__id=selection).distinct()
 		elif audience == 'account':
