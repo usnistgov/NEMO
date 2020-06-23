@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
+{% load mptt_tags %}
 {% block title %}{% if form.instance.id %}Modify user{% else %}New user{% endif %}{% endblock %}
 {% block extrahead %}
 	{% load static %}
@@ -187,32 +188,55 @@
 				This user is not qualified to use any tools.
 			</div>
 		</div>
-		{% if physical_access_levels or externally_managed_access_levels %}
+		{% if area_access_levels or externally_managed_access_levels %}
 			<div class="form-group">
 				<span class="control-label col-sm-2">Physical access levels</span>
 				<div class="col-sm-8">
-					{% if physical_access_levels %}
+					{% if area_access_levels %}
 						<div class="panel panel-info">
 							<div class="panel-heading">
 								<span class="panel-title" style="font-size:inherit">Tablet controlled</span>
 							</div>
 							<div class="panel-body">
 								<p style="font-style: italic"><span class="glyphicon glyphicon-info-sign primary-highlight"></span> Selecting a parent area access will give access to all sub-areas</p>
-								{% if form.instance.id %}
-									{% with checked_access_levels=form.instance.accessible_access_levels %}
-										{% for level in physical_access_levels %}
-											<div class="checkbox">
-												<label><input name="physical_access_levels" type="checkbox" {% if form.instance.is_staff and level.allow_staff_access %}disabled title="This access is automatically granted to staff users"{% endif %} value="{{ level.id }}" {% if level in checked_access_levels %}checked{% endif %}>{% if level.area_category %}{{ level.area_category }}/{% endif %}{{ level }}</label>
-											</div>
-										{% endfor %}
-									{% endwith %}
-								{% else %}
-									{% for level in physical_access_levels %}
-										<div class="checkbox">
-											<label><input name="physical_access_levels" type="checkbox" value="{{ level.id }}">{% if level.area_category %}{{ level.area_category }}/{% endif %}{{ level }}</label>
-										</div>
-									{% endfor %}
-								{% endif %}
+								<ul class="root">
+									{% if form.instance.id %}
+										{# unfortunately have to duplicate some code here #}
+										{% with checked_access_levels=form.instance.accessible_access_levels %}
+											{% recursetree area_access_levels %}
+												<li>
+													{% if not area_access_dict|get_item:node.id %}{{ node.name }}{% endif %}
+													{% for level in area_access_dict|get_item:node.id %}
+														<div class="checkbox">
+															<label><input name="physical_access_levels" type="checkbox" {% if form.instance.is_staff and level.allow_staff_access %}disabled title="This access is automatically granted to staff users"{% endif %} value="{{ level.id }}" {% if level in checked_access_levels %}checked{% endif %}>{% if node.category %}({{ node.category }}) {% endif %}{{ level }}</label>
+														</div>
+													{% endfor %}
+													{% if not node.is_leaf_node %}
+														<ul class="children">
+															{{ children }}
+														</ul>
+													{% endif %}
+												</li>
+											{% endrecursetree %}
+										{% endwith %}
+									{% else %}
+										{% recursetree area_access_levels %}
+											<li>
+												{% if not area_access_dict|get_item:node.id %}{{ node.name }}{% endif %}
+												{% for level in area_access_dict|get_item:node.id %}
+													<div class="checkbox">
+														<label><input name="physical_access_levels" type="checkbox" value="{{ level.id }}">{{ level }}</label>
+													</div>
+												{% endfor %}
+												{% if not node.is_leaf_node %}
+													<ul class="children">
+														{{ children }}
+													</ul>
+												{% endif %}
+											</li>
+										{% endrecursetree %}
+									{% endif %}
+								</ul>
 							</div>
 						</div>
 					{% endif %}
