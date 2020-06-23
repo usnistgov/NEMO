@@ -1,5 +1,6 @@
 from datetime import timedelta
 from html.parser import HTMLParser
+from logging import getLogger
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
@@ -20,6 +21,9 @@ from NEMO.utilities import parse_start_and_end_date
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
+
+
+area_access_logger = getLogger(__name__)
 
 
 # Utility parser to find error messages in rendered self_login view
@@ -280,7 +284,8 @@ def self_log_in(request):
 		except ReservationRequiredUserError as error:
 			dictionary['area_error_message'] = f'You do not have a current reservation for the {error.area.name}. Please make a reservation before trying to access this area.'
 			return render(request, 'area_access/self_login.html', dictionary)
-		except:
+		except Exception as error:
+			area_access_logger.exception(error)
 			dictionary['area_error_message'] = "unexpected error"
 			return render(request, 'area_access/self_login.html', dictionary)
 		return redirect(reverse('landing'))

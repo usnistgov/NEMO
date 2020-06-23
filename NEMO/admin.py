@@ -6,6 +6,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models.fields.files import FieldFile
 from django.utils.html import format_html
+from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
 
 from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks, \
 	duplicate_tool_configuration
@@ -172,8 +173,8 @@ class ToolAdmin(admin.ModelAdmin):
 
 
 @register(Area)
-class AreaAdmin(admin.ModelAdmin):
-	list_display = ('name', 'parent_area', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
+class AreaAdmin(DraggableMPTTAdmin):
+	list_display = ('tree_actions', 'indented_title', 'name', 'parent_area', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
 	fieldsets = (
 		(None, {'fields': ('name', 'parent_area', 'category'),}),
 		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message'),}),
@@ -181,14 +182,17 @@ class AreaAdmin(admin.ModelAdmin):
 		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
 		('Policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time',),}),
 	)
-	list_filter = ('requires_reservation', 'parent_area',)
+	list_display_links = ('indented_title',)
+	list_filter = ('requires_reservation', ('parent_area', TreeRelatedFieldListFilter))
 	search_fields = ('name',)
+
+	mptt_level_indent = 20
 
 	def get_fieldsets(self, request, obj:Area=None):
 		"""
 		Remove some fieldsets if this area is a parent
 		"""
-		if obj and obj.area_children_set.all().exists():
+		if obj and not obj.is_leaf_node():
 			return [i for i in self.fieldsets if i[0] not in ['Area access', 'Reservation', 'Policy']]
 		return super().get_fieldsets(request, obj)
 
@@ -216,7 +220,7 @@ class StaffChargeAdmin(admin.ModelAdmin):
 @register(AreaAccessRecord)
 class AreaAccessRecordAdmin(admin.ModelAdmin):
 	list_display = ('id', 'customer', 'area', 'project', 'start', 'end')
-	list_filter = ('area', 'start',)
+	list_filter = (('area', TreeRelatedFieldListFilter), 'start',)
 	date_hierarchy = 'start'
 
 
@@ -544,6 +548,7 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 class PhysicalAccessLevelAdmin(admin.ModelAdmin):
 	form = PhysicalAccessLevelForm
 	list_display = ('name', 'area', 'schedule', 'allow_staff_access')
+	list_filter = (('area', TreeRelatedFieldListFilter),)
 
 	def save_model(self, request, obj, form, change):
 		"""

@@ -16,6 +16,8 @@ from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
+from mptt.fields import TreeForeignKey
+from mptt.models import MPTTModel
 
 from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
@@ -222,11 +224,16 @@ class User(models.Model):
 		else:
 			return PhysicalAccessLevel.objects.filter(Q(id__in=self.physical_access_levels.all()) | Q(allow_staff_access=True)).distinct()
 
+	def accessible_access_levels_for_area(self, area):
+		"""
+		Return access levels for the area or parent areas.
+		This means when checking access for area1, having access to its parent area grants access to area1
+		"""
+		return self.accessible_access_levels().filter(area__in=area.get_ancestors(include_self=True))
+
 	def accessible_areas(self):
-		if not self.is_staff:
-			return Area.objects.filter(Q(physicalaccesslevel__user=self)).distinct()
-		else:
-			return Area.objects.filter(Q(physicalaccesslevel__user=self) | Q(physicalaccesslevel__allow_staff_access=True)).distinct()
+		""" Returns accessible leaf node areas for this user, including descendants """
+		return Area.objects.filter(id__in=[leaf_descendant.id for access in self.accessible_access_levels() for leaf_descendant in access.area.get_descendants(include_self=True) if leaf_descendant.is_leaf_node()]).distinct()
 
 	def in_area(self) -> bool:
 		return AreaAccessRecord.objects.filter(customer=self, staff_charge=None, end=None).exists()
@@ -299,7 +306,7 @@ class Tool(models.Model):
 	_notification_email_address = models.EmailField(db_column="notification_email_address", blank=True, null=True, help_text="Messages that relate to this tool (such as comments, problems, and shutdowns) will be forwarded to this email address. This can be a normal email address or a mailing list address.")
 	_interlock = models.OneToOneField('Interlock', db_column="interlock_id", blank=True, null=True, on_delete=models.SET_NULL)
 	# Policy fields:
-	_requires_area_access = models.ForeignKey('Area', db_column="requires_area_access_id", null=True, blank=True, help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.", on_delete=models.PROTECT)
+	_requires_area_access = TreeForeignKey('Area', db_column="requires_area_access_id", null=True, blank=True, help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.", on_delete=models.PROTECT)
 	_grant_physical_access_level_upon_qualification = models.ForeignKey('PhysicalAccessLevel', db_column="grant_physical_access_level_upon_qualification_id", null=True, blank=True, help_text="The designated physical access level is granted to the user upon qualification for this tool.", on_delete=models.PROTECT)
 	_grant_badge_reader_access_upon_qualification = models.CharField(db_column="grant_badge_reader_access_upon_qualification", max_length=100, null=True, blank=True, help_text="Badge reader access is granted to the user upon qualification for this tool.")
 	_reservation_horizon = models.PositiveIntegerField(db_column="reservation_horizon", default=14, null=True, blank=True, help_text="Users may create reservations this many days in advance. Leave this field blank to indicate that no reservation horizon exists for this tool.")
@@ -821,9 +828,9 @@ class StaffCharge(CalendarDisplay):
 		return str(self.id)
 
 
-class Area(models.Model):
+class Area(MPTTModel):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
-	parent_area = models.ForeignKey('Area', related_name="area_children_set", null=True, blank=True, help_text='Select a parent area, (building, floor etc.)', on_delete=models.CASCADE)
+	parent_area = TreeForeignKey('self', related_name="area_children_set", null=True, blank=True, help_text='Select a parent area, (building, floor etc.)', on_delete=models.CASCADE)
 	category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login.")
@@ -845,6 +852,9 @@ class Area(models.Model):
 	policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
 	policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
 
+	class MPTTMeta:
+		parent_attr = 'parent_area'
+
 	class Meta:
 		indexes = [
 			models.Index(fields=['name']),
@@ -853,9 +863,15 @@ class Area(models.Model):
 	def __str__(self):
 		return self.name
 
+	def tree_category(self):
+		tree_category = "/".join([ancestor.name for ancestor in self.get_ancestors().only('name')])
+		if self.category:
+			tree_category += "/" + self.category if tree_category else self.category
+		return tree_category
+
 	def is_now_a_parent(self):
 		""" This method is called when this area is a parent of another area """
-		if not self.area_children_set.all().exists():
+		if self.is_leaf_node():
 			# Only need to clean this area if it doesn't yet have children
 			self.requires_reservation = False
 			self.reservation_horizon = None
@@ -885,16 +901,20 @@ class Area(models.Model):
 			return self.occupancy() - self.occupancy_staff()
 
 	def occupancy_staff(self):
-		if self.area_children_set.all().exists():
-			return sum([child.occupancy_staff() for child in self.area_children_set.all()])
+		if not self.is_leaf_node():
+			return sum([descendant.occupancy_staff() for descendant in self.get_descendants().all()])
 		else:
 			return AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None, customer__is_staff=True).count()
 
 	def occupancy(self):
-		if self.area_children_set.all().exists():
-			return sum([child.occupancy() for child in self.area_children_set.all()])
+		if not self.is_leaf_node():
+			return sum([descendant.occupancy() for descendant in self.get_descendants().all()])
 		else:
 			return AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None).count()
+
+	def get_physical_access_levels(self):
+		""" Returns access levels for this area and descendants """
+		return PhysicalAccessLevel.objects.filter(area_id__in=self.get_descendants(include_self=True))
 
 	def required_resource_is_unavailable(self) -> bool:
 		return self.required_resources.filter(available=False).exists()
@@ -907,36 +927,9 @@ class Area(models.Model):
 		if self.requires_reservation:
 			return Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=user, area=self, start__lte=timezone.now(), end__gt=timezone.now())
 
-	def parents(self) -> Optional[List]:
-		parent_list = []
-		parent = self
-		while parent.parent_area:
-			parent_list.append(parent.parent_area)
-			parent = parent.parent_area
-		parent_list.reverse()
-		return parent_list
-
-	def self_and_parents(self) -> List:
-		result = [self]
-		result.extend(self.parents())
-		return result
-
-	def self_and_children(self, include_nodes=False):
-		stack = list(self.area_children_set.all())
-		result = [self]
-		while stack:
-			child = stack.pop()
-			if include_nodes:
-				result.append(child)
-			elif not child.area_children_set.exists():
-				result.append(child)
-			if child.area_children_set.exists():
-				stack.extend(children for children in list(child.area_children_set.all()))
-		return result
-
 
 class AreaAccessRecord(CalendarDisplay):
-	area = models.ForeignKey(Area, on_delete=models.CASCADE)
+	area = TreeForeignKey(Area, on_delete=models.CASCADE)
 	customer = models.ForeignKey(User, on_delete=models.CASCADE)
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
 	start = models.DateTimeField(default=timezone.now)
@@ -1011,7 +1004,7 @@ class Reservation(CalendarDisplay):
 	creator = models.ForeignKey(User, related_name="reservation_creator", on_delete=models.CASCADE)
 	creation_time = models.DateTimeField(default=timezone.now)
 	tool = models.ForeignKey(Tool, null=True, blank=True, on_delete=models.CASCADE)
-	area = models.ForeignKey(Area, null=True, blank=True, on_delete=models.CASCADE)
+	area = TreeForeignKey(Area, null=True, blank=True, on_delete=models.CASCADE)
 	project = models.ForeignKey(Project, null=True, blank=True, help_text="Indicates the intended project for this reservation. A missed reservation would be billed to this project.", on_delete=models.CASCADE)
 	start = models.DateTimeField('start')
 	end = models.DateTimeField('end')
@@ -1509,7 +1502,7 @@ def calculate_duration(start, end, unfinished_reason):
 
 class Door(models.Model):
 	name = models.CharField(max_length=100)
-	area = models.ForeignKey(Area, related_name='doors', on_delete=models.PROTECT)
+	area = TreeForeignKey(Area, related_name='doors', on_delete=models.PROTECT)
 	interlock = models.OneToOneField(Interlock, on_delete=models.PROTECT)
 
 	def __str__(self):
@@ -1522,7 +1515,7 @@ class Door(models.Model):
 
 class PhysicalAccessLevel(models.Model):
 	name = models.CharField(max_length=100)
-	area = models.ForeignKey(Area, on_delete=models.CASCADE)
+	area = TreeForeignKey(Area, on_delete=models.CASCADE)
 
 	class Schedule(object):
 		ALWAYS = 0
@@ -1737,7 +1730,7 @@ class ScheduledOutage(models.Model):
 	details = models.TextField(blank=True, help_text="A detailed description of why there is a scheduled outage, and what users can expect during the outage")
 	category = models.CharField(blank=True, max_length=200, help_text="A categorical reason for why this outage is scheduled. Useful for trend analytics.")
 	tool = models.ForeignKey(Tool, blank=True,  null=True, on_delete=models.CASCADE)
-	area = models.ForeignKey(Area, blank=True, null=True, on_delete=models.CASCADE)
+	area = TreeForeignKey(Area, blank=True, null=True, on_delete=models.CASCADE)
 	resource = models.ForeignKey(Resource, blank=True, null=True, on_delete=models.CASCADE)
 
 	@property
@@ -1772,20 +1765,14 @@ class ScheduledOutage(models.Model):
 
 	def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
 		if self.area_id:
-			if self.area.area_children_set.exists():
-				stack = list(self.area.area_children_set.all())
+			if not self.area.is_leaf_node():
 				scheduled_outages = []
-				while stack:
-					child = stack.pop()
-					if not child.area_children_set.exists():
-						# leaf, create outage
-						child_outage = deepcopy(self)
-						child_outage.pk = None
-						child_outage.id = None
-						child_outage.area = child
-						scheduled_outages.append(child_outage)
-					else:
-						stack.extend(children for children in list(child.area_children_set.all()))
+				for area_descendant in self.area.get_descendants():
+					child_outage = deepcopy(self)
+					child_outage.pk = None
+					child_outage.id = None
+					child_outage.area = area_descendant
+					scheduled_outages.append(child_outage)
 				ScheduledOutage.objects.bulk_create(scheduled_outages)
 
 		super().save(force_insert, force_update, using, update_fields)

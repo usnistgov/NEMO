@@ -97,8 +97,9 @@ def compose_email(request):
 		if audience == 'tool':
 			users = User.objects.filter(qualifications__id=selection).distinct()
 		elif audience == 'area':
-			access_levels = PhysicalAccessLevel.objects.filter(area_id__in=[selection])
+			access_levels = Area.objects.get(pk=selection).get_physical_access_levels()
 			user_filter = Q(physical_access_levels__in=access_levels)
+			# if one of the access levels allows staff, add all staff
 			if access_levels.filter(allow_staff_access=True).exists():
 				user_filter = user_filter | Q(is_staff=True)
 			users = User.objects.filter(user_filter).distinct()

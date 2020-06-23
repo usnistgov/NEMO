@@ -223,7 +223,7 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
 	if item_type == ReservationItemType.AREA:
-		user_access_levels = user.accessible_access_levels().filter(area=new_reservation.area)
+		user_access_levels = user.accessible_access_levels_for_area(new_reservation.area)
 		if not any([access_level.accessible_at(new_reservation.start) for access_level in user_access_levels]) or not any([access_level.accessible_at(new_reservation.end) for access_level in user_access_levels]):
 			details = f" (times allowed in this area are: {','.join([access.get_schedule_display() for access in user_access_levels])})" if user_access_levels else ''
 			if user == user_creating_reservation:
@@ -271,10 +271,10 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 				policy_problems.append("You already have a reservation that coincides with this one. Please choose a different time.")
 			else:
 				policy_problems.append(f"{str(user)} already has a reservation that coincides with this one. Please choose a different time.")
-		for area in new_reservation.area.self_and_parents():
+		for area in new_reservation.area.get_ancestors(ascending=True, include_self=True):
 			# Check reservations for all other children of the parent areas
 			apply_to_user = not user.is_staff or user.is_staff and area.count_staff_in_occupancy
-			children_events = coincident_events.filter(area_id__in=[area.id for area in area.self_and_children()])
+			children_events = coincident_events.filter(area_id__in=[area.id for area in area.get_descendants(include_self=True)])
 			if apply_to_user and area.maximum_capacity and children_events.count() >= area.maximum_capacity:
 				policy_problems.append(f"The {area} is already at its maximum capacity at this time. Please choose a different time.")
 
@@ -462,7 +462,7 @@ def check_policy_to_enter_any_area(user: User):
 	if user.access_expiration is not None and user.access_expiration < date.today():
 		raise PhysicalAccessExpiredUserError(user=user)
 
-	user_has_access_to_at_least_one_area = user.accessible_access_levels().all().exists()
+	user_has_access_to_at_least_one_area = user.accessible_access_levels().exists()
 	if not user_has_access_to_at_least_one_area:
 		raise NoPhysicalAccessUserError(user=user)
 
@@ -472,8 +472,8 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 	if user.is_staff and any([access_level.accessible() for access_level in PhysicalAccessLevel.objects.filter(allow_staff_access=True, area=area)]):
 		pass
 	else:
-		# Check if the user normally has access to this area door at the current time
-		if not any([access_level.accessible() for access_level in user.accessible_access_levels().filter(area=area)]):
+		# Check if the user normally has access to this area door at the current time (or access to any parent)
+		if not any([access_level.accessible() for access_level in user.accessible_access_levels_for_area(area)]):
 			raise NoAccessiblePhysicalAccessUserError(user=user, area=area)
 
 	if not user.is_staff:
@@ -486,7 +486,7 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 			raise ScheduledOutageInProgressError(user=user, area=area)
 
 		# If we reached maximum capacity, fail (only for non staff users)
-		for a in area.self_and_parents():
+		for a in area.get_ancestors(ascending=True, include_self=True):
 			if a.maximum_capacity and 0 < a.maximum_capacity <= a.occupancy_count():
 				raise MaximumCapacityReachedError(user=user, area=a)
 

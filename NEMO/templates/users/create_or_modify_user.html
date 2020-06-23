@@ -190,18 +190,29 @@
 		{% if physical_access_levels or externally_managed_access_levels %}
 			<div class="form-group">
 				<span class="control-label col-sm-2">Physical access levels</span>
-				<div class="col-sm-4">
+				<div class="col-sm-8">
 					{% if physical_access_levels %}
 						<div class="panel panel-info">
 							<div class="panel-heading">
 								<span class="panel-title" style="font-size:inherit">Tablet controlled</span>
 							</div>
 							<div class="panel-body">
-								{% for level in physical_access_levels %}
-									<div class="checkbox">
-										<label><input name="physical_access_levels" type="checkbox" value="{{ level.id }}" {% if form.instance in level.user_set.all %}checked{% endif %}> {{ level }}</label>
-									</div>
-								{% endfor %}
+								<p style="font-style: italic"><span class="glyphicon glyphicon-info-sign primary-highlight"></span> Selecting a parent area access will give access to all sub-areas</p>
+								{% if form.instance.id %}
+									{% with checked_access_levels=form.instance.accessible_access_levels %}
+										{% for level in physical_access_levels %}
+											<div class="checkbox">
+												<label><input name="physical_access_levels" type="checkbox" {% if form.instance.is_staff and level.allow_staff_access %}disabled title="This access is automatically granted to staff users"{% endif %} value="{{ level.id }}" {% if level in checked_access_levels %}checked{% endif %}>{% if level.area_category %}{{ level.area_category }}/{% endif %}{{ level }}</label>
+											</div>
+										{% endfor %}
+									{% endwith %}
+								{% else %}
+									{% for level in physical_access_levels %}
+										<div class="checkbox">
+											<label><input name="physical_access_levels" type="checkbox" value="{{ level.id }}">{% if level.area_category %}{{ level.area_category }}/{% endif %}{{ level }}</label>
+										</div>
+									{% endfor %}
+								{% endif %}
 							</div>
 						</div>
 					{% endif %}

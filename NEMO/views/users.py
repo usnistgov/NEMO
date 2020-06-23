@@ -30,10 +30,16 @@ def users(request):
 @require_http_methods(['GET', 'POST'])
 def create_or_modify_user(request, user_id):
 	identity_service = get_identity_service()
+	# Get access levels and sort by area category
+	access_levels = list(PhysicalAccessLevel.objects.all().only('name', 'area'))
+	for access in access_levels:
+		access.area_category = access.area.tree_category()
+	access_levels.sort(key=lambda x:x.area_category)
+
 	dictionary = {
 		'projects': Project.objects.filter(active=True, account__active=True),
 		'tools': Tool.objects.filter(visible=True),
-		'physical_access_levels': PhysicalAccessLevel.objects.all(),
+		'physical_access_levels': access_levels,
 		'one_year_from_now': timezone.now() + timedelta(days=365),
 		'identity_service_available': identity_service.get('available', False),
 		'identity_service_domains': identity_service.get('domains', []),
@@ -86,7 +92,6 @@ def create_or_modify_user(request, user_id):
 					warning_message += ' The HTTP error was {}: {}'.format(result.status_code, result.text)
 					users_logger.error(warning_message)
 		except Exception as e:
-			site_title = get_customization('site_title')
 			dictionary['identity_service_available'] = False
 			warning_message = f"There was a problem communicating with the identity service. {site_title} is unable to search for a user. The administrator has been notified to resolve the problem."
 			dictionary['warning'] = warning_message
