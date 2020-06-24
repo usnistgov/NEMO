@@ -47,7 +47,7 @@ recurrence_frequencies = {
 @require_GET
 def calendar(request, item_type=None, item_id=None):
 	""" Present the calendar view to the user. """
-
+	user:User = request.user
 	if request.device == 'mobile':
 		if item_type and item_type == 'tool' and item_id:
 			return redirect('view_calendar', item_id)
@@ -56,6 +56,11 @@ def calendar(request, item_type=None, item_id=None):
 
 	tools = Tool.objects.filter(visible=True).only('name', '_category', 'parent_tool_id').order_by('_category', 'name')
 	areas = Area.objects.filter(requires_reservation=True).only('name')
+
+	# We want to remove areas the user doesn't have access to
+	display_all_areas = get_customization('calendar_display_not_qualified_areas') == 'enabled'
+	if not display_all_areas and areas and user and not user.is_superuser:
+		areas = [area for area in areas if area in user.accessible_areas()]
 
 	from NEMO.widgets.item_tree import ItemTree
 	rendered_item_tree_html = ItemTree().render(None, {'tools': tools, 'areas':areas, 'user': request.user})
