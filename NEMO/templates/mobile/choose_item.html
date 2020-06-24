@@ -14,18 +14,20 @@
 		</div>
 	</form>
 	<div id="search_results"></div>
-	<p>... or select by category:</p>
-	{% regroup tools by category as tools_regrouped_by_category %}
-	{% for category in tools_regrouped_by_category %}
-		<div class="alert alert-info" role="alert">
-			<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down" data-toggle="collapse" data-target="#category_{{ forloop.counter }}"></span>
-			<p style="cursor:pointer" data-toggle="collapse" data-target="#category_{{ forloop.counter }}"><strong>{{ category.grouper }}</strong></p>
-			<div id="category_{{ forloop.counter }}" class="collapse">
-				<div style="margin-bottom:10px"></div>
-				{% for tool in category.list %}
-					<p><a href="/{{ next_page }}/{{ tool.id }}/">{{ tool.name_or_child_in_use_name }}</a></p>
-				{% endfor %}
+	{% if tools %}
+		<p>... or select by category:</p>
+		{% regroup tools by category as tools_regrouped_by_category %}
+		{% for category in tools_regrouped_by_category %}
+			<div class="alert alert-info" role="alert">
+				<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down" data-toggle="collapse" data-target="#category_{{ forloop.counter }}"></span>
+				<p style="cursor:pointer" data-toggle="collapse" data-target="#category_{{ forloop.counter }}"><strong>{{ category.grouper }}</strong></p>
+				<div id="category_{{ forloop.counter }}" class="collapse">
+					<div style="margin-bottom:10px"></div>
+					{% for tool in category.list %}
+						<p><a href="/{{ next_page }}/{{ tool.id }}/">{{ tool.name_or_child_in_use_name }}</a></p>
+					{% endfor %}
+				</div>
 			</div>
-		</div>
-	{% endfor %}
+		{% endfor %}
+	{% endif %}
 {% endblock %}
