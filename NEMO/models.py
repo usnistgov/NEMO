@@ -917,7 +917,12 @@ class Area(MPTTModel):
 		return PhysicalAccessLevel.objects.filter(area_id__in=self.get_descendants(include_self=True))
 
 	def required_resource_is_unavailable(self) -> bool:
-		return self.required_resources.filter(available=False).exists()
+		required_resource_unavailable = False
+		for a in self.get_ancestors(ascending=True, include_self=True):
+			if a.required_resources.filter(available=False).exists():
+				required_resource_unavailable = True
+				break
+		return required_resource_unavailable
 
 	def scheduled_outage_in_progress(self) -> bool:
 		""" Returns true if an area or resource outage is currently in effect for this area. Otherwise, returns false. """
