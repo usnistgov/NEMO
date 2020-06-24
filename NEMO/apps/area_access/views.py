@@ -91,12 +91,10 @@ def login_to_area(request, door_id):
 		message = f"You do not have access to this area of the {facility_name} at this time. Please visit the User Office if you believe this is an error."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
-	except UnavailableResourcesUserError:
-		unavailable_resources = door.area.required_resources.filter(available=False)
-		if unavailable_resources and not user.is_staff:
-			log.details = "The user was blocked from entering this area because a required resource was unavailable."
-			log.save()
-			return render(request, 'area_access/resource_unavailable.html', {'unavailable_resources': unavailable_resources})
+	except UnavailableResourcesUserError as error:
+		log.details = "The user was blocked from entering this area because a required resource was unavailable."
+		log.save()
+		return render(request, 'area_access/resource_unavailable.html', {'unavailable_resources': error.resources})
 
 	except MaximumCapacityReachedError as error:
 		# deal with this error after checking if the user is already logged in

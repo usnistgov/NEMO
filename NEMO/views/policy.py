@@ -477,11 +477,13 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 			raise NoAccessiblePhysicalAccessUserError(user=user, area=area)
 
 	if not user.is_staff:
-		unavailable_resources = area.required_resources.filter(available=False)
-		if unavailable_resources:
-			raise UnavailableResourcesUserError(user=user, area=area, resources=unavailable_resources)
+		for a in area.get_ancestors(ascending=True, include_self=True):
+			unavailable_resources = a.required_resources.filter(available=False)
+			if unavailable_resources:
+				raise UnavailableResourcesUserError(user=user, area=a, resources=unavailable_resources)
 
-		# Non staff users may not enter an area during a scheduled outage
+		# Non staff users may not enter an area during a scheduled outage.
+		# Outages created on parents are propagated to all children so we don't need to check parents here
 		if area.scheduled_outage_in_progress():
 			raise ScheduledOutageInProgressError(user=user, area=area)
 

@@ -115,8 +115,8 @@ def new_area_access_record(request):
 		except NoAccessiblePhysicalAccessUserError:
 			dictionary['error_message'] = '{} does not have a physical access level that allows access to the {} at this time.'.format(user, area.name.lower())
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
-		except UnavailableResourcesUserError:
-			dictionary['error_message'] = 'The {} is inaccessible because a required resource is unavailable. You must make all required resources for this area available before creating a new area access record.'.format(area.name.lower())
+		except UnavailableResourcesUserError as error:
+			dictionary['error_message'] = 'The {} is inaccessible because a required resource ({}) is unavailable. You must make all required resources for this area available before creating a new area access record.'.format(error.area.name.lower(), error.resources[0])
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except MaximumCapacityReachedError as error:
 			dictionary['error_message'] = 'The {} is inaccessible because the {} has reached its maximum capacity. Wait for somebody to exit and try again.'.format(area.name.lower(), error.area.name.lower())
