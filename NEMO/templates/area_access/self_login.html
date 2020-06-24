@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load mptt_tags %}
 {% block title %}Log in to an area{% endblock %}
 {% block content %}
 	<h1>Log in to an access controlled area</h1>
@@ -33,11 +34,23 @@
 				<input type="hidden" name="area" value="{{ areas.0.id }}">
 			{% else %}
 				<p>Log in to which area?</p>
-				{% for a in areas %}
-					<div class="radio">
-						<label><input type="radio" name="area" value="{{ a.id }}" required>{{ a.name }}</label>
-					</div>
-				{% endfor %}
+				<ul class="root" style="padding-left: 15px;margin-top: 10px">
+					{% recursetree areas %}
+						<li {% if node.is_leaf_node %}style="list-style: none"{% endif %}>
+							{% if node not in user_accessible_areas %}{{ node.name }}
+							{% else %}
+								<div class="checkbox">
+									<label class="control-label" style="padding-left: 0"><input type="radio" name="area" value="{{ node.id }}" required> {% if node.category %}({{ node.category }}) {% endif %}{{ node.name }}</label><br>
+								</div>
+							{% endif %}
+							{% if not node.is_leaf_node %}
+								<ul class="children">
+									{{ children }}
+								</ul>
+							{% endif %}
+						</li>
+					{% endrecursetree %}
+				</ul>
 			{% endif %}
 			</div>
 			<input id="self_login_submit" type="submit" class="btn btn-success" value="Log in">

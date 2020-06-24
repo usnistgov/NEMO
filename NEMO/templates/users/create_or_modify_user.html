@@ -199,7 +199,7 @@
 							</div>
 							<div class="panel-body">
 								<p style="font-style: italic"><span class="glyphicon glyphicon-info-sign primary-highlight"></span> Selecting a parent area access will give access to all sub-areas</p>
-								<ul class="root">
+								<ul class="root" style="padding-left: 15px">
 									{% if form.instance.id %}
 										{# unfortunately have to duplicate some code here #}
 										{% with checked_access_levels=form.instance.accessible_access_levels %}
@@ -225,7 +225,7 @@
 												{% if not area_access_dict|get_item:node.id %}{{ node.name }}{% endif %}
 												{% for level in area_access_dict|get_item:node.id %}
 													<div class="checkbox">
-														<label><input name="physical_access_levels" type="checkbox" value="{{ level.id }}">{{ level }}</label>
+														<label><input name="physical_access_levels" type="checkbox" value="{{ level.id }}">{% if node.category %}({{ node.category }}) {% endif %}{{ level }}</label>
 													</div>
 												{% endfor %}
 												{% if not node.is_leaf_node %}

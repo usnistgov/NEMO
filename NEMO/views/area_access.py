@@ -93,7 +93,11 @@ def new_area_access_record(request):
 				dictionary['error_message'] = error_message
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
 
-			dictionary['areas'] = customer.accessible_areas().only('name')
+			user_accessible_areas = customer.accessible_areas()
+			dictionary['user_accessible_areas'] = user_accessible_areas
+			areas = [ancestor for area in user_accessible_areas for ancestor in area.get_ancestors(include_self=True)]
+			areas.sort(key=lambda x: x.tree_category())
+			dictionary['areas'] = Area.objects.filter(id__in=[area.id for area in areas])
 			return render(request, 'area_access/new_area_access_record_details.html', dictionary)
 		except:
 			pass
@@ -222,7 +226,7 @@ def calendar_self_login(request):
 	except Project.DoesNotExist:
 		# We have not selected a project yet
 		return render(request, 'area_access/calendar_self_login.html', dictionary)
-	response = self_log_in(request)
+	response = self_log_in(request=request, load_areas=False)
 	if response.status_code == 302 and response.url == '/':
 		# We got redirect to landing page in return, which means it was successful
 		return HttpResponse()
@@ -235,7 +239,7 @@ def calendar_self_login(request):
 
 @login_required
 @require_http_methods(['GET', 'POST'])
-def self_log_in(request):
+def self_log_in(request, load_areas=True):
 	user: User = request.user
 	if not able_to_self_log_in_to_area(user):
 		return redirect(reverse('landing'))
@@ -259,7 +263,16 @@ def self_log_in(request):
 		dictionary['error_message'] = f"You have not been granted physical access to any {facility_name} area. Please visit the User Office if you believe this is an error."
 		return render(request, 'area_access/self_login.html', dictionary)
 
-	dictionary['areas'] = user.accessible_areas().only('name')
+	if load_areas:
+		user_accessible_areas = user.accessible_areas()
+		dictionary['user_accessible_areas'] = user_accessible_areas
+		areas = [ancestor for area in user_accessible_areas for ancestor in area.get_ancestors(include_self=True)]
+		areas.sort(key=lambda x: x.tree_category())
+		dictionary['areas'] = Area.objects.filter(id__in=[area.id for area in areas])
+	else:
+		dictionary['user_accessible_areas'] = []
+		dictionary['areas'] = []
+
 	if request.method == 'GET':
 		return render(request, 'area_access/self_login.html', dictionary)
 	if request.method == 'POST':
@@ -267,7 +280,7 @@ def self_log_in(request):
 			a = Area.objects.get(id=request.POST['area'])
 			p = Project.objects.get(id=request.POST['project'])
 			check_policy_to_enter_this_area(a, request.user)
-			if a in dictionary['areas'] and p in dictionary['projects']:
+			if p in dictionary['projects']:
 				AreaAccessRecord.objects.create(area=a, customer=request.user, project=p)
 		except NoAccessiblePhysicalAccessUserError as error:
 			dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time. Please visit the User Office if you believe this is an error."
