@@ -31,6 +31,7 @@ INSTALLED_APPS = [
 	'NEMO.apps.area_access',
 	'rest_framework',
 	'django_filters',
+	'mptt',
 ]
 
 MIDDLEWARE = [
