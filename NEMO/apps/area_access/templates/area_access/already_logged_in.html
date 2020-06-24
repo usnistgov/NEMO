@@ -1,4 +1,4 @@
-<h1>According to our records, you're already logged into the {{ area|lower }} under the project named {{ project }}.</h1>
+<h1>According to our records, you're already logged into the {{ area }} under the project named {{ project }}.</h1>
 {% if max_capacity_reached %}
 	{% if max_capacity_reached.area == area %}
 		<h2>However, this area has reached its maximum occupancy</h2>
@@ -26,7 +26,7 @@
 {% endif %}
 <p>
 	<a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="exit_area({{ badge_number }})">
-		Log out of the {{ area|lower }}
+		Log out of the {{ area }}
 	</a>
 </p>
 <script>revert(15);</script>

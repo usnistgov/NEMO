@@ -124,7 +124,7 @@
 				data.project_id = project_id;
 			$("#default_content").hide();
 			$("#error").hide();
-			$("#status").html("<h1>Logging you in to the {{ area|lower }}...</h1>").show().load('{% url 'login_to_area' door.id %}', data, load_complete);
+			$("#status").html("<h1>Logging you in to the {{ area }}...</h1>").show().load('{% url 'login_to_area' door.id %}', data, load_complete);
 		}
 		function exit_area(badge_number)
 		{
@@ -135,7 +135,7 @@
 			};
 			$("#default_content").hide();
 			$("#error").hide();
-			$("#status").html("<h1>Logging you out of the {{ area|lower }}...</h1>").show().load('{% url 'logout_of_area' door.id %}', data, load_complete);
+			$("#status").html("<h1>Logging you out of the {{ area }}...</h1>").show().load('{% url 'logout_of_area' door.id %}', data, load_complete);
 		}
 		function fetch_occupancy()
 		{

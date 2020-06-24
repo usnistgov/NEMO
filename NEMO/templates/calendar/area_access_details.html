@@ -4,7 +4,7 @@
 </div>
 <div class="modal-body">
 	{% if event.staff_charge %}
-		This {{ event.area|lower }} charge was incurred by {{ event.staff_charge.staff_member }} while performing work on the customer's behalf.<p>
+		This {{ event.area }} charge was incurred by {{ event.staff_charge.staff_member }} while performing work on the customer's behalf.<p>
 	{% endif %}
 	Customer: {{ event.customer }}<br>
 	Project: {{ event.project.name }}<br>

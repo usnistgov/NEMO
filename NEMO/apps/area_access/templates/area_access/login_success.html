@@ -1,7 +1,7 @@
 {% if previous_area %}
-	<h1>You've been automatically logged out of the {{ previous_area|lower }}, and you're now logged in to the {{ area|lower }}, {{ name }}.</h1>
+	<h1>You've been automatically logged out of the {{ previous_area }}, and you're now logged in to the {{ area }}, {{ name }}.</h1>
 {% else %}
-	<h1>You're logged in to the {{ area|lower }}, {{ name }}.</h1>
+	<h1>You're logged in to the {{ area }}, {{ name }}.</h1>
 {% endif %}
 <h1>The door is open.</h1>
 <h2>Access time is being charged to the project named {{ project }}.</h2>

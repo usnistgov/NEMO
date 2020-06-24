@@ -113,19 +113,19 @@ def new_area_access_record(request):
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
 			check_policy_to_enter_this_area(area=area, user=user)
 		except NoAccessiblePhysicalAccessUserError:
-			dictionary['error_message'] = '{} does not have a physical access level that allows access to the {} at this time.'.format(user, area.name.lower())
+			dictionary['error_message'] = '{} does not have a physical access level that allows access to the {} at this time.'.format(user, area.name)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except UnavailableResourcesUserError as error:
-			dictionary['error_message'] = 'The {} is inaccessible because a required resource ({}) is unavailable. You must make all required resources for this area available before creating a new area access record.'.format(error.area.name.lower(), error.resources[0])
+			dictionary['error_message'] = 'The {} is inaccessible because a required resource ({}) is unavailable. You must make all required resources for this area available before creating a new area access record.'.format(error.area.name, error.resources[0])
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except MaximumCapacityReachedError as error:
-			dictionary['error_message'] = 'The {} is inaccessible because the {} has reached its maximum capacity. Wait for somebody to exit and try again.'.format(area.name.lower(), error.area.name.lower())
+			dictionary['error_message'] = 'The {} is inaccessible because the {} has reached its maximum capacity. Wait for somebody to exit and try again.'.format(area.name, error.area.name)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except ScheduledOutageInProgressError as error:
-			dictionary['error_message'] = 'The {} is inaccessible because a scheduled outage is in effect. You must wait for the outage to end before creating a new area access record.'.format(error.area.name.lower())
+			dictionary['error_message'] = 'The {} is inaccessible because a scheduled outage is in effect. You must wait for the outage to end before creating a new area access record.'.format(error.area.name)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except ReservationRequiredUserError:
-			dictionary['error_message'] = 'You do not have a current reservation for the {}. Please make a reservation before trying to access this area.'.format(area.name.lower())
+			dictionary['error_message'] = 'You do not have a current reservation for the {}. Please make a reservation before trying to access this area.'.format(area.name)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		if user.billing_to_project():
 			dictionary['error_message'] = '{} is already billing area access to another area. The user must log out of that area before entering another.'.format(user)
@@ -138,7 +138,7 @@ def new_area_access_record(request):
 		record.customer = user
 		record.project = project
 		record.save()
-		dictionary['success'] = '{} is now logged in to the {}.'.format(user, area.name.lower())
+		dictionary['success'] = '{} is now logged in to the {}.'.format(user, area.name)
 		return render(request, 'area_access/new_area_access_record.html', dictionary)
 
 

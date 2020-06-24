@@ -61,7 +61,7 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 		if abuse_email_address and message:
 			rendered_message = Template(message).render(Context(dictionary))
 			send_mail("Area access requirement", rendered_message, abuse_email_address, [abuse_email_address])
-		return HttpResponseBadRequest("You must be logged in to the {} to operate this tool.".format(tool.requires_area_access.name.lower()))
+		return HttpResponseBadRequest("You must be logged in to the {} to operate this tool.".format(tool.requires_area_access.name))
 
 	# The tool operator may not activate tools in a particular area unless they are still within that area reservation window
 	if not operator.is_staff and tool.requires_area_reservation():
@@ -76,7 +76,7 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 			if abuse_email_address and message:
 				rendered_message = Template(message).render(Context(dictionary))
 				send_mail("Area reservation requirement", rendered_message, abuse_email_address, [abuse_email_address])
-			return HttpResponseBadRequest("You must have a current reservation for the {} to operate this tool.".format(tool.requires_area_access.name.lower()))
+			return HttpResponseBadRequest("You must have a current reservation for the {} to operate this tool.".format(tool.requires_area_access.name))
 
 	# Staff may only charge staff time for one user at a time.
 	if staff_charge and operator.charging_staff_time():
@@ -283,8 +283,7 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 		coincident_events = ScheduledOutage.objects.filter(
 			Q(tool=new_reservation.tool) | Q(resource__fully_dependent_tools__in=[new_reservation.tool]))
 	elif new_reservation.reservation_item_type == ReservationItemType.AREA:
-		coincident_events = ScheduledOutage.objects.filter(
-			Q(area=new_reservation.area) | Q(resource__dependent_areas__in=[new_reservation.area]))
+		coincident_events = new_reservation.area.scheduled_outage_queryset()
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
@@ -483,7 +482,6 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 				raise UnavailableResourcesUserError(user=user, area=a, resources=unavailable_resources)
 
 		# Non staff users may not enter an area during a scheduled outage.
-		# Outages created on parents are propagated to all children so we don't need to check parents here
 		if area.scheduled_outage_in_progress():
 			raise ScheduledOutageInProgressError(user=user, area=area)
 

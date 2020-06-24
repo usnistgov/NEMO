@@ -925,8 +925,12 @@ class Area(MPTTModel):
 		return required_resource_unavailable
 
 	def scheduled_outage_in_progress(self) -> bool:
-		""" Returns true if an area or resource outage is currently in effect for this area. Otherwise, returns false. """
-		return ScheduledOutage.objects.filter(Q(area=self.id) | Q(resource__dependent_areas__in=[self.id]), start__lte=timezone.now(), end__gt=timezone.now()).exists()
+		""" Returns true if an area or resource outage is currently in effect for this area (or parent). Otherwise, returns false. """
+		return self.scheduled_outage_queryset().filter(start__lte=timezone.now(), end__gt=timezone.now()).exists()
+
+	def scheduled_outage_queryset(self):
+		ids = [area.id for area in self.get_ancestors(include_self=True)]
+		return ScheduledOutage.objects.filter(Q(area_id__in=ids) | Q(resource__dependent_areas__in=ids))
 
 	def get_current_reservation_for_user(self, user):
 		if self.requires_reservation:
@@ -1763,25 +1767,13 @@ class ScheduledOutage(models.Model):
 
 	@property
 	def outage_item_filter(self):
-		return {self.outage_item_type.value: self.outage_item}
+		if not self.outage_item_type:
+			return {'tool':None, 'area':None}
+		else:
+			return {self.outage_item_type.value: self.outage_item}
 
 	def __str__(self):
 		return str(self.title)
-
-	def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-		if self.area_id:
-			if not self.area.is_leaf_node():
-				scheduled_outages = []
-				for area_descendant in self.area.get_descendants():
-					child_outage = deepcopy(self)
-					child_outage.pk = None
-					child_outage.id = None
-					child_outage.area = area_descendant
-					scheduled_outages.append(child_outage)
-				ScheduledOutage.objects.bulk_create(scheduled_outages)
-
-		super().save(force_insert, force_update, using, update_fields)
-
 
 class News(models.Model):
 	title = models.CharField(max_length=200)

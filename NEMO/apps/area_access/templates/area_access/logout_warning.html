@@ -1,5 +1,5 @@
 <script>$('body').removeClass().addClass('logout-warning')</script>
-<h1><p>{% now "h:i A" %}</p>You're now logged out of the {{ area|lower }}, {{ name }}.</h1>
+<h1><p>{% now "h:i A" %}</p>You're now logged out of the {{ area }}, {{ name }}.</h1>
 <audio src="{% url 'media' 'warning.mp3' %}" autoplay></audio>
 <h2>
 	<p>You are currently still logged in to the following tools:</p>

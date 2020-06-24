@@ -1,7 +1,7 @@
 {% extends 'area_access/base.html' %}
 {% block title %}Farewell{% endblock %}
 {% block default_content %}
-	<h1>Scan your badge to log out of the {{ area|lower }}.</h1>
+	<h1>Scan your badge to log out of the {{ area }}.</h1>
 {% endblock %}
 {% block action %}
 	exit_area(badge_number);

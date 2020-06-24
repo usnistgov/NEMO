@@ -146,7 +146,7 @@ def reservation_event_feed(request, start, end):
 				outages = outages.exclude(start__gt=end, end__gt=end)
 			elif item_type == ReservationItemType.AREA:
 				events = events.filter(area__id=item_id)
-				outages = ScheduledOutage.objects.filter(Q(area=item_id) | Q(resource__dependent_areas__in=[item_id]))
+				outages = Area.objects.get(pk=item_id).scheduled_outage_queryset()
 				outages = outages.exclude(start__lt=start, end__lt=start)
 				outages = outages.exclude(start__gt=end, end__gt=end)
 
@@ -660,7 +660,8 @@ def email_reservation_reminders(request):
 	for reservation in upcoming_reservations:
 		item = reservation.reservation_item
 		item_type = reservation.reservation_item_type
-		if item_type == ReservationItemType.TOOL and item.operational and not item.problematic() and item.all_resources_available():
+		if item_type == ReservationItemType.TOOL and item.operational and not item.problematic() and item.all_resources_available()\
+				or item_type == ReservationItemType.AREA and not item.required_resource_is_unavailable():
 			subject = item.name + " reservation reminder"
 			rendered_message = Template(reservation_reminder_message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('success')}))
 		elif (item_type == ReservationItemType.TOOL and not item.operational) or item.required_resource_is_unavailable():
