@@ -45,12 +45,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='area',
             name='category',
-            field=mptt.fields.TreeForeignKey(blank=True, db_column='category', help_text='Create sub-categories using slashes. For example "Category 1/Sub-category 1".', max_length=1000, null=True),
+            field=models.CharField(blank=True, db_column='category', help_text='Create sub-categories using slashes. For example "Category 1/Sub-category 1".', max_length=1000, null=True),
         ),
         migrations.AddField(
             model_name='area',
             name='parent_area',
-            field=models.ForeignKey(blank=True, help_text='Select a parent area, (building, floor etc.)', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='area_children_set', to='NEMO.Area'),
+            field=mptt.fields.TreeForeignKey(blank=True, help_text='Select a parent area, (building, floor etc.)', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='area_children_set', to='NEMO.Area'),
         ),
         migrations.AddField(
             model_name='area',
