@@ -52,7 +52,7 @@ def calendar(request, item_type=None, item_id=None):
 		if item_type and item_type == 'tool' and item_id:
 			return redirect('view_calendar', item_id)
 		else:
-			return redirect('choose_tool', 'view_calendar')
+			return redirect('choose_item', 'view_calendar')
 
 	tools = Tool.objects.filter(visible=True).only('name', '_category', 'parent_tool_id').order_by('_category', 'name')
 	areas = Area.objects.filter(requires_reservation=True).only('name')

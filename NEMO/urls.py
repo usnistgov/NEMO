@@ -49,6 +49,7 @@ urlpatterns = [
 	url(r'^get_projects_for_self/$', get_projects.get_projects_for_self, name='get_projects_for_self'),
 
 	# Tool control:
+	url(r'^tool_control/tool/(?P<tool_id>\d+)/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_control/(?P<tool_id>\d+)/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_control/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_status/(?P<tool_id>\d+)/$', tool_control.tool_status, name='tool_status'),
@@ -158,12 +159,12 @@ urlpatterns = [
 	url(r'^safety/update/(?P<ticket_id>\d+)/$', safety.update_safety_issue, name='update_safety_issue'),
 
 	# Mobile:
-	url(r'^choose_tool/then/(?P<next_page>view_calendar|tool_control)/$', mobile.choose_tool, name='choose_tool'),
-	url(r'^new_reservation/(?P<tool_id>\d+)/$', mobile.new_reservation, name='new_reservation'),
-	url(r'^new_reservation/(?P<tool_id>\d+)/(?P<date>20\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01]))/$', mobile.new_reservation, name='new_reservation'),
+	url(r'^choose_item/then/(?P<next_page>view_calendar|tool_control)/$', mobile.choose_item, name='choose_item'),
+	url(r'^new_reservation/'+reservation_item_types+'/(?P<item_id>\d+)/$', mobile.new_reservation, name='new_reservation'),
+	url(r'^new_reservation/'+reservation_item_types+'/(?P<item_id>\d+)/(?P<date>20\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01]))/$', mobile.new_reservation, name='new_reservation'),
 	url(r'^make_reservation/$', mobile.make_reservation, name='make_reservation'),
-	url(r'^view_calendar/(?P<tool_id>\d+)/$', mobile.view_calendar, name='view_calendar'),
-	url(r'^view_calendar/(?P<tool_id>\d+)/(?P<date>20\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01]))/$', mobile.view_calendar, name='view_calendar'),
+	url(r'^view_calendar/'+reservation_item_types+'/(?P<item_id>\d+)/$', mobile.view_calendar, name='view_calendar'),
+	url(r'^view_calendar/'+reservation_item_types+'/(?P<item_id>\d+)/(?P<date>20\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01]))/$', mobile.view_calendar, name='view_calendar'),
 
 	# Contact staff:
 	url(r'^contact_staff/$', contact_staff.contact_staff, name='contact_staff'),

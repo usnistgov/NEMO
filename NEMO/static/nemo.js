@@ -1,3 +1,7 @@
+String.prototype.capitalize = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
 // This function allows to make regular interval calls to a function only when the tab/window is visible.
 // It also gets called when the tab/window becomes visible (changing tabs, minimizing window etc.)
 function set_interval_when_visible(doc, function_to_repeat, time)
@@ -399,7 +403,7 @@ function matcher(items, search_fields)
 				let result = data['name'];
 				if(!hide_type && data['type'])
 				{
-					result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'] + '</span>';
+					result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'].capitalize() + '</span>';
 				}
 				if(data['application_identifier'])
 				{

@@ -9,8 +9,8 @@
 	<h3>{{ title }}</h3>
 	<form>
 		<div class="form-group">
-			<label for="search">Search for a tool</label>
-			<input class="form-control" type="text" id="search" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" oninput="mobile_search(this, '/{{ next_page }}/')" data-search-results-target="#search_results" data-search-base='{{ tools|json_search_base }}'>
+			<label for="search">Search for{% if tools %} a tool{% endif %}{% if tools and areas %} or{% endif %}{% if areas %} an area{% endif %}</label>
+			<input class="form-control" type="text" id="search" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" oninput="mobile_search(this, '/{{ next_page }}/', {% if tools and areas %}false{% else %}true{% endif %})" data-search-results-target="#search_results" data-search-base='{% json_search_base_with_extra_fields tools|add:areas %}'>
 		</div>
 	</form>
 	<div id="search_results"></div>

@@ -1,5 +1,6 @@
-function mobile_search(query_element, base_url)
+function mobile_search(query_element, base_url, hide_type)
 {
+	hide_type = hide_type || false;
 	query_element = $(query_element);
 	var results_target = $(query_element.data('search-results-target')).html('');
 	var query = query_element.val();
@@ -13,7 +14,12 @@ function mobile_search(query_element, base_url)
 	{
 		if(matching_regular_expression.test(item.name))
 		{
-			results += '<a href="' + base_url + item.id + '/" class="list-group-item list-group-item-info">' + item.name + '</a>';
+			let item_display = item.name;
+			if(!hide_type && item.type)
+			{
+				item_display += '<br><span style="font-size:small; font-weight:bold;">' + item.type.capitalize() + '</span>';
+			}
+			results += '<a href="' + base_url + item.type + '/'+ item.id + '/" class="list-group-item list-group-item-info">' + item_display + '</a>';
 			result_count++;
 		}
 	});

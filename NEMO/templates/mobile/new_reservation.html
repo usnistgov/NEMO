@@ -13,7 +13,8 @@
 	<h3>Create a new reservation</h3>
 	<form method="post" action="{% url 'make_reservation' %}">
 		{% csrf_token %}
-		<input type="hidden" name="tool_id" value="{{ tool.id }}">
+		<input type="hidden" name="item_id" value="{{ item.id }}">
+		<input type="hidden" name="item_type" value="{{ item_type }}">
 		{% if not user.is_staff %}
 			{% if user.active_project_count == 1 %}
 				<input type="hidden" name="project_id" value="{{ user.active_projects.0.id }}">
@@ -33,7 +34,7 @@
 			{% endif %}
 			{% include 'calendar/configuration_helper.html' %}
 		{% endif %}
-		<h4>When would you like to reserve the {{ tool }}?</h4>
+		<h4>When would you like to reserve the {{ item }}?</h4>
 		<div class="form-group">
 			<input type="text" id="date" name="date" class="form-control" placeholder="Choose a date">
 		</div>
@@ -50,8 +51,8 @@
 	<div style="height:350px"></div>
 	<script>
 		var unavailable_times = [];
-		{% for item in tool_reservation_times %}
-		unavailable_times.push([{{ item.start|date:"U" }},{{ item.end|date:"U" }}]);
+		{% for times in item_reservation_times %}
+		unavailable_times.push([{{ times.start|date:"U" }},{{ times.end|date:"U" }}]);
 		{% endfor %}
 		var date_picker = $('#date').pickadate({format: "dddd, mmmm d", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
 		var start_time_picker = $('#start').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});

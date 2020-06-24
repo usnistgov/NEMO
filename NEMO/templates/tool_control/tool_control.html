@@ -44,7 +44,7 @@
 			 	{% if device == 'desktop' %}
 					$('#loading-div').show()
 				{% endif %}
-				$("#content").load('/tool_status/' + item.id + "/", undefined, refresh_tool_completion_callback);
+				$("#content").load('/tool_status/' + {% if device == 'mobile' %}selected_item{% else %}item.id{% endif %} + "/", undefined, refresh_tool_completion_callback);
 			}
 			{% if device == 'desktop' %}
 				refresh_sidebar_tool_icons();
