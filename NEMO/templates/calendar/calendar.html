@@ -467,7 +467,7 @@ function logout_of_area()
 			if (item.type === 'area') login_button.html("Login to the " + item.element_name)
 		}
 		{% if self_login %}login_button.show(){% endif %}
-    }, ajax_failure_callback("Logout of area failed"), refresh_sidebar_area_icons)
+    }, ajax_failure_callback("Logout of area failed"), refresh_calendar_and_sidebar_area_icons)
 }
 
 function initialize_login_logout_buttons()
@@ -501,10 +501,16 @@ function scheduled_outage()
 	}
 }
 
-function refresh_calendar_and_sidebar()
+function refresh_calendar_and_sidebar(items)
 {
 	$("#calendar").fullCalendar('refetchEvents');
-	refresh_sidebar_icons();
+	if (items) refresh_sidebar_icons(items);
+	else refresh_sidebar_icons()
+}
+
+function refresh_calendar_and_sidebar_area_icons()
+{
+    refresh_calendar_and_sidebar('area')
 }
 
 function change_calendar_event_type(calling_element)
