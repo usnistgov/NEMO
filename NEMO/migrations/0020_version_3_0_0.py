@@ -13,6 +13,14 @@ class Migration(migrations.Migration):
         ('NEMO', '0019_user_type_not_required'),
     ]
 
+    def rebuild_area_tree(apps, schema_editor):
+        manager = mptt.managers.TreeManager()
+        Area = apps.get_model("NEMO", "Area")
+        manager.model = Area
+        mptt.register(Area, parent_attr='parent_area')
+        manager.contribute_to_class(Area, 'objects')
+        manager.rebuild()
+
     operations = [
         migrations.AlterModelOptions(
             name='area',
@@ -120,12 +128,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='scheduledoutage',
             name='area',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.Area'),
+            field=mptt.fields.TreeForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.Area'),
         ),
         migrations.AddField(
             model_name='reservation',
             name='area',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.Area'),
+            field=mptt.fields.TreeForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.Area'),
         ),
         migrations.AlterField(
             model_name='scheduledoutage',
@@ -164,4 +172,25 @@ class Migration(migrations.Migration):
             model_name='areaaccessrecord',
             index=models.Index(fields=['end'], name='NEMO_areaac_end_fae061_idx'),
         ),
+        migrations.AlterField(
+            model_name='areaaccessrecord',
+            name='area',
+            field=mptt.fields.TreeForeignKey(on_delete=django.db.models.deletion.CASCADE, to='NEMO.Area'),
+        ),
+        migrations.AlterField(
+            model_name='door',
+            name='area',
+            field=mptt.fields.TreeForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='doors', to='NEMO.Area'),
+        ),
+        migrations.AlterField(
+            model_name='physicalaccesslevel',
+            name='area',
+            field=mptt.fields.TreeForeignKey(on_delete=django.db.models.deletion.CASCADE, to='NEMO.Area'),
+        ),
+        migrations.AlterField(
+            model_name='tool',
+            name='_requires_area_access',
+            field=mptt.fields.TreeForeignKey(blank=True, db_column='requires_area_access_id', help_text='Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.', null=True, on_delete=django.db.models.deletion.PROTECT, to='NEMO.Area'),
+        ),
+        migrations.RunPython(rebuild_area_tree),
     ]
