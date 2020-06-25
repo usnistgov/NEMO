@@ -53,7 +53,7 @@ TEMPLATES = [
 		'OPTIONS': {
 			'context_processors': [
 				'NEMO.context_processors.hide_logout_button',  # Add a 'request context processor' in order to figure out whether to display the logout button. If the site is configured to use the LDAP authentication backend then we want to provide a logoff button (in the menu bar). Otherwise the Kerberos authentication backend is used and no logoff button is necessary.
-				'NEMO.context_processors.device',  # Informs the templating engine whether the template is being rendered for a desktop or mobile device.
+				'NEMO.context_processors.base_context',  # Informs the templating engine whether the template is being rendered for a desktop or mobile device.
 				'django.contrib.auth.context_processors.auth',
 				'django.template.context_processors.debug',
 				'django.template.context_processors.media',
