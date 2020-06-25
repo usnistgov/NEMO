@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import urlencode
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
+from mptt.forms import TreeNodeChoiceField
 
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, InactiveUserError, \
@@ -55,10 +56,10 @@ def area_access(request):
 	now = timezone.now().astimezone()
 	today = now.strftime('%m/%d/%Y')
 	yesterday = (now - timedelta(days=1)).strftime('%m/%d/%Y')
+	area_id = ''
 	dictionary = {
 		'today': reverse('area_access') + '?' + urlencode({'start': today, 'end': today}),
 		'yesterday': reverse('area_access') + '?' + urlencode({'start': yesterday, 'end': yesterday}),
-		'areas': Area.objects.all().order_by('name'),
 	}
 	try:
 		start, end = parse_start_and_end_date(request.GET['start'], request.GET['end'])
@@ -68,8 +69,8 @@ def area_access(request):
 		area_access_records = AreaAccessRecord.objects.filter(start__gte=start, start__lt=end, staff_charge=None)
 		if area_id:
 			area_id = int(area_id)
-			areas = Area.objects.get(pk=area_id).get_descendants(include_self=True)
-			area_access_records = area_access_records.filter(area__in=areas)
+			filter_areas = Area.objects.get(pk=area_id).get_descendants(include_self=True)
+			area_access_records = area_access_records.filter(area__in=filter_areas)
 			dictionary['area_id'] = area_id
 		area_access_records = area_access_records.order_by('area__name')
 		area_access_records.query.add_ordering(F('end').desc(nulls_first=True))
@@ -77,6 +78,7 @@ def area_access(request):
 		dictionary['access_records'] = area_access_records
 	except:
 		pass
+	dictionary['area_select_field'] = TreeNodeChoiceField(Area.objects.all().only('name'), empty_label="All").widget.render('area', area_id)
 	return render(request, 'area_access/area_access.html', dictionary)
 
 
