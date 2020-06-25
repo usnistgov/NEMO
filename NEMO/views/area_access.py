@@ -62,13 +62,15 @@ def area_access(request):
 	}
 	try:
 		start, end = parse_start_and_end_date(request.GET['start'], request.GET['end'])
-		area = request.GET.get('area')
+		area_id = request.GET.get('area')
 		dictionary['start'] = start
 		dictionary['end'] = end
 		area_access_records = AreaAccessRecord.objects.filter(start__gte=start, start__lt=end, staff_charge=None)
-		if area:
-			area_access_records = area_access_records.filter(area__name=area)
-			dictionary['area_name'] = area
+		if area_id:
+			area_id = int(area_id)
+			areas = Area.objects.get(pk=area_id).get_descendants(include_self=True)
+			area_access_records = area_access_records.filter(area__in=areas)
+			dictionary['area_id'] = area_id
 		area_access_records = area_access_records.order_by('area__name')
 		area_access_records.query.add_ordering(F('end').desc(nulls_first=True))
 		area_access_records.query.add_ordering(F('start').desc())

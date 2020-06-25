@@ -34,7 +34,7 @@
 				<select name="area" id="area">
 					<option value="">All</option>
 					{% for area in areas %}
-						<option {% if area_name == area.name %}selected{% endif %}>{{ area.name }}</option>
+						<option {% if area_id == area.id %}selected{% endif %} value="{{ area.id }}">{{ area.name }}</option>
 					{% endfor %}
 				</select>
 			</div>
