@@ -79,7 +79,7 @@ def email_broadcast(request, audience=''):
 	if audience == 'tool':
 		dictionary['search_base'] = Tool.objects.filter(visible=True)
 	elif audience == 'area':
-		dictionary['search_base'] = Area.objects.all()
+		dictionary['search_base'] = Area.objects.filter(requires_reservation=True)
 	elif audience == 'project':
 		dictionary['search_base'] = Project.objects.filter(active=True, account__active=True)
 	elif audience == 'account':

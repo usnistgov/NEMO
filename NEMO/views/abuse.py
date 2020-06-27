@@ -16,7 +16,7 @@ from NEMO.models import Reservation, Tool, User, Area, ReservationItemType
 def abuse(request):
 	dictionary = {
 		'tools': Tool.objects.filter(visible=True),
-		'area_widget': TreeNodeChoiceField(Area.objects.all().only('name'), empty_label=None).widget
+		'area_widget': TreeNodeChoiceField(Area.objects.filter(requires_reservation=True).only('name'), empty_label=None).widget
 	}
 	try:
 		form = ReservationAbuseForm(request.GET)

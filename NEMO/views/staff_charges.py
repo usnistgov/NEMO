@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import User, StaffCharge, AreaAccessRecord, Project, Area
+from NEMO.views.area_access import load_areas_for_use_in_template
 
 
 @staff_member_required(login_url=None)
@@ -17,7 +18,9 @@ def staff_charges(request):
 			area_access_record = AreaAccessRecord.objects.get(staff_charge=staff_charge.id, end=None)
 			return render(request, 'staff_charges/end_area_charge.html', {'area': area_access_record.area})
 		except AreaAccessRecord.DoesNotExist:
-			return render(request, 'staff_charges/change_status.html', {'areas': Area.objects.all().order_by('name')})
+			dictionary = dict()
+			dictionary['user_accessible_areas'], dictionary['areas'] = load_areas_for_use_in_template()
+			return render(request, 'staff_charges/change_status.html', dictionary)
 	error = None
 	customer = None
 	try:
