@@ -61,6 +61,7 @@ customizable_content = [
 	('feedback_email', '.html'),
 	('generic_email', '.html'),
 	('missed_reservation_email', '.html'),
+	('out_of_time_reservation_email', '.html'),
 	('facility_rules_tutorial_email', '.html'),
 	('new_task_email', '.html'),
 	('reservation_reminder_email', '.html'),

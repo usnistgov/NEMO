@@ -698,7 +698,7 @@ def email_usage_reminders(request):
 		aggregate[key] = {
 			'email': access_record.customer.email,
 			'first_name': access_record.customer.first_name,
-			'resources_in_use': [str(access_record.area)],
+			'resources_in_use': [access_record.area.name],
 		}
 	for usage_event in busy_tools:
 		key = str(usage_event.operator)
@@ -830,6 +830,42 @@ def cancel_unused_reservations(request):
 	return HttpResponse()
 
 
+@login_required
+@require_GET
+@permission_required('NEMO.trigger_timed_services', raise_exception=True)
+def email_out_of_time_reservation_notification(request):
+	"""
+	Out of time reservation notification for areas is when a user is still logged in a area but his reservation expired.
+	"""
+	# Exit early if the missed reservation email template has not been customized for the organization yet.
+	if not get_media_file_contents('out_of_time_reservation_email.html'):
+		return HttpResponseNotFound('The out of time reservation email template has not been customized for your organization yet. Please visit the customization page to upload a template, then out of time email notifications can be sent.')
+
+	out_of_time_user_area = []
+
+	# Find all logged users
+	access_records:List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'area').only('customer', 'area')
+	for access_record in access_records:
+		# staff are exempt from out of time notification
+		customer = access_record.customer
+		area = access_record.area
+		if customer.is_staff:
+			continue
+
+		if area.requires_reservation:
+			# Calculate the timestamp of how late a user can be logged in after a reservation ended.
+			threshold = timezone.now() if not area.logout_grace_period else timezone.now() - timedelta(minutes=area.logout_grace_period)
+			threshold = datetime.replace(threshold, second=0, microsecond=0)  # Round down to the nearest minute.
+			reservations = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, area=area, user=customer, start__lte=timezone.now(), end=threshold)
+			if reservations.exists():
+				out_of_time_user_area.append(reservations[0])
+
+	for reservation in out_of_time_user_area:
+		send_out_of_time_reservation_notification(reservation)
+
+	return HttpResponse()
+
+
 @staff_member_required(login_url=None)
 @require_GET
 def proxy_reservation(request):
@@ -904,6 +940,18 @@ def send_missed_reservation_notification(reservation):
 		send_mail(subject, message, user_office_email, [reservation.user.email, abuse_email, user_office_email])
 	else:
 		calendar_logger.error("Missed reservation email couldn't be send because missed_reservation_email.html or user_office_email are not defined")
+
+
+def send_out_of_time_reservation_notification(reservation:Reservation):
+	subject = "Out of time in the " + str(reservation.area.name)
+	message = get_media_file_contents('out_of_time_reservation_email.html')
+	user_office_email = get_customization('user_office_email_address')
+	abuse_email = get_customization('abuse_email_address')
+	if message and user_office_email:
+		message = Template(message).render(Context({'reservation': reservation}))
+		send_mail(subject, message, user_office_email, [reservation.user.email, abuse_email, user_office_email])
+	else:
+		calendar_logger.error("Out of time reservation email couldn't be send because out_of_time_reservation_email.html or user_office_email are not defined")
 
 
 def send_user_created_reservation_notification(reservation: Reservation):

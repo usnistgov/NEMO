@@ -416,6 +416,34 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
+				<h3 id="out_of_time_reservation">Out of time reservation email</h3>
+				<p>
+					This email is sent when a user is still logged in an area but his reservation expired. A grace period can be set when configuring the area.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>reservation</b> - the reservation that the user is out of time on</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'out_of_time_reservation_email' %}#out_of_time_reservation" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('out_of_time_reservation_email')">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="out_of_time_reservation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#out_of_time_reservation_email_span').hide()">
+						{% if out_of_time_reservation_email %}<span id="out_of_time_reservation_email_span">out_of_time_reservation_email.html</span>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload out of time reservation email" class="btn btn-success">
+					</div>
+				</form>
+				{% if out_of_time_reservation_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#out_of_time_reservation_email_render">Show current content</button>
+					<div id="out_of_time_reservation_email_render" class="collapse customization-content">{{ out_of_time_reservation_email }}</div>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
 				<h3 id="facility_rules">{{ facility_name }} rules tutorial email</h3>
 				<p>
 					This email is sent when a user completes the {{ facility_name }} rules tutorial. It can contain a free-response answer (quiz question).
@@ -480,7 +508,7 @@
 			<div class="panel-body">
 				<h3 id="reservation_reminder">Reservation reminder email</h3>
 				<p>
-					This email is sent to a user two hours before their tool reservation begins.
+					This email is sent to a user two hours before their tool/area reservation begins.
 					The reservation warning email must also exist for this email to be sent.
 					The following context variables are provided when the email is rendered:
 				</p>
@@ -509,13 +537,13 @@
 			<div class="panel-body">
 				<h3 id="reservation_warning">Reservation warning email</h3>
 				<p>
-					This email is sent to a user two hours before their tool reservation begins and maintenance may interfere with the upcoming reservation.
+					This email is sent to a user two hours before their tool/area reservation begins and maintenance may interfere with the upcoming reservation.
 					The reservation reminder email must also exist for this email to be sent.
 					The following context variables are provided when the email is rendered:
 				</p>
 				<ul>
 					<li><b>reservation</b> - the user's upcoming reservation</li>
-					<li><b>fatal_error</b> - boolean value that, when true, indicates that it will be impossible for the user to use the tool during their reservation (due to tool maintenance or a missing required dependency)</li>
+					<li><b>fatal_error</b> - boolean value that, when true, indicates that it will be impossible for the user to use the tool/access the area during their reservation (due to maintenance, outages or a missing required dependency)</li>
 				</ul>
 				<form method="POST" action="{% url 'customize' 'reservation_warning_email' %}#reservation_warning" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('reservation_warning_email')">
 					{% csrf_token %}
