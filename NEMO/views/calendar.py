@@ -131,7 +131,7 @@ def event_feed(request):
 
 def reservation_event_feed(request, start, end):
 	events = Reservation.objects.filter(cancelled=False, missed=False, shortened=False)
-	outages = None
+	outages = ScheduledOutage.objects.none()
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
@@ -144,16 +144,17 @@ def reservation_event_feed(request, start, end):
 		item_type = ReservationItemType(item_type)
 		item_id = request.GET.get('item_id')
 		if item_id:
+			events = events.filter(**{f'{item_type.value}__id': item_id})
 			if item_type == ReservationItemType.TOOL:
-				events = events.filter(tool__id=item_id)
 				outages = ScheduledOutage.objects.filter(Q(tool=item_id) | Q(resource__fully_dependent_tools__in=[item_id]))
-				outages = outages.exclude(start__lt=start, end__lt=start)
-				outages = outages.exclude(start__gt=end, end__gt=end)
 			elif item_type == ReservationItemType.AREA:
-				events = events.filter(area__id=item_id)
 				outages = Area.objects.get(pk=item_id).scheduled_outage_queryset()
-				outages = outages.exclude(start__lt=start, end__lt=start)
-				outages = outages.exclude(start__gt=end, end__gt=end)
+
+	# Exclude outages for which the following is true:
+	# The outage starts and ends before the time-window, and...
+	# The outage starts and ends after the time-window.
+	outages = outages.exclude(start__lt=start, end__lt=start)
+	outages = outages.exclude(start__gt=end, end__gt=end)
 
 	# Filter events that only have to do with the current user.
 	personal_schedule = request.GET.get('personal_schedule')

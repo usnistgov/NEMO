@@ -275,7 +275,10 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 			# Check reservations for all other children of the parent areas
 			apply_to_user = not user.is_staff or user.is_staff and area.count_staff_in_occupancy
 			children_events = coincident_events.filter(area_id__in=[area.id for area in area.get_descendants(include_self=True)])
-			if apply_to_user and area.maximum_capacity and children_events.count() >= area.maximum_capacity:
+			# Check only distinct users since the same user could make reservations in different rooms
+			distinct_users = set(children_events.values_list('user', flat=True).distinct())
+			distinct_users.add(user.id)
+			if apply_to_user and area.maximum_capacity and len(distinct_users) > area.maximum_capacity:
 				policy_problems.append(f"The {area} is already at its maximum capacity at this time. Please choose a different time.")
 
 	# The user may not create, move, or resize a reservation to coincide with a scheduled outage.

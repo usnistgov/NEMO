@@ -145,6 +145,9 @@ def view_calendar(request, item_type, item_id, date=None):
 	elif item_type == ReservationItemType.AREA:
 		outages = item.scheduled_outage_queryset()
 
+	# Exclude outages for which the following is true:
+	# The outage starts and ends before the time-window, and...
+	# The outage starts and ends after the time-window.
 	outages = outages.exclude(start__lt=start, end__lt=start)
 	outages = outages.exclude(start__gt=end, end__gt=end)
 
