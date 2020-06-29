@@ -58,6 +58,16 @@ def check_pre_authentication_backends(request):
 			return HttpResponse("There was an error pre-authenticating the user", status=400)
 
 
+def base_64_decode_basic_auth(remote_user:str):
+	""" This method returns username, password from basic authentication base64 encoded remote user """
+	pieces = remote_user.split()
+	if len(pieces) != 2:
+		return None
+	if pieces[0] != "Basic":
+		return None
+	return b64decode(pieces[1]).decode().split(':')
+
+
 class RemoteUserAuthenticationBackend(ModelBackend):
 	""" The web server performs authentication and passes the user name remotely. (header or env) """
 
@@ -86,12 +96,8 @@ class NginxKerberosAuthorizationHeaderAuthenticationBackend(RemoteUserAuthentica
 		"""
 		if not username:
 			return None
-		pieces = username.split()
-		if len(pieces) != 2:
-			return None
-		if pieces[0] != "Basic":
-			return None
-		return b64decode(pieces[1]).decode().partition(':')[0]
+		credentials = base_64_decode_basic_auth(username)
+		return credentials if credentials is None else credentials[0]
 
 
 class LDAPAuthenticationBackend(ModelBackend):
@@ -99,8 +105,18 @@ class LDAPAuthenticationBackend(ModelBackend):
 
 	@method_decorator(sensitive_post_parameters('password'))
 	def authenticate(self, request, username=None, password=None, **keyword_arguments):
+
+		# Check for remote user in extra arguments if no username and password.
+		# In case of basic authentication
 		if not username or not password:
-			return None
+			if 'remote_user' in keyword_arguments:
+				credentials = base_64_decode_basic_auth(keyword_arguments['remote_user'])
+				if credentials:
+					username, password = credentials[0], credentials[1]
+				else:
+					return None
+			else:
+				return None
 
 		user = check_user_exists_and_active(self, username)
 

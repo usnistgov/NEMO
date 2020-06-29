@@ -8,7 +8,7 @@
 		</div>
 	{% endif %}
 	{% if user.in_area %}
-		<p>You are billing {{ user.area_access_record.area.name|lower }} access to the project named {{ user.billing_to_project }} since {{ user.area_access_record.start }}.</p>
+		<p>You are billing {{ user.area_access_record.area.name }} access to the project named {{ user.billing_to_project }} since {{ user.area_access_record.start }}.</p>
 		{% if user.active_project_count > 1 %}
 			<p>Would you like to bill area access to a different project?</p>
 			{% for project in user.active_projects %}

@@ -1,4 +1,3 @@
-from copy import deepcopy
 from datetime import timedelta, datetime
 from http import HTTPStatus
 
@@ -11,7 +10,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import Project, Reservation, Tool, UsageEvent, User
 from NEMO.utilities import quiet_int, localize
-from NEMO.views.calendar import determine_insufficient_notice, extract_configuration, cancel_the_reservation
+from NEMO.views.calendar import determine_insufficient_notice, extract_configuration, cancel_the_reservation, shorten_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool, \
 	check_policy_to_save_reservation
 from NEMO.views.status_dashboard import create_tool_summary
@@ -67,21 +66,9 @@ def disable_tool(request):
 			'delay': 10,
 		}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
-	try:
-		current_reservation = Reservation.objects.get(start__lt=timezone.now(), end__gt=timezone.now(), cancelled=False, missed=False, shortened=False, user=customer, tool=tool)
-		# Staff are exempt from mandatory reservation shortening when tool usage is complete.
-		if customer.is_staff is False:
-			# Shorten the user's reservation to the current time because they're done using the tool.
-			new_reservation = deepcopy(current_reservation)
-			new_reservation.id = None
-			new_reservation.pk = None
-			new_reservation.end = timezone.now()
-			new_reservation.save()
-			current_reservation.shortened = True
-			current_reservation.descendant = new_reservation
-			current_reservation.save()
-	except Reservation.DoesNotExist:
-		pass
+
+	# Shorten the user's tool reservation since we are now done using the tool
+	shorten_reservation(user=customer, item=tool, new_end=timezone.now() + downtime)
 
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
@@ -132,11 +119,11 @@ def reserve_tool(request):
 	reservation.project = project
 	reservation.user = customer
 	reservation.creator = customer
-	reservation.tool = tool
+	reservation.reservation_item = tool
 	reservation.start = start
 	reservation.end = end
 	reservation.short_notice = determine_insufficient_notice(tool, start)
-	policy_problems, overridable = check_policy_to_save_reservation(None, reservation, customer, False)
+	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=reservation, user_creating_reservation=customer, explicit_policy_override=False)
 
 	# If there was a problem in saving the reservation then return the error...
 	if policy_problems:
@@ -164,7 +151,7 @@ def cancel_reservation(request, reservation_id):
 	reservation = Reservation.objects.get(id=reservation_id)
 	customer = User.objects.get(id=request.POST['customer_id'])
 
-	response = cancel_the_reservation(reservation=reservation, user=customer, reason=None)
+	response = cancel_the_reservation(reservation=reservation, user_cancelling_reservation=customer, reason=None)
 
 	if response.status_code == HTTPStatus.OK:
 		return render(request, 'kiosk/success.html', {'cancelled_reservation': reservation, 'customer': customer})
@@ -186,7 +173,7 @@ def tool_reservation(request, tool_id, user_id, back):
 	dictionary['project'] = project
 	dictionary['customer'] = customer
 	dictionary['back'] = back
-	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(tool=tool, start__gte=timezone.now()))
+	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(cancelled=False, missed=False, shortened=False, tool=tool, start__gte=timezone.now()))
 
 	return render(request, 'kiosk/tool_reservation.html', dictionary)
 
@@ -201,6 +188,8 @@ def choices(request):
 		tools_in_use = [u.tool.tool_or_parent_id() for u in usage_events]
 		fifteen_minutes_from_now = timezone.now() + timedelta(minutes=15)
 		reservations = Reservation.objects.filter(end__gt=timezone.now(), user=customer, missed=False, cancelled=False, shortened=False).exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now).order_by('start')
+		if customer.in_area():
+			reservations = reservations.exclude(area=customer.area_access_record().area, start__lte=fifteen_minutes_from_now)
 	except:
 		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please contact staff to resolve the problem."}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)

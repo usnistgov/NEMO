@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from NEMO.forms import UserForm, UserPreferencesForm
-from NEMO.models import User, Project, Tool, PhysicalAccessLevel, Reservation, StaffCharge, UsageEvent, AreaAccessRecord, ActivityHistory, UserPreferences, record_local_many_to_many_changes, record_active_state
+from NEMO.models import User, Project, Tool, PhysicalAccessLevel, Reservation, StaffCharge, UsageEvent, AreaAccessRecord, ActivityHistory, UserPreferences, record_local_many_to_many_changes, record_active_state, Area
 from NEMO.views.customization import get_customization
 
 users_logger = getLogger(__name__)
@@ -30,10 +30,20 @@ def users(request):
 @require_http_methods(['GET', 'POST'])
 def create_or_modify_user(request, user_id):
 	identity_service = get_identity_service()
+	# Get access levels and sort by area category
+	access_levels = list(PhysicalAccessLevel.objects.all().only('name', 'area'))
+	access_level_for_sort = list(set([ancestor for access in access_levels for ancestor in access.area.get_ancestors(include_self=True)]))
+	access_level_for_sort.sort(key=lambda x:x.tree_category())
+	area_access_levels = Area.objects.filter(id__in=[area.id for area in access_level_for_sort])
+	dict_area = {}
+	for access in access_levels:
+		dict_area.setdefault(access.area.id,[]).append(access)
+
 	dictionary = {
 		'projects': Project.objects.filter(active=True, account__active=True),
 		'tools': Tool.objects.filter(visible=True),
-		'physical_access_levels': PhysicalAccessLevel.objects.all(),
+		'area_access_dict': dict_area,
+		'area_access_levels': area_access_levels,
 		'one_year_from_now': timezone.now() + timedelta(days=365),
 		'identity_service_available': identity_service.get('available', False),
 		'identity_service_domains': identity_service.get('domains', []),
@@ -86,7 +96,6 @@ def create_or_modify_user(request, user_id):
 					warning_message += ' The HTTP error was {}: {}'.format(result.status_code, result.text)
 					users_logger.error(warning_message)
 		except Exception as e:
-			site_title = get_customization('site_title')
 			dictionary['identity_service_available'] = False
 			warning_message = f"There was a problem communicating with the identity service. {site_title} is unable to search for a user. The administrator has been notified to resolve the problem."
 			dictionary['warning'] = warning_message

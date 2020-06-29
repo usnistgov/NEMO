@@ -75,7 +75,7 @@ def date_parameters_dictionary(request):
 def usage(request):
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	dictionary = {
-		'area_access': AreaAccessRecord.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date),
+		'area_access': AreaAccessRecord.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date).order_by('-start'),
 		'consumables': ConsumableWithdraw.objects.filter(customer=request.user, date__gt=start_date, date__lte=end_date),
 		'missed_reservations': Reservation.objects.filter(user=request.user, missed=True, end__gt=start_date, end__lte=end_date),
 		'staff_charges': StaffCharge.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date),
@@ -121,7 +121,7 @@ def project_usage(request):
 		pass
 	dictionary = {
 		'accounts_and_applications': set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()),
-		'area_access': AreaAccessRecord.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
+		'area_access': AreaAccessRecord.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date).order_by('-start') if projects else None,
 		'consumables': ConsumableWithdraw.objects.filter(project__in=projects, date__gt=start_date, date__lte=end_date) if projects else None,
 		'missed_reservations': Reservation.objects.filter(project__in=projects, missed=True, end__gt=start_date, end__lte=end_date) if projects else None,
 		'staff_charges': StaffCharge.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,

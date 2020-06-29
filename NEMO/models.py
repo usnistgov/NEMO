@@ -1,7 +1,10 @@
 import datetime
 import os
 import sys
+from copy import deepcopy
 from datetime import timedelta
+from enum import Enum
+from typing import Union, List, Optional
 
 from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
@@ -13,10 +16,41 @@ from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
+from mptt.fields import TreeForeignKey
+from mptt.models import MPTTModel
 
 from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
+
+
+class ReservationItemType(Enum):
+	TOOL = 'tool'
+	AREA = 'area'
+	NONE = ''
+
+	def get_object_class(self):
+		if self == ReservationItemType.AREA:
+			return Area
+		elif self == ReservationItemType.TOOL:
+			return Tool
+
+	@staticmethod
+	def values():
+		return list(map(lambda c: c.value, ReservationItemType))
+
+	@classmethod
+	def _missing_(cls, value):
+		return ReservationItemType.NONE
+
+	@classmethod
+	def from_item(cls, item):
+		if isinstance(item, Tool):
+			return ReservationItemType.TOOL
+		elif isinstance(item, Area):
+			return ReservationItemType.AREA
+		else:
+			return ReservationItemType.NONE
 
 
 class CalendarDisplay(models.Model):
@@ -89,7 +123,7 @@ class User(models.Model):
 	# Physical access fields
 	badge_number = models.PositiveIntegerField(null=True, blank=True, unique=True, help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.")
 	access_expiration = models.DateField(blank=True, null=True, help_text="The user will lose all access rights after this date. Typically this is used to ensure that safety training has been completed by the user every year.")
-	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True, related_name='users')
+	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True)
 
 	# Permissions
 	is_active = models.BooleanField('active', default=True, help_text='Designates whether this user can log in. Unselect this instead of deleting accounts.')
@@ -184,7 +218,24 @@ class User(models.Model):
 	def get_short_name(self):
 		return self.first_name
 
-	def in_area(self):
+	def accessible_access_levels(self):
+		if not self.is_staff:
+			return self.physical_access_levels.all()
+		else:
+			return PhysicalAccessLevel.objects.filter(Q(id__in=self.physical_access_levels.all()) | Q(allow_staff_access=True)).distinct()
+
+	def accessible_access_levels_for_area(self, area):
+		"""
+		Return access levels for the area or parent areas.
+		This means when checking access for area1, having access to its parent area grants access to area1
+		"""
+		return self.accessible_access_levels().filter(area__in=area.get_ancestors(include_self=True))
+
+	def accessible_areas(self):
+		""" Returns accessible leaf node areas for this user, including descendants """
+		return Area.objects.filter(id__in=[leaf_descendant.id for access in self.accessible_access_levels() for leaf_descendant in access.area.get_descendants(include_self=True) if leaf_descendant.is_leaf_node()]).distinct()
+
+	def in_area(self) -> bool:
 		return AreaAccessRecord.objects.filter(customer=self, staff_charge=None, end=None).exists()
 
 	def area_access_record(self):
@@ -192,6 +243,14 @@ class User(models.Model):
 			return AreaAccessRecord.objects.get(customer=self, staff_charge=None, end=None)
 		except AreaAccessRecord.DoesNotExist:
 			return None
+
+	def is_logged_in_area_without_reservation(self) -> bool:
+		if self.in_area():
+			area = self.area_access_record().area
+			if area.requires_reservation:
+				end_time = timezone.now() if not area.logout_grace_period else timezone.now() - timedelta(minutes=area.logout_grace_period)
+				return not Reservation.objects.filter(cancelled=False, missed=False, shortened=False, area=area, user=self, start__lte=timezone.now(), end__gte=end_time).exists()
+		return False
 
 	def billing_to_project(self):
 		access_record = self.area_access_record()
@@ -206,7 +265,7 @@ class User(models.Model):
 	def active_projects(self):
 		return self.projects.filter(active=True, account__active=True)
 
-	def charging_staff_time(self):
+	def charging_staff_time(self) -> bool:
 		return StaffCharge.objects.filter(staff_member=self.id, end=None).exists()
 
 	def get_staff_charge(self):
@@ -247,7 +306,7 @@ class Tool(models.Model):
 	_notification_email_address = models.EmailField(db_column="notification_email_address", blank=True, null=True, help_text="Messages that relate to this tool (such as comments, problems, and shutdowns) will be forwarded to this email address. This can be a normal email address or a mailing list address.")
 	_interlock = models.OneToOneField('Interlock', db_column="interlock_id", blank=True, null=True, on_delete=models.SET_NULL)
 	# Policy fields:
-	_requires_area_access = models.ForeignKey('Area', db_column="requires_area_access_id", null=True, blank=True, help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.", on_delete=models.PROTECT)
+	_requires_area_access = TreeForeignKey('Area', db_column="requires_area_access_id", null=True, blank=True, help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.", on_delete=models.PROTECT)
 	_grant_physical_access_level_upon_qualification = models.ForeignKey('PhysicalAccessLevel', db_column="grant_physical_access_level_upon_qualification_id", null=True, blank=True, help_text="The designated physical access level is granted to the user upon qualification for this tool.", on_delete=models.PROTECT)
 	_grant_badge_reader_access_upon_qualification = models.CharField(db_column="grant_badge_reader_access_upon_qualification", max_length=100, null=True, blank=True, help_text="Badge reader access is granted to the user upon qualification for this tool.")
 	_reservation_horizon = models.PositiveIntegerField(db_column="reservation_horizon", default=14, null=True, blank=True, help_text="Users may create reservations this many days in advance. Leave this field blank to indicate that no reservation horizon exists for this tool.")
@@ -518,7 +577,7 @@ class Tool(models.Model):
 		return self.name
 
 	def is_child_tool(self):
-		return self.parent_tool != None
+		return self.parent_tool is not None
 
 	def is_parent_tool(self, parent_ids = None):
 		if not parent_ids:
@@ -624,8 +683,8 @@ class Tool(models.Model):
 		""" Returns a QuerySet of scheduled outages that are in progress for this tool. This includes resources outages when the tool partially depends on the resource. """
 		return ScheduledOutage.objects.filter(resource__partially_dependent_tools__in=[self.tool_or_parent_id()], start__lte=timezone.now(), end__gt=timezone.now())
 
-	def scheduled_outage_in_progress(self):
-		""" Returns a true if a tool or resource outage is currently in effect for this tool. Otherwise, returns false. """
+	def scheduled_outage_in_progress(self) -> bool:
+		""" Returns true if a tool or resource outage is currently in effect for this tool. Otherwise, returns false. """
 		return ScheduledOutage.objects.filter(Q(tool=self.tool_or_parent_id()) | Q(resource__fully_dependent_tools__in=[self.tool_or_parent_id()]), start__lte=timezone.now(), end__gt=timezone.now()).exists()
 
 	def is_configurable(self):
@@ -672,24 +731,8 @@ class Tool(models.Model):
 		except UsageEvent.DoesNotExist:
 			return None
 
-	def should_enforce_policy(self, reservation):
-		""" Returns whether or not the policy rules should be enforced. """
-		should_enforce = True
-
-		start_time = reservation.start.astimezone(timezone.get_current_timezone())
-		end_time = reservation.end.astimezone(timezone.get_current_timezone())
-		if self.policy_off_weekend and start_time.weekday() >= 5 and end_time.weekday() >= 5:
-			should_enforce = False
-		if self.policy_off_between_times and self.policy_off_start_time and self.policy_off_end_time:
-			if self.policy_off_start_time <= self.policy_off_end_time:
-				""" Range something like 6am-6pm """
-				if self.policy_off_start_time <= start_time.time() <= self.policy_off_end_time and self.policy_off_start_time <= end_time.time() <= self.policy_off_end_time:
-					should_enforce = False
-			else:
-				""" Range something like 6pm-6am """
-				if (self.policy_off_start_time <= start_time.time() or start_time.time() <= self.policy_off_end_time) and (self.policy_off_start_time <= end_time.time() or end_time.time() <= self.policy_off_end_time):
-					should_enforce = False
-		return should_enforce
+	def requires_area_reservation(self):
+		return self.requires_area_access and self.requires_area_access.requires_reservation
 
 
 class Configuration(models.Model):
@@ -785,18 +828,64 @@ class StaffCharge(CalendarDisplay):
 		return str(self.id)
 
 
-class Area(models.Model):
+class Area(MPTTModel):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
-	welcome_message = models.TextField(help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
+	parent_area = TreeForeignKey('self', related_name="area_children_set", null=True, blank=True, help_text='Select a parent area, (building, floor etc.)', on_delete=models.CASCADE)
+	category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
+	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
+	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login.")
+	logout_grace_period = models.PositiveIntegerField(null=True, blank=True, help_text="Number of minutes users have to logout of this area after their reservation expired before being flagged and abuse email is sent.")
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
 	count_staff_in_occupancy = models.BooleanField(default=True, help_text='Indicates that staff users will count towards maximum capacity.')
 	reservation_warning = models.PositiveIntegerField(blank=True, null=True, help_text='The number of simultaneous users (with at least one reservation in this area) allowed before a warning is displayed when creating a reservation.')
 
+	# policy rules
+	reservation_horizon = models.PositiveIntegerField(db_column="reservation_horizon", default=14, null=True, blank=True, help_text="Users may create reservations this many days in advance. Leave this field blank to indicate that no reservation horizon exists for this area.")
+	missed_reservation_threshold = models.PositiveIntegerField(db_column="missed_reservation_threshold", null=True, blank=True, help_text="The amount of time (in minutes) that a area reservation may go unused before it is automatically marked as \"missed\" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.")
+	minimum_usage_block_time = models.PositiveIntegerField(db_column="minimum_usage_block_time", null=True, blank=True, help_text="The minimum amount of time (in minutes) that a user must reserve this area for a single reservation. Leave this field blank to indicate that no minimum usage block time exists for this area.")
+	maximum_usage_block_time = models.PositiveIntegerField(db_column="maximum_usage_block_time", null=True, blank=True,	help_text="The maximum amount of time (in minutes) that a user may reserve this area for a single reservation. Leave this field blank to indicate that no maximum usage block time exists for this area.")
+	maximum_reservations_per_day = models.PositiveIntegerField(db_column="maximum_reservations_per_day", null=True,	blank=True, help_text="The maximum number of reservations a user may make per day for this area.")
+	minimum_time_between_reservations = models.PositiveIntegerField(db_column="minimum_time_between_reservations", null=True, blank=True, help_text="The minimum amount of time (in minutes) that the same user must have between any two reservations for this area.")
+	maximum_future_reservation_time = models.PositiveIntegerField(db_column="maximum_future_reservation_time", null=True, blank=True, help_text="The maximum amount of time (in minutes) that a user may reserve from the current time onwards.")
+	policy_off_between_times = models.BooleanField(db_column="policy_off_between_times", default=False, help_text="Check this box to disable policy rules every day between the given times")
+	policy_off_start_time = models.TimeField(db_column="policy_off_start_time", null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
+	policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
+	policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
+
+	class MPTTMeta:
+		parent_attr = 'parent_area'
+
 	class Meta:
-		ordering = ['name']
+		indexes = [
+			models.Index(fields=['name']),
+		]
 
 	def __str__(self):
 		return self.name
+
+	def tree_category(self):
+		tree_category = "/".join([ancestor.name for ancestor in self.get_ancestors().only('name')])
+		if self.category:
+			tree_category += "/" + self.category if tree_category else self.category
+		return tree_category
+
+	def is_now_a_parent(self):
+		""" This method is called when this area is a parent of another area """
+		if self.is_leaf_node():
+			# Only need to clean this area if it doesn't yet have children
+			self.requires_reservation = False
+			self.reservation_horizon = None
+			self.missed_reservation_threshold = None
+			self.minimum_usage_block_time = None
+			self.maximum_usage_block_time = None
+			self.maximum_reservations_per_day = None
+			self.minimum_time_between_reservations = None
+			self.maximum_future_reservation_time = None
+			self.policy_off_between_times = False
+			self.policy_off_start_time = None
+			self.policy_off_end_time = None
+			self.policy_off_weekend = False
+			self.save()
 
 	def warning_capacity(self):
 		return self.reservation_warning if self.reservation_warning is not None else sys.maxsize
@@ -806,14 +895,50 @@ class Area(models.Model):
 
 	def occupancy_count(self):
 		""" Returns the occupancy used to determine if the area is at capacity """
-		area_occupancy = AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None)
-		if not self.count_staff_in_occupancy:
-			area_occupancy = area_occupancy.filter(customer__is_staff=False)
-		return area_occupancy.count()
+		if self.count_staff_in_occupancy:
+			return self.occupancy()
+		else:
+			return self.occupancy() - self.occupancy_staff()
+
+	def occupancy_staff(self):
+		if not self.is_leaf_node():
+			return sum([descendant.occupancy_staff() for descendant in self.get_descendants().all()])
+		else:
+			return AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None, customer__is_staff=True).count()
+
+	def occupancy(self):
+		if not self.is_leaf_node():
+			return sum([descendant.occupancy() for descendant in self.get_descendants().all()])
+		else:
+			return AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None).count()
+
+	def get_physical_access_levels(self):
+		""" Returns access levels for this area and descendants """
+		return PhysicalAccessLevel.objects.filter(area_id__in=self.get_descendants(include_self=True))
+
+	def required_resource_is_unavailable(self) -> bool:
+		required_resource_unavailable = False
+		for a in self.get_ancestors(ascending=True, include_self=True):
+			if a.required_resources.filter(available=False).exists():
+				required_resource_unavailable = True
+				break
+		return required_resource_unavailable
+
+	def scheduled_outage_in_progress(self) -> bool:
+		""" Returns true if an area or resource outage is currently in effect for this area (or parent). Otherwise, returns false. """
+		return self.scheduled_outage_queryset().filter(start__lte=timezone.now(), end__gt=timezone.now()).exists()
+
+	def scheduled_outage_queryset(self):
+		ids = [area.id for area in self.get_ancestors(include_self=True)]
+		return ScheduledOutage.objects.filter(Q(area_id__in=ids) | Q(resource__dependent_areas__in=ids))
+
+	def get_current_reservation_for_user(self, user):
+		if self.requires_reservation:
+			return Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=user, area=self, start__lte=timezone.now(), end__gt=timezone.now())
 
 
 class AreaAccessRecord(CalendarDisplay):
-	area = models.ForeignKey(Area, on_delete=models.CASCADE)
+	area = TreeForeignKey(Area, on_delete=models.CASCADE)
 	customer = models.ForeignKey(User, on_delete=models.CASCADE)
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
 	start = models.DateTimeField(default=timezone.now)
@@ -821,7 +946,9 @@ class AreaAccessRecord(CalendarDisplay):
 	staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
 
 	class Meta:
-		ordering = ['-start']
+		indexes = [
+			models.Index(fields=['end']),
+		]
 
 	def __str__(self):
 		return str(self.id)
@@ -885,7 +1012,8 @@ class Reservation(CalendarDisplay):
 	user = models.ForeignKey(User, related_name="reservation_user", on_delete=models.CASCADE)
 	creator = models.ForeignKey(User, related_name="reservation_creator", on_delete=models.CASCADE)
 	creation_time = models.DateTimeField(default=timezone.now)
-	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+	tool = models.ForeignKey(Tool, null=True, blank=True, on_delete=models.CASCADE)
+	area = TreeForeignKey(Area, null=True, blank=True, on_delete=models.CASCADE)
 	project = models.ForeignKey(Project, null=True, blank=True, help_text="Indicates the intended project for this reservation. A missed reservation would be billed to this project.", on_delete=models.CASCADE)
 	start = models.DateTimeField('start')
 	end = models.DateTimeField('end')
@@ -899,6 +1027,33 @@ class Reservation(CalendarDisplay):
 	additional_information = models.TextField(null=True, blank=True)
 	self_configuration = models.BooleanField(default=False, help_text="When checked, indicates that the user will perform their own tool configuration (instead of requesting that the staff configure it for them).")
 	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
+
+	@property
+	def reservation_item(self) -> Union[Tool, Area]:
+		if self.tool:
+			return self.tool
+		elif self.area:
+			return self.area
+
+	@reservation_item.setter
+	def reservation_item(self, item):
+		if isinstance(item, Tool):
+			self.tool = item
+		elif isinstance(item, Area):
+			self.area = item
+		else:
+			raise AttributeError(f"This item [{item}] isn't allowed on reservations.")
+
+	@property
+	def reservation_item_type(self) -> ReservationItemType:
+		if self.tool:
+			return ReservationItemType.TOOL
+		elif self.area:
+			return ReservationItemType.AREA
+
+	@property
+	def reservation_item_filter(self):
+		return {self.reservation_item_type.value: self.reservation_item}
 
 	def duration(self):
 		return self.end - self.start
@@ -1356,7 +1511,7 @@ def calculate_duration(start, end, unfinished_reason):
 
 class Door(models.Model):
 	name = models.CharField(max_length=100)
-	area = models.ForeignKey(Area, related_name='doors', on_delete=models.PROTECT)
+	area = TreeForeignKey(Area, related_name='doors', on_delete=models.PROTECT)
 	interlock = models.OneToOneField(Interlock, on_delete=models.PROTECT)
 
 	def __str__(self):
@@ -1369,7 +1524,7 @@ class Door(models.Model):
 
 class PhysicalAccessLevel(models.Model):
 	name = models.CharField(max_length=100)
-	area = models.ForeignKey(Area, on_delete=models.CASCADE)
+	area = TreeForeignKey(Area, on_delete=models.CASCADE)
 
 	class Schedule(object):
 		ALWAYS = 0
@@ -1383,22 +1538,28 @@ class PhysicalAccessLevel(models.Model):
 	schedule = models.IntegerField(choices=Schedule.Choices)
 	allow_staff_access = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow access to Staff users without explicitly granting them access")
 
-	def accessible(self):
-		now = timezone.localtime(timezone.now())
+	def accessible_at(self, time):
+		return self.accessible(time)
+
+	def accessible(self, time: datetime = None):
+		if time is not None:
+			accessible_time = timezone.localtime(time)
+		else:
+			accessible_time = timezone.localtime(timezone.now())
 		saturday = 6
 		sunday = 7
 		if self.schedule == self.Schedule.ALWAYS:
 			return True
 		elif self.schedule == self.Schedule.WEEKDAYS_7AM_TO_MIDNIGHT:
-			if now.isoweekday() == saturday or now.isoweekday() == sunday:
+			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
 				return False
 			seven_am = datetime.time(hour=7, tzinfo=timezone.get_current_timezone())
 			midnight = datetime.time(hour=23, minute=59, second=59, tzinfo=timezone.get_current_timezone())
-			current_time = now.time()
+			current_time = accessible_time.time()
 			if seven_am < current_time < midnight:
 				return True
 		elif self.schedule == self.Schedule.WEEKENDS:
-			if now.isoweekday() == saturday or now.isoweekday() == sunday:
+			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
 				return True
 		return False
 
@@ -1577,12 +1738,42 @@ class ScheduledOutage(models.Model):
 	title = models.CharField(max_length=100, help_text="A brief description to quickly inform users about the outage")
 	details = models.TextField(blank=True, help_text="A detailed description of why there is a scheduled outage, and what users can expect during the outage")
 	category = models.CharField(blank=True, max_length=200, help_text="A categorical reason for why this outage is scheduled. Useful for trend analytics.")
-	tool = models.ForeignKey(Tool, null=True, on_delete=models.CASCADE)
-	resource = models.ForeignKey(Resource, null=True, on_delete=models.CASCADE)
+	tool = models.ForeignKey(Tool, blank=True,  null=True, on_delete=models.CASCADE)
+	area = TreeForeignKey(Area, blank=True, null=True, on_delete=models.CASCADE)
+	resource = models.ForeignKey(Resource, blank=True, null=True, on_delete=models.CASCADE)
+
+	@property
+	def outage_item(self) -> Union[Tool, Area]:
+		if self.tool:
+			return self.tool
+		elif self.area:
+			return self.area
+
+	@outage_item.setter
+	def outage_item(self, item):
+		if isinstance(item, Tool):
+			self.tool = item
+		elif isinstance(item, Area):
+			self.area = item
+		else:
+			raise AttributeError(f"This item [{item}] isn't allowed on outages.")
+
+	@property
+	def outage_item_type(self) -> ReservationItemType:
+		if self.tool:
+			return ReservationItemType.TOOL
+		elif self.area:
+			return ReservationItemType.AREA
+
+	@property
+	def outage_item_filter(self):
+		if not self.outage_item_type:
+			return {'tool':None, 'area':None}
+		else:
+			return {self.outage_item_type.value: self.outage_item}
 
 	def __str__(self):
 		return str(self.title)
-
 
 class News(models.Model):
 	title = models.CharField(max_length=200)

@@ -7,9 +7,10 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
-	MaximumCapacityReachedError
+	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
 from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent
 from NEMO.tasks import postpone
+from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
 
@@ -79,6 +80,8 @@ def login_to_area(request, door_id):
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	max_capacity_reached = False
+	reservation_requirement_failed = False
+	scheduled_outage_in_progress = False
 	# Check policy to enter this area
 	try:
 		check_policy_to_enter_this_area(area=door.area, user=user)
@@ -88,27 +91,52 @@ def login_to_area(request, door_id):
 		message = f"You do not have access to this area of the {facility_name} at this time. Please visit the User Office if you believe this is an error."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
-	except UnavailableResourcesUserError:
-		unavailable_resources = door.area.required_resources.filter(available=False)
-		if unavailable_resources and not user.is_staff:
-			log.details = "The user was blocked from entering this area because a required resource was unavailable."
-			log.save()
-			return render(request, 'area_access/resource_unavailable.html', {'unavailable_resources': unavailable_resources})
+	except UnavailableResourcesUserError as error:
+		log.details = "The user was blocked from entering this area because a required resource was unavailable."
+		log.save()
+		return render(request, 'area_access/resource_unavailable.html', {'unavailable_resources': error.resources})
 
-	except MaximumCapacityReachedError:
+	except MaximumCapacityReachedError as error:
 		# deal with this error after checking if the user is already logged in
-		max_capacity_reached = True
+		max_capacity_reached = error
+
+	except ScheduledOutageInProgressError as error:
+		# deal with this error after checking if the user is already logged in
+		scheduled_outage_in_progress = error
+
+	except ReservationRequiredUserError:
+		# deal with this error after checking if the user is already logged in
+		reservation_requirement_failed = True
 
 	current_area_access_record = user.area_access_record()
 	if current_area_access_record and current_area_access_record.area == door.area:
 		# No log entry necessary here because all validation checks passed.
 		# The log entry is captured when the subsequent choice is made by the user.
-		return render(request, 'area_access/already_logged_in.html', {'area': door.area, 'project': current_area_access_record.project, 'badge_number': user.badge_number})
+		return render(request, 'area_access/already_logged_in.html', {
+			'area': door.area,
+			'project': current_area_access_record.project,
+			'badge_number': user.badge_number,
+			'reservation_requirement_failed': reservation_requirement_failed,
+			'max_capacity_reached': max_capacity_reached,
+			'scheduled_outage_in_progress': scheduled_outage_in_progress,
+		})
+
+	if scheduled_outage_in_progress:
+		log.details = f"The user was blocked from entering this area because the {scheduled_outage_in_progress.area.name} has a scheduled outage in progress."
+		log.save()
+		message = f"The {scheduled_outage_in_progress.area.name} is inaccessible because a scheduled outage is in progress."
+		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	if max_capacity_reached:
-		log.details = f"This area has reached its maximum capacity of {door.area} people at a time."
+		log.details = f"The user was blocked from entering this area because the {max_capacity_reached.area.name} has reached its maximum capacity of {max_capacity_reached.area.maximum_capacity} people at a time."
 		log.save()
-		message = "This area has reached its maximum capacity. Please wait for somebody to leave and try again."
+		message = f"The {max_capacity_reached.area.name} has reached its maximum capacity. Please wait for somebody to leave and try again."
+		return render(request, 'area_access/physical_access_denied.html', {'message': message})
+
+	if reservation_requirement_failed:
+		log.details = f"The user was blocked from entering this area because the user does not have a current reservation for the {door.area}."
+		log.save()
+		message = "You do not have a current reservation for this area. Please make a reservation before trying to access this area."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	previous_area = None
@@ -171,6 +199,8 @@ def logout_of_area(request, door_id):
 	if record:
 		record.end = timezone.now()
 		record.save()
+		# Shorten the user's area reservation since the user is now leaving
+		shorten_reservation(user, record.area)
 		busy_tools = UsageEvent.objects.filter(end=None, user=user)
 		if busy_tools:
 			return render(request, 'area_access/logout_warning.html', {'area': record.area, 'name': user.first_name, 'tools_in_use': busy_tools})

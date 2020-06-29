@@ -7,8 +7,8 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Email addresses</h3>
-				<form method="POST" action="{% url 'customize' 'email_addresses' %}" class="form-horizontal">
+				<h3 id="email_addresses">Email addresses</h3>
+				<form method="POST" action="{% url 'customize' 'email_addresses' %}#email_addresses" class="form-horizontal">
 					{% csrf_token %}
 					<div class="form-group">
 						<label class="control-label col-md-2" for="feedback_email_address">Feedback</label>
@@ -57,8 +57,8 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Calendar settings</h3>
-				<form method="POST" action="{% url 'customize' 'calendar_settings' %}" class="form-horizontal">
+				<h3 id="calendar_settings">Calendar settings</h3>
+				<form method="POST" action="{% url 'customize' 'calendar_settings' %}#calendar_settings" class="form-horizontal">
 					{% csrf_token %}
 					<div class="form-group">
 						<div class="col-md-12">
@@ -121,6 +121,13 @@
 						</div>
 					</div>
 					<div class="form-group">
+						<div class="col-md-12">
+							<div class="checkbox">
+								<label><input type="checkbox" name="calendar_display_not_qualified_areas" {% if calendar_display_not_qualified_areas %}checked{% endif %} value="enabled">Also show areas (for reservations) that the user doesn't have access too (they will be grayed out)</label><br/>
+							</div>
+						</div>
+					</div>
+					<div class="form-group">
 						<div class="col-md-3">
 							<input type="submit" value="Save settings" class="btn btn-success">
 						</div>
@@ -131,14 +138,22 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Application settings</h3>
-				<form method="POST" action="{% url 'customize' 'application_settings' %}" class="form-horizontal">
+				<h3 id="application_settings">Application settings</h3>
+				<form method="POST" action="{% url 'customize' 'application_settings' %}#application_settings" class="form-horizontal">
 					{% csrf_token %}
 					<div class="form-group">
 						<div class="col-md-12">
 							<div class="checkbox">
 								<label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas</label><br/>
-								<label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas</label>
+								<label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas</label><br/>
+								<label><input type="checkbox" name="calendar_login_logout" {% if calendar_login_logout %}checked{% endif %} value="enabled">Allow login/logout in the calendar view</label>
+							</div>
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-md-12">
+							<div class="checkbox">
+								<label><input type="checkbox" name="dashboard_display_not_qualified_areas" {% if dashboard_display_not_qualified_areas %}checked{% endif %} value="enabled">Also show areas the user doesn't have access to in status dashboard</label><br/>
 							</div>
 						</div>
 					</div>
@@ -171,9 +186,9 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Login banner</h3>
+				<h3 id="banner_login">Login banner</h3>
 				<p>The login banner is an informational message displayed underneath the username and password text boxes on the login page. You can customize this to convey rules for {{ site_title }} users at your organization.</p>
-				<form method="POST" action="{% url 'customize' 'login_banner' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'login_banner' %}#banner_login" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('login_banner')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="login_banner" class="customization-input-file" onchange="this.style.color = 'inherit';$('#login_banner_span').hide()">
@@ -193,9 +208,9 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Introduction for &quot;<a href="{% url 'safety' %}" target="_blank">Safety suggestions and observations</a>&quot; page</h3>
+				<h3 id="safety_intro">Introduction for &quot;<a href="{% url 'safety' %}" target="_blank">Safety suggestions and observations</a>&quot; page</h3>
 				<p>What would you like everyone to know about safety policy and procedures? This introduction will be presented at the top of the safety page. You can use HTML to modify the look of the text.</p>
-				<form method="POST" action="{% url 'customize' 'safety_introduction' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'safety_introduction' %}#safety_intro" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('safety_introduction')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="safety_introduction" class="customization-input-file" onchange="this.style.color = 'inherit';$('#safety_introduction_span').hide()">
@@ -215,9 +230,9 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>&quot;<a href="{% url 'facility_rules' %}" target="_blank">{{ facility_name }} rules tutorial</a>&quot; page</h3>
+				<h3 id="facility_rules_tuto">&quot;<a href="{% url 'facility_rules' %}" target="_blank">{{ facility_name }} rules tutorial</a>&quot; page</h3>
 				<p>The {{ facility_name }} rules tutorial is an opportunity to provide new users with a tutorial to your lab operating procedures and rules. The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page. Completion of the HTML form should be POSTed to the 'facility_rules' URL. Upon completion, the user's "training required" attribute is set to false, and they are able to make reservations and control tools.</p>
-				<form method="POST" action="{% url 'customize' 'facility_rules_tutorial' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'facility_rules_tutorial' %}#facility_rules_tuto" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('facility_rules_tutorial')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="facility_rules_tutorial" class="customization-input-file" onchange="this.style.color = 'inherit';$('#facility_rules_tutorial_span').hide()">
@@ -237,10 +252,12 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>&quot;<a href="{% url 'authorization_failed' %}" target="_blank">{{ facility_name }} failed login</a>&quot; page</h3>
-				<p>This page is displayed after authentication when either no matching username could be found in the database or if that user has been deactivated.
-					<br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.</p>
-				<form method="POST" action="{% url 'customize' 'authorization_failed' %}" enctype="multipart/form-data">
+				<h3 id="authorization">&quot;<a href="{% url 'authorization_failed' %}" target="_blank">{{ facility_name }} failed login</a>&quot; page</h3>
+				<p>
+					This page is displayed after authentication when either no matching username could be found in the database or if that user has been deactivated.
+					<br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.
+				</p>
+				<form method="POST" action="{% url 'customize' 'authorization_failed' %}#authorization" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('authorization_failed')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="authorization_failed" class="customization-input-file" onchange="this.style.color = 'inherit';$('#authorization_failed_span').hide()">
@@ -260,11 +277,11 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>&quot;<a href="{% url 'jumbotron' %}" target="_blank">Jumbotron</a>&quot; watermark</h3>
+				<h3 id="jumbo">&quot;<a href="{% url 'jumbotron' %}" target="_blank">Jumbotron</a>&quot; watermark</h3>
 				<p>This image is displayed as background for the Jumbotron. It is set as a full background screen, so your image needs to take that into account.
 					<br>The image you upload should be a valid image file (recommended size is 1500x1000).
 				</p>
-				<form method="POST" action="{% url 'customize' 'jumbotron_watermark' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'jumbotron_watermark' %}#jumbo" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('jumbotron_watermark')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="jumbotron_watermark" class="customization-input-file" onchange="this.style.color = 'inherit';$('#jumbotron_watermark_span').hide()">
@@ -286,14 +303,14 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Cancellation email</h3>
+				<h3 id="cancellation">Cancellation email</h3>
 				<p>This email is sent to a user when a staff member cancels the user's reservation. The following context variables are provided when the email is rendered:</p>
 				<ul>
 					<li><b>reservation</b> - the user's reservation that was cancelled</li>
 					<li><b>staff_member</b> - the user object of the staff member who cancelled the reservation</li>
 					<li><b>reason</b> - the reason the staff member provided for cancelling the reservation</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'cancellation_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'cancellation_email' %}#cancellation" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('cancellation_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="cancellation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#cancellation_email_span').hide()">
@@ -313,7 +330,7 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Feedback email</h3>
+				<h3 id="feedback">Feedback email</h3>
 				<p>
 					This email is sent when a user <a href="{% url 'feedback' %}" target="_blank">submits feedback</a>. The feedback email address (at the top of this page) must also be configured for users to be able to do this.
 					The following context variables are provided when the email is rendered:
@@ -322,7 +339,7 @@
 					<li><b>contents</b> - the user's feedback</li>
 					<li><b>user</b> - the user object of the user who submitted the feedback</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'feedback_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'feedback_email' %}#feedback" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('feedback_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="feedback_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#feedback_email_span').hide()">
@@ -342,7 +359,7 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Generic email</h3>
+				<h3 id="generic">Generic email</h3>
 				<p>A generic email that can be sent to qualified tool users, members of an account, or members of a project. Send these using the <a href="{% url 'email_broadcast' %}">email broadcast page</a>. The following context variables are provided when the email is rendered:</p>
 				<ul>
 					<li><b>title</b> - the user specified title of the email</li>
@@ -350,7 +367,7 @@
 					<li><b>contents</b> - the body of the email</li>
 					<li><b>template_color</b> - the color to emphasize</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'generic_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'generic_email' %}#generic" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('generic_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="generic_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#generic_email_span').hide()">
@@ -370,7 +387,7 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Missed reservation email</h3>
+				<h3 id="missed_reservation">Missed reservation email</h3>
 				<p>
 					This email is sent when a user misses a reservation. If a tool is not used for an amount
 					of time after the user's reservation has begun, it is marked as missed and removed from the calendar.
@@ -379,7 +396,7 @@
 				<ul>
 					<li><b>reservation</b> - the reservation that the user missed</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'missed_reservation_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'missed_reservation_email' %}#missed_reservation" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('missed_reservation_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="missed_reservation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#missed_reservation_email_span').hide()">
@@ -399,7 +416,35 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>{{ facility_name }} rules tutorial email</h3>
+				<h3 id="out_of_time_reservation">Out of time reservation email</h3>
+				<p>
+					This email is sent when a user is still logged in an area but his reservation expired. A grace period can be set when configuring the area.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>reservation</b> - the reservation that the user is out of time on</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'out_of_time_reservation_email' %}#out_of_time_reservation" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('out_of_time_reservation_email')">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="out_of_time_reservation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#out_of_time_reservation_email_span').hide()">
+						{% if out_of_time_reservation_email %}<span id="out_of_time_reservation_email_span">out_of_time_reservation_email.html</span>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload out of time reservation email" class="btn btn-success">
+					</div>
+				</form>
+				{% if out_of_time_reservation_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#out_of_time_reservation_email_render">Show current content</button>
+					<div id="out_of_time_reservation_email_render" class="collapse customization-content">{{ out_of_time_reservation_email }}</div>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="facility_rules">{{ facility_name }} rules tutorial email</h3>
 				<p>
 					This email is sent when a user completes the {{ facility_name }} rules tutorial. It can contain a free-response answer (quiz question).
 					If you do not upload a template then no notification email is sent to staff when a user completes the training tutorial.
@@ -409,7 +454,7 @@
 					<li><b>user</b> - the user's model instance</li>
 					<li><b>making_reservations_rule_summary</b> - a free-response answer provided by the user. Normally, this is provided by the user to summarize their understanding of the {{ facility_name }} rules and proceedures.</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'facility_rules_tutorial_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'facility_rules_tutorial_email' %}#facility_rules" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('facility_rules_tutorial_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="facility_rules_tutorial_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#facility_rules_tutorial_email_span').hide()">
@@ -429,7 +474,7 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>New task email</h3>
+				<h3 id="new_task">New task email</h3>
 				<p>
 					This email is sent when a new maintenance task is created for a tool.
 					The following context variables are provided when the email is rendered:
@@ -441,7 +486,7 @@
 					<li><b>tool_control_absolute_url</b> - the URL of the tool control page for the tool</li>
 					<li><b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'new_task_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'new_task_email' %}#new_task" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('new_task_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="new_task_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#new_task_email_span').hide()">
@@ -461,16 +506,16 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Reservation reminder email</h3>
+				<h3 id="reservation_reminder">Reservation reminder email</h3>
 				<p>
-					This email is sent to a user two hours before their tool reservation begins.
+					This email is sent to a user two hours before their tool/area reservation begins.
 					The reservation warning email must also exist for this email to be sent.
 					The following context variables are provided when the email is rendered:
 				</p>
 				<ul>
 					<li><b>reservation</b> - the user's upcoming reservation</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'reservation_reminder_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'reservation_reminder_email' %}#reservation_reminder" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('reservation_reminder_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="reservation_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_reminder_email_span').hide()">
@@ -490,17 +535,17 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Reservation warning email</h3>
+				<h3 id="reservation_warning">Reservation warning email</h3>
 				<p>
-					This email is sent to a user two hours before their tool reservation begins and maintenance may interfere with the upcoming reservation.
+					This email is sent to a user two hours before their tool/area reservation begins and maintenance may interfere with the upcoming reservation.
 					The reservation reminder email must also exist for this email to be sent.
 					The following context variables are provided when the email is rendered:
 				</p>
 				<ul>
 					<li><b>reservation</b> - the user's upcoming reservation</li>
-					<li><b>fatal_error</b> - boolean value that, when true, indicates that it will be impossible for the user to use the tool during their reservation (due to tool maintenance or a missing required dependency)</li>
+					<li><b>fatal_error</b> - boolean value that, when true, indicates that it will be impossible for the user to use the tool/access the area during their reservation (due to maintenance, outages or a missing required dependency)</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'reservation_warning_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'reservation_warning_email' %}#reservation_warning" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('reservation_warning_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="reservation_warning_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_warning_email_span').hide()">
@@ -520,7 +565,7 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Safety issue email</h3>
+				<h3 id="safety_issue">Safety issue email</h3>
 				<p>
 					This email is sent when a new maintenance task is created for a tool.
 					The following context variables are provided when the email is rendered:
@@ -529,7 +574,7 @@
 					<li><b>issue</b> - the issue information</li>
 					<li><b>issue_absolute_url</b> - the URL for the detailed view of the issue</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'safety_issue_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'safety_issue_email' %}#safety_issue" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('safety_issue_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="safety_issue_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#safety_issue_email_span').hide()">
@@ -549,7 +594,7 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Staff charge reminder email</h3>
+				<h3 id="staff_charge_reminder">Staff charge reminder email</h3>
 				<p>
 					This email is periodically sent to remind staff that they are charging a user for staff time.
 					The following context variables are provided when the email is rendered:
@@ -557,7 +602,7 @@
 				<ul>
 					<li><b>staff_charge</b> - the staff charge that is in progress</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'staff_charge_reminder_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'staff_charge_reminder_email' %}#staff_charge_reminder" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('staff_charge_reminder_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="staff_charge_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#staff_charge_reminder_email_span').hide()">
@@ -577,7 +622,7 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Task status notification email</h3>
+				<h3 id="task_status">Task status notification email</h3>
 				<p>
 					This email is sent when a tool task has be updated and set to a particular state.
 					The following context variables are provided when the email is rendered:
@@ -590,7 +635,7 @@
 					<li><b>notification_message</b> - the notification message that is configured (via the admin site) for the status</li>
 					<li><b>tool_control_absolute_url</b> - the URL of the tool control page for the task</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'task_status_notification' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'task_status_notification' %}#task_status" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('task_status_notification')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="task_status_notification" class="customization-input-file" onchange="this.style.color = 'inherit';$('#task_status_notification_span').hide()">
@@ -610,16 +655,21 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Unauthorized tool access email</h3>
+				<h3 id="unauthorized_tool_access">Unauthorized tool access email</h3>
 				<p>
-					This email is sent when a user tries to access a tool without being logged in to the area in which the tool resides.
+					This email is sent when a user tries to access a tool:
+					<ul>
+						<li>without being logged in to the area in which the tool resides (type 'area').</li>
+						<li>without having a current area reservation (type 'reservation')</li>
+					</ul>
 					The following context variables are provided when the email is rendered:
 				</p>
 				<ul>
 					<li><b>operator</b> - the person who attempted to use the tool</li>
 					<li><b>tool</b> - the tool that the user was denied access to</li>
+					<li><b>type</b> - the type of abuse ('area' or 'reservation')</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'unauthorized_tool_access_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'unauthorized_tool_access_email' %}#unauthorized_tool_access" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('unauthorized_tool_access_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="unauthorized_tool_access_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#unauthorized_tool_access_email_span').hide()">
@@ -639,7 +689,7 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Usage reminder email</h3>
+				<h3 id="usage_reminder">Usage reminder email</h3>
 				<p>
 					This email is periodically sent to remind a user that they have a tool enabled.
 					The following context variables are provided when the email is rendered:
@@ -647,13 +697,14 @@
 				<ul>
 					<li><b>user</b> - the user who is using a tool or logged in to an area</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'usage_reminder_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'usage_reminder_email' %}#usage_reminder" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('usage_reminder_email')">
 					{% csrf_token %}
 					<div class="form-group">
-						<input type="file" name="usage_reminder_email">
+						<input type="file" name="usage_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#usage_reminder_email_span').hide()">
+						{% if usage_reminder_email %}<span id="usage_reminder_email_span">usage_reminder_email.html</span>{% endif %}
 					</div>
 					<div class="form-group">
-						<input type="submit" value="Upload new task email" class="btn btn-success">
+						<input type="submit" value="Upload usage reminder email" class="btn btn-success">
 					</div>
 				</form>
 				{% if usage_reminder_email %}
@@ -667,11 +718,15 @@
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<h3>User reservation created email</h3>
-				<p>This email is sent to a user when the user creates a reservation. The following context variables are provided when the email is rendered:</p>
+				<p>
+					This email is sent to a user when the user creates a reservation and has opted to receive ics calendar notification in his preferences.
+					<br>This is optional, the email will still be sent with only the calendar attachment if this is left blank.
+				    <br><br>The following context variables are provided when the email is rendered:
+				</p>
 				<ul>
-					<li><b>reservation</b> - the user's reservation that was cancelled</li>
+					<li><b>reservation</b> - the user's reservation that was created</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'reservation_created_user_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'reservation_created_user_email' %}" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('reservation_created_user_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="reservation_created_user_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_created_user_email_span').hide()">
@@ -691,12 +746,16 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>User reservation cancelled email</h3>
-				<p>This email is sent to a user when the user cancels his own reservation. The following context variables are provided when the email is rendered:</p>
+				<h3 id="reservation_cancelled">User reservation cancelled email</h3>
+				<p>
+					This email is sent to a user when the user cancels his own reservation and has opted to receive ics calendar notification in his preferences.
+					<br>This is optional, the email will still be sent with only the calendar attachment if this is left blank.
+				    <br><br>The following context variables are provided when the email is rendered:
+				</p>
 				<ul>
 					<li><b>reservation</b> - the user's reservation that was cancelled</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'reservation_cancelled_user_email' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'reservation_cancelled_user_email' %}#reservation_cancelled" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('reservation_cancelled_user_email')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="reservation_cancelled_user_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_cancelled_user_email_span').hide()">
@@ -716,7 +775,7 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3>Tool Rates</h3>
+				<h3 id="rate">Tool Rates</h3>
 				<p>
 					You can upload a json file to display tool rates. An example of a valid rates file can be found on <a target="_blank" href="https://github.com/usnistgov/NEMO/raw/master/resources/splash_pad_rates.json">Github</a>.
 					<br><br>It should be a JSON array of elements, and the following key/values are supported for each element:
@@ -728,7 +787,7 @@
 					<li><b>rate</b> - the rate amount</li>
     				<li>item - the name of the item (optional)</li>
 				</ul>
-				<form method="POST" action="{% url 'customize' 'rates' %}" enctype="multipart/form-data">
+				<form method="POST" action="{% url 'customize' 'rates' %}#rate" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('rates')">
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="rates" class="customization-input-file" onchange="this.style.color = 'inherit';$('#rates_span').hide()">
@@ -746,4 +805,14 @@
 			</div>
 		</div>
 	</div>
+	<script type="application/javascript">
+		function check_delete_file_before_submit(name) {
+			let has_file = $('input[name='+name+']')[0].files.length !== 0;
+			if (!has_file) {
+			    return confirm("Submitting without a new file will delete any previous content. \nAre you sure you want to continue?");
+			} else {
+			    return true;
+			}
+        }
+	</script>
 {% endblock %}

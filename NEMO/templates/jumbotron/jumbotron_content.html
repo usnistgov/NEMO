@@ -1,62 +1,22 @@
 <div class="row" style="background:transparent">
-	{% if area_defined %}
+	{% if areas_exist %}
 		<div class="{% if alerts or disabled_resources %}col-lg-4{% else %}col-lg-6{% endif %}" style="text-align:center; background:transparent">
 			{% if not facility_occupants %}
 				<h2>Nobody is in an access controlled<br>{{ facility_name }} area</h2>
 			{% else %}
 				{% regroup facility_occupants by area as area_occupants %}
 				<h2>Area occupancy</h2>
-				<p>Staff members are highlighted in <span class="success-highlight">green</span></p>
+				<p>
+					Staff members are highlighted in <span class="success-highlight">green</span>.<br>
+					Users with expired reservations are highlighted in <span class="danger-highlight">red</span>.
+				</p>
 				{% for area in area_occupants %}
-					{# Panel is used to make table borders rounded. #}
-					<div class="panel panel-default" style="background:transparent">
-						<table class="table table-bordered table-condensed" style="background:transparent">
-							<thead>
-								<tr>
-									<th colspan="4" style="font-size:large;">
-										<span class="primary-highlight">{{ area.grouper }}</span>
-										{% if area.list|length > 1 %}
-											<span class="pull-right">
-												{% if area.grouper.maximum_capacity != 0 and area.grouper.occupancy_count >= area.grouper.danger_capacity %}<span style="color:red"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
-												{% elif area.grouper.maximum_capacity != 0 and area.grouper.occupancy_count >= area.grouper.warning_capacity %}<span style="color:orange"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
-												{% else %}<span>{% endif %}
-													{{ area.grouper.occupancy_count }}
-												</span>{% if area.grouper.maximum_capacity != 0 %} / {{ area.grouper.maximum_capacity }}{% endif %} people
-												{% if area.list|length != area.grouper.occupancy_count %}
-													{% with occupancy=area.grouper.occupancy_count|stringformat:"d"  %}
-														{% with negative_occupancy="-"|add:occupancy %}
-															(+ {{ area.list|length|add:negative_occupancy }} staff)
-														{% endwith %}
-													{% endwith %}
-												{% endif %}
-											</span>
-										{% endif %}
-									</th>
-								</tr>
-								<tr>
-									<th style="text-align:center;">User</th>
-									<th style="text-align:center;">Since</th>
-									<th style="text-align:center;">Working on project...</th>
-								</tr>
-							</thead>
-							<tbody>
-							{% for o in area.list %}
-								<tr>
-									<td>
-										<span {% if o.customer.is_staff %}class="success-highlight"{% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
-									</td>
-									<td>{{ o.start|date:"l @ g:i A" }}</td>
-									<td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ o.project }}</td>
-								</tr>
-							{% endfor %}
-							</tbody>
-						</table>
-					</div>
+					{% include 'occupancy/occupancy_content.html' with area=area.grouper occupants=area.list transparent_bg=True center_th=True %}
 				{% endfor %}
 			{% endif %}
 		</div>
 	{% endif %}
-	<div class="{% if alerts or disabled_resources %}{% if area_defined %}col-lg-4{% else %}col-lg-6{% endif %}{% else %}{% if area_defined %}col-lg-6{% else %}col-lg-12{% endif %}{% endif %}" style="text-align:center; background:transparent">
+	<div class="{% if alerts or disabled_resources %}{% if areas_exist %}col-lg-4{% else %}col-lg-6{% endif %}{% else %}{% if areas_exist %}col-lg-6{% else %}col-lg-12{% endif %}{% endif %}" style="text-align:center; background:transparent">
 		{% if usage_events %}
 			<h2>Tool usage</h2>
 			<p>{% if usage_events|length > 1 %}{{ usage_events|length }} tools are in use{% endif %}&nbsp;</p>
@@ -86,7 +46,7 @@
 		{% endif %}
 	</div>
 	{% if alerts or disabled_resources %}
-		<div class="{% if area_defined %}col-lg-4{% else %}col-lg-6{% endif %}" style="text-align:center">
+		<div class="{% if areas_exist %}col-lg-4{% else %}col-lg-6{% endif %}" style="text-align:center">
 			<h2>Alerts and outages</h2>
 			<p>{# For spacing #}&nbsp;</p>
 			{% for a in alerts %}

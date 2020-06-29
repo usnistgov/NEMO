@@ -109,7 +109,7 @@ class KioskAreaAccess(TestCase):
 		staff.save()
 		self.client.force_login(user=user)
 		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), data={'badge_number': user.badge_number}, follow=True)
-		self.assertContains(response, "This area has reached its maximum capacity.")
+		self.assertContains(response, f"The {door.area} has reached its maximum capacity.")
 		# staff can still login
 		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), data={'badge_number': staff.badge_number}, follow=True)
 		self.assertTrue(f"login_to_area/{door.id}" in response.request['PATH_INFO'])
@@ -117,7 +117,7 @@ class KioskAreaAccess(TestCase):
 		self.assertTrue(AreaAccessRecord.objects.filter(area=door.area, customer=User.objects.get(badge_number=staff.badge_number)).exists())
 		# try again user, should fail
 		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), data={'badge_number': user.badge_number}, follow=True)
-		self.assertContains(response, "This area has reached its maximum capacity.")
+		self.assertContains(response, f"The {door.area} has reached its maximum capacity.")
 		# increase capacity so user can login
 		door.area.maximum_capacity = 5
 		door.area.save()

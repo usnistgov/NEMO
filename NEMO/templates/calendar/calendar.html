@@ -16,27 +16,27 @@
 		</button>
 		<ul class="dropdown-menu">
 			<li class="dropdown-header">Which type of events would you like<br>to view on the calendar?</li>
-			<li data-toggle="tooltip" data-placement="right" title="Displays tool reservations. While viewing reservations, the 'Personal schedule' link shows your reservations for all tools. Select a tool to view everyone's reservations for that tool."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Reservations</a></li>
-			<li data-toggle="tooltip" data-placement="right" title="Displays your {{ facility_name }} usage. This includes area access, tool usage, and missed reservations (which are all billable items)."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">{{ facility_name }} usage</a></li>
+			<li data-toggle="tooltip" data-placement="right" title="Displays {% if tools and areas %}tool and area{% elif tools %}tool{% elif areas %}area{% endif %} reservations. While viewing reservations, the 'Personal schedule' link shows your reservations for all {% if tools and areas %}tools and areas{% elif tools %}tools{% elif areas %}areas{% endif %}. Select a {% if tools and areas %}tool or area{% elif tools %}tool{% elif areas %}area{% endif %} to view everyone's reservations for that {% if tools and areas %}tool or area{% elif tools %}tool{% elif areas %}area{% endif %}."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Reservations</a></li>
+			<li data-toggle="tooltip" data-placement="right" title="Displays your {{ facility_name }} usage. This includes{% if areas %} area access,{% endif %}{% if tools %} tool usage,{% endif %} and missed reservations (which are all billable items)."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">{{ facility_name }} usage</a></li>
 			{% if user.is_staff %}
 				<li data-toggle="tooltip" data-placement="right" title="Displays {{ facility_name }} reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Specific user</a></li>
 			{% endif %}
 		</ul>
 	</div>
 	<div id="expand-collapse" class="btn-group sidebar-item">
-		<button type="button" class="btn btn-default" style="width:50%" onclick="expand_all_categories()" title="Expand all tool categories"><span class="glyphicon glyphicon-resize-full"></span></button>
-		<button type="button" class="btn btn-default" style="width:50%" onclick="collapse_all_categories()" title="Collapse all tool categories"><span class="glyphicon glyphicon-resize-small"></span></button>
+		<button type="button" class="btn btn-default" style="width:50%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon-resize-full"></span></button>
+		<button type="button" class="btn btn-default" style="width:50%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon-resize-small"></span></button>
 	</div>
-	<input type="text" id="tool_search" placeholder="Search for a tool" class="form-control sidebar-item" autocomplete="off">
+	<input type="text" id="item_search" placeholder="Search for{% if tools %} a tool{% endif %}{% if tools and areas %} or{% endif %}{% if areas %} an area{% endif %}" class="form-control sidebar-item" autocomplete="off">
 	<input type="text" id="user_search" placeholder="Search for a user" class="form-control sidebar-item" autocomplete="off" style="display:none">
 	<button id="chosen_user_button" type="button" class="btn btn-default" style="width:100%; display:none" onclick="clear_specific_user()"></button>
 
 	{# The following menu tree code was take from an example at http://www.bootply.com/120625 #}
 	<ul id="extra-links" class="nav nav-list" style="margin-top: 10px; margin-bottom: 8px;">
-		<li><a href="javascript:void(0)" class="selected personal_schedule" data-tool-id="personal_schedule" onclick="set_selected_item(this); update_event_sources()">Personal schedule</a></li>
+		<li><a href="javascript:void(0)" class="selected personal_schedule" data-item-id="personal_schedule" onclick="set_selected_item(this); update_event_sources()">Personal schedule</a></li>
 	</ul>
-	{# The tool tree has the HTML ID tag "tool_tree". See the widgets/tool_tree.py file for more information. #}
-	{{ rendered_tool_tree_html }}
+	{# The item tree has the HTML class tag "item_tree". See the widgets/item_tree.py file for more information. #}
+	{{ rendered_item_tree_html }}
 	<div style="height:50px"></div>
 </div>
 
@@ -55,16 +55,16 @@ function set_event_type(text)
 	$("#event_type").html(text);
 }
 
-{# Check which tool we want to display information for and establish the calendar feed. #}
+{# Check which tool/area we want to display information for and establish the calendar feed. #}
 {# This function also checks if the user wishes to display their personal calendar feed (that is, all events #}
-{# specific to them for all tools). #}
+{# specific to them for all tools/areas). #}
 function update_event_sources()
 {
 	{# Remove all event sources from the calendar. #}
 	$("#calendar").fullCalendar("removeEventSource", "{% url 'event_feed' %}");
 
 	var event_type = get_event_type();
-	var tool_event_source =
+	var item_event_source =
 	{
 		url: "{% url 'event_feed' %}",
 		data:
@@ -75,49 +75,67 @@ function update_event_sources()
 
 	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage')
 	{
-		var item = get_selected_item();
+		let item = get_selected_item();
+		let login_button = $(".fc-login-button")[0];
+		let logout_button = $(".fc-logout-button")[0];
+		let scheduled_outage_button = $(".fc-scheduledOutage-button")[0];
+		$(scheduled_outage_button).addClass('fc-state-disabled');
+		$(login_button).html("Login");
+		$(login_button).addClass('fc-state-disabled');
+		$(logout_button).removeClass('fc-state-disabled');
 		if(item === 'personal_schedule')
 		{
-			tool_event_source.color = "#33ad33";
-			{# Use green for calendar events of the user's personal schedule. #}
-			tool_event_source.data.personal_schedule = true;
+			item_event_source.data.personal_schedule = true;
 		}
-		else if(item)
-			tool_event_source.data.tool_id = item;
+		else if(item) {
+		    item = JSON.parse(item)
+            item_event_source.data.item_id = item.id;
+            item_event_source.data.item_type = item.type;
+            if (item.type === 'area')
+			{
+			    $(login_button).html("Login to the "+item.element_name);
+				$(login_button).removeClass('fc-state-disabled');
+			}
+			$(scheduled_outage_button).removeClass('fc-state-disabled');
+        }
 	}
 	else if(event_type === 'specific user')
 	{
 		if($("#user_search").typeahead('val'))
-			tool_event_source.data.user = $("#user_search").typeahead('val');
+			item_event_source.data.user = $("#user_search").typeahead('val');
 		else
 			return;
 	}
 
-	$("#calendar").fullCalendar("addEventSource", tool_event_source);
+	$("#calendar").fullCalendar("addEventSource", item_event_source);
 
 	refresh_sidebar_icons();
 }
 
 {# This function is a callback for when a reservation is successfully created by the user. #}
 {# It renders the event to the calendar by refetching the event feed. #}
-function event_creation_success_callback(response, status, xml_http_request, ajax_post)
+function event_creation_success_callback(response, status, xml_http_request, ajax_post, success_callback)
 {
 	$("#calendar").fullCalendar("unselect");
 	{# If the response is empty then the reservation was successfully created. #}
 	if(response === "")
-		refresh_calendar_and_sidebar();
+	{
+        refresh_calendar_and_sidebar();
+        if (success_callback) success_callback()
+    }
 	else if (xml_http_request.status === 201)
 	{
 	    {# reservation was created but there is some extra information to display #}
-		refresh_calendar_and_sidebar();
 		$("#dialog .modal-content").html(response);
 		$("#dialog").modal('show');
+		refresh_calendar_and_sidebar();
+		if (success_callback) success_callback()
 	}
 	else {# the response was non-empty so the tool requires configuration details before the reservation is created. #}
 	{
 		{# Construct the configuration dialog that is contained in the server response. #}
 		$("#dialog .modal-content").html(response);
-		$("#dialog").one('hidden.bs.modal', function() { return submit_event_with_more_information(ajax_post) });
+		$("#dialog").one('hidden.bs.modal', function() { return submit_event_with_more_information(ajax_post, success_callback) });
 		$("#dialog").modal('show');
 	}
 }
@@ -131,7 +149,7 @@ function unselect_and_refresh()
 	refresh_calendar_and_sidebar();
 }
 
-function submit_event_with_more_information(ajax_post)
+function submit_event_with_more_information(ajax_post, success_callback)
 {
 	if($('#dialog_cancelled').val() === "true")
 		return;
@@ -140,16 +158,30 @@ function submit_event_with_more_information(ajax_post)
 		.fail(ajax_failure_callback("Oops, something went wrong!"))
 		.done(function(response, status, xml_http_request)
 		{
-			return event_creation_success_callback(response, status, xml_http_request, ajax_post)
+			return event_creation_success_callback(response, status, xml_http_request, ajax_post, success_callback)
 		});
+}
+
+function event_render(event, element)
+{
+    if ('tooltip' in event)
+    	element.attr('title', event.tooltip)
+	else if ('title' in event)
+	    element.attr('title', event.title)
+}
+
+function event_after_all_render()
+{
+    {# Show tooltips for events #}
+	$('a.fc-time-grid-event').tooltip({ container: 'body', delay: { "show": 1000, "hide": 100 }})
 }
 
 {# This function is called when the user clicks and drags on the calendar to create a reservation. #}
 function create(start, end, jsEvent, view)
 {
-	{# Find out which tool is selected in the tool tree. #}
+	{# Find out which tool/area is selected in the item tree. #}
 	var item = $(".selected");
-	{# Only allow reservations to be created when a tool has been selected. #}
+	{# Only allow reservations to be created when a item has been selected. #}
 	var item_selected = (item != null);
 	{# Only allow selection to proceed when we're in reservation view (instead of usage view). #}
 	var reservation_view = get_event_type() === 'reservations';
@@ -164,14 +196,17 @@ function create(start, end, jsEvent, view)
 	{
 		"start": start.unix(),
 		"end": end.unix(),
-		"tool_name": item.text(),
+        "item_type": item.data('item-type'),
+        "item_id": item.data('item-id'),
 		"csrfmiddlewaretoken": "{{ csrf_token }}"
 	};
 	{# If the user is trying to create a scheduled outage, then put that in the event_properties. #}
 	{# Otherwise, create a reservation (which is the normal case). #}
 	var url;
 	if($('.fc-scheduledOutage-button').html() === "I've finished creating scheduled outages")
+	{
 		url = "{% url 'create_outage' %}";
+	}
 	else
 	{
 		url = "{% url 'create_reservation' %}";
@@ -179,16 +214,14 @@ function create(start, end, jsEvent, view)
 		if(impersonate)
 			event_properties['impersonate'] = impersonate;
 	}
-	var ajax_post =
+	var post_data =
 	{
 		"url": url,
 		"data": event_properties,
 		"type": "POST",
 		"dataType": "html"
 	};
-	jQuery.ajax(ajax_post)
-		.fail([unselect_and_refresh, ajax_failure_callback("Oops! Something went wrong")])
-		.done(function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, ajax_post) });
+	ajax_post(url, event_properties, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [unselect_and_refresh, ajax_failure_callback("Oops! Something went wrong")])
 }
 
 {# This function is called when the user clicks and drags on the calendar to resize a reservation. #}
@@ -200,10 +233,21 @@ function resize(event, delta, revertFunc, jsEvent, ui, view)
 	var event_changes =
 	{
 		"id": id,
-		"delta": delta.asMinutes()
+		"delta": delta.asMinutes(),
+		"csrfmiddlewaretoken": "{{ csrf_token }}"
 	};
 	if(type === "Reservation")
-		ajax_post("{% url 'resize_reservation' %}", event_changes, event_creation_success_callback, [revertFunc, ajax_failure_callback("Reservation resize failed")], refresh_calendar_and_sidebar);
+	{
+	    let url = "{% url 'resize_reservation' %}"
+	    var post_data =
+		{
+			"url": url,
+			"data": event_changes,
+			"type": "POST",
+			"dataType": "html"
+		};
+	    ajax_post(url, event_changes, function(response, status, xml_http_request){return event_creation_success_callback(response, status, xml_http_request, post_data)}, [revertFunc, ajax_failure_callback("Reservation resize failed")], refresh_calendar_and_sidebar);
+	}
 	else if(type === "Outage")
 		ajax_post("{% url 'resize_outage' %}", event_changes, undefined, [revertFunc, ajax_failure_callback("Outage resize failed")], refresh_calendar_and_sidebar);
 }
@@ -217,10 +261,21 @@ function move(event, delta, revertFunc, jsEvent, ui, view)
 	var event_changes =
 	{
 		"id": id,
-		"delta": delta.asMinutes()
+		"delta": delta.asMinutes(),
+		"csrfmiddlewaretoken": "{{ csrf_token }}"
 	};
 	if(type === "Reservation")
-		ajax_post("{% url 'move_reservation' %}", event_changes, event_creation_success_callback, [revertFunc, ajax_failure_callback("Reservation move failed")], refresh_calendar_and_sidebar);
+	{
+	    let url = "{% url 'move_reservation' %}"
+	    var post_data =
+		{
+			"url": url,
+			"data": event_changes,
+			"type": "POST",
+			"dataType": "html"
+		};
+	    ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [revertFunc, ajax_failure_callback("Reservation move failed")], refresh_calendar_and_sidebar)
+	}
 	else if(type === "Outage")
 		ajax_post("{% url 'move_outage' %}", event_changes, undefined, [revertFunc, ajax_failure_callback("Outage move failed")], refresh_calendar_and_sidebar);
 }
@@ -279,7 +334,7 @@ function create_calendar()
 	{
 		"header":
 		{
-			left: "prev,next today{% if user.is_staff %} proxyReservation scheduledOutage{% endif %}",
+			left: "prev,next today{% if user.is_staff %} proxyReservation scheduledOutage{% endif %} login logout",
 			center: "title",
 			right: "agendaDay,agendaWeek,month"
 		},
@@ -309,6 +364,8 @@ function create_calendar()
 		"selectHelper": true,
 		"select": create,
 		"eventResize": resize,
+		"eventRender": event_render,
+		"eventAfterAllRender": event_after_all_render,
 		"eventDrop": move,
 		"eventClick": details,
 		"height": $("#calendar").height(),
@@ -329,6 +386,14 @@ function create_calendar()
 			"scheduledOutage": {
 				"text": "Schedule an outage",
 				"click": scheduled_outage
+			},
+			"login": {
+				"text": "Login",
+				"click": login_to_area
+			},
+			"logout": {
+				"text": "Logout",
+				"click": logout_of_area
 			}
 		}
 	};
@@ -339,7 +404,9 @@ function reserve_for_someone_else()
 {
 	var proxy_reservation_button = $(".fc-proxyReservation-button")[0];
 	if($(proxy_reservation_button).html() === "Reserve for someone else")
+	{
 		ajax_get('{% url 'proxy_reservation' %}', undefined, reserve_for_someone_else_callback);
+	}
 	else
 	{
 		$(proxy_reservation_button).blur().html("Reserve for someone else");
@@ -352,6 +419,70 @@ function reserve_for_someone_else_callback(response, status, xml_http_request)
 {
 	$("#dialog .modal-content").html(response);
 	$("#dialog").modal('show');
+}
+
+function login_to_area()
+{
+	let item = get_selected_item();
+	if (item && item !== "personal_schedule")
+	{
+	    item = JSON.parse(item)
+		var event_changes =
+		{
+			"area": item.id,
+		{% if user.active_project_count == 1 %}
+			"project": "{{ user.active_projects.0.id }}",
+		{% endif %}
+			"csrfmiddlewaretoken": "{{ csrf_token }}"
+		};
+		let url = "{% url 'calendar_self_log_in' %}"
+		var post_data =
+		{
+			"url": url,
+			"data": event_changes,
+			"type": "POST",
+			"dataType": "html"
+		};
+		let callback = function() {
+		    $(".fc-login-button").hide()
+			{% if self_logout %}
+			$($(".fc-logout-button")[0]).html("Logout of the " + item.element_name)
+			$(".fc-logout-button").show()
+			{% endif %}
+        }
+		ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data, callback) }, [ajax_failure_callback("Login to area failed")], refresh_sidebar_area_icons)
+	}
+}
+
+function logout_of_area()
+{
+    ajax_get("{% url 'self_log_out' user.id %}", null, function () {
+        let login_button = $($(".fc-login-button")[0])
+		$(".fc-logout-button").hide()
+		login_button.html("Login")
+		let item = get_selected_item()
+		if (item && item !== 'personal_schedule')
+		{
+		    item = JSON.parse(item)
+			if (item.type === 'area') login_button.html("Login to the " + item.element_name)
+		}
+		{% if self_login %}login_button.show(){% endif %}
+    }, ajax_failure_callback("Logout of area failed"), refresh_calendar_and_sidebar_area_icons)
+}
+
+function initialize_login_logout_buttons()
+{
+    let login_button = $($(".fc-login-button")[0]);
+    let logout_button = $($(".fc-logout-button")[0]);
+    login_button.hide()
+	logout_button.hide()
+	{% if self_login and not user.in_area %}
+		login_button.show()
+	{% endif %}
+	{% if self_logout and user.in_area %}
+		logout_button.html("Logout of the {{ user.area_access_record.area.name }}")
+		logout_button.show()
+	{% endif %}
 }
 
 function scheduled_outage()
@@ -370,18 +501,24 @@ function scheduled_outage()
 	}
 }
 
-function refresh_calendar_and_sidebar()
+function refresh_calendar_and_sidebar(items)
 {
 	$("#calendar").fullCalendar('refetchEvents');
-	refresh_sidebar_icons();
+	if (items) refresh_sidebar_icons(items);
+	else refresh_sidebar_icons()
+}
+
+function refresh_calendar_and_sidebar_area_icons()
+{
+    refresh_calendar_and_sidebar('area')
 }
 
 function change_calendar_event_type(calling_element)
 {
 	set_event_type(calling_element.text);
 	var expand_collapse = $("#expand-collapse").hide();
-	var tool_search = $("#tool_search").hide();
-	var tool_tree = $("#tool_tree").hide();
+	var item_search = $("#item_search").hide();
+	var item_tree = $(".item_tree, .item_tree_fieldset").hide();
 	var event_type = get_event_type();
 	var extra_links = $("#extra-links");
 	var user_search = $("#user_search").hide();
@@ -394,8 +531,8 @@ function change_calendar_event_type(calling_element)
 		chosen_user_button.hide();
 		extra_links.show();
 		expand_collapse.show();
-		tool_search.show();
-		tool_tree.show();
+		item_search.show();
+		item_tree.show();
 		$(proxy_reservation_button).show();
 		$(scheduled_outage_button).show();
 		update_event_sources();
@@ -406,8 +543,8 @@ function change_calendar_event_type(calling_element)
 		chosen_user_button.hide();
 		extra_links.show();
 		expand_collapse.show();
-		tool_search.show();
-		tool_tree.show();
+		item_search.show();
+		item_tree.show();
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
 		update_event_sources();
@@ -416,10 +553,12 @@ function change_calendar_event_type(calling_element)
 	{
 		extra_links.hide();
 		expand_collapse.hide();
-		tool_search.hide();
-		tool_tree.hide();
+		item_search.hide();
+		item_tree.hide();
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
+		$($('.fc-login-button')[0]).html('Login')
+		$($('.fc-login-button')[0]).addClass('fc-state-disabled')
 		clear_specific_user();
 	}
 }
@@ -441,15 +580,15 @@ function clear_specific_user()
 function on_load()
 {
 	create_calendar();
-	setInterval(refresh_calendar_and_sidebar, 30000);
-	set_tool_link_callback(update_event_sources);
-	enable_tool_tree_toggling();
-	$('#tool_search').autocomplete('tools', on_tool_search_selection, {{ tools|json_search_base }});
-	$("#tool_search").focus();
+	set_interval_when_visible(document, refresh_calendar_and_sidebar, 30000);
+	set_item_link_callback(update_event_sources);
+	enable_item_tree_toggling();
+	$('#item_search').autocomplete('items', on_item_search_selection, {% json_search_base_with_extra_fields tools|add:areas %}, {% if tools and areas %}false{% else %}true{% endif %});
+	$("#item_search").focus();
 	load_sidebar_state();
-	$("#tool_tree").show(); {# Tool tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
-	{% if auto_select_tool %}
-		expand_to_tool({{ auto_select_tool }});
+	$(".item_tree").show(); {# Item tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
+	{% if auto_select_item_id %}
+		expand_to_item({{ auto_select_item_id }}, {{ auto_select_item_type }});
 	{% else %}
 		update_event_sources();
 	{% endif %}
@@ -457,6 +596,7 @@ function on_load()
 		$("#user_search").autocomplete('users', get_specific_user_activity, {{ users|json_search_base }});
 	{% endif %}
 	$('[data-toggle~="tooltip"]').tooltip({ container: 'body' });
+	initialize_login_logout_buttons();
 }
 
 $(on_load);

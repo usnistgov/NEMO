@@ -1,3 +1,21 @@
+String.prototype.capitalize = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
+// This function allows to make regular interval calls to a function only when the tab/window is visible.
+// It also gets called when the tab/window becomes visible (changing tabs, minimizing window etc.)
+function set_interval_when_visible(doc, function_to_repeat, time)
+{
+	doc.addEventListener("visibilitychange", function()
+	{
+		function_to_repeat();
+	});
+	setInterval(function()
+	{
+		if (!doc.hidden) function_to_repeat();
+	}, time)
+}
+
 // This function allows any page to switch between content tabs in
 // the Bootstrap framework. It is generally called upon loading the page.
 function switch_tab(element)
@@ -6,9 +24,9 @@ function switch_tab(element)
 	$(this).tab('show')
 }
 
-function set_tool_link_callback(callback)
+function set_item_link_callback(callback)
 {
-	$("a[data-type='tool link']").each(function()
+	$("a[data-item-type='tool'], a[data-item-type='area']").each(function()
 	{
 		$(this).click({"callback": callback}, callback);
 	});
@@ -16,7 +34,7 @@ function set_tool_link_callback(callback)
 
 // This function allows categories in the tool tree sidebar to be expanded and collapsed.
 // It must be called upon loading any page that uses the tool tree.
-function enable_tool_tree_toggling()
+function enable_item_tree_toggling()
 {
 	$('label.tree-toggler').click(toggle_branch);
 }
@@ -27,24 +45,25 @@ function toggle_branch()
 	$(this).parent().children('ul.tree').toggle(300, save_sidebar_state);
 }
 
-function on_tool_search_selection(jquery_event, search_selection, dataset_name)
+function on_item_search_selection(jquery_event, search_selection, dataset_name)
 {
-	$('#tool_search').typeahead('val', '');
-	expand_to_tool(search_selection.id);
+	$('#item_search').typeahead('val', '');
+	expand_to_item(search_selection.id, search_selection.type);
 }
 
-// This function toggles all parent categories of a tool and selects the tool.
-function expand_to_tool(id)
+// This function toggles all parent categories of a tool/area and selects the tool.
+function expand_to_item(id, type)
 {
 	$("#sidebar a").removeClass('selected');
-	$("a[data-tool-id='" + id + "']").addClass('selected').click().parents('ul.tree').show();
+	$("#"+type+"-"+id).addClass('selected').click().parents('ul.tree').show();
 	save_sidebar_state();
 }
 
 // This function expands all tool category branches for the sidebar in the calendar & tool control pages.
 function expand_all_categories()
 {
-	$("#tool_tree ul.tree").show();
+	$(".item_tree ul.tree.area-list").show();
+	$(".item_tree ul.tree.tool-list").show();
 	$("#search").focus();
 	save_sidebar_state();
 }
@@ -52,21 +71,41 @@ function expand_all_categories()
 // This function collapses all tool category branches for the sidebar in the calendar & tool control pages.
 function collapse_all_categories()
 {
-	$("#tool_tree ul.tree").hide();
+	$(".item_tree ul.tree.tool-list").hide();
+	$(".item_tree ul.tree.area-list").hide();
 	$("#search").focus();
 	save_sidebar_state();
 }
 
-function get_selected_item()
+function toggle_item_categories(item_type)
 {
+	let one_visible = $(".item_tree ul.tree."+item_type+"-list li:visible").length >0;
+	if (one_visible)
+	{
+		$(".item_tree ul.tree."+item_type+"-list").hide();
+	}
+	else
+	{
+		$(".item_tree ul.tree."+item_type+"-list").show();
+	}
+	$("#search").focus();
+	save_sidebar_state();
+}
+
+function get_selected_item() {
 	let selected_item = $(".selected");
 	// Exactly one thing should be selected at a time, otherwise there's an error.
-	if(!(selected_item && selected_item.length === 1))
-		return undefined;
-	// Check if the selected item is a special link. Otherwise, get its tool ID.
-	if($(selected_item[0]).hasClass('personal_schedule'))
+	if (!(selected_item && selected_item.length === 1))
+	{
+	return undefined;
+	}
+	let jq_selected_item = $(selected_item[0])
+	// Check if the selected item is a special link. Otherwise, get its item ID.
+	if(jq_selected_item.hasClass('personal_schedule'))
+	{
 		return 'personal_schedule';
-	return $(selected_item[0]).data('tool-id');
+	}
+	return JSON.stringify({'id': jq_selected_item.data('item-id'), 'type': jq_selected_item.data('item-type'), 'element_name': jq_selected_item.data('item-name')});
 }
 
 // This function visually highlights a clicked link with a gray background.
@@ -77,49 +116,67 @@ function set_selected_item(element)
 	save_sidebar_state();
 }
 
-function set_selected_item_by_id(tool_id)
+function set_selected_item_by_id(item_id, item_type)
 {
-	let tool = $("#tool_tree [data-tool-id=" + tool_id + "]");
-	if(tool.length === 1)
+	let item = $("#" + item_type + "-" + item_id);
+	if(item.length === 1)
 	{
 		$("#sidebar a").removeClass('selected');
-		tool.addClass('selected');
+		item.addClass('selected');
 	}
 }
 
 function save_sidebar_state()
 {
 	localStorage.clear();
-	let categories = $("#tool_tree ul.tree");
+	let categories = $(".item_tree ul.tree");
 	for(let c = 0; c < categories.length; c++)
 	{
 		let category = categories[c].getAttribute('data-category');
 		localStorage[category] = $(categories[c]).is(':visible');
 	}
-	localStorage['Selected tool ID'] = get_selected_item();
+	localStorage['Selected item ID'] = get_selected_item();
 }
 
 function load_sidebar_state()
 {
-	let categories = $("#tool_tree ul.tree");
+	let categories = $(".item_tree ul.tree");
 	for(let c = 0; c < categories.length; c++)
 	{
 		let category = categories[c];
 		let name = category.getAttribute('data-category');
 		let state = localStorage[name];
 		if(state === "true")
+		{
 			$(category).show();
+		}
 		else
+		{
 			$(category).hide();
+		}
 	}
-	let selected = localStorage['Selected tool ID'];
-	if(selected)
-		set_selected_item_by_id(selected);
+	let selected = localStorage['Selected item ID'];
+	if(selected && selected !== 'personal_schedule')
+	{
+		let selected_item = JSON.parse(selected)
+		set_selected_item_by_id(selected_item.id, selected_item.type);
+	}
 }
 
-function refresh_sidebar_icons()
+function refresh_sidebar_area_icons()
 {
-	$.getScript('/refresh_sidebar_icons/');
+	refresh_sidebar_icons('area')
+}
+
+function refresh_sidebar_tool_icons()
+{
+	refresh_sidebar_icons('tool')
+}
+
+function refresh_sidebar_icons(items)
+{
+	if (items) $.getScript('/refresh_sidebar_icons/'+items+'/');
+	else $.getScript('/refresh_sidebar_icons/');
 }
 
 // Use this function to display a Bootstrap modal when an AJAX call is successful and contains content to render.
@@ -161,8 +218,10 @@ function ajax_complete_callback(title, preface)
 	preface = preface || "";
 	function callback(response, status, xml_header_request)
 	{
-		if(status !== "error")
+		if (status !== "error")
+		{
 			return;
+		}
 		let dialog_contents =
 			"<div class='modal-header'>" +
 			"<button type='button' class='close' data-dismiss='modal'>&times;</button>" +
@@ -181,8 +240,10 @@ function ajax_complete_callback(title, preface)
 // Take all the elements in a form and put them in a JavaScript object.
 function serialize(form_selector, ajax_message)
 {
-	if(ajax_message === undefined)
+	if (ajax_message === undefined)
+	{
 		ajax_message = {};
+	}
 	let form_values = $(form_selector).serializeArray();
 	for(let c = 0; c < form_values.length; c++)
 		ajax_message[form_values[c].name] = form_values[c].value;
@@ -197,7 +258,9 @@ function ajax_get(url, contents, success_callback, failure_callback, always_call
 function ajax_post(url, contents, success_callback, failure_callback, always_callback, traditional_serialization)
 {
 	if(contents === undefined)
+	{
 		contents = {};
+	}
 	//noinspection JSUnresolvedFunction
 	contents.csrfmiddlewaretoken = csrf_token();
 	ajax_message(url, "POST", contents, success_callback, failure_callback, always_callback, traditional_serialization)
@@ -213,11 +276,17 @@ function ajax_message(url, type, contents, success_callback, failure_callback, a
 	};
 	let message = jQuery.ajax(url, options);
 	if(success_callback !== undefined)
+	{
 		message.done(success_callback);
+	}
 	if(failure_callback !== undefined)
+	{
 		message.fail(failure_callback);
+	}
 	if(always_callback !== undefined)
+	{
 		message.always(always_callback);
+	}
 }
 
 //noinspection JSUnusedGlobalSymbols
@@ -259,16 +328,22 @@ function add_to_list(list_selector, on_click, id, text, removal_title, input_nam
 		'<input type="hidden" name="' + input_name + '" value="' + id + '"><br>' +
 		'</div>';
 	if($(list_selector).find('input').length === 0) // If the list is empty then replace the empty message with the list item.
+	{
 		$(list_selector).html(addition);
+	}
 	else if($(div_id_selector).length === 0) // Only add the element if it's not already in the list.
+	{
 		$(list_selector).append(addition);
+	}
 }
 
 function remove_from_list(list_selector, div_id_selector, emptyMessage)
 {
 	$(list_selector + " > " + div_id_selector).remove();
 	if($(list_selector).find('input').length === 0) // If the list is empty then replace it with the empty message.
+	{
 		$(list_selector).html(emptyMessage);
+	}
 }
 
 // From http://twitter.github.io/typeahead.js/examples/
@@ -311,8 +386,9 @@ function matcher(items, search_fields)
 // $('#search').autocomplete('fruits', on_select, [{name:'apple', id:1}, {name:'banana', id:2}, {name:'cherry', id:3}]);
 (function($)
 {
-	$.fn.autocomplete = function(dataset_name, select_callback, items_to_search)
+	$.fn.autocomplete = function(dataset_name, select_callback, items_to_search, hide_type)
 	{
+		hide_type = hide_type || false;
 		let search_fields = ['name', 'application_identifier'];
 		let datasets =
 		{
@@ -325,10 +401,14 @@ function matcher(items, search_fields)
 			'suggestion': function(data)
 			{
 				let result = data['name'];
-				if(data['type'])
-					result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'] + '</span>';
+				if(!hide_type && data['type'])
+				{
+					result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'].capitalize() + '</span>';
+				}
 				if(data['application_identifier'])
+				{
 					result += '<span style="font-size:small; font-weight:bold; color:#bbbbbb" class="pull-right">' + data['application_identifier'] + '</span>';
+				}
 				return result;
 			}
 		};
@@ -356,5 +436,7 @@ function matcher(items, search_fields)
 function navigate_to_login_on_session_expiration(event, xhr, status, error)
 {
 	if(xhr.status === 403)
+	{
 		window.location.href = '/logout/';
+	}
 }

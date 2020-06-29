@@ -31,12 +31,7 @@
 		<div style="margin-top: 15px">
 			<div class="form-group col-md-3">Area:</div>
 			<div class="form-group">
-				<select name="area" id="area">
-					<option value="">All</option>
-					{% for area in areas %}
-						<option {% if area_name == area.name %}selected{% endif %}>{{ area.name }}</option>
-					{% endfor %}
-				</select>
+				{{ area_select_field }}
 			</div>
 		</div>
 		<div class="form-group col-md-12" style="margin-top: 15px">

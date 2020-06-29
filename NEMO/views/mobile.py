@@ -9,42 +9,64 @@ from django.utils import timezone
 from django.utils.dateparse import parse_time, parse_date
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.models import Reservation, Tool, Project, ScheduledOutage
+from NEMO.models import Reservation, Tool, Project, ScheduledOutage, User, Area, ReservationItemType
 from NEMO.utilities import extract_date, localize, beginning_of_the_day, end_of_the_day
 from NEMO.views.calendar import extract_configuration, determine_insufficient_notice
+from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_save_reservation
 
 
 @login_required
 @require_GET
-def choose_tool(request, next_page):
+def choose_item(request, next_page):
+	user: User = request.user
+	tools = Tool.objects.filter(visible=True).order_by('_category', 'name')
 	dictionary = {
-		'tools': Tool.objects.filter(visible=True).order_by('_category', 'name'),
+		'tools': list(tools),
+		'areas': [],
 	}
 	if next_page == 'view_calendar':
 		# If the user has no active projects then they're not allowed to make reservations. Redirect them home.
-		if request.user.active_project_count() == 0:
+		if user.active_project_count() == 0:
 			return render(request, 'mobile/no_active_projects.html')
-		dictionary['title'] = "Which tool calendar would you like to view?"
+		areas = Area.objects.filter(requires_reservation=True).only('name')
+		# We want to remove areas the user doesn't have access to
+		display_all_areas = get_customization('calendar_display_not_qualified_areas') == 'enabled'
+		if not display_all_areas and areas and user and not user.is_superuser:
+			areas = [area for area in areas if area in user.accessible_areas()]
+
+		tool_area = 'tool/area'
+		if tools and not areas:
+			tool_area = 'tool'
+		if areas and not tools:
+			tool_area = 'area'
+
+		dictionary['areas'] = list(areas)
+		dictionary['title'] = f"Which {tool_area} calendar would you like to view?"
 		dictionary['next_page'] = 'view_calendar'
 	elif next_page == 'tool_control':
 		dictionary['title'] = "Which tool control page would you like to view?"
 		dictionary['next_page'] = 'tool_control'
-	return render(request, 'mobile/choose_tool.html', dictionary)
+	return render(request, 'mobile/choose_item.html', dictionary)
 
 
 @login_required
 @require_GET
-def new_reservation(request, tool_id, date=None):
+def new_reservation(request, item_type, item_id, date=None):
 	# If the user has no active projects then they're not allowed to make reservations.
 	if request.user.active_project_count() == 0:
 		return render(request, 'mobile/no_active_projects.html')
 
-	tool = get_object_or_404(Tool, id=tool_id)
-	dictionary = tool.get_configuration_information(user=request.user, start=None)
-	dictionary['tool'] = tool
+	item_type = ReservationItemType(item_type)
+	item = get_object_or_404(item_type.get_object_class(), id=item_id)
+	if item_type == ReservationItemType.TOOL:
+		dictionary = item.get_configuration_information(user=request.user, start=None)
+	else:
+		dictionary = {}
+	dictionary['item'] = item
+	dictionary['item_type'] = item_type.value
 	dictionary['date'] = date
-	dictionary['tool_reservation_times'] = list(Reservation.objects.filter(tool=tool, start__gte=timezone.now()))
+	dictionary['item_reservation_times'] = list(Reservation.objects.filter(**{item_type.value: item}).filter(cancelled=False, missed=False, shortened=False, start__gte=timezone.now()))
 
 	return render(request, 'mobile/new_reservation.html', dictionary)
 
@@ -59,16 +81,20 @@ def make_reservation(request):
 		end = localize(datetime.combine(date, parse_time(request.POST['end'])))
 	except:
 		return render(request, 'mobile/error.html', {'message': 'Please enter a valid date, start time, and end time for the reservation.'})
-	tool = get_object_or_404(Tool, id=request.POST.get('tool_id'))
+	item_type = ReservationItemType(request.POST['item_type'])
+	item = get_object_or_404(item_type.get_object_class(), id=request.POST.get('item_id'))
 	# Create the new reservation:
 	reservation = Reservation()
 	reservation.user = request.user
 	reservation.creator = request.user
-	reservation.tool = tool
+	reservation.reservation_item = item
 	reservation.start = start
 	reservation.end = end
-	reservation.short_notice = determine_insufficient_notice(tool, start)
-	policy_problems, overridable = check_policy_to_save_reservation(None, reservation, request.user, False)
+	if item_type == ReservationItemType.TOOL:
+		reservation.short_notice = determine_insufficient_notice(item, start)
+	else:
+		reservation.short_notice = False
+	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=reservation, user_creating_reservation=request.user, explicit_policy_override=False)
 
 	# If there was a problem in saving the reservation then return the error...
 	if policy_problems:
@@ -91,8 +117,9 @@ def make_reservation(request):
 
 @login_required
 @require_GET
-def view_calendar(request, tool_id, date=None):
-	tool = get_object_or_404(Tool, id=tool_id)
+def view_calendar(request, item_type, item_id, date=None):
+	item_type = ReservationItemType(item_type)
+	item = get_object_or_404(item_type.get_object_class(), id=item_id)
 	if date:
 		try:
 			date = extract_date(date)
@@ -105,14 +132,22 @@ def view_calendar(request, tool_id, date=None):
 	start = beginning_of_the_day(date, in_local_timezone=True)
 	end = end_of_the_day(date, in_local_timezone=True)
 
-	reservations = Reservation.objects.filter(tool=tool, cancelled=False, missed=False, shortened=False)
+	reservations = Reservation.objects.filter(**{item_type.value: item}).filter(cancelled=False, missed=False, shortened=False).filter(**{})
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
 	reservations = reservations.exclude(start__lt=start, end__lt=start)
 	reservations = reservations.exclude(start__gt=end, end__gt=end)
 
-	outages = ScheduledOutage.objects.filter(Q(tool=tool) | Q(resource__fully_dependent_tools__in=[tool]))
+	outages = ScheduledOutage.objects.none()
+	if item_type == ReservationItemType.TOOL:
+		outages = ScheduledOutage.objects.filter(Q(tool=item) | Q(resource__fully_dependent_tools__in=[item]))
+	elif item_type == ReservationItemType.AREA:
+		outages = item.scheduled_outage_queryset()
+
+	# Exclude outages for which the following is true:
+	# The outage starts and ends before the time-window, and...
+	# The outage starts and ends after the time-window.
 	outages = outages.exclude(start__lt=start, end__lt=start)
 	outages = outages.exclude(start__gt=end, end__gt=end)
 
@@ -120,7 +155,8 @@ def view_calendar(request, tool_id, date=None):
 	events.sort(key=lambda x: x.start)
 
 	dictionary = {
-		'tool': tool,
+		'item': item,
+		'item_type': item_type.value,
 		'previous_day': start - timedelta(days=1),
 		'current_day': start,
 		'current_day_string': date.strftime('%Y-%m-%d'),

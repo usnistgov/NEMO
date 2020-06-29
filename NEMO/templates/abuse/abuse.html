@@ -43,8 +43,11 @@
 			<div class="col-sm-3">
 				<select id="target" name="target" class="form-control">
 					<option value="">Entire {{ facility_name }}</option>
+					{% for area in area_widget.choices %}
+						<option value="area|{{ area.0 }}" {% if item_type == 'area' and item_id == area.0 %}selected{% endif %}>{{ area.1 }} (Area)</option>
+					{% endfor %}
 					{% for tool in tools %}
-						<option value="{{ tool.id }}">{{ tool.name }}</option>
+						<option value="tool|{{ tool.id }}" {% if item_type == 'tool' and item_id == tool.id %}selected{% endif %}>{{ tool.name }}</option>
 					{% endfor %}
 				</select>
 			</div>

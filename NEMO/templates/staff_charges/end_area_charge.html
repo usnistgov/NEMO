@@ -6,7 +6,7 @@
 		<form action="{% url 'end_staff_area_charge' %}" class="form-horizontal" method="post">
 			{% csrf_token %}
 			<div class="form-group">
-				<input type="submit" class="btn btn-primary" style="white-space:normal" value="I am no longer in the {{ area|lower }} on behalf of this user">
+				<input type="submit" class="btn btn-primary" style="white-space:normal" value="I am no longer in the {{ area }} on behalf of this user">
 			</div>
 		</form>
 	</div>

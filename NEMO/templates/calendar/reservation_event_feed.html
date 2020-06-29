@@ -1,10 +1,20 @@
 [
 	{% for x in events %}
 	{
-		{% if personal_schedule %}
-			"title": "{{ x.title|default:x.tool.name|escapejs }}",
+		{% if personal_schedule and x.tool %}
+			"title": "{{ x.title|default:x.reservation_item.name|escapejs }}",
+			"color": "#33ad33",
+		{% elif personal_schedule and x.area %}
+			"title": "{{ x.title|default:x.reservation_item.name|escapejs }}",
+			"color": "#84CD84",
 		{% else %}
 			"title": "{{ x.title|default:x.user|escapejs }}",
+			"color": {% if x.user.id == user.id %}"#3a87ad"{% else %}"#88B7CD"{% endif %},
+		{% endif %}
+		{% if x.creator.id == x.user.id %}
+			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user }}",
+		{% else %}
+			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user }}, created by {{ x.creator }}",
 		{% endif %}
 		"id": "Reservation {{ x.id }}",
 		{# The reservation creator or staff may edit the event: #}

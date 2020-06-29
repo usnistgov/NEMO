@@ -68,7 +68,7 @@
 		if(occupancy)
 		{
 			fetch_occupancy();
-			setInterval(fetch_occupancy, 30000);
+			set_interval_when_visible(document, fetch_occupancy, 30000);
 		}
 
 		function load_complete(response, status, xml_http_request)

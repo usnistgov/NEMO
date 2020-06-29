@@ -6,6 +6,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models.fields.files import FieldFile
 from django.utils.html import format_html
+from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
 
 from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks, \
 	duplicate_tool_configuration
@@ -125,7 +126,7 @@ class ToolAdminForm(forms.ModelForm):
 
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
-	list_display = ('name_display', 'id', '_category', 'visible', 'operational_display', 'problematic', 'is_configurable')
+	list_display = ('name_display', '_category', 'visible', 'operational_display', 'problematic', 'is_configurable', 'id')
 	search_fields = ('name', '_description', '_serial')
 	list_filter = ('visible', '_operational', '_category', '_location')
 	readonly_fields = ('_post_usage_preview',)
@@ -171,6 +172,37 @@ class ToolAdmin(admin.ModelAdmin):
 				obj.nonrequired_resource_set.set(form.cleaned_data['nonrequired_resources'])
 
 
+@register(Area)
+class AreaAdmin(DraggableMPTTAdmin):
+	list_display = ('tree_actions', 'indented_title', 'name', 'parent_area', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
+	fieldsets = (
+		(None, {'fields': ('name', 'parent_area', 'category'),}),
+		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message'),}),
+		('Occupancy', {'fields': ('maximum_capacity', 'count_staff_in_occupancy', 'reservation_warning'),}),
+		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
+		('Policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time',),}),
+	)
+	list_display_links = ('indented_title',)
+	list_filter = ('requires_reservation', ('parent_area', TreeRelatedFieldListFilter))
+	search_fields = ('name',)
+
+	mptt_level_indent = 20
+
+	def get_fieldsets(self, request, obj:Area=None):
+		"""
+		Remove some fieldsets if this area is a parent
+		"""
+		if obj and not obj.is_leaf_node():
+			return [i for i in self.fieldsets if i[0] not in ['Area access', 'Reservation', 'Policy']]
+		return super().get_fieldsets(request, obj)
+
+	def save_model(self, request, obj:Area, form, change):
+		if obj.parent_area:
+			# if this area has a parent, that parent needs to be cleaned and updated
+			obj.parent_area.is_now_a_parent()
+		super(AreaAdmin, self).save_model(request, obj, form, change)
+
+
 @register(TrainingSession)
 class TrainingSessionAdmin(admin.ModelAdmin):
 	list_display = ('id', 'trainer', 'trainee', 'tool', 'project', 'type', 'date', 'duration', 'qualified')
@@ -188,7 +220,7 @@ class StaffChargeAdmin(admin.ModelAdmin):
 @register(AreaAccessRecord)
 class AreaAccessRecordAdmin(admin.ModelAdmin):
 	list_display = ('id', 'customer', 'area', 'project', 'start', 'end')
-	list_filter = ('area', 'start',)
+	list_filter = (('area', TreeRelatedFieldListFilter), 'start',)
 	date_hierarchy = 'start'
 
 
@@ -288,7 +320,7 @@ class UsageEventAdmin(admin.ModelAdmin):
 
 @register(Consumable)
 class ConsumableAdmin(admin.ModelAdmin):
-	list_display = ('name', 'quantity', 'category', 'visible', 'reminder_threshold', 'reminder_email')
+	list_display = ('name', 'quantity', 'category', 'visible', 'reminder_threshold', 'reminder_email', 'id')
 	list_filter = ('visible', 'category')
 
 
@@ -470,7 +502,7 @@ class SafetyIssueAdmin(admin.ModelAdmin):
 
 @register(Door)
 class DoorAdmin(admin.ModelAdmin):
-	list_display = ('name', 'area', 'interlock', 'get_absolute_url')
+	list_display = ('name', 'area', 'interlock', 'get_absolute_url', 'id')
 
 
 @register(AlertCategory)
@@ -492,9 +524,37 @@ class AlertAdmin(admin.ModelAdmin):
 	form = AlertAdminForm
 
 
+class PhysicalAccessLevelForm(forms.ModelForm):
+	class Meta:
+		model = PhysicalAccessLevel
+		fields = '__all__'
+
+	authorized_users = forms.ModelMultipleChoiceField(
+		queryset=User.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(
+			verbose_name='Users',
+			is_stacked=False
+		)
+	)
+
+	def __init__(self, *args, **kwargs):
+		super(PhysicalAccessLevelForm, self).__init__(*args, **kwargs)
+		if self.instance.pk:
+			self.fields['authorized_users'].initial = self.instance.user_set.all()
+
+
 @register(PhysicalAccessLevel)
 class PhysicalAccessLevelAdmin(admin.ModelAdmin):
-	list_display = ('name', 'area', 'schedule')
+	form = PhysicalAccessLevelForm
+	list_display = ('name', 'area', 'schedule', 'allow_staff_access')
+	list_filter = (('area', TreeRelatedFieldListFilter),)
+
+	def save_model(self, request, obj, form, change):
+		"""
+		Explicitly record any membership changes.
+		"""
+		record_remote_many_to_many_changes_and_save(request, obj, form, change, 'authorized_users', super(PhysicalAccessLevelAdmin, self).save_model)
 
 
 @register(ContactInformationCategory)
@@ -525,7 +585,7 @@ class ScheduledOutageCategoryAdmin(admin.ModelAdmin):
 
 @register(ScheduledOutage)
 class ScheduledOutageAdmin(admin.ModelAdmin):
-	list_display = ('id', 'tool', 'resource', 'creator', 'title', 'start', 'end')
+	list_display = ('id', 'tool', 'area', 'resource', 'creator', 'title', 'start', 'end')
 
 
 @register(News)
@@ -540,5 +600,4 @@ class NotificationAdmin(admin.ModelAdmin):
 
 
 admin.site.register(ResourceCategory)
-admin.site.register(Area)
 admin.site.register(Permission)

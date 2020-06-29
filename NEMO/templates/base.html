@@ -53,7 +53,7 @@
 	<title>{% block title %}{% endblock %}</title>
 </head>
 <body>
-{% if 'no_header' in request.session and request.session.no_header %}
+{% if no_header %}
 	<div style="height: 15px;"></div>
 {% else %}
 	{% include 'navbar.html' %}

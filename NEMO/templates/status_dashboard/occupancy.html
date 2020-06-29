@@ -1,55 +1,35 @@
-{% if facility_occupants|length == 0 %}
+{% if no_occupants %}
 	Nobody is in an access controlled {{ facility_name }} area.
 {% else %}
-	Staff members are highlighted in <span class="success-highlight">green</span>.<p>
-	{% regroup facility_occupants|dictsort:"area.name" by area as area_occupants %}
-	{% for area in area_occupants %}
-		{# Panel is used to make table borders rounded. #}
-		<div class="panel panel-default">
-			<table class="table table-bordered table-condensed">
-				<thead>
-				<tr>
-					<th colspan="4">
-						<span class="primary-highlight">{{ area.grouper }}</span>
-						{% if area.list|length > 1 %}
-							<span class="pull-right">
-								{% if area.grouper.maximum_capacity != 0 and area.grouper.occupancy_count >= area.grouper.danger_capacity %}<span style="color:red"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
-								{% elif area.grouper.maximum_capacity != 0 and area.grouper.occupancy_count >= area.grouper.warning_capacity %}<span style="color:orange"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
-								{% else %}<span>{% endif %}
-									{{ area.grouper.occupancy_count }}
-								</span>{% if area.grouper.maximum_capacity != 0 %} / {{ area.grouper.maximum_capacity }}{% endif %} people
-								{% if area.list|length != area.grouper.occupancy_count %}
-									{% with occupancy=area.grouper.occupancy_count|stringformat:"d"  %}
-										{% with negative_occupancy="-"|add:occupancy %}
-											(+ {{ area.list|length|add:negative_occupancy }} staff)
-										{% endwith %}
-									{% endwith %}
+	<p>
+		Staff members are highlighted in <span class="success-highlight">green</span>.<br>
+		Users with expired reservations are highlighted in <span class="danger-highlight">red</span>.
+	</p>
+	<ul class="area-tree-list area-tree-root" style="margin-top: 25px;padding-left: 0">
+		{% for area_item in area_items %}
+			{% if area_item == "in" %}
+				<ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ forloop.counter }}">
+			{% else %}
+				{% if area_item == "out" %}
+						</ul>
+					</li>
+				{% else %}
+					{% if area_item.leaf %}
+						<li class="area-tree-leaf">
+							{% include 'occupancy/occupancy_content.html' with area=area_item.item occupants=area_item.occupants show_force_logout=True %}
+						</li>
+					{% else %}
+						<li class="area-tree-node">
+							<a class="h3" onclick="toggle_details(this)" data-toggle="collapse" aria-expanded="true" data-target="#area-{{ forloop.counter|add:1 }}">
+								<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+								<span class="media-heading">{{ area_item.name }}</span>
+								{% if area_item.maximum_capacity %}
+									 <span style="font-size: large;padding-left: 40px">{% include 'occupancy/occupancy_count.html' with area=area_item.item %}</span>
 								{% endif %}
-							</span>
-						{% endif %}
-					</th>
-				</tr>
-				<tr>
-					<th>User</th>
-					<th>Since</th>
-					<th>Working on project...</th>
-				</tr>
-				</thead>
-				<tbody>
-				{% for o in area.list %}
-					<tr>
-						<td>
-							{% if user.is_staff %}
-								<span class="glyphicon glyphicon-remove-circle grey pointer" onclick="force_user_out_of_the_area('{% url 'force_area_logout' o.customer_id %}')" title="Force {{ o.customer }} to log out of the {{ o.area }}"></span>
-							{% endif %}
-							<span {% if o.customer.is_staff %}class="success-highlight"{% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
-						</td>
-						<td>{{ o.start|date:"l @ g:i A" }}</td>
-						<td>{{ o.project }}</td>
-					</tr>
-				{% endfor %}
-				</tbody>
-			</table>
-		</div>
-	{% endfor %}
+							</a>
+					{% endif %}
+				{% endif %}
+			{% endif %}
+		{% endfor %}
+	</ul>
 {% endif %}

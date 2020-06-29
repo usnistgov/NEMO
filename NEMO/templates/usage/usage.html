@@ -20,7 +20,7 @@
 				<h3>Missed reservations</h3>
 				{% for m in missed_reservations %}
 					<div class="alert alert-danger">
-						<span style="font-weight:bold">{{ m.tool }}</span><br>
+						<span style="font-weight:bold">{{ m.reservation_item }}</span><br>
 						{{ m.start }}<br>
 						Charged to project {{ m.project }}
 					</div>

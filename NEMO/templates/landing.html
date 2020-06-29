@@ -24,14 +24,14 @@
 			<div class="col-lg-4">
 				<h3>Upcoming reservations</h3>
 				{% for r in upcoming_reservations %}
-					<a href="{% url 'tool_control' r.tool.id %}" style="text-decoration: none">
+					{% if r.tool %}<a href="{% url 'tool_control' r.tool.id %}" style="text-decoration: none">{% endif %}
 						<div class="alert {% if r.start < now %}alert-warning{% else %}alert-success{% endif %}">
 							{% if r.title %}<b>{{ r.title }}</b><br>{% endif %}
-							<b>{% if r.start < now %}You're late for your {{ r.tool }} reservation!{% else %}{{ r.tool }}{% endif %}</b><br>
+							<b>{% if r.start < now %}You're late for your {{ r.reservation_item }} reservation!{% else %}{{ r.reservation_item }}{% endif %}</b><br>
 							Starting on {{ r.start|date:"l, F jS @ g:i A" }}<br>
 							Ending on {{ r.end|date:"l, F jS @ g:i A" }}
 						</div>
-					</a>
+					{% if r.tool %}</a>{% endif %}
 				{% endfor %}
 			</div>
 		{% endif %}
@@ -65,7 +65,7 @@
 				{% if user.in_area %}
 					{% with user.active_project_count as active_project_count %}
 						<div class="alert alert-info">
-							You are logged in to the <b>{{ user.area_access_record.area|lower }}</b>{% if self_log_out %} (<a href="{% url 'self_log_out' user.id %}">logout</a>){% endif %}.
+							You are logged in to the <b>{{ user.area_access_record.area }}</b>{% if self_log_out %} (<a href="{% url 'self_log_out' user.id %}">logout</a>){% endif %}.
 							Usage time is being billed to the project named <b>{{ user.billing_to_project }}</b>.
 							{% if active_project_count > 1 %}
 								<a href="{% url 'change_project' %}">Click here to bill to a different project at any time.</a>

@@ -10,6 +10,7 @@ from django.urls import path
 from django.views.static import serve
 from rest_framework import routers
 
+from NEMO.models import ReservationItemType
 from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,8 @@ router.register(r'area_access_records', api.AreaAccessRecordViewSet)
 router.register(r'tasks', api.TaskViewSet)
 router.register(r'scheduled_outages', api.ScheduledOutageViewSet)
 
+reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
+
 urlpatterns = [
 	# Authentication & error pages:
 	url(r'^login/$', authentication.login_user, name='login'),
@@ -46,6 +49,7 @@ urlpatterns = [
 	url(r'^get_projects_for_self/$', get_projects.get_projects_for_self, name='get_projects_for_self'),
 
 	# Tool control:
+	url(r'^tool_control/tool/(?P<tool_id>\d+)/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_control/(?P<tool_id>\d+)/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_control/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_status/(?P<tool_id>\d+)/$', tool_control.tool_status, name='tool_status'),
@@ -66,7 +70,7 @@ urlpatterns = [
 	url(r'^task_resolution_form/(?P<task_id>\d+)/$', tasks.task_resolution_form, name='task_resolution_form'),
 
 	# Calendar:
-	url(r'^calendar/(?P<tool_id>\d+)/$', calendar.calendar, name='calendar'),
+	url(r'^calendar/'+ reservation_item_types + '/(?P<item_id>\d+)/$', calendar.calendar, name='calendar'),
 	url(r'^calendar/$', calendar.calendar, name='calendar'),
 	url(r'^event_feed/$', calendar.event_feed, name='event_feed'),
 	url(r'^create_reservation/$', calendar.create_reservation, name='create_reservation'),
@@ -107,6 +111,7 @@ urlpatterns = [
 
 	# Utility functions:
 	url(r'^refresh_sidebar_icons/$', sidebar.refresh_sidebar_icons, name='refresh_sidebar_icons'),
+	url(r'^refresh_sidebar_icons/'+reservation_item_types+'/$', sidebar.refresh_sidebar_icons, name='refresh_sidebar_icons'),
 
 	# Facility feedback
 	url(r'^feedback/$', feedback.feedback, name='feedback'),
@@ -124,7 +129,7 @@ urlpatterns = [
 	url(r'^get_email_form_for_user/(?P<user_id>\d+)/$', email.get_email_form_for_user, name='get_email_form_for_user'),
 	url(r'^send_email/$', email.send_email, name='send_email'),
 	url(r'^email_broadcast/$', email.email_broadcast, name='email_broadcast'),
-	url(r'^email_broadcast/(?P<audience>tool|account|project)/$', email.email_broadcast, name='email_broadcast'),
+	url(r'^email_broadcast/(?P<audience>tool|area|account|project)/$', email.email_broadcast, name='email_broadcast'),
 	url(r'^email_preview/$', email.email_preview, name='email_preview'),
 	url(r'^compose_email/$', email.compose_email, name='compose_email'),
 	url(r'^send_broadcast_email/$', email.send_broadcast_email, name='send_broadcast_email'),
@@ -154,12 +159,12 @@ urlpatterns = [
 	url(r'^safety/update/(?P<ticket_id>\d+)/$', safety.update_safety_issue, name='update_safety_issue'),
 
 	# Mobile:
-	url(r'^choose_tool/then/(?P<next_page>view_calendar|tool_control)/$', mobile.choose_tool, name='choose_tool'),
-	url(r'^new_reservation/(?P<tool_id>\d+)/$', mobile.new_reservation, name='new_reservation'),
-	url(r'^new_reservation/(?P<tool_id>\d+)/(?P<date>20\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01]))/$', mobile.new_reservation, name='new_reservation'),
+	url(r'^choose_item/then/(?P<next_page>view_calendar|tool_control)/$', mobile.choose_item, name='choose_item'),
+	url(r'^new_reservation/'+reservation_item_types+'/(?P<item_id>\d+)/$', mobile.new_reservation, name='new_reservation'),
+	url(r'^new_reservation/'+reservation_item_types+'/(?P<item_id>\d+)/(?P<date>20\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01]))/$', mobile.new_reservation, name='new_reservation'),
 	url(r'^make_reservation/$', mobile.make_reservation, name='make_reservation'),
-	url(r'^view_calendar/(?P<tool_id>\d+)/$', mobile.view_calendar, name='view_calendar'),
-	url(r'^view_calendar/(?P<tool_id>\d+)/(?P<date>20\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01]))/$', mobile.view_calendar, name='view_calendar'),
+	url(r'^view_calendar/'+reservation_item_types+'/(?P<item_id>\d+)/$', mobile.view_calendar, name='view_calendar'),
+	url(r'^view_calendar/'+reservation_item_types+'/(?P<item_id>\d+)/(?P<date>20\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01]))/$', mobile.view_calendar, name='view_calendar'),
 
 	# Contact staff:
 	url(r'^contact_staff/$', contact_staff.contact_staff, name='contact_staff'),
@@ -168,6 +173,7 @@ urlpatterns = [
 	url(r'^change_project/$', area_access.change_project, name='change_project'),
 	url(r'^change_project/(?P<new_project>\d+)/$', area_access.change_project, name='change_project'),
 	url(r'^force_area_logout/(?P<user_id>\d+)/$', area_access.force_area_logout, name='force_area_logout'),
+	url(r'^calendar_self_log_in/$', area_access.calendar_self_login, name='calendar_self_log_in'),
 	url(r'^self_log_in/$', area_access.self_log_in, name='self_log_in'),
 	url(r'^self_log_out/(?P<user_id>\d+)$', area_access.self_log_out, name='self_log_out'),
 
@@ -208,6 +214,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		# Reminders and periodic events
 		url(r'^email_reservation_reminders/$', calendar.email_reservation_reminders, name='email_reservation_reminders'),
 		url(r'^email_usage_reminders/$', calendar.email_usage_reminders, name='email_usage_reminders'),
+		url(r'^email_out_of_time_reservation_notification/$', calendar.email_out_of_time_reservation_notification, name='email_out_of_time_reservation_notification'),
 		url(r'^cancel_unused_reservations/$', calendar.cancel_unused_reservations, name='cancel_unused_reservations'),
 
 		# Abuse:

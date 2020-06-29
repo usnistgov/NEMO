@@ -41,12 +41,15 @@ customizable_key_values = {
 	'site_title': 'NEMO',
 	'self_log_in': '',
 	'self_log_out': '',
+	'calendar_login_logout': '',
+	'dashboard_display_not_qualified_areas': '',
 	'calendar_view': 'agendaWeek',
 	'calendar_first_day_of_week': '1',
 	'calendar_day_column_format': 'dddd MM/DD/YYYY',
 	'calendar_week_column_format': 'ddd M/DD',
 	'calendar_month_column_format': 'ddd',
 	'calendar_start_of_the_day': '07:00:00',
+	'calendar_display_not_qualified_areas': '',
 }
 
 customizable_content = [
@@ -58,6 +61,7 @@ customizable_content = [
 	('feedback_email', '.html'),
 	('generic_email', '.html'),
 	('missed_reservation_email', '.html'),
+	('out_of_time_reservation_email', '.html'),
 	('facility_rules_tutorial_email', '.html'),
 	('new_task_email', '.html'),
 	('reservation_reminder_email', '.html'),
@@ -124,7 +128,7 @@ def customize(request, element):
 		store_media_file(request.FILES.get(element, ''), item[0] + item[1])
 		if item[0] == 'rates':
 			from NEMO.rates import rate_class
-			rate_class.load_rates()
+			rate_class.load_rates(force_reload=True)
 	elif element == 'email_addresses':
 		set_customization('feedback_email_address', request.POST.get('feedback_email_address', ''))
 		set_customization('safety_email_address', request.POST.get('safety_email_address', ''))
@@ -133,6 +137,8 @@ def customize(request, element):
 	elif element == 'application_settings':
 		set_customization('self_log_in', request.POST.get('self_log_in', ''))
 		set_customization('self_log_out', request.POST.get('self_log_out', ''))
+		set_customization('calendar_login_logout', request.POST.get('calendar_login_logout', ''))
+		set_customization('dashboard_display_not_qualified_areas', request.POST.get('dashboard_display_not_qualified_areas', ''))
 		set_customization('facility_name', request.POST.get('facility_name', ''))
 		set_customization('site_title', request.POST.get('site_title', ''))
 		init_admin_site()
@@ -143,6 +149,7 @@ def customize(request, element):
 		set_customization('calendar_day_column_format', request.POST.get('calendar_day_column_format', ''))
 		set_customization('calendar_week_column_format', request.POST.get('calendar_week_column_format', ''))
 		set_customization('calendar_month_column_format', request.POST.get('calendar_month_column_format', ''))
+		set_customization('calendar_display_not_qualified_areas', request.POST.get('calendar_display_not_qualified_areas', ''))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
 	return redirect('customization')

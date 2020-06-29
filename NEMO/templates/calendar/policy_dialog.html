@@ -20,7 +20,7 @@
 <div class="modal-footer">
 	{% if overridable %}
 		<button type="button" class="btn btn-info pull-left" data-dismiss="modal">Don't create the reservation</button>
-		<button type="button" class="btn btn-success" data-dismiss="modal" onclick="$('#dialog_cancelled').val(false)">Override policy and create the reservation</button>
+		<button type="button" class="btn btn-success" data-dismiss="modal" onclick="$('#dialog_cancelled').val(false)">Override policy and {{ reservation_action }} the reservation</button>
 	{% else %}
 		<button type="button" class="btn btn-warning" data-dismiss="modal">Continue</button>
 	{% endif %}

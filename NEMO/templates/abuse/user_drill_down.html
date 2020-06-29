@@ -4,9 +4,9 @@
 {% block content %}
 	<h1>Reservation abuse for {{ abuser }}</h1>
 	<table class="table table-condensed table-borderless">
-		<tr><th>Tool</th><th>Advance notice</th><th>Penalty</th><th>Original start time</th><th>Reservation ID</th></tr>
+		<tr><th>Item</th><th>Type</th><th>Advance notice</th><th>Penalty</th><th>Original start time</th><th>Reservation ID</th></tr>
 		{% for a in abuses %}
-			<tr><td>{{ a.tool_name }}</td><td>{{ a.delta }}</td><td>{{ a.penalty|floatformat }}</td><td>{{ a.start }}</td><td>{{ a.id }}</td></tr>
+			<tr><td>{{ a.item_name }}</td><td>{{ a.item_type|capfirst }}</td><td>{{ a.delta }}</td><td>{{ a.penalty|floatformat }}</td><td>{{ a.start }}</td><td>{{ a.id }}</td></tr>
 		{% endfor %}
 	</table>
 {% endblock %}

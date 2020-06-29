@@ -88,7 +88,7 @@ class UsageEventViewSet(ReadOnlyModelViewSet):
 
 
 class AreaAccessRecordViewSet(ReadOnlyModelViewSet):
-	queryset = AreaAccessRecord.objects.all()
+	queryset = AreaAccessRecord.objects.all().order_by('-start')
 	serializer_class = AreaAccessRecordSerializer
 	filter_class = AreaAccessRecordFilter
 
@@ -224,7 +224,7 @@ def get_missed_reservations_for_billing(billing_form: BillingFilterForm) -> List
 	for missed_reservation in queryset:
 		result.append({
 			'type': 'missed_reservation',
-			'name': missed_reservation.tool.name,
+			'name': missed_reservation.reservation_item.name,
 			'details': '',
 			'account': missed_reservation.project.account.name,
 			'account_id': missed_reservation.project.account_id,

@@ -21,7 +21,7 @@ window.addEventListener("load", function() {
         $('.post_usage_preview input').each(function(index, element){
             $(element).attr('form', 'post_usage_preview_form')
         })
-        function update_stop_button() {
+        function update_validation_button() {
             var valid_message = $("#form_validity")
             if (valid_message) {
                 if(document.querySelector('#post_usage_preview_form').checkValidity()) {
@@ -34,7 +34,7 @@ window.addEventListener("load", function() {
                 }
             }
         }
-        update_stop_button();
-        $("input[required][form='post_usage_preview_form']").on('change keyup', update_stop_button);
+        update_validation_button();
+        $("input[required][form='post_usage_preview_form']").on('change keyup', update_validation_button);
     })(django.jQuery);
 });

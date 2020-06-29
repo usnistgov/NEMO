@@ -23,5 +23,5 @@ class CalendarTestCase(TestCase):
 		response = self.client.get(reverse('calendar'), follow=True)
 		self.assertEqual(response.status_code, 200)
 
-		response = self.client.get(reverse('calendar', kwargs={'tool_id': tool.id}), follow=True)
+		response = self.client.get(reverse('calendar', kwargs={'item_type': 'tool', 'item_id': tool.id}), follow=True)
 		self.assertEqual(response.status_code, 200)

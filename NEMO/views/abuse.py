@@ -5,22 +5,32 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
+from mptt.forms import TreeNodeChoiceField
 
 from NEMO.forms import ReservationAbuseForm
-from NEMO.models import Reservation, Tool, User
+from NEMO.models import Reservation, Tool, User, Area, ReservationItemType
 
 
 @staff_member_required(login_url=None)
 @require_GET
 def abuse(request):
-	dictionary = {'tools': Tool.objects.filter(visible=True)}
+	dictionary = {
+		'tools': Tool.objects.filter(visible=True),
+		'area_widget': TreeNodeChoiceField(Area.objects.filter(requires_reservation=True).only('name'), empty_label=None).widget
+	}
 	try:
 		form = ReservationAbuseForm(request.GET)
 		if form.is_valid():
 			intermediate_results = defaultdict(float)
 			reservations = Reservation.objects.filter(start__gt=form.cleaned_data['start'], start__lte=form.cleaned_data['end'], cancelled=True, cancellation_time__isnull=False)
 			if form.cleaned_data['target']:
-				reservations = reservations.filter(tool__id=form.cleaned_data['target'])
+				item_type, item_id = form.get_target()
+				dictionary['item_type'] = item_type.value
+				dictionary['item_id'] = item_id
+				if item_type == ReservationItemType.AREA:
+					reservations = reservations.filter(area__in=Area.objects.get(pk=item_id).get_descendants(include_self=True))
+				elif item_type == ReservationItemType.TOOL:
+					reservations = reservations.filter(tool__id=item_id)
 			for r in reservations:
 				cancellation_delta = (r.start - r.cancellation_time).total_seconds()
 				if 0 < cancellation_delta < form.cleaned_data['cancellation_horizon']:
@@ -49,14 +59,18 @@ def user_drill_down(request):
 		abuser = User.objects.get(id=request.GET['user'])
 		reservations = Reservation.objects.filter(start__gt=form.cleaned_data['start'], start__lte=form.cleaned_data['end'], cancelled=True, cancellation_time__isnull=False, user=abuser)
 		if form.cleaned_data['target']:
-			reservations = reservations.filter(tool__id=form.cleaned_data['target'])
+			item_type, item_id = form.get_target()
+			if item_type == ReservationItemType.AREA:
+				reservations = reservations.filter(area__in=Area.objects.get(pk=item_id).get_descendants(include_self=True))
+			elif item_type == ReservationItemType.TOOL:
+				reservations = reservations.filter(tool__id=item_id)
 		abuses = []
 		for r in reservations:
 			cancellation_delta = (r.start - r.cancellation_time).total_seconds()
 			if 0 < cancellation_delta < form.cleaned_data['cancellation_horizon']:
 				penalty = ((form.cleaned_data['cancellation_horizon'] - cancellation_delta) / form.cleaned_data['cancellation_horizon']) * form.cleaned_data['cancellation_penalty']
 				delta = duration_string((r.start - r.cancellation_time).total_seconds())
-				abuses.append({'penalty': penalty, 'start': r.start, 'cancelled': r.cancellation_time, 'delta': delta, 'tool_name': r.tool.name, 'id': r.id})
+				abuses.append({'penalty': penalty, 'start': r.start, 'cancelled': r.cancellation_time, 'delta': delta, 'item_name': r.reservation_item.name, 'id': r.id, 'item_type': r.reservation_item_type.value})
 		return render(request, 'abuse/user_drill_down.html', {'abuses': abuses, 'abuser': abuser})
 	except:
 		return HttpResponseBadRequest()
