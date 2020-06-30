@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='area',
             name='abuse_email',
-            field=NEMO.fields.MultiEmailField(blank=True, help_text='A email will be sent to this address when users overstay in the area. A comma-separated list can be used.', max_length=2540, null=True),
+            field=NEMO.fields.MultiEmailField(blank=True, help_text='A email will be sent to this address when users overstay in the area or in children areas (logged in with expired reservation). A comma-separated list can be used.', max_length=2540, null=True),
         ),
     ]
