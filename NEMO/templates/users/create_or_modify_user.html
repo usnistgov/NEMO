@@ -199,20 +199,31 @@
 							</div>
 							<div class="panel-body">
 								<p style="font-style: italic"><span class="glyphicon glyphicon-info-sign primary-highlight"></span> Selecting a parent area access will give access to all sub-areas</p>
-								<ul class="root" style="padding-left: 15px">
+								<ul class="login-tree area-tree-root area-tree-list" style="padding-left: 0;margin-top: 10px">
 									{% if form.instance.id %}
 										{# unfortunately have to duplicate some code here #}
 										{% with checked_access_levels=form.instance.accessible_access_levels %}
 											{% recursetree area_access_levels %}
-												<li>
-													{% if not area_access_dict|get_item:node.id %}{{ node.name }}{% endif %}
+												{% if node.is_leaf_node %}
+													<li class="area-tree-leaf">
+												{% else %}
+													<li class="area-tree-node">
+														<a onclick="toggle_details(this)" data-toggle="collapse" aria-expanded="true" data-target="#area-{{ node.id }}">
+															<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+												{% endif %}
+													{% if not area_access_dict|get_item:node.id %}
+															<span class="media-heading">{{ node.name }}</span>
+														</a>
+													{% else %}
+														</a>
+													{% endif %}
 													{% for level in area_access_dict|get_item:node.id %}
-														<div class="checkbox">
+														<div class="checkbox" {% if not node.is_leaf_node %}style="display: inline-block;margin-left: -3px"{% endif %}>
 															<label><input name="physical_access_levels" type="checkbox" {% if form.instance.is_staff and level.allow_staff_access %}disabled title="This access is automatically granted to staff users"{% endif %} value="{{ level.id }}" {% if level in checked_access_levels %}checked{% endif %}>{% if node.category %}({{ node.category }}) {% endif %}{{ level }}</label>
 														</div>
 													{% endfor %}
 													{% if not node.is_leaf_node %}
-														<ul class="children">
+														<ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ node.id }}">
 															{{ children }}
 														</ul>
 													{% endif %}
@@ -221,15 +232,26 @@
 										{% endwith %}
 									{% else %}
 										{% recursetree area_access_levels %}
-											<li>
-												{% if not area_access_dict|get_item:node.id %}{{ node.name }}{% endif %}
+											{% if node.is_leaf_node %}
+												<li class="area-tree-leaf">
+											{% else %}
+												<li class="area-tree-node">
+													<a onclick="toggle_details(this)" data-toggle="collapse" aria-expanded="true" data-target="#area-{{ node.id }}">
+														<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+											{% endif %}
+												{% if not area_access_dict|get_item:node.id %}
+														<span class="media-heading">{{ node.name }}</span>
+													</a>
+												{% else %}
+													</a>
+												{% endif %}
 												{% for level in area_access_dict|get_item:node.id %}
-													<div class="checkbox">
+													<div class="checkbox" {% if not node.is_leaf_node %}style="display: inline-block;margin-left: -3px"{% endif %}>
 														<label><input name="physical_access_levels" type="checkbox" value="{{ level.id }}">{% if node.category %}({{ node.category }}) {% endif %}{{ level }}</label>
 													</div>
 												{% endfor %}
 												{% if not node.is_leaf_node %}
-													<ul class="children">
+													<ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ node.id }}">
 														{{ children }}
 													</ul>
 												{% endif %}
