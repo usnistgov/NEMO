@@ -7,60 +7,42 @@
 		Only use this form under extraordinary circumstances (such as when tablet login is not working).
 		This form is not intended to be used regularly.
 	</p>
-	<form action="{% url 'new_area_access_record' %}" class="form-horizontal" method="post">
+	<form action="{% url 'new_area_access_record' %}" method="post">
 		{% csrf_token %}
-		<div class="form-group">
-			<div class="col-sm-12">
-				Customer: {{ customer }}<br>
-				<input type="hidden" name="customer" value="{{ customer.id }}">
+		<div class="form-horizontal">
+			<div class="form-group">
+				<div class="col-sm-12">
+					Customer: {{ customer }}<br>
+					<input type="hidden" name="customer" value="{{ customer.id }}">
+				</div>
+			</div>
+			<div class="form-group">
+				<div class="col-sm-12">
+					{% if customer.active_project_count == 1 %}
+						Area access will be billed to the customer's only project, &quot;{{ customer.active_projects.0 }}&quot;
+						<input type="hidden" name="project" value="{{ customer.active_projects.0.id }}">
+					{% else %}
+						Which of the customer's projects would you like to bill?
+						<div class="radio">
+							{% for p in customer.active_projects %}
+								<label class="control-label"><input type="radio" name="project" value="{{ p.id }}" required> {{ p }}</label><br>
+							{% endfor %}
+						</div>
+					{% endif %}
+				</div>
 			</div>
 		</div>
 		<div class="form-group">
-			<div class="col-sm-12">
-				{% if customer.active_project_count == 1 %}
-					Area access will be billed to the customer's only project, &quot;{{ customer.active_projects.0 }}&quot;
-					<input type="hidden" name="project" value="{{ customer.active_projects.0.id }}">
-				{% else %}
-					Which of the customer's projects would you like to bill?
-					<div class="radio">
-						{% for p in customer.active_projects %}
-							<label class="control-label"><input type="radio" name="project" value="{{ p.id }}" required> {{ p }}</label><br>
-						{% endfor %}
-					</div>
-				{% endif %}
-			</div>
+			{% if areas|length == 1 %}
+				The customer only has access to the {{ areas.0 }}. Access will be billed for that area.
+				<input type="hidden" name="area" value="{{ areas.0.id }}">
+			{% else %}
+				{{ customer }} has access to the following areas. Which would you like to bill for access?
+				{% include 'area_access/login_areas.html' with areas=areas user_accessible_areas=user_accessible_areas %}
+			{% endif %}
 		</div>
 		<div class="form-group">
-			<div class="col-sm-12">
-				{% if areas|length == 1 %}
-					The customer only has access to the {{ areas.0 }}. Access will be billed for that area.
-					<input type="hidden" name="area" value="{{ areas.0.id }}">
-				{% else %}
-					{{ customer }} has access to the following areas. Which would you like to bill for access?
-					<ul class="root" style="padding-left: 15px;margin-top: 10px">
-						{% recursetree areas %}
-							<li {% if node.is_leaf_node %}style="list-style: none"{% endif %}>
-								{% if node not in user_accessible_areas %}{{ node.name }}
-								{% else %}
-									<div class="checkbox">
-										<label class="control-label" style="padding-left: 0"><input type="radio" name="area" value="{{ node.id }}" required> {% if node.category %}({{ node.category }}) {% endif %}{{ node.name }}</label><br>
-									</div>
-								{% endif %}
-								{% if not node.is_leaf_node %}
-									<ul class="children">
-										{{ children }}
-									</ul>
-								{% endif %}
-							</li>
-						{% endrecursetree %}
-					</ul>
-				{% endif %}
-			</div>
-		</div>
-		<div class="form-group">
-			<div class="col-sm-12">
-				<input type="submit" class="btn btn-success" value="Create area access record">
-			</div>
+			<input type="submit" class="btn btn-success" value="Create area access record">
 		</div>
 	</form>
 {% endblock %}
