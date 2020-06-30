@@ -176,7 +176,7 @@ class ToolAdmin(admin.ModelAdmin):
 class AreaAdmin(DraggableMPTTAdmin):
 	list_display = ('tree_actions', 'indented_title', 'name', 'parent_area', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
 	fieldsets = (
-		(None, {'fields': ('name', 'parent_area', 'category'),}),
+		(None, {'fields': ('name', 'parent_area', 'category', 'abuse_email'),}),
 		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message'),}),
 		('Occupancy', {'fields': ('maximum_capacity', 'count_staff_in_occupancy', 'reservation_warning'),}),
 		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),

@@ -946,10 +946,11 @@ def send_out_of_time_reservation_notification(reservation:Reservation):
 	subject = "Out of time in the " + str(reservation.area.name)
 	message = get_media_file_contents('out_of_time_reservation_email.html')
 	user_office_email = get_customization('user_office_email_address')
-	abuse_email = get_customization('abuse_email_address')
 	if message and user_office_email:
 		message = Template(message).render(Context({'reservation': reservation}))
-		send_mail(subject, message, user_office_email, [reservation.user.email, abuse_email, user_office_email])
+		recipients = [reservation.user.email]
+		recipients.extend(reservation.area.abuse_email_list())
+		send_mail(subject, message, user_office_email, recipients)
 	else:
 		calendar_logger.error("Out of time reservation email couldn't be send because out_of_time_reservation_email.html or user_office_email are not defined")
 

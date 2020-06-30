@@ -88,7 +88,7 @@ class MultiEmailField(models.CharField):
 		if isinstance(value, list):
 			return value
 		if value is None:
-			return value
+			return []
 		return [address.strip() for address in value.split(self.separator)]
 
 	def value_to_string(self, obj):
