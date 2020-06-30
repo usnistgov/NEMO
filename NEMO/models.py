@@ -901,16 +901,10 @@ class Area(MPTTModel):
 			return self.occupancy() - self.occupancy_staff()
 
 	def occupancy_staff(self):
-		if not self.is_leaf_node():
-			return sum([descendant.occupancy_staff() for descendant in self.get_descendants().all()])
-		else:
-			return AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None, customer__is_staff=True).count()
+		return AreaAccessRecord.objects.filter(area__in=self.get_descendants(include_self=True), end=None, staff_charge=None, customer__is_staff=True).count()
 
 	def occupancy(self):
-		if not self.is_leaf_node():
-			return sum([descendant.occupancy() for descendant in self.get_descendants().all()])
-		else:
-			return AreaAccessRecord.objects.filter(area=self, end=None, staff_charge=None).count()
+		return AreaAccessRecord.objects.filter(area__in=self.get_descendants(include_self=True), end=None, staff_charge=None).count()
 
 	def get_physical_access_levels(self):
 		""" Returns access levels for this area and descendants """
