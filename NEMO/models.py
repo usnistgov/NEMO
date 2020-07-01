@@ -833,7 +833,8 @@ class Area(MPTTModel):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
 	parent_area = TreeForeignKey('self', related_name="area_children_set", null=True, blank=True, help_text='Select a parent area, (building, floor etc.)', on_delete=models.CASCADE)
 	category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
-	abuse_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="A email will be sent to this address when users overstay in the area or in children areas (logged in with expired reservation). A comma-separated list can be used.")
+	abuse_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users overstay in the area or in children areas (logged in with expired reservation). A comma-separated list can be used.")
+	reservation_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users create or cancel reservations in the area or in children areas. A comma-separated list can be used.")
 
 	# Area access
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
@@ -937,7 +938,11 @@ class Area(MPTTModel):
 			return Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=user, area=self, start__lte=timezone.now(), end__gt=timezone.now())
 
 	def abuse_email_list(self):
-		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.abuse_email if area.abuse_email]
+		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.abuse_email]
+
+	def reservation_email_list(self):
+		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.reservation_email]
+
 
 
 class AreaAccessRecord(CalendarDisplay):
