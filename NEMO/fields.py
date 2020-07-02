@@ -53,8 +53,7 @@ class MultiEmailField(models.CharField):
 			message=_("Enter a valid email address or a list separated by {}").format(separator)
 		)
 		self.separator = separator
-		# max_length=254 (x10) per email to be compliant with RFCs 3696 and 5321
-		kwargs.setdefault("max_length", 254 * 10)
+		kwargs.setdefault("max_length", 2000)
 		super().__init__(*args, **kwargs)
 
 	def deconstruct(self):
