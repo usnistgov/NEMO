@@ -1553,6 +1553,7 @@ class PhysicalAccessLevel(models.Model):
 			return self.get_schedule_display()
 		else:
 			return self.get_schedule_display() + f" from {self.weekdays_start_time.strftime('%-I:%M %p')} to {self.weekdays_end_time.strftime('%-I:%M %p')}"
+	get_schedule_display_with_times.short_description = 'Schedule'
 
 	def accessible_at(self, time):
 		return self.accessible(time)
