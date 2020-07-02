@@ -231,7 +231,7 @@
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<h3 id="facility_rules_tuto">&quot;<a href="{% url 'facility_rules' %}" target="_blank">{{ facility_name }} rules tutorial</a>&quot; page</h3>
-				<p>The {{ facility_name }} rules tutorial is an opportunity to provide new users with a tutorial to your lab operating procedures and rules. The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page. Completion of the HTML form should be POSTed to the 'facility_rules' URL. Upon completion, the user's "training required" attribute is set to false, and they are able to make reservations and control tools.</p>
+				<p>The {{ facility_name }} rules tutorial is an opportunity to provide new users with a tutorial to your lab operating procedures and rules. The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page. The form should include {% templatetag openblock %} csrf_token {% templatetag closeblock %} to specify which user should receive credit for completing the tutorial.  Completion of the HTML form should be POSTed to the '/facility_rules_tutorial/' URL. Upon completion, the user's "training required" attribute is set to false, and they are able to make reservations and control tools.</p>
 				<form method="POST" action="{% url 'customize' 'facility_rules_tutorial' %}#facility_rules_tuto" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('facility_rules_tutorial')">
 					{% csrf_token %}
 					<div class="form-group">
