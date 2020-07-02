@@ -223,7 +223,7 @@
 				{% if safety_introduction %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#safety_introduction_render">Show current content</button>
-					<div id="safety_introduction_render" class="collapse customization-content">{{ safety_introduction }}</div>
+					<div id="safety_introduction_render" class="collapse" style="margin-top: 10px">{{ safety_introduction|safe }}</div>
 				{% endif %}
 			</div>
 		</div>
@@ -252,10 +252,10 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3 id="authorization">&quot;<a href="{% url 'authorization_failed' %}" target="_blank">{{ facility_name }} failed login</a>&quot; page</h3>
+				<h3 id="authorization">&quot;<a href="{% url 'authorization_failed' %}" target="_blank">{{ facility_name }} failed login</a>&quot; message</h3>
 				<p>
-					This page is displayed after authentication when either no matching username could be found in the database or if that user has been deactivated.
-					<br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.
+					This message is displayed after authentication when either no matching username could be found in the database or if that user has been deactivated.
+					<br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the message.
 				</p>
 				<form method="POST" action="{% url 'customize' 'authorization_failed' %}#authorization" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('authorization_failed')">
 					{% csrf_token %}
@@ -270,7 +270,7 @@
 				{% if authorization_failed %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#authorization_failed_render">Show current content</button>
-					<div id="authorization_failed_render" class="collapse customization-content">{{ authorization_failed }}</div>
+					<div id="authorization_failed_render" class="collapse" style="margin-top: 10px">{{ authorization_failed|safe }}</div>
 				{% endif %}
 			</div>
 		</div>
@@ -314,7 +314,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="cancellation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#cancellation_email_span').hide()">
-						{% if cancellation_email %}<span id="cancellation_email_span">cancellation_email.html</span>{% endif %}
+						{% if cancellation_email %}<a id="cancellation_email_span" href="data:text/html,{{ cancellation_email|urlencode }}" download="cancellation_email.html" target="_blank">cancellation_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload cancellation email" class="btn btn-success">
@@ -323,7 +323,11 @@
 				{% if cancellation_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#cancellation_email_render">Show current content</button>
-					<div id="cancellation_email_render" class="collapse customization-content">{{ cancellation_email }}</div>
+					<table id="cancellation_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ cancellation_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -343,7 +347,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="feedback_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#feedback_email_span').hide()">
-						{% if feedback_email %}<span id="feedback_email_span">feedback_email.html</span>{% endif %}
+						{% if feedback_email %}<a id="feedback_email_span" href="data:text/html,{{ feedback_email|urlencode }}" download="feedback_email.html" target="_blank">feedback_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload feedback email" class="btn btn-success">
@@ -352,7 +356,11 @@
 				{% if feedback_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#feedback_email_render">Show current content</button>
-					<div id="feedback_email_render" class="collapse customization-content">{{ feedback_email }}</div>
+					<table id="feedback_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ feedback_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -371,7 +379,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="generic_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#generic_email_span').hide()">
-						{% if generic_email %}<span id="generic_email_span">generic_email.html</span>{% endif %}
+						{% if generic_email %}<a id="generic_email_span" href="data:text/html,{{ generic_email|urlencode }}" download="generic_email.html" target="_blank">generic_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload generic email" class="btn btn-success">
@@ -380,7 +388,11 @@
 				{% if generic_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#generic_email_render">Show current content</button>
-					<div id="generic_email_render" class="collapse customization-content">{{ generic_email }}</div>
+					<table id="generic_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ generic_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -400,7 +412,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="missed_reservation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#missed_reservation_email_span').hide()">
-						{% if missed_reservation_email %}<span id="missed_reservation_email_span">missed_reservation_email.html</span>{% endif %}
+						{% if missed_reservation_email %}<a id="missed_reservation_email_span" href="data:text/html,{{ missed_reservation_email|urlencode }}" download="missed_reservation_email.html" target="_blank">missed_reservation_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload missed reservation email" class="btn btn-success">
@@ -409,7 +421,11 @@
 				{% if missed_reservation_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#missed_reservation_email_render">Show current content</button>
-					<div id="missed_reservation_email_render" class="collapse customization-content">{{ missed_reservation_email }}</div>
+					<table id="missed_reservation_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ missed_reservation_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -428,7 +444,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="out_of_time_reservation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#out_of_time_reservation_email_span').hide()">
-						{% if out_of_time_reservation_email %}<span id="out_of_time_reservation_email_span">out_of_time_reservation_email.html</span>{% endif %}
+						{% if out_of_time_reservation_email %}<a id="out_of_time_reservation_email_span" href="data:text/html,{{ out_of_time_reservation_email|urlencode }}" download="out_of_time_reservation_email.html" target="_blank">out_of_time_reservation_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload out of time reservation email" class="btn btn-success">
@@ -437,7 +453,11 @@
 				{% if out_of_time_reservation_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#out_of_time_reservation_email_render">Show current content</button>
-					<div id="out_of_time_reservation_email_render" class="collapse customization-content">{{ out_of_time_reservation_email }}</div>
+					<table id="out_of_time_reservation_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ out_of_time_reservation_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -458,7 +478,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="facility_rules_tutorial_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#facility_rules_tutorial_email_span').hide()">
-						{% if facility_rules_tutorial_email %}<span id="facility_rules_tutorial_email_span">facility_rules_tutorial_email.html</span>{% endif %}
+						{% if facility_rules_tutorial_email %}<a id="facility_rules_tutorial_email_span" href="data:text/html,{{ facility_rules_tutorial_email|urlencode }}" download="facility_rules_tutorial_email.html" target="_blank">facility_rules_tutorial_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload {{ facility_name }} rules tutorial email" class="btn btn-success">
@@ -467,7 +487,11 @@
 				{% if facility_rules_tutorial_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#facility_rules_tutorial_email_render">Show current content</button>
-					<div id="facility_rules_tutorial_email_render" class="collapse customization-content">{{ facility_rules_tutorial_email }}</div>
+					<table id="facility_rules_tutorial_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ facility_rules_tutorial_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -490,7 +514,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="new_task_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#new_task_email_span').hide()">
-						{% if new_task_email %}<span id="new_task_email_span">new_task_email.html</span>{% endif %}
+						{% if new_task_email %}<a id="new_task_email_span" href="data:text/html,{{ new_task_email|urlencode }}" download="new_task_email.html" target="_blank">new_task_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload new task email" class="btn btn-success">
@@ -499,7 +523,11 @@
 				{% if new_task_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#new_task_email_render">Show current content</button>
-					<div id="new_task_email_render" class="collapse customization-content">{{ new_task_email }}</div>
+					<table id="new_task_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ new_task_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -519,7 +547,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="reservation_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_reminder_email_span').hide()">
-						{% if reservation_reminder_email %}<span id="reservation_reminder_email_span">reservation_reminder_email.html</span>{% endif %}
+						{% if reservation_reminder_email %}<a id="reservation_reminder_email_span" href="data:text/html,{{ reservation_reminder_email|urlencode }}" download="reservation_reminder_email.html" target="_blank">reservation_reminder_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload reservation reminder email" class="btn btn-success">
@@ -528,7 +556,11 @@
 				{% if reservation_reminder_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_reminder_email_render">Show current content</button>
-					<div id="reservation_reminder_email_render" class="collapse customization-content">{{ reservation_reminder_email }}</div>
+					<table id="reservation_reminder_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ reservation_reminder_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -549,7 +581,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="reservation_warning_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_warning_email_span').hide()">
-						{% if reservation_warning_email %}<span id="reservation_warning_email_span">reservation_warning_email.html</span>{% endif %}
+						{% if reservation_warning_email %}<a id="reservation_warning_email_span" href="data:text/html,{{ reservation_warning_email|urlencode }}" download="reservation_warning_email.html" target="_blank">reservation_warning_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload reservation warning email" class="btn btn-success">
@@ -558,7 +590,11 @@
 				{% if reservation_warning_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_warning_email_render">Show current content</button>
-					<div id="reservation_warning_email_render" class="collapse customization-content">{{ reservation_warning_email }}</div>
+					<table id="reservation_warning_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ reservation_warning_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -578,7 +614,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="safety_issue_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#safety_issue_email_span').hide()">
-						{% if safety_issue_email %}<span id="safety_issue_email_span">safety_issue_email.html</span>{% endif %}
+						{% if safety_issue_email %}<a id="safety_issue_email_span" href="data:text/html,{{ safety_issue_email|urlencode }}" download="safety_issue_email.html" target="_blank">safety_issue_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload safety issue email" class="btn btn-success">
@@ -587,7 +623,11 @@
 				{% if safety_issue_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#safety_issue_email_render">Show current content</button>
-					<div id="safety_issue_email_render" class="collapse customization-content">{{ safety_issue_email }}</div>
+					<table id="safety_issue_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ safety_issue_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -606,7 +646,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="staff_charge_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#staff_charge_reminder_email_span').hide()">
-						{% if staff_charge_reminder_email %}<span id="staff_charge_reminder_email_span">staff_charge_reminder_email.html</span>{% endif %}
+						{% if staff_charge_reminder_email %}<a id="staff_charge_reminder_email_span" href="data:text/html,{{ staff_charge_reminder_email|urlencode }}" download="staff_charge_reminder_email.html" target="_blank">staff_charge_reminder_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload staff charge reminder email" class="btn btn-success">
@@ -615,7 +655,11 @@
 				{% if staff_charge_reminder_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#staff_charge_reminder_email_render">Show current content</button>
-					<div id="staff_charge_reminder_email_render" class="collapse customization-content">{{ staff_charge_reminder_email }}</div>
+					<table id="staff_charge_reminder_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ staff_charge_reminder_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -639,7 +683,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="task_status_notification" class="customization-input-file" onchange="this.style.color = 'inherit';$('#task_status_notification_span').hide()">
-						{% if task_status_notification %}<span id="task_status_notification_span">task_status_notification.html</span>{% endif %}
+						{% if task_status_notification %}<a id="task_status_notification_span" href="data:text/html,{{ task_status_notification|urlencode }}" download="task_status_notification.html" target="_blank">task_status_notification.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload task status notification email" class="btn btn-success">
@@ -648,7 +692,11 @@
 				{% if task_status_notification %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#task_status_notification_render">Show current content</button>
-					<div id="task_status_notification_render" class="collapse customization-content">{{ task_status_notification }}</div>
+					<table id="task_status_notification_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ task_status_notification|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -673,7 +721,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="unauthorized_tool_access_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#unauthorized_tool_access_email_span').hide()">
-						{% if unauthorized_tool_access_email %}<span id="unauthorized_tool_access_email_span">unauthorized_tool_access_email.html</span>{% endif %}
+						{% if unauthorized_tool_access_email %}<a id="unauthorized_tool_access_email_span" href="data:text/html,{{ unauthorized_tool_access_email|urlencode }}" download="unauthorized_tool_access_email.html" target="_blank">unauthorized_tool_access_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload unauthorized tool access email" class="btn btn-success">
@@ -682,7 +730,11 @@
 				{% if unauthorized_tool_access_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#unauthorized_tool_access_email_render">Show current content</button>
-					<div id="unauthorized_tool_access_email_render" class="collapse customization-content">{{ unauthorized_tool_access_email }}</div>
+					<table id="unauthorized_tool_access_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ unauthorized_tool_access_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -701,7 +753,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="usage_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#usage_reminder_email_span').hide()">
-						{% if usage_reminder_email %}<span id="usage_reminder_email_span">usage_reminder_email.html</span>{% endif %}
+						{% if usage_reminder_email %}<a id="usage_reminder_email_span" href="data:text/html,{{ usage_reminder_email|urlencode }}" download="usage_reminder_email.html" target="_blank">usage_reminder_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload usage reminder email" class="btn btn-success">
@@ -710,7 +762,11 @@
 				{% if usage_reminder_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#usage_reminder_email_render">Show current content</button>
-					<div id="usage_reminder_email_render" class="collapse customization-content">{{ usage_reminder_email }}</div>
+					<table id="usage_reminder_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ usage_reminder_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -730,7 +786,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="reservation_created_user_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_created_user_email_span').hide()">
-						{% if reservation_created_user_email %}<span id="reservation_created_user_email_span">reservation_created_user_email.html</span>{% endif %}
+						{% if reservation_created_user_email %}<a id="reservation_created_user_email_span" href="data:text/html,{{ reservation_created_user_email|urlencode }}" download="reservation_created_user_email.html" target="_blank">reservation_created_user_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload created reservation email" class="btn btn-success">
@@ -739,7 +795,11 @@
 				{% if reservation_created_user_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_created_user_email_render">Show current content</button>
-					<div id="reservation_created_user_email_render" class="collapse customization-content">{{ reservation_created_user_email }}</div>
+					<table id="reservation_created_user_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ reservation_created_user_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>
@@ -759,7 +819,7 @@
 					{% csrf_token %}
 					<div class="form-group">
 						<input type="file" name="reservation_cancelled_user_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_cancelled_user_email_span').hide()">
-						{% if reservation_cancelled_user_email %}<span id="reservation_cancelled_user_email_span">reservation_cancelled_user_email.html</span>{% endif %}
+						{% if reservation_cancelled_user_email %}<a id="reservation_cancelled_user_email_span" href="data:text/html,{{ reservation_cancelled_user_email|urlencode }}" download="reservation_cancelled_user_email.html" target="_blank">reservation_cancelled_user_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
 						<input type="submit" value="Upload cancelled reservation email" class="btn btn-success">
@@ -768,7 +828,11 @@
 				{% if reservation_cancelled_user_email %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_cancelled_user_email_render">Show current content</button>
-					<div id="reservation_cancelled_user_email_render" class="collapse customization-content">{{ reservation_cancelled_user_email }}</div>
+					<table id="reservation_cancelled_user_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ reservation_cancelled_user_email|safe }}</td>
+						</tr>
+					</table>
 				{% endif %}
 			</div>
 		</div>

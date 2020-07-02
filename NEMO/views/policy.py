@@ -225,7 +225,7 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	if item_type == ReservationItemType.AREA:
 		user_access_levels = user.accessible_access_levels_for_area(new_reservation.area)
 		if not any([access_level.accessible_at(new_reservation.start) for access_level in user_access_levels]) or not any([access_level.accessible_at(new_reservation.end) for access_level in user_access_levels]):
-			details = f" (times allowed in this area are: {','.join([access.get_schedule_display() for access in user_access_levels])})" if user_access_levels else ''
+			details = f" (times allowed in this area are: {','.join([access.get_schedule_display_with_times() for access in user_access_levels])})" if user_access_levels else ''
 			if user == user_creating_reservation:
 				policy_problems.append(f"You are not authorized to access this area at this time{details}. Creating, moving, and resizing reservations is forbidden.")
 			else:
@@ -307,11 +307,11 @@ def should_enforce_policy(reservation: Reservation):
 		should_enforce = False
 	if item.policy_off_between_times and item.policy_off_start_time and item.policy_off_end_time:
 		if item.policy_off_start_time <= item.policy_off_end_time:
-			""" Range something like 6am-6pm """
+			""" Range is something like 6am-6pm """
 			if item.policy_off_start_time <= start_time.time() <= item.policy_off_end_time and item.policy_off_start_time <= end_time.time() <= item.policy_off_end_time:
 				should_enforce = False
 		else:
-			""" Range something like 6pm-6am """
+			""" Range is something like 6pm-6am """
 			if (item.policy_off_start_time <= start_time.time() or start_time.time() <= item.policy_off_end_time) and (item.policy_off_start_time <= end_time.time() or end_time.time() <= item.policy_off_end_time):
 				should_enforce = False
 	return should_enforce

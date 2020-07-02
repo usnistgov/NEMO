@@ -365,7 +365,7 @@ def load_areas_for_use_in_template(user: User = None):
 	The template view needs to use the {% recursetree %} tag from mptt
 	"""
 	accessible_areas = user.accessible_areas() if user else Area.objects.filter(requires_reservation=True)
-	areas = [ancestor for area in accessible_areas for ancestor in area.get_ancestors(include_self=True)]
+	areas = list(set([ancestor for area in accessible_areas for ancestor in area.get_ancestors(include_self=True)]))
 	areas.sort(key=lambda x: x.tree_category())
 	areas = Area.objects.filter(id__in=[area.id for area in areas])
 	return accessible_areas, areas

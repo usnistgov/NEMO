@@ -63,7 +63,7 @@ class ItemTree(Widget):
 		display_all_areas = get_customization('calendar_display_not_qualified_areas') == 'enabled'
 		for area in area_tree_items:
 			category = area.tree_category + '/' if area.tree_category else ''
-			is_qualified = True if not display_all_areas else (user and user.is_staff) or (user and area in user_accessible_areas)
+			is_qualified = True if not display_all_areas else (user and user.is_staff) or (user and area.item in user_accessible_areas)
 			area_tree.add(ReservationItemType.AREA, category + area.name, area.id, is_qualified)
 		for tool in tools:
 			is_qualified = (user and user.is_staff) or (user and tool.id in user_qualified_tool_ids)

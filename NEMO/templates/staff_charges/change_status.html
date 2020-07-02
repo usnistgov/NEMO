@@ -9,26 +9,10 @@
 	</form>
 	{% if areas %}
 		<div style="height:50px"></div>
-		<form action="{% url 'begin_staff_area_charge' %}" class="form-horizontal" method="post">
+		<form action="{% url 'begin_staff_area_charge' %}" method="post">
 			{% csrf_token %}
 			<p>I have entered a billable area on behalf of this user:</p>
-			<ul class="root" style="padding-left: 15px;margin-top: 10px">
-				{% recursetree areas %}
-					<li {% if node.is_leaf_node %}style="list-style: none"{% endif %}>
-						{% if node not in user_accessible_areas %}{{ node.name }}
-						{% else %}
-							<div class="radio">
-								<label class="control-label" style="padding-left: 0"><input type="radio" name="area" value="{{ node.id }}" required> {% if node.category %}({{ node.category }}) {% endif %}{{ node.name }}</label><br>
-							</div>
-						{% endif %}
-						{% if not node.is_leaf_node %}
-							<ul class="children">
-								{{ children }}
-							</ul>
-						{% endif %}
-					</li>
-				{% endrecursetree %}
-			</ul>
+			{% include 'area_access/login_areas.html' with areas=areas user_accessible_areas=user_accessible_areas %}
 			<br>
 			<input type="submit" class="btn btn-primary" value="Begin billing for area access">
 		</form>

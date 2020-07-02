@@ -19,6 +19,7 @@ from django.utils import timezone
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
+from NEMO import fields
 from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
@@ -832,14 +833,20 @@ class Area(MPTTModel):
 	name = models.CharField(max_length=200, help_text='What is the name of this area? The name will be displayed on the tablet login and logout pages.')
 	parent_area = TreeForeignKey('self', related_name="area_children_set", null=True, blank=True, help_text='Select a parent area, (building, floor etc.)', on_delete=models.CASCADE)
 	category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
+	abuse_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users overstay in the area or in children areas (logged in with expired reservation). A comma-separated list can be used.")
+	reservation_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users create or cancel reservations in the area or in children areas. A comma-separated list can be used.")
+
+	# Area access
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login.")
 	logout_grace_period = models.PositiveIntegerField(null=True, blank=True, help_text="Number of minutes users have to logout of this area after their reservation expired before being flagged and abuse email is sent.")
+
+	# Capacity
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
 	count_staff_in_occupancy = models.BooleanField(default=True, help_text='Indicates that staff users will count towards maximum capacity.')
 	reservation_warning = models.PositiveIntegerField(blank=True, null=True, help_text='The number of simultaneous users (with at least one reservation in this area) allowed before a warning is displayed when creating a reservation.')
 
-	# policy rules
+	# Policy rules
 	reservation_horizon = models.PositiveIntegerField(db_column="reservation_horizon", default=14, null=True, blank=True, help_text="Users may create reservations this many days in advance. Leave this field blank to indicate that no reservation horizon exists for this area.")
 	missed_reservation_threshold = models.PositiveIntegerField(db_column="missed_reservation_threshold", null=True, blank=True, help_text="The amount of time (in minutes) that a area reservation may go unused before it is automatically marked as \"missed\" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.")
 	minimum_usage_block_time = models.PositiveIntegerField(db_column="minimum_usage_block_time", null=True, blank=True, help_text="The minimum amount of time (in minutes) that a user must reserve this area for a single reservation. Leave this field blank to indicate that no minimum usage block time exists for this area.")
@@ -929,6 +936,13 @@ class Area(MPTTModel):
 	def get_current_reservation_for_user(self, user):
 		if self.requires_reservation:
 			return Reservation.objects.filter(missed=False, cancelled=False, shortened=False, user=user, area=self, start__lte=timezone.now(), end__gt=timezone.now())
+
+	def abuse_email_list(self):
+		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.abuse_email]
+
+	def reservation_email_list(self):
+		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.reservation_email]
+
 
 
 class AreaAccessRecord(CalendarDisplay):
@@ -1522,15 +1536,24 @@ class PhysicalAccessLevel(models.Model):
 
 	class Schedule(object):
 		ALWAYS = 0
-		WEEKDAYS_7AM_TO_MIDNIGHT = 1
+		WEEKDAYS = 1
 		WEEKENDS = 2
 		Choices = (
 			(ALWAYS, "Always"),
-			(WEEKDAYS_7AM_TO_MIDNIGHT, "Weekdays, 7am to midnight"),
+			(WEEKDAYS, "Weekdays"),
 			(WEEKENDS, "Weekends"),
 		)
 	schedule = models.IntegerField(choices=Schedule.Choices)
+	weekdays_start_time = models.TimeField(default=datetime.time(hour=7), null=True, blank=True, help_text="The weekday access start time")
+	weekdays_end_time = models.TimeField(default=datetime.time(hour=0), null=True, blank=True, help_text="The weekday access end time")
 	allow_staff_access = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow access to Staff users without explicitly granting them access")
+
+	def get_schedule_display_with_times(self):
+		if self.schedule == self.Schedule.ALWAYS or self.schedule == self.Schedule.WEEKENDS:
+			return self.get_schedule_display()
+		else:
+			return self.get_schedule_display() + f" from {self.weekdays_start_time.strftime('%-I:%M %p')} to {self.weekdays_end_time.strftime('%-I:%M %p')}"
+	get_schedule_display_with_times.short_description = 'Schedule'
 
 	def accessible_at(self, time):
 		return self.accessible(time)
@@ -1544,14 +1567,18 @@ class PhysicalAccessLevel(models.Model):
 		sunday = 7
 		if self.schedule == self.Schedule.ALWAYS:
 			return True
-		elif self.schedule == self.Schedule.WEEKDAYS_7AM_TO_MIDNIGHT:
+		elif self.schedule == self.Schedule.WEEKDAYS:
 			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
 				return False
-			seven_am = datetime.time(hour=7, tzinfo=timezone.get_current_timezone())
-			midnight = datetime.time(hour=23, minute=59, second=59, tzinfo=timezone.get_current_timezone())
 			current_time = accessible_time.time()
-			if seven_am < current_time < midnight:
-				return True
+			if self.weekdays_start_time <= self.weekdays_end_time:
+				""" Range is something like 6am-6pm """
+				if self.weekdays_start_time <= current_time <= self.weekdays_end_time:
+					return True
+			else:
+				""" Range is something like 6pm-6am """
+				if self.weekdays_start_time <= current_time or current_time <= self.weekdays_end_time:
+					return True
 		elif self.schedule == self.Schedule.WEEKENDS:
 			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
 				return True

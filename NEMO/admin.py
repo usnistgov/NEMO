@@ -176,7 +176,7 @@ class ToolAdmin(admin.ModelAdmin):
 class AreaAdmin(DraggableMPTTAdmin):
 	list_display = ('tree_actions', 'indented_title', 'name', 'parent_area', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
 	fieldsets = (
-		(None, {'fields': ('name', 'parent_area', 'category'),}),
+		(None, {'fields': ('name', 'parent_area', 'category', 'reservation_email', 'abuse_email'),}),
 		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message'),}),
 		('Occupancy', {'fields': ('maximum_capacity', 'count_staff_in_occupancy', 'reservation_warning'),}),
 		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
@@ -529,6 +529,9 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 		model = PhysicalAccessLevel
 		fields = '__all__'
 
+	class Media:
+		js = ("physical_access_level_form_admin.js",)
+
 	authorized_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
 		required=False,
@@ -543,11 +546,25 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 		if self.instance.pk:
 			self.fields['authorized_users'].initial = self.instance.user_set.all()
 
+	def clean(self):
+		schedule = self.cleaned_data.get('schedule')
+		if schedule == PhysicalAccessLevel.Schedule.WEEKDAYS:
+			start_date = self.cleaned_data.get('weekdays_start_time')
+			end_date = self.cleaned_data.get('weekdays_end_time')
+			if not start_date:
+				self.add_error('weekdays_start_time', 'Start time is required for weekdays.')
+			if not end_date:
+				self.add_error('weekdays_end_time', 'End time is required for weekdays.')
+		else:
+			self.cleaned_data['weekdays_start_time'] = None
+			self.cleaned_data['weekdays_end_time'] = None
+		return self.cleaned_data
+
 
 @register(PhysicalAccessLevel)
 class PhysicalAccessLevelAdmin(admin.ModelAdmin):
 	form = PhysicalAccessLevelForm
-	list_display = ('name', 'area', 'schedule', 'allow_staff_access')
+	list_display = ('name', 'area', 'get_schedule_display_with_times', 'allow_staff_access')
 	list_filter = (('area', TreeRelatedFieldListFilter),)
 
 	def save_model(self, request, obj, form, change):
