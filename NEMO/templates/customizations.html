@@ -236,8 +236,8 @@
 					<br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.
 					<br>
 					<ul>
-						<li>The form should include {% templatetag openblock %} csrf_token {% templatetag closeblock %} inside the form tags.</li>
-						<li>Completion of the HTML form should be POSTed to the {% templatetag openblock %} url 'facility_rules' {% templatetag closeblock %} URL.</li>
+				<li>The form should include <b>{% templatetag openblock %} csrf_token {% templatetag closeblock %}</b> inside the form tags.</li>
+				<li>Completion of the HTML form should be POSTed to <b>"{% templatetag openblock %} url 'facility_rules' {% templatetag closeblock %}"</b> (exactly as is).</li>
 					</ul>
 					Upon completion, the user's "training required" attribute is set to false, and they are able to make reservations and control tools.
 				</p>
