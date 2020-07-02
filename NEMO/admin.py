@@ -529,6 +529,9 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 		model = PhysicalAccessLevel
 		fields = '__all__'
 
+	class Media:
+		js = ("physical_access_level_form_admin.js",)
+
 	authorized_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
 		required=False,
@@ -542,6 +545,20 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 		super(PhysicalAccessLevelForm, self).__init__(*args, **kwargs)
 		if self.instance.pk:
 			self.fields['authorized_users'].initial = self.instance.user_set.all()
+
+	def clean(self):
+		schedule = self.cleaned_data.get('schedule')
+		if schedule == PhysicalAccessLevel.Schedule.WEEKDAYS:
+			start_date = self.cleaned_data.get('weekdays_start_time')
+			end_date = self.cleaned_data.get('weekdays_end_time')
+			if not start_date:
+				self.add_error('weekdays_start_time', 'Start time is required for weekdays.')
+			if not end_date:
+				self.add_error('weekdays_end_time', 'End time is required for weekdays.')
+		else:
+			self.cleaned_data['weekdays_start_time'] = None
+			self.cleaned_data['weekdays_end_time'] = None
+		return self.cleaned_data
 
 
 @register(PhysicalAccessLevel)

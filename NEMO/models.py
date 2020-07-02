@@ -1536,15 +1536,23 @@ class PhysicalAccessLevel(models.Model):
 
 	class Schedule(object):
 		ALWAYS = 0
-		WEEKDAYS_7AM_TO_MIDNIGHT = 1
+		WEEKDAYS = 1
 		WEEKENDS = 2
 		Choices = (
 			(ALWAYS, "Always"),
-			(WEEKDAYS_7AM_TO_MIDNIGHT, "Weekdays, 7am to midnight"),
+			(WEEKDAYS, "Weekdays"),
 			(WEEKENDS, "Weekends"),
 		)
 	schedule = models.IntegerField(choices=Schedule.Choices)
+	weekdays_start_time = models.TimeField(default=datetime.time(hour=7), null=True, blank=True, help_text="The weekday access start time")
+	weekdays_end_time = models.TimeField(default=datetime.time(hour=0), null=True, blank=True, help_text="The weekday access end time")
 	allow_staff_access = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow access to Staff users without explicitly granting them access")
+
+	def get_schedule_display_with_times(self):
+		if self.schedule == self.Schedule.ALWAYS or self.schedule == self.Schedule.WEEKENDS:
+			return self.get_schedule_display()
+		else:
+			return self.get_schedule_display() + f" from {self.weekdays_start_time.strftime('%-I:%M %p')} to {self.weekdays_end_time.strftime('%-I:%M %p')}"
 
 	def accessible_at(self, time):
 		return self.accessible(time)
@@ -1558,14 +1566,18 @@ class PhysicalAccessLevel(models.Model):
 		sunday = 7
 		if self.schedule == self.Schedule.ALWAYS:
 			return True
-		elif self.schedule == self.Schedule.WEEKDAYS_7AM_TO_MIDNIGHT:
+		elif self.schedule == self.Schedule.WEEKDAYS:
 			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
 				return False
-			seven_am = datetime.time(hour=7, tzinfo=timezone.get_current_timezone())
-			midnight = datetime.time(hour=23, minute=59, second=59, tzinfo=timezone.get_current_timezone())
 			current_time = accessible_time.time()
-			if seven_am < current_time < midnight:
-				return True
+			if self.weekdays_start_time <= self.weekdays_end_time:
+				""" Range is something like 6am-6pm """
+				if self.weekdays_start_time <= current_time <= self.weekdays_end_time:
+					return True
+			else:
+				""" Range is something like 6pm-6am """
+				if self.weekdays_start_time <= current_time or current_time <= self.weekdays_end_time:
+					return True
 		elif self.schedule == self.Schedule.WEEKENDS:
 			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
 				return True
