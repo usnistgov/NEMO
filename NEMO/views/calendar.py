@@ -917,11 +917,14 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 			email_contents = get_media_file_contents('cancellation_email.html')
 			if email_contents:
 				cancellation_email = Template(email_contents).render(Context(dictionary))
+				recipients = [reservation.user.email]
+				if reservation.area:
+					recipients.extend(reservation.area.reservation_email_list())
 				if getattr(reservation.user.preferences, 'attach_cancelled_reservation', False):
 					attachment = create_ics_for_reservation(reservation, cancelled=True)
-					reservation.user.email_user('Your reservation was cancelled', cancellation_email, user_cancelling_reservation.email, [attachment])
+					send_mail('Your reservation was cancelled', cancellation_email, user_cancelling_reservation.email, recipients, [attachment])
 				else:
-					reservation.user.email_user('Your reservation was cancelled', cancellation_email, user_cancelling_reservation.email)
+					send_mail('Your reservation was cancelled', cancellation_email, user_cancelling_reservation.email, recipients)
 
 		else:
 			''' here the user cancelled his own reservation so notify him '''
