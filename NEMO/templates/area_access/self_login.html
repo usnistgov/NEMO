@@ -34,7 +34,7 @@
 				<input type="hidden" name="area" value="{{ areas.0.id }}">
 			{% else %}
 				<p>Log in to which area?</p>
-				{% include 'area_access/login_areas.html' %}
+				{% include 'area_access/login_areas.html' with area_id=area_id %}
 			{% endif %}
 			</div>
 			<input id="self_login_submit" type="submit" class="btn btn-success" value="Log in">

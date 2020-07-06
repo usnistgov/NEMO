@@ -18,7 +18,7 @@ from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableReso
 	NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError, \
 	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
 from NEMO.models import Area, AreaAccessRecord, Project, User
-from NEMO.utilities import parse_start_and_end_date
+from NEMO.utilities import parse_start_and_end_date, quiet_int
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
@@ -247,6 +247,9 @@ def self_log_in(request, load_areas=True):
 	dictionary = {
 		'projects': user.active_projects(),
 	}
+	if request.GET.get('area_id'):
+		dictionary['area_id'] = quiet_int(request.GET['area_id'])
+
 	facility_name = get_customization('facility_name')
 	try:
 		check_policy_to_enter_any_area(user)

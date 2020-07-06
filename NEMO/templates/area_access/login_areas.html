@@ -14,7 +14,7 @@
 		{% else %}
 				</a>
 				<div class="checkbox">
-					<label class="control-label" style="padding-left: 0"><input type="radio" name="{{ input_name|default:'area' }}" value="{{ node.id }}" required> {% if node.category %}({{ node.category }}) {% endif %}{{ node.name }}</label><br>
+					<label class="control-label" style="padding-left: 0"><input type="radio" name="{{ input_name|default:'area' }}" value="{{ node.id }}" {% if area_id and node.id == area_id %}checked{% endif %} required> {% if node.category %}({{ node.category }}) {% endif %}{{ node.name }}</label><br>
 				</div>
 		{% endif %}
 		{% if not node.is_leaf_node %}
