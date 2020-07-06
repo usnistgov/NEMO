@@ -14,7 +14,7 @@
 	<script>
 		function get_user(jquery_event, search_selection, dataset_name)
 		{
-			window.location.href = '/user/' + search_selection.id + '/';
+			window.location.href = "{% url 'create_or_modify_user' 999 %}".replace('999', search_selection.id);
 		}
 		function on_load()
 		{

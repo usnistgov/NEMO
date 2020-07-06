@@ -13,14 +13,14 @@
 		{% endif %}
 	{% else %}
 		{% if user.active_project_count == 1 %}
-			<button id="interlock" type="button" class="btn btn-default" onclick="enable_tool({{ task.tool.id }}, {{ user.active_projects.0.id }})">Enable tool</button>
+			<button id="interlock" type="button" class="btn btn-default" onclick="enable_tool('{% url 'enable_tool' tool_id=task.tool.id user_id=user.id project_id=user.active_projects.0.id staff_charge='false' %}')">Enable tool</button>
 		{% elif user.active_project_count > 1 %}
 			<div class="btn-group">
 				<button id="interlock" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Enable tool <span class="caret"></span></button>
 				<ul class="dropdown-menu">
 					<li class="dropdown-header">Using which project?</li>
 					{% for project in user.active_projects %}
-						<li><a href="javascript:void(0)" onclick="enable_tool({{ task.tool.id }}, {{ project.id }})">{{ project.name }}</a></li>
+						<li><a href="javascript:void(0)" onclick="enable_tool('{% url 'enable_tool' tool_id=task.tool.id user_id=user.id project_id=project.id staff_charge='false' %}')">{{ project.name }}</a></li>
 					{% endfor %}
 				</ul>
 			</div>

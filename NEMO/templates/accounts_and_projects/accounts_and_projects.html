@@ -68,23 +68,24 @@
 	<script>
 		function get_account(jquery_event, search_selection, dataset_name)
 		{
-			if(search_selection.type == 'project')
-				window.location.href = '/project/' + search_selection.id + '/';
-			else if(search_selection.type == 'account')
-				window.location.href = '/account/' + search_selection.id + '/';
+			if(search_selection.type === 'project')
+				window.location.href = "{% url 'project' 999 %}".replace('999', search_selection.id);
+			else if(search_selection.type === 'account')
+				window.location.href = "{% url 'account' 999 %}".replace('999', search_selection.id);
 		}
 		function add_user_to_project(jquery_event, search_selection, dataset_name)
 		{
 			var project_id = $(this).data('project-id');
 			$(this).typeahead('val', '').focus();
-			var url = "/add_user/" + search_selection.id + "/to_project/" + project_id + "/";
+			var url = "{% url 'add_user_to_project' user_id=111 project_id=222 %}".replace('111', search_selection.id).replace('222', project_id);
 			var complete_callback = ajax_complete_callback('Unable to modify project');
 			$("#project_" + project_id + "_users").load(url, {'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
 		}
 		function remove_user_from_project(user_id, project_id)
 		{
 			var complete_callback = ajax_complete_callback('Unable to remove user from project');
-			$("#project_" + project_id + "_users").load('/remove_user/' + user_id + '/from_project/' + project_id + '/', {'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
+			var url = "{% url 'remove_user_from_project' user_id=111 project_id=222 %}".replace('111', user_id).replace('222', project_id);
+			$("#project_" + project_id + "_users").load(url, {'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
 		}
 		function on_load()
 		{

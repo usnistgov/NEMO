@@ -103,7 +103,7 @@
 
 	function on_pending_task_details_failure(response, status, xml_header_request)
 	{
-		if(status == "error")
+		if(status === "error")
 		{
 			var message = "Unable to load task details.";
 			if (xml_header_request.responseText)
@@ -114,7 +114,7 @@
 
 	function on_closed_task_details_failure(response, status, xml_header_request)
 	{
-		if(status == "error")
+		if(status === "error")
 		{
 			var message = "Unable to load task details.";
 			if (xml_header_request.responseText)
@@ -123,10 +123,9 @@
 		}
 	}
 
-	function enable_tool(tool_id, project_id)
+	function enable_tool(url)
 	{
 		$("#interlock").prop('disabled', true);
-		var url = "/enable_tool/" + tool_id + "/user/" + {{ user.id }} + "/project/" + project_id + "/staff_charge/false/";
 		var failure_dialog = ajax_failure_callback("Unable to enable tool");
 		ajax_post(url, undefined, reload_maintenance_page, failure_dialog);
 	}
@@ -141,7 +140,7 @@
 	function reload_maintenance_page(response, status, xml_http_request)
 	{
 		save_active_task();
-		location.reload(true);
+		location.reload();
 	}
 
 	function save_active_task()

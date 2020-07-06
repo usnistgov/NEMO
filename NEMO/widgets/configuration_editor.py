@@ -1,9 +1,14 @@
 from django.forms import Widget
+from django.urls import reverse
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
 
 class ConfigurationEditor(Widget):
+	def __init__(self, attrs=None):
+		self.url = reverse('tool_configuration')
+		super().__init__(attrs)
+
 	def render(self, name, value, attrs=None, **kwargs):
 		result = ""
 		for config in value["configurations"]:
@@ -21,7 +26,7 @@ class ConfigurationEditor(Widget):
 		current_setting = config.current_settings_as_list()[0]
 		result = "<p><label class='form-inline'>" + escape(config.name) + ": "
 		if render_as_form:
-			result += "<select class='form-control' style='width:300px; max-width:100%' onchange=\"on_change_configuration(" + str(config.id) + ", 0, this.value)\">"
+			result += "<select class='form-control' style='width:300px; max-width:100%' onchange=\"on_change_configuration('" + self.url +"', " + str(config.id) + ", 0, this.value)\">"
 			for index, option in enumerate(config.available_settings_as_list()):
 				result += "<option value=" + str(index)
 				if option == current_setting:
@@ -39,7 +44,7 @@ class ConfigurationEditor(Widget):
 			result += "<li>"
 			if render_as_form:
 				result += "<label class='form-inline'>" + escape(config.configurable_item_name) + " #" + str(setting_index + 1) + ": "
-				result += "<select class='form-control' style='width:300px' onchange=\"on_change_configuration(" + str(config.id) + ", " + str(setting_index) + ", this.value)\">"
+				result += "<select class='form-control' style='width:300px' onchange=\"on_change_configuration('" + self.url +"', " + str(config.id) + ", " + str(setting_index) + ", this.value)\">"
 				for option_index, option in enumerate(config.available_settings_as_list()):
 					result += "<option value=" + str(option_index)
 					if option == current_setting:

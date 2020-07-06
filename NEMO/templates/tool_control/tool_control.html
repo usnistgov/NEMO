@@ -44,7 +44,8 @@
 			 	{% if device == 'desktop' %}
 					$('#loading-div').show()
 				{% endif %}
-				$("#content").load('/tool_status/' + {% if device == 'mobile' %}selected_item{% else %}item.id{% endif %} + "/", undefined, refresh_tool_completion_callback);
+				var url = "{% url 'tool_status' 999 %}".replace('999', {% if device == 'mobile' %}selected_item{% else %}item.id{% endif %})
+				$("#content").load(url, undefined, refresh_tool_completion_callback);
 			}
 			{% if device == 'desktop' %}
 				refresh_sidebar_tool_icons();
@@ -94,7 +95,7 @@
 
 		function load_projects_completion_callback(response, status, xml_http_request)
 		{
-			if(status == "error")
+			if(status === "error")
 				$("#customer_project").html("Unable to retrieve a list of projects for this user.")
 		}
 
@@ -104,9 +105,9 @@
 			var user_id = parseInt($("#user_id").val());
 			var project_id = parseInt($("#project_id").val());
 			var staff_charge = false;
-			if($("input[name='staff_charge']").length > 0 && $("input[name='staff_charge']:checked").val() == 'true')
+			if($("input[name='staff_charge']").length > 0 && $("input[name='staff_charge']:checked").val() === 'true')
 				staff_charge = true;
-			var url = "/enable_tool/" + tool_id + "/user/" + user_id + "/project/" + project_id + "/staff_charge/" + staff_charge + "/";
+			var url = "{% url 'enable_tool' tool_id=111 user_id=222 project_id=333 staff_charge='false' %}".replace('111', tool_id).replace('222', user_id.toString()).replace('333', project_id.toString()).replace('false', staff_charge.toString())
 			var failure_dialog = ajax_failure_callback("Couldn't change tool status");
 			var success_callbacks;
 			if(staff_charge === true)
@@ -205,6 +206,11 @@
 		{
 			var failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
 			$("#past_tasks_and_comments").load(url, failure_dialog);
+		}
+
+		function refresh_sidebar_tool_icons()
+		{
+		    $.getScript('{% url 'refresh_sidebar_icons' item_type='tool' %}')
 		}
 
 		function on_load()

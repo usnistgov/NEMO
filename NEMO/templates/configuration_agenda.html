@@ -44,7 +44,7 @@
 										{{ reservation.additional_information|linebreaksbr }}
 									</p>
 									{% if not reservation.tool.in_use and reservation.project %}
-										<button class="btn btn-info" onclick="enable_tool({{ reservation.tool.id }}, {{ reservation.user.id }}, {{ reservation.project.id }})">
+										<button class="btn btn-info" onclick="enable_tool('{% url 'enable_tool' tool_id=reservation.tool.id user_id=reservation.user.id project_id=reservation.project.id staff_charge='false' %}')">
 											Enable the tool on behalf of {{ reservation.user.first_name }}
 										</button>
 									{% endif %}
@@ -64,14 +64,14 @@
 											{% endif %}
 										{% else %}
 											{% if user.active_project_count == 1 %}
-												<button id="interlock" type="button" class="btn btn-default" onclick="enable_tool({{ reservation.tool.id }}, {{ user.id }}, {{ user.active_projects.0.id }})">Enable the tool for myself</button>
+												<button id="interlock" type="button" class="btn btn-default" onclick="enable_tool('{% url 'enable_tool' tool_id=reservation.tool.id user_id=user.id project_id=user.active_projects.0.id staff_charge='false' %}')">Enable the tool for myself</button>
 											{% elif user.active_project_count > 1 %}
 												<div class="btn-group">
 													<button id="interlock" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Enable the tool for myself <span class="caret"></span></button>
 													<ul class="dropdown-menu">
 														<li class="dropdown-header">Using which project?</li>
 														{% for project in user.active_projects %}
-															<li><a href="javascript:void(0)" onclick="enable_tool({{ reservation.tool.id }}, {{ user.id }}, {{ project.id }})">{{ project.name }}</a></li>
+															<li><a href="javascript:void(0)" onclick="enable_tool('{% url 'enable_tool' tool_id=reservation.tool.id user_id=user.id project_id=project.id staff_charge='false' %}')">{{ project.name }}</a></li>
 														{% endfor %}
 													</ul>
 												</div>
@@ -86,9 +86,8 @@
 			</table>
 		{% endfor %}
 		<script>
-			function enable_tool(tool_id, user_id, project_id)
+			function enable_tool(url)
 			{
-				var url = "/enable_tool/" + tool_id + "/user/" + user_id + "/project/" + project_id + "/staff_charge/false/";
 				var failure_dialog = ajax_failure_callback("Unable to enable tool");
 				ajax_post(url, undefined, reload_page, failure_dialog);
 			}

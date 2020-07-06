@@ -163,22 +163,6 @@ function load_sidebar_state()
 	}
 }
 
-function refresh_sidebar_area_icons()
-{
-	refresh_sidebar_icons('area')
-}
-
-function refresh_sidebar_tool_icons()
-{
-	refresh_sidebar_icons('tool')
-}
-
-function refresh_sidebar_icons(items)
-{
-	if (items) $.getScript('/refresh_sidebar_icons/'+items+'/');
-	else $.getScript('/refresh_sidebar_icons/');
-}
-
 // Use this function to display a Bootstrap modal when an AJAX call is successful and contains content to render.
 // Use this function with ajax_get(), ajax_post() or other similar functions.
 function ajax_success_callback(response, status, xml_http_request)
@@ -290,7 +274,7 @@ function ajax_message(url, type, contents, success_callback, failure_callback, a
 }
 
 //noinspection JSUnusedGlobalSymbols
-function on_change_configuration(configuration_id, slot, choice)
+function on_change_configuration(url, configuration_id, slot, choice)
 {
 	let reconfiguration_properties =
 	{
@@ -299,7 +283,7 @@ function on_change_configuration(configuration_id, slot, choice)
 		"choice": choice
 	};
 	let failure_dialog = ajax_failure_callback("Configuration change failed", "There was a problem while changing this tool's configuration.");
-	ajax_post('/tool_configuration/', reconfiguration_properties, undefined, failure_dialog);
+	ajax_post(url, reconfiguration_properties, undefined, failure_dialog);
 }
 
 function autofocus(selector)
@@ -433,10 +417,10 @@ function matcher(items, search_fields)
 // is redirected to the logout page, and then further redirected to the login
 // page. This design is useful because some of NEMO's pages (such as the
 // Calendar, Tool Control, and Status Dashboard) make regular polling AJAX requests.
-function navigate_to_login_on_session_expiration(event, xhr, status, error)
+function navigate_to_login_on_session_expiration(logout_url, event, xhr, status, error)
 {
 	if(xhr.status === 403)
 	{
-		window.location.href = '/logout/';
+		window.location.href = logout_url;
 	}
 }

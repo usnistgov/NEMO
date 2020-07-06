@@ -501,16 +501,26 @@ function scheduled_outage()
 	}
 }
 
-function refresh_calendar_and_sidebar(items)
+function refresh_sidebar_icons()
+{
+	$.getScript('{% url 'refresh_sidebar_icons' %}')
+}
+
+function refresh_sidebar_area_icons()
+{
+	$.getScript('{% url 'refresh_sidebar_icons' item_type='area' %}')
+}
+
+function refresh_calendar_and_sidebar()
 {
 	$("#calendar").fullCalendar('refetchEvents');
-	if (items) refresh_sidebar_icons(items);
-	else refresh_sidebar_icons()
+	refresh_sidebar_icons()
 }
 
 function refresh_calendar_and_sidebar_area_icons()
 {
-    refresh_calendar_and_sidebar('area')
+    $("#calendar").fullCalendar('refetchEvents');
+    refresh_sidebar_area_icons()
 }
 
 function change_calendar_event_type(calling_element)
