@@ -227,7 +227,7 @@ def calendar_self_login(request):
 		# We have not selected a project yet
 		return render(request, 'area_access/calendar_self_login.html', dictionary)
 	response = self_log_in(request=request, load_areas=False)
-	if response.status_code == 302 and response.url == '/':
+	if response.status_code == 302 and response.url == reverse('landing'):
 		# We got redirect to landing page in return, which means it was successful
 		return HttpResponse()
 	elif response and response.content:

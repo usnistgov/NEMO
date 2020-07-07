@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import User, Tool, TrainingSession, Project, MembershipHistory
@@ -72,7 +73,7 @@ def charge_training(request):
 		dictionary = {
 			'title': 'Success!',
 			'content': 'Training charges were successfully saved.',
-			'redirect': '/',
+			'redirect': reverse('landing'),
 		}
 		return render(request, 'display_success_and_redirect.html', dictionary)
 
