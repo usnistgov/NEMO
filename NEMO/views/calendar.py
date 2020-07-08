@@ -102,7 +102,7 @@ def calendar(request, item_type=None, item_id=None):
 @require_GET
 @disable_session_expiry_refresh
 def event_feed(request):
-	""" Get all reservations for a specific time-window. Optionally: filter by tool or user name. """
+	""" Get all reservations for a specific time-window. Optionally: filter by tool, area or user name. """
 	try:
 		start, end = extract_dates(request.GET)
 	except Exception as e:
@@ -183,25 +183,26 @@ def usage_event_feed(request, start, end):
 	if item_id and item_type == ReservationItemType.TOOL:
 		usage_events = usage_events.filter(tool__id__in=Tool.objects.get(pk=item_id).get_family_tool_ids())
 
-	area_access_events = None
+	area_access_events = AreaAccessRecord.objects.none()
 	# Filter events that only have to do with the current user.
 	personal_schedule = request.GET.get('personal_schedule')
 	if personal_schedule:
 		usage_events = usage_events.filter(user=request.user)
 		# Display area access along side tool usage when 'personal schedule' is selected.
 		area_access_events = AreaAccessRecord.objects.filter(customer__id=request.user.id)
-		area_access_events = area_access_events.exclude(start__lt=start, end__lt=start)
-		area_access_events = area_access_events.exclude(start__gt=end, end__gt=end)
+	if item_id and item_type == ReservationItemType.AREA:
+		area_access_events = AreaAccessRecord.objects.filter(area__id=item_id)
+	area_access_events = area_access_events.exclude(start__lt=start, end__lt=start)
+	area_access_events = area_access_events.exclude(start__gt=end, end__gt=end)
 
-	missed_reservations = None
+	missed_reservations = Reservation.objects.none()
 	if personal_schedule:
 		missed_reservations = Reservation.objects.filter(missed=True, user=request.user)
 	elif item_type:
 		reservation_filter = {item_type.value: item_id}
 		missed_reservations = Reservation.objects.filter(missed=True).filter(**reservation_filter)
-	if missed_reservations:
-		missed_reservations = missed_reservations.exclude(start__lt=start, end__lt=start)
-		missed_reservations = missed_reservations.exclude(start__gt=end, end__gt=end)
+	missed_reservations = missed_reservations.exclude(start__lt=start, end__lt=start)
+	missed_reservations = missed_reservations.exclude(start__gt=end, end__gt=end)
 
 	dictionary = {
 		'usage_events': usage_events,
