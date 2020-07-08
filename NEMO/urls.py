@@ -15,7 +15,6 @@ from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, a
 
 logger = logging.getLogger(__name__)
 
-
 if apps.is_installed("django.contrib.admin"):
 	# Use our custom login page instead of Django's built-in one.
 	admin.site.login = login_required(admin.site.login)
@@ -204,6 +203,8 @@ urlpatterns = [
 if settings.ALLOW_CONDITIONAL_URLS:
 	urlpatterns += [
 		url(r'^admin/', admin.site.urls),
+
+		# REST API
 		url(r'^api/', include(router.urls)),
 		url(r'^api/billing/?$', api.billing),
 

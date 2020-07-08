@@ -4,6 +4,7 @@ from logging import getLogger
 from django.http import HttpResponseForbidden
 from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.conf import settings
+from django.urls import reverse
 
 from NEMO.exceptions import InactiveUserError
 from NEMO.models import User
@@ -12,28 +13,29 @@ middleware_logger = getLogger(__name__)
 
 
 class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
-	# This value allows for more validation on the header received. Use it to check for Basic or Token prefixes for example
-	header_value_prefix = getattr(settings, "AUTHENTICATION_HEADER_VALUE_PREFIX", None)
+
+	def __init__(self, get_response=None):
+		self.api_url = reverse('api-root')
+		super().__init__(get_response)
 
 	def process_request(self, request):
+		# REST API has its own authentication
+		if request.path and request.path.startswith(self.api_url):
+			return
+
 		try:
 			try:
 				header_value = request.META[self.header]
 			except KeyError:
-				# If header is not present, log a warning and continue with processing of base class
+				# If header is not present, log a warning and continue with processing of base class. (no authentication is happening)
 				middleware_logger.warning(f"Header: {self.header} not present or invalid")
-				super().process_request(request)
-			else:
-				# We have a header, check for prefix if present.
-				prefix_valid = self.header_value_prefix and header_value.startswith(self.header_value_prefix)
-				if self.header_value_prefix and not prefix_valid:
-					middleware_logger.warning(f"Prefix: {self.header_value_prefix} not present in header value")
-				else:
-					super().process_request(request)
+			super().process_request(request)
 		except (User.DoesNotExist, InactiveUserError):
-			from NEMO.views.authentication import authorization_failed
-
-			return authorization_failed(request)
+			from NEMO.views.authentication import all_auth_backends_are_pre_auth
+			# Only raise error if all we have are pre_authentication backends and they failed
+			if all_auth_backends_are_pre_auth():
+				from NEMO.views.authentication import authorization_failed
+				return authorization_failed(request)
 
 
 class HTTPHeaderAuthenticationMiddleware(RemoteUserAuthenticationMiddleware):

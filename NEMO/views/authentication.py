@@ -3,13 +3,14 @@ from base64 import b64decode
 from logging import getLogger
 
 from django.conf import settings
-from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout
+from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout, get_backends
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.urls import reverse, resolve
 from django.utils.decorators import method_decorator
+from django.utils.module_loading import import_string
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_GET
 from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE, AUTO_BIND_NO_TLS, ANONYMOUS
@@ -18,13 +19,27 @@ from ldap3.core.exceptions import LDAPBindError, LDAPException
 from NEMO.exceptions import InactiveUserError
 from NEMO.middleware import HTTPHeaderAuthenticationMiddleware, RemoteUserAuthenticationMiddleware
 from NEMO.models import User
-from NEMO.views.customization import get_media_file_contents, get_customization
+from NEMO.views.customization import get_media_file_contents
 
 auth_logger = getLogger(__name__)
 
 
 def get_full_class_name(clas):
 	return clas.__module__ + "." + clas.__name__
+
+
+def get_auth_backends():
+	return [type(backend) for backend in get_backends()]
+
+
+def get_pre_authentication_backends():
+	""" Returns a list of pre_authentication backends. Those require the user to be authenticated before getting to NEMO """
+	pre_auth_backends = getattr(settings, "PRE_AUTH_BACKENDS", [get_full_class_name(RemoteUserAuthenticationBackend), get_full_class_name(NginxKerberosAuthorizationHeaderAuthenticationBackend)])
+	return [import_string(pre_auth_backend) for pre_auth_backend in pre_auth_backends]
+
+
+def all_auth_backends_are_pre_auth():
+	return all([auth_backend in get_pre_authentication_backends() for auth_backend in get_auth_backends()])
 
 
 def check_user_exists_and_active(backend: ModelBackend, username: str) -> User:
@@ -44,17 +59,19 @@ def check_user_exists_and_active(backend: ModelBackend, username: str) -> User:
 
 
 def check_pre_authentication_backends(request):
-	if get_full_class_name(RemoteUserAuthenticationBackend) in settings.AUTHENTICATION_BACKENDS or get_full_class_name(NginxKerberosAuthorizationHeaderAuthenticationBackend) in settings.AUTHENTICATION_BACKENDS:
+	if any([pre_auth_backend in get_auth_backends() for pre_auth_backend in get_pre_authentication_backends()]):
 		# check for improper configuration
 		if get_full_class_name(RemoteUserMiddleware) not in settings.MIDDLEWARE \
 				and get_full_class_name(HTTPHeaderAuthenticationMiddleware) not in settings.MIDDLEWARE \
 				and get_full_class_name(RemoteUserAuthenticationMiddleware) not in settings.MIDDLEWARE :
-			auth_logger.error("To use this backend you need to add either RemoteUserMiddleware, RemoteUserAuthenticationMiddleware or HTTPHeaderAuthenticationMiddleware to settings.MIDDLEWARE")
-			return HttpResponse("There was an error pre-authenticating the user", status=400)
+			error_message = "To use this backend you need to add either RemoteUserMiddleware, RemoteUserAuthenticationMiddleware or HTTPHeaderAuthenticationMiddleware to settings.MIDDLEWARE"
+			auth_logger.error(error_message)
+			return HttpResponse(error_message, status=400)
 		# if the user is already in the request and authenticated, send to landing page
 		elif hasattr(request, 'user') and request.user.is_authenticated:
 			return HttpResponseRedirect(reverse('landing'))
-		else:
+		elif all_auth_backends_are_pre_auth():
+			# We only have pre_auth backends, and the user isn't authenticated at this point, fail.
 			return HttpResponse("There was an error pre-authenticating the user", status=400)
 
 

@@ -14,7 +14,6 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
-from django.urls import reverse
 from django.utils import timezone
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
@@ -1526,6 +1525,7 @@ class Door(models.Model):
 		return str(self.name)
 
 	def get_absolute_url(self):
+		from django.urls import reverse
 		return reverse('welcome_screen', args=[self.id])
 	get_absolute_url.short_description = 'URL'
 
