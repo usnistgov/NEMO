@@ -21,6 +21,7 @@
 	{% for x in area_access_events %}
 	{
 		"title": "{{ x.area }} access billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
+		"tooltip": "{{ x.area }} access for {{ x.customer }} billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
 		"id": {{ x.id }},
 		"color": "#e68a00",
 		"start": "{{ x.start|date:"c" }}",
