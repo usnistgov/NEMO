@@ -1,11 +1,11 @@
 import datetime
 import os
 import sys
-from copy import deepcopy
 from datetime import timedelta
 from enum import Enum
-from typing import Union, List, Optional
+from typing import Union, List
 
+from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -273,6 +273,13 @@ class User(models.Model):
 			return StaffCharge.objects.get(staff_member=self.id, end=None)
 		except StaffCharge.DoesNotExist:
 			return None
+
+	def get_preferences(self):
+		if not self.preferences:
+			default_reservation_preferences = getattr(settings, 'USER_RESERVATION_PREFERENCES_DEFAULT', False)
+			self.preferences = UserPreferences.objects.create(attach_cancelled_reservation=default_reservation_preferences, attach_created_reservation=default_reservation_preferences)
+			self.save()
+		return self.preferences
 
 	@classmethod
 	def get_email_field_name(cls):

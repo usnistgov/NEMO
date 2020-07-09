@@ -327,19 +327,13 @@ def unlock_account(request, user_id):
 @require_http_methods(['GET', 'POST'])
 def user_preferences(request):
 	user: User = User.objects.get(pk=request.user.id)
-	''' create and save new preferences if they didn't exist before '''
-	if not user.preferences:
-		prefs = UserPreferences()
-		prefs.save()
-		user.preferences = prefs
-		user.save()
 	if request.method == 'POST':
 		form = UserPreferencesForm(data=request.POST, instance=user.preferences)
 		if form.is_valid():
 			form.save()
 			messages.success(request, "Your preferences have been saved")
 	dictionary = {
-		'user_preferences': user.preferences,
+		'user_preferences': user.get_preferences(),
 	}
 	return render(request, 'users/preferences.html', dictionary)
 

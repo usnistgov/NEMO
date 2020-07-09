@@ -921,7 +921,7 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 				recipients = [reservation.user.email]
 				if reservation.area:
 					recipients.extend(reservation.area.reservation_email_list())
-				if getattr(reservation.user.preferences, 'attach_cancelled_reservation', False):
+				if reservation.user.get_preferences().attach_cancelled_reservation:
 					attachment = create_ics_for_reservation(reservation, cancelled=True)
 					send_mail('Your reservation was cancelled', cancellation_email, user_cancelling_reservation.email, recipients, [attachment])
 				else:
@@ -961,7 +961,7 @@ def send_out_of_time_reservation_notification(reservation:Reservation):
 
 def send_user_created_reservation_notification(reservation: Reservation):
 	site_title = get_customization('site_title')
-	recipients = [reservation.user.email] if getattr(reservation.user.preferences, 'attach_created_reservation', False) else []
+	recipients = [reservation.user.email] if reservation.user.get_preferences().attach_created_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
@@ -979,7 +979,7 @@ def send_user_created_reservation_notification(reservation: Reservation):
 
 def send_user_cancelled_reservation_notification(reservation: Reservation):
 	site_title = get_customization('site_title')
-	recipients = [reservation.user.email] if getattr(reservation.user.preferences, 'attach_cancelled_reservation', False) else []
+	recipients = [reservation.user.email] if reservation.user.get_preferences().attach_cancelled_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
