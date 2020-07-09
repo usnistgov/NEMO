@@ -4,7 +4,7 @@ from logging import getLogger
 from django.http import HttpResponseForbidden
 from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.conf import settings
-from django.urls import reverse
+from django.urls import reverse, NoReverseMatch
 from django.utils.deprecation import MiddlewareMixin
 
 from NEMO.exceptions import InactiveUserError
@@ -16,12 +16,16 @@ middleware_logger = getLogger(__name__)
 class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
 
 	def __init__(self, get_response=None):
-		self.api_url = reverse('api-root')
+		self.api_url = None
+		try:
+			self.api_url = reverse('api-root')
+		except NoReverseMatch:
+			pass
 		super().__init__(get_response)
 
 	def process_request(self, request):
 		# REST API has its own authentication
-		if request.path and request.path.startswith(self.api_url):
+		if request.path and self.api_url and request.path.startswith(self.api_url):
 			return
 
 		try:
