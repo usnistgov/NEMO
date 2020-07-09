@@ -3,9 +3,9 @@ from base64 import b64decode
 from logging import getLogger
 
 from django.conf import settings
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout, get_backends
 from django.contrib.auth.backends import ModelBackend
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, redirect
@@ -241,7 +241,7 @@ def authorization_failed(request):
 	return render(request, 'authorization_failed.html', {'authorization_failed': authorization_page})
 
 
-@login_required()
+@staff_member_required(login_url=None)
 @require_http_methods(['GET', 'POST'])
 def impersonate(request):
 	impersonate_middleware_name = get_full_class_name(ImpersonateMiddleware)
