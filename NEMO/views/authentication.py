@@ -241,7 +241,6 @@ def authorization_failed(request):
 	return render(request, 'authorization_failed.html', {'authorization_failed': authorization_page})
 
 
-@staff_member_required(login_url=None)
 @require_http_methods(['GET', 'POST'])
 def impersonate(request):
 	impersonate_middleware_name = get_full_class_name(ImpersonateMiddleware)
