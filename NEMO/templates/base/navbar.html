@@ -29,6 +29,7 @@
 								{% navigation_url 'customization' 'Customization' %}
 								{% navigation_url 'admin:index' 'Detailed administration' %}
 								{% navigation_url 'email_broadcast' 'Email' %}
+								{% if user.is_superuser %}{% navigation_url 'impersonate' 'Impersonate' %}{% endif %}
 								{% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' %}{% endif %}
 								{% navigation_url 'project_billing' 'Project billing' %}
 								{% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' %}{% endif %}

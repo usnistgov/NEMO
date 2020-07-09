@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+
+{% block content %}
+	<form class="form-horizontal" action="{% url 'impersonate' %}" method="post">
+		{% csrf_token %}
+		<input id="user_id" name="user_id" type="hidden"/>
+		<p>This form allows you to impersonate any active user.</p>
+		<div class="form-group">
+			<div class="col-md-4">
+				<input type="text" id="search_users" placeholder="Search for a user to impersonate" class="form-control sidebar-item" autocomplete="off">
+			</div>
+			<div class="col-md-2" style="margin-top: 5px; margin-bottom: 5px">
+				<input id="impersonate_submit" type="submit" class="btn btn-warning" value="Impersonate">
+			</div>
+		</div>
+		<script>
+			let submit_button = $('#impersonate_submit');
+			let search_user_input = $('#search_users')
+			search_user_input.autocomplete('users', impersonate_user, {{ users|json_search_base }});
+			search_user_input.focus()
+			function impersonate_user(jquery_event, search_selection)
+			{
+				$('#user_id').val(search_selection.id);
+				submit_button.prop( "disabled", false );
+			}
+			submit_button.prop( "disabled", true );
+		</script>
+	</form>
+{% endblock %}

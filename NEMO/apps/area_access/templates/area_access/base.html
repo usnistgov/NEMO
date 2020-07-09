@@ -44,13 +44,7 @@
 		<div id="status" style="display: none"></div>
 		<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
 	</div>
-	<!-- Version -->
-    <footer class="page-footer">
-        {% app_version as app_version %}
-        <div class="container">
-            {% if app_version %}v {% app_version %}{% else %}&nbsp;{% endif %} - <a href="https://www.nist.gov/cnst" target="_blank">Developed by CNST, NIST</a>
-        </div>
-    </footer>
+	{% include 'base/footer.html' %}
 	<script type="text/javascript">
 		var area_access_badge_reader = new BadgeReader(send_badge_number);
 		let timeout_handle = null;

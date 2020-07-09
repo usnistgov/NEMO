@@ -5,6 +5,7 @@ from django.http import HttpResponseForbidden
 from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.conf import settings
 from django.urls import reverse
+from django.utils.deprecation import MiddlewareMixin
 
 from NEMO.exceptions import InactiveUserError
 from NEMO.models import User
@@ -89,3 +90,9 @@ class DeviceDetectionMiddleware:
 				request.device = "mobile"
 
 		return self.get_response(request)
+
+
+class ImpersonateMiddleware(MiddlewareMixin):
+	def process_request(self, request):
+		if request.user.is_superuser and 'impersonate_id' in request.session:
+			request.user = User.objects.get(pk=request.session['impersonate_id'])

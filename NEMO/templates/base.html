@@ -53,10 +53,13 @@
 	<title>{% block title %}{% endblock %}</title>
 </head>
 <body>
+{% if request.session.impersonate_id %}
+	{% include 'base/impersonate_header.html' %}
+{% endif %}
 {% if no_header %}
 	<div style="height: 15px;"></div>
 {% else %}
-	{% include 'navbar.html' %}
+	{% include 'base/navbar.html' %}
 {% endif %}
 {% block body %}
     <div class="body-container">
@@ -75,13 +78,7 @@
             <div style="height: 200px"></div>
         {% endblock %}
     </div>
-    <!-- Version -->
-    <footer class="page-footer">
-        {% app_version as app_version %}
-        <div class="container">
-            {% if app_version %}v {% app_version %}{% else %}&nbsp;{% endif %} - <a href="https://www.nist.gov/cnst" target="_blank">Developed by CNST, NIST</a>
-        </div>
-    </footer>
+    {% include 'base/footer.html' %}
 {% endblock %}
 
 {# This division is used to display dialog messages via Bootstrap. #}

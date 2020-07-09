@@ -5,9 +5,10 @@ from logging import getLogger
 from django.conf import settings
 from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, logout, get_backends
 from django.contrib.auth.backends import ModelBackend
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.middleware import RemoteUserMiddleware
-from django.http import HttpResponseRedirect, HttpResponse
-from django.shortcuts import render
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
+from django.shortcuts import render, redirect
 from django.urls import reverse, resolve
 from django.utils.decorators import method_decorator
 from django.utils.module_loading import import_string
@@ -17,7 +18,8 @@ from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE, AU
 from ldap3.core.exceptions import LDAPBindError, LDAPException
 
 from NEMO.exceptions import InactiveUserError
-from NEMO.middleware import HTTPHeaderAuthenticationMiddleware, RemoteUserAuthenticationMiddleware
+from NEMO.middleware import HTTPHeaderAuthenticationMiddleware, RemoteUserAuthenticationMiddleware, \
+	ImpersonateMiddleware
 from NEMO.models import User
 from NEMO.views.customization import get_media_file_contents
 
@@ -233,6 +235,29 @@ def logout_user(request):
 	return HttpResponseRedirect(reverse('landing'))
 
 
+@require_GET
 def authorization_failed(request):
 	authorization_page = get_media_file_contents('authorization_failed.html')
 	return render(request, 'authorization_failed.html', {'authorization_failed': authorization_page})
+
+
+@login_required()
+@require_http_methods(['GET', 'POST'])
+def impersonate(request):
+	impersonate_middleware_name = get_full_class_name(ImpersonateMiddleware)
+	if impersonate_middleware_name not in settings.MIDDLEWARE:
+		return HttpResponse(f"'{impersonate_middleware_name}' needs to be in settings.MIDDLEWARE for this feature to work", status=400)
+	if 'unimpersonate' in request.GET:
+		del request.session['impersonate_id']
+		del request.session['impersonated_user']
+		return redirect(reverse('landing'))
+	if not request.user.is_superuser:
+		return HttpResponseForbidden()
+	if request.method == 'POST':
+		user_id = request.POST['user_id']
+		request.session['impersonate_id'] = int(user_id)
+		request.session['impersonated_user'] = str(User.objects.get(pk=user_id))
+		return redirect(reverse('landing'))
+	else:
+		users = User.objects.filter(is_active=True)
+		return render(request, 'impersonate.html', {'users': users})

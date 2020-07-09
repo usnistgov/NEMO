@@ -1,0 +1,3 @@
+<div class="alert-warning" style="padding: 10px; text-align: center">
+	<span style="margin-right: 15px">You are currently impersonating {{ request.session.impersonated_user }}</span><a href="{% url 'impersonate' %}?unimpersonate" style="color: initial"><button>Switch back</button></a>
+</div>
