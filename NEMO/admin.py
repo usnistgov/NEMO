@@ -9,7 +9,7 @@ from django.utils.html import format_html
 from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
 
 from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks, \
-	duplicate_tool_configuration
+	duplicate_tool_configuration, rebuild_area_tree
 from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord, Comment, Configuration, \
 	ConfigurationHistory, Consumable, ConsumableCategory, ConsumableWithdraw, ContactInformation, \
 	ContactInformationCategory, Customization, Door, Interlock, InterlockCard, LandingPageChoice, MembershipHistory, \
@@ -185,6 +185,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	list_display_links = ('indented_title',)
 	list_filter = ('requires_reservation', ('parent_area', TreeRelatedFieldListFilter))
 	search_fields = ('name',)
+	actions = [rebuild_area_tree]
 
 	mptt_level_indent = 20
 

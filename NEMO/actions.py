@@ -1,4 +1,4 @@
-from NEMO.models import User
+from NEMO.models import User, Area
 
 
 def lock_selected_interlocks(model_admin, request, queryset):
@@ -42,3 +42,6 @@ def duplicate_tool_configuration(model_admin, request, queryset):
 			tool.backup_owners.set(old_backup_users)
 			for user in old_qualified_users:
 				user.qualifications.add(tool)
+
+def rebuild_area_tree(model_admin, request, queryset):
+	Area.objects.rebuild()
