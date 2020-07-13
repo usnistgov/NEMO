@@ -6,7 +6,6 @@ label
 .application-sidebar
 {
 	position: absolute;
-	top: 47px;
 	bottom: 0;
 	left: 0;
 	width: 300px;
@@ -17,12 +16,23 @@ label
 .application-content
 {
 	position: absolute;
-	top: 51px;
 	bottom: 0;
 	left: 300px;
 	right: 0;
 	padding-top: 15px;
 	padding-left: 7px;
+}
+
+/* Leave enough space for the header bar */
+body .application-sidebar, body .application-content
+{
+	top: 49px;
+}
+
+/* Take into account the impersonation header bar */
+body.impersonating .application-sidebar, body.impersonating .application-content
+{
+	top: 95px;
 }
 
 #calendar th

@@ -52,7 +52,7 @@
 
 	<title>{% block title %}{% endblock %}</title>
 </head>
-<body>
+<body class="{% if request.session.impersonate_id %}impersonating{% endif %}">
 {% if request.session.impersonate_id %}
 	{% include 'base/impersonate_header.html' %}
 {% endif %}
