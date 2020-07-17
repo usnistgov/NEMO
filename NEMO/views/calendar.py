@@ -1,5 +1,5 @@
 import io
-from collections import Iterable, defaultdict
+from collections import Iterable
 from copy import deepcopy
 from datetime import timedelta, datetime
 from http import HTTPStatus
@@ -22,7 +22,7 @@ from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccess
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
-from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage
+from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations
 
 calendar_logger = getLogger(__name__)
 
@@ -348,10 +348,10 @@ def reservation_success(request, reservation: Reservation):
 			overlapping_reservations_in_same_area = overlapping_reservations_in_same_area.filter(tool__in=Tool.objects.filter(_requires_area_access=area))
 		elif reservation.reservation_item_type == ReservationItemType.AREA:
 			overlapping_reservations_in_same_area = overlapping_reservations_in_same_area.filter(area=area)
-		max_area_overlap, max_area_time = maximum_overlap_users(overlapping_reservations_in_same_area)
+		max_area_overlap, max_area_time = maximum_users_in_overlapping_reservations(overlapping_reservations_in_same_area)
 		if location:
 			overlapping_reservations_in_same_location = overlapping_reservations_in_same_area.filter(tool__in=Tool.objects.filter(_location=location))
-			max_location_overlap, max_location_time = maximum_overlap_users(overlapping_reservations_in_same_location)
+			max_location_overlap, max_location_time = maximum_users_in_overlapping_reservations(overlapping_reservations_in_same_location)
 	if max_area_overlap and max_area_overlap >= area.warning_capacity():
 		dictionary = {
 			'area': area,
@@ -1014,54 +1014,3 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	filename = 'cancelled_reservation.ics' if cancelled else 'reservation.ics'
 
 	return create_email_attachment(ics, filename)
-
-
-def maximum_overlap_users(reservations: List[Reservation]) -> (int, datetime):
-	"""
-	Returns the maximum number of overlapping reservations and the earlier time the maximum is reached
-	This will only count reservations made by different users. i.e. if a user has 3 reservations at the same
-	time for different tools, it will only count as one.
-	"""
-	# First we need to merge reservations by user, since one user could have more than one at the same time. (and we should only count it as one)
-	intervals_by_user = defaultdict(list)
-	for r in reservations:
-		intervals_by_user[r.user.id].append((r.start, r.end))
-
-	merged_intervals = []
-	for user, intervals in intervals_by_user.items():
-		merged_intervals.extend(recursive_merge(sorted(intervals).copy()))
-
-	# Now let's count the maximum overlapping reservations
-	times = []
-	for interval in merged_intervals:
-		start_time, end_time = interval[0], interval[1]
-		times.append((start_time, 'start'))
-		times.append((end_time, 'end'))
-	times = sorted(times)
-
-	count = 0
-	max_count = 0
-	max_time = None
-	for time in times:
-		if time[1] == 'start':
-			count += 1  # increment on arrival/start
-		else:
-			count -= 1  # decrement on departure/end
-		# maintain maximum
-		prev_count = max_count
-		max_count = max(count, max_count)
-		# maintain earlier time max is reached
-		if max_count > prev_count:
-			max_time = time[0]
-	return max_count, max_time
-
-
-def recursive_merge(intervals: List[tuple], start_index=0) -> List[tuple]:
-	for i in range(start_index, len(intervals) - 1):
-		if intervals[i][1] > intervals[i + 1][0]:
-			new_start = intervals[i][0]
-			new_end = intervals[i + 1][1]
-			intervals[i] = (new_start, new_end)
-			del intervals[i + 1]
-			return recursive_merge(intervals.copy(), start_index=i)
-	return intervals

@@ -1,4 +1,5 @@
-from datetime import timedelta, date
+from collections import defaultdict
+from datetime import timedelta, date, datetime
 from typing import Optional, List
 
 from django.db.models import Q
@@ -273,13 +274,18 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 				policy_problems.append(f"{str(user)} already has a reservation that coincides with this one. Please choose a different time.")
 		for area in new_reservation.area.get_ancestors(ascending=True, include_self=True):
 			# Check reservations for all other children of the parent areas
+			if not area.count_staff_in_occupancy:
+				coincident_events = coincident_events.filter(user__is_staff=False)
 			apply_to_user = not user.is_staff or user.is_staff and area.count_staff_in_occupancy
-			children_events = coincident_events.filter(area_id__in=[area.id for area in area.get_descendants(include_self=True)])
-			# Check only distinct users since the same user could make reservations in different rooms
-			distinct_users = set(children_events.values_list('user', flat=True).distinct())
-			distinct_users.add(user.id)
-			if apply_to_user and area.maximum_capacity and len(distinct_users) > area.maximum_capacity:
-				policy_problems.append(f"The {area} is already at its maximum capacity at this time. Please choose a different time.")
+			if apply_to_user and area.maximum_capacity:
+				children_events = coincident_events.filter(area_id__in=[area.id for area in area.get_descendants(include_self=True)])
+				reservations = list(children_events)
+				reservations.append(new_reservation)
+				# Check only distinct users since the same user could make reservations in different rooms
+				maximum_users, time = maximum_users_in_overlapping_reservations(reservations)
+				if maximum_users > area.maximum_capacity:
+					time_display = "at this time" if time is None else "at "+timezone.localtime(time).strftime('%-I:%M %p')
+					policy_problems.append(f"The {area} would be over its maximum capacity {time_display}. Please choose a different time.")
 
 	# The user may not create, move, or resize a reservation to coincide with a scheduled outage.
 	if new_reservation.reservation_item_type == ReservationItemType.TOOL:
@@ -287,6 +293,8 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 			Q(tool=new_reservation.tool) | Q(resource__fully_dependent_tools__in=[new_reservation.tool]))
 	elif new_reservation.reservation_item_type == ReservationItemType.AREA:
 		coincident_events = new_reservation.area.scheduled_outage_queryset()
+	else:
+		coincident_events = ScheduledOutage.objects.none()
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
@@ -496,3 +504,53 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 		if area.requires_reservation and not area.get_current_reservation_for_user(user):
 			raise ReservationRequiredUserError(user=user, area=area)
 
+
+def maximum_users_in_overlapping_reservations(reservations: List[Reservation]) -> (int, datetime):
+	"""
+	Returns the maximum number of overlapping reservations and the earlier time the maximum is reached
+	This will only count reservations made by different users. i.e. if a user has 3 reservations at the same
+	time for different tools/areas, it will only count as one.
+	"""
+	# First we need to merge reservations by user, since one user could have more than one at the same time. (and we should only count it as one)
+	intervals_by_user = defaultdict(list)
+	for r in reservations:
+		intervals_by_user[r.user.id].append((r.start, r.end))
+
+	merged_intervals = []
+	for user, intervals in intervals_by_user.items():
+		merged_intervals.extend(recursive_merge(sorted(intervals).copy()))
+
+	# Now let's count the maximum overlapping reservations
+	times = []
+	for interval in merged_intervals:
+		start_time, end_time = interval[0], interval[1]
+		times.append((start_time, 'start'))
+		times.append((end_time, 'end'))
+	times = sorted(times)
+
+	count = 0
+	max_count = 0
+	max_time: Optional[datetime] = None
+	for time in times:
+		if time[1] == 'start':
+			count += 1  # increment on arrival/start
+		else:
+			count -= 1  # decrement on departure/end
+		# maintain maximum
+		prev_count = max_count
+		max_count = max(count, max_count)
+		# maintain earlier time max is reached
+		if max_count > prev_count:
+			max_time = time[0]
+	return max_count, max_time
+
+
+def recursive_merge(intervals: List[tuple], start_index=0) -> List[tuple]:
+	for i in range(start_index, len(intervals) - 1):
+		if intervals[i][1] > intervals[i + 1][0]:
+			new_start = intervals[i][0]
+			new_end = intervals[i + 1][1]
+			intervals[i] = (new_start, new_end)
+			del intervals[i + 1]
+			return recursive_merge(intervals.copy(), start_index=i)
+	return intervals
