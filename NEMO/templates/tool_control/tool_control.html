@@ -107,7 +107,7 @@
 			var staff_charge = false;
 			if($("input[name='staff_charge']").length > 0 && $("input[name='staff_charge']:checked").val() === 'true')
 				staff_charge = true;
-			var url = "{% url 'enable_tool' tool_id=111 user_id=222 project_id=333 staff_charge='false' %}".replace('111', tool_id).replace('222', user_id.toString()).replace('333', project_id.toString()).replace('false', staff_charge.toString())
+			var url = "{% url 'enable_tool' tool_id=111 user_id=22222222 project_id=33333333 staff_charge='false' %}".replace('111', tool_id).replace('22222222', user_id.toString()).replace('33333333', project_id.toString()).replace('false', staff_charge.toString())
 			var failure_dialog = ajax_failure_callback("Couldn't change tool status");
 			var success_callbacks;
 			if(staff_charge === true)

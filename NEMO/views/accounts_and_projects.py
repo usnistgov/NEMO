@@ -93,9 +93,9 @@ def create_account(request):
 
 @staff_member_required(login_url=None)
 @require_POST
-def remove_user_from_project(request, user_id, project_id):
-	user = get_object_or_404(User, id=user_id)
-	project = get_object_or_404(Project, id=project_id)
+def remove_user_from_project(request):
+	user = get_object_or_404(User, id=request.POST['user_id'])
+	project = get_object_or_404(Project, id=request.POST['project_id'])
 	if project.user_set.filter(id=user.id).exists():
 		history = MembershipHistory()
 		history.action = MembershipHistory.Action.REMOVED
@@ -113,9 +113,9 @@ def remove_user_from_project(request, user_id, project_id):
 
 @staff_member_required(login_url=None)
 @require_POST
-def add_user_to_project(request, user_id, project_id):
-	user = get_object_or_404(User, id=user_id)
-	project = get_object_or_404(Project, id=project_id)
+def add_user_to_project(request):
+	user = get_object_or_404(User, id=request.POST['user_id'])
+	project = get_object_or_404(Project, id=request.POST['project_id'])
 	if user not in project.user_set.all():
 		history = MembershipHistory()
 		history.action = MembershipHistory.Action.ADDED
