@@ -187,9 +187,7 @@ def choices(request):
 		usage_events = UsageEvent.objects.filter(operator=customer.id, end=None).order_by('tool__name').prefetch_related('tool', 'project')
 		tools_in_use = [u.tool.tool_or_parent_id() for u in usage_events]
 		fifteen_minutes_from_now = timezone.now() + timedelta(minutes=15)
-		reservations = Reservation.objects.filter(end__gt=timezone.now(), user=customer, missed=False, cancelled=False, shortened=False).exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now).order_by('start')
-		if customer.in_area():
-			reservations = reservations.exclude(area=customer.area_access_record().area, start__lte=fifteen_minutes_from_now)
+		tool_reservations = Reservation.objects.filter(tool__isnull=False, end__gt=timezone.now(), user=customer, missed=False, cancelled=False, shortened=False).exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now).order_by('start')
 	except:
 		dictionary = {'message': "Your badge wasn't recognized. If you got a new one recently then we'll need to update your account. Please contact staff to resolve the problem."}
 		return render(request, 'kiosk/acknowledgement.html', dictionary)
@@ -200,7 +198,7 @@ def choices(request):
 		'now': timezone.now(),
 		'customer': customer,
 		'usage_events': list(usage_events),
-		'upcoming_reservations': reservations,
+		'upcoming_reservations': tool_reservations,
 		'tool_summary': create_tool_summary(),
 		'categories': categories,
 		'unqualified_categories': unqualified_categories,
