@@ -49,14 +49,13 @@ def check_user_exists_and_active(backend: ModelBackend, username: str) -> User:
 	try:
 		user = User.objects.get(username=username)
 	except User.DoesNotExist:
-		auth_logger.warning(f"Username {username} attempted to authenticate with {type(backend).__name__}, but that username does not exist in the database. The user was denied access.")
+		auth_logger.warning(f"User {username} attempted to authenticate with {type(backend).__name__}, but that username does not exist in the database. The user was denied access.")
 		raise
 	# The user must be marked active.
 	if not user.is_active:
-		auth_logger.warning(f"User {username} successfully authenticated with {type(backend).__name__}, but that user is marked inactive in the database. The user was denied access.")
+		auth_logger.warning(f"User {username} attempted to authenticate with {type(backend).__name__}, but that user is marked inactive in the database. The user was denied access.")
 		raise InactiveUserError(user=username)
-	# All security checks passed so let the user in.
-	auth_logger.debug(f"User {username} successfully authenticated with {type(backend).__name__} and was granted access.")
+	auth_logger.debug(f"User {username} exists in the database and is active.")
 	return user
 
 
@@ -94,7 +93,10 @@ class RemoteUserAuthenticationBackend(ModelBackend):
 		if not remote_user:
 			return
 		username = self.clean_username(remote_user)
-		return check_user_exists_and_active(self, username)
+		user = check_user_exists_and_active(self, username)
+		# All security checks passed so let the user in.
+		auth_logger.debug(f"User {username} successfully authenticated with {type(self).__name__} and was granted access.")
+		return user
 
 
 	def clean_username(self, username):
