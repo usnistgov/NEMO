@@ -24,7 +24,7 @@
 				<div id="category_{{ forloop.counter }}" class="collapse">
 					<div style="margin-bottom:10px"></div>
 					{% for tool in category.list %}
-						<p><a href="/{{ next_page }}/{{ tool.id }}/">{{ tool.name_or_child_in_use_name }}</a></p>
+						<p><a href="/{{ next_page }}/tool/{{ tool.id }}/">{{ tool.name_or_child_in_use_name }}</a></p>
 					{% endfor %}
 				</div>
 			</div>
