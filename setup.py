@@ -31,7 +31,7 @@ setup(
 		'ldap3==2.6.1',
 		'python-dateutil==2.8.1',
 		'requests==2.22.0',
-		'Pillow==7.0.0',
+		'Pillow==7.2.0',
 		'django-mptt==0.11.0',
 	],
 	entry_points={
