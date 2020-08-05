@@ -50,10 +50,14 @@ $('#sidebar .sidebar-status-occupancy').remove();
 		{% else %}
 			$('#area-{{ area.id }}').append('<span class="glyphicon glyphicon-user success-highlight sidebar-status-icon" data-toggle="tooltip" title="{{ area.occupants }}"></span>');
 		{% endif %}
-		{% if area.count_staff_in_occupancy %}
+		{% if area.count_staff_in_occupancy and area.count_service_personnel_in_occupancy %}
 			$('#area-{{ area.id }}').append('<span class="sidebar-status-occupancy" title="There {% if area.occupancy_count == 1 %}is{% else %}are{% endif %} {{ area.occupancy_count }} {% if area.occupancy_count == 1 %}person{% else %}people{% endif %} in this area"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
-		{% else %}
+		{% elif not area.count_staff_in_occupancy and area.count_service_personnel_in_occupancy %}
 			$('#area-{{ area.id }}').append('<span class="sidebar-status-occupancy" title="There {% if area.occupancy_count == 1 %}is{% else %}are{% endif %} {{ area.occupancy_count }} {% if area.occupancy_count == 1 %}person{% else %}people{% endif %} in this area (+ {{ area.occupancy_staff }} staff)"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
+		{% elif not area.count_service_personnel_in_occupancy and area.count_staff_in_occupancy %}
+			$('#area-{{ area.id }}').append('<span class="sidebar-status-occupancy" title="There {% if area.occupancy_count == 1 %}is{% else %}are{% endif %} {{ area.occupancy_count }} {% if area.occupancy_count == 1 %}person{% else %}people{% endif %} in this area (+ {{ area.occupancy_service_personnel }} service personnel)"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
+		{% else %}
+			$('#area-{{ area.id }}').append('<span class="sidebar-status-occupancy" title="There {% if area.occupancy_count == 1 %}is{% else %}are{% endif %} {{ area.occupancy_count }} {% if area.occupancy_count == 1 %}person{% else %}people{% endif %} in this area (+ {{ area.occupancy_staff }} staff {% if area.occupancy_service_personnel > 0 %}and {{ area.occupancy_service_personnel }} service personnel{% endif %})"> {{ area.occupancy_count }} / {{ area.maximum_capacity }}</span>');
 		{% endif %}
 	{% endif %}
 {% endfor %}

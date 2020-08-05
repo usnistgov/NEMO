@@ -847,10 +847,10 @@ def email_out_of_time_reservation_notification(request):
 	# Find all logged users
 	access_records:List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'area').only('customer', 'area')
 	for access_record in access_records:
-		# staff are exempt from out of time notification
+		# staff and service personnel are exempt from out of time notification
 		customer = access_record.customer
 		area = access_record.area
-		if customer.is_staff:
+		if customer.is_staff or customer.is_service_personnel:
 			continue
 
 		if area.requires_reservation:

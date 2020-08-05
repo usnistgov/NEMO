@@ -128,6 +128,7 @@ class User(models.Model):
 	# Permissions
 	is_active = models.BooleanField('active', default=True, help_text='Designates whether this user can log in. Unselect this instead of deleting accounts.')
 	is_staff = models.BooleanField('staff status', default=False, help_text='Designates whether the user can log into this admin site.')
+	is_service_personnel = models.BooleanField('service personnel', default=False, help_text='Designates this user as service personnel. Service personnel can operate qualified tools without a reservation even when they are shutdown or during an outage and can access authorized areas without a reservation.')
 	is_technician = models.BooleanField('technician status', default=False, help_text='Specifies how to bill staff time for this user. When checked, customers are billed at technician rates.')
 	is_superuser = models.BooleanField('superuser status', default=False, help_text='Designates that this user has all permissions without explicitly assigning them.')
 	training_required = models.BooleanField(default=True, help_text='When selected, the user is blocked from all reservation and tool usage capabilities.')
@@ -850,6 +851,7 @@ class Area(MPTTModel):
 	# Capacity
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
 	count_staff_in_occupancy = models.BooleanField(default=True, help_text='Indicates that staff users will count towards maximum capacity.')
+	count_service_personnel_in_occupancy = models.BooleanField(default=True, help_text='Indicates that service personnel will count towards maximum capacity.')
 	reservation_warning = models.PositiveIntegerField(blank=True, null=True, help_text='The number of simultaneous users (with at least one reservation in this area) allowed before a warning is displayed when creating a reservation.')
 
 	# Policy rules
@@ -908,13 +910,18 @@ class Area(MPTTModel):
 
 	def occupancy_count(self):
 		""" Returns the occupancy used to determine if the area is at capacity """
-		if self.count_staff_in_occupancy:
-			return self.occupancy()
-		else:
-			return self.occupancy() - self.occupancy_staff()
+		result = self.occupancy()
+		if not self.count_staff_in_occupancy:
+			result = result - self.occupancy_staff()
+		if not self.count_service_personnel_in_occupancy:
+			result = result - self.occupancy_service_personnel()
+		return result
 
 	def occupancy_staff(self):
 		return AreaAccessRecord.objects.filter(area__in=self.get_descendants(include_self=True), end=None, staff_charge=None, customer__is_staff=True).count()
+
+	def occupancy_service_personnel(self):
+		return AreaAccessRecord.objects.filter(area__in=self.get_descendants(include_self=True), end=None, staff_charge=None, customer__is_service_personnel=True).count()
 
 	def occupancy(self):
 		return AreaAccessRecord.objects.filter(area__in=self.get_descendants(include_self=True), end=None, staff_charge=None).count()
