@@ -54,9 +54,18 @@
 				{% endfor %}
 			</div>
 		{% endif %}
-		{% if usage_events or user.in_area or self_log_in %}
+		{% if usage_events or user.in_area or self_log_in or user.is_staff and user.charging_staff_time %}
 			<div class="col-lg-4">
 				<h3>Current {{ facility_name }} usage</h3>
+				{% if user.is_staff and user.charging_staff_time %}
+					<a href="{% url 'staff_charges' %}" style="text-decoration: none">
+						<div class="alert alert-warning">
+						{% with user.get_staff_charge as staff_charge %}
+							You are currently charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.
+						{% endwith %}
+						</div>
+					</a>
+				{% endif %}
 				{% for usage in usage_events %}
 					<a href="{% url 'tool_control' usage.tool.tool_or_parent_id %}" style="text-decoration: none">
 						<div class="alert alert-info">

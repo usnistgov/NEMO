@@ -196,6 +196,14 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	if tool.interlock and not tool.interlock.unlock():
 		raise Exception("The interlock command for this tool failed. The error message returned: " + str(tool.interlock.most_recent_reply))
 
+	# Start staff charge before tool usage
+	if staff_charge:
+		new_staff_charge = StaffCharge()
+		new_staff_charge.staff_member = request.user
+		new_staff_charge.customer = user
+		new_staff_charge.project = project
+		new_staff_charge.save()
+
 	# Create a new usage event to track how long the user uses the tool.
 	new_usage_event = UsageEvent()
 	new_usage_event.operator = operator
@@ -203,13 +211,6 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	new_usage_event.project = project
 	new_usage_event.tool = tool
 	new_usage_event.save()
-
-	if staff_charge:
-		new_staff_charge = StaffCharge()
-		new_staff_charge.staff_member = request.user
-		new_staff_charge.customer = user
-		new_staff_charge.project = project
-		new_staff_charge.save()
 
 	return response
 

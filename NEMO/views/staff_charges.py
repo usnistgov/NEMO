@@ -5,20 +5,31 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.models import User, StaffCharge, AreaAccessRecord, Project, Area
+from NEMO.models import User, StaffCharge, AreaAccessRecord, Project, Area, UsageEvent
 from NEMO.views.area_access import load_areas_for_use_in_template
 
 
 @staff_member_required(login_url=None)
 @require_GET
 def staff_charges(request):
-	staff_charge = request.user.get_staff_charge()
+	staff_charge: StaffCharge = request.user.get_staff_charge()
+	dictionary = dict()
 	if staff_charge:
 		try:
+			dictionary['staff_charge'] = staff_charge
+			# Create dictionary of charges for time, tool and areas
+			charges = [{'type': 'Start time charge', 'start': staff_charge.start, 'end': staff_charge.end}]
+			for area_charge in AreaAccessRecord.objects.filter(staff_charge_id=staff_charge.id):
+				charges.append({'type': area_charge.area.name + ' access', 'start': area_charge.start, 'end': area_charge.end, 'class': 'primary-highlight'})
+			for tool_charge in UsageEvent.objects.filter(operator=staff_charge.staff_member, user=staff_charge.customer, start__gt=staff_charge.start):
+				charges.append({'type': tool_charge.tool.name + ' usage', 'start': tool_charge.start, 'end': tool_charge.end, 'class': 'warning-highlight'})
+			charges.sort(key=lambda x: x['start'], reverse=True)
+			dictionary['charges'] = charges
+
 			area_access_record = AreaAccessRecord.objects.get(staff_charge=staff_charge.id, end=None)
-			return render(request, 'staff_charges/end_area_charge.html', {'area': area_access_record.area})
+			dictionary['area'] = area_access_record.area
+			return render(request, 'staff_charges/end_area_charge.html', dictionary)
 		except AreaAccessRecord.DoesNotExist:
-			dictionary = dict()
 			dictionary['user_accessible_areas'], dictionary['areas'] = load_areas_for_use_in_template()
 			return render(request, 'staff_charges/change_status.html', dictionary)
 	error = None
@@ -29,11 +40,14 @@ def staff_charges(request):
 		pass
 	if customer:
 		if customer.active_project_count() > 0:
-			return render(request, 'staff_charges/choose_project.html', {'customer': customer})
+			dictionary['customer'] = customer
+			return render(request, 'staff_charges/choose_project.html', dictionary)
 		else:
 			error = str(customer) + ' does not have any active projects. You cannot bill staff time to this user.'
 	users = User.objects.filter(is_active=True).exclude(id=request.user.id)
-	return render(request, 'staff_charges/new_staff_charge.html', {'users': users, 'error': error})
+	dictionary['users'] = users
+	dictionary['error'] = error
+	return render(request, 'staff_charges/new_staff_charge.html', dictionary)
 
 
 @staff_member_required(login_url=None)

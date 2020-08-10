@@ -1,7 +1,5 @@
-{% extends 'base.html' %}
-{% block title %}Staff charges{% endblock %}
-{% block content %}
-	<h1>Staff charges</h1>
+{% extends 'staff_charges/staff_charges_base.html' %}
+{% block staff_charges_content %}
 	<div class="col-sm-12">
 		<form action="{% url 'begin_staff_charge' %}" class="form-horizontal" method="post">
 			{% csrf_token %}
