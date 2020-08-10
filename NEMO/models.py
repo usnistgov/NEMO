@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import timedelta
 from enum import Enum
+from logging import getLogger
 from typing import Union, List
 
 from django.conf import settings
@@ -22,6 +23,8 @@ from NEMO import fields
 from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
+
+models_logger = getLogger(__name__)
 
 
 class ReservationItemType(Enum):
@@ -1127,12 +1130,29 @@ class Consumable(models.Model):
 	visible = models.BooleanField(default=True)
 	reminder_threshold = models.IntegerField(help_text="More of this item should be ordered when the quantity falls below this threshold.")
 	reminder_email = models.EmailField(help_text="An email will be sent to this address when the quantity of this item falls below the reminder threshold.")
+	reminder_threshold_reached = models.BooleanField(default=False)
 
 	class Meta:
 		ordering = ['name']
 
 	def __str__(self):
 		return self.name
+
+# This method is used to check when the quantity of a consumable falls below the threshold and when it has been replenished
+@receiver(models.signals.pre_save, sender=Consumable)
+def check_consumable_quantity_threshold(sender, instance: Consumable, **kwargs):
+	try:
+		if not instance.reminder_threshold_reached and instance.quantity < instance.reminder_threshold:
+			# quantity is below threshold. set flag and send email
+			instance.reminder_threshold_reached = True
+			from NEMO.views.consumables import send_reorder_supply_reminder_email
+			send_reorder_supply_reminder_email(instance)
+		if instance.reminder_threshold_reached and instance.quantity >= instance.reminder_threshold:
+			# it has been replenished. reset flag
+			instance.reminder_threshold_reached = False
+	except Exception as e:
+		models_logger.exception(e)
+		pass
 
 
 class ConsumableCategory(models.Model):

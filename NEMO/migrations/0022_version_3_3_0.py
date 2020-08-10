@@ -20,4 +20,9 @@ class Migration(migrations.Migration):
             name='is_service_personnel',
             field=models.BooleanField(default=False, help_text='Designates this user as service personnel. Service personnel can operate qualified tools without a reservation even when they are shutdown or during an outage and can access authorized areas without a reservation.', verbose_name='service personnel'),
         ),
+        migrations.AddField(
+            model_name='consumable',
+            name='reminder_threshold_reached',
+            field=models.BooleanField(default=False),
+        ),
     ]

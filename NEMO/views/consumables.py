@@ -1,11 +1,14 @@
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
+from django.template import Template, Context
 from django.views.decorators.http import require_http_methods
 
 from NEMO import rates
 from NEMO.forms import ConsumableWithdrawForm
 from NEMO.models import Consumable, User, ConsumableWithdraw, Project
+from NEMO.utilities import send_mail
+from NEMO.views.customization import get_media_file_contents, get_customization
 
 
 @staff_member_required(login_url=None)
@@ -37,3 +40,12 @@ def make_withdrawal(consumable: Consumable, quantity: int, project: Project, mer
 	withdraw = ConsumableWithdraw.objects.create(consumable=consumable, quantity=quantity, merchant=merchant, customer=customer, project=project)
 	withdraw.consumable.quantity -= withdraw.quantity
 	withdraw.consumable.save()
+
+
+def send_reorder_supply_reminder_email(consumable: Consumable):
+	user_office_email = get_customization('user_office_email_address')
+	message = get_media_file_contents('reorder_supplies_reminder_email.html')
+	if user_office_email and message:
+		subject = f"Time to order more {consumable.name}"
+		rendered_message = Template(message).render(Context({'item': consumable}))
+		send_mail(subject, rendered_message, user_office_email, [consumable.reminder_email])

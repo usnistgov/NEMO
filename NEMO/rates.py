@@ -7,7 +7,7 @@ from django.conf import settings
 
 from NEMO.models import Consumable, Tool
 
-logger = getLogger(__name__)
+rates_logger = getLogger(__name__)
 
 class Rates(ABC):
 
@@ -53,15 +53,15 @@ class NISTRates(Rates):
 				rates_file = getattr(settings, 'RATES_FILE', settings.MEDIA_ROOT + '/rates.json')
 				json_data = open(rates_file)
 				self.rates = json.load(json_data)
-				logger.info("found rates file and loaded rates")
+				rates_logger.info("found rates file and loaded rates")
 			except FileNotFoundError as e:
 				if hasattr(settings, 'RATES_FILE'):
-					logger.exception(e)
+					rates_logger.exception(e)
 				else:
-					logger.debug("no rates file, skipping loading rates")
+					rates_logger.debug("no rates file, skipping loading rates")
 			except Exception as e:
-				logger.error("error loading rates")
-				logger.exception(e)
+				rates_logger.error("error loading rates")
+				rates_logger.exception(e)
 			finally:
 				if json_data:
 					json_data.close()
