@@ -60,14 +60,20 @@
 			<label class="control-label col-sm-2" for="consumable">Consumable</label>
 			<div class="col-sm-4">
 				<select id="consumable" name="consumable" class="form-control">
+					<option>&nbsp;</option>
 					{% regroup consumables by category as categories %}
 					{% for category in categories %}
-						<option>&nbsp;</option>
+						{% if categories|length > 1 or category.grouper %}
 						<optgroup label="{{ category.grouper|default_if_none:"Uncategorized" }}">
 							{% for item in category.list %}
 								<option value="{{ item.id }}" {% if form.cleaned_data.consumable.id == item.id %}selected{% endif %}>{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}</option>
 							{% endfor %}
 						</optgroup>
+						{% else %}
+							{% for item in category.list %}
+								<option value="{{ item.id }}" {% if form.cleaned_data.consumable.id == item.id %}selected{% endif %}>{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}</option>
+							{% endfor %}
+						{% endif %}
 					{% endfor %}
 				</select>
 			</div>
