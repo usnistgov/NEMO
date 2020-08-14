@@ -33,7 +33,7 @@ class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
 				header_value = request.META[self.header]
 			except KeyError:
 				# If header is not present, log a warning and continue with processing of base class. (no authentication is happening)
-				middleware_logger.warning(f"Header: {self.header} not present or invalid")
+				middleware_logger.debug(f"Header: {self.header} not present or invalid")
 			super().process_request(request)
 		except (User.DoesNotExist, InactiveUserError):
 			from NEMO.views.authentication import all_auth_backends_are_pre_auth

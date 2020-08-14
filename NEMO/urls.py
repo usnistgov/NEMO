@@ -141,9 +141,10 @@ urlpatterns = [
 
 	# Resources:
 	url(r'^resources/$', resources.resources, name='resources'),
-	url(r'^resources/modify/(?P<resource_id>\d+)/$', resources.modify_resource, name='modify_resource'),
-	url(r'^resources/schedule_outage/$', resources.schedule_outage, name='schedule_resource_outage'),
-	url(r'^resources/delete_scheduled_outage/(?P<outage_id>\d+)/$', resources.delete_scheduled_outage, name='delete_scheduled_resource_outage'),
+	url(r'^resources/(?P<resource_id>\d+)/$', resources.resource_details, name='resource_details'),
+	url(r'^resources/(?P<resource_id>\d+)/modify/$', resources.modify_resource, name='modify_resource'),
+	url(r'^resources/(?P<resource_id>\d+)/schedule_outage/$', resources.schedule_outage, name='schedule_resource_outage'),
+	url(r'^resources/(?P<resource_id>\d+)/delete_scheduled_outage/(?P<outage_id>\d+)/$', resources.delete_scheduled_outage, name='delete_scheduled_resource_outage'),
 
 	# Consumables:
 	url(r'^consumables/$', consumables.consumables, name='consumables'),
