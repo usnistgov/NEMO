@@ -78,6 +78,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 	attachments = None
 	if task_images:
 		attachments = [create_email_attachment(task_image.image, task_image.image.name) for task_image in task_images]
+	# Send an email to the appropriate staff that a new task has been created:
 	if message:
 		dictionary = {
 			'template_color': bootstrap_primary_color('danger') if task.force_shutdown else bootstrap_primary_color('warning'),
@@ -86,7 +87,6 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 			'tool': task.tool,
 			'tool_control_absolute_url': request.build_absolute_uri(task.tool.get_absolute_url())
 		}
-		# Send an email to the appropriate staff that a new task has been created:
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
 		message = Template(message).render(Context(dictionary))
 		managers = []
@@ -242,29 +242,27 @@ def set_task_status(request, task, status_name, user):
 	task.save()
 
 	message = get_media_file_contents('task_status_notification.html')
-	if not message:
-		return
-
-	dictionary = {
-		'template_color': bootstrap_primary_color('success'),
-		'title': f'{task.tool} task notification',
-		'status_message': status_message,
-		'notification_message': status.notification_message,
-		'task': task,
-		'tool_control_absolute_url': request.build_absolute_uri(task.tool.get_absolute_url())
-	}
-	# Send an email to the appropriate staff that a new task has been created:
-	subject = f'{task.tool} task notification'
-	message = Template(message).render(Context(dictionary))
-	recipients = [
-		task.tool.primary_tool_owner.email if status.notify_primary_tool_owner else None,
-		task.tool.notification_email_address if status.notify_tool_notification_email else None,
-		status.custom_notification_email_address
-	]
-	if status.notify_backup_tool_owners:
-		recipients += task.tool.backup_tool_owners.values_list('email')
-	recipients = filter(None, recipients)
-	send_mail(subject, message, user.email, recipients)
+	# Send an email to the appropriate staff that a task status has been updated:
+	if message:
+		dictionary = {
+			'template_color': bootstrap_primary_color('success'),
+			'title': f'{task.tool} task notification',
+			'status_message': status_message,
+			'notification_message': status.notification_message,
+			'task': task,
+			'tool_control_absolute_url': request.build_absolute_uri(task.tool.get_absolute_url())
+		}
+		subject = f'{task.tool} task notification'
+		message = Template(message).render(Context(dictionary))
+		recipients = [
+			task.tool.primary_tool_owner.email if status.notify_primary_tool_owner else None,
+			task.tool.notification_email_address if status.notify_tool_notification_email else None,
+			status.custom_notification_email_address
+		]
+		if status.notify_backup_tool_owners:
+			recipients += task.tool.backup_tool_owners.values_list('email')
+		recipients = filter(None, recipients)
+		send_mail(subject, message, user.email, recipients)
 
 
 def save_task_images(request, task: Task) -> List[TaskImages]:

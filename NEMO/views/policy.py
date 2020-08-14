@@ -52,14 +52,14 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 	# The tool operator may not activate tools in a particular area unless they are logged in to the area.
 	# Staff are exempt from this rule.
 	if tool.requires_area_access and AreaAccessRecord.objects.filter(area=tool.requires_area_access, customer=operator, staff_charge=None, end=None).count() == 0 and not operator.is_staff:
-		dictionary = {
-			'operator': operator,
-			'tool': tool,
-			'type': 'access'
-		}
 		abuse_email_address = get_customization('abuse_email_address')
 		message = get_media_file_contents('unauthorized_tool_access_email.html')
 		if abuse_email_address and message:
+			dictionary = {
+				'operator': operator,
+				'tool': tool,
+				'type': 'access'
+			}
 			rendered_message = Template(message).render(Context(dictionary))
 			send_mail("Area access requirement", rendered_message, abuse_email_address, [abuse_email_address])
 		return HttpResponseBadRequest("You must be logged in to the {} to operate this tool.".format(tool.requires_area_access.name))
@@ -68,14 +68,14 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 	# Staff and service personnel are exempt from this rule.
 	if not operator.is_staff and not operator.is_service_personnel and tool.requires_area_reservation():
 		if not tool.requires_area_access.get_current_reservation_for_user(operator):
-			dictionary = {
-				'operator': operator,
-				'tool': tool,
-				'type': 'reservation',
-			}
 			abuse_email_address = get_customization('abuse_email_address')
 			message = get_media_file_contents('unauthorized_tool_access_email.html')
 			if abuse_email_address and message:
+				dictionary = {
+					'operator': operator,
+					'tool': tool,
+					'type': 'reservation',
+				}
 				rendered_message = Template(message).render(Context(dictionary))
 				send_mail("Area reservation requirement", rendered_message, abuse_email_address, [abuse_email_address])
 			return HttpResponseBadRequest("You must have a current reservation for the {} to operate this tool.".format(tool.requires_area_access.name))
