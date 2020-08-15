@@ -27,7 +27,7 @@ def consumables(request):
 		withdraw = form.save(commit=False)
 		make_withdrawal(consumable=withdraw.consumable, merchant=request.user, customer=withdraw.customer, quantity=withdraw.quantity, project=withdraw.project)
 		form = ConsumableWithdrawForm(initial={'quantity': 1})
-		messages.success(request, f'The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer} was successfully logged and will be billed to project {withdraw.project}.')
+		messages.success(request, f'The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer} was successfully logged and will be billed to project {withdraw.project}.', extra_tags="data-speed=9000")
 	else:
 		if hasattr(form, 'cleaned_data') and 'customer' in form.cleaned_data:
 			dictionary['projects'] = form.cleaned_data['customer'].active_projects()

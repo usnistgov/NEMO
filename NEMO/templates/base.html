@@ -66,7 +66,7 @@
         <div class="container">
 			{% if messages %}
 				{% for message in messages %}
-					<div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" style="display: none">
+					<div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
 						<button type="button" class="close" data-dismiss="alert">&times;</button>
 						{{message}}
 					</div>
@@ -104,7 +104,9 @@
 	{
 		var alert_users = $(".alert.show-on-load");
 		alert_users.each(function(index, element) {
-			$(element).fadeTo(3500, 500).slideUp(500, function () {
+		    let speed = 4500;
+		    if ($(element).data('speed')) speed = $(element).data('speed')
+			$(element).fadeTo(speed, 500).slideUp(500, function () {
 				$(element).slideUp(500);
 			});
 		});
