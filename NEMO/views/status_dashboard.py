@@ -111,9 +111,11 @@ def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=Tru
 			'warning_capacity': area.item.warning_capacity(),
 			'danger_capacity': area.item.danger_capacity(),
 			'count_staff_in_occupancy': area.count_staff_in_occupancy,
+			'count_service_personnel_in_occupancy': area.count_service_personnel_in_occupancy,
 			'occupancy_count': 0,
 			'occupancy': 0,
 			'occupancy_staff': 0,
+			'occupancy_service_personnel': 0,
 			'occupants': '',
 			'required_resource_is_unavailable': False,
 			'scheduled_outage': False,
@@ -141,6 +143,8 @@ def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=Tru
 			area_ids = area_model_tree.get_area(occupant.area_id).ancestor_ids(include_self=True)
 			if occupant.customer.is_staff:
 				customer_display = f'<span class="success-highlight">{str(occupant.customer)}</span>'
+			elif occupant.customer.is_service_personnel:
+				customer_display = f'<span class="warning-highlight">{str(occupant.customer)}</span>'
 			elif occupant.customer.is_logged_in_area_without_reservation():
 				customer_display = f'<span class="danger-highlight">{str(occupant.customer)}</span>'
 			else:
@@ -150,7 +154,9 @@ def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=Tru
 					result[area_id]['occupancy'] += 1
 					if occupant.customer.is_staff:
 						result[area_id]['occupancy_staff'] += 1
-					if not occupant.customer.is_staff or result[area_id]['count_staff_in_occupancy']:
+					if occupant.customer.is_service_personnel:
+						result[area_id]['occupancy_service_personnel'] += 1
+					if (not occupant.customer.is_staff or result[area_id]['count_staff_in_occupancy']) and (not occupant.customer.is_service_personnel or result[area_id]['count_service_personnel_in_occupancy']):
 						result[area_id]['occupancy_count'] += 1
 					result[area_id]['occupants'] += customer_display if not result[area_id]['occupants'] else f'<br>{customer_display}'
 	area_summary = list(result.values())

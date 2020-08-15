@@ -178,7 +178,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	fieldsets = (
 		(None, {'fields': ('name', 'parent_area', 'category', 'reservation_email', 'abuse_email'),}),
 		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message'),}),
-		('Occupancy', {'fields': ('maximum_capacity', 'count_staff_in_occupancy', 'reservation_warning'),}),
+		('Occupancy', {'fields': ('maximum_capacity', 'count_staff_in_occupancy', 'count_service_personnel_in_occupancy', 'reservation_warning'),}),
 		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
 		('Policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time',),}),
 	)
@@ -323,6 +323,7 @@ class UsageEventAdmin(admin.ModelAdmin):
 class ConsumableAdmin(admin.ModelAdmin):
 	list_display = ('name', 'quantity', 'category', 'visible', 'reminder_threshold', 'reminder_email', 'id')
 	list_filter = ('visible', 'category')
+	readonly_fields = ('reminder_threshold_reached',)
 
 
 @register(ConsumableCategory)
@@ -458,18 +459,36 @@ class UserPreferencesAdmin(admin.ModelAdmin):
 	list_display = ('user',)
 
 
+class UserAdminForm(forms.ModelForm):
+	class Meta:
+		model = User
+		fields = '__all__'
+
+	def clean(self):
+		cleaned_data = super().clean()
+		staff_status = cleaned_data.get("is_staff")
+		service_personnel_status = cleaned_data.get("is_service_personnel")
+
+		if staff_status and service_personnel_status:
+			raise forms.ValidationError({
+				'is_staff': 'A user cannot be both staff and service personnel. Please choose one or the other.',
+				'is_service_personnel': 'A user cannot be both staff and service personnel. Please choose one or the other.',
+			})
+
+
 @register(User)
 class UserAdmin(admin.ModelAdmin):
+	form = UserAdminForm
 	filter_horizontal = ('groups', 'user_permissions', 'qualifications', 'projects', 'physical_access_levels')
 	fieldsets = (
 		('Personal information', {'fields': ('first_name', 'last_name', 'username', 'email', 'badge_number', 'type', 'domain')}),
-		('Permissions', {'fields': ('is_active', 'is_staff', 'is_technician', 'is_superuser', 'training_required', 'groups', 'user_permissions', 'physical_access_levels')}),
+		('Permissions', {'fields': ('is_active', 'is_staff', 'is_technician', 'is_service_personnel', 'is_superuser', 'training_required', 'groups', 'user_permissions', 'physical_access_levels')}),
 		('Important dates', {'fields': ('date_joined', 'last_login', 'access_expiration')}),
 		("Facility information", {'fields': ('qualifications', 'projects')}),
 	)
 	search_fields = ('first_name', 'last_name', 'username', 'email')
-	list_display = ('first_name', 'last_name', 'username', 'email', 'is_active', 'domain', 'is_staff', 'is_technician', 'is_superuser', 'date_joined', 'last_login')
-	list_filter = ('is_active', 'domain', 'is_staff', 'is_technician', 'is_superuser', 'date_joined', 'last_login')
+	list_display = ('first_name', 'last_name', 'username', 'email', 'is_active', 'domain', 'is_staff', 'is_technician', 'is_service_personnel', 'is_superuser', 'date_joined', 'last_login')
+	list_filter = ('is_active', 'domain', 'is_staff', 'is_technician', 'is_service_personnel', 'is_superuser', 'date_joined', 'last_login')
 
 	def formfield_for_manytomany(self, db_field, request, **kwargs):
 		if db_field.name == "qualifications":

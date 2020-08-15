@@ -654,8 +654,8 @@ def email_reservation_reminders(request):
 	reservation_reminder_message = get_media_file_contents('reservation_reminder_email.html')
 	reservation_warning_message = get_media_file_contents('reservation_warning_email.html')
 	if not reservation_reminder_message or not reservation_warning_message:
-		calendar_logger.error("Reservation reminder email couldn't be send because reservation_reminder_email.html is not defined")
-		return HttpResponseNotFound('The reservation reminder email template has not been customized for your organization yet. Please visit the customization page to upload a template, then reservation reminder email notifications can be sent.')
+		calendar_logger.error("Reservation reminder email couldn't be send because either reservation_reminder_email.html or reservation_warning_email.html is not defined")
+		return HttpResponseNotFound('The reservation reminder and/or warning email templates have not been customized for your organization yet. Please visit the customization page to upload both templates, then reservation reminder email notifications can be sent.')
 
 	# Find all reservations that are two hours from now, plus or minus 5 minutes to allow for time skew.
 	preparation_time = 120
@@ -773,11 +773,8 @@ def cancel_unused_reservations(request):
 	Missed reservation for tools is when there is no tool activity during the reservation time + missed reservation threshold.
 	Any tool usage will count, since we don't want to charge for missed reservation when users swap reservation or somebody else gets to use the tool.
 
-	Missed reservation for areas is then there is no area access login during the reservation time + missed reservation threshold
+	Missed reservation for areas is when there is no area access login during the reservation time + missed reservation threshold
 	"""
-	# Exit early if the missed reservation email template has not been customized for the organization yet.
-	if not get_media_file_contents('missed_reservation_email.html'):
-		return HttpResponseNotFound('The missed reservation email template has not been customized for your organization yet. Please visit the customization page to upload a template, then missed email notifications can be sent.')
 
 	# Missed Tool Reservations
 	tools = Tool.objects.filter(visible=True, _operational=True, _missed_reservation_threshold__isnull=False)
@@ -838,7 +835,8 @@ def email_out_of_time_reservation_notification(request):
 	"""
 	Out of time reservation notification for areas is when a user is still logged in a area but his reservation expired.
 	"""
-	# Exit early if the missed reservation email template has not been customized for the organization yet.
+	# Exit early if the out of time reservation email template has not been customized for the organization yet.
+	# This feature only sends emails, so there if the template is not defined there nothing to do.
 	if not get_media_file_contents('out_of_time_reservation_email.html'):
 		return HttpResponseNotFound('The out of time reservation email template has not been customized for your organization yet. Please visit the customization page to upload a template, then out of time email notifications can be sent.')
 
@@ -847,10 +845,10 @@ def email_out_of_time_reservation_notification(request):
 	# Find all logged users
 	access_records:List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'area').only('customer', 'area')
 	for access_record in access_records:
-		# staff are exempt from out of time notification
+		# staff and service personnel are exempt from out of time notification
 		customer = access_record.customer
 		area = access_record.area
-		if customer.is_staff:
+		if customer.is_staff or customer.is_service_personnel:
 			continue
 
 		if area.requires_reservation:
@@ -907,16 +905,16 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 		reservation.cancelled_by = user_cancelling_reservation
 
 		if reason:
-			''' don't notify in this case since we are sending a specific email for the cancellation '''
+			''' don't notify (just save) in this case since we are sending a specific email for the cancellation '''
 			reservation.save()
-			dictionary = {
-				'staff_member': user_cancelling_reservation,
-				'reservation': reservation,
-				'reason': reason,
-				'template_color': bootstrap_primary_color('info')
-			}
 			email_contents = get_media_file_contents('cancellation_email.html')
 			if email_contents:
+				dictionary = {
+					'staff_member': user_cancelling_reservation,
+					'reservation': reservation,
+					'reason': reason,
+					'template_color': bootstrap_primary_color('info')
+				}
 				cancellation_email = Template(email_contents).render(Context(dictionary))
 				recipients = [reservation.user.email]
 				if reservation.area:
@@ -935,11 +933,11 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 
 
 def send_missed_reservation_notification(reservation):
-	subject = "Missed reservation for the " + str(reservation.reservation_item)
 	message = get_media_file_contents('missed_reservation_email.html')
 	user_office_email = get_customization('user_office_email_address')
 	abuse_email = get_customization('abuse_email_address')
 	if message and user_office_email:
+		subject = "Missed reservation for the " + str(reservation.reservation_item)
 		message = Template(message).render(Context({'reservation': reservation}))
 		send_mail(subject, message, user_office_email, [reservation.user.email, abuse_email, user_office_email])
 	else:
@@ -947,10 +945,10 @@ def send_missed_reservation_notification(reservation):
 
 
 def send_out_of_time_reservation_notification(reservation:Reservation):
-	subject = "Out of time in the " + str(reservation.area.name)
 	message = get_media_file_contents('out_of_time_reservation_email.html')
 	user_office_email = get_customization('user_office_email_address')
 	if message and user_office_email:
+		subject = "Out of time in the " + str(reservation.area.name)
 		message = Template(message).render(Context({'reservation': reservation}))
 		recipients = [reservation.user.email]
 		recipients.extend(reservation.area.abuse_email_list())

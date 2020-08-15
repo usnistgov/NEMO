@@ -5,3 +5,4 @@ settings.py
 NEMO/media
 nemo.db
 nemo.log
+.DS_Store

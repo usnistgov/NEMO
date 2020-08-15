@@ -36,18 +36,17 @@ def safety(request):
 
 
 def send_safety_email_notification(request, issue):
-	subject = 'Safety issue'
-	dictionary = {
-		'issue': issue,
-		'issue_absolute_url': request.build_absolute_uri(issue.get_absolute_url()),
-	}
 	recipient = get_customization('safety_email_address')
 	message = get_media_file_contents('safety_issue_email.html')
-	if not recipient or not message:
-		return
-	rendered_message = Template(message).render(Context(dictionary))
-	from_email = issue.reporter.email if issue.reporter else recipient
-	send_mail(subject, rendered_message, from_email, [recipient])
+	if recipient and message:
+		subject = 'Safety issue'
+		dictionary = {
+			'issue': issue,
+			'issue_absolute_url': request.build_absolute_uri(issue.get_absolute_url()),
+		}
+		rendered_message = Template(message).render(Context(dictionary))
+		from_email = issue.reporter.email if issue.reporter else recipient
+		send_mail(subject, rendered_message, from_email, [recipient])
 
 
 @login_required

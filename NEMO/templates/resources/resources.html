@@ -3,10 +3,11 @@
 {% block content %}
 	<h1>Resources</h1>
 	<p>
-		Below is a list of resources, grouped by category. Resources in <span class="success-highlight">green</span> are currently
+		Below is a list of resources, grouped by category.
+		<br>Resources in <span class="success-highlight">green</span> are currently
 		available while resources in <span class="danger-highlight">red</span> are unavailable. Click on a resource to modify its
-		availability and status message. When a resource is unavailable, users are blocked from using tools that fully depend on that
-		resource. You can also <a href="{% url 'schedule_resource_outage' %}">schedule resource outages</a>.
+		availability, status message or to schedule an outage.
+		<br>When a resource is unavailable, users are blocked from using tools or login to areas that fully depend on that resource.
 	</p>
 	{% if resources %}
 		{% regroup resources by category as category_list %}
@@ -14,7 +15,7 @@
 			{% if category.grouper %}<h3>{{ category.grouper }}</h3>{% endif %}
 			<div id="resource_list">
 				{% for resource in category.list %}
-					<a href="{% url 'modify_resource' resource.id %}" class="{% if resource.available %}success-highlight{% else %}danger-highlight{% endif %}">{{ resource }}</a>
+					<a href="{% url 'resource_details' resource.id %}" class="{% if resource.available %}success-highlight{% else %}danger-highlight{% endif %}">{{ resource }}</a>
 					{% if not resource.available %}
 						- {{ resource.restriction_message }}
 					{% endif %}

@@ -27,8 +27,8 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 		return HttpResponseBadRequest("This tool is currently hidden from users.")
 
 	# The tool must be operational.
-	# If the tool is non-operational then it may only be accessed by staff members.
-	if not tool.operational and not operator.is_staff:
+	# If the tool is non-operational then it may only be accessed by staff members or service personnel.
+	if not tool.operational and not operator.is_staff and not operator.is_service_personnel:
 		return HttpResponseBadRequest("This tool is currently non-operational.")
 
 	# The tool must not be in use.
@@ -45,36 +45,37 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 	if (user and operator.pk != user.pk) and not operator.is_staff:
 		return HttpResponseBadRequest("You must be a staff member to use a tool on another user's behalf.")
 
-	# All required resources must be available to operate a tool except for staff.
-	if tool.required_resource_set.filter(available=False).exists() and not operator.is_staff:
+	# All required resources must be available to operate a tool except for staff or service personnel.
+	if tool.required_resource_set.filter(available=False).exists() and not operator.is_staff and not operator.is_service_personnel:
 		return HttpResponseBadRequest("A resource that is required to operate this tool is unavailable.")
 
 	# The tool operator may not activate tools in a particular area unless they are logged in to the area.
 	# Staff are exempt from this rule.
 	if tool.requires_area_access and AreaAccessRecord.objects.filter(area=tool.requires_area_access, customer=operator, staff_charge=None, end=None).count() == 0 and not operator.is_staff:
-		dictionary = {
-			'operator': operator,
-			'tool': tool,
-			'type': 'access'
-		}
 		abuse_email_address = get_customization('abuse_email_address')
 		message = get_media_file_contents('unauthorized_tool_access_email.html')
 		if abuse_email_address and message:
+			dictionary = {
+				'operator': operator,
+				'tool': tool,
+				'type': 'access'
+			}
 			rendered_message = Template(message).render(Context(dictionary))
 			send_mail("Area access requirement", rendered_message, abuse_email_address, [abuse_email_address])
 		return HttpResponseBadRequest("You must be logged in to the {} to operate this tool.".format(tool.requires_area_access.name))
 
 	# The tool operator may not activate tools in a particular area unless they are still within that area reservation window
-	if not operator.is_staff and tool.requires_area_reservation():
+	# Staff and service personnel are exempt from this rule.
+	if not operator.is_staff and not operator.is_service_personnel and tool.requires_area_reservation():
 		if not tool.requires_area_access.get_current_reservation_for_user(operator):
-			dictionary = {
-				'operator': operator,
-				'tool': tool,
-				'type': 'reservation',
-			}
 			abuse_email_address = get_customization('abuse_email_address')
 			message = get_media_file_contents('unauthorized_tool_access_email.html')
 			if abuse_email_address and message:
+				dictionary = {
+					'operator': operator,
+					'tool': tool,
+					'type': 'reservation',
+				}
 				rendered_message = Template(message).render(Context(dictionary))
 				send_mail("Area reservation requirement", rendered_message, abuse_email_address, [abuse_email_address])
 			return HttpResponseBadRequest("You must have a current reservation for the {} to operate this tool.".format(tool.requires_area_access.name))
@@ -83,7 +84,7 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 	if staff_charge and operator.charging_staff_time():
 		return HttpResponseBadRequest('You are already charging staff time. You must end the current staff charge before you being another.')
 
-	# Staff may not bill staff time to the themselves.
+	# Staff may not bill staff time to themselves.
 	if staff_charge and operator == user:
 		return HttpResponseBadRequest('You cannot charge staff time to yourself.')
 
@@ -95,12 +96,12 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 	if operator.training_required:
 		return HttpResponseBadRequest(f"You are blocked from using all tools in the {facility_name}. Please complete the {facility_name} rules tutorial in order to use tools.")
 
-	# Users may only use a tool when delayed logoff is not in effect. Staff are exempt from this rule.
-	if tool.delayed_logoff_in_progress() and not operator.is_staff:
+	# Users may only use a tool when delayed logoff is not in effect. Staff and service personnel are exempt from this rule.
+	if tool.delayed_logoff_in_progress() and not operator.is_staff and not operator.is_service_personnel:
 		return HttpResponseBadRequest("Delayed tool logoff is in effect. You must wait for the delayed logoff to expire before you can use the tool.")
 
-	# Users may not enable a tool during a scheduled outage. Staff are exempt from this rule.
-	if tool.scheduled_outage_in_progress() and not operator.is_staff:
+	# Users may not enable a tool during a scheduled outage. Staff and service personnel are exempt from this rule.
+	if tool.scheduled_outage_in_progress() and not operator.is_staff and not operator.is_service_personnel:
 		return HttpResponseBadRequest("A scheduled outage is in effect. You must wait for the outage to end before you can use the tool.")
 
 	return HttpResponse()
@@ -276,7 +277,9 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 			# Check reservations for all other children of the parent areas
 			if not area.count_staff_in_occupancy:
 				coincident_events = coincident_events.filter(user__is_staff=False)
-			apply_to_user = not user.is_staff or user.is_staff and area.count_staff_in_occupancy
+			if not area.count_service_personnel_in_occupancy:
+				coincident_events = coincident_events.filter(user__is_service_personnel=False)
+			apply_to_user = (not user.is_staff and not user.is_service_personnel) or (user.is_staff and area.count_staff_in_occupancy) or (user.is_service_personnel and area.count_service_personnel_in_occupancy)
 			if apply_to_user and area.maximum_capacity:
 				children_events = coincident_events.filter(area_id__in=[area.id for area in area.get_descendants(include_self=True)])
 				reservations = list(children_events)
@@ -486,7 +489,7 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 		if not any([access_level.accessible() for access_level in user.accessible_access_levels_for_area(area)]):
 			raise NoAccessiblePhysicalAccessUserError(user=user, area=area)
 
-	if not user.is_staff:
+	if not user.is_staff and not user.is_service_personnel:
 		for a in area.get_ancestors(ascending=True, include_self=True):
 			unavailable_resources = a.required_resources.filter(available=False)
 			if unavailable_resources:

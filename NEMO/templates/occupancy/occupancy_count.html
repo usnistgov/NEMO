@@ -4,5 +4,11 @@
 	{{ area.occupancy_count }}
 </span>{% if area.maximum_capacity != 0 %} / {{ area.maximum_capacity }}{% endif %} people
 {% if area.occupancy != area.occupancy_count %}
-	(+ {{ area.occupancy_staff }} staff)
+	{% if not area.count_staff_in_occupancy and area.count_service_personnel_in_occupancy %}
+		(+ {{ area.occupancy_staff }} staff)
+	{% elif not area.count_service_personnel_in_occupancy and area.count_staff_in_occupancy %}
+		(+ {{ area.occupancy_service_personnel }} service personnel)
+	{% else %}
+		(+ {{ area.occupancy_staff }} staff {% if area.occupancy_service_personnel > 0 %}and {{ area.occupancy_service_personnel }} service personnel{% endif %})
+	{% endif %}
 {% endif %}

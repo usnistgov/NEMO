@@ -112,5 +112,5 @@ class ModelTreeHelper:
 def get_area_model_tree():
 	from NEMO.models import Area
 
-	only_fields = ["name", "category", "maximum_capacity", "reservation_warning", "count_staff_in_occupancy"]
+	only_fields = ["name", "category", "maximum_capacity", "reservation_warning", "count_staff_in_occupancy", "count_service_personnel_in_occupancy"]
 	return ModelTreeHelper(Area(), "parent_area", "area_children_set", only_fields)

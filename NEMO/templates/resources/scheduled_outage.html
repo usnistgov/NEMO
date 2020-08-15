@@ -7,7 +7,7 @@
 {% endblock %}
 {% block title %}Resource outages{% endblock %}
 {% block content %}
-	<h1>Scheduled resource outages</h1>
+	<h1>Schedule {{ resource }} outage</h1>
 	<p>
 		You can schedule a resource outage to occur for a specific time window. This prevents users from using
 		affected tools and areas, <strong>but will not kick users off if they're already logged in to an area or using a tool</strong>.
@@ -27,24 +27,10 @@
 			{{ form.non_field_errors }}
 		</div>
 	{% endif %}
-	<form action="{% url 'schedule_resource_outage' %}" method="post" class="well">
-		<h4>{% if editing %}Edit this outage{% else %}Create a new outage{% endif %}</h4>
+	<form action="{% url 'schedule_resource_outage' resource.id %}" method="post" class="well">
+		<h4>{% if editing %}Edit this outage{% else %}Create a new {{ resource }} outage{% endif %}</h4>
 		{% csrf_token %}
 		{% if form.instance.id %}<input type="hidden" name="outage_id" value="{{ form.instance.id }}">{% endif %}
-		<div class="form-group">
-			<label for="resource">Resource</label>{% if form.resource.errors %} - <span style="color:red">{{ form.resource.errors|striptags }}</span>{% endif %}
-			<select class="form-control" name="resource" id="resource">
-				<option></option>
-				{% regroup resources by category as resource_categories %}
-				{% for rc in resource_categories %}
-					{% if rc.grouper %}<optgroup label="{{ rc.grouper }}">{% endif %}
-						{% for r in rc.list %}
-							<option value="{{ r.id }}" {% if form.resource.value|to_int == r.id %}selected{% endif %}>{{ r }}</option>
-						{% endfor %}
-					{% if rc.grouper %}</optgroup>{% endif %}
-				{% endfor %}
-			</select>
-		</div>
 		{% if outage_categories %}
 			<div class="form-group">
 				<label for="category">Outage category</label><span class="grey"> - is there a category for this outage? This is useful for data and trend analysis</span>
@@ -72,42 +58,18 @@
 				</div>
 			</div>
 		</div>
-		{% if editing %}
-			<div class="form-group">
-				<a href="{% url 'schedule_resource_outage' %}" class="btn btn-warning">Abandon changes</a>
-			</div>
-		{% endif %}
 		<div class="form-group">
 			<input type="submit" class="btn btn-success" value="{% if editing %}Save changes{% else %}Create outage{% endif %}">
+		{% if editing %}
+			<a href="{% url 'resource_details' resource.id %}" class="btn btn-warning">Abandon changes</a>
+		{% endif %}
 		</div>
 	</form>
-	<div class="row">
-		{% for o in outages %}
-			<div class="col-sm-6">
-				<div class="alert alert-danger">
-					<form id="delete_resource_outage_{{ o.id }}" method="post" action="{% url 'delete_scheduled_resource_outage' o.id %}">
-						{% csrf_token %}
-						<span class="glyphicon glyphicon-remove pull-right" style="cursor:pointer" onclick="$('#delete_resource_outage_{{ o.id }}').submit()" data-toggle="tooltip" data-placement="top" title="Delete this outage"></span>
-					</form>
-					<form id="edit_resource_outage_{{ o.id }}" method="get" action="{% url 'schedule_resource_outage' %}">
-						<span class="glyphicon glyphicon-pencil pull-right" style="margin-right:10px; cursor:pointer" onclick="$('#edit_resource_outage_{{ o.id }}').submit()" data-toggle="tooltip" data-placement="top" title="Edit this outage"></span>
-						<input type="hidden" name="outage_id" value="{{ o.id }}">
-					</form>
-					<span style="font-weight:bold">{{ o.title }}</span><br>
-					{% if o.category %}Outage category: {{ o.category }}<br>{% endif %}
-					Starts on {{ o.start }}<br>
-					Ends on {{ o.end }}<br>
-					{{ o.details }}<br>
-				</div>
-			</div>
-		{% endfor %}
-	</div>
 	<script>
 		var timepicker_properties = {
 			sideBySide: true
 		};
 		$('#start').datetimepicker(timepicker_properties);
 		$('#end').datetimepicker(timepicker_properties);
-		$('.glyphicon').tooltip({container: 'body'});
 	</script>
 {% endblock %}

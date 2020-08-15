@@ -441,38 +441,6 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<h3 id="out_of_time_reservation">Out of time reservation email</h3>
-				<p>
-					This email is sent when a user is still logged in an area but his reservation expired. A grace period can be set when configuring the area.
-					The following context variables are provided when the email is rendered:
-				</p>
-				<ul>
-					<li><b>reservation</b> - the reservation that the user is out of time on</li>
-				</ul>
-				<form method="POST" action="{% url 'customize' 'out_of_time_reservation_email' %}#out_of_time_reservation" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('out_of_time_reservation_email')">
-					{% csrf_token %}
-					<div class="form-group">
-						<input type="file" name="out_of_time_reservation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#out_of_time_reservation_email_span').hide()">
-						{% if out_of_time_reservation_email %}<a id="out_of_time_reservation_email_span" href="data:text/html,{{ out_of_time_reservation_email|urlencode }}" download="out_of_time_reservation_email.html" target="_blank">out_of_time_reservation_email.html</a>{% endif %}
-					</div>
-					<div class="form-group">
-						<input type="submit" value="Upload out of time reservation email" class="btn btn-success">
-					</div>
-				</form>
-				{% if out_of_time_reservation_email %}
-					<div class="customization-separation"></div>
-					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#out_of_time_reservation_email_render">Show current content</button>
-					<table id="out_of_time_reservation_email_render" class="collapse customization-content-email">
-						<tr>
-							<td>{{ out_of_time_reservation_email|safe }}</td>
-						</tr>
-					</table>
-				{% endif %}
-			</div>
-		</div>
-
-		<div class="panel panel-default">
-			<div class="panel-body">
 				<h3 id="facility_rules">{{ facility_name }} rules tutorial email</h3>
 				<p>
 					This email is sent when a user completes the {{ facility_name }} rules tutorial. It can contain a free-response answer (quiz question).
@@ -535,6 +503,70 @@
 					<table id="new_task_email_render" class="collapse customization-content-email">
 						<tr>
 							<td>{{ new_task_email|safe }}</td>
+						</tr>
+					</table>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="out_of_time_reservation">Out of time reservation email</h3>
+				<p>
+					This email is sent when a user is still logged in an area but his reservation expired. A grace period can be set when configuring the area.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>reservation</b> - the reservation that the user is out of time on</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'out_of_time_reservation_email' %}#out_of_time_reservation" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('out_of_time_reservation_email')">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="out_of_time_reservation_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#out_of_time_reservation_email_span').hide()">
+						{% if out_of_time_reservation_email %}<a id="out_of_time_reservation_email_span" href="data:text/html,{{ out_of_time_reservation_email|urlencode }}" download="out_of_time_reservation_email.html" target="_blank">out_of_time_reservation_email.html</a>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload out of time reservation email" class="btn btn-success">
+					</div>
+				</form>
+				{% if out_of_time_reservation_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#out_of_time_reservation_email_render">Show current content</button>
+					<table id="out_of_time_reservation_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ out_of_time_reservation_email|safe }}</td>
+						</tr>
+					</table>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="reorder_supplies_reminder_email">Reorder supplies reminder email</h3>
+				<p>
+					This email is sent to the item's reminder email when the quantity of an item falls below the reminder threshold and should be reordered.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>item</b> - the item which quantity fell below the reminder threshold</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'reorder_supplies_reminder_email' %}#reorder_supplies_reminder_email" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('reorder_supplies_reminder_email')">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="reorder_supplies_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reorder_supplies_reminder_email').hide()">
+						{% if reorder_supplies_reminder_email %}<a id="reorder_supplies_reminder_email_span" href="data:text/html,{{ reorder_supplies_reminder_email|urlencode }}" download="reorder_supplies_reminder_email.html" target="_blank">reorder_supplies_reminder_email.html</a>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload reorder supplies reminder email" class="btn btn-success">
+					</div>
+				</form>
+				{% if reorder_supplies_reminder_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reorder_supplies_reminder_email_render">Show current content</button>
+					<table id="reorder_supplies_reminder_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ reorder_supplies_reminder_email|safe }}</td>
 						</tr>
 					</table>
 				{% endif %}

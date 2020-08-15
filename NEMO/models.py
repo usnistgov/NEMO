@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import timedelta
 from enum import Enum
+from logging import getLogger
 from typing import Union, List
 
 from django.conf import settings
@@ -22,6 +23,8 @@ from NEMO import fields
 from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
+
+models_logger = getLogger(__name__)
 
 
 class ReservationItemType(Enum):
@@ -128,6 +131,7 @@ class User(models.Model):
 	# Permissions
 	is_active = models.BooleanField('active', default=True, help_text='Designates whether this user can log in. Unselect this instead of deleting accounts.')
 	is_staff = models.BooleanField('staff status', default=False, help_text='Designates whether the user can log into this admin site.')
+	is_service_personnel = models.BooleanField('service personnel', default=False, help_text='Designates this user as service personnel. Service personnel can operate qualified tools without a reservation even when they are shutdown or during an outage and can access authorized areas without a reservation.')
 	is_technician = models.BooleanField('technician status', default=False, help_text='Specifies how to bill staff time for this user. When checked, customers are billed at technician rates.')
 	is_superuser = models.BooleanField('superuser status', default=False, help_text='Designates that this user has all permissions without explicitly assigning them.')
 	training_required = models.BooleanField(default=True, help_text='When selected, the user is blocked from all reservation and tool usage capabilities.')
@@ -850,6 +854,7 @@ class Area(MPTTModel):
 	# Capacity
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
 	count_staff_in_occupancy = models.BooleanField(default=True, help_text='Indicates that staff users will count towards maximum capacity.')
+	count_service_personnel_in_occupancy = models.BooleanField(default=True, help_text='Indicates that service personnel will count towards maximum capacity.')
 	reservation_warning = models.PositiveIntegerField(blank=True, null=True, help_text='The number of simultaneous users (with at least one reservation in this area) allowed before a warning is displayed when creating a reservation.')
 
 	# Policy rules
@@ -908,13 +913,18 @@ class Area(MPTTModel):
 
 	def occupancy_count(self):
 		""" Returns the occupancy used to determine if the area is at capacity """
-		if self.count_staff_in_occupancy:
-			return self.occupancy()
-		else:
-			return self.occupancy() - self.occupancy_staff()
+		result = self.occupancy()
+		if not self.count_staff_in_occupancy:
+			result = result - self.occupancy_staff()
+		if not self.count_service_personnel_in_occupancy:
+			result = result - self.occupancy_service_personnel()
+		return result
 
 	def occupancy_staff(self):
 		return AreaAccessRecord.objects.filter(area__in=self.get_descendants(include_self=True), end=None, staff_charge=None, customer__is_staff=True).count()
+
+	def occupancy_service_personnel(self):
+		return AreaAccessRecord.objects.filter(area__in=self.get_descendants(include_self=True), end=None, staff_charge=None, customer__is_service_personnel=True).count()
 
 	def occupancy(self):
 		return AreaAccessRecord.objects.filter(area__in=self.get_descendants(include_self=True), end=None, staff_charge=None).count()
@@ -1120,12 +1130,29 @@ class Consumable(models.Model):
 	visible = models.BooleanField(default=True)
 	reminder_threshold = models.IntegerField(help_text="More of this item should be ordered when the quantity falls below this threshold.")
 	reminder_email = models.EmailField(help_text="An email will be sent to this address when the quantity of this item falls below the reminder threshold.")
+	reminder_threshold_reached = models.BooleanField(default=False)
 
 	class Meta:
 		ordering = ['name']
 
 	def __str__(self):
 		return self.name
+
+# This method is used to check when the quantity of a consumable falls below the threshold and when it has been replenished
+@receiver(models.signals.pre_save, sender=Consumable)
+def check_consumable_quantity_threshold(sender, instance: Consumable, **kwargs):
+	try:
+		if not instance.reminder_threshold_reached and instance.quantity < instance.reminder_threshold:
+			# quantity is below threshold. set flag and send email
+			instance.reminder_threshold_reached = True
+			from NEMO.views.consumables import send_reorder_supply_reminder_email
+			send_reorder_supply_reminder_email(instance)
+		if instance.reminder_threshold_reached and instance.quantity >= instance.reminder_threshold:
+			# it has been replenished. reset flag
+			instance.reminder_threshold_reached = False
+	except Exception as e:
+		models_logger.exception(e)
+		pass
 
 
 class ConsumableCategory(models.Model):

@@ -1,8 +1,6 @@
-{% extends 'base.html' %}
+{% extends 'staff_charges/staff_charges_base.html' %}
 {% load custom_tags_and_filters %}
-{% block title %}Staff charges{% endblock %}
-{% block content %}
-	<h1>Staff charges</h1>
+{% block staff_charges_content %}
 	<p>Use this form to charge a user for staff time and area access time when you are working on a project on their behalf. You may only work on one user project at a time for a customer.</p>
 	{% if error %}
 		<div class="alert alert-danger">

@@ -6,7 +6,7 @@
 			{{ error }}
 		</div>
 	{% endif %}
-	<h1>Modify a resource</h1>
+	<h1>Modify {{ resource }} resource</h1>
 	<form method="post" action="{% url 'modify_resource' resource.id %}" style="margin-bottom:50px">
 		{% csrf_token %}
 		{% if resource.available %}
@@ -60,48 +60,6 @@
 			</div>
 		{% endif %}
 		<input type="submit" id="submit" class="btn btn-info" value="Modify resource">
-		<a href="{% url 'resources' %}" class="btn btn-warning">Nevermind</a>
+		<a href="{% url 'resource_details' resource.id %}" class="btn btn-warning">Nevermind</a>
 	</form>
-	{% if resource.visible_fully_dependent_tools %}
-		<h3>Tools that fully depend on {{ resource }}</h3>
-		<ul>
-			{% for t in resource.visible_fully_dependent_tools %}
-				<li>
-					{% if t.in_use %}
-						{{ t }} - in use by <a href="{% url 'get_email_form_for_user' t.get_current_usage_event.operator.id %}"><span class="glyphicon glyphicon-send"></span> {{ t.get_current_usage_event.operator }}</a>
-					{% else %}
-						{{ t }}
-					{% endif %}
-				</li>
-			{% endfor %}
-		</ul>
-	{% else %}
-		<h3>No tools fully depend on {{ resource }}</h3>
-	{% endif %}
-	{% if resource.visible_partially_dependent_tools %}
-		<h3>Tools that partially depend on {{ resource }}</h3>
-		<ul>
-			{% for t in resource.visible_partially_dependent_tools %}
-				<li>
-					{% if t.in_use %}
-						{{ t }} - in use by <a href="{% url 'get_email_form_for_user' t.get_current_usage_event.operator.id %}"><span class="glyphicon glyphicon-send"></span> {{ t.get_current_usage_event.operator }}</a>
-					{% else %}
-						{{ t }}
-					{% endif %}
-				</li>
-			{% endfor %}
-		</ul>
-	{% else %}
-		<h3>No tools partially depend on {{ resource }}</h3>
-	{% endif %}
-	{% if resource.dependent_areas.all %}
-		<h3>Areas that depend on {{ resource }}</h3>
-		<ul>
-			{% for a in resource.dependent_areas.all %}
-				<li>{{ a }}</li>
-			{% endfor %}
-		</ul>
-	{% else %}
-		<h3>No areas depend on {{ resource }}</h3>
-	{% endif %}
 {% endblock %}

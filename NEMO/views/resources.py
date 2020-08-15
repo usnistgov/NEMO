@@ -16,6 +16,17 @@ def resources(request):
 
 
 @staff_member_required(login_url=None)
+@require_GET
+def resource_details(request, resource_id):
+	resource = get_object_or_404(Resource, id=resource_id)
+	dictionary = {
+		'resource': resource,
+		'outages': ScheduledOutage.objects.filter(resource__id=resource_id, end__gt=datetime.now()),
+	}
+	return render(request, 'resources/resource_details.html', dictionary)
+
+
+@staff_member_required(login_url=None)
 @require_http_methods(['GET', 'POST'])
 def modify_resource(request, resource_id):
 	resource = get_object_or_404(Resource, id=resource_id)
@@ -47,7 +58,8 @@ def modify_resource(request, resource_id):
 
 @staff_member_required(login_url=None)
 @require_http_methods(['GET', 'POST'])
-def schedule_outage(request):
+def schedule_outage(request, resource_id):
+	resource = get_object_or_404(Resource, id=resource_id)
 	outage_id = request.GET.get('outage_id') or request.POST.get('outage_id')
 	try:
 		outage = ScheduledOutage.objects.get(id=outage_id)
@@ -59,17 +71,18 @@ def schedule_outage(request):
 		form = ScheduledOutageForm(data=request.POST, instance=outage)
 		if form.is_valid():
 			outage = form.save(commit=False)
+			outage.resource = resource
 			outage.creator = request.user
 			outage.title = f"{outage.resource.name} scheduled outage"
 			outage.save()
-			form = ScheduledOutageForm()
+			return redirect('resource_details', resource.id)
 	else:
 		form = ScheduledOutageForm()
 	dictionary = {
+		'resource': resource,
 		'form': form,
 		'editing': True if form.instance.id else False,
 		'resources': Resource.objects.all().prefetch_related('category').order_by('category__name', 'name'),
-		'outages': ScheduledOutage.objects.filter(resource__isnull=False, end__gt=datetime.now()),
 		'outage_categories': ScheduledOutageCategory.objects.all(),
 	}
 	return render(request, 'resources/scheduled_outage.html', dictionary)
@@ -77,9 +90,10 @@ def schedule_outage(request):
 
 @staff_member_required(login_url=None)
 @require_POST
-def delete_scheduled_outage(request, outage_id):
+def delete_scheduled_outage(request, resource_id, outage_id):
 	try:
-		ScheduledOutage.objects.filter(id=outage_id).delete()
+		get_object_or_404(Resource, id=resource_id)
+		get_object_or_404(ScheduledOutage, id=outage_id).delete()
 	except Http404:
 		pass
 	return redirect(request.META.get('HTTP_REFERER', 'landing'))

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Staff charges{% endblock %}
+{% block content %}
+	<h1>Staff charges</h1>
+	{% if staff_charge %}
+		<p>You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.</p>
+		<p>Here is a summary of the current charges:</p>
+
+		<table class="table">
+			<thead>
+			<tr>
+				<th>Type</th>
+				<th>Start</th>
+				<th>End</th>
+			</tr>
+			</thead>
+			<tbody>
+			{% for charge in charges %}
+					<tr class="{{ charge.class }}">
+						<td>{{ charge.type }}</td>
+						<td>{{ charge.start }}</td>
+						<td>{{ charge.end|default:'' }}</td>
+					</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+	{% endif %}
+
+	{% block staff_charges_content %}
+	{% endblock %}
+{% endblock %}
