@@ -11,7 +11,7 @@ from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
 from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks, \
 	duplicate_tool_configuration, rebuild_area_tree
 from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord, Comment, Configuration, \
-	ConfigurationHistory, Consumable, ConsumableCategory, ConsumableWithdraw, ContactInformation, \
+	ConfigurationHistory, Consumable, ConsumableCategory, ConsumableWithdraw, ContactInformation, BadgeReader, \
 	ContactInformationCategory, Customization, Door, Interlock, InterlockCard, LandingPageChoice, MembershipHistory, \
 	News, Notification, PhysicalAccessLevel, PhysicalAccessLog, Project, Reservation, Resource, ResourceCategory, \
 	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
@@ -634,6 +634,11 @@ class NewsAdmin(admin.ModelAdmin):
 @register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
 	list_display = ('id', 'user', 'expiration', 'content_type', 'object_id')
+
+
+@register(BadgeReader)
+class BadgeReaderAdmin(admin.ModelAdmin):
+	list_display = ('id', 'name', 'send_key', 'record_key')
 
 
 admin.site.register(ResourceCategory)

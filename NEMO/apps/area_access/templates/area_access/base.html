@@ -21,7 +21,7 @@
 	<link rel="stylesheet" type="text/css" href="{% static "area_access/area_access.css" %}"/>
 
 	{# Badge Reader #}
-	<script type="text/javascript" src="{% static "area_access/badge_reader.js" %}"></script>
+	<script type="text/javascript" src="{% static "badge_reader.js" %}"></script>
 
 	<!--suppress CssUnusedSymbol -->
 	<style>
@@ -46,7 +46,7 @@
 	</div>
 	{% include 'base/footer.html' %}
 	<script type="text/javascript">
-		var area_access_badge_reader = new BadgeReader(send_badge_number);
+		var area_access_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}" {% if badge_reader.record_key %}, "{{ badge_reader.record_key }}"{% endif %});
 		let timeout_handle = null;
 		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
 

@@ -21,7 +21,7 @@
 	<link rel="stylesheet" type="text/css" href="{% static "kiosk/kiosk.css" %}"/>
 
 	{# Badge Reader #}
-	<script type="text/javascript" src="{% static "kiosk/badge_reader.js" %}"></script>
+	<script type="text/javascript" src="{% static "badge_reader.js" %}"></script>
 
 	<!--suppress CssUnusedSymbol -->
 	<style>
@@ -48,7 +48,7 @@
 	</div>
 	{% include 'base/footer.html' %}
 	<script type="text/javascript">
-		var kiosk_badge_reader = new BadgeReader(send_badge_number);
+		var kiosk_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}" {% if badge_reader.record_key %}, "{{ badge_reader.record_key }}"{% endif %});
 		let timeout_handle = null;
 		let countdown_handle = null;
 		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
