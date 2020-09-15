@@ -65,7 +65,8 @@ def date_parameters_dictionary(request):
 		'end_date': end_date,
 		'kind': kind,
 		'identifier': identifier,
-		'tab_url': get_url_for_other_tab(request)
+		'tab_url': get_url_for_other_tab(request),
+		'billing_service': False if not hasattr(settings, 'BILLING_SERVICE') or not settings.BILLING_SERVICE['available'] else True,
 	}
 	return dictionary, start_date, end_date, kind, identifier
 
@@ -105,6 +106,7 @@ def project_usage(request):
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 
 	projects = []
+	user = None
 	selection = ''
 	try:
 		if kind == 'application':
@@ -117,16 +119,20 @@ def project_usage(request):
 			account = Account.objects.get(id=identifier)
 			projects = Project.objects.filter(account=account)
 			selection = account.name
+		elif kind == 'user':
+			user = User.objects.get(id=identifier)
+			projects = user.active_projects()
+			selection = str(user)
 	except:
 		pass
 	dictionary = {
-		'accounts_and_applications': set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()),
-		'area_access': AreaAccessRecord.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date).order_by('-start') if projects else None,
-		'consumables': ConsumableWithdraw.objects.filter(project__in=projects, date__gt=start_date, date__lte=end_date) if projects else None,
-		'missed_reservations': Reservation.objects.filter(project__in=projects, missed=True, end__gt=start_date, end__lte=end_date) if projects else None,
-		'staff_charges': StaffCharge.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
-		'training_sessions': TrainingSession.objects.filter(project__in=projects, date__gt=start_date, date__lte=end_date) if projects else None,
-		'usage_events': UsageEvent.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
+		'search_items': set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()) | set(User.objects.filter(is_active=True)),
+		'area_access': AreaAccessRecord.objects.filter(customer=user, project__in=projects, end__gt=start_date, end__lte=end_date).order_by('-start') if projects else None,
+		'consumables': ConsumableWithdraw.objects.filter(customer=user, project__in=projects, date__gt=start_date, date__lte=end_date) if projects else None,
+		'missed_reservations': Reservation.objects.filter(user=user, project__in=projects, missed=True, end__gt=start_date, end__lte=end_date) if projects else None,
+		'staff_charges': StaffCharge.objects.filter(customer=user, project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
+		'training_sessions': TrainingSession.objects.filter(trainee=user, project__in=projects, date__gt=start_date, date__lte=end_date) if projects else None,
+		'usage_events': UsageEvent.objects.filter(user=user, project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
 		'project_autocomplete': True,
 		'selection': selection
 	}
@@ -139,10 +145,11 @@ def project_usage(request):
 def project_billing(request):
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	base_dictionary['project_autocomplete'] = True
-	base_dictionary['accounts_and_applications'] = set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications())
+	base_dictionary['search_items'] = set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()) | set(User.objects.filter(is_active=True))
 
 	project_id = None
 	account_id = None
+	user = None
 	formatted_applications = None
 	selection = ''
 	try:
@@ -157,13 +164,17 @@ def project_billing(request):
 		elif kind == 'account':
 			account = Account.objects.get(id=identifier)
 			projects = Project.objects.filter(account=account, active=True, account__active=True)
-			formatted_applications = ','.join(
-				map(str, set(projects.values_list('application_identifier', flat=True)))) if projects else None
+			formatted_applications = ','.join(map(str, set(projects.values_list('application_identifier', flat=True)))) if projects else None
 			account_id = account.id
 			selection = account.name
+		elif kind == 'user':
+			user = User.objects.get(id=identifier)
+			projects = user.active_projects()
+			formatted_applications = ','.join(map(str, set(projects.values_list('application_identifier', flat=True)))) if projects else None
+			selection = str(user)
 
 		base_dictionary['selection'] = selection
-		billing_dictionary = billing_dict(start_date, end_date, None, formatted_applications, project_id, account_id=account_id, force_pi=True)
+		billing_dictionary = billing_dict(start_date, end_date, user, formatted_applications, project_id, account_id=account_id, force_pi=True if not user else False)
 		return render(request, 'usage/billing.html', {**base_dictionary, **billing_dictionary})
 	except Exception as e:
 		logger.warning(str(e))
@@ -174,7 +185,9 @@ def is_user_pi(user, application_pi_row):
 	return application_pi_row is not None and (user.username == application_pi_row['username'] or (user.first_name == application_pi_row['first_name'] and user.last_name == application_pi_row['last_name']))
 
 
-def billing_dict(start_date, end_date, user, formatted_applications, project_id=None, account_id=None, force_pi=None):
+def billing_dict(start_date, end_date, user, formatted_applications, project_id=None, account_id=None, force_pi=False):
+	# The parameter force_pi allows us to display information as if the user was the project pi
+	# This is useful on the admin project billing page tp display other project users for example
 	dictionary = {}
 
 	if not settings.BILLING_SERVICE or not settings.BILLING_SERVICE['available']:
@@ -193,7 +206,7 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 	cost_activity_response = get(cost_activity_url, params=cost_activity_params, **keyword_arguments)
 	cost_activity_data = cost_activity_response.json()['d']
 
-	if force_pi is None:
+	if not force_pi:
 		latest_pis_params = {'$format': 'json'}
 		latest_pis_response = get(project_lead_url, params=latest_pis_params, **keyword_arguments)
 		latest_pis_data = latest_pis_response.json()['d']
@@ -214,7 +227,7 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 		application_key = (activity['application_id'], activity['application_name'])
 		project_key = (activity['project_id'], activity['project_name'])
 		user_key = (activity['member_id'], User.objects.filter(id__in=[activity['member_id']]).first())
-		user_is_pi = is_user_pi(user, next((x for x in latest_pis_data if x['application_name'] == activity['application_name']), None)) if force_pi is None else True
+		user_is_pi = is_user_pi(user, next((x for x in latest_pis_data if x['application_name'] == activity['application_name']), None)) if not force_pi else True
 		if user_is_pi:
 			user_pi_applications.append(activity['application_id'])
 		if user_is_pi or str(user.id) == activity['member_id']:

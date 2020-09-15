@@ -351,7 +351,11 @@ function matcher(items, search_fields)
 				{
 					// The typeahead jQuery plugin expects suggestions to a
 					// JavaScript object, refer to typeahead docs for more info
-					matches.push(item);
+					if (matches.indexOf(item) === -1)
+					{
+						// Only add if it's not already in the list
+						matches.push(item);
+					}
 				}
 			});
 		});

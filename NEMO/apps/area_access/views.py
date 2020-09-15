@@ -8,7 +8,8 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
 	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
-from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent
+from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent, \
+	BadgeReader
 from NEMO.tasks import postpone
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization
@@ -20,7 +21,9 @@ from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_e
 @require_GET
 def welcome_screen(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
-	return render(request, 'area_access/welcome_screen.html', {'area': door.area, 'door': door})
+	reader_id = request.GET.get("reader_id")
+	badge_reader = BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default()
+	return render(request, 'area_access/welcome_screen.html', {'area': door.area, 'door': door, 'badge_reader': badge_reader})
 
 
 @login_required
@@ -28,7 +31,9 @@ def welcome_screen(request, door_id):
 @require_GET
 def farewell_screen(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
-	return render(request, 'area_access/farewell_screen.html', {'area': door.area, 'door': door})
+	reader_id = request.GET.get("reader_id")
+	badge_reader = BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default()
+	return render(request, 'area_access/farewell_screen.html', {'area': door.area, 'door': door, 'badge_reader': badge_reader})
 
 
 @login_required

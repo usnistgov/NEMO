@@ -1845,6 +1845,23 @@ class News(models.Model):
 		verbose_name_plural = 'News'
 
 
+class BadgeReader(models.Model):
+	name = models.CharField(max_length=200)
+	send_key = models.CharField(max_length=20, help_text="The name of the key which submits the badge number ('F2', 'Shift', 'Meta', 'Enter', 'a' etc.)")
+	record_key = models.CharField(null=True, blank=True, max_length=20, help_text="The name of the key which starts badge number recording. If left blank, badge number recording starts when any input is received.")
+
+	def __str__(self):
+		return str(self.name)
+
+	@staticmethod
+	def default():
+		# The default badge reader is a badge reader using F2 for recording and sending
+		default_badge_reader = BadgeReader()
+		default_badge_reader.record_key = "F2"
+		default_badge_reader.send_key = "F2"
+		return default_badge_reader
+
+
 def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):
 	"""
 	Record the changes in a many-to-many field that the model does not own. Then, save the many-to-many field.

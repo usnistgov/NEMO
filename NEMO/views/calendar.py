@@ -855,9 +855,11 @@ def email_out_of_time_reservation_notification(request):
 			# Calculate the timestamp of how late a user can be logged in after a reservation ended.
 			threshold = timezone.now() if not area.logout_grace_period else timezone.now() - timedelta(minutes=area.logout_grace_period)
 			threshold = datetime.replace(threshold, second=0, microsecond=0)  # Round down to the nearest minute.
-			reservations = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, area=area, user=customer, start__lte=timezone.now(), end=threshold)
-			if reservations.exists():
-				out_of_time_user_area.append(reservations[0])
+			ending_reservations = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, area=area, user=customer, start__lte=timezone.now(), end=threshold)
+			# find out if a reservation is starting right at the same time (in case of back to back reservations, in which case customer is good)
+			starting_reservations = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, area=area, user=customer, start=threshold)
+			if ending_reservations.exists() and not starting_reservations.exists():
+				out_of_time_user_area.append(ending_reservations[0])
 
 	for reservation in out_of_time_user_area:
 		send_out_of_time_reservation_notification(reservation)

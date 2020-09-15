@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.models import Project, Reservation, Tool, UsageEvent, User
+from NEMO.models import Project, Reservation, Tool, UsageEvent, User, BadgeReader
 from NEMO.utilities import quiet_int, localize
 from NEMO.views.calendar import determine_insufficient_notice, extract_configuration, cancel_the_reservation, shorten_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool, \
@@ -256,8 +256,10 @@ def tool_information(request, tool_id, user_id, back):
 @require_GET
 def kiosk(request, location=None):
 	if location and Tool.objects.filter(_location=location, visible=True).exists():
+		reader_id = request.GET.get("reader_id")
 		dictionary = {
 			'location': location,
+			'badge_reader': BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default(),
 		}
 		return render(request, 'kiosk/kiosk.html', dictionary)
 	else:

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
 {% load static %}
-{% block title %}Usage and billing information{% endblock %}
+{% block title %}Usage{% if billing_service %} and billing information{% endif %}{% endblock %}
 {% block extrahead %}
 	<script type="text/javascript" src="{% static "pickadate/picker.js" %}"></script>
 	<script type="text/javascript" src="{% static "pickadate/picker.date.js" %}"></script>
@@ -11,11 +11,11 @@
 	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.time.css" %}"/>
 {% endblock %}
 {% block content %}
-	<h1>Usage and billing information
+	<h1>Usage{% if billing_service %} and billing information{% endif %}
 		<small> between {{ start_date|date:"F jS, Y" }} and {{ end_date|date:"F jS, Y" }}</small>
 	</h1>
 	<p>
-		This page presents a monthly report of your {{ facility_name }} usage and billing information. Approved adjustments are reflected in the Billing information data but not in the Usage data.
+		This page presents a monthly report of your {{ facility_name }} usage{% if billing_service %} and billing information{% endif %}. Approved adjustments are{% if not billing_service %} not{% endif %} reflected{% if billing_service %} in the billing information data but not{% endif %} in the usage data.
 	</p>
 	<div style="height: 20px"></div>
 	<form class="form-horizontal" role="form">
@@ -92,21 +92,21 @@
 			<div class="form-group">
 				<label class="control-label col-sm-2" for="search"><strong>For</strong></label>
 				<div class="col-sm-4" id="search_container" style="width: 36.4%;">
-					<input id="search" type="text" class="form-control" style="width: 100%" autofocus {% if selection %}placeholder="{{ selection }}"{% else %}placeholder="Search for an account, application or project"{% endif %}>
+					<input id="search" type="text" class="form-control" style="width: 100%" autofocus {% if selection %}placeholder="{{ selection }}"{% else %}placeholder="Search for an account, project, application or user"{% endif %}>
 				</div>
 				<div class="col-sm-2">
 					<input type="submit" class="btn btn-success" value="Update">
 				</div>
 			</div>
 			<script>
-				function get_account(jquery_event, search_selection)
+				function get_search_item(jquery_event, search_selection)
 				{
 					$('#type').val(search_selection.type);
 					$('#id').val(search_selection.id);
 				}
 				function on_load()
 				{
-					$('#search').autocomplete('accounts_and_projects_for_usage', get_account, {% json_search_base_with_extra_fields accounts_and_applications %});
+					$('#search').autocomplete('accounts_and_projects_for_usage', get_search_item, {% json_search_base_with_extra_fields search_items %});
 				}
 				$(on_load);
 			</script>

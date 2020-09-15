@@ -2,14 +2,14 @@
 	{% for x in usage_events %}
 	{
 		{% if personal_schedule %}
-			"title": "{{ x.tool.name }}",
+			"title": "{{ x.tool.name }} \n {{ x.project }}",
 		{% else %}
-			"title": "{% if x.operator.id != x.user.id %}{{ x.operator }} on behalf of {% endif %}{{ x.user }}",
+			"title": "{% if x.operator.id != x.user.id %}{{ x.operator }} on behalf of {% endif %}{{ x.user }} \n {{ x.project }}",
 		{% endif %}
 		{% if x.operator.id == x.user.id %}
-			"tooltip": "{{ x.tool.name }} usage for {{ x.user }}",
+			"tooltip": "{{ x.tool.name }} usage for {{ x.user }} billed to project {{ x.project }}",
 		{% else %}
-			"tooltip": "{{ x.tool.name }} usage for {{ x.user }}, operated by {{ x.operator }}",
+			"tooltip": "{{ x.tool.name }} usage for {{ x.user }}, operated by {{ x.operator }} and billed to project {{ x.project }}",
 		{% endif %}
 		"id": {{ x.id }},
 		"start": "{{ x.start|date:"c" }}",
@@ -33,14 +33,14 @@
 	{% for x in missed_reservations %}
 	{
 		{% if personal_schedule %}
-			"title": "Missed reservation for the {{ x.reservation_item }}",
+			"title": "Missed reservation for the {{ x.reservation_item }} \n {{ x.project }}",
 		{% else %}
-			"title": "Missed reservation by {{ x.user }}",
+			"title": "Missed reservation by {{ x.user }} \n {{ x.project }}",
 		{% endif %}
 		{% if x.creator.id == x.user.id %}
-			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user }}",
+			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user }} billed to project {{ x.project }}",
 		{% else %}
-			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user }}, created by {{ x.creator }}",
+			"tooltip": "Missed {{ x.reservation_item.name }} reservation for {{ x.user }} billed to project {{ x.project }}, created by {{ x.creator }}",
 		{% endif %}
 		"id": {{ x.id }},
 		"color": "#ff0000",
