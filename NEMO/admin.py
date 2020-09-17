@@ -601,7 +601,7 @@ class ContactInformationCategoryAdmin(admin.ModelAdmin):
 
 @register(ContactInformation)
 class ContactInformationAdmin(admin.ModelAdmin):
-	list_display = ('name', 'category')
+	list_display = ('name', 'category', 'user')
 
 
 @register(LandingPageChoice)

@@ -350,18 +350,18 @@
 		<div class="media">
 			<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
 			<div class="media-body">
-				<p><a href="{% url 'get_email_form_for_user' tool.primary_owner.id %}" title="Email {{ tool.primary_owner.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.primary_owner }}</a> is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.</p>
+				<p>{{ tool.primary_owner.get_contact_info_html|safe }} is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.</p>
 				{% if tool.backup_owners.all.count == 1 %}
 					{% with tool.backup_owners.all|first as backup %}
-						<p>If you are unable to reach {{ tool.primary_owner }} then please contact the backup tool owner, <a href="{% url 'get_email_form_for_user' backup.id %}" title="Email {{ backup.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ backup }}</a>.</p>
+						<p>If you are unable to reach {{ tool.primary_owner }} then please contact the backup tool owner, {{ backup.get_contact_info_html|safe }}.</p>
 					{% endwith %}
 				{% elif tool.backup_owners.all.count > 1 %}
 					<p>If you are unable to reach {{ tool.primary_owner }} then please contact
 					{% for x in tool.backup_owners.all %}
 						{% if not forloop.last %}
-							<a href="{% url 'get_email_form_for_user' x.id %}" title="Email {{ x.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ x }}</a>,
+							{{ x.get_contact_info_html|safe }},
 						{% else %}
-							or <a href="{% url 'get_email_form_for_user' x.id %}" title="Email {{ x.first_name }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ x }}</a>.
+							or {{ x.get_contact_info_html|safe }}.
 						{% endif %}
 					{% endfor %}
 					</p>
@@ -583,6 +583,9 @@
 </div>
 
 <script>
+	$(".contact-info-tooltip").on('click', function () {
+      	$(this).tooltip({trigger: 'manual', html: 'true', title: $(this).data('title')}).tooltip('toggle');
+    });
 	$("#tabs").find("a").click(switch_tab);
 	$('#task_and_comment_start').datetimepicker({format: 'MM/DD/YYYY', 'widgetParent': '#task_and_comment_start_form_group'});
 	$('#task_and_comment_end').datetimepicker({format: 'MM/DD/YYYY', 'widgetParent': '#task_and_comment_end_form_group'});

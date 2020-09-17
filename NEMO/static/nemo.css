@@ -546,3 +546,9 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 {
 	margin-bottom: 0;
 }
+
+.contact-info-tooltip + .tooltip > .tooltip-inner {
+	max-width: initial;
+	text-align: left;
+	padding: 10px 16px;
+}

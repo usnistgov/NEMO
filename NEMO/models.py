@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import timedelta
 from enum import Enum
+from html import escape
 from logging import getLogger
 from typing import Union, List
 
@@ -15,6 +16,8 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
+from django.template import loader
+from django.urls import reverse
 from django.utils import timezone
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
@@ -285,6 +288,15 @@ class User(models.Model):
 			self.save()
 		return self.preferences
 
+	def get_contact_info_html(self):
+		if hasattr(self, 'contactinformation'):
+			content = escape(loader.render_to_string('contact/contact_person.html', {'person':self.contactinformation, 'email_form': True}))
+			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
+		else:
+			email_url = reverse('get_email_form_for_user', kwargs={'user_id':self.id})
+			return f'<a href="{email_url}" title="Email {self.first_name}"><span class="glyphicon glyphicon-send small-icon"></span>{self}</a>'
+
+
 	@classmethod
 	def get_email_field_name(cls):
 		return 'email'
@@ -383,7 +395,7 @@ class Tool(models.Model):
 		self._operational = value
 
 	@property
-	def primary_owner(self):
+	def primary_owner(self) -> User:
 		return self.parent_tool.primary_owner if self.is_child_tool() else self._primary_owner
 
 	@primary_owner.setter
@@ -392,7 +404,7 @@ class Tool(models.Model):
 		self._primary_owner = value
 
 	@property
-	def backup_owners(self):
+	def backup_owners(self) -> List[User]:
 		return self.parent_tool.backup_owners if self.is_child_tool() else self._backup_owners
 
 	@backup_owners.setter
@@ -1720,6 +1732,7 @@ class ContactInformation(models.Model):
 	office_location = models.CharField(max_length=200, blank=True)
 	mobile_phone = models.CharField(max_length=40, blank=True)
 	mobile_phone_is_sms_capable = models.BooleanField(default=True, verbose_name='Mobile phone is SMS capable', help_text="Is the mobile phone capable of receiving text messages? If so, a link will be displayed for users to click to send a text message to the recipient when viewing the 'Contact information' page.")
+	user = models.OneToOneField(to=User, blank=True, null=True, help_text="Select a user to associate with this contact. When set, this contact information will be shown instead of the user information on pages like tool details.", on_delete=models.CASCADE)
 
 	class Meta:
 		verbose_name_plural = 'Contact information'
