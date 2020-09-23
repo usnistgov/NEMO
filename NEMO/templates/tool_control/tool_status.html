@@ -353,10 +353,10 @@
 				<p>{{ tool.primary_owner.get_contact_info_html|safe }} is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.</p>
 				{% if tool.backup_owners.all.count == 1 %}
 					{% with tool.backup_owners.all|first as backup %}
-						<p>If you are unable to reach {{ tool.primary_owner }} then please contact the backup tool owner, {{ backup.get_contact_info_html|safe }}.</p>
+						<p>If you are unable to reach {{ tool.primary_owner.get_name }} then please contact the backup tool owner, {{ backup.get_contact_info_html|safe }}.</p>
 					{% endwith %}
 				{% elif tool.backup_owners.all.count > 1 %}
-					<p>If you are unable to reach {{ tool.primary_owner }} then please contact
+					<p>If you are unable to reach {{ tool.primary_owner.get_name }} then please contact
 					{% for x in tool.backup_owners.all %}
 						{% if not forloop.last %}
 							{{ x.get_contact_info_html|safe }},

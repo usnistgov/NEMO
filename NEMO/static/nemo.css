@@ -552,3 +552,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	text-align: left;
 	padding: 10px 16px;
 }
+
+.contact-info-tooltip + .tooltip > .tooltip-inner a {
+	color: #b0dbff;
+}

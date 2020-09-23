@@ -220,10 +220,13 @@ class User(models.Model):
 		send_mail(subject=subject, message=message, from_email=from_email, recipient_list=[self.email], attachments=attachments)
 
 	def get_full_name(self):
-		return self.first_name + ' ' + self.last_name + ' (' + self.username + ')'
+		return self.get_name() + ' (' + self.username + ')'
 
 	def get_short_name(self):
 		return self.first_name
+
+	def get_name(self):
+		return self.first_name + ' ' + self.last_name
 
 	def accessible_access_levels(self):
 		if not self.is_staff:
@@ -294,7 +297,7 @@ class User(models.Model):
 			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
 		else:
 			email_url = reverse('get_email_form_for_user', kwargs={'user_id':self.id})
-			return f'<a href="{email_url}" title="Email {self.first_name}"><span class="glyphicon glyphicon-send small-icon"></span>{self}</a>'
+			return f'<a href="{email_url}" title="Email {self.first_name}"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
 
 
 	@classmethod
