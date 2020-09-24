@@ -21,8 +21,8 @@ class DynamicForm:
 				result += f'<div class="form-group">{question["title"]}'
 				for choice in question['choices']:
 					result += '<div class="radio">'
-					required = 'required' if question['required'] else ''
-					is_default_choice = 'checked' if question['default_choice'] == choice else ''
+					required = 'required' if 'required' in question and question['required'] is True else ''
+					is_default_choice = 'checked' if 'default_choice' in question and question['default_choice'] == choice else ''
 					result += f'<label><input type="radio" name="{question["name"]}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
 					result += '</div>'
 				result += '</div>'
@@ -34,7 +34,7 @@ class DynamicForm:
 					result += f'<div class="input-group" style="max-width:{question["max-width"]}px">'
 				if 'prefix' in question:
 					result += f'<span class="input-group-addon">{question["prefix"]}</span>'
-				required = 'required' if question['required'] is True else ''
+				required = 'required' if 'required' in question and question['required'] is True else ''
 				pattern = f'pattern="{question["pattern"]}"' if 'pattern' in question else ''
 				placeholder = f'placeholder="{question["placeholder"]}"' if 'placeholder' in question else ''
 				if question['type'] == "textbox":
