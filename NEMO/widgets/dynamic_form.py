@@ -1,10 +1,13 @@
 from json import dumps, loads
+from logging import getLogger
 
 from django.utils.safestring import mark_safe
 
 from NEMO.models import Consumable
-from NEMO.utilities import quiet_int
 from NEMO.views.consumables import make_withdrawal
+
+
+dynamic_form_logger = getLogger(__name__)
 
 
 class DynamicForm:
@@ -65,23 +68,20 @@ class DynamicForm:
 	def charge_for_consumables(self, customer, merchant, project, run_data):
 		try:
 			run_data = loads(run_data)
-		except:
+		except Exception as error:
+			dynamic_form_logger.debug(error)
 			return
 		for question in self.questions:
 			if 'consumable' in question:
 				try:
 					consumable = Consumable.objects.get(name=question['consumable'])
 					quantity = 0
-					if question['type'] == 'textbox':
+					if question['type'] == 'number':
 						if question['name'] in run_data:
-							quantity = quiet_int(run_data[question['name']])
-					elif question['type'] == 'number':
-						if question['name'] in run_data:
-							quantity = quiet_int(run_data[question['name']])
-					elif question['type'] == 'radio':
-						quantity = 1
+							quantity = int(run_data[question['name']])
 
 					if quantity > 0:
 						make_withdrawal(consumable=consumable, customer=customer, merchant=merchant, quantity=quantity, project=project)
-				except:
+				except Exception as e:
+					dynamic_form_logger.warning(f"Could not withdraw consumable: '{question['consumable']}' with quantity: '{run_data[question['name']]}' for customer: '{customer}' by merchant: '{merchant}' for project: '{project}'", e)
 					pass
