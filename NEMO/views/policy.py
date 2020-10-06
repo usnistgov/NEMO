@@ -255,7 +255,7 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 
 def check_tool_reservation_requiring_area(policy_problems: List[str], user_creating_reservation: User, cancelled_reservation: Optional[Reservation], new_reservation: Optional[Reservation]):
 	# When modifying an area reservation, check that all tools reservations starting during the cancelled one are still within the new one
-	if cancelled_reservation.reservation_item_type == ReservationItemType.AREA and cancelled_reservation:
+	if cancelled_reservation and cancelled_reservation.reservation_item_type == ReservationItemType.AREA:
 		tools_requiring_cancelled_reservation = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, tool__isnull=False, tool___requires_area_access=cancelled_reservation.area, user=cancelled_reservation.user)
 		tools_requiring_cancelled_reservation = tools_requiring_cancelled_reservation.filter(start__gte=cancelled_reservation.start, start__lt=cancelled_reservation.end)
 		if tools_requiring_cancelled_reservation.exists():
