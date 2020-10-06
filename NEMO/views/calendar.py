@@ -170,37 +170,36 @@ def reservation_event_feed(request, start, end):
 
 
 def usage_event_feed(request, start, end):
-	usage_events = UsageEvent.objects
+	usage_events = UsageEvent.objects.none()
+	area_access_events = AreaAccessRecord.objects.none()
+	missed_reservations = Reservation.objects.none()
+
+	item_id = request.GET.get('item_id')
+	item_type = ReservationItemType(request.GET.get('item_type')) if request.GET.get('item_type') else None
+
+	personal_schedule = request.GET.get('personal_schedule')
+	if personal_schedule:
+		# Filter events that only have to do with the current user.
+		# Display missed reservations, tool and area usage when 'personal schedule' is selected
+		usage_events = UsageEvent.objects.filter(user=request.user)
+		area_access_events = AreaAccessRecord.objects.filter(customer=request.user)
+		missed_reservations = Reservation.objects.filter(missed=True, user=request.user)
+	elif item_type:
+		reservation_filter = {item_type.value: item_id}
+		missed_reservations = Reservation.objects.filter(missed=True).filter(**reservation_filter)
+		# Filter events that only have to do with the relevant tool or area.
+		if item_id and item_type == ReservationItemType.TOOL:
+			usage_events = UsageEvent.objects.filter(tool__id__in=Tool.objects.get(pk=item_id).get_family_tool_ids())
+		if item_id and item_type == ReservationItemType.AREA:
+			area_access_events = AreaAccessRecord.objects.filter(area__id=item_id)
+
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
 	usage_events = usage_events.exclude(start__lt=start, end__lt=start)
 	usage_events = usage_events.exclude(start__gt=end, end__gt=end)
-
-	# Filter events that only have to do with the relevant tool.
-	item_id = request.GET.get('item_id')
-	item_type = ReservationItemType(request.GET.get('item_type')) if request.GET.get('item_type') else None
-	if item_id and item_type == ReservationItemType.TOOL:
-		usage_events = usage_events.filter(tool__id__in=Tool.objects.get(pk=item_id).get_family_tool_ids())
-
-	area_access_events = AreaAccessRecord.objects.none()
-	# Filter events that only have to do with the current user.
-	personal_schedule = request.GET.get('personal_schedule')
-	if personal_schedule:
-		usage_events = usage_events.filter(user=request.user)
-		# Display area access along side tool usage when 'personal schedule' is selected.
-		area_access_events = AreaAccessRecord.objects.filter(customer__id=request.user.id)
-	if item_id and item_type == ReservationItemType.AREA:
-		area_access_events = AreaAccessRecord.objects.filter(area__id=item_id)
 	area_access_events = area_access_events.exclude(start__lt=start, end__lt=start)
 	area_access_events = area_access_events.exclude(start__gt=end, end__gt=end)
-
-	missed_reservations = Reservation.objects.none()
-	if personal_schedule:
-		missed_reservations = Reservation.objects.filter(missed=True, user=request.user)
-	elif item_type:
-		reservation_filter = {item_type.value: item_id}
-		missed_reservations = Reservation.objects.filter(missed=True).filter(**reservation_filter)
 	missed_reservations = missed_reservations.exclude(start__lt=start, end__lt=start)
 	missed_reservations = missed_reservations.exclude(start__gt=end, end__gt=end)
 
