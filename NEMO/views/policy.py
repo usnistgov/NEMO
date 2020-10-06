@@ -233,6 +233,8 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 			else:
 				policy_problems.append(f"{str(user)} is not authorized to access this area at this time{details}. Creating, moving, and resizing reservations is forbidden.")
 
+	check_tool_reservation_requiring_area(policy_problems, user_creating_reservation, cancelled_reservation, new_reservation)
+
 	# The reservation start time may not exceed the item's reservation horizon.
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
@@ -249,6 +251,29 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 
 	# Return the list of all policies that are not met.
 	return policy_problems + item_policy_problems, overridable
+
+
+def check_tool_reservation_requiring_area(policy_problems: List[str], user_creating_reservation: User, cancelled_reservation: Optional[Reservation], new_reservation: Optional[Reservation]):
+	# When modifying an area reservation, check that all tools reservations starting during the cancelled one are still within the new one
+	if cancelled_reservation.reservation_item_type == ReservationItemType.AREA and cancelled_reservation:
+		tools_requiring_cancelled_reservation = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, tool__isnull=False, tool___requires_area_access=cancelled_reservation.area, user=cancelled_reservation.user)
+		tools_requiring_cancelled_reservation = tools_requiring_cancelled_reservation.filter(start__gte=cancelled_reservation.start, start__lt=cancelled_reservation.end)
+		if tools_requiring_cancelled_reservation.exists():
+			if new_reservation:
+				tools_requiring_new_reservation = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, tool__isnull=False, tool___requires_area_access=new_reservation.area, user=new_reservation.user)
+				tools_requiring_new_reservation = tools_requiring_new_reservation.filter(start__gte=new_reservation.start, start__lt=new_reservation.end)
+			else:
+				tools_requiring_new_reservation = Reservation.objects.none()
+			difference: List[Reservation] = [item for item in tools_requiring_cancelled_reservation if item not in tools_requiring_new_reservation]
+			# As long as the new reservation includes the same tool reservations, we are good
+			if difference:
+				user = cancelled_reservation.user
+				area = new_reservation.area if new_reservation else cancelled_reservation.area
+				difference.sort(key=lambda x: x.start)
+				if user == user_creating_reservation:
+					policy_problems.append(f"You have a reservation for the {difference[0].tool} at {format_datetime(difference[0].start)} that requires a {area} reservation. Cancel or reschedule the tool reservation first and try again.")
+				else:
+					policy_problems.append(f"{str(user)} has a reservation for the {difference[0].tool} at {format_datetime(difference[0].start)} that requires a {area} reservation. Cancel or reschedule the tool reservation first and try again.")
 
 
 def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Reservation], new_reservation: Reservation, user_creating_reservation: User, policy_problems: List):

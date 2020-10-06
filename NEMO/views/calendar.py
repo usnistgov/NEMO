@@ -22,7 +22,7 @@ from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccess
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
-from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations
+from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations, check_tool_reservation_requiring_area
 
 calendar_logger = getLogger(__name__)
 
@@ -895,10 +895,18 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 
 
 def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation: User, reason: Optional[str]):
+	# Check policy to cancel reservation contains rules common to cancelling and modifying
 	response = check_policy_to_cancel_reservation(reservation, user_cancelling_reservation)
+
+	# The following rules apply only for proper cancellation, not for modification
 	# Staff must provide a reason when cancelling a reservation they do not own.
 	if reservation.user != user_cancelling_reservation and not reason:
 		response = HttpResponseBadRequest("You must provide a reason when cancelling someone else's reservation.")
+
+	policy_problems = []
+	check_tool_reservation_requiring_area(policy_problems, user_cancelling_reservation, reservation, None)
+	if policy_problems:
+		return HttpResponseBadRequest(policy_problems[0])
 
 	if response.status_code == HTTPStatus.OK:
 		# All policy checks passed, so cancel the reservation.
