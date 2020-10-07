@@ -617,6 +617,7 @@
 				<ul>
 					<li><b>reservation</b> - the user's upcoming reservation</li>
 					<li><b>fatal_error</b> - boolean value that, when true, indicates that it will be impossible for the user to use the tool/access the area during their reservation (due to maintenance, outages or a missing required dependency)</li>
+					<li><b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.</li>
 				</ul>
 				<form method="POST" action="{% url 'customize' 'reservation_warning_email' %}#reservation_warning" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('reservation_warning_email')">
 					{% csrf_token %}
