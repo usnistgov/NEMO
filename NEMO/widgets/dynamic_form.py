@@ -29,6 +29,18 @@ class DynamicForm:
 					result += f'<label><input type="radio" name="{question["name"]}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
 					result += '</div>'
 				result += '</div>'
+			elif question['type'] == "dropdown":
+				result += f'<div class="form-group">{question["title"]}'
+				required = 'required' if 'required' in question and question['required'] is True else ''
+				result += f'<select name="{question["name"]}" id="{question["name"]}" {required} style="margin-top: 5px;max-width:{question["max-width"]}px" class="form-control">'
+				blank_disabled = 'disabled="disabled"' if required else ''
+				placeholder = question["placeholder"] if 'placeholder' in question else 'Select an option'
+				result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
+				for choice in question['choices']:
+					is_default_choice = 'selected' if 'default_choice' in question and question['default_choice'] == choice else ''
+					result += f'<option value="{choice}" {is_default_choice}>{choice}</option>'
+				result += '</select>'
+				result += '</div>'
 			elif question['type'] == "textbox" or question['type'] == "number":
 				result += '<div class="form-group">'
 				result += f'<label for="{question["name"]}">{question["title"]}</label>'

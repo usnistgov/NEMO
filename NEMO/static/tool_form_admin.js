@@ -18,7 +18,7 @@ window.addEventListener("load", function() {
 
         /* set a separate form for testing post_usage data */
         $('#tool_form').after('<form id="post_usage_preview_form"></form>')
-        $('.post_usage_preview input').each(function(index, element){
+        $('.post_usage_preview input, .post_usage_preview select').each(function(index, element){
             $(element).attr('form', 'post_usage_preview_form')
         })
         function update_validation_button() {
@@ -35,6 +35,6 @@ window.addEventListener("load", function() {
             }
         }
         update_validation_button();
-        $("input[required][form='post_usage_preview_form']").on('change keyup', update_validation_button);
+        $("input[required][form='post_usage_preview_form'], select[required][form='post_usage_preview_form']").on('change keyup', update_validation_button);
     })(django.jQuery);
 });
