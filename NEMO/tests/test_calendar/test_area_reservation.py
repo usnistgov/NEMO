@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 from django.test import TestCase
 from django.urls import reverse
 
-from NEMO.models import User, ScheduledOutage, Reservation, Account, Project, Area, PhysicalAccessLevel
+from NEMO.models import User, ScheduledOutage, Reservation, Account, Project, Area, PhysicalAccessLevel, \
+	AreaAccessRecord
 from NEMO.tests.test_utilities import login_as_user, login_as
 
 
@@ -14,9 +15,10 @@ class AreaReservationTestCase(TestCase):
 	owner: User = None
 	consumer: User = None
 	staff: User = None
+	project: Project = None
 
 	def setUp(self):
-		global area, area_access_level, consumer, staff
+		global area, area_access_level, consumer, staff, project
 		area = Area.objects.create(name='test_area', requires_reservation=True, category='Imaging')
 		area_access_level = PhysicalAccessLevel.objects.create(name='area access level', area=area, schedule=PhysicalAccessLevel.Schedule.ALWAYS)
 		account = Account.objects.create(name="account1")
@@ -406,10 +408,17 @@ class AreaReservationTestCase(TestCase):
 		self.assertEquals(response.content.decode(), "This reservation was missed and cannot be modified.")
 
 		# test cancel already ended reservation
-		already_ended_resa = Reservation.objects.create(area=area, start=start - timedelta(days=1), end=end - timedelta(days=1), user=consumer, creator=consumer, missed=True, short_notice=False)
+		already_ended_resa = Reservation.objects.create(area=area, start=start - timedelta(days=1), end=end - timedelta(days=1), user=consumer, creator=consumer, missed=False, short_notice=False)
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': already_ended_resa.id}), {}, follow=True)
 		self.assertEquals(response.status_code, 400)
 		self.assertEquals(response.content.decode(), "You may not cancel reservations that have already ended.")
+
+		# test cancel reservation while logged in area
+		older_resa_still_ongoing = Reservation.objects.create(area=area, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
+		AreaAccessRecord.objects.create(area=area, customer=consumer, start=datetime.now(), project=project)
+		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': older_resa_still_ongoing.id}), {}, follow=True)
+		self.assertEquals(response.status_code, 400)
+		self.assertEquals(response.content.decode(), "You may not cancel an area reservation while logged in that area.")
 
 		# cancel reservation
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': reservation.id}), {}, follow=True)

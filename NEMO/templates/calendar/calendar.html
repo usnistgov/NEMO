@@ -172,6 +172,8 @@ function event_render(event, element)
 
 function event_after_all_render()
 {
+    {# Remove visible tooltips first otherwise they get stuck #}
+	$('.tooltip').remove()
     {# Show tooltips for events #}
 	$('a.fc-time-grid-event').tooltip({ container: 'body', delay: { "show": 1000, "hide": 100 }})
 }

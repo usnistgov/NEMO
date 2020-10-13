@@ -1,0 +1,15 @@
+<h4 style="margin-top:0; text-align: center">{{ person.name }}</h4>
+{% if person.email %}Email: <a href="{% if email_form %}{% url 'get_email_form' %}?recipient={{ person.email }}{% else %}mailto:{{ person.email }}{% endif %}">{{ person.email }}</a><br>{% endif %}
+{% if person.office_phone %}Office phone: <a href="tel:{{ person.office_phone }}">{{ person.office_phone }}</a><br>{% endif %}
+{% if person.mobile_phone %}
+	Mobile phone:
+	{% if person.mobile_phone_is_sms_capable %}
+		<ul>
+			<li><a href="tel:{{ person.mobile_phone }}">Call {{ person.mobile_phone }}</a></li>
+			<li><a href="sms:{{ person.mobile_phone }}">Send a text message</a></li>
+		</ul>
+	{% else %}
+		<a href="tel:{{ person.mobile_phone }}">{{ person.mobile_phone }}</a><br>
+	{% endif %}
+{% endif %}
+{% if person.office_location %}Office location: {{ person.office_location }}<br>{% endif %}

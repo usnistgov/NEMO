@@ -1,3 +1,4 @@
+import sys
 from json import loads
 from django import forms
 from django.contrib import admin
@@ -113,7 +114,14 @@ class ToolAdminForm(forms.ModelForm):
 					loads(post_usage_questions)
 				except ValueError as error:
 					self.add_error("_post_usage_questions", "This field needs to be a valid JSON string")
-					
+				try:
+					DynamicForm(post_usage_questions).render()
+				except KeyError as e:
+					self.add_error("_post_usage_questions", f"Missing mandatory {e} field")
+				except Exception:
+					error_info = sys.exc_info()
+					self.add_error("_post_usage_questions", error_info[0].__name__ + ": " + str(error_info[1]))
+
 			policy_off_between_times = cleaned_data.get("_policy_off_between_times")
 			policy_off_start_time = cleaned_data.get("_policy_off_start_time")
 			policy_off_end_time = cleaned_data.get("_policy_off_end_time")
@@ -601,7 +609,7 @@ class ContactInformationCategoryAdmin(admin.ModelAdmin):
 
 @register(ContactInformation)
 class ContactInformationAdmin(admin.ModelAdmin):
-	list_display = ('name', 'category')
+	list_display = ('name', 'category', 'user')
 
 
 @register(LandingPageChoice)

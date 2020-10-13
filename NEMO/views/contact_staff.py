@@ -12,4 +12,4 @@ def contact_staff(request):
 		'categories': ContactInformationCategory.objects.all(),
 		'people': ContactInformation.objects.all(),
 	}
-	return render(request, 'contact_staff.html', dictionary)
+	return render(request, 'contact/contact_staff.html', dictionary)
