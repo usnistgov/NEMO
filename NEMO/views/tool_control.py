@@ -1,7 +1,9 @@
 from datetime import timedelta
 from http import HTTPStatus
 from itertools import chain
+from json import loads, JSONDecodeError
 from logging import getLogger
+from typing import List
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
@@ -58,6 +60,7 @@ def tool_status(request, tool_id):
 		'task_statuses': TaskStatus.objects.all(),
 		'post_usage_questions': DynamicForm(tool.post_usage_questions).render(),
 		'configs': get_tool_full_config_history(tool),
+		'usage_data': get_usage_data(tool),
 	}
 
 	try:
@@ -107,6 +110,30 @@ def get_tool_full_config_history(tool: Tool):
 			}
 		)
 	return configs
+
+
+def get_usage_data(tool: Tool):
+	""" This method return a dictionary of headers and rows containing run_data information for Usage Events """
+	""" It returns the 50 most recent entries """
+	result = {'headers':[('user', 'user'), ('date', 'date')], 'rows':[]}
+	usage_events: List[UsageEvent] = UsageEvent.objects.filter(tool=tool, end__isnull=False).order_by('-end')[:50]
+	for usage_event in usage_events:
+		if usage_event.run_data:
+			usage_data = {}
+			try:
+				for key, value in loads(usage_event.run_data).items():
+					if 'user_input' in value:
+						if not any(k[0] == key for k in result['headers']):
+							result['headers'].append((key, value['title']))
+						usage_data[key]=value['user_input']
+				if usage_data:
+					usage_data['user'] = usage_event.user
+					usage_data['date'] = usage_event.end
+					result['rows'].append(usage_data)
+			except JSONDecodeError:
+				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
+	return result
+
 
 @login_required
 @require_POST

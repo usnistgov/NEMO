@@ -1,3 +1,4 @@
+from copy import copy
 from json import dumps, loads
 from logging import getLogger
 
@@ -72,14 +73,17 @@ class DynamicForm:
 
 		results = {}
 		for question in self.questions:
-			# Only record the answer when the question was answered. Discard questions that were left blank
+			# Record the original question and the answer when the question was answered. Discard questions that were left blank
 			if request.POST.get(question['name']):
-				results[question['name']] = request.POST[question['name']]
+				answered_question = copy(question)
+				answered_question['user_input'] = request.POST[question['name']]
+				results[question['name']] = answered_question
+
 		return dumps(results, indent='\t', sort_keys=True) if len(results) else ''
 
-	def charge_for_consumables(self, customer, merchant, project, run_data):
+	def charge_for_consumables(self, customer, merchant, project, run_data: str):
 		try:
-			run_data = loads(run_data)
+			run_data_json = loads(run_data)
 		except Exception as error:
 			dynamic_form_logger.debug(error)
 			return
@@ -89,11 +93,11 @@ class DynamicForm:
 					consumable = Consumable.objects.get(name=question['consumable'])
 					quantity = 0
 					if question['type'] == 'number':
-						if question['name'] in run_data:
-							quantity = int(run_data[question['name']])
+						if question['name'] in run_data_json and 'user_input' in run_data_json[question['name']]:
+							quantity = int(run_data_json[question['name']]['user_input'])
 
 					if quantity > 0:
 						make_withdrawal(consumable=consumable, customer=customer, merchant=merchant, quantity=quantity, project=project)
 				except Exception as e:
-					dynamic_form_logger.warning(f"Could not withdraw consumable: '{question['consumable']}' with quantity: '{run_data[question['name']]}' for customer: '{customer}' by merchant: '{merchant}' for project: '{project}'", e)
+					dynamic_form_logger.warning(f"Could not withdraw consumable: '{question['consumable']}' with quantity: '{run_data_json[question['name']]}' for customer: '{customer}' by merchant: '{merchant}' for project: '{project}'", e)
 					pass
