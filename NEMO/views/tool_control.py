@@ -132,7 +132,7 @@ def get_usage_data(tool: Tool):
 					result['rows'].append(usage_data)
 			except JSONDecodeError:
 				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
-	return result
+	return result if result['rows'] else {}
 
 
 @login_required
