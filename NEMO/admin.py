@@ -516,7 +516,7 @@ class UserAdmin(admin.ModelAdmin):
 class PhysicalAccessLogAdmin(admin.ModelAdmin):
 	list_display = ('user', 'door', 'time', 'result')
 	list_filter = ('door', 'result')
-	search_fields = ('user',)
+	search_fields = ('user__first_name', 'user__last_name', 'user__username', 'door__name')
 	date_hierarchy = 'time'
 
 
