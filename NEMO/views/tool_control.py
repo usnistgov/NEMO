@@ -127,8 +127,8 @@ def get_usage_data(tool: Tool):
 							result['headers'].append((key, value['title']))
 						usage_data[key]=value['user_input']
 				if usage_data:
-					usage_data['user'] = usage_event.user
-					usage_data['date'] = usage_event.end
+					usage_data['user'] = f"{usage_event.user.first_name} {usage_event.user.last_name}"
+					usage_data['date'] = usage_event.end.strftime('%m/%d/%Y %H:%M:%S')
 					result['rows'].append(usage_data)
 			except JSONDecodeError:
 				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
