@@ -128,7 +128,7 @@ def get_usage_data(tool: Tool):
 						usage_data[key]=value['user_input']
 				if usage_data:
 					usage_data['user'] = f"{usage_event.user.first_name} {usage_event.user.last_name}"
-					usage_data['date'] = usage_event.end.strftime('%m/%d/%Y %H:%M:%S')
+					usage_data['date'] = usage_event.end.astimezone(timezone.get_current_timezone()).strftime('%m/%d/%Y @ %I:%M %p')
 					result['rows'].append(usage_data)
 			except JSONDecodeError:
 				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
