@@ -2,7 +2,7 @@
 {% elif area.maximum_capacity != 0 and area.occupancy_count >= area.warning_capacity %}<span class="warning-highlight"><span class="glyphicon glyphicon-alert" style="margin-right: 10px"></span>
 {% else %}<span>{% endif %}
 	{{ area.occupancy_count }}
-</span>{% if area.maximum_capacity != 0 %} / {{ area.maximum_capacity }}{% endif %} people
+</span>{% if area.maximum_capacity != 0 %} / {{ area.maximum_capacity }}{% endif %}{% if area.occupancy_count != 1 or area.maximum_capacity != 0 %} people{% else %} person{% endif %}
 {% if area.occupancy != area.occupancy_count %}
 	{% if not area.count_staff_in_occupancy and area.count_service_personnel_in_occupancy %}
 		(+ {{ area.occupancy_staff }} staff)
