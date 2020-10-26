@@ -144,9 +144,9 @@
 					<div class="form-group">
 						<div class="col-md-12">
 							<div class="checkbox">
-								<label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas</label><br/>
-								<label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas</label><br/>
-								<label><input type="checkbox" name="calendar_login_logout" {% if calendar_login_logout %}checked{% endif %} value="enabled">Allow login/logout in the calendar view</label>
+								<label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas from landing page</label><br/>
+								<label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas from landing page</label><br/>
+								<label><input type="checkbox" name="calendar_login_logout" {% if calendar_login_logout %}checked{% endif %} value="enabled">Show access controlled area login/logout button on calendar view header (requires login and/or logout feature enabled above)</label>
 							</div>
 						</div>
 					</div>
