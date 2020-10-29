@@ -233,6 +233,15 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	position: relative;
 }
 
+.extra-side-padding {
+	padding-left: 5px;
+	padding-right: 5px;
+}
+
+.small-input {
+	max-width: 125px;
+}
+
 /* Overrides the styling of un-editable Full Calendar events. Makes the cursor
 appear as a pointer (rather than text selector) when mousing over event text. */
 .fc-title

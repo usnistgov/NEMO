@@ -1,9 +1,9 @@
+import csv
 from datetime import timedelta
 from http import HTTPStatus
 from itertools import chain
 from json import loads, JSONDecodeError
 from logging import getLogger
-from typing import List
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
@@ -29,7 +29,8 @@ tool_control_logger = getLogger(__name__)
 @require_GET
 def tool_control(request, tool_id=None):
 	""" Presents the tool control view to the user, allowing them to begin/end using a tool or see who else is using it. """
-	if request.user.active_project_count() == 0:
+	user: User = request.user
+	if user.active_project_count() == 0:
 		return render(request, 'no_project.html')
 	# The tool-choice sidebar is not available for mobile devices, so redirect the user to choose a tool to view.
 	if request.device == 'mobile' and tool_id is None:
@@ -41,7 +42,7 @@ def tool_control(request, tool_id=None):
 	}
 	# The tool-choice sidebar only needs to be rendered for desktop devices, not mobile devices.
 	if request.device == 'desktop':
-		dictionary['rendered_item_tree_html'] = ItemTree().render(None, {'tools': tools, 'user':request.user})
+		dictionary['rendered_item_tree_html'] = ItemTree().render(None, {'tools': tools, 'user': user})
 	return render(request, 'tool_control/tool_control.html', dictionary)
 
 
@@ -60,7 +61,6 @@ def tool_status(request, tool_id):
 		'task_statuses': TaskStatus.objects.all(),
 		'post_usage_questions': DynamicForm(tool.post_usage_questions).render(),
 		'configs': get_tool_full_config_history(tool),
-		'usage_data': get_usage_data(tool),
 	}
 
 	try:
@@ -112,11 +112,22 @@ def get_tool_full_config_history(tool: Tool):
 	return configs
 
 
-def get_usage_data(tool: Tool):
+@login_required
+@require_POST
+def usage_data_history(request, tool_id):
+	csv_export = bool(request.POST.get('csv', False))
+	start, end = extract_times(request.POST, start_required=False, end_required=False)
+	if not start and not end:
+		end = timezone.now().astimezone(timezone.get_current_timezone())
+		start = end + timedelta(days=-30)
 	""" This method return a dictionary of headers and rows containing run_data information for Usage Events """
 	""" It returns the 50 most recent entries """
 	result = {'headers':[('user', 'user'), ('date', 'date')], 'rows':[]}
-	usage_events: List[UsageEvent] = UsageEvent.objects.filter(tool=tool, end__isnull=False).order_by('-end')[:50]
+	usage_events = UsageEvent.objects.filter(tool_id=tool_id, end__isnull=False).order_by('-end')
+	if start:
+		usage_events = usage_events.filter(end__gte=start.replace(hour=0, minute=0, second=0))
+	if end:
+		usage_events = usage_events.filter(end__lte=end.replace(hour=0, minute=0, second=0) + timedelta(days=1, minutes=-1))
 	for usage_event in usage_events:
 		if usage_event.run_data:
 			usage_data = {}
@@ -132,7 +143,23 @@ def get_usage_data(tool: Tool):
 					result['rows'].append(usage_data)
 			except JSONDecodeError:
 				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
-	return result if result['rows'] else {}
+	if csv_export:
+		response = HttpResponse(content_type='text/csv')
+		filename = f"usage_data_{start.strftime('%m_%d_%Y')}_to_{end.strftime('%m_%d_%Y')}.csv"
+		response['Content-Disposition'] = f'attachment; filename="{filename}"'
+		writer = csv.writer(response)
+		writer.writerow([value for key, value in result['headers']])
+		for row in result['rows']:
+			writer.writerow([row.get(key, '') for key, value in result['headers']])
+		return response
+	else:
+		dictionary = {
+			'tool_id': tool_id,
+			'data_history_start': start,
+			'data_history_end': end,
+			'usage_data': result if result['rows'] else {},
+		}
+		return render(request, 'tool_control/usage_data.html', dictionary)
 
 
 @login_required
@@ -276,8 +303,9 @@ def disable_tool(request, tool_id):
 	dynamic_form.charge_for_consumables(current_usage_event.user, current_usage_event.operator, current_usage_event.project, current_usage_event.run_data)
 
 	current_usage_event.save()
-	if request.user.charging_staff_time():
-		existing_staff_charge = request.user.get_staff_charge()
+	user: User = request.user
+	if user.charging_staff_time():
+		existing_staff_charge = user.get_staff_charge()
 		if existing_staff_charge.customer == current_usage_event.user and existing_staff_charge.project == current_usage_event.project:
 			response = render(request, 'staff_charges/reminder.html', {'tool': tool})
 

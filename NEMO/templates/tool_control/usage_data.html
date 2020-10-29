@@ -1,0 +1,55 @@
+{% load custom_tags_and_filters %}
+<form method="POST" action="{% url 'usage_data_history' tool_id %}" id="usage_data_form" class="form-inline" role="form" style="margin: 15px 0" target="_blank">
+	{% csrf_token %}
+	<input type="hidden" name="csv" id="hidden_data_csv"/>
+	<input type="hidden" name="start" id="hidden_data_start"/>
+	<input type="hidden" name="end" id="hidden_data_end"/>
+	<div class="form-group extra-side-padding">
+		<label for="data_history_start_date">From</label>
+	</div>
+	<div class="datetimepicker-container form-group extra-side-padding">
+		<input type="text" id="data_history_start_date" name="data_history_start_date" class="form-control text-center small-input" placeholder="Choose a date" value="{{ data_history_start|date:"m/d/Y" }}">
+	</div>
+	<div class="form-group extra-side-padding">
+		<label for="data_history_end_date">to</label>
+	</div>
+	<div class="datetimepicker-container form-group extra-side-padding">
+		<input type="text" id="data_history_end_date" name="data_history_end_date" class="form-control text-center small-input" placeholder="Choose a date" value="{{ data_history_end|date:"m/d/Y" }}">
+	</div>
+	<div class="form-group extra-side-padding">
+		<input type="button" class="btn btn-success" value="Update" onclick="load_usage_data('{{ tool_id }}')">
+	</div>
+	{% if user.is_staff %}
+		<div class="form-group pull-right extra-side-padding">
+			<input type="button" class="btn btn-info" value="Export" onclick="load_usage_data('{{ tool_id }}', true)">
+		</div>
+	{% endif %}
+</form>
+
+{% if usage_data %}
+<table class="table table-bordered table-condensed" style="margin-top: 10px">
+	<thead>
+		<tr>
+			{% for header in usage_data.headers %}
+				<th>{{ header.1|capfirst }}</th>
+			{% endfor %}
+		</tr>
+	</thead>
+	<tbody>
+		{% for row in usage_data.rows %}
+			<tr>
+				{% for header in usage_data.headers %}
+					<td>{{ row|get_item:header.0|default_if_none:'' }}</td>
+				{% endfor %}
+			</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% else %}
+	<span class="italic">No usage data was found between these dates</span>
+{% endif %}
+
+<script>
+	$('#data_history_start_date').datetimepicker({format: 'MM/DD/YYYY'});
+	$('#data_history_end_date').datetimepicker({format: 'MM/DD/YYYY'});
+</script>

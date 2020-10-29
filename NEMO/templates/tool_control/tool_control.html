@@ -44,7 +44,7 @@
 			 	{% if device == 'desktop' %}
 					$('#loading-div').show()
 				{% endif %}
-				var url = "{% url 'tool_status' 999 %}".replace('999', {% if device == 'mobile' %}selected_item{% else %}item.id{% endif %})
+				let url = "{% url 'tool_status' 999 %}".replace('999', {% if device == 'mobile' %} selected_item {% else %} item.id {% endif %})
 				$("#content").load(url, undefined, refresh_tool_completion_callback);
 			}
 			{% if device == 'desktop' %}
@@ -62,7 +62,7 @@
 		    {% if device == 'desktop' %}
 				$('#loading-div').hide()
 			{% endif %}
-			if(status == "error")
+			if(status === "error")
 			{
 				let content = "<div class='alert alert-danger'><span class='glyphicon glyphicon-remove'></span> Unable to retrieve tool status.";
 				if(xml_http_request.responseText)
@@ -102,19 +102,21 @@
 		function enable_tool(tool_id)
 		{
 			$("#start button").prop("disabled", true);
-			var user_id = parseInt($("#user_id").val());
-			var project_id = parseInt($("#project_id").val());
-			var staff_charge = false;
+			let user_id = parseInt($("#user_id").val());
+			let project_id = parseInt($("#project_id").val());
+			let staff_charge = false;
 			if($("input[name='staff_charge']").length > 0 && $("input[name='staff_charge']:checked").val() === 'true')
-				staff_charge = true;
-			var url = "{% url 'enable_tool' tool_id=111 user_id=22222222 project_id=33333333 staff_charge='false' %}".replace('111', tool_id).replace('22222222', user_id.toString()).replace('33333333', project_id.toString()).replace('false', staff_charge.toString())
-			var failure_dialog = ajax_failure_callback("Couldn't change tool status");
-			var success_callbacks;
+			{
+			    staff_charge = true;
+            }
+			let url = "{% url 'enable_tool' tool_id=111 user_id=22222222 project_id=33333333 staff_charge='false' %}".replace('111', tool_id).replace('22222222', user_id.toString()).replace('33333333', project_id.toString()).replace('false', staff_charge.toString())
+			let failure_dialog = ajax_failure_callback("Couldn't change tool status");
+			let success_callbacks;
 			if(staff_charge === true)
 				success_callbacks = [reload_page]; {# If there's a new staff charge then we need to reload the whole page so it's displayed in the menu bar. #}
 			else
 				success_callbacks = [refresh_tool_status, ajax_success_callback];
-			var enable_start_button = function() { $("#start button").prop("disabled", false); };
+			let enable_start_button = function() { $("#start button").prop("disabled", false); };
 			ajax_post(url, undefined, success_callbacks, failure_dialog, enable_start_button);
 		}
 
@@ -148,16 +150,16 @@
 			function add_qualified_user(jquery_event, search_selection, dataset_name)
 			{
 				$(this).typeahead('val', '');
-				var failure_dialog = ajax_failure_callback("Failed to qualify user", "There was a problem qualifying this user.");
-				var data = serialize("#add_qualified_user_form");
+				let failure_dialog = ajax_failure_callback("Failed to qualify user", "There was a problem qualifying this user.");
+				let data = serialize("#add_qualified_user_form");
 				data['chosen_user[]'] = search_selection.id;
 				ajax_post("{% url 'modify_qualifications' %}", data, reload_qualified_users, failure_dialog)
 			}
 
 			function remove_qualified_user(user_id, tool_id)
 			{
-				var failure_dialog = ajax_failure_callback("Failed to remove qualified user", "There was a problem revoking this user's tool qualification.");
-				var data = {
+				let failure_dialog = ajax_failure_callback("Failed to remove qualified user", "There was a problem revoking this user's tool qualification.");
+				let data = {
 					'action': 'disqualify',
 					'chosen_tool[]': tool_id,
 					'chosen_user[]': user_id
@@ -178,15 +180,15 @@
 
 			function end_staff_charge()
 			{
-				var failure_dialog = ajax_failure_callback("Unable to end staff charge", "There was a problem ending your staff charge.");
+				let failure_dialog = ajax_failure_callback("Unable to end staff charge", "There was a problem ending your staff charge.");
 				ajax_post("{% url 'end_staff_charge' %}", undefined, reload_page, failure_dialog);
 			}
 		{% endif %}
 
 		function load_tasks_and_comments(tool_id)
 		{
-			var failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
-			var data = serialize("#history_form");
+			let failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
+			let data = serialize("#history_form");
 			if (data.start)	data.start = moment(data.start, "MM/DD/YYYY").unix();
 			if (data.end) data.end = moment(data.end, "MM/DD/YYYY").add(1, 'day').unix();
 			{# Add one day because by default the time is midnight the day of. We want to include the full duration of the last day. #}
@@ -204,8 +206,25 @@
 
 		function load_ten_most_recent_tasks_and_comments(url)
 		{
-			var failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
+			let failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
 			$("#past_tasks_and_comments").load(url, failure_dialog);
+		}
+
+		function load_usage_data(tool_id, csv_export)
+		{
+			let failure_dialog = ajax_complete_callback("Unable to find usage data", "There was a problem looking up usage data.");
+			let data = serialize("#usage_data_form");
+			data.csrfmiddlewaretoken= "{{ csrf_token }}";
+			if (data.data_history_start_date) data.start = moment(data.data_history_start_date, "MM/DD/YYYY").unix();
+			if (data.data_history_end_date) data.end = moment(data.data_history_end_date, "MM/DD/YYYY").unix();
+			$("#usage_data").load("{% url 'usage_data_history' 999 %}".replace('999', tool_id), data, failure_dialog);
+			if (csv_export)
+			{
+				$('#hidden_data_csv').val('true');
+				$('#hidden_data_start').val(data.start);
+				$('#hidden_data_end').val(data.end);
+				$('#usage_data_form').submit();
+			}
 		}
 
 		function refresh_sidebar_tool_icons()
