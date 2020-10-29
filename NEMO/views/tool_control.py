@@ -148,7 +148,7 @@ def usage_data_history(request, tool_id):
 		filename = f"usage_data_{start.strftime('%m_%d_%Y')}_to_{end.strftime('%m_%d_%Y')}.csv"
 		response['Content-Disposition'] = f'attachment; filename="{filename}"'
 		writer = csv.writer(response)
-		writer.writerow([value for key, value in result['headers']])
+		writer.writerow([value.capitalize() for key, value in result['headers']])
 		for row in result['rows']:
 			writer.writerow([row.get(key, '') for key, value in result['headers']])
 		return response
