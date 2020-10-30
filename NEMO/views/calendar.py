@@ -522,16 +522,8 @@ def modify_reservation(request, start_delta, end_delta):
 		explicit_policy_override = request.POST['explicit_policy_override'] == 'true'
 	except:
 		pass
-	response = check_policy_to_cancel_reservation(reservation_to_cancel, request.user)
-	# Do not move the reservation if the user was not authorized to cancel it.
-	if response.status_code != HTTPStatus.OK:
-		return response
 	# Record the current time so that the timestamp of the cancelled reservation and the new reservation match exactly.
 	now = timezone.now()
-	# Cancel the user's original reservation.
-	reservation_to_cancel.cancelled = True
-	reservation_to_cancel.cancellation_time = now
-	reservation_to_cancel.cancelled_by = request.user
 	# Create a new reservation for the user.
 	new_reservation = Reservation()
 	new_reservation.title = reservation_to_cancel.title
@@ -554,6 +546,17 @@ def modify_reservation(request, start_delta, end_delta):
 	new_reservation.project = reservation_to_cancel.project
 	new_reservation.user = reservation_to_cancel.user
 	new_reservation.creation_time = now
+
+	response = check_policy_to_cancel_reservation(request.user, reservation_to_cancel, new_reservation)
+	# Do not move the reservation if the user was not authorized to cancel it.
+	if response.status_code != HTTPStatus.OK:
+		return response
+
+	# Cancel the user's original reservation.
+	reservation_to_cancel.cancelled = True
+	reservation_to_cancel.cancellation_time = now
+	reservation_to_cancel.cancelled_by = request.user
+
 	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=reservation_to_cancel, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 	if policy_problems:
 		reservation_action = "resize" if start_delta is None else "move"
@@ -895,7 +898,7 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 
 def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation: User, reason: Optional[str]):
 	# Check policy to cancel reservation contains rules common to cancelling and modifying
-	response = check_policy_to_cancel_reservation(reservation, user_cancelling_reservation)
+	response = check_policy_to_cancel_reservation(user_cancelling_reservation, reservation)
 
 	# The following rules apply only for proper cancellation, not for modification
 	# Staff must provide a reason when cancelling a reservation they do not own.

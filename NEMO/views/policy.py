@@ -201,9 +201,11 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 		policy_problems.append("You may not change reservations that you do not own.")
 
 	# The user may not create or move a reservation to have a start time that is earlier than the current time.
+	# Unless it's an extension of an area reservation, in which case the start time is the same.
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
-	if new_reservation.start < timezone.now():
+	extension_of_area_reservation = new_reservation.area and cancelled_reservation and cancelled_reservation.start == new_reservation.start
+	if not extension_of_area_reservation and new_reservation.start < timezone.now():
 		policy_problems.append("Reservation start time (" + format_datetime(new_reservation.start) + ") is earlier than the current time (" + format_datetime(timezone.now()) + ").")
 
 	# The user may not move or resize a reservation to have an end time that is earlier than the current time.
@@ -247,7 +249,7 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	# Check item policy rules
 	item_policy_problems = []
 	if should_enforce_policy(new_reservation):
-		item_policy_problems = check_policy_rules_for_item(cancelled_reservation, new_reservation, user_creating_reservation)
+		item_policy_problems = check_policy_rules_for_item(user_creating_reservation, new_reservation, cancelled_reservation)
 
 	# Return the list of all policies that are not met.
 	return policy_problems + item_policy_problems, overridable
@@ -353,7 +355,7 @@ def should_enforce_policy(reservation: Reservation):
 	return should_enforce
 
 
-def check_policy_rules_for_item(cancelled_reservation: Optional[Reservation], new_reservation: Reservation, user_creating_reservation: User):
+def check_policy_rules_for_item(user_creating_reservation: User, new_reservation: Reservation, cancelled_reservation: Optional[Reservation]):
 	item_policy_problems = []
 	# Calculate the duration of the reservation:
 	duration = new_reservation.end - new_reservation.start
@@ -442,32 +444,39 @@ def check_policy_rules_for_item(cancelled_reservation: Optional[Reservation], ne
 	return item_policy_problems
 
 
-def check_policy_to_cancel_reservation(reservation, user_cancelling_reservation):
+def check_policy_to_cancel_reservation(user_cancelling_reservation: User, reservation_to_cancel: Reservation, new_reservation: Optional[Reservation] = None):
 	"""
 	Checks the reservation deletion policy.
 	If all checks pass the function returns an HTTP "OK" response.
 	Otherwise, the function returns an HTTP "Bad Request" with an error message.
 	"""
 
+	move = new_reservation and new_reservation.start != reservation_to_cancel.start
+	resize = new_reservation and new_reservation.start == reservation_to_cancel.start
+	action = 'move' if move else 'resize' if resize else 'cancel'
+
 	# Users may only cancel reservations that they own.
 	# Staff may break this rule.
-	if (reservation.user != user_cancelling_reservation) and not user_cancelling_reservation.is_staff:
-		return HttpResponseBadRequest("You may not cancel reservations that you do not own.")
+	if (reservation_to_cancel.user != user_cancelling_reservation) and not user_cancelling_reservation.is_staff:
+		return HttpResponseBadRequest(f"You may not {action} reservations that you do not own.")
 
 	# Users may not cancel reservations that have already ended.
 	# Staff may break this rule.
-	if reservation.end < timezone.now() and not user_cancelling_reservation.is_staff:
-		return HttpResponseBadRequest("You may not cancel reservations that have already ended.")
+	if reservation_to_cancel.end < timezone.now() and not user_cancelling_reservation.is_staff:
+		return HttpResponseBadRequest(f"You may not {action} reservations that have already ended.")
 
-	# Users may not cancel ongoing area reservations when they are currently logged in that area
+	# Users may not cancel ongoing area reservations when they are currently logged in that area (unless they are extending it)
 	# Staff may break this rule.
-	if reservation.area and reservation.area.requires_reservation and reservation.start < timezone.now() < reservation.end and AreaAccessRecord.objects.filter(end=None, staff_charge=None, customer=reservation.user, area=reservation.area) and not user_cancelling_reservation.is_staff:
-		return HttpResponseBadRequest("You may not cancel an area reservation while logged in that area.")
+	if reservation_to_cancel.area and reservation_to_cancel.area.requires_reservation and not resize and reservation_to_cancel.start < timezone.now() < reservation_to_cancel.end and AreaAccessRecord.objects.filter(end=None, staff_charge=None, customer=reservation_to_cancel.user, area=reservation_to_cancel.area) and not user_cancelling_reservation.is_staff:
+		if move:
+			return HttpResponseBadRequest("You may only resize an area reservation while logged in that area.")
+		else:
+			return HttpResponseBadRequest("You may not cancel an area reservation while logged in that area.")
 
-	if reservation.cancelled:
-		return HttpResponseBadRequest("This reservation has already been cancelled by " + str(reservation.cancelled_by) + " at " + format_datetime(reservation.cancellation_time) + ".")
+	if reservation_to_cancel.cancelled:
+		return HttpResponseBadRequest("This reservation has already been cancelled by " + str(reservation_to_cancel.cancelled_by) + " on " + format_datetime(reservation_to_cancel.cancellation_time) + ".")
 
-	if reservation.missed:
+	if reservation_to_cancel.missed:
 		return HttpResponseBadRequest("This reservation was missed and cannot be modified.")
 
 	return HttpResponse()
