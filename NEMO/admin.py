@@ -5,6 +5,7 @@ from django.contrib import admin
 from django.contrib.admin import register
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
+from django.db.models import Count
 from django.db.models.fields.files import FieldFile
 from django.utils.html import format_html
 from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
@@ -17,7 +18,8 @@ from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord,
 	News, Notification, PhysicalAccessLevel, PhysicalAccessLog, Project, Reservation, Resource, ResourceCategory, \
 	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
 	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences, TaskImages, InterlockCardCategory, \
-	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory
+	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory, \
+	BuddyRequest
 from NEMO.widgets.dynamic_form import DynamicForm
 
 
@@ -206,9 +208,10 @@ class AreaAdmin(DraggableMPTTAdmin):
 		return super().get_fieldsets(request, obj)
 
 	def save_model(self, request, obj:Area, form, change):
-		if obj.parent_area:
+		parent_area: Area = obj.parent_area
+		if parent_area:
 			# if this area has a parent, that parent needs to be cleaned and updated
-			obj.parent_area.is_now_a_parent()
+			parent_area.is_now_a_parent()
 		super(AreaAdmin, self).save_model(request, obj, form, change)
 
 
@@ -648,6 +651,37 @@ class NotificationAdmin(admin.ModelAdmin):
 @register(BadgeReader)
 class BadgeReaderAdmin(admin.ModelAdmin):
 	list_display = ('id', 'name', 'send_key', 'record_key')
+
+
+class BuddyRequestForm(forms.ModelForm):
+	class Meta:
+		model = BuddyRequest
+		fields = '__all__'
+
+	user_replies = forms.ModelMultipleChoiceField(
+		queryset=User.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(
+			verbose_name='User Replies',
+			is_stacked=False
+		)
+	)
+
+
+@register(BuddyRequest)
+class BuddyRequestAdmin(admin.ModelAdmin):
+	form = BuddyRequestForm
+	list_display = ('user', 'start', 'end', 'tool', 'user_replies_count', 'expired', 'deleted')
+	list_filter = ('expired',)
+
+	def get_queryset(self, request):
+		qs = super().get_queryset(request)
+		return qs.annotate(user_replies_count=Count('user_replies'))
+
+	def user_replies_count(self, buddy_request:BuddyRequest):
+		return buddy_request.user_replies.count()
+	user_replies_count.admin_order_field = 'user_replies_count'
+	user_replies_count.short_description = 'Replies'
 
 
 admin.site.register(ResourceCategory)

@@ -1878,6 +1878,18 @@ class BadgeReader(models.Model):
 		return default_badge_reader
 
 
+class BuddyRequest(models.Model):
+	creation_time = models.DateTimeField(default=timezone.now, help_text="The date and time when the request was created.")
+	start = models.DateTimeField(help_text="The start date and time the user is requesting a buddy.")
+	end = models.DateTimeField(help_text="The end date and time the user is requesting a buddy.")
+	description = models.TextField(help_text="The description of the request.")
+	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+	user = models.ForeignKey(User, help_text="The user who is submitting the request.", on_delete=models.CASCADE)
+	user_replies = models.ManyToManyField(User, blank=True, related_name="user_replies", help_text="Users who have responded to the request.")
+	expired = models.BooleanField(default=False, help_text="Indicates the request has expired and won't be shown anymore.")
+	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
+
+
 def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):
 	"""
 	Record the changes in a many-to-many field that the model does not own. Then, save the many-to-many field.

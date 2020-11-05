@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Buddy Board{% endblock %}
+{% block content %}
+	<h1>
+		Buddy Board
+		<a class="btn btn-success pull-right" href="{% url 'create_buddy_request' %}">New request</a>
+	</h1>
+	{% if buddy_requests %}
+		<div class="table-responsive">
+			<table class="table table-condensed table-align-middle">
+				<thead>
+					<tr>
+						<th>User</th>
+						<th>Start</th>
+						<th>End</th>
+						<th>Tool</th>
+						<th>Area</th>
+						<th>Location</th>
+						<th>Replies</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for br in buddy_requests %}
+						<tr>
+							<td>{{ br.user.get_name }}</td>
+							<td>{{ br.start }}</td>
+							<td>{{ br.end }}</td>
+							<td>{{ br.tool.name }}</td>
+							<td>{{ br.tool.requires_area_access.name|default_if_none:'' }}</td>
+							<td>{{ br.tool.location|default_if_none:'' }}</td>
+							<td class="text-center">{{ br.user_replies.count }}</td>
+						</tr>
+						<tr class="no-border">
+							<td></td>
+							<td colspan="4">{{ br.description|linebreaksbr }}</td>
+							<td colspan="2">
+								{% if br.user == request.user %}
+									<a href="{% url 'delete_buddy_request' br.id %}" class="btn btn-danger btn-sm pull-right">Delete</a>
+									<a href="{% url 'create_buddy_request' br.id %}" class="btn btn-default btn-sm pull-right" style="margin-right: 5px">Edit</a>
+								{% else %}
+									<button class="btn btn-info btn-sm pull-right">Reply</button>
+								{% endif %}
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	{% else %}
+		<span class="italic" style="margin-top: 10px">There are no active buddy requests</span>
+	{% endif %}
+{% endblock %}

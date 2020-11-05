@@ -11,7 +11,7 @@ from django.views.static import serve
 from rest_framework import routers
 
 from NEMO.models import ReservationItemType
-from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
+from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users, buddy_system
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,12 @@ urlpatterns = [
 	url(r'^usage_data_history/(?P<tool_id>\d+)/$', tool_control.usage_data_history, name='usage_data_history'),
 	url(r'^past_comments_and_tasks/$', tool_control.past_comments_and_tasks, name='past_comments_and_tasks'),
 	url(r'^ten_most_recent_past_comments_and_tasks/(?P<tool_id>\d+)/$', tool_control.ten_most_recent_past_comments_and_tasks, name='ten_most_recent_past_comments_and_tasks'),
+
+	# Buddy System
+	url(r'^buddy_system/$', buddy_system.buddy_system, name='buddy_system'),
+	url(r'^create_buddy_request/$', buddy_system.create_buddy_request, name='create_buddy_request'),
+	url(r'^create_buddy_request/(?P<request_id>\d+)/$', buddy_system.create_buddy_request, name='create_buddy_request'),
+	url(r'^delete_buddy_request/(?P<request_id>\d+)/$', buddy_system.delete_buddy_request, name='delete_buddy_request'),
 
 	# Tasks:
 	url(r'^create_task/$', tasks.create, name='create_task'),

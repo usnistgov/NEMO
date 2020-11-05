@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% load static %}
+{% block title %}{% if form.instance.id %}Modify buddy request{% else %}New buddy request{% endif %}{% endblock %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+{% endblock %}
+{% block content %}
+	<form class="form-horizontal" action="{% if form.instance.id %}{% url 'create_buddy_request' form.instance.id %}{% else %}{% url 'create_buddy_request' %}{% endif %}" method="post">
+		<h1 class="form-group">{% if form.instance.id %}Modify buddy request{% else %}New buddy request{% endif %}</h1>
+		{% if form.non_field_errors %}
+			<div class="alert alert-danger">
+				{{ form.non_field_errors }}
+			</div>
+		{% endif %}
+		{% csrf_token %}
+		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="request_id">{% endif %}
+		<div class="form-group">
+			<div class="row">
+				<div class="col-sm-6">
+					<label for="start">Start time</label>{% if form.start.errors %} - <span style="color:red">{{ form.start.errors|striptags }}</span>{% endif %}
+					<input type="text" class="form-control" name="start" id="start" value="{% if form.start.value %}{% if form.start.value|class_name == "datetime" %}{{ form.start.value|date:"m/d/Y g:i A" }}{% else %}{{ form.start.value }}{% endif %}{% endif %}">
+				</div>
+				<div class="col-sm-6">
+					<label for="end">End time</label>{% if form.end.errors %} - <span style="color:red">{{ form.end.errors|striptags }}</span>{% endif %}
+					<input type="text" class="form-control" name="end" id="end" value="{% if form.end.value %}{% if form.end.value|class_name == "datetime" %}{{ form.end.value|date:"m/d/Y g:i A" }}{% else %}{{ form.end.value }}{% endif %}{% endif %}">
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="tool_search">Tool</label>{% if form.tool.errors %} - <span style="color:red">{{ form.tool.errors|striptags }}</span>{% endif %}
+			<input type="text" id="tool_search" name="tool" class="form-control">
+			<input type="button" id="selected_tool" class="btn btn-default" onclick="clear_tool_selection()" style="display:none">
+		</div>
+		<div class="form-group">
+			<label for="description">Description</label>{% if form.description.errors %} - <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
+			<textarea class="form-control" rows="3" name="description" id="description" maxlength="{{ form.fields.description.max_length }}" placeholder="Describe your request">{{ form.description.value|default_if_none:"" }}</textarea>
+		</div>
+		<div class="form-group">
+			<input type="submit" class="btn btn-success pull-right" value="{% if form.instance.id %}Save changes{% else %}Create buddy request{% endif %}">
+		</div>
+	</form>
+	<script>
+		let timepicker_properties =
+		{
+			sideBySide: true
+		};
+		$('#start').datetimepicker(timepicker_properties);
+		$('#end').datetimepicker(timepicker_properties);
+
+		function select_tool(jquery_event, search_selection, dataset_name)
+		{
+			$('#tool_search').typeahead('val', search_selection.id).hide();
+			$("#selected_tool").val(search_selection.name).show();
+		}
+		function clear_tool_selection()
+		{
+			$("#selected_tool").hide();
+			$('#tool_search').typeahead('val', '').show().focus();
+		}
+		function on_load()
+		{
+			$('#tool_search').autocomplete('tool', select_tool, {{ tools|json_search_base }});
+			{% if form.instance.tool %}
+				let selected_tool = {'id': '{{ form.instance.tool.id }}', 'name': '{{ form.instance.tool.name }}'};
+				select_tool(false, selected_tool);
+			{% endif %}
+		}
+
+		$(on_load);
+	</script>
+{% endblock %}

@@ -205,6 +205,14 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	background-color: transparent !important;
 }
 
+.table.table-align-middle > tbody > tr > td {
+     vertical-align: middle;
+}
+
+table > tbody > tr.no-border > td, table > tbody > tr.no-border > th {
+	border: none;
+}
+
 .split-screen-left-panel
 {
 	position: absolute;
