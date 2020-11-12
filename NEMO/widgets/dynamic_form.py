@@ -323,7 +323,7 @@ class DynamicForm:
 		results = {}
 		for question in self.questions:
 			results[question.name] = question.extract(request)
-		return dumps(results, indent='\t', sort_keys=True) if len(results) else ''
+		return dumps(results, indent='\t') if len(results) else ''
 
 	def charge_for_consumables(self, customer, merchant, project, run_data: str):
 		try:
