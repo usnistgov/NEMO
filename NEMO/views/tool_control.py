@@ -4,6 +4,7 @@ from http import HTTPStatus
 from itertools import chain
 from json import loads, JSONDecodeError
 from logging import getLogger
+from typing import Dict, Tuple, List
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
@@ -20,10 +21,44 @@ from NEMO.utilities import extract_times, quiet_int
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
-from NEMO.widgets.dynamic_form import DynamicForm
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, PostUsageQuestion
 from NEMO.widgets.item_tree import ItemTree
 
 tool_control_logger = getLogger(__name__)
+
+
+class PostUsageDataTable(object):
+	""" Utility table to make adding headers and rows easier """
+
+	def __init__(self):
+		self.headers: List[Tuple[str, str]] = []
+		self.rows: List[Dict] = []
+
+	def add_header(self, header: Tuple[str, str]):
+		if not any(k[0] == header[0] for k in self.headers):
+			self.headers.append((header[0], header[1].capitalize()))
+
+	def add_row(self, row:Dict):
+		self.rows.append(row)
+
+	def flat_headers(self) -> List[str]:
+		return [display for key, display in self.headers]
+
+	def flat_rows(self) -> List[List]:
+		flat_result = []
+		for row in self.rows:
+			flat_result.append([row.get(key, '') for key, display_value in self.headers])
+		return flat_result
+
+	def to_csv(self) -> HttpResponse:
+		response = HttpResponse(content_type='text/csv')
+		writer = csv.writer(response)
+		writer.writerow([display_value.capitalize() for key, display_value in self.headers])
+		for row in self.rows:
+			writer.writerow([row.get(key, '') for key, display_value in self.headers])
+		return response
+
+
 
 @login_required
 @require_GET
@@ -59,7 +94,7 @@ def tool_status(request, tool_id):
 		'rendered_configuration_html': tool.configuration_widget(request.user),
 		'mobile': request.device == 'mobile',
 		'task_statuses': TaskStatus.objects.all(),
-		'post_usage_questions': DynamicForm(tool.post_usage_questions).render(),
+		'post_usage_questions': DynamicForm(tool.post_usage_questions, tool.id).render(),
 		'configs': get_tool_full_config_history(tool),
 	}
 
@@ -115,49 +150,67 @@ def get_tool_full_config_history(tool: Tool):
 @login_required
 @require_POST
 def usage_data_history(request, tool_id):
+	""" This method return a dictionary of headers and rows containing run_data information for Usage Events """
 	csv_export = bool(request.POST.get('csv', False))
 	start, end = extract_times(request.POST, start_required=False, end_required=False)
 	if not start and not end:
+		# Default to last 30 days of usage data
 		end = timezone.now().astimezone(timezone.get_current_timezone())
 		start = end + timedelta(days=-30)
-	""" This method return a dictionary of headers and rows containing run_data information for Usage Events """
-	""" It returns the 50 most recent entries """
-	result = {'headers':[('user', 'user'), ('date', 'date')], 'rows':[]}
 	usage_events = UsageEvent.objects.filter(tool_id=tool_id, end__isnull=False).order_by('-end')
 	if start:
 		usage_events = usage_events.filter(end__gte=start.replace(hour=0, minute=0, second=0))
 	if end:
 		usage_events = usage_events.filter(end__lte=end.replace(hour=0, minute=0, second=0) + timedelta(days=1, minutes=-1))
+	table_result = PostUsageDataTable()
+	table_result.add_header(('user', 'User'))
+	table_result.add_header(('date', 'Date'))
 	for usage_event in usage_events:
 		if usage_event.run_data:
 			usage_data = {}
 			try:
-				for key, value in loads(usage_event.run_data).items():
-					if 'user_input' in value:
-						if not any(k[0] == key for k in result['headers']):
-							result['headers'].append((key, value['title']))
-						usage_data[key]=value['user_input']
+				user_data = f"{usage_event.user.first_name} {usage_event.user.last_name}"
+				date_data = usage_event.end.astimezone(timezone.get_current_timezone()).strftime('%m/%d/%Y @ %I:%M %p')
+				run_data: Dict = loads(usage_event.run_data)
+				for question_key, question in run_data.items():
+					if 'user_input' in question:
+						if question['type'] == 'group':
+							for sub_question in question['questions']:
+								table_result.add_header((sub_question['name'], sub_question['title']))
+							for index, user_inputs in question['user_input'].items():
+								if index == '0':
+									# Special case here the "initial" group of user inputs will go along with the rest of the non-group user inputs
+									for name, user_input in user_inputs.items():
+										usage_data[name] = user_input
+								else:
+									# For the other groups of user inputs, we have to add a whole new row
+									group_usage_data = {}
+									for name, user_input in user_inputs.items():
+										group_usage_data[name] = user_input
+									if group_usage_data:
+										group_usage_data['user'] = user_data
+										group_usage_data['date'] = date_data
+										table_result.add_row(group_usage_data)
+						else:
+							table_result.add_header((question_key, question['title']))
+							usage_data[question_key]=question['user_input']
 				if usage_data:
-					usage_data['user'] = f"{usage_event.user.first_name} {usage_event.user.last_name}"
-					usage_data['date'] = usage_event.end.astimezone(timezone.get_current_timezone()).strftime('%m/%d/%Y @ %I:%M %p')
-					result['rows'].append(usage_data)
+					usage_data['user'] = user_data
+					usage_data['date'] = date_data
+					table_result.add_row(usage_data)
 			except JSONDecodeError:
 				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
 	if csv_export:
-		response = HttpResponse(content_type='text/csv')
+		response = table_result.to_csv()
 		filename = f"usage_data_{start.strftime('%m_%d_%Y')}_to_{end.strftime('%m_%d_%Y')}.csv"
 		response['Content-Disposition'] = f'attachment; filename="{filename}"'
-		writer = csv.writer(response)
-		writer.writerow([value.capitalize() for key, value in result['headers']])
-		for row in result['rows']:
-			writer.writerow([row.get(key, '') for key, value in result['headers']])
 		return response
 	else:
 		dictionary = {
 			'tool_id': tool_id,
 			'data_history_start': start,
 			'data_history_end': end,
-			'usage_data': result if result['rows'] else {},
+			'usage_data_table': table_result,
 		}
 		return render(request, 'tool_control/usage_data.html', dictionary)
 
@@ -298,7 +351,7 @@ def disable_tool(request, tool_id):
 	current_usage_event.end = timezone.now() + downtime
 
 	# Collect post-usage questions
-	dynamic_form = DynamicForm(tool.post_usage_questions)
+	dynamic_form = DynamicForm(tool.post_usage_questions, tool.id)
 	current_usage_event.run_data = dynamic_form.extract(request)
 	dynamic_form.charge_for_consumables(current_usage_event.user, current_usage_event.operator, current_usage_event.project, current_usage_event.run_data)
 
@@ -356,3 +409,15 @@ def ten_most_recent_past_comments_and_tasks(request, tool_id):
 		'past': past,
 	}
 	return render(request, 'tool_control/past_tasks_and_comments.html', dictionary)
+
+
+@login_required
+@require_GET
+def tool_usage_group_question(request, tool_id, question_name):
+	tool = get_object_or_404(Tool, id=tool_id)
+	question_index = request.GET['index']
+	if tool.post_usage_questions:
+		for question in loads(tool.post_usage_questions):
+			if question['type'] == 'group' and question['name'] == question_name:
+				return HttpResponse(PostUsageGroupQuestion(question, tool.id, question_index).render_group_question())
+	return HttpResponse()

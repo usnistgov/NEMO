@@ -612,6 +612,7 @@
 	}
 
 	update_stop_button();
-	$('#tool_control input[required], #tool_control select[required]').on('change keyup', update_stop_button);
+	$('body').on('question-group-changed', update_stop_button);
+	$('body').on('change keyup', '#tool_control input[required], #tool_control select[required]', update_stop_button);
 
 </script>
