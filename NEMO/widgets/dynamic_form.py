@@ -141,7 +141,7 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 		required = 'required' if self.required else ''
 		pattern = f'pattern="{self.pattern}"' if self.pattern else ''
 		placeholder = f'placeholder="{self.placeholder}"' if self.placeholder else ''
-		result += f'<input type="text" class="form-control" name="{self.name}" {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+		result += self.render_input(required, pattern, placeholder)
 		if self.suffix:
 			result += f'<span class="input-group-addon">{self.suffix}</span>'
 		if input_group_required:
@@ -149,34 +149,17 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 		result += '</div>'
 		return result
 
+	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
+		return f'<input type="text" class="form-control" name="{self.name}" {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
-class PostUsageNumberFieldQuestion(PostUsageQuestion):
+
+class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 	question_type = "Question of type number"
 
-	def validate(self):
-		super().validate()
-		self.validate_property_exists("max-width")
-
-	def render(self) -> str:
-		result = '<div class="form-group">'
-		result += f'<label for="{self.name}">{self.title}</label>'
-		input_group_required = True if self.prefix or self.suffix else False
-		if input_group_required:
-			result += f'<div class="input-group" style="max-width:{self.max_width}px">'
-		if self.prefix:
-			result += f'<span class="input-group-addon">{self.prefix}</span>'
-		required = 'required' if self.required else ''
-		pattern = f'pattern="{self.pattern}"' if self.pattern else ''
-		placeholder = f'placeholder="{self.placeholder}"' if self.placeholder else ''
+	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
 		minimum = f'min="{self.min}"' if self.min else ''
 		maximum = f'max="{self.max}"' if self.max else ''
-		result += f'<input type="number" class="form-control" name="{self.name}" {placeholder} {pattern} {minimum} {maximum} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
-		if self.suffix:
-			result += f'<span class="input-group-addon">{self.suffix}</span>'
-		if input_group_required:
-			result += '</div>'
-		result += '</div>'
-		return result
+		return f'<input type="number" class="form-control" name="{self.name}" {placeholder} {pattern} {minimum} {maximum} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
 
 class PostUsageGroupQuestion(PostUsageQuestion):
@@ -220,9 +203,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 	def render_script(self):
 		return f"""
 		<script>
-			if (!$) {{
-				$ = django.jQuery;
-			}}
+			if (!$) {{ $ = django.jQuery; }}
 			var {self.group_name}_question_index=1;
 			function update_add_button_{self.group_name}()
 			{{
@@ -255,7 +236,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 		</script>"""
 
 	def extract(self, request) -> Dict:
-		# For group question, we also have to look for answers submitted with a suffix (i.e. question, question_1, question_2 etc.)
+		# For group question, we also have to look for answers submitted with a numbered suffix (i.e. question, question_1, question_2 etc.)
 		sub_results = copy(self.properties)
 		user_inputs = {}
 		for key, value in request.POST.items():
@@ -274,7 +255,6 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
 
 class DynamicForm:
-	""" Builds a (not so dynamic anymore) form based on tool post usage data json properties """
 
 	def __init__(self, questions, tool_id):
 		self.questions = []
@@ -303,8 +283,7 @@ class DynamicForm:
 		duplicate_names = [k for k, v in Counter(names).items() if v > 1]
 		if duplicate_names:
 			raise Exception(f"Question names need to be unique. Duplicates were found: {duplicate_names}")
-
-		# Check for consumable existence
+		# Check that consumable exists and is linked to a number question
 		for question in self.questions:
 			if question.consumable:
 				if not isinstance(question, PostUsageNumberFieldQuestion):
