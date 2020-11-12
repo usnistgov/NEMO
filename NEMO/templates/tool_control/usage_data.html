@@ -26,25 +26,25 @@
 	{% endif %}
 </form>
 
-{% if usage_data %}
-<table class="table table-bordered table-condensed" style="margin-top: 10px">
-	<thead>
-		<tr>
-			{% for header in usage_data.headers %}
-				<th>{{ header.1|capfirst }}</th>
-			{% endfor %}
-		</tr>
-	</thead>
-	<tbody>
-		{% for row in usage_data.rows %}
+{% if usage_data_table.rows %}
+	<table class="table table-bordered table-condensed" style="margin-top: 10px">
+		<thead>
 			<tr>
-				{% for header in usage_data.headers %}
-					<td>{{ row|get_item:header.0|default_if_none:'' }}</td>
+				{% for header in usage_data_table.flat_headers %}
+					<th>{{ header }}</th>
 				{% endfor %}
 			</tr>
-		{% endfor %}
-	</tbody>
-</table>
+		</thead>
+		<tbody>
+			{% for row in usage_data_table.flat_rows %}
+				<tr>
+					{% for item in row %}
+						<td>{{ item }}</td>
+					{% endfor %}
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
 {% else %}
 	<span class="italic">No usage data was found between these dates</span>
 {% endif %}

@@ -6,7 +6,7 @@ from django.contrib.admin import register
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models.fields.files import FieldFile
-from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
 
 from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks, \
@@ -115,9 +115,7 @@ class ToolAdminForm(forms.ModelForm):
 				except ValueError as error:
 					self.add_error("_post_usage_questions", "This field needs to be a valid JSON string")
 				try:
-					DynamicForm(post_usage_questions).render()
-				except KeyError as e:
-					self.add_error("_post_usage_questions", f"Missing mandatory {e} field")
+					DynamicForm(post_usage_questions, self.instance.id).validate()
 				except Exception:
 					error_info = sys.exc_info()
 					self.add_error("_post_usage_questions", error_info[0].__name__ + ": " + str(error_info[1]))
@@ -153,7 +151,7 @@ class ToolAdmin(admin.ModelAdmin):
 
 	def _post_usage_preview(self, obj):
 		form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ''
-		return format_html('<div class="post_usage_preview">{}{}</div><div class="help post_usage_preview_help">Save form to preview post usage questions</div>'.format(DynamicForm(obj.post_usage_questions).render(), form_validity_div))
+		return mark_safe('<div class="post_usage_preview">{}{}</div><div class="help post_usage_preview_help">Save form to preview post usage questions</div>'.format(DynamicForm(obj.post_usage_questions, obj.id).render(), form_validity_div))
 
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):
 		""" We only want non children tool to be eligible as parents """
