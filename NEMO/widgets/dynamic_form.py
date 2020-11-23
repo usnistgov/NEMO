@@ -180,7 +180,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			sub_question.validate()
 
 	def render(self) -> str:
-		result = f'<div class="form-group">{self.title}</div>'
+		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}</div>'
 		result += f'<div id="{self.group_name}_container">'
 		result += self.render_group_question()
 		result += '</div>'
