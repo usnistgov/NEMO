@@ -4,6 +4,7 @@ from datetime import timedelta, datetime
 from email import encoders
 from email.mime.base import MIMEBase
 from io import BytesIO
+from typing import Tuple
 
 from PIL import Image
 from dateutil import parser
@@ -81,7 +82,7 @@ def get_month_timeframe(date=None):
 	return first_of_the_month, last_of_the_month
 
 
-def extract_times(parameters, input_timezone=None, start_required=True, end_required=True):
+def extract_times(parameters, input_timezone=None, start_required=True, end_required=True) -> Tuple[datetime, datetime]:
 	"""
 	Extract the "start" and "end" parameters from an HTTP request while performing a few logic validation checks.
 	The function assumes the UNIX timestamp is in the local timezone. Use input_timezone to specify the timezone.
@@ -177,13 +178,13 @@ def naive_local_current_datetime():
 	return localtime(timezone.now()).replace(tzinfo=None)
 
 
-def beginning_of_the_day(t, in_local_timezone=True):
+def beginning_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	""" Returns the BEGINNING of today's day (12:00:00.000000 AM of the current day) in LOCAL time. """
 	midnight = t.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
 	return localize(midnight) if in_local_timezone else midnight
 
 
-def end_of_the_day(t, in_local_timezone=True):
+def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	""" Returns the END of today's day (11:59:59.999999 PM of the current day) in LOCAL time. """
 	midnight = t.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=None)
 	return localize(midnight) if in_local_timezone else midnight

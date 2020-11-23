@@ -50,6 +50,7 @@ customizable_key_values = {
 	'calendar_month_column_format': 'ddd',
 	'calendar_start_of_the_day': '07:00:00',
 	'calendar_display_not_qualified_areas': '',
+	'buddy_board_disclaimer': '',
 }
 
 customizable_content = [
@@ -142,6 +143,7 @@ def customize(request, element):
 		set_customization('dashboard_display_not_qualified_areas', request.POST.get('dashboard_display_not_qualified_areas', ''))
 		set_customization('facility_name', request.POST.get('facility_name', ''))
 		set_customization('site_title', request.POST.get('site_title', ''))
+		set_customization('buddy_board_disclaimer', request.POST.get('buddy_board_disclaimer', ''))
 		init_admin_site()
 	elif element == 'calendar_settings':
 		set_customization('calendar_view', request.POST.get('calendar_view', ''))

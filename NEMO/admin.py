@@ -185,7 +185,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	list_display = ('tree_actions', 'indented_title', 'name', 'parent_area', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
 	fieldsets = (
 		(None, {'fields': ('name', 'parent_area', 'category', 'reservation_email', 'abuse_email'),}),
-		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message'),}),
+		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message', 'requires_buddy_after_hours'),}),
 		('Occupancy', {'fields': ('maximum_capacity', 'count_staff_in_occupancy', 'count_service_personnel_in_occupancy', 'reservation_warning'),}),
 		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
 		('Policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time',),}),
@@ -656,30 +656,17 @@ class BuddyRequestForm(forms.ModelForm):
 		model = BuddyRequest
 		fields = '__all__'
 
-	user_replies = forms.ModelMultipleChoiceField(
-		queryset=User.objects.all(),
-		required=False,
-		widget=FilteredSelectMultiple(
-			verbose_name='User Replies',
-			is_stacked=False
-		)
-	)
-
 
 @register(BuddyRequest)
 class BuddyRequestAdmin(admin.ModelAdmin):
 	form = BuddyRequestForm
-	list_display = ('user', 'start', 'end', 'tool', 'user_replies_count', 'expired', 'deleted')
-	list_filter = ('expired',)
+	list_display = ('user', 'start', 'end', 'area', 'reply_count', 'expired', 'deleted')
+	list_filter = ('expired', 'deleted')
 
-	def get_queryset(self, request):
-		qs = super().get_queryset(request)
-		return qs.annotate(user_replies_count=Count('user_replies'))
-
-	def user_replies_count(self, buddy_request:BuddyRequest):
-		return buddy_request.user_replies.count()
-	user_replies_count.admin_order_field = 'user_replies_count'
-	user_replies_count.short_description = 'Replies'
+	def reply_count(self, buddy_request:BuddyRequest):
+		return buddy_request.replies.count()
+	reply_count.admin_order_field = 'replies'
+	reply_count.short_description = 'Replies'
 
 
 admin.site.register(ResourceCategory)

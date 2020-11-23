@@ -7,7 +7,7 @@
 	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
 {% endblock %}
 {% block content %}
-	<form class="form-horizontal" action="{% if form.instance.id %}{% url 'create_buddy_request' form.instance.id %}{% else %}{% url 'create_buddy_request' %}{% endif %}" method="post">
+	<form class="form-horizontal" action="{% if form.instance.id %}{% url 'edit_buddy_request' form.instance.id %}{% else %}{% url 'create_buddy_request' %}{% endif %}" method="post">
 		<h1 class="form-group">{% if form.instance.id %}Modify buddy request{% else %}New buddy request{% endif %}</h1>
 		{% if form.non_field_errors %}
 			<div class="alert alert-danger">
@@ -29,9 +29,9 @@
 			</div>
 		</div>
 		<div class="form-group">
-			<label for="tool_search">Tool</label>{% if form.tool.errors %} - <span style="color:red">{{ form.tool.errors|striptags }}</span>{% endif %}
-			<input type="text" id="tool_search" name="tool" class="form-control">
-			<input type="button" id="selected_tool" class="btn btn-default" onclick="clear_tool_selection()" style="display:none">
+			<label for="area_search">Area</label>{% if form.area.errors %} - <span style="color:red">{{ form.area.errors|striptags }}</span>{% endif %}
+			<input type="text" id="area_search" name="area" class="form-control">
+			<input type="button" id="selected_area" class="btn btn-default" onclick="clear_area_selection()" style="display:none">
 		</div>
 		<div class="form-group">
 			<label for="description">Description</label>{% if form.description.errors %} - <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
@@ -49,22 +49,22 @@
 		$('#start').datetimepicker(timepicker_properties);
 		$('#end').datetimepicker(timepicker_properties);
 
-		function select_tool(jquery_event, search_selection, dataset_name)
+		function select_area(jquery_event, search_selection, dataset_name)
 		{
-			$('#tool_search').typeahead('val', search_selection.id).hide();
-			$("#selected_tool").val(search_selection.name).show();
+			$('#area_search').typeahead('val', search_selection.id).hide();
+			$("#selected_area").val(search_selection.name).show();
 		}
-		function clear_tool_selection()
+		function clear_area_selection()
 		{
-			$("#selected_tool").hide();
-			$('#tool_search').typeahead('val', '').show().focus();
+			$("#selected_area").hide();
+			$('#area_search').typeahead('val', '').show().focus();
 		}
 		function on_load()
 		{
-			$('#tool_search').autocomplete('tool', select_tool, {{ tools|json_search_base }});
-			{% if form.instance.tool %}
-				let selected_tool = {'id': '{{ form.instance.tool.id }}', 'name': '{{ form.instance.tool.name }}'};
-				select_tool(false, selected_tool);
+			$('#area_search').autocomplete('area', select_area, {{ areas|json_search_base }});
+			{% if form.instance.area %}
+				let selected_area = {'id': '{{ form.instance.area.id }}', 'name': '{{ form.instance.area.name }}'};
+				select_area(false, selected_area);
 			{% endif %}
 		}
 

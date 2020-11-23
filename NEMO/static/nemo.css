@@ -573,3 +573,62 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 .contact-info-tooltip + .tooltip > .tooltip-inner a {
 	color: #b0dbff;
 }
+
+.buddy-list {
+	margin-top: 10px;
+}
+
+.buddy-list-item {
+	display: table;
+	width: 100%;
+	margin-bottom: 5px;
+}
+
+.buddy-list-item:first-child {
+	margin-top: 10px;
+}
+
+.buddy-list-item-reply {
+	margin-top: 5px;
+}
+
+.buddy-list-item-reply textarea {
+	padding: 10px;
+}
+
+.buddy-list-item-description, .buddy-list-item-buttons {
+	display: table-cell;
+	padding: 10px;
+}
+
+.buddy-list-item-reply textarea, .buddy-list .buddy-list-item.list-group-item-info {
+	border-radius: 8px;
+}
+
+.buddy-list-item-buttons {
+	vertical-align: middle;
+	text-align: right;
+	white-space: nowrap;
+}
+
+.buddy-list-item-reply, .buddy-list-item-message {
+	float: right;
+	width: 90%;
+}
+
+.buddy-list-item-message-user {
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	font-size: x-small;
+}
+
+.buddy-list-item-reply-buttons {
+	margin: 15px 0;
+}
+
+.buddy-list-day {
+	margin-top: 20px;
+	padding-inline-start: 40px;
+	font-size: large;
+}

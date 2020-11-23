@@ -2,13 +2,13 @@
 {% block title %}Status dashboard{% endblock %}
 {% block content %}
 
-<div>
+<h1>
 	<h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">Status dashboard</h1>
 	<ul class="nav nav-pills" id="tabs" {% if no_header %}style="display:none"{% endif %}>
 		{% if areas_exist %}<li {% if tab == 'occupancy' %}class="active"{% endif %}><a href="#occupancy">Area occupancy</a></li>{% endif %}
 		{% if tools_exist %}<li {% if tab == 'tools' %}class="active"{% endif %}><a href="#tools">Tool status & usage</a></li>{% endif %}
 	</ul>
-</div>
+</h1>
 
 <div id="content" class="tab-content" style="padding-top:10px">
 	<div class="tab-pane {% if areas_exist and tab == 'occupancy' %}active{% endif %}" id="occupancy">

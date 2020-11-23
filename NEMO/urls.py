@@ -67,8 +67,9 @@ urlpatterns = [
 	# Buddy System
 	url(r'^buddy_system/$', buddy_system.buddy_system, name='buddy_system'),
 	url(r'^create_buddy_request/$', buddy_system.create_buddy_request, name='create_buddy_request'),
-	url(r'^create_buddy_request/(?P<request_id>\d+)/$', buddy_system.create_buddy_request, name='create_buddy_request'),
+	url(r'^edit_buddy_request/(?P<request_id>\d+)/$', buddy_system.create_buddy_request, name='edit_buddy_request'),
 	url(r'^delete_buddy_request/(?P<request_id>\d+)/$', buddy_system.delete_buddy_request, name='delete_buddy_request'),
+	url(r'^buddy_request_reply/(?P<request_id>\d+)/$', buddy_system.buddy_request_reply, name='buddy_request_reply'),
 
 	# Tasks:
 	url(r'^create_task/$', tasks.create, name='create_task'),

@@ -17,7 +17,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO import rates
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, TaskCategory, TaskStatus, Tool, UsageEvent, User
-from NEMO.utilities import extract_times, quiet_int
+from NEMO.utilities import extract_times, quiet_int, beginning_of_the_day, end_of_the_day
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
@@ -159,9 +159,9 @@ def usage_data_history(request, tool_id):
 		start = end + timedelta(days=-30)
 	usage_events = UsageEvent.objects.filter(tool_id=tool_id, end__isnull=False).order_by('-end')
 	if start:
-		usage_events = usage_events.filter(end__gte=start.replace(hour=0, minute=0, second=0))
+		usage_events = usage_events.filter(end__gte=beginning_of_the_day(start))
 	if end:
-		usage_events = usage_events.filter(end__lte=end.replace(hour=0, minute=0, second=0) + timedelta(days=1, minutes=-1))
+		usage_events = usage_events.filter(end__lte=end_of_the_day(end))
 	table_result = PostUsageDataTable()
 	table_result.add_header(('user', 'User'))
 	table_result.add_header(('date', 'Date'))

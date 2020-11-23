@@ -865,6 +865,7 @@ class Area(MPTTModel):
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login.")
 	logout_grace_period = models.PositiveIntegerField(null=True, blank=True, help_text="Number of minutes users have to logout of this area after their reservation expired before being flagged and abuse email is sent.")
+	requires_buddy_after_hours = models.BooleanField(default=False, help_text="Check this box if this area requires users to have a buddy after hours.")
 
 	# Capacity
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
@@ -1883,12 +1884,20 @@ class BuddyRequest(models.Model):
 	start = models.DateTimeField(help_text="The start date and time the user is requesting a buddy.")
 	end = models.DateTimeField(help_text="The end date and time the user is requesting a buddy.")
 	description = models.TextField(help_text="The description of the request.")
-	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+	area = models.ForeignKey(Area, on_delete=models.CASCADE)
 	user = models.ForeignKey(User, help_text="The user who is submitting the request.", on_delete=models.CASCADE)
-	user_replies = models.ManyToManyField(User, blank=True, related_name="user_replies", help_text="Users who have responded to the request.")
 	expired = models.BooleanField(default=False, help_text="Indicates the request has expired and won't be shown anymore.")
 	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
 
+
+class BuddyRequestMessage(models.Model):
+	buddy_request = models.ForeignKey(BuddyRequest, related_name="replies", help_text="The request that this message relates to.", on_delete=models.CASCADE)
+	author = models.ForeignKey(User, on_delete=models.CASCADE)
+	creation_date = models.DateTimeField(default=timezone.now)
+	content = models.TextField()
+
+	class Meta:
+		ordering = ['creation_date']
 
 def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):
 	"""

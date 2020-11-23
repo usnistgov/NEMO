@@ -24,6 +24,6 @@
 			</div>
 		{% endfor %}
 	{% else %}
-		<h3>No resources exist yet. You can <a href="{% url 'admin:index' %}">create some in the Resources section of 'Detailed Administration'</a>.</h3>
+		<h3>No resources exist yet. You can <a href="{% url 'admin:NEMO_resource_changelist' %}">create some in the Resources section of 'Detailed Administration'</a>.</h3>
 	{% endif %}
 {% endblock %}

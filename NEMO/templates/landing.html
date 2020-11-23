@@ -117,14 +117,14 @@
 				Welcome! This is {{ site_title }}'s landing page - the first page users see when visiting the site. There's nothing here yet...<br>&nbsp;<br>
 
 				Add landing page choices by navigating to<br>
-				<code>
+				<a href="{% url 'admin:NEMO_landingpagechoice_add' %}">
 					Administration -> Detailed Administration -><br>
 					Landing page choices -> Add landing page choice
-				</code>
+				</a>
 				<br>&nbsp;<br>
 
 				Customize {{ site_title }} further by navigating to<br>
-				<code>Administration -> Customization</code>
+				<a href="{% url 'customization' %}">Administration -> Customization</a>
 			</span>
 		{% endfor %}
 {% endblock %}
