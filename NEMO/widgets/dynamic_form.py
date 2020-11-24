@@ -2,13 +2,13 @@ from collections import Counter
 from copy import copy
 from json import dumps, loads
 from logging import getLogger
-from typing import Dict, List
+from typing import Dict, List, Callable
 
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 
-from NEMO.models import Consumable
+from NEMO.models import Consumable, ToolUsageCounter
 from NEMO.views.consumables import make_withdrawal
 
 dynamic_form_logger = getLogger(__name__)
@@ -237,6 +237,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
 	def extract(self, request) -> Dict:
 		# For group question, we also have to look for answers submitted with a numbered suffix (i.e. question, question_1, question_2 etc.)
+		# The result of the extraction will be a dictionary, with the keys being the group number, and the values the user inputs for all questions of the group.
 		sub_results = copy(self.properties)
 		user_inputs = {}
 		for key, value in request.POST.items():
@@ -304,6 +305,17 @@ class DynamicForm:
 			results[question.name] = question.extract(request)
 		return dumps(results, indent='\t') if len(results) else ''
 
+	def filter_questions(self, function: Callable[[PostUsageQuestion], bool]) -> List[PostUsageQuestion]:
+		results = []
+		for question in self.questions:
+			if function(question):
+				results.append(question)
+			elif isinstance(question, PostUsageGroupQuestion):
+				for sub_question in question.sub_questions:
+					if function(sub_question):
+						results.append(sub_question)
+		return results
+
 	def charge_for_consumables(self, customer, merchant, project, run_data: str):
 		try:
 			run_data_json = loads(run_data)
@@ -323,3 +335,28 @@ class DynamicForm:
 				except Exception as e:
 					dynamic_form_logger.warning(f"Could not withdraw consumable: '{question.consumable}' with quantity: '{run_data_json[question.name]}' for customer: '{customer}' by merchant: '{merchant}' for project: '{project}'", e)
 					pass
+
+	def update_counters(self, run_data: str):
+		# This function increments all counters associated with the tool
+		try:
+			run_data_json = loads(run_data)
+		except Exception as error:
+			dynamic_form_logger.debug(error)
+			return
+		active_counters = ToolUsageCounter.objects.filter(is_active=True, tool_id=self.tool_id)
+		for counter in active_counters:
+			additional_value = 0
+			for question in self.questions:
+				if isinstance(question, PostUsageNumberFieldQuestion):
+					if question.name == counter.tool_usage_question and question.name in run_data_json and 'user_input' in run_data_json[question.name]:
+						additional_value = int(run_data_json[question.name]['user_input'])
+				elif isinstance(question, PostUsageGroupQuestion):
+					for sub_question in question.sub_questions:
+						if sub_question.name == counter.tool_usage_question and question.name in run_data_json and 'user_input' in run_data_json[question.name]:
+							for user_input in run_data_json[question.name]['user_input'].values():
+								if sub_question.name in user_input:
+									additional_value += int(user_input[sub_question.name])
+			if additional_value:
+				counter.value += additional_value
+				counter.save(update_fields=['value'])
+

@@ -81,6 +81,7 @@ def disable_tool(request):
 	dynamic_form = DynamicForm(tool.post_usage_questions, tool.id)
 	current_usage_event.run_data = dynamic_form.extract(request)
 	dynamic_form.charge_for_consumables(current_usage_event.user, current_usage_event.operator, current_usage_event.project, current_usage_event.run_data)
+	dynamic_form.update_counters(current_usage_event.run_data)
 
 	current_usage_event.save()
 	dictionary = {

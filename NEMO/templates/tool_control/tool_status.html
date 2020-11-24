@@ -83,6 +83,17 @@
 					{% endautoescape %}
 				</div>
 			{% endif %}
+
+			{% if tool.active_counters %}
+				<div class="tool-counters">
+					{% for counter in tool.active_counters %}
+						<div class="tool-counter">
+							<div class="tool-counter-description">{{ counter.name }}: <span style="font-weight: bold">{{ counter.value }}</span></div>
+							{% if user.is_staff %}<div class="tool-counter-reset"><a class="btn btn-xs btn-warning" href="{% url 'reset_tool_counter' counter.id %}">Reset</a></div>{% endif %}
+						</div>
+					{% endfor %}
+				</div>
+			{% endif %}
 		</div>
 
 		{% if tool.unavailable_required_resources or tool.scheduled_outages %}

@@ -17,8 +17,9 @@ from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord,
 	News, Notification, PhysicalAccessLevel, PhysicalAccessLog, Project, Reservation, Resource, ResourceCategory, \
 	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
 	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences, TaskImages, InterlockCardCategory, \
-	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory
-from NEMO.widgets.dynamic_form import DynamicForm
+	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory, \
+	ToolUsageCounter
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion
 
 
 class ToolAdminForm(forms.ModelForm):
@@ -646,6 +647,38 @@ class NotificationAdmin(admin.ModelAdmin):
 @register(BadgeReader)
 class BadgeReaderAdmin(admin.ModelAdmin):
 	list_display = ('id', 'name', 'send_key', 'record_key')
+
+
+class CounterAdminForm(forms.ModelForm):
+	class Meta:
+		model = ToolUsageCounter
+		fields = '__all__'
+
+	def clean(self):
+		cleaned_data = super().clean()
+		tool = cleaned_data.get('tool')
+		tool_usage_question_name = cleaned_data.get('tool_usage_question')
+		if tool and tool_usage_question_name:
+			error = None
+			if tool.post_usage_questions:
+				post_usage_form = DynamicForm(tool.post_usage_questions, tool.id)
+				tool_question = post_usage_form.filter_questions(lambda x: isinstance(x, PostUsageNumberFieldQuestion) and x.name == tool_usage_question_name)
+				if not tool_question:
+					candidates = [question.name for question in post_usage_form.filter_questions(lambda x: isinstance(x, PostUsageNumberFieldQuestion))]
+					error = "The tool has no post usage question of type Number with this name."
+					if candidates:
+						error += f" Valid question names are: {', '.join(candidates)}"
+			else:
+				error = "The tool does not have any post usage questions."
+			if error:
+				self.add_error('tool_usage_question', error)
+		return cleaned_data
+
+
+@register(ToolUsageCounter)
+class CounterAdmin(admin.ModelAdmin):
+	list_display = ('name', 'tool', 'tool_usage_question', 'value', 'last_reset', 'last_reset_by')
+	form = CounterAdminForm
 
 
 admin.site.register(ResourceCategory)

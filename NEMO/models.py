@@ -760,6 +760,9 @@ class Tool(models.Model):
 	def requires_area_reservation(self):
 		return self.requires_area_access and self.requires_area_access.requires_reservation
 
+	def active_counters(self):
+		return self.toolusagecounter_set.filter(is_active=True)
+
 
 class Configuration(models.Model):
 	tool = models.ForeignKey(Tool, help_text="The tool that this configuration option applies to.", on_delete=models.CASCADE)
@@ -1877,6 +1880,19 @@ class BadgeReader(models.Model):
 		default_badge_reader.send_key = "F2"
 		return default_badge_reader
 
+
+class ToolUsageCounter(models.Model):
+	name = models.CharField(max_length=200, help_text="The name of this counter")
+	value = models.PositiveIntegerField(default=0, help_text="The current value of this counter")
+	tool = models.ForeignKey(Tool, help_text="The tool this counter is for.", on_delete=models.CASCADE)
+	tool_usage_question = models.CharField(max_length=200, help_text="The name of the tool's post usage question which should be used to increment this counter")
+	last_reset_value = models.PositiveIntegerField(null=True, blank=True, help_text="The last value before the counter was reset")
+	last_reset = models.DateTimeField(null=True, blank=True, help_text="The date and time this counter was last reset")
+	last_reset_by = models.ForeignKey(User, null=True, blank=True, help_text="The user who last reset this counter", on_delete=models.SET_NULL)
+	is_active = models.BooleanField(default=True, help_text="The state of the counter")
+
+	def __str__(self):
+		return str(self.name)
 
 def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):
 	"""
