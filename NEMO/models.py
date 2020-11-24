@@ -1883,6 +1883,7 @@ class BadgeReader(models.Model):
 
 class ToolUsageCounter(models.Model):
 	name = models.CharField(max_length=200, help_text="The name of this counter")
+	description = models.TextField(null=True, blank=True, help_text="The counter description to be displayed next to it on the tool control page")
 	value = models.PositiveIntegerField(default=0, help_text="The current value of this counter")
 	tool = models.ForeignKey(Tool, help_text="The tool this counter is for.", on_delete=models.CASCADE)
 	tool_usage_question = models.CharField(max_length=200, help_text="The name of the tool's post usage question which should be used to increment this counter")

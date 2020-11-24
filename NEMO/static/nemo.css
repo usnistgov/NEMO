@@ -467,7 +467,7 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 
 .tool-counters
 {
-	margin-top: 10px;
+	margin-top: 5px;
 	display: table;
 }
 
@@ -476,11 +476,18 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 	display: table-row;
 }
 
-.tool-counter-description, .tool-counter-reset
+.tool-counter-name, .tool-counter-description, .tool-counter-reset
 {
 	display: table-cell;
 	padding-right: 10px;
-	padding-top: 5px;
+	padding-top: 10px;
+	vertical-align: middle;
+}
+
+.tool-counter-description
+{
+	padding-left: 10px;
+	font-style: italic;
 }
 
 .jumbotron-body

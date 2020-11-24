@@ -677,7 +677,7 @@ class CounterAdminForm(forms.ModelForm):
 
 @register(ToolUsageCounter)
 class CounterAdmin(admin.ModelAdmin):
-	list_display = ('name', 'tool', 'tool_usage_question', 'value', 'last_reset', 'last_reset_by')
+	list_display = ('name', 'tool', 'tool_usage_question', 'value', 'last_reset', 'last_reset_by', 'is_active')
 	form = CounterAdminForm
 
 

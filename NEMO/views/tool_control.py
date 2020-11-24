@@ -11,13 +11,13 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseServerError
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
+from django.utils import timezone, formats
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import rates
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, TaskCategory, TaskStatus, Tool, UsageEvent, User, ToolUsageCounter
-from NEMO.utilities import extract_times, quiet_int
+from NEMO.utilities import extract_times, quiet_int, send_mail
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
@@ -433,4 +433,18 @@ def reset_tool_counter(request, counter_id):
 	counter.last_reset = datetime.now()
 	counter.last_reset_by = request.user
 	counter.save()
+
+	# Save a comment about the counter being reset.
+	comment = Comment()
+	comment.tool = counter.tool
+	comment.content = f"The {counter.name} counter was reset to 0. Its last value was {counter.last_reset_value}."
+	comment.author = request.user
+	comment.expiration_date = None
+	comment.save()
+
+	# Send an email to Lab Managers about the counter being reset.
+	if hasattr(settings, 'LAB_MANAGERS'):
+		message = f"The {counter.name} counter for the {counter.tool.name} was reset to 0 on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.<br/>" \
+				  f"Its last value was {counter.last_reset_value}."
+		send_mail(f'{counter.tool.name} counter reset', message, settings.SERVER_EMAIL, settings.LAB_MANAGERS)
 	return redirect('tool_control')
