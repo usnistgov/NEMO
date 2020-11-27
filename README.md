@@ -1,4 +1,4 @@
-The **N**anoFab **E**quipment **M**anagement & **O**perations (NEMO) web application is laboratory logistics software that strives to be intuitive and easy to use, making life easier in the lab. NEMO manages tool reservations, control access to tools, and streamline logistics and communication. The code is open source and free so that other labs can benefit.
+The NEMO web application is laboratory logistics software that strives to be intuitive and easy to use, making life easier in the lab. NEMO manages tool reservations, control access to tools, and streamline logistics and communication. The code is open source and free so that other labs can benefit.
 
 You can try NEMO out using the "[splash pad](https://hub.docker.com/r/nanofab/nemo_splash_pad/)" Docker image, which comes preconfigured and loaded with sample data. Install [Docker Community Edition (CE)](https://www.docker.com/community-edition) and run this command:  
 `docker run --detach --name nemo_splash_pad --publish 8000:8000 nanofab/nemo_splash_pad`  
