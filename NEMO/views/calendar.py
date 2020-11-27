@@ -652,6 +652,9 @@ def change_reservation_project(request, reservation_id):
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 @require_GET
 def email_reservation_reminders(request):
+	send_email_reservation_reminders()
+
+def send_email_reservation_reminders():
 	# Exit early if the reservation reminder email template has not been customized for the organization yet.
 	reservation_reminder_message = get_media_file_contents('reservation_reminder_email.html')
 	reservation_warning_message = get_media_file_contents('reservation_warning_email.html')
@@ -689,6 +692,11 @@ def email_reservation_reminders(request):
 @require_GET
 def email_usage_reminders(request):
 	projects_to_exclude = request.GET.getlist("projects_to_exclude[]")
+	send_email_usage_reminders(projects_to_exclude)
+
+def send_email_usage_reminders(projects_to_exclude=None):
+	if projects_to_exclude is None:
+		projects_to_exclude = []
 	busy_users = AreaAccessRecord.objects.filter(end=None, staff_charge=None).exclude(project__id__in=projects_to_exclude)
 	busy_tools = UsageEvent.objects.filter(end=None).exclude(project__id__in=projects_to_exclude)
 
@@ -771,6 +779,9 @@ def area_access_details(request, event_id):
 @require_GET
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def cancel_unused_reservations(request):
+	do_cancel_unused_reservations()
+
+def do_cancel_unused_reservations():
 	"""
 	Missed reservation for tools is when there is no tool activity during the reservation time + missed reservation threshold.
 	Any tool usage will count, since we don't want to charge for missed reservation when users swap reservation or somebody else gets to use the tool.
@@ -834,6 +845,9 @@ def cancel_unused_reservations(request):
 @require_GET
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def email_out_of_time_reservation_notification(request):
+	send_email_out_of_time_reservation_notification()
+
+def send_email_out_of_time_reservation_notification():
 	"""
 	Out of time reservation notification for areas is when a user is still logged in a area but his reservation expired.
 	"""
