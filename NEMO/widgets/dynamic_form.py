@@ -89,7 +89,7 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render(self) -> str:
-		result = f'<div class="form-group">{self.title}'
+		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}'
 		for choice in self.properties['choices']:
 			result += '<div class="radio">'
 			required = 'required' if self.required else ''
@@ -109,7 +109,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render(self) -> str:
-		result = f'<div class="form-group">{self.title}'
+		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}'
 		required = 'required' if self.required else ''
 		result += f'<select name="{self.name}" {required} style="margin-top: 5px;max-width:{self.max_width}px" class="form-control">'
 		blank_disabled = 'disabled="disabled"' if required else ''
@@ -132,7 +132,7 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 
 	def render(self) -> str:
 		result = '<div class="form-group">'
-		result += f'<label for="{self.name}">{self.title}</label>'
+		result += f'<label for="{self.name}" style="white-space: pre-wrap">{self.title}</label>'
 		input_group_required = True if self.prefix or self.suffix else False
 		if input_group_required:
 			result += f'<div class="input-group" style="max-width:{self.max_width}px">'
