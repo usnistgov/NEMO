@@ -6,6 +6,7 @@ from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LogoutView
 from django.urls import path
 from django.views.static import serve
 from rest_framework import routers
@@ -36,7 +37,7 @@ reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())
 urlpatterns = [
 	# Authentication & error pages:
 	url(r'^login/$', authentication.login_user, name='login'),
-	url(r'^logout/$', authentication.logout_user, name='logout'),
+	url(r'^logout/$', LogoutView.as_view(next_page = 'landing' if not settings.LOGOUT_REDIRECT_URL else None), name='logout'),
 	url(r'^impersonate/$', authentication.impersonate, name='impersonate'),
 	url(r'^authorization_failed/$', authentication.authorization_failed, name='authorization_failed'),
 
