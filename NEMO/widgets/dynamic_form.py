@@ -30,6 +30,7 @@ class PostUsageQuestion:
 		self.pattern = self._init_property('pattern')
 		self.min = self._init_property('min')
 		self.max = self._init_property('max')
+		self.step = self._init_property('step')
 		self.consumable = self._init_property('consumable')
 		self.required = self._init_property('required', True)
 		self.default_choice = self._init_property('default_choice')
@@ -159,7 +160,8 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
 		minimum = f'min="{self.min}"' if self.min else ''
 		maximum = f'max="{self.max}"' if self.max else ''
-		return f'<input type="number" class="form-control" name="{self.name}" {placeholder} {pattern} {minimum} {maximum} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+		step = f'step="{self.step}"' if self.step else ''
+		return f'<input type="number" class="form-control" name="{self.name}" {placeholder} {pattern} {minimum} {maximum} {step} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
 
 class PostUsageGroupQuestion(PostUsageQuestion):
