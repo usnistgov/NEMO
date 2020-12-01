@@ -19,6 +19,7 @@ from django.dispatch import receiver
 from django.template import loader
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import localize
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
@@ -1618,6 +1619,11 @@ class PhysicalAccessLevel(models.Model):
 			accessible_time = timezone.localtime(time)
 		else:
 			accessible_time = timezone.localtime(timezone.now())
+		# First deal with exceptions
+		relevant_exceptions = self.physicalaccessexception_set.filter(start_time__lte=accessible_time, end_time__gt=accessible_time)
+		if relevant_exceptions.exists():
+			return False
+		# Then look at the actual allowed schedule
 		saturday = 6
 		sunday = 7
 		if self.schedule == self.Schedule.ALWAYS:
@@ -1639,12 +1645,31 @@ class PhysicalAccessLevel(models.Model):
 				return True
 		return False
 
+	def ongoing_exception(self, time: datetime = None):
+		if time is not None:
+			accessible_time = timezone.localtime(time)
+		else:
+			accessible_time = timezone.localtime(timezone.now())
+		return self.physicalaccessexception_set.filter(start_time__lte=accessible_time, end_time__gt=accessible_time).first()
+
 	def __str__(self):
 		return str(self.name)
 
 	class Meta:
 		ordering = ['name']
 
+
+class PhysicalAccessException(models.Model):
+	name = models.CharField(max_length=100, help_text="The name of this exception that will be displayed as the policy problem")
+	start_time = models.DateTimeField(help_text="The start of the exception, after which users will be denied access.")
+	end_time = models.DateTimeField(help_text="The end of the exception, after which users will be allowed access again")
+	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True)
+
+	class Meta:
+		ordering = ['-start_time']
+
+	def __str__(self):
+		return str(self.name)
 
 class PhysicalAccessType(object):
 	DENY = False

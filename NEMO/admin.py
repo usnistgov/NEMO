@@ -18,7 +18,7 @@ from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord,
 	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
 	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences, TaskImages, InterlockCardCategory, \
 	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory, \
-	ToolUsageCounter
+	ToolUsageCounter, PhysicalAccessException
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion
 
 
@@ -569,10 +569,20 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 		)
 	)
 
+	physical_access_exceptions = forms.ModelMultipleChoiceField(
+		queryset=PhysicalAccessException.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(
+			verbose_name='Physical Access Exceptions',
+			is_stacked=False
+		)
+	)
+
 	def __init__(self, *args, **kwargs):
-		super(PhysicalAccessLevelForm, self).__init__(*args, **kwargs)
+		super().__init__(*args, **kwargs)
 		if self.instance.pk:
 			self.fields['authorized_users'].initial = self.instance.user_set.all()
+			self.fields['physical_access_exceptions'].initial = self.instance.physicalaccessexception_set.all()
 
 	def clean(self):
 		schedule = self.cleaned_data.get('schedule')
@@ -599,7 +609,31 @@ class PhysicalAccessLevelAdmin(admin.ModelAdmin):
 		"""
 		Explicitly record any membership changes.
 		"""
-		record_remote_many_to_many_changes_and_save(request, obj, form, change, 'authorized_users', super(PhysicalAccessLevelAdmin, self).save_model)
+		record_remote_many_to_many_changes_and_save(request, obj, form, change, 'authorized_users', super().save_model)
+		if 'physical_access_exceptions' in form.changed_data:
+			obj.physicalaccessexception_set.set(form.cleaned_data['physical_access_exceptions'])
+
+
+class PhysicalAccessExceptionAdminForm(forms.ModelForm):
+	class Meta:
+		model = PhysicalAccessException
+		fields = '__all__'
+
+	physical_access_levels = forms.ModelMultipleChoiceField(
+		queryset=PhysicalAccessLevel.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(
+			verbose_name='Physical Access Levels',
+			is_stacked=False
+		)
+	)
+
+
+@register(PhysicalAccessException)
+class PhysicalAccessExceptionAdmin(admin.ModelAdmin):
+	form = PhysicalAccessExceptionAdminForm
+	list_display = ('name', 'start_time', 'end_time')
+	list_filter = (('physical_access_levels__area'),)
 
 
 @register(ContactInformationCategory)

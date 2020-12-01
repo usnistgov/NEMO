@@ -9,6 +9,7 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import localize
 from django.utils.http import urlencode
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from mptt.forms import TreeNodeChoiceField
@@ -116,8 +117,11 @@ def new_area_access_record(request):
 				dictionary['error_message'] = error_message
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
 			check_policy_to_enter_this_area(area=area, user=user)
-		except NoAccessiblePhysicalAccessUserError:
-			dictionary['error_message'] = '{} does not have a physical access level that allows access to the {} at this time.'.format(user, area.name)
+		except NoAccessiblePhysicalAccessUserError as error:
+			if error.access_exception:
+				dictionary['error_message'] = '{} does not have access to the {} at this time due to the following exception: {}.'.format(user, area.name, error.access_exception.name)
+			else:
+				dictionary['error_message'] = '{} does not have a physical access level that allows access to the {} at this time.'.format(user, area.name)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except UnavailableResourcesUserError as error:
 			dictionary['error_message'] = 'The {} is inaccessible because a required resource ({}) is unavailable. You must make all required resources for this area available before creating a new area access record.'.format(error.area.name, error.resources[0])
@@ -282,7 +286,10 @@ def self_log_in(request, load_areas=True):
 			if p in dictionary['projects']:
 				AreaAccessRecord.objects.create(area=a, customer=request.user, project=p)
 		except NoAccessiblePhysicalAccessUserError as error:
-			dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time. Please visit the User Office if you believe this is an error."
+			if error.access_exception:
+				dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time due to the following exception: {error.access_exception.name}. The exception ends on {localize(error.access_exception.end_time)}"
+			else:
+				dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time. Please visit the User Office if you believe this is an error."
 			return render(request, 'area_access/self_login.html', dictionary)
 		except UnavailableResourcesUserError as error:
 			dictionary['area_error_message'] = f'The {error.area.name} is inaccessible because a required resource is unavailable ({error.resources[0]}).'

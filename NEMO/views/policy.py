@@ -6,11 +6,13 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import Template, Context
 from django.utils import timezone
+from django.utils.formats import localize
 
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
 	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
-from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, ReservationItemType, Tool, Project
+from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, \
+	ReservationItemType, Tool, Project, PhysicalAccessException
 from NEMO.utilities import format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 
@@ -229,7 +231,15 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	if item_type == ReservationItemType.AREA:
 		user_access_levels = user.accessible_access_levels_for_area(new_reservation.area)
 		if not any([access_level.accessible_at(new_reservation.start) for access_level in user_access_levels]) or not any([access_level.accessible_at(new_reservation.end) for access_level in user_access_levels]):
-			details = f" (times allowed in this area are: {','.join([access.get_schedule_display_with_times() for access in user_access_levels])})" if user_access_levels else ''
+			# it could be inaccessible because of an ongoing exception at the start or end time
+			first_access_exception: PhysicalAccessException = next(iter([access_level.ongoing_exception(new_reservation.start) for access_level in user_access_levels]), None)
+			if not first_access_exception:
+				first_access_exception = next(iter([access_level.ongoing_exception(new_reservation.end) for access_level in user_access_levels]), None)
+			if first_access_exception:
+				details = f" due to the following exception: {first_access_exception.name} (from {localize(first_access_exception.start_time)} to {localize(first_access_exception.end_time)}"
+			# or simply due to scheduling
+			else:
+				details = f" (times allowed in this area are: {', '.join([access.get_schedule_display_with_times() for access in user_access_levels])})" if user_access_levels else ''
 			if user == user_creating_reservation:
 				policy_problems.append(f"You are not authorized to access this area at this time{details}. Creating, moving, and resizing reservations is forbidden.")
 			else:
@@ -526,7 +536,8 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 	else:
 		# Check if the user normally has access to this area door at the current time (or access to any parent)
 		if not any([access_level.accessible() for access_level in user.accessible_access_levels_for_area(area)]):
-			raise NoAccessiblePhysicalAccessUserError(user=user, area=area)
+			first_access_exception = next(iter([access_level.ongoing_exception() for access_level in user.accessible_access_levels_for_area(area)]), None)
+			raise NoAccessiblePhysicalAccessUserError(user=user, area=area, access_exception=first_access_exception)
 
 	if not user.is_staff and not user.is_service_personnel:
 		for a in area.get_ancestors(ascending=True, include_self=True):
