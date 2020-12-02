@@ -237,7 +237,7 @@ def tool_information(request, tool_id, user_id, back):
 		'customer': customer,
 		'tool': tool,
 		'rendered_configuration_html': tool.configuration_widget(customer),
-		'post_usage_questions': DynamicForm(tool.post_usage_questions, tool.id).render(),
+		'post_usage_questions': DynamicForm(questions=tool.post_usage_questions, tool_id=tool.id, is_mobile=True).render(),
 		'back': back,
 	}
 	try:

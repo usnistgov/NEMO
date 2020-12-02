@@ -63,7 +63,7 @@ urlpatterns = [
 	url(r'^usage_data_history/(?P<tool_id>\d+)/$', tool_control.usage_data_history, name='usage_data_history'),
 	url(r'^past_comments_and_tasks/$', tool_control.past_comments_and_tasks, name='past_comments_and_tasks'),
 	url(r'^ten_most_recent_past_comments_and_tasks/(?P<tool_id>\d+)/$', tool_control.ten_most_recent_past_comments_and_tasks, name='ten_most_recent_past_comments_and_tasks'),
-	url(r'^tool_usage_group_question/(?P<tool_id>\d+)/(?P<question_name>\w+)/$', tool_control.tool_usage_group_question, name='tool_usage_group_question'),
+	url(r'^tool_usage_group_question/(?P<tool_id>\d+)/(?P<group_name>\w+)/$', tool_control.tool_usage_group_question, name='tool_usage_group_question'),
 	url(r'^reset_tool_counter/(?P<counter_id>\d+)/$', tool_control.reset_tool_counter, name='reset_tool_counter'),
 
 	# Tasks:

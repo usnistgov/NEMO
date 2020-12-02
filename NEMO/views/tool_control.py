@@ -1,5 +1,6 @@
 import csv
 from datetime import timedelta, datetime
+from distutils.util import strtobool
 from http import HTTPStatus
 from itertools import chain
 from json import loads, JSONDecodeError
@@ -414,13 +415,14 @@ def ten_most_recent_past_comments_and_tasks(request, tool_id):
 
 @login_required
 @require_GET
-def tool_usage_group_question(request, tool_id, question_name):
+def tool_usage_group_question(request, tool_id, group_name):
 	tool = get_object_or_404(Tool, id=tool_id)
 	question_index = request.GET['index']
+	is_mobile = bool(strtobool((request.GET['is_mobile'])))
 	if tool.post_usage_questions:
-		for question in loads(tool.post_usage_questions):
-			if question['type'] == 'group' and question['name'] == question_name:
-				return HttpResponse(PostUsageGroupQuestion(question, tool.id, question_index).render_group_question())
+		for question in PostUsageQuestion.load_questions(loads(tool.post_usage_questions), tool.id, is_mobile, question_index):
+			if isinstance(question, PostUsageGroupQuestion) and question.group_name == group_name:
+				return HttpResponse(question.render_group_question())
 	return HttpResponse()
 
 

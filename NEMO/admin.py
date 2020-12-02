@@ -151,8 +151,9 @@ class ToolAdmin(admin.ModelAdmin):
 	)
 
 	def _post_usage_preview(self, obj):
-		form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ''
-		return mark_safe('<div class="post_usage_preview">{}{}</div><div class="help post_usage_preview_help">Save form to preview post usage questions</div>'.format(DynamicForm(obj.post_usage_questions, obj.id).render(), form_validity_div))
+		if obj.id:
+			form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ''
+			return mark_safe('<div class="post_usage_preview">{}{}</div><div class="help post_usage_preview_help">Save form to preview post usage questions</div>'.format(DynamicForm(obj.post_usage_questions, obj.id).render(), form_validity_div))
 
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):
 		""" We only want non children tool to be eligible as parents """

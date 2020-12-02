@@ -4,7 +4,7 @@ from json import dumps, loads
 from logging import getLogger
 from typing import Dict, List, Callable
 
-from django.urls import reverse
+from django.urls import reverse, NoReverseMatch
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 
@@ -17,9 +17,10 @@ dynamic_form_logger = getLogger(__name__)
 class PostUsageQuestion:
 	question_type = "Question"
 
-	def __init__(self, properties: Dict, tool_id: int, index: int = None):
+	def __init__(self, properties: Dict, tool_id: int, is_mobile: bool=False, index: int = None):
 		self.properties = properties
 		self.tool_id = tool_id
+		self.is_mobile = is_mobile
 		self.name = self._init_property('name')
 		self.title = self._init_property('title')
 		self.type = self._init_property('type')
@@ -52,6 +53,12 @@ class PostUsageQuestion:
 		self.validate_property_exists("type")
 
 	def render(self) -> str:
+		return self.render_element() + self.render_script()
+
+	def render_element(self):
+		return ''
+
+	def render_script(self):
 		return ''
 
 	def extract(self, request) -> Dict:
@@ -68,7 +75,7 @@ class PostUsageQuestion:
 			raise Exception(f"{self.question_type} requires property '{prop}' to be defined")
 
 	@staticmethod
-	def load_questions(questions: List[Dict], tool_id: int, index: int = None):
+	def load_questions(questions: List[Dict], tool_id: int, is_mobile: bool=False, index: int = None):
 		constructor = {
 			'number': PostUsageNumberFieldQuestion,
 			'textbox': PostUsageTextFieldQuestion,
@@ -78,7 +85,7 @@ class PostUsageQuestion:
 		}
 		post_usage_questions: List[PostUsageQuestion] = []
 		for question in questions:
-			post_usage_questions.append(constructor.get(question['type'], PostUsageQuestion)(question, tool_id, index))
+			post_usage_questions.append(constructor.get(question['type'], PostUsageQuestion)(question, tool_id, is_mobile, index))
 		return post_usage_questions
 
 
@@ -89,7 +96,7 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 		super().validate()
 		self.validate_property_exists("choices")
 
-	def render(self) -> str:
+	def render_element(self) -> str:
 		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}'
 		for choice in self.properties['choices']:
 			result += '<div class="radio">'
@@ -109,7 +116,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 		self.validate_property_exists("max-width")
 		self.validate_property_exists("choices")
 
-	def render(self) -> str:
+	def render_element(self) -> str:
 		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}'
 		required = 'required' if self.required else ''
 		result += f'<select name="{self.name}" {required} style="margin-top: 5px;max-width:{self.max_width}px" class="form-control">'
@@ -131,7 +138,7 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 		super().validate()
 		self.validate_property_exists("max-width")
 
-	def render(self) -> str:
+	def render_element(self) -> str:
 		result = '<div class="form-group">'
 		result += f'<label for="{self.name}" style="white-space: pre-wrap">{self.title}</label>'
 		input_group_required = True if self.prefix or self.suffix else False
@@ -161,18 +168,23 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 		minimum = f'min="{self.min}"' if self.min else ''
 		maximum = f'max="{self.max}"' if self.max else ''
 		step = f'step="{self.step}"' if self.step else ''
-		return f'<input type="number" class="form-control" name="{self.name}" {placeholder} {pattern} {minimum} {maximum} {step} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+		return f'<input type="number" class="form-control" id="{self.name}" name="{self.name}" {placeholder} {pattern} {minimum} {maximum} {step} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+
+	def render_script(self):
+		if self.is_mobile:
+			return f"<script>$($('#{self.name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true}}))</script>"
+		return super().render_script()
 
 
 class PostUsageGroupQuestion(PostUsageQuestion):
 	question_type = "Question of type group"
 
-	def __init__(self, properties: Dict, tool_id: int, index: int = None):
-		super().__init__(properties, tool_id, index)
+	def __init__(self, properties: Dict, tool_id: int, is_mobile: bool=False, index: int = None):
+		super().__init__(properties, tool_id, is_mobile, index)
 		self.max_number = self._init_property('max_number')
 		# we need a safe group name to use in js function and variable names
 		self.group_name = slugify(self.name).replace("-", "_")
-		self.sub_questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(self._init_property('questions'), tool_id, index)
+		self.sub_questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(self._init_property('questions'), tool_id, is_mobile, index)
 
 	def validate(self):
 		super().validate()
@@ -181,7 +193,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 		for sub_question in self.sub_questions:
 			sub_question.validate()
 
-	def render(self) -> str:
+	def render_element(self) -> str:
 		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}</div>'
 		result += f'<div id="{self.group_name}_container">'
 		result += self.render_group_question()
@@ -190,7 +202,6 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 		result += '<div class="form-group">'
 		result += f'<button id="{self.group_name}_add_button" type="button" onclick="add_question_{self.group_name}()">Add</button>'
 		result += '</div>'
-		result += self.render_script()
 		return result
 
 	def render_group_question(self) -> str:
@@ -226,7 +237,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			}}
 			function add_question_{self.group_name}()
 			{{
-				$.ajax({{ type: "GET", url: "{reverse('tool_usage_group_question', args=[self.tool_id, self.name])}?index="+{self.group_name}_question_index, success : function(response)
+				$.ajax({{ type: "GET", url: "{reverse('tool_usage_group_question', args=[self.tool_id, self.group_name])}?is_mobile={self.is_mobile}&index="+{self.group_name}_question_index, success : function(response)
 				{{
 					{self.group_name}_question_index ++;
 					$("#{self.group_name}_container").append(response);
@@ -259,10 +270,10 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
 class DynamicForm:
 
-	def __init__(self, questions, tool_id):
+	def __init__(self, questions, tool_id, is_mobile: bool=False):
 		self.questions = []
 		if questions:
-			self.questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(loads(questions), tool_id)
+			self.questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(loads(questions), tool_id, is_mobile)
 		self.tool_id = tool_id
 
 	def render(self):
@@ -275,7 +286,13 @@ class DynamicForm:
 		for question in self.questions:
 			question.validate()
 		# Test the rendering
-		self.render()
+		# But catch reverse exception if this the tool doesn't have an id yet
+		try:
+			self.render()
+		except NoReverseMatch:
+			if self.tool_id:
+				raise
+			pass
 		# Check for duplicate names
 		names = []
 		for question in self.questions:
