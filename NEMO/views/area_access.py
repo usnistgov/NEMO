@@ -287,7 +287,7 @@ def self_log_in(request, load_areas=True):
 				AreaAccessRecord.objects.create(area=a, customer=request.user, project=p)
 		except NoAccessiblePhysicalAccessUserError as error:
 			if error.access_exception:
-				dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time due to the following exception: {error.access_exception.name}. The exception ends on {localize(error.access_exception.end_time)}"
+				dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time due to the following exception: {error.access_exception.name}. The exception ends on {localize(error.access_exception.end_time.astimezone(timezone.get_current_timezone()))}"
 			else:
 				dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time. Please visit the User Office if you believe this is an error."
 			return render(request, 'area_access/self_login.html', dictionary)

@@ -94,7 +94,7 @@ def login_to_area(request, door_id):
 	except NoAccessiblePhysicalAccessUserError as error:
 		if error.access_exception:
 			log.details = f"The user was blocked from entering this area because of an exception: {error.access_exception.name}."
-			message = f"You do not have access to this area of the {facility_name} due to the following exception: {error.access_exception}. The exception ends on {localize(error.access_exception.end_time)}"
+			message = f"You do not have access to this area of the {facility_name} due to the following exception: {error.access_exception}. The exception ends on {localize(error.access_exception.end_time.astimezone(timezone.get_current_timezone()))}"
 		else:
 			log.details = "This user is not assigned to a physical access level that allows access to this door at this time."
 			message = f"You do not have access to this area of the {facility_name} at this time. Please visit the User Office if you believe this is an error."

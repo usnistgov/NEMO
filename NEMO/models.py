@@ -19,7 +19,6 @@ from django.dispatch import receiver
 from django.template import loader
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import localize
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
@@ -1620,8 +1619,7 @@ class PhysicalAccessLevel(models.Model):
 		else:
 			accessible_time = timezone.localtime(timezone.now())
 		# First deal with exceptions
-		relevant_exceptions = self.physicalaccessexception_set.filter(start_time__lte=accessible_time, end_time__gt=accessible_time)
-		if relevant_exceptions.exists():
+		if self.ongoing_exception(accessible_time):
 			return False
 		# Then look at the actual allowed schedule
 		saturday = 6

@@ -236,7 +236,7 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 			if not first_access_exception:
 				first_access_exception = next(iter([access_level.ongoing_exception(new_reservation.end) for access_level in user_access_levels]), None)
 			if first_access_exception:
-				details = f" due to the following exception: {first_access_exception.name} (from {localize(first_access_exception.start_time)} to {localize(first_access_exception.end_time)}"
+				details = f" due to the following exception: {first_access_exception.name} (from {localize(first_access_exception.start_time.astimezone(timezone.get_current_timezone()))} to {localize(first_access_exception.end_time.astimezone(timezone.get_current_timezone()))}"
 			# or simply due to scheduling
 			else:
 				details = f" (times allowed in this area are: {', '.join([access.get_schedule_display_with_times() for access in user_access_levels])})" if user_access_levels else ''
