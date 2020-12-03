@@ -27,4 +27,17 @@ class Migration(migrations.Migration):
                 ('tool', models.ForeignKey(help_text='The tool this counter is for.', on_delete=django.db.models.deletion.CASCADE, to='NEMO.Tool')),
             ],
         ),
+        migrations.CreateModel(
+            name='PhysicalAccessException',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(help_text='The name of this exception that will be displayed as the policy problem', max_length=100)),
+                ('start_time', models.DateTimeField(help_text='The start of the exception, after which users will be denied access.')),
+                ('end_time', models.DateTimeField(help_text='The end of the exception, after which users will be allowed access again')),
+                ('physical_access_levels', models.ManyToManyField(blank=True, to='NEMO.PhysicalAccessLevel')),
+            ],
+            options={
+                'ordering': ['-start_time'],
+            },
+        ),
     ]
