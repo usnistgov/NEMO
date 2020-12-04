@@ -232,12 +232,6 @@ def login_user(request):
 
 
 @require_GET
-def logout_user(request):
-	logout(request)
-	return HttpResponseRedirect(reverse('landing'))
-
-
-@require_GET
 def authorization_failed(request):
 	authorization_page = get_media_file_contents('authorization_failed.html')
 	return render(request, 'authorization_failed.html', {'authorization_failed': authorization_page})

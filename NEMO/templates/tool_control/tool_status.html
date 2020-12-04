@@ -5,6 +5,7 @@
 			<li style="width:48%; text-align:center" class="active"><a href="#summary" style="padding: 10px 5px">Summary</a></li>
 			<li style="width:48%; text-align:center"><a href="#details" style="padding: 10px 5px">Details</a></li>
 			{% if configs %}<li style="width:48%; text-align:center"><a href="#config" style="padding: 10px 5px">Config History</a></li>{% endif %}
+			{% if tool.post_usage_questions %}<li><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
 			<li style="width:48%; text-align:center"><a href="#problem" style="padding: 10px 5px">Report a problem</a></li>
 			<li style="width:48%; text-align:center"><a href="#comment" style="padding: 10px 5px">Post a comment</a></li>
 		</ul>
@@ -14,6 +15,7 @@
 			<li class="active"><a href="#summary">Summary</a></li>
 			<li><a href="#details">Details</a></li>
 			{% if configs %}<li><a href="#config">Config History</a></li>{% endif %}
+			{% if tool.post_usage_questions %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
 			<li><a href="#problem">Report a problem</a></li>
 			<li><a href="#comment">Post a comment</a></li>
 		</ul>
@@ -79,6 +81,18 @@
 					{% autoescape off %}
 						{{ tool_rate }}
 					{% endautoescape %}
+				</div>
+			{% endif %}
+
+			{% if tool.active_counters %}
+				<div class="tool-counters">
+					{% for counter in tool.active_counters %}
+						<div class="tool-counter">
+							<div class="tool-counter-name">{{ counter.name }}: <span style="font-weight: bold">{{ counter.value }}</span></div>
+							{% if user.is_staff %}<div class="tool-counter-reset"><a class="btn btn-xs btn-warning" href="{% url 'reset_tool_counter' counter.id %}" onclick="return confirm('You are about to reset the {{ counter.name }} counter to 0.\nAre you sure?')">Reset</a></div>{% endif %}
+							<div class="tool-counter-description">{{ counter.description|linebreaksbr }}</div>
+						</div>
+					{% endfor %}
 				</div>
 			{% endif %}
 		</div>
@@ -477,6 +491,10 @@
 		{% endfor %}
 	</div>
 
+	<div class="tab-pane" id="usage_data">
+		{# the data to be loaded here is in tool_control/usage_data.html #}
+	</div>
+
 	<div class="tab-pane" id="problem">
 		<form action="{% url 'create_task' %}" method="post" enctype="multipart/form-data">
 			{% csrf_token %}
@@ -606,6 +624,7 @@
 	}
 
 	update_stop_button();
-	$('#tool_control input[required]').on('change keyup', update_stop_button);
+	$('body').on('question-group-changed', update_stop_button);
+	$('body').on('change keyup', '#tool_control input[required], #tool_control select[required]', update_stop_button);
 
 </script>

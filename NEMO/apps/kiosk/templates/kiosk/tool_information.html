@@ -55,6 +55,17 @@
 	{% endif %}
 </div>
 
+{% if tool.active_counters %}
+	<div class="tool-counters">
+		{% for counter in tool.active_counters %}
+			<div class="tool-counter">
+				<div class="tool-counter-name">{{ counter.name }}: <span style="font-weight: bold">{{ counter.value }}</span></div>
+				<div class="tool-counter-description">{{ counter.description|linebreaksbr }}</div>
+			</div>
+		{% endfor %}
+	</div>
+{% endif %}
+
 {# dangers #}
 {% if tool.unavailable_required_resources or tool.scheduled_outages %}
 	<div class="danger-status">
@@ -321,6 +332,8 @@
 	}
 
 	update_stop_button();
-	$('#tool_control input[required]').on('change keyup', update_stop_button);	$('#delayed_logoff_help').popover();
+	$('body').on('question-group-changed', update_stop_button);
+	$('body').on('change keyup', '#tool_control input[required], #tool_control select[required]', update_stop_button);
+	$('#delayed_logoff_help').popover();
 	revert(60);
 </script>

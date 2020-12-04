@@ -3,6 +3,7 @@ from time import sleep
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
+from django.utils.formats import localize
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
@@ -90,14 +91,18 @@ def login_to_area(request, door_id):
 	# Check policy to enter this area
 	try:
 		check_policy_to_enter_this_area(area=door.area, user=user)
-	except NoAccessiblePhysicalAccessUserError:
-		log.details = "This user is not assigned to a physical access level that allows access to this door at this time."
+	except NoAccessiblePhysicalAccessUserError as error:
+		if error.access_exception:
+			log.details = f"The user was blocked from entering this area because of an exception: {error.access_exception.name}."
+			message = f"You do not have access to this area of the {facility_name} due to the following exception: {error.access_exception}. The exception ends on {localize(error.access_exception.end_time.astimezone(timezone.get_current_timezone()))}"
+		else:
+			log.details = "This user is not assigned to a physical access level that allows access to this door at this time."
+			message = f"You do not have access to this area of the {facility_name} at this time. Please visit the User Office if you believe this is an error."
 		log.save()
-		message = f"You do not have access to this area of the {facility_name} at this time. Please visit the User Office if you believe this is an error."
 		return render(request, 'area_access/physical_access_denied.html', {'message': message})
 
 	except UnavailableResourcesUserError as error:
-		log.details = "The user was blocked from entering this area because a required resource was unavailable."
+		log.details = f"The user was blocked from entering this area because a required resource was unavailable [{', '.join(str(resource) for resource in error.resources)}]."
 		log.save()
 		return render(request, 'area_access/resource_unavailable.html', {'unavailable_resources': error.resources})
 

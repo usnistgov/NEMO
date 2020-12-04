@@ -215,6 +215,9 @@ class User(models.Model):
 	def has_usable_password(self):
 		return False
 
+	def set_unusable_password(self):
+		pass
+
 	def email_user(self, subject, message, from_email, attachments=None):
 		""" Sends an email to this user. """
 		send_mail(subject=subject, message=message, from_email=from_email, recipient_list=[self.email], attachments=attachments)
@@ -759,6 +762,9 @@ class Tool(models.Model):
 
 	def requires_area_reservation(self):
 		return self.requires_area_access and self.requires_area_access.requires_reservation
+
+	def active_counters(self):
+		return self.toolusagecounter_set.filter(is_active=True)
 
 
 class Configuration(models.Model):
@@ -1612,6 +1618,10 @@ class PhysicalAccessLevel(models.Model):
 			accessible_time = timezone.localtime(time)
 		else:
 			accessible_time = timezone.localtime(timezone.now())
+		# First deal with exceptions
+		if self.ongoing_exception(accessible_time):
+			return False
+		# Then look at the actual allowed schedule
 		saturday = 6
 		sunday = 7
 		if self.schedule == self.Schedule.ALWAYS:
@@ -1633,12 +1643,31 @@ class PhysicalAccessLevel(models.Model):
 				return True
 		return False
 
+	def ongoing_exception(self, time: datetime = None):
+		if time is not None:
+			accessible_time = timezone.localtime(time)
+		else:
+			accessible_time = timezone.localtime(timezone.now())
+		return self.physicalaccessexception_set.filter(start_time__lte=accessible_time, end_time__gt=accessible_time).first()
+
 	def __str__(self):
 		return str(self.name)
 
 	class Meta:
 		ordering = ['name']
 
+
+class PhysicalAccessException(models.Model):
+	name = models.CharField(max_length=100, help_text="The name of this exception that will be displayed as the policy problem")
+	start_time = models.DateTimeField(help_text="The start of the exception, after which users will be denied access.")
+	end_time = models.DateTimeField(help_text="The end of the exception, after which users will be allowed access again")
+	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True)
+
+	class Meta:
+		ordering = ['-start_time']
+
+	def __str__(self):
+		return str(self.name)
 
 class PhysicalAccessType(object):
 	DENY = False
@@ -1877,6 +1906,20 @@ class BadgeReader(models.Model):
 		default_badge_reader.send_key = "F2"
 		return default_badge_reader
 
+
+class ToolUsageCounter(models.Model):
+	name = models.CharField(max_length=200, help_text="The name of this counter")
+	description = models.TextField(null=True, blank=True, help_text="The counter description to be displayed next to it on the tool control page")
+	value = models.PositiveIntegerField(default=0, help_text="The current value of this counter")
+	tool = models.ForeignKey(Tool, help_text="The tool this counter is for.", on_delete=models.CASCADE)
+	tool_usage_question = models.CharField(max_length=200, help_text="The name of the tool's post usage question which should be used to increment this counter")
+	last_reset_value = models.PositiveIntegerField(null=True, blank=True, help_text="The last value before the counter was reset")
+	last_reset = models.DateTimeField(null=True, blank=True, help_text="The date and time this counter was last reset")
+	last_reset_by = models.ForeignKey(User, null=True, blank=True, help_text="The user who last reset this counter", on_delete=models.SET_NULL)
+	is_active = models.BooleanField(default=True, help_text="The state of the counter")
+
+	def __str__(self):
+		return str(self.name)
 
 def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):
 	"""

@@ -6,11 +6,13 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import Template, Context
 from django.utils import timezone
+from django.utils.formats import localize
 
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
 	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
-from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, ReservationItemType, Tool, Project
+from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, \
+	ReservationItemType, Tool, Project, PhysicalAccessException
 from NEMO.utilities import format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 
@@ -201,9 +203,11 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 		policy_problems.append("You may not change reservations that you do not own.")
 
 	# The user may not create or move a reservation to have a start time that is earlier than the current time.
+	# Unless it's an extension of an area reservation, in which case the start time is the same.
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
-	if new_reservation.start < timezone.now():
+	extension_of_area_reservation = new_reservation.area and cancelled_reservation and cancelled_reservation.start == new_reservation.start
+	if not extension_of_area_reservation and new_reservation.start < timezone.now():
 		policy_problems.append("Reservation start time (" + format_datetime(new_reservation.start) + ") is earlier than the current time (" + format_datetime(timezone.now()) + ").")
 
 	# The user may not move or resize a reservation to have an end time that is earlier than the current time.
@@ -227,7 +231,15 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	if item_type == ReservationItemType.AREA:
 		user_access_levels = user.accessible_access_levels_for_area(new_reservation.area)
 		if not any([access_level.accessible_at(new_reservation.start) for access_level in user_access_levels]) or not any([access_level.accessible_at(new_reservation.end) for access_level in user_access_levels]):
-			details = f" (times allowed in this area are: {','.join([access.get_schedule_display_with_times() for access in user_access_levels])})" if user_access_levels else ''
+			# it could be inaccessible because of an ongoing exception at the start or end time
+			first_access_exception: PhysicalAccessException = next(iter([access_level.ongoing_exception(new_reservation.start) for access_level in user_access_levels]), None)
+			if not first_access_exception:
+				first_access_exception = next(iter([access_level.ongoing_exception(new_reservation.end) for access_level in user_access_levels]), None)
+			if first_access_exception:
+				details = f" due to the following exception: {first_access_exception.name} (from {localize(first_access_exception.start_time.astimezone(timezone.get_current_timezone()))} to {localize(first_access_exception.end_time.astimezone(timezone.get_current_timezone()))}"
+			# or simply due to scheduling
+			else:
+				details = f" (times allowed in this area are: {', '.join([access.get_schedule_display_with_times() for access in user_access_levels])})" if user_access_levels else ''
 			if user == user_creating_reservation:
 				policy_problems.append(f"You are not authorized to access this area at this time{details}. Creating, moving, and resizing reservations is forbidden.")
 			else:
@@ -247,7 +259,7 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	# Check item policy rules
 	item_policy_problems = []
 	if should_enforce_policy(new_reservation):
-		item_policy_problems = check_policy_rules_for_item(cancelled_reservation, new_reservation, user_creating_reservation)
+		item_policy_problems = check_policy_rules_for_item(user_creating_reservation, new_reservation, cancelled_reservation)
 
 	# Return the list of all policies that are not met.
 	return policy_problems + item_policy_problems, overridable
@@ -353,7 +365,7 @@ def should_enforce_policy(reservation: Reservation):
 	return should_enforce
 
 
-def check_policy_rules_for_item(cancelled_reservation: Optional[Reservation], new_reservation: Reservation, user_creating_reservation: User):
+def check_policy_rules_for_item(user_creating_reservation: User, new_reservation: Reservation, cancelled_reservation: Optional[Reservation]):
 	item_policy_problems = []
 	# Calculate the duration of the reservation:
 	duration = new_reservation.end - new_reservation.start
@@ -442,32 +454,39 @@ def check_policy_rules_for_item(cancelled_reservation: Optional[Reservation], ne
 	return item_policy_problems
 
 
-def check_policy_to_cancel_reservation(reservation, user_cancelling_reservation):
+def check_policy_to_cancel_reservation(user_cancelling_reservation: User, reservation_to_cancel: Reservation, new_reservation: Optional[Reservation] = None):
 	"""
 	Checks the reservation deletion policy.
 	If all checks pass the function returns an HTTP "OK" response.
 	Otherwise, the function returns an HTTP "Bad Request" with an error message.
 	"""
 
+	move = new_reservation and new_reservation.start != reservation_to_cancel.start
+	resize = new_reservation and new_reservation.start == reservation_to_cancel.start
+	action = 'move' if move else 'resize' if resize else 'cancel'
+
 	# Users may only cancel reservations that they own.
 	# Staff may break this rule.
-	if (reservation.user != user_cancelling_reservation) and not user_cancelling_reservation.is_staff:
-		return HttpResponseBadRequest("You may not cancel reservations that you do not own.")
+	if (reservation_to_cancel.user != user_cancelling_reservation) and not user_cancelling_reservation.is_staff:
+		return HttpResponseBadRequest(f"You may not {action} reservations that you do not own.")
 
 	# Users may not cancel reservations that have already ended.
 	# Staff may break this rule.
-	if reservation.end < timezone.now() and not user_cancelling_reservation.is_staff:
-		return HttpResponseBadRequest("You may not cancel reservations that have already ended.")
+	if reservation_to_cancel.end < timezone.now() and not user_cancelling_reservation.is_staff:
+		return HttpResponseBadRequest(f"You may not {action} reservations that have already ended.")
 
-	# Users may not cancel ongoing area reservations when they are currently logged in that area
+	# Users may not cancel ongoing area reservations when they are currently logged in that area (unless they are extending it)
 	# Staff may break this rule.
-	if reservation.area and reservation.area.requires_reservation and reservation.start < timezone.now() < reservation.end and AreaAccessRecord.objects.filter(end=None, staff_charge=None, customer=reservation.user, area=reservation.area) and not user_cancelling_reservation.is_staff:
-		return HttpResponseBadRequest("You may not cancel an area reservation while logged in that area.")
+	if reservation_to_cancel.area and reservation_to_cancel.area.requires_reservation and not resize and reservation_to_cancel.start < timezone.now() < reservation_to_cancel.end and AreaAccessRecord.objects.filter(end=None, staff_charge=None, customer=reservation_to_cancel.user, area=reservation_to_cancel.area) and not user_cancelling_reservation.is_staff:
+		if move:
+			return HttpResponseBadRequest("You may only resize an area reservation while logged in that area.")
+		else:
+			return HttpResponseBadRequest("You may not cancel an area reservation while logged in that area.")
 
-	if reservation.cancelled:
-		return HttpResponseBadRequest("This reservation has already been cancelled by " + str(reservation.cancelled_by) + " at " + format_datetime(reservation.cancellation_time) + ".")
+	if reservation_to_cancel.cancelled:
+		return HttpResponseBadRequest("This reservation has already been cancelled by " + str(reservation_to_cancel.cancelled_by) + " on " + format_datetime(reservation_to_cancel.cancellation_time) + ".")
 
-	if reservation.missed:
+	if reservation_to_cancel.missed:
 		return HttpResponseBadRequest("This reservation was missed and cannot be modified.")
 
 	return HttpResponse()
@@ -517,7 +536,8 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 	else:
 		# Check if the user normally has access to this area door at the current time (or access to any parent)
 		if not any([access_level.accessible() for access_level in user.accessible_access_levels_for_area(area)]):
-			raise NoAccessiblePhysicalAccessUserError(user=user, area=area)
+			first_access_exception = next(iter([access_level.ongoing_exception() for access_level in user.accessible_access_levels_for_area(area)]), None)
+			raise NoAccessiblePhysicalAccessUserError(user=user, area=area, access_exception=first_access_exception)
 
 	if not user.is_staff and not user.is_service_personnel:
 		for a in area.get_ancestors(ascending=True, include_self=True):

@@ -44,6 +44,10 @@
 <input type="hidden" id="impersonate" name="impersonate" value="test">
 
 <script type="text/javascript">
+var logged_in = false;
+{% if user.in_area %}
+logged_in = "{{ user.area_access_record.area.name }}";
+{% endif %}
 
 function get_event_type()
 {
@@ -61,10 +65,11 @@ function set_event_type(text)
 function update_event_sources()
 {
 	{# Remove all event sources from the calendar. #}
-	$("#calendar").fullCalendar("removeEventSource", "{% url 'event_feed' %}");
+	let calendar_jq = $("#calendar");
+	calendar_jq.fullCalendar("removeEventSource", "{% url 'event_feed' %}");
 
-	var event_type = get_event_type();
-	var item_event_source =
+	let event_type = get_event_type();
+	let item_event_source =
 	{
 		url: "{% url 'event_feed' %}",
 		data:
@@ -76,40 +81,33 @@ function update_event_sources()
 	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage')
 	{
 		let item = get_selected_item();
-		let login_button = $(".fc-login-button")[0];
-		let logout_button = $(".fc-logout-button")[0];
 		let scheduled_outage_button = $(".fc-scheduledOutage-button")[0];
 		$(scheduled_outage_button).addClass('fc-state-disabled');
-		$(login_button).html("Login");
-		$(login_button).addClass('fc-state-disabled');
-		$(logout_button).removeClass('fc-state-disabled');
 		if(item === 'personal_schedule')
 		{
 			item_event_source.data.personal_schedule = true;
 		}
-		else if(item) {
+		else if(item)
+		{
 		    item = JSON.parse(item)
             item_event_source.data.item_id = item.id;
             item_event_source.data.item_type = item.type;
-            if (item.type === 'area')
-			{
-			    $(login_button).html("Login to the "+item.element_name);
-				$(login_button).removeClass('fc-state-disabled');
-			}
 			$(scheduled_outage_button).removeClass('fc-state-disabled');
         }
 	}
 	else if(event_type === 'specific user')
 	{
-		if($("#user_search").typeahead('val'))
-			item_event_source.data.user = $("#user_search").typeahead('val');
+	    let user_search = $("#user_search");
+		if(user_search.typeahead('val'))
+			item_event_source.data.user = user_search.typeahead('val');
 		else
 			return;
 	}
 
-	$("#calendar").fullCalendar("addEventSource", item_event_source);
+	calendar_jq.fullCalendar("addEventSource", item_event_source);
 
 	refresh_sidebar_icons();
+	refresh_calendar_login();
 }
 
 {# This function is a callback for when a reservation is successfully created by the user. #}
@@ -182,19 +180,19 @@ function event_after_all_render()
 function create(start, end, jsEvent, view)
 {
 	{# Find out which tool/area is selected in the item tree. #}
-	var item = $(".selected");
+	let item = $(".selected");
 	{# Only allow reservations to be created when a item has been selected. #}
-	var item_selected = (item != null);
+	let item_selected = (item != null);
 	{# Only allow selection to proceed when we're in reservation view (instead of usage view). #}
-	var reservation_view = get_event_type() === 'reservations';
+	let reservation_view = get_event_type() === 'reservations';
 	{# Users may not create reservations when viewing their personal schedule. #}
-	var personal_schedule = item.hasClass('personal_schedule');
+	let personal_schedule = item.hasClass('personal_schedule');
 	if(!item_selected || !reservation_view || personal_schedule)
 	{
 		$("#calendar").fullCalendar("unselect");
 		return;
 	}
-	var event_properties =
+	let event_properties =
 	{
 		"start": start.unix(),
 		"end": end.unix(),
@@ -204,7 +202,7 @@ function create(start, end, jsEvent, view)
 	};
 	{# If the user is trying to create a scheduled outage, then put that in the event_properties. #}
 	{# Otherwise, create a reservation (which is the normal case). #}
-	var url;
+	let url;
 	if($('.fc-scheduledOutage-button').html() === "I've finished creating scheduled outages")
 	{
 		url = "{% url 'create_outage' %}";
@@ -212,11 +210,11 @@ function create(start, end, jsEvent, view)
 	else
 	{
 		url = "{% url 'create_reservation' %}";
-		var impersonate = $("#impersonate").val();
+		let impersonate = $("#impersonate").val();
 		if(impersonate)
 			event_properties['impersonate'] = impersonate;
 	}
-	var post_data =
+	let post_data =
 	{
 		"url": url,
 		"data": event_properties,
@@ -229,10 +227,10 @@ function create(start, end, jsEvent, view)
 {# This function is called when the user clicks and drags on the calendar to resize a reservation. #}
 function resize(event, delta, revertFunc, jsEvent, ui, view)
 {
-	var pieces = event.id.split(" ");
-	var type = pieces[0];
-	var id = pieces[1];
-	var event_changes =
+	let pieces = event.id.split(" ");
+	let type = pieces[0];
+	let id = pieces[1];
+	let event_changes =
 	{
 		"id": id,
 		"delta": delta.asMinutes(),
@@ -241,7 +239,7 @@ function resize(event, delta, revertFunc, jsEvent, ui, view)
 	if(type === "Reservation")
 	{
 	    let url = "{% url 'resize_reservation' %}"
-	    var post_data =
+	    let post_data =
 		{
 			"url": url,
 			"data": event_changes,
@@ -251,16 +249,18 @@ function resize(event, delta, revertFunc, jsEvent, ui, view)
 	    ajax_post(url, event_changes, function(response, status, xml_http_request){return event_creation_success_callback(response, status, xml_http_request, post_data)}, [revertFunc, ajax_failure_callback("Reservation resize failed")], refresh_calendar_and_sidebar);
 	}
 	else if(type === "Outage")
+	{
 		ajax_post("{% url 'resize_outage' %}", event_changes, undefined, [revertFunc, ajax_failure_callback("Outage resize failed")], refresh_calendar_and_sidebar);
+	}
 }
 
 {# This function is called when the user clicks and drags an event in order to move their reservation. #}
 function move(event, delta, revertFunc, jsEvent, ui, view)
 {
-	var pieces = event.id.split(" ");
-	var type = pieces[0];
-	var id = pieces[1];
-	var event_changes =
+	let pieces = event.id.split(" ");
+	let type = pieces[0];
+	let id = pieces[1];
+	let event_changes =
 	{
 		"id": id,
 		"delta": delta.asMinutes(),
@@ -269,7 +269,7 @@ function move(event, delta, revertFunc, jsEvent, ui, view)
 	if(type === "Reservation")
 	{
 	    let url = "{% url 'move_reservation' %}"
-	    var post_data =
+	    let post_data =
 		{
 			"url": url,
 			"data": event_changes,
@@ -279,31 +279,35 @@ function move(event, delta, revertFunc, jsEvent, ui, view)
 	    ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [revertFunc, ajax_failure_callback("Reservation move failed")], refresh_calendar_and_sidebar)
 	}
 	else if(type === "Outage")
+	{
 		ajax_post("{% url 'move_outage' %}", event_changes, undefined, [revertFunc, ajax_failure_callback("Outage move failed")], refresh_calendar_and_sidebar);
+	}
 }
 
 function details(event, jsEvent, view)
 {
-	var failure_dialog = ajax_failure_callback("Unable to display details");
+	let failure_dialog = ajax_failure_callback("Unable to display details");
 	ajax_get(event.details_url, undefined, ajax_success_callback, [failure_dialog, refresh_calendar_and_sidebar]);
 }
 
 function cancel_reservation(url, reservation_id, reason)
 {
-	var failure_dialog = ajax_failure_callback("Unable to cancel this reservation");
+	let failure_dialog = ajax_failure_callback("Unable to cancel this reservation");
 	function reservation_cancel_success_callback()
 	{
 		$("#calendar").fullCalendar("removeEvents", reservation_id);
 	}
-	var contents = undefined;
+	let contents = undefined;
 	if(reason)
+	{
 		contents = {'reason': reason};
+    }
 	ajax_post(url, contents, reservation_cancel_success_callback, [failure_dialog, refresh_calendar_and_sidebar]);
 }
 
 function cancel_outage(url, outage_id)
 {
-	var failure_dialog = ajax_failure_callback("Unable to cancel this outage");
+	let failure_dialog = ajax_failure_callback("Unable to cancel this outage");
 	function outage_cancel_success_callback()
 	{
 		$("#calendar").fullCalendar("removeEvents", outage_id);
@@ -314,13 +318,13 @@ function cancel_outage(url, outage_id)
 
 function set_reservation_title(url, reservation_id, title)
 {
-	var failure_dialog = ajax_failure_callback("Unable to set reservation title");
+	let failure_dialog = ajax_failure_callback("Unable to set reservation title");
 	ajax_post(url, {'title': title}, refresh_calendar_and_sidebar, [failure_dialog, refresh_calendar_and_sidebar]);
 }
 
 function change_reservation_project(url, project_id)
 {
-	var failure_dialog = ajax_failure_callback("Unable to change reservation project");
+	let failure_dialog = ajax_failure_callback("Unable to change reservation project");
 	ajax_post(url, {'project_id': project_id}, refresh_calendar_and_sidebar, [failure_dialog, refresh_calendar_and_sidebar]);
 }
 
@@ -332,7 +336,7 @@ function on_browser_resize()
 function create_calendar()
 {
 	{# Documentation for properties: http://arshaw.com/fullcalendar/docs/ #}
-	var calendar_properties =
+	let calendar_properties =
 	{
 		"header":
 		{
@@ -357,6 +361,7 @@ function create_calendar()
 		"firstDay": '{{ calendar_first_day_of_week }}',
 		"scrollTime": '{{ calendar_start_of_the_day }}',
 		"defaultView": '{{ calendar_view }}',
+		"nowIndicator": '{{ calendar_now_indicator }}',
 		"allDaySlot": false,
 		"allDayDefault": false,
 		"slotDuration": '00:15:00', {# 15 minutes each row #}
@@ -404,7 +409,7 @@ function create_calendar()
 
 function reserve_for_someone_else()
 {
-	var proxy_reservation_button = $(".fc-proxyReservation-button")[0];
+	let proxy_reservation_button = $(".fc-proxyReservation-button")[0];
 	if($(proxy_reservation_button).html() === "Reserve for someone else")
 	{
 		ajax_get('{% url 'proxy_reservation' %}', undefined, reserve_for_someone_else_callback);
@@ -429,7 +434,7 @@ function login_to_area()
 	if (item && item !== "personal_schedule")
 	{
 	    item = JSON.parse(item)
-		var event_changes =
+		let event_changes =
 		{
 			"area": item.id,
 		{% if user.active_project_count == 1 %}
@@ -438,7 +443,7 @@ function login_to_area()
 			"csrfmiddlewaretoken": "{{ csrf_token }}"
 		};
 		let url = "{% url 'calendar_self_log_in' %}"
-		var post_data =
+		let post_data =
 		{
 			"url": url,
 			"data": event_changes,
@@ -446,11 +451,8 @@ function login_to_area()
 			"dataType": "html"
 		};
 		let callback = function() {
-		    $(".fc-login-button").hide()
-			{% if self_logout %}
-			$($(".fc-logout-button")[0]).html("Logout of the " + item.element_name)
-			$(".fc-logout-button").show()
-			{% endif %}
+			logged_in = item.element_name;
+			refresh_calendar_login();
         }
 		ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data, callback) }, [ajax_failure_callback("Login to area failed")], refresh_sidebar_area_icons)
 	}
@@ -459,38 +461,15 @@ function login_to_area()
 function logout_of_area()
 {
     ajax_get("{% url 'self_log_out' user.id %}", null, function () {
-        let login_button = $($(".fc-login-button")[0])
-		$(".fc-logout-button").hide()
-		login_button.html("Login")
-		let item = get_selected_item()
-		if (item && item !== 'personal_schedule')
-		{
-		    item = JSON.parse(item)
-			if (item.type === 'area') login_button.html("Login to the " + item.element_name)
-		}
-		{% if self_login %}login_button.show(){% endif %}
+        logged_in = false;
+		refresh_calendar_login();
     }, ajax_failure_callback("Logout of area failed"), refresh_calendar_and_sidebar_area_icons)
-}
-
-function initialize_login_logout_buttons()
-{
-    let login_button = $($(".fc-login-button")[0]);
-    let logout_button = $($(".fc-logout-button")[0]);
-    login_button.hide()
-	logout_button.hide()
-	{% if self_login and not user.in_area %}
-		login_button.show()
-	{% endif %}
-	{% if self_logout and user.in_area %}
-		logout_button.html("Logout of the {{ user.area_access_record.area.name }}")
-		logout_button.show()
-	{% endif %}
 }
 
 function scheduled_outage()
 {
-	var scheduled_outage_button = $(".fc-scheduledOutage-button")[0];
-	var proxy_reservation_button = $(".fc-proxyReservation-button")[0];
+	let scheduled_outage_button = $(".fc-scheduledOutage-button")[0];
+	let proxy_reservation_button = $(".fc-proxyReservation-button")[0];
 	if($(scheduled_outage_button).html() === "Schedule an outage")
 	{
 		$(proxy_reservation_button).hide();
@@ -519,6 +498,38 @@ function refresh_calendar_and_sidebar()
 	refresh_sidebar_icons()
 }
 
+function refresh_calendar_login()
+{
+	let login_button = $(".fc-login-button")[0];
+	let logout_button = $(".fc-logout-button")[0];
+	$(login_button).hide()
+	$(logout_button).hide();
+	{# Login and logout are only available on reservations events and when personal_schedule isn't selected #}
+	let item = get_selected_item();
+	let event_type = get_event_type();
+    if (event_type === 'reservations' && item !== 'personal_schedule')
+	{
+		if (logged_in)
+		{
+			{% if self_logout %}
+				$(logout_button).html("Logout of the " + logged_in)
+				$(logout_button).show()
+			{% endif %}
+		}
+		else
+		{
+			{% if self_login %}
+			item = JSON.parse(item);
+			if (item.type === 'area')
+			{
+				$(login_button).html("Login to the "+item.element_name);
+				$(login_button).show();
+			}
+			{% endif %}
+		}
+	}
+}
+
 function refresh_calendar_and_sidebar_area_icons()
 {
     $("#calendar").fullCalendar('refetchEvents');
@@ -528,15 +539,15 @@ function refresh_calendar_and_sidebar_area_icons()
 function change_calendar_event_type(calling_element)
 {
 	set_event_type(calling_element.text);
-	var expand_collapse = $("#expand-collapse").hide();
-	var item_search = $("#item_search").hide();
-	var item_tree = $(".item_tree, .item_tree_fieldset").hide();
-	var event_type = get_event_type();
-	var extra_links = $("#extra-links");
-	var user_search = $("#user_search").hide();
-	var chosen_user_button = $("#chosen_user_button").show();
-	var proxy_reservation_button = $(".fc-proxyReservation-button")[0];
-	var scheduled_outage_button = $(".fc-scheduledOutage-button")[0];
+	let expand_collapse = $("#expand-collapse").hide();
+	let item_search = $("#item_search").hide();
+	let item_tree = $(".item_tree, .item_tree_fieldset").hide();
+	let event_type = get_event_type();
+	let extra_links = $("#extra-links");
+	let user_search = $("#user_search").hide();
+	let chosen_user_button = $("#chosen_user_button").show();
+	let proxy_reservation_button = $(".fc-proxyReservation-button")[0];
+	let scheduled_outage_button = $(".fc-scheduledOutage-button")[0];
 	if(event_type === "reservations")
 	{
 		user_search.hide();
@@ -569,8 +580,6 @@ function change_calendar_event_type(calling_element)
 		item_tree.hide();
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
-		$($('.fc-login-button')[0]).html('Login')
-		$($('.fc-login-button')[0]).addClass('fc-state-disabled')
 		clear_specific_user();
 	}
 }
@@ -608,7 +617,7 @@ function on_load()
 		$("#user_search").autocomplete('users', get_specific_user_activity, {{ users|json_search_base }});
 	{% endif %}
 	$('[data-toggle~="tooltip"]').tooltip({ container: 'body' });
-	initialize_login_logout_buttons();
+	refresh_calendar_login();
 }
 
 $(on_load);

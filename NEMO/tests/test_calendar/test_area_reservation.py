@@ -275,7 +275,7 @@ class AreaReservationTestCase(TestCase):
 		old_resa = Reservation.objects.create(area=area, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), creator=consumer, user=consumer, short_notice=False)
 		response = self.client.post(reverse('resize_reservation'), {'delta': -65, 'id': old_resa.id}, follow=True)
 		self.assertEqual(response.status_code, 200)
-		self.assertContains(response, 'Reservation start time')
+		self.assertContains(response, 'Reservation end time')
 		self.assertContains(response, 'is earlier than the current time')
 		old_resa.delete()
 
@@ -311,6 +311,34 @@ class AreaReservationTestCase(TestCase):
 		self.assertEquals(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
 		new_reservation = list(Reservation.objects.filter(area=area, cancelled=False))[0]
 		self.assertEquals(new_reservation.end, old_reservation.end + timedelta(minutes=10))
+		new_reservation.delete()
+
+		# test increase reservation time by 10 min while logged in
+		older_resa_still_ongoing = Reservation.objects.create(area=area, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
+		AreaAccessRecord.objects.create(area=area, customer=consumer, start=datetime.now(), project=project)
+		response = self.client.post(reverse('resize_reservation'), {'delta': 10, 'id': older_resa_still_ongoing.id}, follow=True)
+		self.assertEquals(response.status_code, 200)
+		old_reservation = Reservation.objects.get(pk=older_resa_still_ongoing.id)
+		self.assertTrue(old_reservation.cancelled)
+		self.assertEquals(old_reservation.cancelled_by, consumer)
+		self.assertEquals(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
+		new_reservation = list(Reservation.objects.filter(area=area, cancelled=False))[0]
+		self.assertEquals(new_reservation.end, old_reservation.end + timedelta(minutes=10))
+		self.assertEquals(new_reservation.start, old_reservation.start)
+		new_reservation.delete()
+
+		# test decrease reservation time by 10 min while logged in
+		older_resa_still_ongoing = Reservation.objects.create(area=area, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
+		AreaAccessRecord.objects.create(area=area, customer=consumer, start=datetime.now(), project=project)
+		response = self.client.post(reverse('resize_reservation'), {'delta': -10, 'id': older_resa_still_ongoing.id}, follow=True)
+		self.assertEquals(response.status_code, 200)
+		old_reservation = Reservation.objects.get(pk=older_resa_still_ongoing.id)
+		self.assertTrue(old_reservation.cancelled)
+		self.assertEquals(old_reservation.cancelled_by, consumer)
+		self.assertEquals(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
+		new_reservation = list(Reservation.objects.filter(area=area, cancelled=False))[0]
+		self.assertEquals(new_reservation.end, old_reservation.end - timedelta(minutes=10))
+		self.assertEquals(new_reservation.start, old_reservation.start)
 
 	def test_move_reservation(self):
 		# create reservation
@@ -341,6 +369,15 @@ class AreaReservationTestCase(TestCase):
 		response = self.client.post(reverse('move_reservation'), {'delta': 61, 'id': reservation.id}, follow=True)
 		self.assertEquals(response.status_code, 200)
 		self.assertContains(response, "Your reservation coincides with a scheduled outage. Please choose a different time.")
+
+		# test move reservation while logged in area
+		older_resa_still_ongoing = Reservation.objects.create(area=area, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
+		area_access_record = AreaAccessRecord.objects.create(area=area, customer=consumer, start=datetime.now(), project=project)
+		response = self.client.post(reverse('move_reservation'), {'delta': -10, 'id': older_resa_still_ongoing.id}, follow=True)
+		self.assertEquals(response.status_code, 400)
+		self.assertEquals(response.content.decode(), "You may only resize an area reservation while logged in that area.")
+		area_access_record.delete()
+		older_resa_still_ongoing.delete()
 
 		# test move reservation 10 min earlier
 		response = self.client.post(reverse('move_reservation'), {'delta': -10, 'id': reservation.id}, follow=True)
