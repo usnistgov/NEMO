@@ -1,5 +1,6 @@
 import csv
-from datetime import timedelta
+from datetime import timedelta, datetime
+from distutils.util import strtobool
 from http import HTTPStatus
 from itertools import chain
 from json import loads, JSONDecodeError
@@ -11,13 +12,13 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseServerError
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
+from django.utils import timezone, formats
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import rates
 from NEMO.forms import CommentForm, nice_errors
-from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, TaskCategory, TaskStatus, Tool, UsageEvent, User
-from NEMO.utilities import extract_times, quiet_int, beginning_of_the_day, end_of_the_day
+from NEMO.models import Comment, Configuration, ConfigurationHistory, Project, Reservation, StaffCharge, Task, TaskCategory, TaskStatus, Tool, UsageEvent, User, ToolUsageCounter
+from NEMO.utilities import extract_times, quiet_int, beginning_of_the_day, end_of_the_day, send_mail
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
@@ -354,6 +355,7 @@ def disable_tool(request, tool_id):
 	dynamic_form = DynamicForm(tool.post_usage_questions, tool.id)
 	current_usage_event.run_data = dynamic_form.extract(request)
 	dynamic_form.charge_for_consumables(current_usage_event.user, current_usage_event.operator, current_usage_event.project, current_usage_event.run_data)
+	dynamic_form.update_counters(current_usage_event.run_data)
 
 	current_usage_event.save()
 	user: User = request.user
@@ -413,11 +415,38 @@ def ten_most_recent_past_comments_and_tasks(request, tool_id):
 
 @login_required
 @require_GET
-def tool_usage_group_question(request, tool_id, question_name):
+def tool_usage_group_question(request, tool_id, group_name):
 	tool = get_object_or_404(Tool, id=tool_id)
 	question_index = request.GET['index']
+	is_mobile = bool(strtobool((request.GET['is_mobile'])))
 	if tool.post_usage_questions:
-		for question in loads(tool.post_usage_questions):
-			if question['type'] == 'group' and question['name'] == question_name:
-				return HttpResponse(PostUsageGroupQuestion(question, tool.id, question_index).render_group_question())
+		for question in PostUsageQuestion.load_questions(loads(tool.post_usage_questions), tool.id, is_mobile, question_index):
+			if isinstance(question, PostUsageGroupQuestion) and question.group_name == group_name:
+				return HttpResponse(question.render_group_question())
 	return HttpResponse()
+
+
+@staff_member_required
+@require_GET
+def reset_tool_counter(request, counter_id):
+	counter = get_object_or_404(ToolUsageCounter, id=counter_id)
+	counter.last_reset_value = counter.value
+	counter.value = 0
+	counter.last_reset = datetime.now()
+	counter.last_reset_by = request.user
+	counter.save()
+
+	# Save a comment about the counter being reset.
+	comment = Comment()
+	comment.tool = counter.tool
+	comment.content = f"The {counter.name} counter was reset to 0. Its last value was {counter.last_reset_value}."
+	comment.author = request.user
+	comment.expiration_date = datetime.now() + timedelta(weeks=1)
+	comment.save()
+
+	# Send an email to Lab Managers about the counter being reset.
+	if hasattr(settings, 'LAB_MANAGERS'):
+		message = f"The {counter.name} counter for the {counter.tool.name} was reset to 0 on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.<br/>" \
+				  f"Its last value was {counter.last_reset_value}."
+		send_mail(f'{counter.tool.name} counter reset', message, settings.SERVER_EMAIL, settings.LAB_MANAGERS)
+	return redirect('tool_control')

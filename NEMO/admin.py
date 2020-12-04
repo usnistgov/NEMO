@@ -19,8 +19,8 @@ from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord,
 	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
 	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences, TaskImages, InterlockCardCategory, \
 	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory, \
-	BuddyRequest
-from NEMO.widgets.dynamic_form import DynamicForm
+	ToolUsageCounter, PhysicalAccessException, BuddyRequest
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion
 
 
 class ToolAdminForm(forms.ModelForm):
@@ -152,8 +152,9 @@ class ToolAdmin(admin.ModelAdmin):
 	)
 
 	def _post_usage_preview(self, obj):
-		form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ''
-		return mark_safe('<div class="post_usage_preview">{}{}</div><div class="help post_usage_preview_help">Save form to preview post usage questions</div>'.format(DynamicForm(obj.post_usage_questions, obj.id).render(), form_validity_div))
+		if obj.id:
+			form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ''
+			return mark_safe('<div class="post_usage_preview">{}{}</div><div class="help post_usage_preview_help">Save form to preview post usage questions</div>'.format(DynamicForm(obj.post_usage_questions, obj.id).render(), form_validity_div))
 
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):
 		""" We only want non children tool to be eligible as parents """
@@ -571,10 +572,20 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 		)
 	)
 
+	physical_access_exceptions = forms.ModelMultipleChoiceField(
+		queryset=PhysicalAccessException.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(
+			verbose_name='Physical Access Exceptions',
+			is_stacked=False
+		)
+	)
+
 	def __init__(self, *args, **kwargs):
-		super(PhysicalAccessLevelForm, self).__init__(*args, **kwargs)
+		super().__init__(*args, **kwargs)
 		if self.instance.pk:
 			self.fields['authorized_users'].initial = self.instance.user_set.all()
+			self.fields['physical_access_exceptions'].initial = self.instance.physicalaccessexception_set.all()
 
 	def clean(self):
 		schedule = self.cleaned_data.get('schedule')
@@ -601,7 +612,31 @@ class PhysicalAccessLevelAdmin(admin.ModelAdmin):
 		"""
 		Explicitly record any membership changes.
 		"""
-		record_remote_many_to_many_changes_and_save(request, obj, form, change, 'authorized_users', super(PhysicalAccessLevelAdmin, self).save_model)
+		record_remote_many_to_many_changes_and_save(request, obj, form, change, 'authorized_users', super().save_model)
+		if 'physical_access_exceptions' in form.changed_data:
+			obj.physicalaccessexception_set.set(form.cleaned_data['physical_access_exceptions'])
+
+
+class PhysicalAccessExceptionAdminForm(forms.ModelForm):
+	class Meta:
+		model = PhysicalAccessException
+		fields = '__all__'
+
+	physical_access_levels = forms.ModelMultipleChoiceField(
+		queryset=PhysicalAccessLevel.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(
+			verbose_name='Physical Access Levels',
+			is_stacked=False
+		)
+	)
+
+
+@register(PhysicalAccessException)
+class PhysicalAccessExceptionAdmin(admin.ModelAdmin):
+	form = PhysicalAccessExceptionAdminForm
+	list_display = ('name', 'start_time', 'end_time')
+	list_filter = (('physical_access_levels__area'),)
 
 
 @register(ContactInformationCategory)
@@ -649,6 +684,38 @@ class NotificationAdmin(admin.ModelAdmin):
 @register(BadgeReader)
 class BadgeReaderAdmin(admin.ModelAdmin):
 	list_display = ('id', 'name', 'send_key', 'record_key')
+
+
+class CounterAdminForm(forms.ModelForm):
+	class Meta:
+		model = ToolUsageCounter
+		fields = '__all__'
+
+	def clean(self):
+		cleaned_data = super().clean()
+		tool = cleaned_data.get('tool')
+		tool_usage_question_name = cleaned_data.get('tool_usage_question')
+		if tool and tool_usage_question_name:
+			error = None
+			if tool.post_usage_questions:
+				post_usage_form = DynamicForm(tool.post_usage_questions, tool.id)
+				tool_question = post_usage_form.filter_questions(lambda x: isinstance(x, PostUsageNumberFieldQuestion) and x.name == tool_usage_question_name)
+				if not tool_question:
+					candidates = [question.name for question in post_usage_form.filter_questions(lambda x: isinstance(x, PostUsageNumberFieldQuestion))]
+					error = "The tool has no post usage question of type Number with this name."
+					if candidates:
+						error += f" Valid question names are: {', '.join(candidates)}"
+			else:
+				error = "The tool does not have any post usage questions."
+			if error:
+				self.add_error('tool_usage_question', error)
+		return cleaned_data
+
+
+@register(ToolUsageCounter)
+class CounterAdmin(admin.ModelAdmin):
+	list_display = ('name', 'tool', 'tool_usage_question', 'value', 'last_reset', 'last_reset_by', 'is_active')
+	form = CounterAdminForm
 
 
 class BuddyRequestForm(forms.ModelForm):

@@ -6,6 +6,7 @@ from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LogoutView
 from django.urls import path
 from django.views.static import serve
 from rest_framework import routers
@@ -36,7 +37,7 @@ reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())
 urlpatterns = [
 	# Authentication & error pages:
 	url(r'^login/$', authentication.login_user, name='login'),
-	url(r'^logout/$', authentication.logout_user, name='logout'),
+	url(r'^logout/$', LogoutView.as_view(next_page = 'landing' if not settings.LOGOUT_REDIRECT_URL else None), name='logout'),
 	url(r'^impersonate/$', authentication.impersonate, name='impersonate'),
 	url(r'^authorization_failed/$', authentication.authorization_failed, name='authorization_failed'),
 
@@ -62,7 +63,8 @@ urlpatterns = [
 	url(r'^usage_data_history/(?P<tool_id>\d+)/$', tool_control.usage_data_history, name='usage_data_history'),
 	url(r'^past_comments_and_tasks/$', tool_control.past_comments_and_tasks, name='past_comments_and_tasks'),
 	url(r'^ten_most_recent_past_comments_and_tasks/(?P<tool_id>\d+)/$', tool_control.ten_most_recent_past_comments_and_tasks, name='ten_most_recent_past_comments_and_tasks'),
-	url(r'^tool_usage_group_question/(?P<tool_id>\d+)/(?P<question_name>\w+)/$', tool_control.tool_usage_group_question, name='tool_usage_group_question'),
+	url(r'^tool_usage_group_question/(?P<tool_id>\d+)/(?P<group_name>\w+)/$', tool_control.tool_usage_group_question, name='tool_usage_group_question'),
+	url(r'^reset_tool_counter/(?P<counter_id>\d+)/$', tool_control.reset_tool_counter, name='reset_tool_counter'),
 
 	# Buddy System
 	url(r'^buddy_system/$', buddy_system.buddy_system, name='buddy_system'),

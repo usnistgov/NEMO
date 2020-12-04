@@ -1,6 +1,6 @@
 from typing import List, Any
 
-from NEMO.models import User, Area, Resource, Interlock
+from NEMO.models import User, Area, Resource, Interlock, PhysicalAccessException
 
 
 class NEMOException(Exception):
@@ -69,9 +69,12 @@ class NoPhysicalAccessUserError(UserAccessError):
 
 
 class NoAccessiblePhysicalAccessUserError(UserAccessError):
-	def __init__(self, user: User, area: Area):
+	def __init__(self, user: User, area: Area, access_exception: PhysicalAccessException=None):
 		self.area = area
+		self.access_exception = access_exception
 		details = f"This user is not assigned to a physical access that allow access to this area [{area}] at this time"
+		if self.access_exception:
+			details = f"This user was denied access to this area [{area}] due to the following exception: {access_exception.name}"
 		super(NoAccessiblePhysicalAccessUserError, self).__init__(user=user, msg=details)
 
 
