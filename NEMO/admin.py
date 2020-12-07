@@ -186,7 +186,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	list_display = ('tree_actions', 'indented_title', 'name', 'parent_area', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
 	fieldsets = (
 		(None, {'fields': ('name', 'parent_area', 'category', 'reservation_email', 'abuse_email'),}),
-		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message', 'requires_buddy_after_hours'),}),
+		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message', 'buddy_system_allowed'),}),
 		('Occupancy', {'fields': ('maximum_capacity', 'count_staff_in_occupancy', 'count_service_personnel_in_occupancy', 'reservation_warning'),}),
 		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
 		('Policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time',),}),

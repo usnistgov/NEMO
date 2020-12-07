@@ -29,8 +29,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='area',
-            name='requires_buddy_after_hours',
-            field=models.BooleanField(default=False, help_text='Check this box if this area requires users to have a buddy after hours.'),
+            name='buddy_system_allowed',
+            field=models.BooleanField(default=False, help_text='Check this box if the buddy system is allowed in this area.'),
         ),
         migrations.CreateModel(
             name='BuddyRequestMessage',

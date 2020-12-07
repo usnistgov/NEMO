@@ -24,7 +24,7 @@ def buddy_system(request):
 		buddy_request.user_reply_error = check_user_reply_error(buddy_request, request.user)
 	dictionary = {
 		'buddy_requests': buddy_requests,
-		'areas': Area.objects.filter(requires_buddy_after_hours=True).count(),
+		'areas': Area.objects.filter(buddy_system_allowed=True).count(),
 		'buddy_board_disclaimer': get_customization('buddy_board_disclaimer')
 	}
 	return render(request, 'buddy_system/buddy_system.html', dictionary)
@@ -39,7 +39,7 @@ def create_buddy_request(request, request_id=None):
 		buddy_request = None
 
 	dictionary = {
-		'areas': Area.objects.filter(requires_buddy_after_hours=True),
+		'areas': Area.objects.filter(buddy_system_allowed=True),
 	}
 
 	if buddy_request:

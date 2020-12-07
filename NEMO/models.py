@@ -871,7 +871,7 @@ class Area(MPTTModel):
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login.")
 	logout_grace_period = models.PositiveIntegerField(null=True, blank=True, help_text="Number of minutes users have to logout of this area after their reservation expired before being flagged and abuse email is sent.")
-	requires_buddy_after_hours = models.BooleanField(default=False, help_text="Check this box if this area requires users to have a buddy after hours.")
+	buddy_system_allowed = models.BooleanField(default=False, help_text="Check this box if the buddy system is allowed in this area.")
 
 	# Capacity
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
