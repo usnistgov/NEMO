@@ -65,6 +65,9 @@
 			{% if form.instance.area %}
 				let selected_area = {'id': '{{ form.instance.area.id }}', 'name': '{{ form.instance.area.name }}'};
 				select_area(false, selected_area);
+			{% elif areas|length_is:1 %}
+				let auto_select_area = {'id': '{{ areas.0.id }}', 'name': '{{ areas.0.name }}'};
+				select_area(false, auto_select_area);
 			{% endif %}
 		}
 
