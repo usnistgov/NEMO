@@ -9,7 +9,7 @@ import django.utils.timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('NEMO', '0024_contactinformation_user'),
+        ('NEMO', '0025_version_3_6_0'),
     ]
 
     operations = [
