@@ -11,7 +11,6 @@ from requests import get
 from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, StaffCharge, TrainingSession, UsageEvent, User, Project, Account
 from NEMO.utilities import get_month_timeframe, month_list, parse_start_and_end_date
 
-
 logger = getLogger(__name__)
 
 
@@ -105,6 +104,8 @@ def billing(request):
 def project_usage(request):
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 
+	area_access, consumables, missed_reservations, staff_charges, training_sessions, usage_events = None, None, None, None, None, None
+
 	projects = []
 	user = None
 	selection = ''
@@ -123,16 +124,31 @@ def project_usage(request):
 			user = User.objects.get(id=identifier)
 			projects = user.active_projects()
 			selection = str(user)
+
+		if projects:
+			area_access = AreaAccessRecord.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date).order_by('-start')
+			consumables = ConsumableWithdraw.objects.filter(project__in=projects, date__gt=start_date, date__lte=end_date)
+			missed_reservations = Reservation.objects.filter(project__in=projects, missed=True, end__gt=start_date, end__lte=end_date)
+			staff_charges = StaffCharge.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date)
+			training_sessions = TrainingSession.objects.filter(project__in=projects, date__gt=start_date, date__lte=end_date)
+			usage_events = UsageEvent.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date)
+			if user:
+				area_access = area_access.filter(customer=user)
+				consumables = consumables.filter(customer=user)
+				missed_reservations = missed_reservations.filter(user=user)
+				staff_charges = staff_charges.filter(customer=user)
+				training_sessions = training_sessions.filter(trainee=user)
+				usage_events = usage_events.filter(user=user)
 	except:
 		pass
 	dictionary = {
 		'search_items': set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()) | set(User.objects.filter(is_active=True)),
-		'area_access': AreaAccessRecord.objects.filter(customer=user, project__in=projects, end__gt=start_date, end__lte=end_date).order_by('-start') if projects else None,
-		'consumables': ConsumableWithdraw.objects.filter(customer=user, project__in=projects, date__gt=start_date, date__lte=end_date) if projects else None,
-		'missed_reservations': Reservation.objects.filter(user=user, project__in=projects, missed=True, end__gt=start_date, end__lte=end_date) if projects else None,
-		'staff_charges': StaffCharge.objects.filter(customer=user, project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
-		'training_sessions': TrainingSession.objects.filter(trainee=user, project__in=projects, date__gt=start_date, date__lte=end_date) if projects else None,
-		'usage_events': UsageEvent.objects.filter(user=user, project__in=projects, end__gt=start_date, end__lte=end_date) if projects else None,
+		'area_access': area_access,
+		'consumables': consumables,
+		'missed_reservations': missed_reservations,
+		'staff_charges': staff_charges,
+		'training_sessions': training_sessions,
+		'usage_events': usage_events,
 		'project_autocomplete': True,
 		'selection': selection
 	}
