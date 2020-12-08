@@ -38,7 +38,7 @@
 							{% if current_usage_event.operator.id == user.id %}
 								You are using this tool
 							{% else %}
-								{{ current_usage_event.operator }} is using this tool
+								<a title="Click to email this user" href="{% url 'get_email_form_for_user' current_usage_event.operator.id %}">{{ current_usage_event.operator }}</a> is using this tool
 							{% endif %}
 							{% if current_usage_event.operator.id != current_usage_event.user.id %}
 								on behalf of {{ current_usage_event.user }}
