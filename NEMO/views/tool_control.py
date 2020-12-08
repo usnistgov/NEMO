@@ -63,7 +63,8 @@ class PostUsageDataTable(object):
 
 @login_required
 @require_GET
-def tool_control(request, tool_id=None):
+def tool_control(request, item_type='tool', tool_id=None):
+	# item_type is needed for compatibility with 'view_calendar' view on mobile
 	""" Presents the tool control view to the user, allowing them to begin/end using a tool or see who else is using it. """
 	user: User = request.user
 	if user.active_project_count() == 0:

@@ -1,4 +1,4 @@
-function mobile_search(query_element, base_url, hide_type)
+function mobile_search(query_element, get_base_url_callback, hide_type)
 {
 	hide_type = hide_type || false;
 	query_element = $(query_element);
@@ -19,11 +19,13 @@ function mobile_search(query_element, base_url, hide_type)
 			{
 				item_display += '<br><span style="font-size:small; font-weight:bold;">' + item.type.capitalize() + '</span>';
 			}
-			results += '<a href="' + base_url + item.type + '/'+ item.id + '/" class="list-group-item list-group-item-info">' + item_display + '</a>';
+			results += '<a href="' + get_base_url_callback(item.type, item.id) + '" class="list-group-item list-group-item-info">' + item_display + '</a>';
 			result_count++;
 		}
 	});
 	results += '</div>';
 	if(result_count > 0)
+	{
 		results_target.html(results);
+	}
 }

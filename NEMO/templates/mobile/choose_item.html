@@ -10,7 +10,7 @@
 	<form>
 		<div class="form-group">
 			<label for="search">Search for{% if tools %} a tool{% endif %}{% if tools and areas %} or{% endif %}{% if areas %} an area{% endif %}</label>
-			<input class="form-control" type="text" id="search" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" oninput="mobile_search(this, '/{{ next_page }}/', {% if tools and areas %}false{% else %}true{% endif %})" data-search-results-target="#search_results" data-search-base='{% json_search_base_with_extra_fields tools|add:areas %}'>
+			<input class="form-control" type="text" id="search" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" oninput="mobile_search(this, get_base_url, {% if tools and areas %}false{% else %}true{% endif %})" data-search-results-target="#search_results" data-search-base='{% json_search_base_with_extra_fields tools|add:areas %}'>
 		</div>
 	</form>
 	<div id="search_results"></div>
@@ -24,10 +24,16 @@
 				<div id="category_{{ forloop.counter }}" class="collapse">
 					<div style="margin-bottom:10px"></div>
 					{% for tool in category.list %}
-						<p><a href="/{{ next_page }}/tool/{{ tool.id }}/">{{ tool.name_or_child_in_use_name }}</a></p>
+						<p><a href="{% url next_page 'tool' tool.id %}">{{ tool.name_or_child_in_use_name }}</a></p>
 					{% endfor %}
 				</div>
 			</div>
 		{% endfor %}
 	{% endif %}
+	<script type="text/javascript">
+	let get_base_url = function(item_type, item_id)
+	{
+	    return '{% url next_page 'tool' '11111' %}'.replace('/tool/', '/'+item_type+'/').replace('11111', item_id)
+	}
+	</script>
 {% endblock %}

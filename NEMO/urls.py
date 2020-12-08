@@ -50,7 +50,8 @@ urlpatterns = [
 	url(r'^get_projects_for_self/$', get_projects.get_projects_for_self, name='get_projects_for_self'),
 
 	# Tool control:
-	url(r'^tool_control/tool/(?P<tool_id>\d+)/$', tool_control.tool_control, name='tool_control'),
+	# This tool_control URL is needed to be able to reverse when choosing items on mobile using next_page. (see choose_item.html for details)
+	url(r'^tool_control/(?P<item_type>(tool))/(?P<tool_id>\d+)/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_control/(?P<tool_id>\d+)/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_control/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_status/(?P<tool_id>\d+)/$', tool_control.tool_status, name='tool_status'),
