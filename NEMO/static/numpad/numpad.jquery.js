@@ -54,7 +54,7 @@
 				nmpd = $('<div id="' + id + '"></div>').addClass('nmpd-wrapper');
 				nmpd.options = options;
 				/** @var display jQuery object representing the display of the numpad (typically an input field) */
-				var display = $(options.displayTpl).addClass('nmpd-display');
+				var display = $(options.displayTpl).addClass('nmpd-display').attr("min", options.min).attr("max", options.max);
 				nmpd.display = display;
 				/** @var grid jQuery object containing the grid for the numpad: the display, the buttons, etc. */
 				var table = $(options.gridTpl).addClass('nmpd-grid');
@@ -170,6 +170,8 @@
 			*/
 			nmpd.setValue = function(value){
 				if (nmpd.display.attr('maxLength') < value.toString().length) value = value.toString().substr(0, nmpd.display.attr('maxLength'));
+				if (Number(nmpd.display.attr('min')) > Number(value.toString())) value = nmpd.display.attr('min');
+				if (Number(nmpd.display.attr('max')) < Number(value.toString())) value = nmpd.display.attr('max');
 				nmpd.display.val(value);
 				nmpd.find('.dirty').val('1');
 				nmpd.trigger('numpad.change', [value]);
@@ -182,7 +184,7 @@
 			* @return jQuery object nmpd
 			*/
 			nmpd.close = function(target){
-				// If a target element is given, set it's value to the dipslay value of the numpad. Otherwise just hide the numpad
+				// If a target element is given, set it's value to the display value of the numpad. Otherwise just hide the numpad
 				if (target){
 					if (target.prop("tagName") === 'INPUT'){
 						target.val(nmpd.getValue().toString().replace('.', options.decimalSeparator));
@@ -216,6 +218,8 @@
 					if (target.prop("tagName") == 'INPUT'){
 						nmpd.display.val(target.val());
 						nmpd.display.attr('maxLength', target.attr('maxLength'));
+						nmpd.display.attr('min', target.attr('min'));
+						nmpd.display.attr('max', target.attr('max'));
 					} else {
 						nmpd.display.val(isNaN(parseFloat(target.text())) ? '' : parseFloat(target.text()));
 					}
@@ -298,6 +302,8 @@
 		textCancel: 'Cancel',
 		decimalSeparator: ',',
 		precision: null,
+		min: null,
+		max: null,
 		appendKeypadTo: false,
 		position: 'fixed',
 		positionX: 'center',
@@ -309,3 +315,10 @@
 		readonly: true
 	};
 })(jQuery);
+
+function close_numpads()
+{
+	$.each($('[data-numpad]'), function (index, item) {
+		$(item).data('numpad').close(false);
+	})
+}
