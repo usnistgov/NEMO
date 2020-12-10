@@ -9,7 +9,12 @@ from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_GET, require_POST
 
 from NEMO.admin import BuddyRequestForm
-from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, NoPhysicalAccessUserError
+from NEMO.exceptions import (
+	InactiveUserError,
+	NoActiveProjectsForUserError,
+	PhysicalAccessExpiredUserError,
+	NoPhysicalAccessUserError,
+)
 from NEMO.models import BuddyRequest, Area, User, BuddyRequestMessage
 from NEMO.utilities import beginning_of_the_day
 from NEMO.views.customization import get_customization
@@ -20,29 +25,27 @@ from NEMO.views.policy import check_policy_to_enter_any_area
 @require_GET
 def buddy_system(request):
 	mark_requests_expired()
-	buddy_requests = BuddyRequest.objects.filter(expired=False, deleted=False).order_by('start')
+	buddy_requests = BuddyRequest.objects.filter(expired=False, deleted=False).order_by("start")
 	# extend buddy request to add whether or not the current user can reply
 	for buddy_request in buddy_requests:
 		buddy_request.user_reply_error = check_user_reply_error(buddy_request, request.user)
 	dictionary = {
-		'buddy_requests': buddy_requests,
-		'areas': Area.objects.filter(buddy_system_allowed=True).count(),
-		'buddy_board_disclaimer': get_customization('buddy_board_disclaimer')
+		"buddy_requests": buddy_requests,
+		"areas": Area.objects.filter(buddy_system_allowed=True).count(),
+		"buddy_board_disclaimer": get_customization("buddy_board_disclaimer"),
 	}
-	return render(request, 'buddy_system/buddy_system.html', dictionary)
+	return render(request, "buddy_system/buddy_system.html", dictionary)
 
 
 @login_required
-@require_http_methods(['GET', 'POST'])
+@require_http_methods(["GET", "POST"])
 def create_buddy_request(request, request_id=None):
 	try:
 		buddy_request = BuddyRequest.objects.get(id=request_id)
 	except BuddyRequest.DoesNotExist:
 		buddy_request = None
 
-	dictionary = {
-		'areas': Area.objects.filter(buddy_system_allowed=True),
-	}
+	dictionary = {"areas": Area.objects.filter(buddy_system_allowed=True)}
 
 	if buddy_request:
 		if buddy_request.replies.count() > 0:
@@ -50,22 +53,22 @@ def create_buddy_request(request, request_id=None):
 		if buddy_request.user != request.user:
 			return HttpResponseBadRequest("You are not allowed to edit a request you didn't create.")
 
-	if request.method == 'POST':
+	if request.method == "POST":
 		form = BuddyRequestForm(request.POST, instance=buddy_request)
-		form.fields['user'].required = False
-		form.fields['creation_time'].required = False
+		form.fields["user"].required = False
+		form.fields["creation_time"].required = False
 		if form.is_valid():
 			form.instance.user = request.user
 			form.save()
-			return redirect('buddy_system')
+			return redirect("buddy_system")
 		else:
-			dictionary['form'] = form
-			return render(request, 'buddy_system/buddy_request.html', dictionary)
+			dictionary["form"] = form
+			return render(request, "buddy_system/buddy_request.html", dictionary)
 	else:
 		form = BuddyRequestForm(instance=buddy_request)
 		form.user = request.user
-		dictionary['form'] = form
-		return render(request, 'buddy_system/buddy_request.html', dictionary)
+		dictionary["form"] = form
+		return render(request, "buddy_system/buddy_request.html", dictionary)
 
 
 @login_required
@@ -79,8 +82,8 @@ def delete_buddy_request(request, request_id):
 		return HttpResponseBadRequest("You are not allowed to delete a request you didn't create.")
 
 	buddy_request.deleted = True
-	buddy_request.save(update_fields=['deleted'])
-	return redirect('buddy_system')
+	buddy_request.save(update_fields=["deleted"])
+	return redirect("buddy_system")
 
 
 @login_required
@@ -88,7 +91,7 @@ def delete_buddy_request(request, request_id):
 def buddy_request_reply(request, request_id):
 	buddy_request = get_object_or_404(BuddyRequest, id=request_id)
 	user: User = request.user
-	message_content = request.POST['reply_content']
+	message_content = request.POST["reply_content"]
 
 	error_message = check_user_reply_error(buddy_request, user)
 	if error_message:
@@ -100,18 +103,17 @@ def buddy_request_reply(request, request_id):
 		reply.author = user
 		reply.save()
 		email_interested_parties(reply, request.build_absolute_uri(f"{reverse('buddy_system')}?#{reply.id}"))
-	return redirect('buddy_system')
+	return redirect("buddy_system")
 
 
 def email_interested_parties(reply: BuddyRequestMessage, reply_url):
 	creator: User = reply.buddy_request.user
 	for user in reply.buddy_request.creator_and_reply_users():
 		if user != reply.author:
-			creator_display = f"{creator.get_name()}'s" if creator != user else 'your'
-			creator_display_his = creator_display if creator != reply.author else 'his'
+			creator_display = f"{creator.get_name()}'s" if creator != user else "your"
+			creator_display_his = creator_display if creator != reply.author else "his"
 			subject = f"New reply on {creator_display} buddy request"
-			message = \
-f"""{reply.author.get_name()} also replied to {creator_display_his} buddy request:
+			message = f"""{reply.author.get_name()} also replied to {creator_display_his} buddy request:
 
 {reply.content}
 
@@ -133,7 +135,9 @@ def check_user_reply_error(buddy_request: BuddyRequest, user: User) -> Optional[
 		error_message = "You cannot reply to this request because you do not have access to any areas"
 	else:
 		if buddy_request.area not in user.accessible_areas():
-			error_message = f"You cannot reply to this request because you do not have access to the {buddy_request.area.name}"
+			error_message = (
+				f"You cannot reply to this request because you do not have access to the {buddy_request.area.name}"
+			)
 	return error_message
 
 
