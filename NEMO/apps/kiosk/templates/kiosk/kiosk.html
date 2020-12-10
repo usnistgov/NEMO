@@ -83,7 +83,7 @@
 		function revert(delay)
 		{
 			clear_timeout();
-			var countdown = delay;
+			let countdown = delay;
 			delay = delay * 1000;
 			timeout_handle = setTimeout(revert_to_default_content, delay);
 			countdown_handle = setInterval(function(){

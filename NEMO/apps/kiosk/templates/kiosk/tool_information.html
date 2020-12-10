@@ -324,4 +324,6 @@
 	$('#downtime').numpad({'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true});
 	$('#delayed_logoff_help').popover();
 	revert(60);
+	{# reset timeout if user is active in the tool control form #}
+	$('#tool_control :input').on('change', function (){revert(60)})
 </script>
