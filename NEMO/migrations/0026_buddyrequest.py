@@ -18,8 +18,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('creation_time', models.DateTimeField(default=django.utils.timezone.now, help_text='The date and time when the request was created.')),
-                ('start', models.DateTimeField(help_text='The start date and time the user is requesting a buddy.')),
-                ('end', models.DateTimeField(help_text='The end date and time the user is requesting a buddy.')),
+                ('start', models.DateField(help_text='The start date the user is requesting a buddy.')),
+                ('end', models.DateField(help_text='The end date the user is requesting a buddy.')),
                 ('description', models.TextField(help_text='The description of the request.')),
                 ('expired', models.BooleanField(default=False, help_text="Indicates the request has expired and won't be shown anymore.")),
                 ('deleted', models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")),

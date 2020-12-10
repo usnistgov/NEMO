@@ -1925,13 +1925,19 @@ class ToolUsageCounter(models.Model):
 
 class BuddyRequest(models.Model):
 	creation_time = models.DateTimeField(default=timezone.now, help_text="The date and time when the request was created.")
-	start = models.DateTimeField(help_text="The start date and time the user is requesting a buddy.")
-	end = models.DateTimeField(help_text="The end date and time the user is requesting a buddy.")
+	start = models.DateField(help_text="The start date the user is requesting a buddy.")
+	end = models.DateField(help_text="The end date the user is requesting a buddy.")
 	description = models.TextField(help_text="The description of the request.")
 	area = models.ForeignKey(Area, on_delete=models.CASCADE)
 	user = models.ForeignKey(User, help_text="The user who is submitting the request.", on_delete=models.CASCADE)
 	expired = models.BooleanField(default=False, help_text="Indicates the request has expired and won't be shown anymore.")
 	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
+
+	def creator_and_reply_users(self) -> List[User]:
+		result = {self.user}
+		for reply in self.replies.all():
+			result.add(reply.author)
+		return list(result)
 
 
 class BuddyRequestMessage(models.Model):

@@ -1,9 +1,11 @@
 from datetime import datetime
 from typing import Optional
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_GET, require_POST
 
 from NEMO.admin import BuddyRequestForm
@@ -97,7 +99,24 @@ def buddy_request_reply(request, request_id):
 		reply.content = message_content
 		reply.author = user
 		reply.save()
+		email_interested_parties(reply, request.build_absolute_uri(f"{reverse('buddy_system')}?#{reply.id}"))
 	return redirect('buddy_system')
+
+
+def email_interested_parties(reply: BuddyRequestMessage, reply_url):
+	creator: User = reply.buddy_request.user
+	for user in reply.buddy_request.creator_and_reply_users():
+		if user != reply.author:
+			creator_display = f"{creator.get_name()}'s" if creator != user else 'your'
+			creator_display_his = creator_display if creator != reply.author else 'his'
+			subject = f"New reply on {creator_display} buddy request"
+			message = \
+f"""{reply.author.get_name()} also replied to {creator_display_his} buddy request:
+
+{reply.content}
+
+Please visit {reply_url} to reply"""
+			user.email_user(subject=subject, message=message, from_email=settings.SERVER_EMAIL)
 
 
 def check_user_reply_error(buddy_request: BuddyRequest, user: User) -> Optional[str]:

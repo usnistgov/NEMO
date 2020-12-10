@@ -34,11 +34,16 @@ def base_context(request):
 		areas_exist = Area.objects.filter(requires_reservation=True).exists() and PhysicalAccessLevel.objects.exists()
 	except:
 		areas_exist = False
+	try:
+		buddy_system_areas_exist = Area.objects.filter(buddy_system_allowed=True).exists()
+	except:
+		buddy_system_areas_exist = False
 	return {
 		"facility_name": facility_name,
 		"site_title": site_title,
 		"device": request.device,
 		"tools_exist": tools_exist,
 		"areas_exist": areas_exist,
+		"buddy_system_areas_exist": buddy_system_areas_exist,
 		"no_header": request.session.get('no_header', False),
 	}

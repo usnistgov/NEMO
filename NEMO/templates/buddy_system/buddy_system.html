@@ -6,18 +6,21 @@
 			Buddy Board
 			<a class="btn btn-success pull-right" href="{% url 'create_buddy_request' %}">New request</a>
 		</h1>
-		<p>
-			{{ buddy_board_disclaimer|linebreaksbr }}
-		</p>
+		{% if buddy_board_disclaimer %}
+			<div class="buddy-system-disclaimer-container">
+				<span class="buddy-system-disclaimer-info glyphicon glyphicon-info-sign primary-highlight"></span>
+				<div class="buddy-system-disclaimer">{{ buddy_board_disclaimer|linebreaksbr }}</div>
+			</div>
+		{% endif %}
 		{% if buddy_requests %}
-			<div class="table-responsive">
-				{% regroup buddy_requests by start.date as requests_by_date %}
+			<div class="table-responsive buddy-system-requests">
+				{% regroup buddy_requests by start as requests_by_date %}
 				{% for date in requests_by_date %}
 					<h3>{{ date.grouper|date:"l, F jS, Y" }}</h3>
 					<ul class="buddy-list-day">
 						{% for br in date.list %}
 							<li>
-								<ul class="buddy-list list-unstyled">{{ br.user.get_name }} needs a buddy between {% if br.start|date:"Y-m-d" == br.end|date:"Y-m-d" %}{{ br.start|time }} and {{ br.end|time }}{% else %}{{ br.start }} and {{ br.end }}{% endif %} in the {{ br.area.name }}
+								<ul class="buddy-list list-unstyled">{{ br.user.get_name }} needs a buddy {% if not br.start|date:"Y-m-d" == br.end|date:"Y-m-d" %}between {{ br.start|date:"l, F jS, Y" }} and {{ br.end|date:"l, F jS, Y" }}{% endif %} in the {{ br.area.name }}
 									<li class="buddy-list-item">
 										<div class="buddy-list-item list-group-item-info">
 											<div class="buddy-list-item-description">
@@ -32,7 +35,7 @@
 										</div>
 									</li>
 									{% for message in br.replies.all %}
-										<li class="buddy-list-item">
+										<li class="buddy-list-item" id="{{ message.id }}">
 											<div class="list-group-item buddy-list-item-message">
 												{{ message.content|linebreaksbr }}
 												<div class="buddy-list-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
@@ -89,7 +92,7 @@
 		<h1>
 			Buddy Board
 		</h1>
-		<h3><span class="italic" style="margin-top: 10px">You do not have any areas requiring the buddy system.</span></h3>
+		<h3><span class="italic" style="margin-top: 10px">You do not have any areas where the buddy system is allowed.</span></h3>
 		{% if user.is_superuser %}
 			<h3>You can change that in the <a href="{% url 'admin:NEMO_area_changelist' %}">Areas section of 'Detailed Administration'</a>.</h3>
 		{% endif %}
