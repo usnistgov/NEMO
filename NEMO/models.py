@@ -81,6 +81,9 @@ class CalendarDisplay(models.Model):
 class UserPreferences(models.Model):
 	attach_created_reservation = models.BooleanField('created_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when creating a new reservation')
 	attach_cancelled_reservation = models.BooleanField('cancelled_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when cancelling a reservation')
+	display_new_buddy_request_notification = models.BooleanField('new_buddy_request_notification', default=True, help_text='Whether or not to notify the user of new buddy requests (via unread badges)')
+	display_new_buddy_request_reply_notification = models.BooleanField('new_buddy_request_reply_notification', default=True, help_text='Whether or not to notify the user of replies on buddy request he commented on (via unread badges)')
+	email_new_buddy_request_reply = models.BooleanField('email_new_buddy_request_reply', default=True, help_text='Whether or not to email the user of replies on buddy request he commented on')
 
 	class Meta:
 		verbose_name = 'User preferences'
@@ -1785,9 +1788,13 @@ class Notification(models.Model):
 	class Types:
 		NEWS = 'news'
 		SAFETY = 'safetyissue'
+		BUDDY_REQUEST = 'buddyrequest'
+		BUDDY_REQUEST_REPLY = 'buddyrequestmessage'
 		Choices = (
 			(NEWS, 'News creation and updates - notifies all users'),
-			(SAFETY, 'New safety issues - notifies staff only')
+			(SAFETY, 'New safety issues - notifies staff only'),
+			(BUDDY_REQUEST, 'New buddy request - notifies all users'),
+			(BUDDY_REQUEST_REPLY, 'New buddy request reply - notifies request creator and users who have replied')
 		)
 
 

@@ -20,7 +20,9 @@
 					<ul class="buddy-list-day">
 						{% for br in date.list %}
 							<li>
-								<ul class="buddy-list list-unstyled">{{ br.user.get_name }} needs a buddy {% if not br.start|date:"Y-m-d" == br.end|date:"Y-m-d" %}between {{ br.start|date:"l, F jS, Y" }} and {{ br.end|date:"l, F jS, Y" }}{% endif %} in the {{ br.area.name }}
+								<ul class="buddy-list list-unstyled">
+									{% if br.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
+									{{ br.user.get_name }} needs a buddy {% if not br.start|date:"Y-m-d" == br.end|date:"Y-m-d" %}between {{ br.start|date:"l, F jS, Y" }} and {{ br.end|date:"l, F jS, Y" }}{% endif %} in the {{ br.area.name }}
 									<li class="buddy-list-item">
 										<div class="buddy-list-item list-group-item-info">
 											<div class="buddy-list-item-description">
@@ -36,6 +38,7 @@
 									</li>
 									{% for message in br.replies.all %}
 										<li class="buddy-list-item" id="{{ message.id }}">
+											{% if message.id in reply_notifications %}<span class="label label-success">New reply</span>{% endif %}
 											<div class="list-group-item buddy-list-item-message">
 												{{ message.content|linebreaksbr }}
 												<div class="buddy-list-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
