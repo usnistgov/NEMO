@@ -315,10 +315,3 @@
 		readonly: true
 	};
 })(jQuery);
-
-function close_numpads()
-{
-	$.each($('[data-numpad]'), function (index, item) {
-		$(item).data('numpad').close(false);
-	})
-}

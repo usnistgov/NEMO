@@ -14,8 +14,12 @@
 	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.css" %}"/>
 
 	{# Numpad #}
-	<script type="text/javascript" src="{% static "numpad/numpad.jquery.js" %}"></script>
+	<script type="text/javascript" src="{% static "numpad/custom_numpad.jquery.js" %}"></script>
 	<link rel="stylesheet" type="text/css" href="{% static "numpad/numpad.jquery.css" %}"/>
+
+	{# Virtual Keyboard	#}
+	<script type="text/javascript" src="{% static "virtualkeyboard/jquery.keyboard.min.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "virtualkeyboard/keyboard-basic.min.css" %}"/>
 
 	{# NEMO #}
 	<script type="text/javascript" src="{% static "nemo.js" %}"></script>
@@ -96,6 +100,7 @@
 			fetch_occupancy();
 			clear_timeout();
 			close_numpads();
+			close_keyboards();
 			$("#status").hide();
 			$("#error").hide();
 			$("#badge_number").html("");
@@ -186,6 +191,19 @@
 		{
 			ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 		}
+		function close_numpads()
+		{
+			$.each($('[data-numpad]'), function (index, item) {
+				$(item).data('numpad').close(false);
+			})
+		}
+        function close_keyboards()
+		{
+            $.each($('.ui-keyboard-input'), function (index, item)
+			{
+                $(item).data('keyboard').close(false);
+            })
+        }
 	</script>
 </body>
 </html>
