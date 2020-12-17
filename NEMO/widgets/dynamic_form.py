@@ -286,9 +286,10 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
 class DynamicForm:
 	def __init__(self, questions, tool_id, virtual_inputs: bool = False):
-		self.untreated_questions = loads(questions)
+		self.untreated_questions = []
 		self.questions = []
 		if questions:
+			self.untreated_questions = loads(questions)
 			self.questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(
 				self.untreated_questions, tool_id, virtual_inputs
 			)
