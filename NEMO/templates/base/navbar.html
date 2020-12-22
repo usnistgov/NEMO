@@ -1,79 +1,79 @@
 {% load static %}
 {% load custom_tags_and_filters %}
 <nav class="navbar navbar-default navbar-static-top">
-		<div class="container">
-			<div class="navbar-header">
-				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#site-navigation">
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-				</button>
-				<a class="navbar-brand" href="{% url 'landing' %}">{{ site_title }}</a>
-			</div>
-			<div class="navbar-collapse collapse" id="site-navigation">
-				<ul class="nav navbar-nav">
-					<li><a href="{% url 'calendar' %}">Calendar</a></li>
-					{% if tools_exist %}<li><a href="{% url 'tool_control' %}">Tool control</a></li>{% endif %}
-					{% if tools_exist or areas_exist %}<li><a href="{% url 'status_dashboard' %}">Status dashboard</a></li>{% endif %}
-					{% if buddy_system_areas_exist %}
-						<li><a href="{% url 'buddy_system' %}">
-							Buddy board
-							{% if buddy_notification_count %}
-								<span class="badge" style="vertical-align:middle; background-color:red">{{ buddy_notification_count }}</span>
-							{% endif %}
-						</a></li>
-					{% endif %}
-					{% if user.is_staff %}
-						<li class="dropdown">
-							<a href="#" class="dropdown-toggle" data-toggle="dropdown">Administration <b class="caret"></b></a>
-							<ul class="dropdown-menu">
-								{# The navigation_url tag will display the item if the URL name can be reversed. #}
-								{# This allows items to be easily removed from the public facing version. #}
-								{% navigation_url 'abuse' 'Abuse' %}
-								{% navigation_url 'accounts_and_projects' 'Accounts and projects' %}
-								{% navigation_url 'alerts' 'Alerts' %}
-								{% if areas_exist %}{% navigation_url 'area_access' 'Area access' %}{% endif %}
-								{% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' %}{% endif %}
-								{% navigation_url 'customization' 'Customization' %}
-								{% navigation_url 'admin:index' 'Detailed administration' %}
-								{% navigation_url 'email_broadcast' 'Email' %}
-								{% if user.is_superuser %}{% navigation_url 'impersonate' 'Impersonate' %}{% endif %}
-								{% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' %}{% endif %}
-								{% navigation_url 'project_billing' 'Project billing' %}
-								{% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' %}{% endif %}
-								{% navigation_url 'remote_work' 'Remote work' %}
-								{% navigation_url 'resources' 'Resources' %}
-								{% navigation_url 'staff_charges' 'Staff charges' %}
-								{% navigation_url 'consumables' 'Supplies' %}
-								{% if tools_exist %}{% navigation_url 'training' 'Training' %}{% endif %}
-								{% navigation_url 'users' 'Users' %}
-							</ul>
-						</li>
-					{% endif %}
-					<li class="visible-xs"><a href="{%  url 'user_preferences' %}">Preferences</a></li>
-					{% if logout_allowed %}
-						<li class="visible-xs"><a href="{% url 'logout' %}">Logout</a></li>
-					{% endif %}
-				</ul>
-				<ul class="nav navbar-nav navbar-right hidden-xs">
-					{% if user.is_staff and user.charging_staff_time %}
-						<li class="hidden-sm">
-							<p class="navbar-text">
-								<a id="staff_charge_link" href="{% url 'staff_charges' %}" style="color:red; text-decoration: none" data-toggle="tooltip" data-placement="bottom" title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">
-									Charging staff time
-								</a>
-							</p>
-							<script>
-								$("#staff_charge_link").tooltip();
-							</script>
-						</li>
-					{% endif %}
-					<li class="hidden-sm"><p class="navbar-text">Welcome, {{ user.first_name }}</p></li>
-					<li class="navbar-preferences"><a href="{%  url 'user_preferences' %}"><img src="{% static 'icons/preferences.png' %}"/></a></li>
-					{% if logout_allowed %}
-						<li><a href="{% url 'logout' %}">Logout</a></li>
-					{% endif %}
-				</ul>
-			</div>
+	<div class="container">
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#site-navigation">
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			<a class="navbar-brand" href="{% url 'landing' %}">{{ site_title }}</a>
 		</div>
-	</nav>
+		<div class="navbar-collapse collapse" id="site-navigation">
+			<ul class="nav navbar-nav">
+				<li><a href="{% url 'calendar' %}">Calendar</a></li>
+				{% if tools_exist %}<li><a href="{% url 'tool_control' %}">Tool control</a></li>{% endif %}
+				{% if tools_exist or areas_exist %}<li><a href="{% url 'status_dashboard' %}">Status dashboard</a></li>{% endif %}
+				{% if buddy_system_areas_exist %}
+					<li><a href="{% url 'buddy_system' %}">
+						Buddy board
+						{% if buddy_notification_count %}
+							<span class="badge" style="vertical-align:middle; background-color:red">{{ buddy_notification_count }}</span>
+						{% endif %}
+					</a></li>
+				{% endif %}
+				{% if user.is_staff %}
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Administration <b class="caret"></b></a>
+						<ul class="dropdown-menu">
+							{# The navigation_url tag will display the item if the URL name can be reversed. #}
+							{# This allows items to be easily removed from the public facing version. #}
+							{% navigation_url 'abuse' 'Abuse' %}
+							{% navigation_url 'accounts_and_projects' 'Accounts and projects' %}
+							{% navigation_url 'alerts' 'Alerts' %}
+							{% if areas_exist %}{% navigation_url 'area_access' 'Area access' %}{% endif %}
+							{% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' %}{% endif %}
+							{% navigation_url 'customization' 'Customization' %}
+							{% navigation_url 'admin:index' 'Detailed administration' %}
+							{% navigation_url 'email_broadcast' 'Email' %}
+							{% if user.is_superuser %}{% navigation_url 'impersonate' 'Impersonate' %}{% endif %}
+							{% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' %}{% endif %}
+							{% navigation_url 'project_billing' 'Project billing' %}
+							{% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' %}{% endif %}
+							{% navigation_url 'remote_work' 'Remote work' %}
+							{% navigation_url 'resources' 'Resources' %}
+							{% navigation_url 'staff_charges' 'Staff charges' %}
+							{% navigation_url 'consumables' 'Supplies' %}
+							{% if tools_exist %}{% navigation_url 'training' 'Training' %}{% endif %}
+							{% navigation_url 'users' 'Users' %}
+						</ul>
+					</li>
+				{% endif %}
+				<li class="visible-xs"><a href="{%  url 'user_preferences' %}">Preferences</a></li>
+				{% if logout_allowed %}
+					<li class="visible-xs"><a href="{% url 'logout' %}">Logout</a></li>
+				{% endif %}
+			</ul>
+			<ul class="nav navbar-nav navbar-right hidden-xs">
+				{% if user.is_staff and user.charging_staff_time %}
+					<li class="hidden-sm">
+						<p class="navbar-text">
+							<a id="staff_charge_link" href="{% url 'staff_charges' %}" style="color:red; text-decoration: none" data-toggle="tooltip" data-placement="bottom" title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">
+								Charging staff time
+							</a>
+						</p>
+						<script>
+							$("#staff_charge_link").tooltip();
+						</script>
+					</li>
+				{% endif %}
+				<li class="hidden-sm"><p class="navbar-text">Welcome, {{ user.first_name }}</p></li>
+				<li class="navbar-preferences"><a href="{%  url 'user_preferences' %}"><img src="{% static 'icons/preferences.png' %}"/></a></li>
+				{% if logout_allowed %}
+					<li><a href="{% url 'logout' %}">Logout</a></li>
+				{% endif %}
+			</ul>
+		</div>
+	</div>
+</nav>
