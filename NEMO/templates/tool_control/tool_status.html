@@ -306,7 +306,7 @@
 								<div class="radio disabled">
 									<label id="staff_charge_tooltip_container" class="light-grey" data-toggle="tooltip" data-placement="right" title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
 										<input type="radio" onchange="use_tool_for_other()" disabled>
-										<span id="staff_charge_tooltip_location">Use this tool on behalf of another user and begin charging staff time</span>
+										<span id="staff_charge_tooltip_location">Use this tool for a remote project</span>
 									</label>
 								</div>
 								<script>
@@ -314,7 +314,7 @@
 								</script>
 							{% endwith %}
 						{% else %}
-							<div class="radio"><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">Use this tool on behalf of another user and begin charging staff time</label></div>
+							<div class="radio"><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">Use this tool for a remote project</label></div>
 						{% endif %}
 					{% endif %}
 					<div id="project_choice"></div>

@@ -1,11 +1,10 @@
-import csv
 from datetime import timedelta, datetime
 from distutils.util import strtobool
 from http import HTTPStatus
 from itertools import chain
 from json import loads, JSONDecodeError
 from logging import getLogger
-from typing import Dict, Tuple, List
+from typing import Dict
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
@@ -31,8 +30,9 @@ from NEMO.models import (
 	UsageEvent,
 	User,
 	ToolUsageCounter,
+	AreaAccessRecord,
 )
-from NEMO.utilities import extract_times, quiet_int, beginning_of_the_day, end_of_the_day, send_mail
+from NEMO.utilities import extract_times, quiet_int, beginning_of_the_day, end_of_the_day, send_mail, BasicDisplayTable
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
@@ -40,38 +40,6 @@ from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, PostU
 from NEMO.widgets.item_tree import ItemTree
 
 tool_control_logger = getLogger(__name__)
-
-
-class PostUsageDataTable(object):
-	""" Utility table to make adding headers and rows easier """
-
-	def __init__(self):
-		self.headers: List[Tuple[str, str]] = []
-		self.rows: List[Dict] = []
-
-	def add_header(self, header: Tuple[str, str]):
-		if not any(k[0] == header[0] for k in self.headers):
-			self.headers.append((header[0], header[1].capitalize()))
-
-	def add_row(self, row: Dict):
-		self.rows.append(row)
-
-	def flat_headers(self) -> List[str]:
-		return [display for key, display in self.headers]
-
-	def flat_rows(self) -> List[List]:
-		flat_result = []
-		for row in self.rows:
-			flat_result.append([row.get(key, "") for key, display_value in self.headers])
-		return flat_result
-
-	def to_csv(self) -> HttpResponse:
-		response = HttpResponse(content_type="text/csv")
-		writer = csv.writer(response)
-		writer.writerow([display_value.capitalize() for key, display_value in self.headers])
-		for row in self.rows:
-			writer.writerow([row.get(key, "") for key, display_value in self.headers])
-		return response
 
 
 @login_required
@@ -175,7 +143,7 @@ def usage_data_history(request, tool_id):
 		usage_events = usage_events.filter(end__gte=beginning_of_the_day(start))
 	if end:
 		usage_events = usage_events.filter(end__lte=end_of_the_day(end))
-	table_result = PostUsageDataTable()
+	table_result = BasicDisplayTable()
 	table_result.add_header(("user", "User"))
 	table_result.add_header(("date", "Date"))
 	for usage_event in usage_events:
@@ -332,6 +300,14 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 		new_staff_charge.customer = user
 		new_staff_charge.project = project
 		new_staff_charge.save()
+		# If the tool requires area access, start charging area access time
+		if tool.requires_area_access:
+			area_access = AreaAccessRecord()
+			area_access.area = tool.requires_area_access
+			area_access.staff_charge = new_staff_charge
+			area_access.customer = new_staff_charge.customer
+			area_access.project = new_staff_charge.project
+			area_access.save()
 
 	# Create a new usage event to track how long the user uses the tool.
 	new_usage_event = UsageEvent()
