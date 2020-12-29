@@ -74,7 +74,7 @@ def remote_work(request):
 					STAFF: usage.operator,
 					CUSTOMER: usage.user,
 					START: usage.start.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p"),
-					END: usage.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p"),
+					END: usage.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p") if usage.end else "",
 					PROJECT: usage.project,
 				}
 			)
@@ -88,7 +88,7 @@ def remote_work(request):
 						STAFF: staff_charge.staff_member,
 						CUSTOMER: access.customer,
 						START: access.start.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p"),
-						END: access.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p"),
+						END: access.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p") if access.end else "",
 						PROJECT: access.project,
 					}
 				)
@@ -96,13 +96,13 @@ def remote_work(request):
 				{
 					ID: staff_charge.id,
 					TYPE: "Staff Charge",
-					ITEM: "",
+					ITEM: "Staff Charge",
 					STAFF: staff_charge.staff_member,
 					CUSTOMER: staff_charge.customer,
 					START: staff_charge.start.astimezone(timezone.get_current_timezone()).strftime(
 						"%m/%d/%Y @ %I:%M %p"
 					),
-					END: staff_charge.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p"),
+					END: staff_charge.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p") if staff_charge.end else "",
 					PROJECT: staff_charge.project,
 				}
 			)
