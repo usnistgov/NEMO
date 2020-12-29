@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     def create_proxr_interlock_card_category(apps, schema_editor):
         InterlockCardCategory = apps.get_model("NEMO", "InterlockCardCategory")
         if not InterlockCardCategory.objects.filter(key="proxr").exists():
-            proxr_category = InterlockCardCategory.objects.create(id=3, name="ProXr", key="proxr")
+            proxr_category = InterlockCardCategory.objects.create(name="ProXr", key="proxr")
             proxr_category.save()
 
     operations = [
