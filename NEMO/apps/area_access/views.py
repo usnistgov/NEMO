@@ -12,7 +12,7 @@ from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, Phy
 from NEMO.models import AreaAccessRecord, Door, PhysicalAccessLog, PhysicalAccessType, Project, User, UsageEvent, \
 	BadgeReader
 from NEMO.tasks import postpone
-from NEMO.views.calendar import shorten_reservation
+from NEMO.views.area_access import log_out_user
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
 
@@ -205,15 +205,12 @@ def logout_of_area(request, door_id):
 	except (User.DoesNotExist, ValueError):
 		return render(request, 'area_access/badge_not_found.html')
 	record = user.area_access_record()
-	# Allow the user to log out of any area, even if this is a logout tablet for a different area.
 	if record:
-		record.end = timezone.now()
-		record.save()
-		# Shorten the user's area reservation since the user is now leaving
-		shorten_reservation(user, record.area)
+		log_out_user(user)
 		busy_tools = UsageEvent.objects.filter(end=None, user=user)
-		if busy_tools:
-			return render(request, 'area_access/logout_warning.html', {'area': record.area, 'name': user.first_name, 'tools_in_use': busy_tools})
+		staff_charge = user.get_staff_charge()
+		if busy_tools or staff_charge:
+			return render(request, 'area_access/logout_warning.html', {'area': record.area, 'name': user.first_name, 'tools_in_use': busy_tools, 'staff_charge': staff_charge})
 		else:
 			return render(request, 'area_access/logout_success.html', {'area': record.area, 'name': user.first_name})
 	else:
