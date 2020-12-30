@@ -19,12 +19,12 @@
 		<div class="form-group">
 			<div class="row">
 				<div class="col-sm-2">
-					<label for="start">Start time</label>{% if form.start.errors %} - <span style="color:red">{{ form.start.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control" name="start" id="start" value="{% if form.start.value %}{% if form.start.value|class_name == "datetime" %}{{ form.start.value|date:"m/d/Y g:i A" }}{% else %}{{ form.start.value }}{% endif %}{% endif %}">
+					<label for="start">Start date</label>{% if form.start.errors %} - <span style="color:red">{{ form.start.errors|striptags }}</span>{% endif %}
+					<input type="text" class="form-control text-center" name="start" id="start" value="{% if form.start.value %}{{ form.start.value }}{% endif %}">
 				</div>
 				<div class="col-sm-2">
-					<label for="end">End time</label>{% if form.end.errors %} - <span style="color:red">{{ form.end.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control" name="end" id="end" value="{% if form.end.value %}{% if form.end.value|class_name == "datetime" %}{{ form.end.value|date:"m/d/Y g:i A" }}{% else %}{{ form.end.value }}{% endif %}{% endif %}">
+					<label for="end">End date</label>{% if form.end.errors %} - <span style="color:red">{{ form.end.errors|striptags }}</span>{% endif %}
+					<input type="text" class="form-control text-center" name="end" id="end" value="{% if form.end.value %}{{ form.end.value }}{% endif %}">
 				</div>
 			</div>
 		</div>
