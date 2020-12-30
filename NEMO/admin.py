@@ -151,7 +151,7 @@ class ToolAdminForm(forms.ModelForm):
 			if post_usage_questions:
 				try:
 					loads(post_usage_questions)
-				except ValueError as error:
+				except ValueError:
 					self.add_error("_post_usage_questions", "This field needs to be a valid JSON string")
 				try:
 					DynamicForm(post_usage_questions, self.instance.id).validate()
@@ -861,7 +861,6 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 		end_time = cleaned_data.get("end_time")
 		if end_time <= start_time:
 			self.add_error("end_time", "The end time must be later than the start time")
-
 
 
 @register(PhysicalAccessException)
