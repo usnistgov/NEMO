@@ -855,6 +855,14 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 		widget=FilteredSelectMultiple(verbose_name="Physical Access Levels", is_stacked=False),
 	)
 
+	def clean(self):
+		cleaned_data = super().clean()
+		start_time = cleaned_data.get("start_time")
+		end_time = cleaned_data.get("end_time")
+		if end_time <= start_time:
+			self.add_error("end_time", "The end time must be later than the start time")
+
+
 
 @register(PhysicalAccessException)
 class PhysicalAccessExceptionAdmin(admin.ModelAdmin):
