@@ -251,7 +251,9 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 			cost_activities_tree[account_key].setdefault(application_key, {})
 			cost_activities_tree[account_key][application_key].setdefault(project_key, {})
 			cost_activities_tree[account_key][application_key][project_key].setdefault(user_key, 0)
-			cost = -activity['cost'] if activity['activity_type'] == 'refund_activity' else activity['cost']
+			cost = 0
+			if activity['cost'] is not None:
+				cost = -activity['cost'] if activity['activity_type'] == 'refund_activity' else activity['cost']
 			cost_activities_tree[account_key][application_key][project_key][user_key] = cost_activities_tree[account_key][application_key][project_key][user_key] + cost
 			project_totals[activity['project_id']] = project_totals[activity['project_id']] + cost
 			application_totals[activity['application_id']] = application_totals[activity['application_id']] + cost
