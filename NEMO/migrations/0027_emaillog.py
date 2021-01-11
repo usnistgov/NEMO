@@ -2,12 +2,17 @@
 
 from django.db import migrations, models
 
+from NEMO.migrations_utils import create_news_for_version
+
 
 class Migration(migrations.Migration):
 
     dependencies = [
         ('NEMO', '0026_version_3_7_0'),
     ]
+
+    def new_version_news(apps, schema_editor):
+        create_news_for_version(apps, "3.7.0", "")
 
     operations = [
         migrations.CreateModel(
@@ -27,4 +32,5 @@ class Migration(migrations.Migration):
                 'ordering': ['-when'],
             },
         ),
+        migrations.RunPython(new_version_news),
     ]
