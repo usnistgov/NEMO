@@ -68,6 +68,7 @@ from NEMO.models import (
 	ToolUsageCounter,
 	PhysicalAccessException,
 	BuddyRequest,
+	EmailLog,
 )
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion
 
@@ -744,6 +745,15 @@ class PhysicalAccessLogAdmin(admin.ModelAdmin):
 	search_fields = ("user__first_name", "user__last_name", "user__username", "door__name")
 	date_hierarchy = "time"
 
+	def has_delete_permission(self, request, obj=None):
+		return False
+
+	def has_add_permission(self, request):
+		return False
+
+	def has_change_permission(self, request, obj=None):
+		return False
+
 
 @register(SafetyIssue)
 class SafetyIssueAdmin(admin.ModelAdmin):
@@ -981,6 +991,27 @@ class BuddyRequestAdmin(admin.ModelAdmin):
 
 	reply_count.admin_order_field = "replies"
 	reply_count.short_description = "Replies"
+
+
+@register(EmailLog)
+class EmailLogAdmin(admin.ModelAdmin):
+	list_display = ["id", "category", "sender", "to", "subject", "when", "ok"]
+	list_filter = ["category", "ok"]
+	search_fields = ["subject", "content", "to"]
+	readonly_fields = ("content_preview",)
+	date_hierarchy = "when"
+
+	def content_preview(self, obj):
+		return mark_safe(obj.content)
+
+	def has_delete_permission(self, request, obj=None):
+		return False
+
+	def has_add_permission(self, request):
+		return False
+
+	def has_change_permission(self, request, obj=None):
+		return False
 
 
 admin.site.register(ResourceCategory)

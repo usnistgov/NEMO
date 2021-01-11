@@ -19,20 +19,19 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area, ReservationItemType
-from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize
+from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize, EmailCategory
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations, check_tool_reservation_requiring_area
 
 calendar_logger = getLogger(__name__)
 
-
 recurrence_frequency_display = {
 	'DAILY': 'Day(s)',
-	'DAILY_WEEKDAYS':'Week Day(s)',
-	'DAILY WEEKENDS':'Weekend Day(s)',
-	'WEEKLY':'Week(s)',
-	'MONTHLY':'Month(s)',
+	'DAILY_WEEKDAYS': 'Week Day(s)',
+	'DAILY WEEKENDS': 'Weekend Day(s)',
+	'WEEKLY': 'Week(s)',
+	'MONTHLY': 'Month(s)',
 }
 
 recurrence_frequencies = {
@@ -42,6 +41,7 @@ recurrence_frequencies = {
 	'WEEKLY': rrule.WEEKLY,
 	'MONTHLY': rrule.MONTHLY,
 }
+
 
 @login_required
 @require_GET
@@ -656,6 +656,7 @@ def change_reservation_project(request, reservation_id):
 def email_reservation_reminders(request):
 	return send_email_reservation_reminders()
 
+
 def send_email_reservation_reminders():
 	# Exit early if the reservation reminder email template has not been customized for the organization yet.
 	reservation_reminder_message = get_media_file_contents('reservation_reminder_email.html')
@@ -685,7 +686,7 @@ def send_email_reservation_reminders():
 			subject = item.name + " reservation warning"
 			rendered_message = Template(reservation_warning_message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}))
 		user_office_email = get_customization('user_office_email_address')
-		reservation.user.email_user(subject, rendered_message, user_office_email)
+		reservation.user.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
 	return HttpResponse()
 
 
@@ -695,6 +696,7 @@ def send_email_reservation_reminders():
 def email_usage_reminders(request):
 	projects_to_exclude = request.GET.getlist("projects_to_exclude[]")
 	return send_email_usage_reminders(projects_to_exclude)
+
 
 def send_email_usage_reminders(projects_to_exclude=None):
 	if projects_to_exclude is None:
@@ -732,7 +734,7 @@ def send_email_usage_reminders(projects_to_exclude=None):
 		subject = f"{facility_name} usage"
 		for user in aggregate.values():
 			rendered_message = Template(message).render(Context({'user': user}))
-			send_mail(subject, rendered_message, user_office_email, [user['email']])
+			send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=[user['email']], email_category=EmailCategory.TIMED_SERVICES)
 
 	message = get_media_file_contents('staff_charge_reminder_email.html')
 	if message:
@@ -740,7 +742,7 @@ def send_email_usage_reminders(projects_to_exclude=None):
 		for staff_charge in busy_staff:
 			subject = "Active staff charge since " + format_datetime(staff_charge.start)
 			rendered_message = Template(message).render(Context({'staff_charge': staff_charge}))
-			staff_charge.staff_member.email_user(subject, rendered_message, user_office_email)
+			staff_charge.staff_member.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
 
 	return HttpResponse()
 
@@ -782,6 +784,7 @@ def area_access_details(request, event_id):
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def cancel_unused_reservations(request):
 	return do_cancel_unused_reservations()
+
 
 def do_cancel_unused_reservations():
 	"""
@@ -848,6 +851,7 @@ def do_cancel_unused_reservations():
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def email_out_of_time_reservation_notification(request):
 	return send_email_out_of_time_reservation_notification()
+
 
 def send_email_out_of_time_reservation_notification():
 	"""
@@ -949,9 +953,9 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 					recipients.extend(reservation.area.reservation_email_list())
 				if reservation.user.get_preferences().attach_cancelled_reservation:
 					attachment = create_ics_for_reservation(reservation, cancelled=True)
-					send_mail('Your reservation was cancelled', cancellation_email, user_cancelling_reservation.email, recipients, [attachment])
+					send_mail(subject='Your reservation was cancelled', content=cancellation_email, from_email=user_cancelling_reservation.email, to=recipients, attachments=[attachment])
 				else:
-					send_mail('Your reservation was cancelled', cancellation_email, user_cancelling_reservation.email, recipients)
+					send_mail(subject='Your reservation was cancelled', content=cancellation_email, from_email=user_cancelling_reservation.email, to=recipients)
 
 		else:
 			''' here the user cancelled his own reservation so notify him '''
@@ -967,7 +971,7 @@ def send_missed_reservation_notification(reservation):
 	if message and user_office_email:
 		subject = "Missed reservation for the " + str(reservation.reservation_item)
 		message = Template(message).render(Context({'reservation': reservation}))
-		send_mail(subject, message, user_office_email, [reservation.user.email, abuse_email, user_office_email])
+		send_mail(subject=subject, content=message, from_email=user_office_email, to=[reservation.user.email, abuse_email, user_office_email], email_category=EmailCategory.TIMED_SERVICES)
 	else:
 		calendar_logger.error("Missed reservation email couldn't be send because missed_reservation_email.html or user_office_email are not defined")
 
@@ -980,7 +984,7 @@ def send_out_of_time_reservation_notification(reservation:Reservation):
 		message = Template(message).render(Context({'reservation': reservation}))
 		recipients = [reservation.user.email]
 		recipients.extend(reservation.area.abuse_email_list())
-		send_mail(subject, message, user_office_email, recipients)
+		send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, email_category=EmailCategory.TIMED_SERVICES)
 	else:
 		calendar_logger.error("Out of time reservation email couldn't be send because out_of_time_reservation_email.html or user_office_email are not defined")
 
@@ -998,7 +1002,7 @@ def send_user_created_reservation_notification(reservation: Reservation):
 		# We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
 			attachment = create_ics_for_reservation(reservation)
-			send_mail(subject, message, user_office_email, recipients, [attachment])
+			send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment])
 		else:
 			calendar_logger.error("User created reservation notification could not be send because user_office_email_address is not defined")
 
@@ -1016,7 +1020,7 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
 		# We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
 			attachment = create_ics_for_reservation(reservation, cancelled=True)
-			send_mail(subject, message, user_office_email, recipients, [attachment])
+			send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment])
 		else:
 			calendar_logger.error("User cancelled reservation notification could not be send because user_office_email_address is not defined")
 

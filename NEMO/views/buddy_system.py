@@ -130,7 +130,7 @@ def email_interested_parties(reply: BuddyRequestMessage, reply_url):
 {reply.content}
 
 Please visit {reply_url} to reply"""
-            user.email_user(subject=subject, message=message, from_email=settings.SERVER_EMAIL)
+            user.email_user(subject=subject, content=message, from_email=settings.SERVER_EMAIL)
 
 
 def check_user_reply_error(buddy_request: BuddyRequest, user: User) -> Optional[str]:

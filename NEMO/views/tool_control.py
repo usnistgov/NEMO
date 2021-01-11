@@ -32,7 +32,15 @@ from NEMO.models import (
 	ToolUsageCounter,
 	AreaAccessRecord,
 )
-from NEMO.utilities import extract_times, quiet_int, beginning_of_the_day, end_of_the_day, send_mail, BasicDisplayTable
+from NEMO.utilities import (
+	extract_times,
+	quiet_int,
+	beginning_of_the_day,
+	end_of_the_day,
+	send_mail,
+	BasicDisplayTable,
+	EmailCategory,
+)
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
@@ -451,5 +459,11 @@ def reset_tool_counter(request, counter_id):
 		message = f"""The {counter.name} counter for the {counter.tool.name} was reset to 0 on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.
 	
 Its last value was {counter.last_reset_value}."""
-		send_mail(f"{counter.tool.name} counter reset", message, settings.SERVER_EMAIL, settings.LAB_MANAGERS)
+		send_mail(
+			subject=f"{counter.tool.name} counter reset",
+			content=message,
+			from_email=settings.SERVER_EMAIL,
+			to=settings.LAB_MANAGERS,
+			email_category=EmailCategory.SYSTEM,
+		)
 	return redirect("tool_control")

@@ -23,7 +23,7 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from NEMO import fields
-from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename
+from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename, EmailCategory
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -221,9 +221,9 @@ class User(models.Model):
 	def set_unusable_password(self):
 		pass
 
-	def email_user(self, subject, message, from_email, attachments=None):
+	def email_user(self, subject, content, from_email, attachments=None, email_category=None):
 		""" Sends an email to this user. """
-		send_mail(subject=subject, message=message, from_email=from_email, recipient_list=[self.email], attachments=attachments)
+		send_mail(subject=subject, content=content, from_email=from_email, to=[self.email], attachments=attachments, email_category=email_category)
 
 	def get_full_name(self):
 		return self.get_name() + ' (' + self.username + ')'
@@ -1673,6 +1673,7 @@ class PhysicalAccessException(models.Model):
 	def __str__(self):
 		return str(self.name)
 
+
 class PhysicalAccessType(object):
 	DENY = False
 	ALLOW = True
@@ -1955,6 +1956,20 @@ class BuddyRequestMessage(models.Model):
 
 	class Meta:
 		ordering = ['creation_date']
+
+
+class EmailLog(models.Model):
+	category = models.IntegerField(choices=EmailCategory.Choices, default=EmailCategory.GENERAL)
+	when = models.DateTimeField(null=False, auto_now_add=True)
+	sender = models.EmailField(null=False, blank=False)
+	to = models.EmailField(null=False, blank=False)
+	subject = models.CharField(null=False, max_length=254)
+	content = models.TextField(null=False)
+	ok = models.BooleanField(null=False, default=True)
+	attachments = models.TextField(null=True)
+
+	class Meta:
+		ordering = ['-when']
 
 
 def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):

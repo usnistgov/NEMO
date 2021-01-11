@@ -65,6 +65,29 @@ def bootstrap_primary_color(color_type):
 	return None
 
 
+class EmailCategory(object):
+	GENERAL = 0
+	SYSTEM = 1
+	DIRECT_CONTACT = 2
+	BROADCAST_EMAIL = 3
+	TIMED_SERVICES = 4
+	FEEDBACK = 5
+	ABUSE = 6
+	SAFETY = 7
+	TASKS = 8
+	Choices = (
+		(GENERAL, "General"),
+		(SYSTEM, "System"),
+		(DIRECT_CONTACT, "Direct Contact"),
+		(BROADCAST_EMAIL, "Broadcast Email"),
+		(TIMED_SERVICES, "Timed Services"),
+		(FEEDBACK, "Feedback"),
+		(ABUSE, "Abuse"),
+		(SAFETY, "Safety"),
+		(TASKS, "Tasks"),
+	)
+
+
 def parse_start_and_end_date(start, end):
 	start = timezone.make_aware(parser.parse(start), timezone.get_current_timezone())
 	end = timezone.make_aware(parser.parse(end), timezone.get_current_timezone())
@@ -240,12 +263,33 @@ def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	return localize(midnight) if in_local_timezone else midnight
 
 
-def send_mail(subject, message, from_email, recipient_list, attachments=None):
+def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachments=None, email_category:EmailCategory = EmailCategory.GENERAL, fail_silently=True):
 	mail = EmailMessage(
-		subject=subject, body=message, from_email=from_email, to=recipient_list, attachments=attachments
+		subject=subject, body=content, from_email=from_email, to=to, bcc=bcc, cc=cc, attachments=attachments
 	)
 	mail.content_subtype = "html"
-	mail.send()
+	email_record = create_email_log(mail, email_category)
+	try:
+		mail.send()
+	except:
+		email_record.ok = False
+		if not fail_silently:
+			raise
+	finally:
+		email_record.save()
+
+
+def create_email_log(email: EmailMessage, email_category: EmailCategory):
+	from NEMO.models import EmailLog
+	email_record: EmailLog = EmailLog.objects.create(category=email_category, sender=email.from_email, to=', '.join(email.recipients()), subject=email.subject, content=email.body)
+	if email.attachments:
+		email_attachments = []
+		for attachment in email.attachments:
+			if isinstance(attachment, MIMEBase):
+				email_attachments.append(attachment.get_filename())
+		if email_attachments:
+			email_record.attachments = ', '.join(email_attachments)
+	return email_record
 
 
 def create_email_attachment(stream, filename) -> MIMEBase:

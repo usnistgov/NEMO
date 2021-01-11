@@ -8,7 +8,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.forms import SafetyIssueCreationForm, SafetyIssueUpdateForm
 from NEMO.models import SafetyIssue
-from NEMO.utilities import send_mail
+from NEMO.utilities import send_mail, EmailCategory
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.notifications import create_safety_notification, delete_safety_notification, get_notifications
 
@@ -46,7 +46,7 @@ def send_safety_email_notification(request, issue):
 		}
 		rendered_message = Template(message).render(Context(dictionary))
 		from_email = issue.reporter.email if issue.reporter else recipient
-		send_mail(subject, rendered_message, from_email, [recipient])
+		send_mail(subject=subject, content=rendered_message, from_email=from_email, to=[recipient], email_category=EmailCategory.SAFETY)
 
 
 @login_required
