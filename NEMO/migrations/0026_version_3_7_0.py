@@ -2,8 +2,9 @@
 
 from django.conf import settings
 from django.db import migrations, models
-import django.db.models.deletion
 import django.utils.timezone
+
+from NEMO.migrations_utils import create_news_for_version
 
 
 class Migration(migrations.Migration):
@@ -11,6 +12,9 @@ class Migration(migrations.Migration):
     dependencies = [
         ('NEMO', '0025_version_3_6_0'),
     ]
+
+    def new_version_news(apps, schema_editor):
+        create_news_for_version(apps, "3.7.0", "")
 
     operations = [
         migrations.CreateModel(
@@ -65,4 +69,22 @@ class Migration(migrations.Migration):
                 'ordering': ['creation_date'],
             },
         ),
+        migrations.CreateModel(
+            name='EmailLog',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('category', models.IntegerField(choices=[(0, 'General'), (1, 'System'), (2, 'Direct Contact'), (3, 'Broadcast Email'), (4, 'Timed Services'), (5, 'Feedback'), (6, 'Abuse'), (7, 'Safety'), (8, 'Tasks')], default=0)),
+                ('when', models.DateTimeField(auto_now_add=True)),
+                ('sender', models.EmailField(max_length=254)),
+                ('to', models.EmailField(max_length=254)),
+                ('subject', models.CharField(max_length=254)),
+                ('content', models.TextField()),
+                ('ok', models.BooleanField(default=True)),
+                ('attachments', models.TextField(null=True)),
+            ],
+            options={
+                'ordering': ['-when'],
+            },
+        ),
+        migrations.RunPython(new_version_news),
     ]
