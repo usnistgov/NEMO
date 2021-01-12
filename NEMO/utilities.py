@@ -268,15 +268,16 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 		subject=subject, body=content, from_email=from_email, to=to, bcc=bcc, cc=cc, attachments=attachments
 	)
 	mail.content_subtype = "html"
-	email_record = create_email_log(mail, email_category)
-	try:
-		mail.send()
-	except:
-		email_record.ok = False
-		if not fail_silently:
-			raise
-	finally:
-		email_record.save()
+	if mail.recipients():
+		email_record = create_email_log(mail, email_category)
+		try:
+			mail.send()
+		except:
+			email_record.ok = False
+			if not fail_silently:
+				raise
+		finally:
+			email_record.save()
 
 
 def create_email_log(email: EmailMessage, email_category: EmailCategory):
