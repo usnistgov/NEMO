@@ -76,7 +76,7 @@ class Migration(migrations.Migration):
                 ('category', models.IntegerField(choices=[(0, 'General'), (1, 'System'), (2, 'Direct Contact'), (3, 'Broadcast Email'), (4, 'Timed Services'), (5, 'Feedback'), (6, 'Abuse'), (7, 'Safety'), (8, 'Tasks')], default=0)),
                 ('when', models.DateTimeField(auto_now_add=True)),
                 ('sender', models.EmailField(max_length=254)),
-                ('to', models.EmailField(max_length=254)),
+                ('to', models.TextField()),
                 ('subject', models.CharField(max_length=254)),
                 ('content', models.TextField()),
                 ('ok', models.BooleanField(default=True)),
