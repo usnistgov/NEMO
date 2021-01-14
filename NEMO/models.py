@@ -1947,6 +1947,9 @@ class BuddyRequest(models.Model):
 			result.add(reply.author)
 		return list(result)
 
+	def __str__(self):
+		return f"BuddyRequest [{self.id}]"
+
 
 class BuddyRequestMessage(models.Model):
 	buddy_request = models.ForeignKey(BuddyRequest, related_name="replies", help_text="The request that this message relates to.", on_delete=models.CASCADE)

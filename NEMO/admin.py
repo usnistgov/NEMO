@@ -6,6 +6,8 @@ from django.contrib.admin import register
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models.fields.files import FieldFile
+from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
 
@@ -68,7 +70,7 @@ from NEMO.models import (
 	ToolUsageCounter,
 	PhysicalAccessException,
 	BuddyRequest,
-	EmailLog,
+	EmailLog, BuddyRequestMessage,
 )
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion
 
@@ -991,6 +993,15 @@ class BuddyRequestAdmin(admin.ModelAdmin):
 
 	reply_count.admin_order_field = "replies"
 	reply_count.short_description = "Replies"
+
+
+@register(BuddyRequestMessage)
+class BuddyRequestMessageAdmin(admin.ModelAdmin):
+	list_display = ("id", "link_to_buddy_request", "author", "creation_date")
+	def link_to_buddy_request(self, obj):
+		link = reverse("admin:NEMO_buddyrequest_change", args=[obj.buddy_request.id])  # model name has to be lowercase
+		return format_html('<a href="%s">%s</a>' % (link, obj.buddy_request))
+	link_to_buddy_request.short_description = "BUDDY REQUEST"
 
 
 @register(EmailLog)
