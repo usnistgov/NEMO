@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render, redirect, get_object_or_404
+from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_GET, require_POST
 
@@ -126,9 +127,9 @@ def email_interested_parties(reply: BuddyRequestMessage, reply_url):
             creator_display_his = creator_display if creator != reply.author else "his"
             subject = f"New reply on {creator_display} buddy request"
             message = f"""{reply.author.get_name()} also replied to {creator_display_his} buddy request:
-
-{reply.content}
-
+<br><br>
+{linebreaksbr(reply.content)}
+<br><br>
 Please visit {reply_url} to reply"""
             user.email_user(subject=subject, content=message, from_email=settings.SERVER_EMAIL)
 
@@ -138,11 +139,11 @@ def check_user_reply_error(buddy_request: BuddyRequest, user: User) -> Optional[
     try:
         check_policy_to_enter_any_area(user)
     except InactiveUserError:
-        error_message = "Your cannot reply to this request because your account has been deactivated"
+        error_message = "You cannot reply to this request because your account has been deactivated"
     except NoActiveProjectsForUserError:
-        error_message = "Your cannot reply to this request because you don't have any active projects"
+        error_message = "You cannot reply to this request because you don't have any active projects"
     except PhysicalAccessExpiredUserError:
-        error_message = "Your cannot reply to this request because you don't have any active projects"
+        error_message = "You cannot reply to this request because your facility access has expired"
     except NoPhysicalAccessUserError:
         error_message = "You cannot reply to this request because you do not have access to any areas"
     else:

@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
+from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
@@ -155,13 +156,13 @@ A task for the {task.tool} was just modified by {task_user}.
 The latest update is at the bottom of the description. The entirety of the task status follows: 
 <br/><br/>
 Task problem description:<br/>
-{task.problem_description}
+{linebreaksbr(task.problem_description)}
 <br/><br/>
 Task progress description:<br/>
-{task.progress_description}
+{linebreaksbr(task.progress_description)}
 <br/><br/>
 Task resolution description:<br/>
-{task.resolution_description}
+{linebreaksbr(task.resolution_description)}
 <br/><br/>
 Visit {url} to view the tool control page for the task.<br/>
 """
