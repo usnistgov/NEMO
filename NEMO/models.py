@@ -221,7 +221,7 @@ class User(models.Model):
 	def set_unusable_password(self):
 		pass
 
-	def email_user(self, subject, content, from_email, attachments=None, email_category=None):
+	def email_user(self, subject, content, from_email, attachments=None, email_category:EmailCategory = EmailCategory.GENERAL):
 		""" Sends an email to this user. """
 		send_mail(subject=subject, content=content, from_email=from_email, to=[self.email], attachments=attachments, email_category=email_category)
 
