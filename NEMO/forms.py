@@ -32,6 +32,7 @@ from NEMO.models import (
 	TaskImages,
 	AlertCategory,
 	ReservationItemType,
+	BuddyRequest,
 )
 from NEMO.utilities import bootstrap_primary_color, format_datetime
 
@@ -378,6 +379,12 @@ class UserPreferencesForm(ModelForm):
 			"display_new_buddy_request_reply_notification",
 			"email_new_buddy_request_reply",
 		]
+
+
+class BuddyRequestForm(ModelForm):
+	class Meta:
+		model = BuddyRequest
+		fields = "__all__"
 
 
 def nice_errors(form, non_field_msg="General form errors"):

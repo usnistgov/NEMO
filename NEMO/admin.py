@@ -18,6 +18,7 @@ from NEMO.actions import (
 	duplicate_tool_configuration,
 	rebuild_area_tree,
 )
+from NEMO.forms import BuddyRequestForm
 from NEMO.models import (
 	Account,
 	ActivityHistory,
@@ -70,7 +71,8 @@ from NEMO.models import (
 	ToolUsageCounter,
 	PhysicalAccessException,
 	BuddyRequest,
-	EmailLog, BuddyRequestMessage,
+	EmailLog,
+	BuddyRequestMessage,
 )
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion
 
@@ -976,12 +978,6 @@ class CounterAdmin(admin.ModelAdmin):
 	form = CounterAdminForm
 
 
-class BuddyRequestForm(forms.ModelForm):
-	class Meta:
-		model = BuddyRequest
-		fields = "__all__"
-
-
 @register(BuddyRequest)
 class BuddyRequestAdmin(admin.ModelAdmin):
 	form = BuddyRequestForm
@@ -998,9 +994,11 @@ class BuddyRequestAdmin(admin.ModelAdmin):
 @register(BuddyRequestMessage)
 class BuddyRequestMessageAdmin(admin.ModelAdmin):
 	list_display = ("id", "link_to_buddy_request", "author", "creation_date")
+
 	def link_to_buddy_request(self, obj):
 		link = reverse("admin:NEMO_buddyrequest_change", args=[obj.buddy_request.id])  # model name has to be lowercase
 		return format_html('<a href="%s">%s</a>' % (link, obj.buddy_request))
+
 	link_to_buddy_request.short_description = "BUDDY REQUEST"
 
 
