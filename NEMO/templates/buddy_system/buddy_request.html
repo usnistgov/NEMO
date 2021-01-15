@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% load static %}
+{% block title %}{% if form.instance.id %}Modify buddy request{% else %}New buddy request{% endif %}{% endblock %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+{% endblock %}
+{% block content %}
+	<form class="form-horizontal" action="{% if form.instance.id %}{% url 'edit_buddy_request' form.instance.id %}{% else %}{% url 'create_buddy_request' %}{% endif %}" method="post">
+		<h1 class="form-group">{% if form.instance.id %}Modify buddy request{% else %}New buddy request{% endif %}</h1>
+		{% if form.non_field_errors %}
+			<div class="alert alert-danger">
+				{{ form.non_field_errors }}
+			</div>
+		{% endif %}
+		{% csrf_token %}
+		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="request_id">{% endif %}
+		<div class="form-group">
+			<div class="row">
+				<div class="col-sm-2">
+					<label for="start">Start date</label>{% if form.start.errors %} - <span style="color:red">{{ form.start.errors|striptags }}</span>{% endif %}
+					<input type="text" class="form-control text-center" name="start" id="start" value="{% if form.start.value %}{{ form.start.value }}{% endif %}">
+				</div>
+				<div class="col-sm-2">
+					<label for="end">End date</label>{% if form.end.errors %} - <span style="color:red">{{ form.end.errors|striptags }}</span>{% endif %}
+					<input type="text" class="form-control text-center" name="end" id="end" value="{% if form.end.value %}{{ form.end.value }}{% endif %}">
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="area_search">Area</label>{% if form.area.errors %} - <span style="color:red">{{ form.area.errors|striptags }}</span>{% endif %}
+			<input type="text" id="area_search" name="area" class="form-control">
+			<input type="button" id="selected_area" class="btn btn-default" onclick="clear_area_selection()" style="display:none">
+		</div>
+		<div class="form-group">
+			<label for="description">Description</label>{% if form.description.errors %} - <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
+			<textarea class="form-control" rows="3" name="description" id="description" maxlength="{{ form.fields.description.max_length }}" placeholder="Describe your request">{{ form.description.value|default_if_none:"" }}</textarea>
+		</div>
+		<div class="form-group">
+			<input type="submit" class="btn btn-success pull-right" value="{% if form.instance.id %}Save changes{% else %}Create buddy request{% endif %}">
+		</div>
+	</form>
+	<script>
+		let timepicker_properties =
+		{
+			format: 'MM/DD/YYYY'
+		};
+		$('#start').datetimepicker(timepicker_properties);
+		$('#end').datetimepicker(timepicker_properties);
+
+		function select_area(jquery_event, search_selection, dataset_name)
+		{
+			$('#area_search').typeahead('val', search_selection.id).hide();
+			$("#selected_area").val(search_selection.name).show();
+		}
+		function clear_area_selection()
+		{
+			$("#selected_area").hide();
+			$('#area_search').typeahead('val', '').show().focus();
+		}
+		function on_load()
+		{
+			$('#area_search').autocomplete('area', select_area, {{ areas|json_search_base }});
+			{% if form.instance.area %}
+				let selected_area = {'id': '{{ form.instance.area.id }}', 'name': '{{ form.instance.area.name }}'};
+				select_area(false, selected_area);
+			{% elif areas|length_is:1 %}
+				let auto_select_area = {'id': '{{ areas.0.id }}', 'name': '{{ areas.0.name }}'};
+				select_area(false, auto_select_area);
+			{% endif %}
+		}
+
+		$(on_load);
+	</script>
+{% endblock %}

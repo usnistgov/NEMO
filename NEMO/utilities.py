@@ -1,9 +1,11 @@
+import csv
 import os
 from calendar import monthrange
 from datetime import timedelta, datetime
 from email import encoders
 from email.mime.base import MIMEBase
 from io import BytesIO
+from typing import Tuple, List, Dict
 
 from PIL import Image
 from dateutil import parser
@@ -12,20 +14,78 @@ from dateutil.rrule import MONTHLY, rrule
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.timezone import localtime
 
 
+class BasicDisplayTable(object):
+	""" Utility table to make adding headers and rows easier, and export to csv """
+
+	def __init__(self):
+		# headers is a list of tuples (key, display)
+		self.headers: List[Tuple[str, str]] = []
+		# rows is a list of dictionaries. Each dictionary is a row, with keys corresponding to header keys
+		self.rows: List[Dict] = []
+
+	def add_header(self, header: Tuple[str, str]):
+		if not any(k[0] == header[0] for k in self.headers):
+			self.headers.append((header[0], header[1].capitalize()))
+
+	def add_row(self, row: Dict):
+		self.rows.append(row)
+
+	def flat_headers(self) -> List[str]:
+		return [display for key, display in self.headers]
+
+	def flat_rows(self) -> List[List]:
+		flat_result = []
+		for row in self.rows:
+			flat_result.append([row.get(key, "") for key, display_value in self.headers])
+		return flat_result
+
+	def to_csv(self) -> HttpResponse:
+		response = HttpResponse(content_type="text/csv")
+		writer = csv.writer(response)
+		writer.writerow([display_value.capitalize() for key, display_value in self.headers])
+		for row in self.rows:
+			writer.writerow([row.get(key, "") for key, display_value in self.headers])
+		return response
+
+
 def bootstrap_primary_color(color_type):
-	if color_type == 'success':
-		return '#5cb85c'
-	elif color_type == 'info':
-		return '#5bc0de'
-	elif color_type == 'warning':
-		return '#f0ad4e'
-	elif color_type == 'danger':
-		return '#d9534f'
+	if color_type == "success":
+		return "#5cb85c"
+	elif color_type == "info":
+		return "#5bc0de"
+	elif color_type == "warning":
+		return "#f0ad4e"
+	elif color_type == "danger":
+		return "#d9534f"
 	return None
+
+
+class EmailCategory(object):
+	GENERAL = 0
+	SYSTEM = 1
+	DIRECT_CONTACT = 2
+	BROADCAST_EMAIL = 3
+	TIMED_SERVICES = 4
+	FEEDBACK = 5
+	ABUSE = 6
+	SAFETY = 7
+	TASKS = 8
+	Choices = (
+		(GENERAL, "General"),
+		(SYSTEM, "System"),
+		(DIRECT_CONTACT, "Direct Contact"),
+		(BROADCAST_EMAIL, "Broadcast Email"),
+		(TIMED_SERVICES, "Timed Services"),
+		(FEEDBACK, "Feedback"),
+		(ABUSE, "Abuse"),
+		(SAFETY, "Safety"),
+		(TASKS, "Tasks"),
+	)
 
 
 def parse_start_and_end_date(start, end):
@@ -48,14 +108,20 @@ def quiet_int(value_to_convert, default_upon_failure=0):
 	return result
 
 
-def parse_parameter_string(parameter_dictionary, parameter_key, maximum_length=3000, raise_on_error=False, default_return=''):
+def parse_parameter_string(
+		parameter_dictionary, parameter_key, maximum_length=3000, raise_on_error=False, default_return=""
+):
 	"""
 	Attempts to parse a string from an HTTP GET or POST dictionary and applies validation checks.
 	"""
 	try:
 		parameter = parameter_dictionary[parameter_key].strip()
 		if raise_on_error and len(parameter) > maximum_length:
-			raise Exception('The parameter named {} is {} characters long, exceeding the maximum length of {} characters.'.format(parameter_key, len(parameter), maximum_length))
+			raise Exception(
+				"The parameter named {} is {} characters long, exceeding the maximum length of {} characters.".format(
+					parameter_key, len(parameter), maximum_length
+				)
+			)
 		return parameter
 	except Exception as e:
 		if raise_on_error:
@@ -77,24 +143,26 @@ def get_month_timeframe(date=None):
 	else:
 		start = timezone.now()
 	first_of_the_month = localize(datetime(start.year, start.month, 1))
-	last_of_the_month = localize(datetime(start.year, start.month, monthrange(start.year, start.month)[1], 23, 59, 59, 0))
+	last_of_the_month = localize(
+		datetime(start.year, start.month, monthrange(start.year, start.month)[1], 23, 59, 59, 0)
+	)
 	return first_of_the_month, last_of_the_month
 
 
-def extract_times(parameters, input_timezone=None, start_required=True, end_required=True):
+def extract_times(parameters, input_timezone=None, start_required=True, end_required=True) -> Tuple[datetime, datetime]:
 	"""
 	Extract the "start" and "end" parameters from an HTTP request while performing a few logic validation checks.
 	The function assumes the UNIX timestamp is in the local timezone. Use input_timezone to specify the timezone.
 	"""
 	start, end, new_start, new_end = None, None, None, None
 	try:
-		start = parameters['start']
+		start = parameters["start"]
 	except:
 		if start_required:
 			raise Exception("The request parameters did not contain a start time.")
 
 	try:
-		end = parameters['end']
+		end = parameters["end"]
 	except:
 		if end_required:
 			raise Exception("The request parameters did not contain an end time.")
@@ -122,7 +190,7 @@ def extract_times(parameters, input_timezone=None, start_required=True, end_requ
 
 
 def extract_date(date):
-	return localize(datetime.strptime(date, '%Y-%m-%d'))
+	return localize(datetime.strptime(date, "%Y-%m-%d"))
 
 
 def extract_dates(parameters):
@@ -130,12 +198,12 @@ def extract_dates(parameters):
 	Extract the "start" and "end" parameters from an HTTP request while performing a few logic validation checks.
 	"""
 	try:
-		start = parameters['start']
+		start = parameters["start"]
 	except:
 		raise Exception("The request parameters did not contain a start time.")
 
 	try:
-		end = parameters['end']
+		end = parameters["end"]
 	except:
 		raise Exception("The request parameters did not contain an end time.")
 
@@ -162,7 +230,13 @@ def format_datetime(universal_time):
 		suffix = "th"
 	else:
 		suffix = ["st", "nd", "rd"][day % 10 - 1]
-	return local_time.strftime("%A, %B ") + str(day) + suffix + local_time.strftime(", %Y @ ") + local_time.strftime("%I:%M %p").lstrip('0')
+	return (
+			local_time.strftime("%A, %B ")
+			+ str(day)
+			+ suffix
+			+ local_time.strftime(", %Y @ ")
+			+ local_time.strftime("%I:%M %p").lstrip("0")
+	)
 
 
 def localize(dt, tz=None):
@@ -177,47 +251,78 @@ def naive_local_current_datetime():
 	return localtime(timezone.now()).replace(tzinfo=None)
 
 
-def beginning_of_the_day(t, in_local_timezone=True):
+def beginning_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	""" Returns the BEGINNING of today's day (12:00:00.000000 AM of the current day) in LOCAL time. """
 	midnight = t.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
 	return localize(midnight) if in_local_timezone else midnight
 
 
-def end_of_the_day(t, in_local_timezone=True):
+def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	""" Returns the END of today's day (11:59:59.999999 PM of the current day) in LOCAL time. """
 	midnight = t.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=None)
 	return localize(midnight) if in_local_timezone else midnight
 
 
-def send_mail(subject, message, from_email, recipient_list, attachments=None):
-	mail = EmailMessage(subject=subject, body=message, from_email=from_email, to=recipient_list, attachments=attachments)
+def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachments=None, email_category:EmailCategory = EmailCategory.GENERAL, fail_silently=True):
+	mail = EmailMessage(
+		subject=subject, body=content, from_email=from_email, to=to, bcc=bcc, cc=cc, attachments=attachments
+	)
 	mail.content_subtype = "html"
-	mail.send()
+	if mail.recipients():
+		email_record = create_email_log(mail, email_category)
+		try:
+			mail.send()
+		except:
+			email_record.ok = False
+			if not fail_silently:
+				raise
+		finally:
+			email_record.save()
+
+
+def create_email_log(email: EmailMessage, email_category: EmailCategory):
+	from NEMO.models import EmailLog
+	email_record: EmailLog = EmailLog.objects.create(category=email_category, sender=email.from_email, to=', '.join(email.recipients()), subject=email.subject, content=email.body)
+	if email.attachments:
+		email_attachments = []
+		for attachment in email.attachments:
+			if isinstance(attachment, MIMEBase):
+				email_attachments.append(attachment.get_filename())
+		if email_attachments:
+			email_record.attachments = ', '.join(email_attachments)
+	return email_record
 
 
 def create_email_attachment(stream, filename) -> MIMEBase:
-	attachment = MIMEBase('application', "octet-stream")
+	attachment = MIMEBase("application", "octet-stream")
 	attachment.set_payload(stream.read())
 	encoders.encode_base64(attachment)
-	attachment.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+	attachment.add_header("Content-Disposition", f'attachment; filename="{filename}"')
 	return attachment
 
 
 def get_task_image_filename(task_images, filename):
 	from NEMO.models import Task, TaskImages
 	from django.template.defaultfilters import slugify
+
 	task: Task = task_images.task
 	tool_name = slugify(task.tool)
 	now = datetime.now()
 	date = now.strftime("%Y-%m-%d")
 	year = now.strftime("%Y")
-	number = "{:02d}".format(TaskImages.objects.filter(task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day).count() +1)
+	number = "{:02d}".format(
+		TaskImages.objects.filter(
+			task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day
+		).count()
+		+ 1
+	)
 	ext = os.path.splitext(filename)[1]
 	return f"task_images/{year}/{tool_name}/{date}_{tool_name}_{number}{ext}"
 
 
 def get_tool_image_filename(tool, filename):
 	from django.template.defaultfilters import slugify
+
 	tool_name = slugify(tool)
 	ext = os.path.splitext(filename)[1]
 	return f"tool_images/{tool_name}{ext}"
@@ -231,15 +336,17 @@ def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryU
 		if width <= max or height <= max:
 			return image
 		if width > height:
-			width_ratio = (max / float(width))
+			width_ratio = max / float(width)
 			new_height = int((float(height) * float(width_ratio)))
 			img = img.resize((max, new_height), Image.ANTIALIAS)
 		else:
-			height_ratio = (max / float(height))
+			height_ratio = max / float(height)
 			new_width = int((float(width) * float(height_ratio)))
 			img = img.resize((new_width, max), Image.ANTIALIAS)
 		with BytesIO() as buffer:
-			img.save(fp=buffer, format='PNG', quality=quality)
+			img.save(fp=buffer, format="PNG", quality=quality)
 			resized_image = ContentFile(buffer.getvalue())
 	file_name_without_ext = os.path.splitext(image.name)[0]
-	return InMemoryUploadedFile(resized_image, 'ImageField', "%s.png" %file_name_without_ext, 'image/png', resized_image.tell(), None)
+	return InMemoryUploadedFile(
+		resized_image, "ImageField", "%s.png" % file_name_without_ext, "image/png", resized_image.tell(), None
+	)

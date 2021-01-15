@@ -7,7 +7,7 @@
 		<input type="hidden" value="{{ recipient }}" name="recipient">
 		<div class="form-group">
 			<p>From: {{ user.email }}</p>
-			<p>To: {{ recipient }}</p>
+			<p>To: {% if name %}{{ name }}{% else %}{{ recipient }}{% endif %}</p>
 			<div class="checkbox">
 				<label><input type="checkbox" name="copy_me" checked>Send a copy of this message to myself</label>
 			</div>

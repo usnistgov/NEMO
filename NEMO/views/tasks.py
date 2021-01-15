@@ -7,12 +7,13 @@ from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
+from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import TaskForm, nice_errors, TaskImagesForm
 from NEMO.models import Interlock, Reservation, SafetyIssue, Task, TaskCategory, TaskHistory, TaskStatus, UsageEvent, TaskImages
-from NEMO.utilities import bootstrap_primary_color, format_datetime, send_mail, create_email_attachment, resize_image
+from NEMO.utilities import bootstrap_primary_color, format_datetime, send_mail, create_email_attachment, resize_image, EmailCategory
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.tool_control import determine_tool_status
@@ -93,7 +94,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 		if hasattr(settings, 'LAB_MANAGERS'):
 			managers = settings.LAB_MANAGERS
 		recipients = tuple([r for r in [task.tool.primary_owner.email, *task.tool.backup_owners.all().values_list('email', flat=True), task.tool.notification_email_address, *managers] if r])
-		send_mail(subject, message, request.user.email, recipients, attachments)
+		send_mail(subject=subject, content=message, from_email=request.user.email, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
 
 	# Send an email to any user (excluding staff) with a future reservation on the tool:
 	user_office_email = get_customization('user_office_email_address')
@@ -107,7 +108,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 			else:
 				subject = reservation.tool.name + " reservation warning"
 				rendered_message = Template(message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}))
-			reservation.user.email_user(subject, rendered_message, user_office_email)
+			reservation.user.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TASKS)
 
 
 @login_required
@@ -155,17 +156,17 @@ A task for the {task.tool} was just modified by {task_user}.
 The latest update is at the bottom of the description. The entirety of the task status follows: 
 <br/><br/>
 Task problem description:<br/>
-{task.problem_description}
+{linebreaksbr(task.problem_description)}
 <br/><br/>
 Task progress description:<br/>
-{task.progress_description}
+{linebreaksbr(task.progress_description)}
 <br/><br/>
 Task resolution description:<br/>
-{task.resolution_description}
+{linebreaksbr(task.resolution_description)}
 <br/><br/>
 Visit {url} to view the tool control page for the task.<br/>
 """
-	send_mail(f'{task.tool} task {task_status}', message, settings.SERVER_EMAIL, settings.LAB_MANAGERS, attachments)
+	send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=settings.SERVER_EMAIL, to=settings.LAB_MANAGERS, attachments=attachments, email_category=EmailCategory.TASKS)
 
 
 @staff_member_required(login_url=None)
@@ -262,7 +263,7 @@ def set_task_status(request, task, status_name, user):
 		if status.notify_backup_tool_owners:
 			recipients += task.tool.backup_tool_owners.values_list('email')
 		recipients = filter(None, recipients)
-		send_mail(subject, message, user.email, recipients)
+		send_mail(subject=subject, content=message, from_email=user.email, to=recipients, email_category=EmailCategory.TASKS)
 
 
 def save_task_images(request, task: Task) -> List[TaskImages]:

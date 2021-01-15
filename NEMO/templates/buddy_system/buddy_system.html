@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Buddy Board{% endblock %}
+{% block content %}
+	{% if areas %}
+		<h1>
+			Buddy Board
+			<a class="btn btn-success pull-right" href="{% url 'create_buddy_request' %}">New request</a>
+		</h1>
+		{% if buddy_board_disclaimer %}
+			<div class="buddy-system-disclaimer-container">
+				<span class="buddy-system-disclaimer-info glyphicon glyphicon-info-sign primary-highlight"></span>
+				<div class="buddy-system-disclaimer">{{ buddy_board_disclaimer|linebreaksbr }}</div>
+			</div>
+		{% endif %}
+		{% if buddy_requests %}
+			<div class="table-responsive buddy-system-requests">
+				{% regroup buddy_requests by start as requests_by_date %}
+				{% for date in requests_by_date %}
+					<h3>{{ date.grouper|date:"l, F jS, Y" }}</h3>
+					<ul class="buddy-list-day">
+						{% for br in date.list %}
+							<li>
+								<ul class="buddy-list list-unstyled">
+									{% if br.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
+									{{ br.user.get_name }} needs a buddy {% if not br.start|date:"Y-m-d" == br.end|date:"Y-m-d" %}between {{ br.start|date:"l, F jS, Y" }} and {{ br.end|date:"l, F jS, Y" }}{% endif %} in the {{ br.area.name }}
+									<li class="buddy-list-item">
+										<div class="buddy-list-item list-group-item-info">
+											<div class="buddy-list-item-description">
+												{{ br.description|linebreaksbr }}
+											</div>
+											{% if br.user == request.user and br.replies.count == 0 %}
+												<div class="buddy-list-item-buttons">
+													<a href="{% url 'edit_buddy_request' br.id %}" class="btn btn-default btn-sm" style="margin-right: 5px">Edit</a>
+													<a href="{% url 'delete_buddy_request' br.id %}" class="btn btn-danger btn-sm">Delete</a>
+												</div>
+											{% endif %}
+										</div>
+									</li>
+									{% for message in br.replies.all %}
+										<li class="buddy-list-item" id="{{ message.id }}">
+											{% if message.id in reply_notifications %}<span class="label label-success">New reply</span>{% endif %}
+											<div class="list-group-item buddy-list-item-message">
+												{{ message.content|linebreaksbr }}
+												<div class="buddy-list-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
+											</div>
+										</li>
+									{% endfor %}
+									<li class="buddy-list-item" style="display: none">
+										<div class="buddy-list-item-reply list-group-item-text">
+											<form id="buddy_request_reply_{{ br.id }}" action="{% url 'buddy_request_reply' br.id %}" method="post">
+												{% csrf_token %}
+												<textarea required name="reply_content" style="width: 100%"></textarea>
+											</form>
+										</div>
+									</li>
+									<li class="buddy-list-item-reply-buttons list-group-item-text text-right">
+										<span data-toggle="tooltip" title="{{ br.user_reply_error|default_if_none:'' }}">
+											{% if br.user_reply_error %}
+													<button class="btn btn-info btn-sm disabled">Reply</button>
+											{% else %}
+												<button class="btn btn-info btn-sm" onclick="show_or_send_reply(this, 'buddy_request_reply_{{ br.id }}')">Reply</button>
+											{% endif %}
+										</span>
+									</li>
+								</ul>
+							</li>
+						{% endfor %}
+					</ul>
+				{% endfor %}
+			</div>
+		{% else %}
+			<div class="italic" style="margin-top: 20px">There are no active buddy requests</div>
+		{% endif %}
+		<script>
+			function show_or_send_reply(button_element, form_selector)
+			{
+			    let form_element = $('#'+form_selector)
+				if (form_element.is(":visible"))
+				{
+				    form_element.submit();
+				}
+				else
+				{
+				    form_element.parents('li').fadeIn('50');
+				    form_element.children('textarea').focus();
+				    $(button_element).html("Send");
+				}
+			}
+			$(function ()
+			{
+				$('[data-toggle="tooltip"]').tooltip()
+			})
+		</script>
+	{% else %}
+		<h1>
+			Buddy Board
+		</h1>
+		<h3><span class="italic" style="margin-top: 10px">You do not have any areas where the buddy system is allowed.</span></h3>
+		{% if user.is_superuser %}
+			<h3>You can change that in the <a href="{% url 'admin:NEMO_area_changelist' %}">Areas section of 'Detailed Administration'</a>.</h3>
+		{% endif %}
+	{% endif %}
+{% endblock %}

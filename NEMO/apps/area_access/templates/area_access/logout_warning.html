@@ -2,11 +2,20 @@
 <h1><p>{% now "h:i A" %}</p>You're now logged out of the {{ area }}, {{ name }}.</h1>
 <audio src="{% url 'media' 'warning.mp3' %}" autoplay></audio>
 <h2>
-	<p>You are currently still logged in to the following tools:</p>
-	<ul>
-		{% for usage_event in tools_in_use %}
-			<li>{{ usage_event.tool.name }}</li>
-		{% endfor %}
-	</ul>
+	{% if tools_in_use %}
+		<p>You are currently still logged in to the following tools:</p>
+		<ul>
+			{% for usage_event in tools_in_use %}
+				<li>{{ usage_event.tool.name }}</li>
+			{% endfor %}
+		</ul>
+	{% endif %}
+	{% if staff_charge %}
+		<br>
+		<p>You are currently still charging staff time to:</p>
+		<ul>
+			<li>{{ staff_charge.customer }} for project {{ staff_charge.project }}</li>
+		</ul>
+	{% endif %}
 </h2>
 <script>revert(15);</script>

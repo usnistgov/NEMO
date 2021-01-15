@@ -26,15 +26,15 @@
 				</h3>
 				{% if story.update_count > 2 %}
 					<div id="abridged_story_{{ story.id }}">
-						<p>{{ story.original_content|linebreaksbr }}</p>
+						<p>{{ story.original_content|safe|linebreaksbr }}</p>
 						<p>... <a href="javascript:expand_story({{ story.id }})">show full story</a> ...</p>
-						<p>{{ story.last_update_content|linebreaksbr }}</p>
+						<p>{{ story.last_update_content|safe|linebreaksbr }}</p>
 					</div>
 					<div id="full_story_{{ story.id }}" style="display:none">
-						<p>{{ story.all_content|linebreaksbr }}</p>
+						<p>{{ story.all_content|safe|linebreaksbr }}</p>
 					</div>
 				{% else %}
-					<p>{{ story.all_content|linebreaksbr }}</p>
+					<p>{{ story.all_content|safe|linebreaksbr }}</p>
 				{% endif %}
 			</div>
 		{% empty %}

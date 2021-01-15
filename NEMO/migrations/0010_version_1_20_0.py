@@ -9,8 +9,8 @@ import django.db.models.deletion
 def add_and_set_default_interlock_category(apps, schema_editor):
     InterlockCardCategory = apps.get_model("NEMO", "InterlockCardCategory")
     InterlockCard = apps.get_model("NEMO", "InterlockCard")
-    stanford_category = InterlockCardCategory.objects.create(id=1, name="Stanford", key="stanford")
-    InterlockCardCategory.objects.create(id=2, name="WebRelayHttp", key="web_relay_http")
+    stanford_category = InterlockCardCategory.objects.create(name="Stanford", key="stanford")
+    InterlockCardCategory.objects.create(name="WebRelayHttp", key="web_relay_http")
     for interlock_card in InterlockCard.objects.all():
         interlock_card.category = stanford_category
         interlock_card.save()

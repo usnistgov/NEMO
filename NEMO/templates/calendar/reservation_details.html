@@ -24,11 +24,11 @@
 		Title: {{ reservation.title }}<br>
 	{% endif %}
 
-	User: {{ reservation.user }}<br>
+	User: <a title="Click to email this user" href="{% url 'get_email_form_for_user' reservation.user.id %}">{{ reservation.user }}</a><br>
 	Created by: {{ reservation.creator }}<br>
 	Created on: {{ reservation.creation_time }}<br>
 	{% if reservation.tool %}
-		Tool: {{ reservation.tool }}
+		Tool: <a title="Click to go to the tool control page for this tool" href="{% url 'tool_control' reservation.tool.id %}">{{ reservation.tool }}</a><br>
 	{% elif reservation.area %}
 		Area: {{ reservation.area }}
 	{% endif %}

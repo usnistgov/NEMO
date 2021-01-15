@@ -9,7 +9,7 @@
 			<input type="submit" class="btn btn-danger" value="Archive this news story">
 		</div>
 	</form>
-	<p>{{ story.all_content|linebreaksbr }}</p>
+	<p>{{ story.all_content|safe|linebreaksbr }}</p>
 	<form method="post" action="{% url 'publish_news_update' story.id %}">
 		{% csrf_token %}
 		<div class="form-group">

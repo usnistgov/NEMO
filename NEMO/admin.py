@@ -6,74 +6,114 @@ from django.contrib.admin import register
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models.fields.files import FieldFile
+from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
 
-from NEMO.actions import lock_selected_interlocks, synchronize_with_tool_usage, unlock_selected_interlocks, \
-	duplicate_tool_configuration, rebuild_area_tree
-from NEMO.models import Account, ActivityHistory, Alert, Area, AreaAccessRecord, Comment, Configuration, \
-	ConfigurationHistory, Consumable, ConsumableCategory, ConsumableWithdraw, ContactInformation, BadgeReader, \
-	ContactInformationCategory, Customization, Door, Interlock, InterlockCard, LandingPageChoice, MembershipHistory, \
-	News, Notification, PhysicalAccessLevel, PhysicalAccessLog, Project, Reservation, Resource, ResourceCategory, \
-	SafetyIssue, ScheduledOutage, ScheduledOutageCategory, StaffCharge, Task, TaskCategory, TaskHistory, TaskStatus, \
-	Tool, TrainingSession, UsageEvent, User, UserType, UserPreferences, TaskImages, InterlockCardCategory, \
-	record_remote_many_to_many_changes_and_save, record_local_many_to_many_changes, record_active_state, AlertCategory, \
-	ToolUsageCounter, PhysicalAccessException
+from NEMO.actions import (
+	lock_selected_interlocks,
+	synchronize_with_tool_usage,
+	unlock_selected_interlocks,
+	duplicate_tool_configuration,
+	rebuild_area_tree,
+)
+from NEMO.models import (
+	Account,
+	ActivityHistory,
+	Alert,
+	Area,
+	AreaAccessRecord,
+	Comment,
+	Configuration,
+	ConfigurationHistory,
+	Consumable,
+	ConsumableCategory,
+	ConsumableWithdraw,
+	ContactInformation,
+	BadgeReader,
+	ContactInformationCategory,
+	Customization,
+	Door,
+	Interlock,
+	InterlockCard,
+	LandingPageChoice,
+	MembershipHistory,
+	News,
+	Notification,
+	PhysicalAccessLevel,
+	PhysicalAccessLog,
+	Project,
+	Reservation,
+	Resource,
+	ResourceCategory,
+	SafetyIssue,
+	ScheduledOutage,
+	ScheduledOutageCategory,
+	StaffCharge,
+	Task,
+	TaskCategory,
+	TaskHistory,
+	TaskStatus,
+	Tool,
+	TrainingSession,
+	UsageEvent,
+	User,
+	UserType,
+	UserPreferences,
+	TaskImages,
+	InterlockCardCategory,
+	record_remote_many_to_many_changes_and_save,
+	record_local_many_to_many_changes,
+	record_active_state,
+	AlertCategory,
+	ToolUsageCounter,
+	PhysicalAccessException,
+	BuddyRequest,
+	EmailLog, BuddyRequestMessage,
+)
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion
 
 
 class ToolAdminForm(forms.ModelForm):
 	class Meta:
 		model = Tool
-		fields = '__all__'
+		fields = "__all__"
 
 	class Media:
 		js = ("tool_form_admin.js",)
-		css = {'':('tool_form_admin.css',),}
+		css = {"": ("tool_form_admin.css",)}
 
 	qualified_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
 		required=False,
-		widget=FilteredSelectMultiple(
-			verbose_name='Users',
-			is_stacked=False
-		)
+		widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
 	)
 
 	_backup_owners = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
 		required=False,
-		widget=FilteredSelectMultiple(
-			verbose_name='Users',
-			is_stacked=False
-		)
+		widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
 	)
 
 	required_resources = forms.ModelMultipleChoiceField(
 		queryset=Resource.objects.all(),
 		required=False,
-		widget=FilteredSelectMultiple(
-			verbose_name='Required resources',
-			is_stacked=False
-		)
+		widget=FilteredSelectMultiple(verbose_name="Required resources", is_stacked=False),
 	)
 
 	nonrequired_resources = forms.ModelMultipleChoiceField(
 		queryset=Resource.objects.all(),
 		required=False,
-		widget=FilteredSelectMultiple(
-			verbose_name='Nonrequired resources',
-			is_stacked=False
-		)
+		widget=FilteredSelectMultiple(verbose_name="Nonrequired resources", is_stacked=False),
 	)
 
 	def __init__(self, *args, **kwargs):
 		super(ToolAdminForm, self).__init__(*args, **kwargs)
 		if self.instance.pk:
-			self.fields['qualified_users'].initial = self.instance.user_set.all()
-			self.fields['required_resources'].initial = self.instance.required_resource_set.all()
-			self.fields['nonrequired_resources'].initial = self.instance.nonrequired_resource_set.all()
-
+			self.fields["qualified_users"].initial = self.instance.user_set.all()
+			self.fields["required_resources"].initial = self.instance.required_resource_set.all()
+			self.fields["nonrequired_resources"].initial = self.instance.nonrequired_resource_set.all()
 
 	def clean(self):
 		cleaned_data = super().clean()
@@ -87,33 +127,34 @@ class ToolAdminForm(forms.ModelForm):
 		# only resize if an image is present and  has changed
 		if image and not isinstance(image, FieldFile):
 			from NEMO.utilities import resize_image
+
 			# resize image to 500x500 maximum
-			cleaned_data['_image'] = resize_image(image, 500)
+			cleaned_data["_image"] = resize_image(image, 500)
 
 		if parent_tool:
 			if parent_tool.id == self.instance.id:
-				self.add_error('parent_tool', 'You cannot select the parent to be the tool itself.')
+				self.add_error("parent_tool", "You cannot select the parent to be the tool itself.")
 			# in case of alternate tool, remove everything except parent_tool and name
 			data = dict([(k, v) for k, v in self.cleaned_data.items() if k == "parent_tool" or k == "name"])
 			# an alternate tool is never visible
-			data['visible'] = False
+			data["visible"] = False
 			return data
 		else:
 			if not category:
-				self.add_error('_category', 'This field is required.')
+				self.add_error("_category", "This field is required.")
 			if not location:
-				self.add_error('_location', 'This field is required.')
+				self.add_error("_location", "This field is required.")
 			if not phone_number:
-				self.add_error('_phone_number', 'This field is required.')
+				self.add_error("_phone_number", "This field is required.")
 			if not primary_owner:
-				self.add_error('_primary_owner', 'This field is required.')
+				self.add_error("_primary_owner", "This field is required.")
 
 			post_usage_questions = cleaned_data.get("_post_usage_questions")
 			# Validate _post_usage_questions JSON format
 			if post_usage_questions:
 				try:
 					loads(post_usage_questions)
-				except ValueError as error:
+				except ValueError:
 					self.add_error("_post_usage_questions", "This field needs to be a valid JSON string")
 				try:
 					DynamicForm(post_usage_questions, self.instance.id).validate()
@@ -133,27 +174,88 @@ class ToolAdminForm(forms.ModelForm):
 
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
-	list_display = ('name_display', '_category', 'visible', 'operational_display', 'problematic', 'is_configurable', 'id')
-	search_fields = ('name', '_description', '_serial')
-	list_filter = ('visible', '_operational', '_category', '_location')
-	readonly_fields = ('_post_usage_preview',)
+	list_display = (
+		"name_display",
+		"_category",
+		"visible",
+		"operational_display",
+		"problematic",
+		"is_configurable",
+		"id",
+	)
+	search_fields = ("name", "_description", "_serial")
+	list_filter = ("visible", "_operational", "_category", "_location")
+	readonly_fields = ("_post_usage_preview",)
 	actions = [duplicate_tool_configuration]
 	form = ToolAdminForm
 	fieldsets = (
-		(None, {'fields': ('name', 'parent_tool', '_category', 'qualified_users', '_post_usage_questions', '_post_usage_preview'),}),
-		('Additional Information', {'fields': ('_description', '_serial', '_image'),}),
-		('Current state', {'fields': ('visible', '_operational'),}),
-		('Contact information', {'fields': ('_primary_owner', '_backup_owners', '_notification_email_address', '_location', '_phone_number'),}),
-		('Reservation', {'fields': ('_reservation_horizon', '_missed_reservation_threshold'),}),
-		('Usage policy', {'fields': ('_policy_off_between_times', '_policy_off_start_time', '_policy_off_end_time', '_policy_off_weekend', '_minimum_usage_block_time', '_maximum_usage_block_time', '_maximum_reservations_per_day', '_minimum_time_between_reservations', '_maximum_future_reservation_time',),}),
-		('Area Access', {'fields': ('_requires_area_access', '_grant_physical_access_level_upon_qualification', '_grant_badge_reader_access_upon_qualification', '_interlock', '_allow_delayed_logoff'),}),
-		('Dependencies', {'fields': ('required_resources', 'nonrequired_resources'),}),
+		(
+			None,
+			{
+				"fields": (
+					"name",
+					"parent_tool",
+					"_category",
+					"qualified_users",
+					"_post_usage_questions",
+					"_post_usage_preview",
+				)
+			},
+		),
+		("Additional Information", {"fields": ("_description", "_serial", "_image")}),
+		("Current state", {"fields": ("visible", "_operational")}),
+		(
+			"Contact information",
+			{
+				"fields": (
+					"_primary_owner",
+					"_backup_owners",
+					"_notification_email_address",
+					"_location",
+					"_phone_number",
+				)
+			},
+		),
+		("Reservation", {"fields": ("_reservation_horizon", "_missed_reservation_threshold")}),
+		(
+			"Usage policy",
+			{
+				"fields": (
+					"_policy_off_between_times",
+					"_policy_off_start_time",
+					"_policy_off_end_time",
+					"_policy_off_weekend",
+					"_minimum_usage_block_time",
+					"_maximum_usage_block_time",
+					"_maximum_reservations_per_day",
+					"_minimum_time_between_reservations",
+					"_maximum_future_reservation_time",
+				)
+			},
+		),
+		(
+			"Area Access",
+			{
+				"fields": (
+					"_requires_area_access",
+					"_grant_physical_access_level_upon_qualification",
+					"_grant_badge_reader_access_upon_qualification",
+					"_interlock",
+					"_allow_delayed_logoff",
+				)
+			},
+		),
+		("Dependencies", {"fields": ("required_resources", "nonrequired_resources")}),
 	)
 
 	def _post_usage_preview(self, obj):
 		if obj.id:
-			form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ''
-			return mark_safe('<div class="post_usage_preview">{}{}</div><div class="help post_usage_preview_help">Save form to preview post usage questions</div>'.format(DynamicForm(obj.post_usage_questions, obj.id).render(), form_validity_div))
+			form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ""
+			return mark_safe(
+				'<div class="post_usage_preview">{}{}</div><div class="help post_usage_preview_help">Save form to preview post usage questions</div>'.format(
+					DynamicForm(obj.post_usage_questions, obj.id).render(), form_validity_div
+				)
+			)
 
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):
 		""" We only want non children tool to be eligible as parents """
@@ -173,131 +275,178 @@ class ToolAdmin(admin.ModelAdmin):
 				obj = clean_alt_tool
 			super(ToolAdmin, self).save_model(request, obj, form, change)
 		else:
-			record_remote_many_to_many_changes_and_save(request, obj, form, change, 'qualified_users', super(ToolAdmin, self).save_model)
-			if 'required_resources' in form.changed_data:
-				obj.required_resource_set.set(form.cleaned_data['required_resources'])
-			if 'nonrequired_resources' in form.changed_data:
-				obj.nonrequired_resource_set.set(form.cleaned_data['nonrequired_resources'])
+			record_remote_many_to_many_changes_and_save(
+				request, obj, form, change, "qualified_users", super(ToolAdmin, self).save_model
+			)
+			if "required_resources" in form.changed_data:
+				obj.required_resource_set.set(form.cleaned_data["required_resources"])
+			if "nonrequired_resources" in form.changed_data:
+				obj.nonrequired_resource_set.set(form.cleaned_data["nonrequired_resources"])
 
 
 @register(Area)
 class AreaAdmin(DraggableMPTTAdmin):
-	list_display = ('tree_actions', 'indented_title', 'name', 'parent_area', 'category', 'requires_reservation', 'maximum_capacity', 'reservation_warning', 'id')
-	fieldsets = (
-		(None, {'fields': ('name', 'parent_area', 'category', 'reservation_email', 'abuse_email'),}),
-		('Area access', {'fields': ('requires_reservation', 'logout_grace_period', 'welcome_message'),}),
-		('Occupancy', {'fields': ('maximum_capacity', 'count_staff_in_occupancy', 'count_service_personnel_in_occupancy', 'reservation_warning'),}),
-		('Reservation', {'fields': ('reservation_horizon', 'missed_reservation_threshold'),}),
-		('Policy', {'fields': ('policy_off_between_times', 'policy_off_start_time', 'policy_off_end_time', 'policy_off_weekend', 'minimum_usage_block_time', 'maximum_usage_block_time', 'maximum_reservations_per_day', 'minimum_time_between_reservations', 'maximum_future_reservation_time',),}),
+	list_display = (
+		"tree_actions",
+		"indented_title",
+		"name",
+		"parent_area",
+		"category",
+		"requires_reservation",
+		"maximum_capacity",
+		"reservation_warning",
+		"id",
 	)
-	list_display_links = ('indented_title',)
-	list_filter = ('requires_reservation', ('parent_area', TreeRelatedFieldListFilter))
-	search_fields = ('name',)
+	fieldsets = (
+		(None, {"fields": ("name", "parent_area", "category", "reservation_email", "abuse_email")}),
+		(
+			"Area access",
+			{"fields": ("requires_reservation", "logout_grace_period", "welcome_message", "buddy_system_allowed")},
+		),
+		(
+			"Occupancy",
+			{
+				"fields": (
+					"maximum_capacity",
+					"count_staff_in_occupancy",
+					"count_service_personnel_in_occupancy",
+					"reservation_warning",
+				)
+			},
+		),
+		("Reservation", {"fields": ("reservation_horizon", "missed_reservation_threshold")}),
+		(
+			"Policy",
+			{
+				"fields": (
+					"policy_off_between_times",
+					"policy_off_start_time",
+					"policy_off_end_time",
+					"policy_off_weekend",
+					"minimum_usage_block_time",
+					"maximum_usage_block_time",
+					"maximum_reservations_per_day",
+					"minimum_time_between_reservations",
+					"maximum_future_reservation_time",
+				)
+			},
+		),
+	)
+	list_display_links = ("indented_title",)
+	list_filter = ("requires_reservation", ("parent_area", TreeRelatedFieldListFilter))
+	search_fields = ("name",)
 	actions = [rebuild_area_tree]
 
 	mptt_level_indent = 20
 
-	def get_fieldsets(self, request, obj:Area=None):
+	def get_fieldsets(self, request, obj: Area = None):
 		"""
 		Remove some fieldsets if this area is a parent
 		"""
 		if obj and not obj.is_leaf_node():
-			return [i for i in self.fieldsets if i[0] not in ['Area access', 'Reservation', 'Policy']]
+			return [i for i in self.fieldsets if i[0] not in ["Area access", "Reservation", "Policy"]]
 		return super().get_fieldsets(request, obj)
 
-	def save_model(self, request, obj:Area, form, change):
-		if obj.parent_area:
+	def save_model(self, request, obj: Area, form, change):
+		parent_area: Area = obj.parent_area
+		if parent_area:
 			# if this area has a parent, that parent needs to be cleaned and updated
-			obj.parent_area.is_now_a_parent()
+			parent_area.is_now_a_parent()
 		super(AreaAdmin, self).save_model(request, obj, form, change)
 
 
 @register(TrainingSession)
 class TrainingSessionAdmin(admin.ModelAdmin):
-	list_display = ('id', 'trainer', 'trainee', 'tool', 'project', 'type', 'date', 'duration', 'qualified')
-	list_filter = ('qualified', 'date', 'type', 'tool')
-	date_hierarchy = 'date'
+	list_display = ("id", "trainer", "trainee", "tool", "project", "type", "date", "duration", "qualified")
+	list_filter = ("qualified", "date", "type", "tool")
+	date_hierarchy = "date"
 
 
 @register(StaffCharge)
 class StaffChargeAdmin(admin.ModelAdmin):
-	list_display = ('id', 'staff_member', 'customer', 'start', 'end')
-	list_filter = ('start',)
-	date_hierarchy = 'start'
+	list_display = ("id", "staff_member", "customer", "start", "end")
+	list_filter = ("start",)
+	date_hierarchy = "start"
 
 
 @register(AreaAccessRecord)
 class AreaAccessRecordAdmin(admin.ModelAdmin):
-	list_display = ('id', 'customer', 'area', 'project', 'start', 'end')
-	list_filter = (('area', TreeRelatedFieldListFilter), 'start',)
-	date_hierarchy = 'start'
+	list_display = ("id", "customer", "area", "project", "start", "end")
+	list_filter = (("area", TreeRelatedFieldListFilter), "start")
+	date_hierarchy = "start"
 
 
 @register(Configuration)
 class ConfigurationAdmin(admin.ModelAdmin):
-	list_display = ('id', 'tool', 'name', 'qualified_users_are_maintainers', 'display_priority', 'exclude_from_configuration_agenda')
-	filter_horizontal = ('maintainers',)
+	list_display = (
+		"id",
+		"tool",
+		"name",
+		"qualified_users_are_maintainers",
+		"display_priority",
+		"exclude_from_configuration_agenda",
+	)
+	filter_horizontal = ("maintainers",)
 
 
 @register(ConfigurationHistory)
 class ConfigurationHistoryAdmin(admin.ModelAdmin):
-	list_display = ('id', 'configuration', 'user', 'modification_time', 'slot')
-	date_hierarchy = 'modification_time'
+	list_display = ("id", "configuration", "user", "modification_time", "slot")
+	date_hierarchy = "modification_time"
 
 
 @register(Account)
 class AccountAdmin(admin.ModelAdmin):
-	list_display = ('name', 'id', 'active')
-	search_fields = ('name',)
-	list_filter = ('active',)
+	list_display = ("name", "id", "active")
+	search_fields = ("name",)
+	list_filter = ("active",)
 
 	def save_model(self, request, obj, form, change):
 		""" Audit account and project active status. """
 		super(AccountAdmin, self).save_model(request, obj, form, change)
-		record_active_state(request, obj, form, 'active', not change)
+		record_active_state(request, obj, form, "active", not change)
 
 
 class ProjectAdminForm(forms.ModelForm):
 	class Meta:
 		model = Project
-		fields = '__all__'
+		fields = "__all__"
 
 	members = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
 		required=False,
-		widget=FilteredSelectMultiple(
-			verbose_name='Users',
-			is_stacked=False
-		)
+		widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
 	)
 
 	def __init__(self, *args, **kwargs):
 		super(ProjectAdminForm, self).__init__(*args, **kwargs)
 		if self.instance.pk:
-			self.fields['members'].initial = self.instance.user_set.all()
+			self.fields["members"].initial = self.instance.user_set.all()
 
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-	list_display = ('name', 'id', 'application_identifier', 'account', 'active')
-	search_fields = ('name', 'application_identifier', 'account__name')
-	list_filter = ('active',)
+	list_display = ("name", "id", "application_identifier", "account", "active")
+	search_fields = ("name", "application_identifier", "account__name")
+	list_filter = ("active",)
 	form = ProjectAdminForm
 
 	def save_model(self, request, obj, form, change):
 		"""
 		Audit project creation and modification. Also save any project membership changes explicitly.
 		"""
-		record_remote_many_to_many_changes_and_save(request, obj, form, change, 'members', super(ProjectAdmin, self).save_model)
+		record_remote_many_to_many_changes_and_save(
+			request, obj, form, change, "members", super(ProjectAdmin, self).save_model
+		)
 		# Make a history entry if a project has been moved under an account.
 		# This applies to newly created projects and project ownership reassignment.
-		if 'account' in form.changed_data:
+		if "account" in form.changed_data:
 			# Create a membership removal entry for the project if it used to belong to another account:
 			if change:
 				previous_account = MembershipHistory()
 				previous_account.authorizer = request.user
 				previous_account.child_content_object = obj
-				previous_account.parent_content_object = Account.objects.get(pk=form.initial['account'])
+				previous_account.parent_content_object = Account.objects.get(pk=form.initial["account"])
 				previous_account.action = MembershipHistory.Action.REMOVED
 				previous_account.save()
 
@@ -310,168 +459,204 @@ class ProjectAdmin(admin.ModelAdmin):
 			current_account.save()
 
 		# Record whether the project is active or not.
-		record_active_state(request, obj, form, 'active', not change)
+		record_active_state(request, obj, form, "active", not change)
 
 
 @register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
-	list_display = ('id', 'user', 'creator', 'tool', 'project', 'start', 'end', 'duration', 'cancelled', 'missed')
-	readonly_fields = ('descendant',)
-	list_filter = ('cancelled', 'missed', 'tool')
-	date_hierarchy = 'start'
+	list_display = ("id", "user", "creator", "tool", "project", "start", "end", "duration", "cancelled", "missed")
+	readonly_fields = ("descendant",)
+	list_filter = ("cancelled", "missed", "tool")
+	date_hierarchy = "start"
 
 
 @register(UsageEvent)
 class UsageEventAdmin(admin.ModelAdmin):
-	list_display = ('id', 'tool', 'user', 'operator', 'project', 'start', 'end', 'duration')
-	list_filter = ('start', 'end', 'tool')
-	date_hierarchy = 'start'
+	list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration")
+	list_filter = ("start", "end", "tool")
+	date_hierarchy = "start"
 
 
 @register(Consumable)
 class ConsumableAdmin(admin.ModelAdmin):
-	list_display = ('name', 'quantity', 'category', 'visible', 'reminder_threshold', 'reminder_email', 'id')
-	list_filter = ('visible', 'category')
-	readonly_fields = ('reminder_threshold_reached',)
+	list_display = ("name", "quantity", "category", "visible", "reminder_threshold", "reminder_email", "id")
+	list_filter = ("visible", "category")
+	readonly_fields = ("reminder_threshold_reached",)
 
 
 @register(ConsumableCategory)
 class ConsumableCategoryAdmin(admin.ModelAdmin):
-	list_display = ('name',)
+	list_display = ("name",)
 
 
 @register(ConsumableWithdraw)
 class ConsumableWithdrawAdmin(admin.ModelAdmin):
-	list_display = ('id', 'customer', 'merchant', 'consumable', 'quantity', 'project', 'date')
-	list_filter = ('date', 'consumable')
-	date_hierarchy = 'date'
+	list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date")
+	list_filter = ("date", "consumable")
+	date_hierarchy = "date"
 
 
 class InterlockCardAdminForm(forms.ModelForm):
 	class Meta:
 		model = InterlockCard
-		widgets = {
-			'password': forms.PasswordInput(render_value=True),
-		}
-		fields = '__all__'
+		widgets = {"password": forms.PasswordInput(render_value=True)}
+		fields = "__all__"
 
 	def clean(self):
 		if any(self.errors):
 			return
 		super(InterlockCardAdminForm, self).clean()
-		category = self.cleaned_data['category']
+		category = self.cleaned_data["category"]
 		from NEMO import interlocks
+
 		interlocks.get(category, False).clean_interlock_card(self)
 
 
 @register(InterlockCard)
 class InterlockCardAdmin(admin.ModelAdmin):
 	form = InterlockCardAdminForm
-	list_display = ('name', 'server', 'port', 'number', 'category', 'even_port', 'odd_port')
+	list_display = ("name", "server", "port", "number", "category", "even_port", "odd_port")
 
 
 class InterlockAdminForm(forms.ModelForm):
 	class Meta:
 		model = Interlock
-		fields = '__all__'
+		fields = "__all__"
 
 	def clean(self):
 		if any(self.errors):
 			return
 		super(InterlockAdminForm, self).clean()
 		from NEMO import interlocks
-		category = self.cleaned_data['card'].category
+
+		category = self.cleaned_data["card"].category
 		interlocks.get(category, False).clean_interlock(self)
 
 
 @register(Interlock)
 class InterlockAdmin(admin.ModelAdmin):
 	form = InterlockAdminForm
-	list_display = ('id', 'card', 'channel', 'state', 'tool', 'door')
+	list_display = ("id", "card", "channel", "state", "tool", "door")
 	actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage]
-	readonly_fields = ['state', 'most_recent_reply']
+	readonly_fields = ["state", "most_recent_reply"]
 
 
 @register(InterlockCardCategory)
 class InterlockCardCategoryAdmin(admin.ModelAdmin):
-	list_display = ('name',)
+	list_display = ("name",)
 
 
 @register(Task)
 class TaskAdmin(admin.ModelAdmin):
-	list_display = ('id', 'urgency', 'tool', 'creator', 'creation_time', 'problem_category', 'cancelled', 'resolved', 'resolution_category')
-	list_filter = ('urgency', 'resolved', 'cancelled', 'safety_hazard', 'creation_time', 'tool')
-	date_hierarchy = 'creation_time'
+	list_display = (
+		"id",
+		"urgency",
+		"tool",
+		"creator",
+		"creation_time",
+		"problem_category",
+		"cancelled",
+		"resolved",
+		"resolution_category",
+	)
+	list_filter = ("urgency", "resolved", "cancelled", "safety_hazard", "creation_time", "tool")
+	date_hierarchy = "creation_time"
 
 
 @register(TaskCategory)
 class TaskCategoryAdmin(admin.ModelAdmin):
-	list_display = ('name', 'stage')
+	list_display = ("name", "stage")
 
 
 @register(TaskStatus)
 class TaskStatusAdmin(admin.ModelAdmin):
-	list_display = ('name', 'notify_primary_tool_owner', 'notify_backup_tool_owners', 'notify_tool_notification_email', 'custom_notification_email_address')
+	list_display = (
+		"name",
+		"notify_primary_tool_owner",
+		"notify_backup_tool_owners",
+		"notify_tool_notification_email",
+		"custom_notification_email_address",
+	)
 
 
 @register(TaskHistory)
 class TaskHistoryAdmin(admin.ModelAdmin):
-	list_display = ('id', 'task', 'status', 'time', 'user')
-	readonly_fields = ('time',)
-	date_hierarchy = 'time'
+	list_display = ("id", "task", "status", "time", "user")
+	readonly_fields = ("time",)
+	date_hierarchy = "time"
 
 
 @register(TaskImages)
 class TaskImagesAdmin(admin.ModelAdmin):
-	list_display = ('id', 'get_tool', 'task', 'uploaded_at')
+	list_display = ("id", "get_tool", "task", "uploaded_at")
 
 	def get_tool(self, task_image: TaskImages):
 		return task_image.task.tool.name
-	get_tool.admin_order_field = 'tool'  # Allows column order sorting
-	get_tool.short_description = 'Tool Name'  # Renames column head
+
+	get_tool.admin_order_field = "tool"  # Allows column order sorting
+	get_tool.short_description = "Tool Name"  # Renames column head
 
 
 @register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-	list_display = ('id', 'tool', 'author', 'creation_date', 'expiration_date', 'visible', 'staff_only', 'hidden_by', 'hide_date')
-	list_filter = ('visible', 'creation_date', 'tool', 'staff_only')
-	date_hierarchy = 'creation_date'
-	search_fields = ('content',)
+	list_display = (
+		"id",
+		"tool",
+		"author",
+		"creation_date",
+		"expiration_date",
+		"visible",
+		"staff_only",
+		"hidden_by",
+		"hide_date",
+	)
+	list_filter = ("visible", "creation_date", "tool", "staff_only")
+	date_hierarchy = "creation_date"
+	search_fields = ("content",)
 
 
 @register(Resource)
 class ResourceAdmin(admin.ModelAdmin):
-	list_display = ('name', 'category', 'available')
-	list_filter = ('available', 'category')
-	filter_horizontal = ('fully_dependent_tools', 'partially_dependent_tools', 'dependent_areas')
+	list_display = ("name", "category", "available")
+	list_filter = ("available", "category")
+	filter_horizontal = ("fully_dependent_tools", "partially_dependent_tools", "dependent_areas")
 
 
 @register(ActivityHistory)
 class ActivityHistoryAdmin(admin.ModelAdmin):
-	list_display = ('__str__', 'content_type', 'object_id', 'action', 'date', 'authorizer')
-	date_hierarchy = 'date'
+	list_display = ("__str__", "content_type", "object_id", "action", "date", "authorizer")
+	date_hierarchy = "date"
 
 
 @register(MembershipHistory)
 class MembershipHistoryAdmin(admin.ModelAdmin):
-	list_display = ('__str__', 'parent_content_type', 'parent_object_id', 'action', 'child_content_type', 'child_object_id', 'date', 'authorizer')
-	date_hierarchy = 'date'
+	list_display = (
+		"__str__",
+		"parent_content_type",
+		"parent_object_id",
+		"action",
+		"child_content_type",
+		"child_object_id",
+		"date",
+		"authorizer",
+	)
+	date_hierarchy = "date"
 
 
 @register(UserType)
 class UserTypeAdmin(admin.ModelAdmin):
-	list_display = ('name',)
+	list_display = ("name",)
 
 
 @register(UserPreferences)
 class UserPreferencesAdmin(admin.ModelAdmin):
-	list_display = ('user',)
+	list_display = ("user",)
 
 
 class UserAdminForm(forms.ModelForm):
 	class Meta:
 		model = User
-		fields = '__all__'
+		fields = "__all__"
 
 	def clean(self):
 		cleaned_data = super().clean()
@@ -479,25 +664,67 @@ class UserAdminForm(forms.ModelForm):
 		service_personnel_status = cleaned_data.get("is_service_personnel")
 
 		if staff_status and service_personnel_status:
-			raise forms.ValidationError({
-				'is_staff': 'A user cannot be both staff and service personnel. Please choose one or the other.',
-				'is_service_personnel': 'A user cannot be both staff and service personnel. Please choose one or the other.',
-			})
+			raise forms.ValidationError(
+				{
+					"is_staff": "A user cannot be both staff and service personnel. Please choose one or the other.",
+					"is_service_personnel": "A user cannot be both staff and service personnel. Please choose one or the other.",
+				}
+			)
 
 
 @register(User)
 class UserAdmin(admin.ModelAdmin):
 	form = UserAdminForm
-	filter_horizontal = ('groups', 'user_permissions', 'qualifications', 'projects', 'physical_access_levels')
+	filter_horizontal = ("groups", "user_permissions", "qualifications", "projects", "physical_access_levels")
 	fieldsets = (
-		('Personal information', {'fields': ('first_name', 'last_name', 'username', 'email', 'badge_number', 'type', 'domain')}),
-		('Permissions', {'fields': ('is_active', 'is_staff', 'is_technician', 'is_service_personnel', 'is_superuser', 'training_required', 'groups', 'user_permissions', 'physical_access_levels')}),
-		('Important dates', {'fields': ('date_joined', 'last_login', 'access_expiration')}),
-		("Facility information", {'fields': ('qualifications', 'projects')}),
+		(
+			"Personal information",
+			{"fields": ("first_name", "last_name", "username", "email", "badge_number", "type", "domain")},
+		),
+		(
+			"Permissions",
+			{
+				"fields": (
+					"is_active",
+					"is_staff",
+					"is_technician",
+					"is_service_personnel",
+					"is_superuser",
+					"training_required",
+					"groups",
+					"user_permissions",
+					"physical_access_levels",
+				)
+			},
+		),
+		("Important dates", {"fields": ("date_joined", "last_login", "access_expiration")}),
+		("Facility information", {"fields": ("qualifications", "projects")}),
 	)
-	search_fields = ('first_name', 'last_name', 'username', 'email')
-	list_display = ('first_name', 'last_name', 'username', 'email', 'is_active', 'domain', 'is_staff', 'is_technician', 'is_service_personnel', 'is_superuser', 'date_joined', 'last_login')
-	list_filter = ('is_active', 'domain', 'is_staff', 'is_technician', 'is_service_personnel', 'is_superuser', 'date_joined', 'last_login')
+	search_fields = ("first_name", "last_name", "username", "email")
+	list_display = (
+		"first_name",
+		"last_name",
+		"username",
+		"email",
+		"is_active",
+		"domain",
+		"is_staff",
+		"is_technician",
+		"is_service_personnel",
+		"is_superuser",
+		"date_joined",
+		"last_login",
+	)
+	list_filter = (
+		"is_active",
+		"domain",
+		"is_staff",
+		"is_technician",
+		"is_service_personnel",
+		"is_superuser",
+		"date_joined",
+		"last_login",
+	)
 
 	def formfield_for_manytomany(self, db_field, request, **kwargs):
 		if db_field.name == "qualifications":
@@ -507,56 +734,76 @@ class UserAdmin(admin.ModelAdmin):
 	def save_model(self, request, obj, form, change):
 		""" Audit project membership and qualifications when a user is saved. """
 		super(UserAdmin, self).save_model(request, obj, form, change)
-		record_local_many_to_many_changes(request, obj, form, 'projects')
-		record_local_many_to_many_changes(request, obj, form, 'qualifications')
-		record_local_many_to_many_changes(request, obj, form, 'physical_access_levels')
-		record_active_state(request, obj, form, 'is_active', not change)
+		record_local_many_to_many_changes(request, obj, form, "projects")
+		record_local_many_to_many_changes(request, obj, form, "qualifications")
+		record_local_many_to_many_changes(request, obj, form, "physical_access_levels")
+		record_active_state(request, obj, form, "is_active", not change)
 
 
 @register(PhysicalAccessLog)
 class PhysicalAccessLogAdmin(admin.ModelAdmin):
-	list_display = ('user', 'door', 'time', 'result')
-	list_filter = ('door', 'result')
-	search_fields = ('user__first_name', 'user__last_name', 'user__username', 'door__name')
-	date_hierarchy = 'time'
+	list_display = ("user", "door", "time", "result")
+	list_filter = ("door", "result")
+	search_fields = ("user__first_name", "user__last_name", "user__username", "door__name")
+	date_hierarchy = "time"
+
+	def has_delete_permission(self, request, obj=None):
+		return False
+
+	def has_add_permission(self, request):
+		return False
+
+	def has_change_permission(self, request, obj=None):
+		return False
 
 
 @register(SafetyIssue)
 class SafetyIssueAdmin(admin.ModelAdmin):
-	list_display = ('id', 'reporter', 'creation_time', 'visible', 'resolved', 'resolution_time', 'resolver')
-	list_filter = ('resolved', 'visible', 'creation_time', 'resolution_time')
-	readonly_fields = ('creation_time', 'resolution_time')
-	search_fields = ('location', 'concern', 'progress', 'resolution',)
+	list_display = ("id", "reporter", "creation_time", "visible", "resolved", "resolution_time", "resolver")
+	list_filter = ("resolved", "visible", "creation_time", "resolution_time")
+	readonly_fields = ("creation_time", "resolution_time")
+	search_fields = ("location", "concern", "progress", "resolution")
 
 
 @register(Door)
 class DoorAdmin(admin.ModelAdmin):
-	list_display = ('name', 'area', 'interlock', 'get_absolute_url', 'id')
+	list_display = ("name", "area", "interlock", "get_absolute_url", "id")
 
 
 @register(AlertCategory)
 class AlertCategoryAdmin(admin.ModelAdmin):
-	list_display = ('name',)
+	list_display = ("name",)
 
 
 class AlertAdminForm(forms.ModelForm):
-	contents = forms.CharField(widget=forms.Textarea(attrs={'rows':3, 'cols': 50}),)
+	contents = forms.CharField(widget=forms.Textarea(attrs={"rows": 3, "cols": 50}))
 
 	class Meta:
 		model = Alert
-		fields = '__all__'
+		fields = "__all__"
 
 
 @register(Alert)
 class AlertAdmin(admin.ModelAdmin):
-	list_display = ('title', 'category', 'creation_time', 'creator', 'debut_time', 'expiration_time', 'user', 'dismissible', 'expired', 'deleted')
+	list_display = (
+		"title",
+		"category",
+		"creation_time",
+		"creator",
+		"debut_time",
+		"expiration_time",
+		"user",
+		"dismissible",
+		"expired",
+		"deleted",
+	)
 	form = AlertAdminForm
 
 
 class PhysicalAccessLevelForm(forms.ModelForm):
 	class Meta:
 		model = PhysicalAccessLevel
-		fields = '__all__'
+		fields = "__all__"
 
 	class Media:
 		js = ("physical_access_level_form_admin.js",)
@@ -564,156 +811,218 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 	authorized_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
 		required=False,
-		widget=FilteredSelectMultiple(
-			verbose_name='Users',
-			is_stacked=False
-		)
+		widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
 	)
 
 	physical_access_exceptions = forms.ModelMultipleChoiceField(
 		queryset=PhysicalAccessException.objects.all(),
 		required=False,
-		widget=FilteredSelectMultiple(
-			verbose_name='Physical Access Exceptions',
-			is_stacked=False
-		)
+		widget=FilteredSelectMultiple(verbose_name="Physical Access Exceptions", is_stacked=False),
 	)
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		if self.instance.pk:
-			self.fields['authorized_users'].initial = self.instance.user_set.all()
-			self.fields['physical_access_exceptions'].initial = self.instance.physicalaccessexception_set.all()
+			self.fields["authorized_users"].initial = self.instance.user_set.all()
+			self.fields["physical_access_exceptions"].initial = self.instance.physicalaccessexception_set.all()
 
 	def clean(self):
-		schedule = self.cleaned_data.get('schedule')
+		schedule = self.cleaned_data.get("schedule")
 		if schedule == PhysicalAccessLevel.Schedule.WEEKDAYS:
-			start_date = self.cleaned_data.get('weekdays_start_time')
-			end_date = self.cleaned_data.get('weekdays_end_time')
+			start_date = self.cleaned_data.get("weekdays_start_time")
+			end_date = self.cleaned_data.get("weekdays_end_time")
 			if not start_date:
-				self.add_error('weekdays_start_time', 'Start time is required for weekdays.')
+				self.add_error("weekdays_start_time", "Start time is required for weekdays.")
 			if not end_date:
-				self.add_error('weekdays_end_time', 'End time is required for weekdays.')
+				self.add_error("weekdays_end_time", "End time is required for weekdays.")
 		else:
-			self.cleaned_data['weekdays_start_time'] = None
-			self.cleaned_data['weekdays_end_time'] = None
+			self.cleaned_data["weekdays_start_time"] = None
+			self.cleaned_data["weekdays_end_time"] = None
 		return self.cleaned_data
 
 
 @register(PhysicalAccessLevel)
 class PhysicalAccessLevelAdmin(admin.ModelAdmin):
 	form = PhysicalAccessLevelForm
-	list_display = ('name', 'area', 'get_schedule_display_with_times', 'allow_staff_access')
-	list_filter = (('area', TreeRelatedFieldListFilter),)
+	list_display = ("name", "area", "get_schedule_display_with_times", "allow_staff_access")
+	list_filter = (("area", TreeRelatedFieldListFilter),)
 
 	def save_model(self, request, obj, form, change):
 		"""
 		Explicitly record any membership changes.
 		"""
-		record_remote_many_to_many_changes_and_save(request, obj, form, change, 'authorized_users', super().save_model)
-		if 'physical_access_exceptions' in form.changed_data:
-			obj.physicalaccessexception_set.set(form.cleaned_data['physical_access_exceptions'])
+		record_remote_many_to_many_changes_and_save(request, obj, form, change, "authorized_users", super().save_model)
+		if "physical_access_exceptions" in form.changed_data:
+			obj.physicalaccessexception_set.set(form.cleaned_data["physical_access_exceptions"])
 
 
 class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 	class Meta:
 		model = PhysicalAccessException
-		fields = '__all__'
+		fields = "__all__"
 
 	physical_access_levels = forms.ModelMultipleChoiceField(
 		queryset=PhysicalAccessLevel.objects.all(),
 		required=False,
-		widget=FilteredSelectMultiple(
-			verbose_name='Physical Access Levels',
-			is_stacked=False
-		)
+		widget=FilteredSelectMultiple(verbose_name="Physical Access Levels", is_stacked=False),
 	)
+
+	def clean(self):
+		cleaned_data = super().clean()
+		start_time = cleaned_data.get("start_time")
+		end_time = cleaned_data.get("end_time")
+		if end_time <= start_time:
+			self.add_error("end_time", "The end time must be later than the start time")
 
 
 @register(PhysicalAccessException)
 class PhysicalAccessExceptionAdmin(admin.ModelAdmin):
 	form = PhysicalAccessExceptionAdminForm
-	list_display = ('name', 'start_time', 'end_time')
-	list_filter = (('physical_access_levels__area'),)
+	list_display = ("name", "start_time", "end_time")
+	list_filter = (("physical_access_levels__area"),)
 
 
 @register(ContactInformationCategory)
 class ContactInformationCategoryAdmin(admin.ModelAdmin):
-	list_display = ('name', 'display_order')
+	list_display = ("name", "display_order")
 
 
 @register(ContactInformation)
 class ContactInformationAdmin(admin.ModelAdmin):
-	list_display = ('name', 'category', 'user')
+	list_display = ("name", "category", "user")
 
 
 @register(LandingPageChoice)
 class LandingPageChoiceAdmin(admin.ModelAdmin):
-	list_display = ('display_priority', 'name', 'url', 'open_in_new_tab', 'secure_referral', 'hide_from_mobile_devices', 'hide_from_desktop_computers')
-	list_display_links = ('name',)
+	list_display = (
+		"display_priority",
+		"name",
+		"url",
+		"open_in_new_tab",
+		"secure_referral",
+		"hide_from_mobile_devices",
+		"hide_from_desktop_computers",
+	)
+	list_display_links = ("name",)
 
 
 @register(Customization)
 class CustomizationAdmin(admin.ModelAdmin):
-	list_display = ('name', 'value')
+	list_display = ("name", "value")
 
 
 @register(ScheduledOutageCategory)
 class ScheduledOutageCategoryAdmin(admin.ModelAdmin):
-	list_display = ('name',)
+	list_display = ("name",)
 
 
 @register(ScheduledOutage)
 class ScheduledOutageAdmin(admin.ModelAdmin):
-	list_display = ('id', 'tool', 'area', 'resource', 'creator', 'title', 'start', 'end')
+	list_display = ("id", "tool", "area", "resource", "creator", "title", "start", "end")
 
 
 @register(News)
 class NewsAdmin(admin.ModelAdmin):
-	list_display = ('id', 'created', 'last_updated', 'archived', 'title')
-	list_filter = ('archived',)
+	list_display = ("id", "created", "last_updated", "archived", "title")
+	list_filter = ("archived",)
 
 
 @register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
-	list_display = ('id', 'user', 'expiration', 'content_type', 'object_id')
+	list_display = ("id", "user", "expiration", "content_type", "object_id")
 
 
 @register(BadgeReader)
 class BadgeReaderAdmin(admin.ModelAdmin):
-	list_display = ('id', 'name', 'send_key', 'record_key')
+	list_display = ("id", "name", "send_key", "record_key")
 
 
 class CounterAdminForm(forms.ModelForm):
 	class Meta:
 		model = ToolUsageCounter
-		fields = '__all__'
+		fields = "__all__"
 
 	def clean(self):
 		cleaned_data = super().clean()
-		tool = cleaned_data.get('tool')
-		tool_usage_question_name = cleaned_data.get('tool_usage_question')
+		tool = cleaned_data.get("tool")
+		tool_usage_question_name = cleaned_data.get("tool_usage_question")
 		if tool and tool_usage_question_name:
 			error = None
 			if tool.post_usage_questions:
 				post_usage_form = DynamicForm(tool.post_usage_questions, tool.id)
-				tool_question = post_usage_form.filter_questions(lambda x: isinstance(x, PostUsageNumberFieldQuestion) and x.name == tool_usage_question_name)
+				tool_question = post_usage_form.filter_questions(
+					lambda x: isinstance(x, PostUsageNumberFieldQuestion) and x.name == tool_usage_question_name
+				)
 				if not tool_question:
-					candidates = [question.name for question in post_usage_form.filter_questions(lambda x: isinstance(x, PostUsageNumberFieldQuestion))]
+					candidates = [
+						question.name
+						for question in post_usage_form.filter_questions(
+							lambda x: isinstance(x, PostUsageNumberFieldQuestion)
+						)
+					]
 					error = "The tool has no post usage question of type Number with this name."
 					if candidates:
 						error += f" Valid question names are: {', '.join(candidates)}"
 			else:
 				error = "The tool does not have any post usage questions."
 			if error:
-				self.add_error('tool_usage_question', error)
+				self.add_error("tool_usage_question", error)
 		return cleaned_data
 
 
 @register(ToolUsageCounter)
 class CounterAdmin(admin.ModelAdmin):
-	list_display = ('name', 'tool', 'tool_usage_question', 'value', 'last_reset', 'last_reset_by', 'is_active')
+	list_display = ("name", "tool", "tool_usage_question", "value", "last_reset", "last_reset_by", "is_active")
 	form = CounterAdminForm
+
+
+class BuddyRequestForm(forms.ModelForm):
+	class Meta:
+		model = BuddyRequest
+		fields = "__all__"
+
+
+@register(BuddyRequest)
+class BuddyRequestAdmin(admin.ModelAdmin):
+	form = BuddyRequestForm
+	list_display = ("user", "start", "end", "area", "reply_count", "expired", "deleted")
+	list_filter = ("expired", "deleted")
+
+	def reply_count(self, buddy_request: BuddyRequest):
+		return buddy_request.replies.count()
+
+	reply_count.admin_order_field = "replies"
+	reply_count.short_description = "Replies"
+
+
+@register(BuddyRequestMessage)
+class BuddyRequestMessageAdmin(admin.ModelAdmin):
+	list_display = ("id", "link_to_buddy_request", "author", "creation_date")
+	def link_to_buddy_request(self, obj):
+		link = reverse("admin:NEMO_buddyrequest_change", args=[obj.buddy_request.id])  # model name has to be lowercase
+		return format_html('<a href="%s">%s</a>' % (link, obj.buddy_request))
+	link_to_buddy_request.short_description = "BUDDY REQUEST"
+
+
+@register(EmailLog)
+class EmailLogAdmin(admin.ModelAdmin):
+	list_display = ["id", "category", "sender", "to", "subject", "when", "ok"]
+	list_filter = ["category", "ok"]
+	search_fields = ["subject", "content", "to"]
+	readonly_fields = ("content_preview",)
+	date_hierarchy = "when"
+
+	def content_preview(self, obj):
+		return mark_safe(obj.content)
+
+	def has_delete_permission(self, request, obj=None):
+		return False
+
+	def has_add_permission(self, request):
+		return False
+
+	def has_change_permission(self, request, obj=None):
+		return False
 
 
 admin.site.register(ResourceCategory)

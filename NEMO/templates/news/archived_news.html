@@ -16,7 +16,7 @@
 		{% for story in news %}
 			<div class="col-sm-12">
 				<h3>{{ story.title }}</h3>
-				<p>{{ story.all_content|linebreaksbr }}</p>
+				<p>{{ story.all_content|safe|linebreaksbr }}</p>
 			</div>
 		{% empty %}
 			<div class="col-sm-12">

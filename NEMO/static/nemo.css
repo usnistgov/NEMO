@@ -205,6 +205,14 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	background-color: transparent !important;
 }
 
+.table.table-align-middle > tbody > tr > td {
+     vertical-align: middle;
+}
+
+table > tbody > tr.no-border > td, table > tbody > tr.no-border > th {
+	border: none;
+}
+
 .split-screen-left-panel
 {
 	position: absolute;
@@ -581,12 +589,114 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	margin-bottom: 0;
 }
 
-.contact-info-tooltip + .tooltip > .tooltip-inner {
+.contact-info-tooltip + .tooltip > .tooltip-inner
+{
 	max-width: initial;
 	text-align: left;
 	padding: 10px 16px;
 }
 
-.contact-info-tooltip + .tooltip > .tooltip-inner a {
+.contact-info-tooltip + .tooltip > .tooltip-inner a
+{
 	color: #b0dbff;
+}
+
+.buddy-system-disclaimer-container
+{
+	display: table-row;
+}
+
+.buddy-system-disclaimer, .buddy-system-disclaimer-info
+{
+	display: table-cell;
+	padding-top: 10px;
+}
+
+.buddy-system-disclaimer
+{
+	font-size: large;
+	font-style: italic;
+}
+
+.buddy-system-disclaimer-info
+{
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+.buddy-system-requests
+{
+	margin-top: 20px;
+}
+
+.buddy-list
+{
+	margin-top: 10px;
+}
+
+.buddy-list-item
+{
+	display: table;
+	width: 100%;
+	margin-bottom: 5px;
+}
+
+.buddy-list-item:first-child
+{
+	margin-top: 10px;
+}
+
+.buddy-list-item-reply
+{
+	margin-top: 5px;
+}
+
+.buddy-list-item-reply textarea
+{
+	padding: 10px;
+}
+
+.buddy-list-item-description, .buddy-list-item-buttons
+{
+	display: table-cell;
+	padding: 10px;
+}
+
+.buddy-list-item-reply textarea, .buddy-list .buddy-list-item.list-group-item-info
+{
+	border-radius: 8px;
+}
+
+.buddy-list-item-buttons
+{
+	vertical-align: middle;
+	text-align: right;
+	white-space: nowrap;
+}
+
+.buddy-list-item-reply, .buddy-list-item-message
+{
+	float: right;
+	width: 90%;
+}
+
+.buddy-list-item-message-user
+{
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	font-size: x-small;
+}
+
+.buddy-list-item-reply-buttons
+{
+	margin: 15px 0;
+	padding: 0 10px;
+}
+
+.buddy-list-day
+{
+	margin-top: 20px;
+	padding-inline-start: 40px;
+	font-size: large;
 }

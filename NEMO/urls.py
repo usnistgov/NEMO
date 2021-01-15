@@ -12,7 +12,7 @@ from django.views.static import serve
 from rest_framework import routers
 
 from NEMO.models import ReservationItemType
-from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users
+from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users, buddy_system
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,8 @@ urlpatterns = [
 	url(r'^get_projects_for_self/$', get_projects.get_projects_for_self, name='get_projects_for_self'),
 
 	# Tool control:
-	url(r'^tool_control/tool/(?P<tool_id>\d+)/$', tool_control.tool_control, name='tool_control'),
+	# This tool_control URL is needed to be able to reverse when choosing items on mobile using next_page. (see choose_item.html for details)
+	url(r'^tool_control/(?P<item_type>(tool))/(?P<tool_id>\d+)/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_control/(?P<tool_id>\d+)/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_control/$', tool_control.tool_control, name='tool_control'),
 	url(r'^tool_status/(?P<tool_id>\d+)/$', tool_control.tool_status, name='tool_status'),
@@ -65,6 +66,13 @@ urlpatterns = [
 	url(r'^ten_most_recent_past_comments_and_tasks/(?P<tool_id>\d+)/$', tool_control.ten_most_recent_past_comments_and_tasks, name='ten_most_recent_past_comments_and_tasks'),
 	url(r'^tool_usage_group_question/(?P<tool_id>\d+)/(?P<group_name>\w+)/$', tool_control.tool_usage_group_question, name='tool_usage_group_question'),
 	url(r'^reset_tool_counter/(?P<counter_id>\d+)/$', tool_control.reset_tool_counter, name='reset_tool_counter'),
+
+	# Buddy System
+	url(r'^buddy_system/$', buddy_system.buddy_system, name='buddy_system'),
+	url(r'^create_buddy_request/$', buddy_system.create_buddy_request, name='create_buddy_request'),
+	url(r'^edit_buddy_request/(?P<request_id>\d+)/$', buddy_system.create_buddy_request, name='edit_buddy_request'),
+	url(r'^delete_buddy_request/(?P<request_id>\d+)/$', buddy_system.delete_buddy_request, name='delete_buddy_request'),
+	url(r'^buddy_request_reply/(?P<request_id>\d+)/$', buddy_system.buddy_request_reply, name='buddy_request_reply'),
 
 	# Tasks:
 	url(r'^create_task/$', tasks.create, name='create_task'),

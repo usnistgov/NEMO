@@ -7,7 +7,7 @@ from django.views.decorators.http import require_http_methods
 from NEMO import rates
 from NEMO.forms import ConsumableWithdrawForm
 from NEMO.models import Consumable, User, ConsumableWithdraw, Project
-from NEMO.utilities import send_mail
+from NEMO.utilities import send_mail, EmailCategory
 from NEMO.views.customization import get_media_file_contents, get_customization
 
 
@@ -48,4 +48,4 @@ def send_reorder_supply_reminder_email(consumable: Consumable):
 	if user_office_email and message:
 		subject = f"Time to order more {consumable.name}"
 		rendered_message = Template(message).render(Context({'item': consumable}))
-		send_mail(subject, rendered_message, user_office_email, [consumable.reminder_email])
+		send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=[consumable.reminder_email], email_category=EmailCategory.SYSTEM)

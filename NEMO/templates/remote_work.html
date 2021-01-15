@@ -1,5 +1,10 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Remote work{% endblock %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+{% endblock %}
 {% block content %}
 	<h1>Remote work</h1>
 
@@ -13,28 +18,58 @@
 	<p>Do not validate a charge if part or all of it is incorrect. Instead, visit the user office so an adjustment can be entered
 	into the billing system. Furthermore, please visit the user office if there is a charge that you forgot to enter.</p>
 
-	<form class="form-inline" role="form">
+	<form id="remote_work_form" class="form-horizontal" role="form" style="margin-top: 20px">
+		<input type="hidden" name="csv" id="hidden_data_csv"/>
 		<div class="form-group">
-			<label class="control-label">View charges for
-				<select name="operator" class="form-control">
+			<label class="control-label col-md-2" for="operator">View charges for</label>
+			<div class="col-md-3">
+				<select id="operator" name="operator" class="form-control">
 					<option {% if selected_staff == "all staff" %}selected{% endif %}>all staff</option>
 					{% for s in staff_list %}
 						<option value="{{ s.id }}" {% if s.id == selected_staff %}selected{% endif %}>{{ s }}</option>
 					{% endfor %}
 				</select>
-			</label>
-		</div>
-		<div class="form-group" style="margin-right:20px">
-			<label class="control-label">during
-				<select name="date" class="form-control">
-					{% for month in month_list %}
-						<option {% if selected_month == month|date:"F, Y" %}selected{% endif %}>{{ month|date:"F, Y" }}</option>
+			</div>
+			<div class="control-label col-md-2">
+				<label class="text-center" style="width: 100%" for="project">and for</label>
+			</div>
+			<div class="col-md-3">
+				<select id="project" name="project" class="form-control">
+					<option {% if selected_project == "all projects" %}selected{% endif %}>all projects</option>
+					{% for p in project_list %}
+						<option value="{{ p.id }}" {% if p.id == selected_project %}selected{% endif %}>{{ p }}</option>
 					{% endfor %}
 				</select>
-			</label>
+			</div>
 		</div>
 		<div class="form-group">
-			<input type="submit" class="btn btn-default" value="Update">
+			<label for="month_list" class="control-label col-md-2">during</label>
+			<div class="col-md-2">
+				<select id="month_list" class="form-control" style="margin-right: 5px;" onchange="set_dates_from_month(this.value)">
+					<option selected></option>
+					{% for month in month_list %}
+						<option>{{ month|date:"F, Y" }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="control-label col-md-1" style="padding-left: 0;padding-right: 0">
+				<label for="start_date" class="text-center" style="width: 100%">or between</label>
+			</div>
+			<div class="col-md-2">
+				<input type="text" id="start_date" name="start_date" class="form-control text-center" placeholder="Choose a date" value="{{ start_date|date:"m/d/Y" }}">
+			</div>
+			<div class="control-label col-md-1">
+				<label for="end_date" class="text-center" style="width: 100%">and</label>
+			</div>
+			<div class="col-md-2">
+				<input type="text" id="end_date" name="end_date" class="form-control text-center" placeholder="Choose a date" value="{{ end_date|date:"m/d/Y" }}">
+			</div>
+		</div>
+		<div class="form-group" style="margin-top: 25px">
+			<div class="col-sm-12 text-center">
+				<input type="button" class="btn btn-default" value="Update" onclick="$('#hidden_data_csv').val('');$('#remote_work_form').submit();">
+				<input type="button" class="btn btn-info" style="margin-left: 5px" value="Export" onclick="$('#hidden_data_csv').val('true');$('#remote_work_form').submit();">
+			</div>
 		</div>
 	</form>
 
@@ -59,7 +94,7 @@
 				<td>{{ c.customer }}</td>
 				<td>{{ c.project }}</td>
 				<td>{{ c.start }}</td>
-				<td>{{ c.end }}</td>
+				<td>{{ c.end|default_if_none:'' }}</td>
 				<td>{% if not c.validated %}<button class="btn btn-success" onclick="validate_charge('{% url 'validate_staff_charge' c.id %}', this, '#staff_charge_row_{{ forloop.counter }}')">Validate</button>{% endif %}</td>
 			</tr>
 			{% for area_access_record in c.areaaccessrecord_set.all %}
@@ -67,7 +102,7 @@
 					<td style="border-top: none"></td>
 					<td colspan="3" style="border-top-style: dotted">{{ area_access_record.area.name }} access</td>
 					<td style="border-top-style: dotted">{{ area_access_record.start }}</td>
-					<td style="border-top-style: dotted">{{ area_access_record.end }}</td>
+					<td style="border-top-style: dotted">{{ area_access_record.end|default_if_none:'' }}</td>
 					<td style="border-top: none"></td>
 				</tr>
 			{%  endfor %}
@@ -97,7 +132,7 @@
 				<td>{{ u.user }}</td>
 				<td>{{ u.project }}</td>
 				<td>{{ u.start }}</td>
-				<td>{{ u.end }}</td>
+				<td>{{ u.end|default_if_none:'' }}</td>
 				<td>{{ u.tool }}</td>
 				<td>{% if not u.validated %}<button class="btn btn-success" onclick="validate_charge('{% url 'validate_usage_event' u.id %}', this, '#usage_event_row_{{ forloop.counter }}')">Validate</button>{% endif %}</td>
 			</tr>
@@ -110,9 +145,39 @@
 		{
 			$(button).hide();
 			$(row).addClass('success-highlight');
-			var failure_dialog = ajax_failure_callback("Unable to validate charge");
+			let failure_dialog = ajax_failure_callback("Unable to validate charge");
 			ajax_post(url, undefined, undefined, failure_dialog);
 		}
+
+		let start_date_jq = $('#start_date');
+		let end_date_jq = $('#end_date');
+		start_date_jq.datetimepicker({format: 'MM/DD/YYYY'});
+		end_date_jq.datetimepicker({format: 'MM/DD/YYYY'});
+
+		function set_dates_from_month(month_input)
+		{
+			let month = moment(month_input, "MMMM, YYYY");
+			let firstOfMonth = month.startOf('month').format('MM/DD/YYYY');
+			let lastOfMonth = month.endOf('month').format('MM/DD/YYYY');
+
+			start_date_jq.val(firstOfMonth);
+			end_date_jq.val(lastOfMonth);
+		}
+
+		function set_dropdown_selected()
+		{
+			if ('{{ start_date }}' && '{{ end_date }}')
+			{
+				let start = moment('{{ start_date|date:'m/d/Y' }}');
+				let end = moment('{{ end_date|date:'m/d/Y' }}');
+				if (start.month() === end.month() && start.year() === end.year() && start.format('MM/DD/YYYY') === start.startOf('month').format('MM/DD/YYYY') && end.format('MM/DD/YYYY') === end.endOf('month').format('MM/DD/YYYY'))
+				{
+					let month = start.format("MMMM, YYYY");
+					$('#month_list').val(month)
+				}
+			}
+		}
+		$(set_dropdown_selected());
 	</script>
 
 {% endblock %}

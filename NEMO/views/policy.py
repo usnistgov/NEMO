@@ -13,7 +13,7 @@ from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, Phy
 	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
 from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, \
 	ReservationItemType, Tool, Project, PhysicalAccessException
-from NEMO.utilities import format_datetime, send_mail
+from NEMO.utilities import format_datetime, send_mail, EmailCategory
 from NEMO.views.customization import get_customization, get_media_file_contents
 
 
@@ -63,7 +63,7 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 				'type': 'access'
 			}
 			rendered_message = Template(message).render(Context(dictionary))
-			send_mail("Area access requirement", rendered_message, abuse_email_address, [abuse_email_address])
+			send_mail(subject="Area access requirement", content=rendered_message, from_email=abuse_email_address, to=[abuse_email_address], email_category=EmailCategory.ABUSE)
 		return HttpResponseBadRequest("You must be logged in to the {} to operate this tool.".format(tool.requires_area_access.name))
 
 	# The tool operator may not activate tools in a particular area unless they are still within that area reservation window
@@ -79,7 +79,7 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 					'type': 'reservation',
 				}
 				rendered_message = Template(message).render(Context(dictionary))
-				send_mail("Area reservation requirement", rendered_message, abuse_email_address, [abuse_email_address])
+				send_mail(subject="Area reservation requirement", content=rendered_message, from_email=abuse_email_address, to=[abuse_email_address], email_category=EmailCategory.ABUSE)
 			return HttpResponseBadRequest("You must have a current reservation for the {} to operate this tool.".format(tool.requires_area_access.name))
 
 	# Staff may only charge staff time for one user at a time.

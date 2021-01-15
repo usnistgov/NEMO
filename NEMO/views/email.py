@@ -3,7 +3,6 @@ from smtplib import SMTPException
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.core.mail import EmailMultiAlternatives
 from django.core.validators import validate_email
 from django.db.models import Q
 from django.http import HttpResponseBadRequest, HttpResponse
@@ -13,7 +12,8 @@ from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import EmailBroadcastForm
-from NEMO.models import Tool, Account, Project, User, Area, PhysicalAccessLevel
+from NEMO.models import Tool, Account, Project, User, Area
+from NEMO.utilities import send_mail, EmailCategory
 from NEMO.views.customization import get_media_file_contents, get_customization
 
 logger = getLogger(__name__)
@@ -52,9 +52,7 @@ def send_email(request):
 	if request.POST.get('copy_me'):
 		recipient_list.append(sender)
 	try:
-		email = EmailMultiAlternatives(subject, from_email=sender, bcc=recipient_list)
-		email.attach_alternative(body, 'text/html')
-		email.send()
+		send_mail(subject=subject, content=body, from_email=sender, bcc=recipient_list, email_category=EmailCategory.DIRECT_CONTACT)
 	except SMTPException as error:
 		site_title = get_customization('site_title')
 		error_message = f'{site_title} was unable to send the email through the email server. The error message that was received is: ' + str(error)
@@ -172,9 +170,7 @@ def send_broadcast_email(request):
 	if form.cleaned_data['copy_me']:
 		users += [request.user.email]
 	try:
-		email = EmailMultiAlternatives(subject, from_email=request.user.email, bcc=set(users))
-		email.attach_alternative(content, 'text/html')
-		email.send()
+		send_mail(subject=subject, content=content, from_email=request.user.email, bcc=set(users), email_category=EmailCategory.BROADCAST_EMAIL)
 	except SMTPException as error:
 		site_title = get_customization('site_title')
 		error_message = f"{site_title} was unable to send the email through the email server. The error message that was received is: " + str(error)

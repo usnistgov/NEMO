@@ -172,8 +172,7 @@ def force_area_logout(request, user_id):
 	record = user.area_access_record()
 	if record is None:
 		return HttpResponseBadRequest('That user is not logged into any areas.')
-	record.end = timezone.now()
-	record.save()
+	log_out_user(user)
 	return HttpResponse()
 
 
@@ -318,10 +317,7 @@ def self_log_out(request, user_id):
 		record = user.area_access_record()
 		if record is None:
 			return HttpResponseBadRequest('You are not logged into any areas.')
-		record.end = timezone.now()
-		record.save()
-		# Shorten the user's area reservation since the user is now leaving
-		shorten_reservation(request.user, record.area)
+		log_out_user(user)
 	return redirect(reverse('landing'))
 
 
@@ -341,6 +337,25 @@ def occupancy(request):
 		'occupants': AreaAccessRecord.objects.filter(area__name=area.name, end=None, staff_charge=None).prefetch_related('customer').order_by('-start'),
 	}
 	return render(request, 'occupancy/occupancy.html', dictionary)
+
+
+def log_out_user(user: User):
+	record = user.area_access_record()
+	# Allow the user to log out of any area, even if this is a logout tablet for a different area.
+	if record:
+		record.end = timezone.now()
+		record.save()
+		# Shorten the user's area reservation since the user is now leaving
+		shorten_reservation(user, record.area)
+		# Stop charging area access if staff is leaving the area
+		staff_charge = user.get_staff_charge()
+		if staff_charge:
+			try:
+				staff_area_access = AreaAccessRecord.objects.get(staff_charge=staff_charge, end=None)
+				staff_area_access.end = timezone.now()
+				staff_area_access.save()
+			except AreaAccessRecord.DoesNotExist:
+				pass
 
 
 def able_to_self_log_out_of_area(user):

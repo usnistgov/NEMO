@@ -23,7 +23,7 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from NEMO import fields
-from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename
+from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename, EmailCategory
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -81,6 +81,9 @@ class CalendarDisplay(models.Model):
 class UserPreferences(models.Model):
 	attach_created_reservation = models.BooleanField('created_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when creating a new reservation')
 	attach_cancelled_reservation = models.BooleanField('cancelled_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when cancelling a reservation')
+	display_new_buddy_request_notification = models.BooleanField('new_buddy_request_notification', default=True, help_text='Whether or not to notify the user of new buddy requests (via unread badges)')
+	display_new_buddy_request_reply_notification = models.BooleanField('new_buddy_request_reply_notification', default=True, help_text='Whether or not to notify the user of replies on buddy request he commented on (via unread badges)')
+	email_new_buddy_request_reply = models.BooleanField('email_new_buddy_request_reply', default=True, help_text='Whether or not to email the user of replies on buddy request he commented on')
 
 	class Meta:
 		verbose_name = 'User preferences'
@@ -218,9 +221,9 @@ class User(models.Model):
 	def set_unusable_password(self):
 		pass
 
-	def email_user(self, subject, message, from_email, attachments=None):
+	def email_user(self, subject, content, from_email, attachments=None, email_category:EmailCategory = EmailCategory.GENERAL):
 		""" Sends an email to this user. """
-		send_mail(subject=subject, message=message, from_email=from_email, recipient_list=[self.email], attachments=attachments)
+		send_mail(subject=subject, content=content, from_email=from_email, to=[self.email], attachments=attachments, email_category=email_category)
 
 	def get_full_name(self):
 		return self.get_name() + ' (' + self.username + ')'
@@ -871,6 +874,7 @@ class Area(MPTTModel):
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login.")
 	logout_grace_period = models.PositiveIntegerField(null=True, blank=True, help_text="Number of minutes users have to logout of this area after their reservation expired before being flagged and abuse email is sent.")
+	buddy_system_allowed = models.BooleanField(default=False, help_text="Check this box if the buddy system is allowed in this area.")
 
 	# Capacity
 	maximum_capacity = models.PositiveIntegerField(help_text='The maximum number of people allowed in this area at any given time. Set to 0 for unlimited.', default=0)
@@ -1669,6 +1673,7 @@ class PhysicalAccessException(models.Model):
 	def __str__(self):
 		return str(self.name)
 
+
 class PhysicalAccessType(object):
 	DENY = False
 	ALLOW = True
@@ -1784,9 +1789,13 @@ class Notification(models.Model):
 	class Types:
 		NEWS = 'news'
 		SAFETY = 'safetyissue'
+		BUDDY_REQUEST = 'buddyrequest'
+		BUDDY_REQUEST_REPLY = 'buddyrequestmessage'
 		Choices = (
 			(NEWS, 'News creation and updates - notifies all users'),
-			(SAFETY, 'New safety issues - notifies staff only')
+			(SAFETY, 'New safety issues - notifies staff only'),
+			(BUDDY_REQUEST, 'New buddy request - notifies all users'),
+			(BUDDY_REQUEST_REPLY, 'New buddy request reply - notifies request creator and users who have replied')
 		)
 
 
@@ -1920,6 +1929,51 @@ class ToolUsageCounter(models.Model):
 
 	def __str__(self):
 		return str(self.name)
+
+
+class BuddyRequest(models.Model):
+	creation_time = models.DateTimeField(default=timezone.now, help_text="The date and time when the request was created.")
+	start = models.DateField(help_text="The start date the user is requesting a buddy.")
+	end = models.DateField(help_text="The end date the user is requesting a buddy.")
+	description = models.TextField(help_text="The description of the request.")
+	area = models.ForeignKey(Area, on_delete=models.CASCADE)
+	user = models.ForeignKey(User, help_text="The user who is submitting the request.", on_delete=models.CASCADE)
+	expired = models.BooleanField(default=False, help_text="Indicates the request has expired and won't be shown anymore.")
+	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
+
+	def creator_and_reply_users(self) -> List[User]:
+		result = {self.user}
+		for reply in self.replies.all():
+			result.add(reply.author)
+		return list(result)
+
+	def __str__(self):
+		return f"BuddyRequest [{self.id}]"
+
+
+class BuddyRequestMessage(models.Model):
+	buddy_request = models.ForeignKey(BuddyRequest, related_name="replies", help_text="The request that this message relates to.", on_delete=models.CASCADE)
+	author = models.ForeignKey(User, on_delete=models.CASCADE)
+	creation_date = models.DateTimeField(default=timezone.now)
+	content = models.TextField()
+
+	class Meta:
+		ordering = ['creation_date']
+
+
+class EmailLog(models.Model):
+	category = models.IntegerField(choices=EmailCategory.Choices, default=EmailCategory.GENERAL)
+	when = models.DateTimeField(null=False, auto_now_add=True)
+	sender = models.EmailField(null=False, blank=False)
+	to = models.TextField(null=False, blank=False)
+	subject = models.CharField(null=False, max_length=254)
+	content = models.TextField(null=False)
+	ok = models.BooleanField(null=False, default=True)
+	attachments = models.TextField(null=True)
+
+	class Meta:
+		ordering = ['-when']
+
 
 def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):
 	"""
