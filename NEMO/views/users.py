@@ -194,7 +194,7 @@ def deactivate(request, user_id):
 		return render(request, 'users/safe_deactivation.html', dictionary)
 	elif request.method == 'POST':
 		identity_service = get_identity_service()
-		if identity_service['available']:
+		if identity_service.get('available', False):
 			parameters = {
 				'username': user_to_deactivate.username,
 				'domain': user_to_deactivate.domain,
