@@ -870,6 +870,8 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 	)
 
 	def clean(self):
+		if any(self.errors):
+			return
 		cleaned_data = super().clean()
 		start_time = cleaned_data.get("start_time")
 		end_time = cleaned_data.get("end_time")
