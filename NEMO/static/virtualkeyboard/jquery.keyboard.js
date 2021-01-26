@@ -1596,7 +1596,7 @@ http://www.opensource.org/licenses/mit-license.php
 		}
 
 		if (o.useCombos) {
-			// keep 'a' and 'o' in the regex for ae and oe ligature (ae,oe)
+			// keep 'a' and 'o' in the regex for ae and oe ligature (æ,œ)
 			// thanks to KennyTM: http://stackoverflow.com/q/4275077
 			// original regex /([`\'~\^\"ao])([a-z])/mig moved to $.keyboard.comboRegex
 			if ($keyboard.msie) {
