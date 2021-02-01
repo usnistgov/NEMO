@@ -2,6 +2,12 @@ window.addEventListener("load", function() {
     (function ($) {
         let selector = $('#id_parent_tool');
 
+        let required_fields = ['category:', 'location:', 'phone number:', 'primary owner:'];
+        function add_required_class() {
+            let required_label = $('label').filter(function(){ return required_fields.includes($(this).text().trim().toLowerCase());})
+            required_label.addClass('required')
+        }
+
         function hide_fields(){
             if(selector.val()) {
                 /* hide everything but name and parent_tool */
@@ -43,5 +49,6 @@ window.addEventListener("load", function() {
         });
         update_input_form();
         update_validation_button();
+        add_required_class();
     })(django.jQuery);
 });
