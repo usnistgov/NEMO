@@ -28,7 +28,7 @@ from NEMO.models import (
 	BadgeReader,
 )
 from NEMO.tasks import postpone
-from NEMO.views.area_access import log_out_user
+from NEMO.views.area_access import log_out_user, log_in_user_to_area
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
 
@@ -179,7 +179,6 @@ def login_to_area(request, door_id):
 		message = "You do not have a current reservation for this area. Please make a reservation before trying to access this area."
 		return render(request, "area_access/physical_access_denied.html", {"message": message})
 
-	previous_area = None
 	if user.active_project_count() >= 1:
 		if user.active_project_count() == 1:
 			project = user.active_projects()[0]
@@ -203,22 +202,18 @@ def login_to_area(request, door_id):
 		log.save()
 
 		# Automatically log the user out of any previous area before logging them in to the new area.
+		previous_area = None
 		if user.in_area():
-			previous_area_access_record = user.area_access_record()
-			previous_area_access_record.end = timezone.now()
-			previous_area_access_record.save()
-			previous_area = previous_area_access_record.area
+			previous_area = user.area_access_record().area
+			log_out_user(user)
 
-		record = AreaAccessRecord()
-		record.area = door.area
-		record.customer = user
-		record.project = project
-		record.save()
+		log_in_user_to_area(door.area, user, project)
+
 		unlock_door(door.id)
 		return render(
 			request,
 			"area_access/login_success.html",
-			{"area": door.area, "name": user.first_name, "project": record.project, "previous_area": previous_area},
+			{"area": door.area, "name": user.first_name, "project": project, "previous_area": previous_area},
 		)
 
 

@@ -9,6 +9,7 @@ from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import Project, Reservation, Tool, UsageEvent, User, BadgeReader
+from NEMO.tasks import synchronized
 from NEMO.utilities import quiet_int, localize
 from NEMO.views.calendar import (
 	determine_insufficient_notice,
@@ -29,7 +30,12 @@ from NEMO.widgets.dynamic_form import DynamicForm
 @permission_required("NEMO.kiosk")
 @require_POST
 def enable_tool(request):
-	tool = Tool.objects.get(id=request.POST["tool_id"])
+	return do_enable_tool(request, request.POST["tool_id"])
+
+
+@synchronized('tool_id')
+def do_enable_tool(request, tool_id):
+	tool = Tool.objects.get(id=tool_id)
 	customer = User.objects.get(id=request.POST["customer_id"])
 	project = Project.objects.get(id=request.POST["project_id"])
 
@@ -64,7 +70,12 @@ def enable_tool(request):
 @permission_required("NEMO.kiosk")
 @require_POST
 def disable_tool(request):
-	tool = Tool.objects.get(id=request.POST["tool_id"])
+	return do_disable_tool(request, request.POST["tool_id"])
+
+
+@synchronized('tool_id')
+def do_disable_tool(request, tool_id):
+	tool = Tool.objects.get(id=tool_id)
 	customer = User.objects.get(id=request.POST["customer_id"])
 	downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
 	response = check_policy_to_disable_tool(tool, customer, downtime)

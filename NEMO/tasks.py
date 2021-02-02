@@ -1,5 +1,8 @@
+import inspect
 from logging import getLogger
 from threading import Thread, Lock, RLock
+
+from django.utils.text import slugify
 
 postponed_tasks_logger = getLogger("NEMO.PostponedTasks")
 
@@ -21,8 +24,9 @@ def postpone(function):
 def synchronized(method_argument=""):
 	def inner(function):
 		def decorator(*args, **kwargs):
-			attribute_value = kwargs.get(method_argument, "")
-			lock_name = "__" + function.__name__ + "_lock_" + str(attribute_value) + "__"
+			func_args = inspect.signature(function).bind(*args, **kwargs).arguments
+			attribute_value = slugify(str(func_args.get(method_argument, ""))).replace("-", "_")
+			lock_name = "__" + function.__name__ + "_lock_" + attribute_value + "__"
 			lock: RLock = vars(function).get(lock_name, None)
 			if lock is None:
 				meta_lock = vars(decorator).setdefault("_synchronized_meta_lock", Lock())

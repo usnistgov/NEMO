@@ -32,6 +32,7 @@ from NEMO.models import (
 	ToolUsageCounter,
 	AreaAccessRecord,
 )
+from NEMO.tasks import synchronized
 from NEMO.utilities import (
 	extract_times,
 	quiet_int,
@@ -277,6 +278,7 @@ def determine_tool_status(tool):
 
 @login_required
 @require_POST
+@synchronized('tool_id')
 def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	""" Enable a tool for a user. The user must be qualified to do so based on the lab usage policy. """
 
@@ -330,6 +332,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 
 @login_required
 @require_POST
+@synchronized('tool_id')
 def disable_tool(request, tool_id):
 	if not settings.ALLOW_CONDITIONAL_URLS:
 		return HttpResponseBadRequest("Tool control is only available on campus.")
