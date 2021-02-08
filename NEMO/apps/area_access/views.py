@@ -1,7 +1,9 @@
 from time import sleep
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
 from django.utils.formats import localize
 from django.views.decorators.http import require_GET, require_POST
@@ -64,6 +66,7 @@ def login_to_area(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
 
 	badge_number = request.POST.get("badge_number", "")
+	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
 	if badge_number == "":
 		return render(request, "area_access/badge_not_found.html")
 	try:
@@ -207,9 +210,17 @@ def login_to_area(request, door_id):
 			previous_area = user.area_access_record().area
 			log_out_user(user)
 
+		# All policy checks passed so open the door for the user.
+		if not door.interlock.unlock():
+			if bypass_interlock and get_customization('allow_bypass_interlock_on_failure') == 'enabled':
+				pass
+			else:
+				return interlock_error("Login")
+
+		delay_lock_door(door.id)
+
 		log_in_user_to_area(door.area, user, project)
 
-		unlock_door(door.id)
 		return render(
 			request,
 			"area_access/login_success.html",
@@ -218,9 +229,8 @@ def login_to_area(request, door_id):
 
 
 @postpone
-def unlock_door(door_id):
+def delay_lock_door(door_id):
 	door = Door.objects.get(id=door_id)
-	door.interlock.unlock()
 	sleep(8)
 	door.interlock.lock()
 
@@ -276,6 +286,20 @@ def open_door(request, door_id):
 			details="The user was permitted to enter this area, and already had an active area access record for this area.",
 		)
 		log.save()
-		unlock_door(door.id)
+		# If we cannot open the door, display message and let them try again or exit since there is nothing else to do (user is already logged in).
+		if not door.interlock.unlock():
+			return interlock_error(bypass_allowed=False)
+		delay_lock_door(door.id)
 		return render(request, "area_access/door_is_open.html")
 	return render(request, "area_access/not_logged_in.html", {"area": door.area})
+
+
+def interlock_error(action:str = None, bypass_allowed:bool = None):
+	error_message = get_customization('door_interlock_failure_message')
+	bypass_allowed = get_customization('allow_bypass_interlock_on_failure') == 'enabled' if bypass_allowed is None else bypass_allowed
+	dictionary = {
+		"message": linebreaksbr(error_message),
+		"bypass_allowed": bypass_allowed,
+		"action": action
+	}
+	return JsonResponse(dictionary, status=501)

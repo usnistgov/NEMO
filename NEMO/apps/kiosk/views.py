@@ -2,7 +2,9 @@ from datetime import timedelta, datetime
 from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.http import JsonResponse
 from django.shortcuts import render
+from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
@@ -17,6 +19,7 @@ from NEMO.views.calendar import (
 	cancel_the_reservation,
 	shorten_reservation,
 )
+from NEMO.views.customization import get_customization
 from NEMO.views.policy import (
 	check_policy_to_disable_tool,
 	check_policy_to_enable_tool,
@@ -38,6 +41,7 @@ def do_enable_tool(request, tool_id):
 	tool = Tool.objects.get(id=tool_id)
 	customer = User.objects.get(id=request.POST["customer_id"])
 	project = Project.objects.get(id=request.POST["project_id"])
+	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
 
 	response = check_policy_to_enable_tool(tool, operator=customer, user=customer, project=project, staff_charge=False)
 	if response.status_code != HTTPStatus.OK:
@@ -49,10 +53,10 @@ def do_enable_tool(request, tool_id):
 
 	# All policy checks passed so enable the tool for the user.
 	if tool.interlock and not tool.interlock.unlock():
-		raise Exception(
-			"The interlock command for this tool failed. The error message returned: "
-			+ str(tool.interlock.most_recent_reply)
-		)
+		if bypass_interlock and get_customization('allow_bypass_interlock_on_failure') == 'enabled':
+			pass
+		else:
+			return interlock_error("Enable")
 
 	# Create a new usage event to track how long the user uses the tool.
 	new_usage_event = UsageEvent()
@@ -78,6 +82,7 @@ def do_disable_tool(request, tool_id):
 	tool = Tool.objects.get(id=tool_id)
 	customer = User.objects.get(id=request.POST["customer_id"])
 	downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
+	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
 	response = check_policy_to_disable_tool(tool, customer, downtime)
 	if response.status_code != HTTPStatus.OK:
 		dictionary = {"message": response.content, "delay": 10}
@@ -88,10 +93,11 @@ def do_disable_tool(request, tool_id):
 
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
-		raise Exception(
-			"The interlock command for this tool failed. The error message returned: "
-			+ str(tool.interlock.most_recent_reply)
-		)
+		if bypass_interlock and get_customization('allow_bypass_interlock_on_failure') == 'enabled':
+			pass
+		else:
+			return interlock_error("Disable")
+
 	# End the current usage event for the tool and save it.
 	current_usage_event = tool.get_current_usage_event()
 	current_usage_event.end = timezone.now() + downtime
@@ -110,6 +116,17 @@ def do_disable_tool(request, tool_id):
 	current_usage_event.save()
 	dictionary = {"message": "You are no longer using the {}".format(tool), "badge_number": customer.badge_number}
 	return render(request, "kiosk/acknowledgement.html", dictionary)
+
+
+def interlock_error(action:str):
+	error_message = get_customization('tool_interlock_failure_message')
+	bypass_allowed = get_customization('allow_bypass_interlock_on_failure') == 'enabled'
+	dictionary = {
+		"message": linebreaksbr(error_message),
+		"bypass_allowed": bypass_allowed,
+		"action": action
+	}
+	return JsonResponse(dictionary, status=501)
 
 
 @login_required

@@ -52,6 +52,9 @@ customizable_key_values = {
 	'calendar_now_indicator': '',
 	'calendar_display_not_qualified_areas': '',
 	'buddy_board_disclaimer': '',
+	'allow_bypass_interlock_on_failure': '',
+	'tool_interlock_failure_message': 'Communication with the interlock failed',
+	'door_interlock_failure_message': 'Communication with the interlock failed',
 }
 
 customizable_content = [
@@ -146,6 +149,10 @@ def customize(request, element):
 		set_customization('site_title', request.POST.get('site_title', ''))
 		set_customization('buddy_board_disclaimer', request.POST.get('buddy_board_disclaimer', ''))
 		init_admin_site()
+	elif element == 'interlock_settings':
+		set_customization('allow_bypass_interlock_on_failure', request.POST.get('allow_bypass_interlock_on_failure', ''))
+		set_customization('tool_interlock_failure_message', request.POST.get('tool_interlock_failure_message', ''))
+		set_customization('door_interlock_failure_message', request.POST.get('door_interlock_failure_message', ''))
 	elif element == 'calendar_settings':
 		set_customization('calendar_view', request.POST.get('calendar_view', ''))
 		set_customization('calendar_first_day_of_week', request.POST.get('calendar_first_day_of_week', ''))

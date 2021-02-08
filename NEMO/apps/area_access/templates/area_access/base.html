@@ -41,35 +41,67 @@
 			<div id="occupancy"></div>
 		</div>
 		<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1><audio id="error-sound" src="{% url 'media' 'error.mp3' %}"></audio></div>
+        <div id="interlock_error" style="display: none">
+            <h1 class="text-center">
+                <span style="font-size: xx-large;margin-right:10px;" class="glyphicon glyphicon-exclamation-sign"></span>
+                Interlock error
+            </h1>
+            <h3 id="interlock_message" class="text-center"></h3>
+
+            <div class="col-xs-4" style="margin: 40px auto; float: initial">
+                <div id="inter_bypass" class="btn-block" style="display: none; margin-bottom: 10px">
+                    <div class="alert alert-success" style="text-align:center; margin-bottom:0">
+                        <span id="bypass_text" style="font-size:x-large"></span>
+                    </div>
+                </div>
+                <div id="inter_try_again" class="btn-block" style="margin-bottom: 10px">
+                    <div class="alert alert-info" style="text-align:center; margin-bottom:0">
+                        <span style="font-size:x-large">Try again</span>
+                    </div>
+                </div>
+                <div class="btn-block" onclick="revert()">
+                    <div class="alert alert-warning" style="text-align:center; margin-bottom:0">
+                        <span style="font-size:x-large">Cancel</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 		<div id="status" style="display: none"></div>
 		<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
+        <div id="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
 	</div>
 	{% include 'base/footer.html' %}
 	<script type="text/javascript">
-		var area_access_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}" {% if badge_reader.record_key %}, "{{ badge_reader.record_key }}"{% endif %});
+		let area_access_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}" {% if badge_reader.record_key %}, "{{ badge_reader.record_key }}"{% endif %});
 		let timeout_handle = null;
+		let countdown_handle = null;
 		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
+
+		let default_content_element = $("#default_content");
+		let status_element = $("#status");
+		let error_element = $("#error");
+		let error_interlock_element = $("#interlock_error");
+		let bypass_button = $("#inter_bypass");
 
 		function send_badge_number(badge_number)
 		{
 		    clear_timeout();
 			{% block action %}{% endblock %}
 		}
-
 		if(occupancy)
 		{
 			fetch_occupancy();
 			set_interval_when_visible(document, fetch_occupancy, 30000);
 		}
-
 		function load_complete(response, status, xml_http_request)
 		{
 			if(status === "error")
 			{
 				document.getElementById('error-sound').play();
-				$("#default_content").hide();
-				$("#status").hide();
-				$("#error").show();
+				default_content_element.hide();
+				status_element.hide();
+				error_element.show();
+				error_interlock_element.hide();
 				$('body').removeClass().addClass('logout-error');
 				revert(15);
 			}
@@ -77,25 +109,40 @@
 		function revert(delay)
 		{
 			clear_timeout();
+			let countdown = delay;
 			delay = delay * 1000;
 			timeout_handle = setTimeout(revert_to_default_content, delay);
+			countdown_handle = setInterval(function()
+            {
+				$('#countdown').html(countdown);
+				countdown --;
+			}, 1000);
 		}
 		function revert_to_default_content()
 		{
 			$('body').removeClass();
 			fetch_occupancy();
 			clear_timeout();
-			$("#status").hide();
-			$("#error").hide();
+			status_element.hide();
+			error_element.hide();
+			error_interlock_element.hide();
 			$("#badge_number").html("");
-			$("#default_content").show();
+			default_content_element.show();
 		}
 		function clear_timeout()
 		{
 			if(timeout_handle != null)
 				clearTimeout(timeout_handle);
 			timeout_handle = null;
+			if (countdown_handle != null)
+				clearInterval(countdown_handle);
+			countdown_handle = null;
+			$("#countdown").html("");
 		}
+		function try_post_catch_interlock_error(url, data)
+        {
+            ajax_post(url, data, function(response, status, xml_http_request) {interlock_success_callback(response, status, xml_http_request)}, function(response, status, xml_http_request) { return interlock_failure_callback(response, status, xml_http_request, url, data) });
+        }
 		function just_open_the_door(badge_number)
 		{
 			let data = {
@@ -103,9 +150,11 @@
 				'badge_number': badge_number,
 				'csrfmiddlewaretoken': '{{ csrf_token }}'
 			};
-			$("#default_content").hide();
-			$("#error").hide();
-			$("#status").html("<h1>Opening the door...</h1>").show().load('{% url 'open_door' door.id %}', data, load_complete);
+			default_content_element.hide();
+			error_element.hide();
+			error_interlock_element.hide();
+			status_element.html("<h1>Opening the door...</h1>").show();
+            try_post_catch_interlock_error('{% url 'open_door' door.id %}', data);
 		}
 		function enter_area(badge_number, project_id)
 		{
@@ -116,9 +165,11 @@
 			};
 			if(project_id)
 				data.project_id = project_id;
-			$("#default_content").hide();
-			$("#error").hide();
-			$("#status").html("<h1>Logging you in to the {{ area }}...</h1>").show().load('{% url 'login_to_area' door.id %}', data, load_complete);
+			default_content_element.hide();
+			error_element.hide();
+			error_interlock_element.hide();
+			status_element.html("<h1>Logging you in to the {{ area }}...</h1>").show();
+			try_post_catch_interlock_error('{% url 'login_to_area' door.id %}', data);
 		}
 		function exit_area(badge_number)
 		{
@@ -127,14 +178,69 @@
 				'badge_number': badge_number,
 				'csrfmiddlewaretoken': '{{ csrf_token }}'
 			};
-			$("#default_content").hide();
-			$("#error").hide();
-			$("#status").html("<h1>Logging you out of the {{ area }}...</h1>").show().load('{% url 'logout_of_area' door.id %}', data, load_complete);
+			default_content_element.hide();
+			error_element.hide();
+			error_interlock_element.hide();
+			status_element.html("<h1>Logging you out of the {{ area }}...</h1>").show();
+			try_post_catch_interlock_error('{% url 'logout_of_area' door.id %}', data);
+		}
+		function csrf_token()
+		{
+			return '{{ csrf_token }}';
 		}
 		function fetch_occupancy()
 		{
 			ajax_get('{% url 'area_access_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 		}
+		function interlock_success_callback(response, status, xml_http_request)
+        {
+            $('body').removeClass();
+            error_interlock_element.hide();
+            status_element.html(response).show();
+        }
+		function interlock_failure_callback(response, status, xml_http_request, url, data)
+        {
+            revert(15);
+            {# Specific case here where we have an error but it could be bypassed #}
+            if (status === 'error' && response.status === 501)
+            {
+                document.getElementById('error-sound').play();
+                $('body').removeClass().addClass('logout-error');
+                status_element.hide();
+                let response_data = response.responseJSON;
+                $("#interlock_message").html(response_data['message'])
+                bypass_button.hide();
+                error_interlock_element.show();
+                {# we can bypass, show the button #}
+                if (response_data["bypass_allowed"] === true)
+                {
+                    bypass_button.off("click")
+                    $('#bypass_text').html(response_data['action'] + " anyway");
+                    bypass_button.show();
+                    bypass_button.one('click', function ()
+                    {
+                        data["bypass"] = 'True'
+                        try_post_catch_interlock_error(url, data);
+                    });
+                }
+                {# hook up try again button #}
+                let inter_try_again_button = $("#inter_try_again");
+                inter_try_again_button.off("click");
+                inter_try_again_button.one('click', function ()
+                {
+                    error_interlock_element.hide();
+                    status_element.html("<h1>Trying again...</h1>").show();
+                    setTimeout(function()
+                    {
+                        try_post_catch_interlock_error(url, data);
+                    }, 200);
+                });
+            }
+            else
+            {
+                load_complete(response, status, xml_http_request);
+            }
+        }
 	</script>
 </body>
 </html>

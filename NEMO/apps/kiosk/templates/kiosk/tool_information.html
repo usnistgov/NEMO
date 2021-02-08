@@ -212,6 +212,7 @@
 	{% csrf_token %}
 	<input type="hidden" name="tool_id" value="{{ tool.id }}">
 	<input type="hidden" name="customer_id" value="{{ customer.id }}">
+    <input type="hidden" name="back" value="{{ back }}">
 	{% if tool.in_use %}
 		{% if tool.get_current_usage_event.operator.id == customer.id or tool.get_current_usage_event.user.id == customer.id %}
 			{% if post_usage_questions %}
