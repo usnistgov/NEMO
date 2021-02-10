@@ -19,13 +19,13 @@ from NEMO.views.calendar import (
 	cancel_the_reservation,
 	shorten_reservation,
 )
-from NEMO.views.customization import get_customization
 from NEMO.views.policy import (
 	check_policy_to_disable_tool,
 	check_policy_to_enable_tool,
 	check_policy_to_save_reservation,
 )
 from NEMO.views.status_dashboard import create_tool_summary
+from NEMO.views.tool_control import interlock_error, interlock_bypass_allowed
 from NEMO.widgets.dynamic_form import DynamicForm
 
 
@@ -53,10 +53,10 @@ def do_enable_tool(request, tool_id):
 
 	# All policy checks passed so enable the tool for the user.
 	if tool.interlock and not tool.interlock.unlock():
-		if bypass_interlock and get_customization('allow_bypass_interlock_on_failure') == 'enabled':
+		if bypass_interlock and interlock_bypass_allowed(customer):
 			pass
 		else:
-			return interlock_error("Enable")
+			return interlock_error("Enable", customer)
 
 	# Create a new usage event to track how long the user uses the tool.
 	new_usage_event = UsageEvent()
@@ -88,15 +88,15 @@ def do_disable_tool(request, tool_id):
 		dictionary = {"message": response.content, "delay": 10}
 		return render(request, "kiosk/acknowledgement.html", dictionary)
 
-	# Shorten the user's tool reservation since we are now done using the tool
-	shorten_reservation(user=customer, item=tool, new_end=timezone.now() + downtime)
-
-	# All policy checks passed so disable the tool for the user.
+	# All policy checks passed so try to disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
-		if bypass_interlock and get_customization('allow_bypass_interlock_on_failure') == 'enabled':
+		if bypass_interlock and interlock_bypass_allowed(customer):
 			pass
 		else:
-			return interlock_error("Disable")
+			return interlock_error("Disable", customer)
+
+	# Shorten the user's tool reservation since we are now done using the tool
+	shorten_reservation(user=customer, item=tool, new_end=timezone.now() + downtime)
 
 	# End the current usage event for the tool and save it.
 	current_usage_event = tool.get_current_usage_event()
@@ -116,17 +116,6 @@ def do_disable_tool(request, tool_id):
 	current_usage_event.save()
 	dictionary = {"message": "You are no longer using the {}".format(tool), "badge_number": customer.badge_number}
 	return render(request, "kiosk/acknowledgement.html", dictionary)
-
-
-def interlock_error(action:str):
-	error_message = get_customization('tool_interlock_failure_message')
-	bypass_allowed = get_customization('allow_bypass_interlock_on_failure') == 'enabled'
-	dictionary = {
-		"message": linebreaksbr(error_message),
-		"bypass_allowed": bypass_allowed,
-		"action": action
-	}
-	return JsonResponse(dictionary, status=501)
 
 
 @login_required

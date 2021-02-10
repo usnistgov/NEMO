@@ -20,7 +20,6 @@ from NEMO.exceptions import (
 	ScheduledOutageInProgressError,
 )
 from NEMO.models import (
-	AreaAccessRecord,
 	Door,
 	PhysicalAccessLog,
 	PhysicalAccessType,
@@ -33,6 +32,7 @@ from NEMO.tasks import postpone
 from NEMO.views.area_access import log_out_user, log_in_user_to_area
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
+from NEMO.views.tool_control import interlock_bypass_allowed
 
 
 @login_required
@@ -212,10 +212,10 @@ def login_to_area(request, door_id):
 
 		# All policy checks passed so open the door for the user.
 		if not door.interlock.unlock():
-			if bypass_interlock and get_customization('allow_bypass_interlock_on_failure') == 'enabled':
+			if bypass_interlock and interlock_bypass_allowed(user):
 				pass
 			else:
-				return interlock_error("Login")
+				return interlock_error("Login", user)
 
 		delay_lock_door(door.id)
 
@@ -294,9 +294,9 @@ def open_door(request, door_id):
 	return render(request, "area_access/not_logged_in.html", {"area": door.area})
 
 
-def interlock_error(action:str = None, bypass_allowed:bool = None):
+def interlock_error(action: str = None, user: User = None, bypass_allowed: bool = None):
 	error_message = get_customization('door_interlock_failure_message')
-	bypass_allowed = get_customization('allow_bypass_interlock_on_failure') == 'enabled' if bypass_allowed is None else bypass_allowed
+	bypass_allowed = interlock_bypass_allowed(user) if bypass_allowed is None else bypass_allowed
 	dictionary = {
 		"message": linebreaksbr(error_message),
 		"bypass_allowed": bypass_allowed,

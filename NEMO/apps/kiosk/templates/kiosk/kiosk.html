@@ -256,13 +256,12 @@
                 {# we can bypass, show the button #}
                 if (response_data["bypass_allowed"] === true)
                 {
-
                     bypass_button.off("click")
                     $('#bypass_text').html(response_data['action'] + " anyway");
                     bypass_button.show();
                     bypass_button.one('click', function ()
                     {
-                        data["bypass"] = 'True'
+                        data["bypass"] = 'True';
                         try_post_catch_interlock_error(url, data);
                     });
                 }
