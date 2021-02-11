@@ -1,6 +1,6 @@
 window.addEventListener("load", function() {
     (function ($) {
-        var selector = $('#id_schedule');
+        let selector = $('#id_schedule');
 
         function hide_time_fields(){
             if(selector.val() === "1") {

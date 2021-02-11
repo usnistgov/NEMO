@@ -83,8 +83,8 @@ class ToolAdminForm(forms.ModelForm):
 		fields = "__all__"
 
 	class Media:
-		js = ("tool_form_admin.js",)
-		css = {"": ("tool_form_admin.css",)}
+		js = ("admin/tool/tool.js",)
+		css = {"": ("admin/tool/tool.css",)}
 
 	qualified_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
@@ -808,7 +808,7 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 		fields = "__all__"
 
 	class Media:
-		js = ("physical_access_level_form_admin.js",)
+		js = ("admin/physical_access_level/access_level.js",)
 
 	authorized_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
@@ -862,6 +862,9 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 	class Meta:
 		model = PhysicalAccessException
 		fields = "__all__"
+
+	class Media:
+		js = ("admin/time_options_override.js",)
 
 	physical_access_levels = forms.ModelMultipleChoiceField(
 		queryset=PhysicalAccessLevel.objects.all(),

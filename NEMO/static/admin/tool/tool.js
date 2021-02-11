@@ -9,14 +9,15 @@ window.addEventListener("load", function() {
         }
 
         function hide_fields(){
+            let rows_except_name_and_parent = $(".form-row:not(.field-name,.field-parent_tool)");
             if(selector.val()) {
                 /* hide everything but name and parent_tool */
-                $(".form-row:not(.field-name,.field-parent_tool)").hide();
-                $(".form-row:not(.field-name,.field-parent_tool)").parent().hide();
+                rows_except_name_and_parent.hide();
+                rows_except_name_and_parent.parent().hide();
                 $(".form-row.field-name,.form-row.field-parent_tool").parent().show();
             } else {
-                $(".form-row:not(.field-name,.field-parent_tool)").show();
-                $(".form-row:not(.field-name,.field-parent_tool)").parent().show();
+                rows_except_name_and_parent.show();
+                rows_except_name_and_parent.parent().show();
             }
         }
         selector.change(hide_fields);
