@@ -9,95 +9,135 @@
 		</div>
 	{% endif %}
 	<h1>Withdraw consumables</h1>
-	<p>Use this form to charge users for consumable items & supplies.</p>
-	<form action="{% url 'consumables' %}" class="form-horizontal" method="post">
-		{% csrf_token %}
+    <div style="height: 15px"></div>
+    <div class="col-md-5">
+        <p>Use this form to charge users for consumable items & supplies.</p>
+        <form action="{% url 'consumables' %}" class="form-horizontal" method="post">
+            {% csrf_token %}
 
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="customer_search">Customer</label>
-			<div class="col-sm-4">
-				{% if form.cleaned_data.customer %}
-					<input type="text" class="form-control" id="customer_search" placeholder="Search for a customer" style="display:none">
-					<input type="button" id="chosen_customer" class="btn btn-default" onclick="clear_selected_customer()" value="{{ form.cleaned_data.customer }}">
-					<input type="hidden" id="customer" name="customer" value="{{ form.cleaned_data.customer.id }}">
-				{% else %}
-					<input type="text" class="form-control" id="customer_search" placeholder="Search for a customer">
-					<input type="button" id="chosen_customer" class="btn btn-default" style="display:none" onclick="clear_selected_customer()">
-					<input type="hidden" id="customer" name="customer">
-				{% endif %}
-			</div>
-			{% if form.customer.errors %}
-				<div class="col-sm-6 form-control-static danger-highlight">
-					{{ form.customer.errors|striptags }}
-				</div>
-			{% endif %}
-		</div>
+            <div class="form-group">
+                <label class="control-label col-md-3" for="customer_search">Customer</label>
+                <div class="col-md-9">
+                    {% if form.cleaned_data.customer %}
+                        <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer" style="display:none">
+                        <input type="button" id="chosen_customer" class="btn btn-default" onclick="clear_selected_customer()" value="{{ form.cleaned_data.customer }}">
+                        <input type="hidden" id="customer" name="customer" value="{{ form.cleaned_data.customer.id }}">
+                    {% else %}
+                        <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer">
+                        <input type="button" id="chosen_customer" class="btn btn-default" style="display:none" onclick="clear_selected_customer()">
+                        <input type="hidden" id="customer" name="customer">
+                    {% endif %}
+                </div>
+                {% if form.customer.errors %}
+                    <div class="col-md-12 form-control-static danger-highlight">
+                        {{ form.customer.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
 
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="project">Project</label>
-			<div class="col-sm-4">
-				<select id="project" name="project" class="form-control" {% if not projects %}disabled{% endif %}>
-					{% if projects|length == 0 %}
-						<option>{% if form.cleaned_data.customer %}No active projects!{% endif %}</option>
-					{% elif projects|length == 1 %}
-						<option value="{{ projects.0.id }}">{{ projects.0 }}</option>
-					{% elif projects %}
-						<option disabled selected>Choose a project to bill</option>
-						{% for p in projects %}
-							<option value="{{ p.id }}" {% if form.cleaned_data.project.id == p.id %}selected{% endif %}>{{ p }}</option>
-						{% endfor %}
-					{% endif %}
-				</select>
-			</div>
-			{% if form.project.errors %}
-				<div class="col-sm-6 form-control-static danger-highlight">
-					{{ form.project.errors|striptags }}
-				</div>
-			{% endif %}
-		</div>
+            <div class="form-group">
+                <label class="control-label col-md-3" for="project">Project</label>
+                <div class="col-md-9">
+                    <select id="project" name="project" class="form-control" {% if not projects %}disabled{% endif %}>
+                        {% if projects|length == 0 %}
+                            <option>{% if form.cleaned_data.customer %}No active projects!{% endif %}</option>
+                        {% elif projects|length == 1 %}
+                            <option value="{{ projects.0.id }}">{{ projects.0 }}</option>
+                        {% elif projects %}
+                            <option disabled selected>Choose a project to bill</option>
+                            {% for p in projects %}
+                                <option value="{{ p.id }}" {% if form.cleaned_data.project.id == p.id %}selected{% endif %}>{{ p }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+                {% if form.project.errors %}
+                    <div class="col-md-12 form-control-static danger-highlight">
+                        {{ form.project.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
 
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="consumable">Consumable</label>
-			<div class="col-sm-4">
-				<select id="consumable" name="consumable" class="form-control">
-					<option>&nbsp;</option>
-					{% regroup consumables by category as categories %}
-					{% for category in categories %}
-						{% if categories|length > 1 or category.grouper %}
-						<optgroup label="{{ category.grouper|default_if_none:"Uncategorized" }}">
-							{% for item in category.list %}
-								<option value="{{ item.id }}" {% if form.cleaned_data.consumable.id == item.id %}selected{% endif %}>{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}</option>
-							{% endfor %}
-						</optgroup>
-						{% else %}
-							{% for item in category.list %}
-								<option value="{{ item.id }}" {% if form.cleaned_data.consumable.id == item.id %}selected{% endif %}>{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}</option>
-							{% endfor %}
-						{% endif %}
-					{% endfor %}
-				</select>
-			</div>
-			{% if form.consumable.errors %}
-				<div class="col-sm-6 form-control-static danger-highlight">
-					{{ form.consumable.errors|striptags }}
-				</div>
-			{% endif %}
-		</div>
+            <div class="form-group">
+                <label class="control-label col-md-3" for="consumable">Consumable</label>
+                <div class="col-md-9">
+                    <select id="consumable" name="consumable" class="form-control">
+                        <option>&nbsp;</option>
+                        {% regroup consumables by category as categories %}
+                        {% for category in categories %}
+                            {% if categories|length > 1 or category.grouper %}
+                            <optgroup label="{{ category.grouper|default_if_none:"Uncategorized" }}">
+                                {% for item in category.list %}
+                                    <option value="{{ item.id }}" {% if form.cleaned_data.consumable.id == item.id %}selected{% endif %}>{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% else %}
+                                {% for item in category.list %}
+                                    <option value="{{ item.id }}" {% if form.cleaned_data.consumable.id == item.id %}selected{% endif %}>{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}</option>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if form.consumable.errors %}
+                    <div class="col-md-12 form-control-static danger-highlight">
+                        {{ form.consumable.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
 
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="quantity">Quantity</label>
-			<div class="col-sm-4">
-				<input type="number" min="1" inputmode="numeric" pattern="[0-9]*" id="quantity" name="quantity" class="form-control">
-			</div>
-			{% if form.quantity.errors %}
-				<div class="col-sm-6 form-control-static danger-highlight">
-					{{ form.quantity.errors|striptags }}
-				</div>
-			{% endif %}
-		</div>
+            <div class="form-group">
+                <label class="control-label col-md-3" for="quantity">Quantity</label>
+                <div class="col-md-9">
+                    <input type="number" min="1" inputmode="numeric" pattern="[0-9]*" id="quantity" name="quantity" class="form-control">
+                </div>
+                {% if form.quantity.errors %}
+                    <div class="col-md-12 form-control-static danger-highlight">
+                        {{ form.quantity.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
 
-		<input type="submit" class="btn btn-default" value="Make withdrawal">
-	</form>
+            <div class="col-md-12 text-right" style="padding-right: 0">
+                <input type="submit" class="btn btn-default" value="Add">
+            </div>
+        </form>
+    </div>
+
+    {% if request.session.withdrawals %}
+        <div class="col-md-6 col-md-offset-1">
+            <p>Current orders:</p>
+            <table class="table table-condensed table-striped thead-light">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Project</th>
+                        <th>Consumable</th>
+                        <th>Quantity</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                {% for withdraw in request.session.withdrawals %}
+                    <tr>
+                        <td>{{ withdraw.customer }}</td>
+                        <td>{{ withdraw.project }}</td>
+                        <td>{{ withdraw.consumable }}</td>
+                        <td>{{ withdraw.quantity }}</td>
+                        <td>
+                            <form id="remove_withdrawal_{{ forloop.counter0 }}" method="post" action="{% url 'remove_consumable' forloop.counter0 %}">
+                                {% csrf_token %}
+                                <span class="glyphicon glyphicon-remove pull-right" style="cursor:pointer" onclick="$('#remove_withdrawal_{{ forloop.counter0 }}').submit()" data-toggle="tooltip" data-placement="top" title="Remove this withdrawal"></span>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+            <form action="{% url 'withdraw_consumables' %}" class="form-horizontal text-right" method="post">
+                {% csrf_token %}
+                <input type="submit" class="btn btn-success" value="Confirm">
+            </form>
+        </div>
+    {% endif %}
 
 	<script type="text/javascript">
 		function clear_selected_customer()
@@ -118,34 +158,35 @@
 
 		function update_projects(response, status, xml_http_request)
 		{
-			$('#project').find('option').remove().end().removeAttr('disabled');
-			var projects = response['projects'];
+		    let project_selector = $('#project');
+			project_selector.find('option').remove().end().removeAttr('disabled');
+			let projects = response['projects'];
 
-			if(response.projects.length === 0)
-				$('#project').append($('<option/>', {text: "No active projects!"})).attr('disabled', 'disabled');
-			else if(response.projects.length === 1)
-				$('#project').append($('<option/>', {value: response['projects'][0].id, text: response['projects'][0].name}));
+			if(projects.length === 0)
+				project_selector.append($('<option/>', {text: "No active projects!"})).attr('disabled', 'disabled');
+			else if(projects.length === 1)
+				project_selector.append($('<option/>', {value: response['projects'][0].id, text: response['projects'][0].name}));
 			else
 			{
-				$('#project').append($('<option/>', {
+				project_selector.append($('<option/>', {
 					text: "Choose a project to bill",
 					disabled: true,
 					selected: true
 				}));
-				$.each(response['projects'], function(count, project)
+				$.each(projects, function(count, project)
 				{
-					$('#project').append($('<option/>', {value: project.id, text: project.name}));
+					project_selector.append($('<option/>', {value: project.id, text: project.name}));
 				});
 			}
 		}
 
-		function on_load()
-		{
-			$('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
-		}
-
-		$(on_load);
-
 	</script>
 
+{% endblock %}
+{% block onload_js %}
+    $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
+    {# Prevent refresh resubmit #}
+    if ( window.history.replaceState ) {
+        window.history.replaceState( null, null, window.location.href );
+    }
 {% endblock %}

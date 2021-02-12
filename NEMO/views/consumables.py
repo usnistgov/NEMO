@@ -1,14 +1,19 @@
+from logging import getLogger
+from typing import List
+
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.template import Template, Context
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 
 from NEMO import rates
 from NEMO.forms import ConsumableWithdrawForm
-from NEMO.models import Consumable, User, ConsumableWithdraw, Project
+from NEMO.models import Consumable, User, ConsumableWithdraw
 from NEMO.utilities import send_mail, EmailCategory
 from NEMO.views.customization import get_media_file_contents, get_customization
+
+consumables_logger = getLogger(__name__)
 
 
 @staff_member_required(login_url=None)
@@ -25,9 +30,8 @@ def consumables(request):
 
 	if form.is_valid():
 		withdraw = form.save(commit=False)
-		make_withdrawal(consumable=withdraw.consumable, merchant=request.user, customer=withdraw.customer, quantity=withdraw.quantity, project=withdraw.project)
-		form = ConsumableWithdrawForm(initial={'quantity': 1})
-		messages.success(request, f'The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer} was successfully logged and will be billed to project {withdraw.project}.', extra_tags="data-speed=9000")
+		add_withdraw_to_session(request, withdraw)
+		dictionary['projects'] = form.cleaned_data['customer'].active_projects()
 	else:
 		if hasattr(form, 'cleaned_data') and 'customer' in form.cleaned_data:
 			dictionary['projects'] = form.cleaned_data['customer'].active_projects()
@@ -36,8 +40,48 @@ def consumables(request):
 	return render(request, 'consumables.html', dictionary)
 
 
-def make_withdrawal(consumable: Consumable, quantity: int, project: Project, merchant:User, customer:User):
-	withdraw = ConsumableWithdraw.objects.create(consumable=consumable, quantity=quantity, merchant=merchant, customer=customer, project=project)
+def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
+	request.session.setdefault('withdrawals', [])
+	temp_withdrawals: List = request.session.get('withdrawals')
+	if temp_withdrawals is not None:
+		withdrawal_dict = {
+			'customer': str(withdrawal.customer),
+			'customer_id': withdrawal.customer_id,
+			'consumable': str(withdrawal.consumable),
+			'consumable_id': withdrawal.consumable_id,
+			'project': str(withdrawal.project),
+			'project_id': withdrawal.project_id,
+			'quantity': withdrawal.quantity
+		}
+		temp_withdrawals.append(withdrawal_dict)
+
+
+@staff_member_required(login_url=None)
+@require_POST
+def remove_withdraw_at_index(request, index: str):
+	try:
+		index = int(index)
+		temp_withdrawals: List = request.session.get('withdrawals')
+		if temp_withdrawals:
+			del temp_withdrawals[index]
+	except Exception as e:
+		consumables_logger.exception(e)
+	return redirect("consumables")
+
+
+@staff_member_required(login_url=None)
+@require_POST
+def make_withdrawals(request):
+	temp_withdrawals: List = request.session.get('withdrawals')
+	for withdraw in temp_withdrawals:
+		make_withdrawal(consumable_id=withdraw['consumable_id'], merchant=request.user, customer_id=withdraw['customer_id'], quantity=withdraw['quantity'], project_id=withdraw['project_id'])
+		messages.success(request, f'The withdrawal of {withdraw["quantity"]} of {withdraw["consumable"]} for {withdraw["customer"]} was successfully logged and will be billed to project {withdraw["project"]}.', extra_tags="data-speed=9000")
+	del request.session['withdrawals']
+	return redirect('consumables')
+
+
+def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int):
+	withdraw = ConsumableWithdraw.objects.create(consumable_id=consumable_id, quantity=quantity, merchant=merchant, customer_id=customer_id, project_id=project_id)
 	withdraw.consumable.quantity -= withdraw.quantity
 	withdraw.consumable.save()
 

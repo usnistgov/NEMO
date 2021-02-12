@@ -160,6 +160,8 @@ urlpatterns = [
 
 	# Consumables:
 	url(r'^consumables/$', consumables.consumables, name='consumables'),
+	url(r'^consumables/(?P<index>\d+)/remove$', consumables.remove_withdraw_at_index, name='remove_consumable'),
+	url(r'^consumables/withdraw$', consumables.make_withdrawals, name='withdraw_consumables'),
 
 	# Training:
 	url(r'^training/$', training.training, name='training'),

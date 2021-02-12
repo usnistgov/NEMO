@@ -278,9 +278,7 @@ class ConsumableWithdrawForm(ModelForm):
 		consumable = self.cleaned_data["consumable"]
 		if quantity > consumable.quantity:
 			raise ValidationError(
-				'The withdraw was not processed because there are not enough "'
-				+ consumable.name
-				+ '". (There current quantity in stock is '
+				'There are not enough "' + consumable.name + '". (The current quantity in stock is '
 				+ str(consumable.quantity)
 				+ "). Please order more as soon as possible."
 			)

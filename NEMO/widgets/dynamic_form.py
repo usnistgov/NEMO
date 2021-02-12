@@ -379,11 +379,11 @@ class DynamicForm:
 							quantity = int(run_data_json[question.name]["user_input"])
 					if quantity > 0:
 						make_withdrawal(
-							consumable=consumable,
-							customer=customer,
+							consumable_id=consumable.id,
+							customer_id=customer.id,
 							merchant=merchant,
 							quantity=quantity,
-							project=project,
+							project_id=project.id,
 						)
 				except Exception as e:
 					dynamic_form_logger.warning(
