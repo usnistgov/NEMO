@@ -1,5 +1,5 @@
 /*global Calendar, findPosX, findPosY, getStyle, get_format, gettext, gettext_noop, interpolate, ngettext, quickElement*/
-window.onload = function () {
+window.addEventListener('load', function () {
     django.jQuery('document').ready(function () {
         for (let num=0; num < DateTimeShortcuts.clockInputs.length ; num++) {
             let clock_box = document.getElementById(DateTimeShortcuts.clockDivName + num);
@@ -24,4 +24,4 @@ window.onload = function () {
             DateTimeShortcuts.dismissClock(num);
         }
     });
-}
+});
