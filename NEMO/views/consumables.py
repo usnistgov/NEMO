@@ -42,8 +42,8 @@ def consumables(request):
 
 def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
 	request.session.setdefault('withdrawals', [])
-	temp_withdrawals: List = request.session.get('withdrawals')
-	if temp_withdrawals is not None:
+	withdrawals: List = request.session.get('withdrawals')
+	if withdrawals is not None:
 		withdrawal_dict = {
 			'customer': str(withdrawal.customer),
 			'customer_id': withdrawal.customer_id,
@@ -53,7 +53,8 @@ def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
 			'project_id': withdrawal.project_id,
 			'quantity': withdrawal.quantity
 		}
-		temp_withdrawals.append(withdrawal_dict)
+		withdrawals.append(withdrawal_dict)
+	request.session['withdrawals'] = withdrawals
 
 
 @staff_member_required(login_url=None)
@@ -61,9 +62,9 @@ def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
 def remove_withdraw_at_index(request, index: str):
 	try:
 		index = int(index)
-		temp_withdrawals: List = request.session.get('withdrawals')
-		if temp_withdrawals:
-			del temp_withdrawals[index]
+		withdrawals: List = request.session.get('withdrawals')
+		if withdrawals:
+			del withdrawals[index]
 	except Exception as e:
 		consumables_logger.exception(e)
 	return redirect("consumables")
@@ -72,8 +73,8 @@ def remove_withdraw_at_index(request, index: str):
 @staff_member_required(login_url=None)
 @require_POST
 def make_withdrawals(request):
-	temp_withdrawals: List = request.session.get('withdrawals')
-	for withdraw in temp_withdrawals:
+	withdrawals: List = request.session.get('withdrawals')
+	for withdraw in withdrawals:
 		make_withdrawal(consumable_id=withdraw['consumable_id'], merchant=request.user, customer_id=withdraw['customer_id'], quantity=withdraw['quantity'], project_id=withdraw['project_id'])
 		messages.success(request, f'The withdrawal of {withdraw["quantity"]} of {withdraw["consumable"]} for {withdraw["customer"]} was successfully logged and will be billed to project {withdraw["project"]}.', extra_tags="data-speed=9000")
 	del request.session['withdrawals']
