@@ -231,6 +231,7 @@ def choices(request):
 				shortened=False,
 			)
 				.exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now)
+				.exclude(ancestor__shortened=True)
 				.order_by("start")
 		)
 	except:
