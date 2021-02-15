@@ -21,7 +21,6 @@ def accounts_and_projects(request, kind=None, identifier=None):
 		account = None
 	dictionary = {
 		'account': account,
-		'account_list': Account.objects.all(),
 		'accounts_and_projects': set(Account.objects.all()) | set(Project.objects.all()),
 		'users': User.objects.all(),
 	}

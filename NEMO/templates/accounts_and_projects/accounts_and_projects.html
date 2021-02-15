@@ -52,7 +52,7 @@
 						<div id="project_{{ project.id }}_details" class="collapse">
 							<div style="height:10px"></div>
 							<div id="add_user_to_project_{{ project.id }}">
-								<label class="control-label"><input id="search_user_for_project_{{ project.id }}" type="text" class="form-control user_search" placeholder="Search for a user to add" data-project-id="{{ project.id }}"></label>
+								<label class="control-label" style="min-width: 250px"><input id="search_user_for_project_{{ project.id }}" type="text" class="form-control user_search" placeholder="Search for a user to add" data-project-id="{{ project.id }}"></label>
 							</div>
 							<div id="project_{{ project.id }}_users">
 								{% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
@@ -75,14 +75,14 @@
 		}
 		function add_user_to_project(jquery_event, search_selection, dataset_name)
 		{
-			var project_id = $(this).data('project-id');
+			let project_id = $(this).data('project-id');
 			$(this).typeahead('val', '').focus();
-			var complete_callback = ajax_complete_callback('Unable to modify project');
+			let complete_callback = ajax_complete_callback('Unable to modify project');
 			$("#project_" + project_id + "_users").load("{% url 'add_user_to_project' %}", {'user_id': search_selection.id, 'project_id': project_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
 		}
 		function remove_user_from_project(user_id, project_id)
 		{
-			var complete_callback = ajax_complete_callback('Unable to remove user from project');
+			let complete_callback = ajax_complete_callback('Unable to remove user from project');
 			$("#project_" + project_id + "_users").load("{% url 'remove_user_from_project' %}", {'user_id': user_id, 'project_id': project_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
 		}
 		function on_load()
