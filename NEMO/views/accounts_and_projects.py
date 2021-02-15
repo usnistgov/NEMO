@@ -10,9 +10,11 @@ from NEMO.models import Account, Project, User, MembershipHistory, ActivityHisto
 @staff_member_required(login_url=None)
 @require_GET
 def accounts_and_projects(request, kind=None, identifier=None):
+	selected_project = None
 	try:
 		if kind == 'project':
-			account = Project.objects.get(id=identifier).account
+			selected_project = Project.objects.get(id=identifier)
+			account = selected_project.account
 		elif kind == 'account':
 			account = Account.objects.get(id=identifier)
 		else:
@@ -21,6 +23,7 @@ def accounts_and_projects(request, kind=None, identifier=None):
 		account = None
 	dictionary = {
 		'account': account,
+		'selected_project': selected_project,
 		'accounts_and_projects': set(Account.objects.all()) | set(Project.objects.all()),
 		'users': User.objects.all(),
 	}
