@@ -106,7 +106,7 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}'
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
 		for choice in self.properties["choices"]:
 			result += '<div class="radio">'
 			required = "required" if self.required else ""
@@ -126,7 +126,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}'
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
 		required = "required" if self.required else ""
 		result += f'<select name="{self.name}" {required} style="margin-top: 5px;max-width:{self.max_width}px" class="form-control">'
 		blank_disabled = 'disabled="disabled"' if required else ""
@@ -210,7 +210,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			sub_question.validate()
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}</div>'
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div></div>'
 		result += f'<div id="{self.group_name}_container">'
 		result += self.render_group_question()
 		result += "</div>"
