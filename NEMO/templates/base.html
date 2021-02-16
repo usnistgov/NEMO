@@ -111,9 +111,6 @@
     {
         show_alerts();
 
-        {# Block for js that needs to be executed on page load #}
-        {% block onload_js %}{% endblock %}
-
 	    {# Add a global AJAX completion callback if sessions are able to timeout. #}
         {# When an AJAX request receives an HTTP 403 (unauthorized) reply the user is #}
         {# sent to the logoff page, which then redirects them back to the login page. #}

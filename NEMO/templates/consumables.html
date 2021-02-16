@@ -180,13 +180,14 @@
 			}
 		}
 
+        window.addEventListener("load", function ()
+        {
+            $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
+            {# Prevent refresh resubmit #}
+            if (window.history.replaceState)
+            {
+                window.history.replaceState(null, null, window.location.href);
+            }
+        }, true);
 	</script>
-
-{% endblock %}
-{% block onload_js %}
-    $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
-    {# Prevent refresh resubmit #}
-    if ( window.history.replaceState ) {
-        window.history.replaceState( null, null, window.location.href );
-    }
 {% endblock %}
