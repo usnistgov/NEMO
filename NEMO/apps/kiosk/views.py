@@ -104,7 +104,13 @@ def do_disable_tool(request, tool_id):
 
 	# Collect post-usage questions
 	dynamic_form = DynamicForm(tool.post_usage_questions, tool.id)
-	current_usage_event.run_data = dynamic_form.extract(request)
+
+	try:
+		current_usage_event.run_data = dynamic_form.extract(request)
+	except Exception as e:
+		dictionary = {"message": str(e), "delay": 10}
+		return render(request, "kiosk/acknowledgement.html", dictionary)
+
 	dynamic_form.charge_for_consumables(
 		current_usage_event.user,
 		current_usage_event.operator,

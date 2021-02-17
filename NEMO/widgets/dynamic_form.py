@@ -350,6 +350,8 @@ class DynamicForm:
 		results = {}
 		for question in self.questions:
 			results[question.name] = question.extract(request)
+			if not isinstance(question, PostUsageGroupQuestion) and question.required and not results[question.name].get('user_input'):
+				raise Exception(f"You have to answer the question \"{question.title}\"")
 		return dumps(results, indent="\t") if len(results) else ""
 
 	def filter_questions(self, function: Callable[[PostUsageQuestion], bool]) -> List[PostUsageQuestion]:
