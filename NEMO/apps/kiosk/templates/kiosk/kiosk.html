@@ -97,6 +97,17 @@
 		let error_interlock_element = $("#interlock_error");
 		let bypass_button = $("#inter_bypass");
 
+        function show_alerts()
+        {
+            let alert_users = $(".alert.show-on-load");
+            alert_users.each(function(index, element) {
+                let speed = 4500;
+                if ($(element).data('speed')) speed = $(element).data('speed')
+                $(element).fadeTo(speed, 500).slideUp(500, function () {
+                    $(element).slideUp(500);
+                });
+            });
+        }
 		function send_badge_number(badge_number)
 		{
 			clear_timeout();
@@ -120,6 +131,7 @@
 				revert(15);
 			}
 			$("#badge_number").html("");
+			show_alerts();
 		}
 		function revert(delay)
 		{

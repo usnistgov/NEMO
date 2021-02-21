@@ -365,7 +365,7 @@ class DynamicForm:
 						results.append(sub_question)
 		return results
 
-	def charge_for_consumables(self, customer, merchant, project, run_data: str):
+	def charge_for_consumables(self, customer, merchant, project, run_data: str, request=None):
 		try:
 			run_data_json = loads(run_data)
 		except Exception as error:
@@ -386,6 +386,7 @@ class DynamicForm:
 							merchant=merchant,
 							quantity=quantity,
 							project_id=project.id,
+							request=request
 						)
 				except Exception as e:
 					dynamic_form_logger.warning(

@@ -75,16 +75,23 @@ def remove_withdraw_at_index(request, index: str):
 def make_withdrawals(request):
 	withdrawals: List = request.session.get('withdrawals')
 	for withdraw in withdrawals:
-		make_withdrawal(consumable_id=withdraw['consumable_id'], merchant=request.user, customer_id=withdraw['customer_id'], quantity=withdraw['quantity'], project_id=withdraw['project_id'])
-		messages.success(request, f'The withdrawal of {withdraw["quantity"]} of {withdraw["consumable"]} for {withdraw["customer"]} was successfully logged and will be billed to project {withdraw["project"]}.', extra_tags="data-speed=9000")
+		make_withdrawal(consumable_id=withdraw['consumable_id'], merchant=request.user, customer_id=withdraw['customer_id'], quantity=withdraw['quantity'], project_id=withdraw['project_id'], request=request)
 	del request.session['withdrawals']
 	return redirect('consumables')
 
 
-def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int):
+def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, request=None):
 	withdraw = ConsumableWithdraw.objects.create(consumable_id=consumable_id, quantity=quantity, merchant=merchant, customer_id=customer_id, project_id=project_id)
 	withdraw.consumable.quantity -= withdraw.quantity
 	withdraw.consumable.save()
+	# Only add notification message if request is present
+	if request:
+		if request.user.id == customer_id:
+			message = f'Your withdrawal of {withdraw.quantity} of {withdraw.consumable}'
+		else:
+			message = f'The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer}'
+		message += f' was successfully logged and will be billed to project {withdraw.project}.'
+		messages.success(request, message, extra_tags="data-speed=9000")
 
 
 def send_reorder_supply_reminder_email(consumable: Consumable):

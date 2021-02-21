@@ -376,6 +376,7 @@ def disable_tool(request, tool_id):
 		current_usage_event.operator,
 		current_usage_event.project,
 		current_usage_event.run_data,
+		request
 	)
 	dynamic_form.update_counters(current_usage_event.run_data)
 
