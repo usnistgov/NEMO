@@ -23,7 +23,7 @@
                         <input type="button" id="chosen_customer" class="btn btn-default" onclick="clear_selected_customer()" value="{{ form.cleaned_data.customer }}">
                         <input type="hidden" id="customer" name="customer" value="{{ form.cleaned_data.customer.id }}">
                     {% else %}
-                        <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer">
+                        <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer" required>
                         <input type="button" id="chosen_customer" class="btn btn-default" style="display:none" onclick="clear_selected_customer()">
                         <input type="hidden" id="customer" name="customer">
                     {% endif %}
@@ -147,14 +147,14 @@
 		function clear_selected_customer()
 		{
 			$("#chosen_customer").val('').hide();
-			$("#customer_search").typeahead('val', '').show().focus();
+			$("#customer_search").typeahead('val', '').prop('required', true).show().focus();
 			$("#customer").val('');
 			$('#project').find('option').remove().end().attr('disabled', 'disabled');
 		}
 
 		function fetch_projects(jquery_event, search_selection, dataset_name)
 		{
-			$('#customer_search').hide();
+			$('#customer_search').prop('required', false).hide();
 			$('#chosen_customer').val(search_selection.name).show();
 			$('#customer').val(search_selection.id);
 			ajax_get("{% url 'get_projects' %}", {'user_id': search_selection.id}, update_projects);
