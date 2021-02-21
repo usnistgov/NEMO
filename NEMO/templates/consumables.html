@@ -38,13 +38,13 @@
             <div class="form-group">
                 <label class="control-label col-md-3" for="project">Project</label>
                 <div class="col-md-9">
-                    <select id="project" name="project" class="form-control" {% if not projects %}disabled{% endif %}>
+                    <select id="project" name="project" class="form-control" {% if not projects %}disabled{% endif %} required>
                         {% if projects|length == 0 %}
                             <option>{% if form.cleaned_data.customer %}No active projects!{% endif %}</option>
                         {% elif projects|length == 1 %}
                             <option value="{{ projects.0.id }}">{{ projects.0 }}</option>
                         {% elif projects %}
-                            <option disabled selected>Choose a project to bill</option>
+                            <option disabled selected value="">Choose a project to bill</option>
                             {% for p in projects %}
                                 <option value="{{ p.id }}" {% if form.cleaned_data.project.id == p.id %}selected{% endif %}>{{ p }}</option>
                             {% endfor %}
@@ -175,7 +175,8 @@
 				project_selector.append($('<option/>', {
 					text: "Choose a project to bill",
 					disabled: true,
-					selected: true
+					selected: true,
+                    value: ""
 				}));
 				$.each(projects, function(count, project)
 				{
