@@ -12,7 +12,7 @@
     <div style="height: 15px"></div>
     <div class="col-md-5">
         <p>Use this form to charge users for consumable items & supplies.</p>
-        <form action="{% url 'consumables' %}" class="form-horizontal" method="post">
+        <form id="withdrawal_form_order" action="{% url 'consumables' %}" class="form-horizontal" method="post">
             {% csrf_token %}
 
             <div class="form-group">
@@ -59,54 +59,45 @@
             </div>
 
             <div class="form-group">
-                <label class="control-label col-md-3" for="consumable">Consumable</label>
-                <div class="col-md-9">
-                    <select id="consumable" name="consumable" class="form-control">
-                        <option>&nbsp;</option>
-                        {% regroup consumables by category as categories %}
-                        {% for category in categories %}
-                            {% if categories|length > 1 or category.grouper %}
-                            <optgroup label="{{ category.grouper|default_if_none:"Uncategorized" }}">
-                                {% for item in category.list %}
-                                    <option value="{{ item.id }}" {% if form.cleaned_data.consumable.id == item.id %}selected{% endif %}>{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}</option>
-                                {% endfor %}
-                            </optgroup>
-                            {% else %}
-                                {% for item in category.list %}
-                                    <option value="{{ item.id }}" {% if form.cleaned_data.consumable.id == item.id %}selected{% endif %}>{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}</option>
-                                {% endfor %}
-                            {% endif %}
-                        {% endfor %}
-                    </select>
+                <label class="control-label col-md-3">Consumables</label>
+                <div class="col-md-9 control-label" style="text-align: left">
                 </div>
-                {% if form.consumable.errors %}
-                    <div class="col-md-12 form-control-static danger-highlight">
-                        {{ form.consumable.errors|striptags }}
-                    </div>
-                {% endif %}
             </div>
 
             <div class="form-group">
-                <label class="control-label col-md-3" for="quantity">Quantity</label>
-                <div class="col-md-9">
-                    <input type="number" min="1" inputmode="numeric" pattern="[0-9]*" id="quantity" name="quantity" class="form-control">
+                <div class="col-sm-12">
+                    <table class="table">
+                        {% regroup consumables by category as categories %}
+                        {% for category in categories %}
+                            {% if categories|length > 1 or category.grouper %}
+                                <tr><th>{{ category.grouper|default_if_none:"Uncategorized" }}</th></tr>
+                            {% endif %}
+                            {% for item in category.list %}
+                                <tr><td {% if categories|length > 1 or category.grouper %}style="padding-left: 15px;"{% endif %}>
+                                    {% if form.cleaned_data.consumable.id == item.id %}
+                                        {% if form.quantity.errors %}
+                                            <div class="form-control-static danger-highlight">
+                                                Quantity: {{ form.quantity.errors|striptags }}
+                                            </div>
+                                        {% elif form.consumable.errors %}
+                                            <div class="form-control-static danger-highlight">
+                                                Consumable: {{ form.consumable.errors|striptags }}
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                    <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %} <span class="glyphicon glyphicon-plus-sign success-highlight" style="vertical-align: text-top"></span></span>
+                                </td></tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </table>
                 </div>
-                {% if form.quantity.errors %}
-                    <div class="col-md-12 form-control-static danger-highlight">
-                        {{ form.quantity.errors|striptags }}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="col-md-12 text-right" style="padding-right: 0">
-                <input type="submit" class="btn btn-default" value="Add">
             </div>
         </form>
     </div>
 
     {% if request.session.withdrawals %}
         <div class="col-md-6 col-md-offset-1">
-            <p>Current orders:</p>
+            <p>Current order:</p>
             <table class="table table-condensed table-striped thead-light">
                 <thead>
                     <tr>
@@ -140,6 +131,19 @@
     {% endif %}
 
 	<script type="text/javascript">
+        function add_tooltip(element, consumable_id)
+        {
+            let consumable_tooltip_content =
+                "<div style='margin: 10px;'>" +
+                "<input type='hidden' id='consumable' name='consumable' value='" + consumable_id + "'>" +
+                "<div style='margin-bottom: 10px'>" +
+                "<label for=quantity class='control-label'>How many?</label>" +
+                "<input style='padding-right: 0;margin-left: 10px; min-width: 20px; max-width: 50px; display: inline-block' class='form-control input-sm' type='number' id='quantity' name='quantity' min='1' inputmode='numeric' pattern='[0-9]*' required>" +
+                "</div>" +
+                "<button id='order_add_button' class='btn btn-sm btn-success' type='submit'>Add to order</button>" +
+                "</div>"
+            $(element).tooltip({trigger: 'manual', placement: 'right', html: 'true', title: consumable_tooltip_content}).tooltip('show');
+        }
 		function clear_selected_customer()
 		{
 			$("#chosen_customer").val('').hide();
@@ -183,6 +187,25 @@
         window.addEventListener("load", function ()
         {
             $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
+            $('#withdrawal_form_order').on('shown.bs.tooltip', function(e)
+            {
+                $('#quantity').focus();
+            });
+            $(document).on('click', function(e)
+            {
+                {# Dimiss tooltip when clicking on everything outside the tooltip itself #}
+                if($(e.target).closest(".tooltip").length === 0 )
+                {
+                    $('#withdrawal_form_order .tooltip').remove();
+                }
+            });
+            $('.consumable_trigger').on('click', function (event)
+            {
+                $('#withdrawal_form_order .tooltip').remove();
+                event.stopPropagation();
+                let consumable_id = $(this).data("item-id");
+                add_tooltip($(this), consumable_id);
+            });
             {# Prevent refresh resubmit #}
             if (window.history.replaceState)
             {
@@ -190,4 +213,10 @@
             }
         }, true);
 	</script>
+    <style>
+    .tooltip
+    {
+        opacity: 1 !important;
+    }
+    </style>
 {% endblock %}
