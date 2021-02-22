@@ -733,3 +733,16 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 		margin-left: 0 !important;
 	}
 }
+
+/* Pagination */
+.button-column-minimum
+{
+    width: 1px;
+    white-space: nowrap;
+    word-break: keep-all;
+}
+
+.pagination-column a
+{
+    color: inherit;
+}

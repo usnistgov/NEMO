@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+	{% block before_pagination %}{% endblock %}
+	{% if page %}
+		{% with paginator=page.paginator %}
+			<div class="pagination pull-right">
+				<select id="results_per_page" onchange="window.location = '?o={{ paginator.order_by }}&p={{ page.number }}&pp='+this.value">
+					<option value="5" {% if paginator.per_page == 5 %}selected{% endif %}>5</option>
+					<option value="25" {% if paginator.per_page == 25 %}selected{% endif %}>25</option>
+					<option value="50" {% if paginator.per_page == 50 %}selected{% endif %}>50</option>
+					<option value="100" {% if paginator.per_page == 100 %}selected{% endif %}>100</option>
+				</select>
+				<label for="results_per_page">results per page</label>
+			</div>
+
+			{% block pagination_content %}{% endblock %}
+
+			<div class="pagination pull-right">
+				<span class="step-links">
+					{% if page.has_previous %}
+						<a href="?o={{ paginator.order_by }}&p=1&pp={{ paginator.per_page }}">&laquo; first</a>
+						<a href="?o={{ paginator.order_by }}&p={{ page.previous_page_number }}&pp={{ paginator.per_page }}">previous</a>
+					{% endif %}
+
+					<span class="current">
+						Page {{ page.number }} of {{ paginator.num_pages }}
+					</span>
+
+					{% if page.has_next %}
+						<a href="?o={{ paginator.order_by }}&p={{ page.next_page_number }}&pp={{ paginator.per_page }}">next</a>
+						<a href="?o={{ paginator.order_by }}&p={{ paginator.num_pages }}&pp={{ paginator.per_page }}">last &raquo;</a>
+					{% endif %}
+				</span>
+			</div>
+		{% endwith %}
+	{% else %}
+		{% block table_empty_content %}{% endblock %}
+	{% endif %}
+	{% block after_pagination %}{% endblock %}
+{% endblock %}

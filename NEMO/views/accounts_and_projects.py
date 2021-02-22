@@ -5,11 +5,23 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 
 from NEMO.forms import ProjectForm, AccountForm
 from NEMO.models import Account, Project, User, MembershipHistory, ActivityHistory
+from NEMO.views.pagination import SortedPaginator
 
 
 @staff_member_required(login_url=None)
 @require_GET
-def accounts_and_projects(request, kind=None, identifier=None):
+def accounts_and_projects(request):
+	all_accounts = Account.objects.all().order_by("name")
+
+	page = SortedPaginator(all_accounts, request, order_by="name").get_current_page()
+
+	dictionary = {"page": page, "accounts_and_projects": set(Account.objects.all()) | set(Project.objects.all())}
+	return render(request, "accounts_and_projects/accounts_and_projects.html", dictionary)
+
+
+@staff_member_required(login_url=None)
+@require_GET
+def select_accounts_and_projects(request, kind=None, identifier=None):
 	selected_project = None
 	try:
 		if kind == 'project':
@@ -27,7 +39,7 @@ def accounts_and_projects(request, kind=None, identifier=None):
 		'accounts_and_projects': set(Account.objects.all()) | set(Project.objects.all()),
 		'users': User.objects.all(),
 	}
-	return render(request, 'accounts_and_projects/accounts_and_projects.html', dictionary)
+	return render(request, 'accounts_and_projects/account_and_projects.html', dictionary)
 
 
 @staff_member_required(login_url=None)

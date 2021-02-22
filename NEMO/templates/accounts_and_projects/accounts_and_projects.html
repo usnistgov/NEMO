@@ -1,7 +1,7 @@
-{% extends 'base.html' %}
+{% extends 'pagination/pagination_base.html' %}
 {% load custom_tags_and_filters %}
 {% block title %}Accounts and projects{% endblock %}
-{% block content %}
+{% block before_pagination %}
 	<h1>
 		Accounts and projects
 		<span class="hidden-sm hidden-xs">
@@ -20,59 +20,69 @@
 			<input id="search" type="text" placeholder="Search for an account or project" class="form-control" autofocus>
 		</div>
 	</div>
-	{% if account %}
-		<div class="row">
-			<div class="col-sm-12">
-                {% if not selected_project %}
-                    <h2>
-                        {{ account }}
-                        <form style="display:inline" method="post" action="{% url 'toggle_active' 'account' account.id %}">
-                            {% csrf_token %}
-                            {# Using an 'input submit' element would be preferable to an anchor on the following line, but Bootstrap can't style a 'submit' as a label so you have to use an anchor. #}
-                            <a onclick="$(this).closest('form').submit()" class="label {% if account.active %}label-success{% else %}label-danger{% endif %}" style="vertical-align:50%; font-size:small">
-                                {% if account.active %}Active{% else %}Inactive{% endif %}
-                            </a>
-                        </form>
-                    </h2>
-                {% endif %}
-				{% for project in account.project_set.all %}
-                    {% if not selected_project or project == selected_project %}
-                        <h3>
-                            <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#project_{{ project.id }}_details" class="pointer" style="text-decoration:none">
-                                <span id="project_{{ project.id }}_chevron" class="glyphicon {% if selected_project %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
-                                {{ project }}
-                            </a>
-                            <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
-                                {% csrf_token %}
-                                {# Using an 'input submit' element would be preferable to an anchor on the following line, but Bootstrap can't style a 'submit' as a label so you have to use an anchor. #}
-                                <a onclick="$(this).closest('form').submit()" class="label {% if project.active %}label-success{% else %}label-danger{% endif %}" style="vertical-align:50%; font-size:small">
-                                    {% if project.active %}Active{% else %}Inactive{% endif %}
-                                </a>
-                            </form>
-                        </h3>
-                        <div style="margin-left:34px">
-                            {% if selected_project %}Account: <a href="{% url 'account' project.account.id %}">{{ project.account }}</a>{% endif %}
-                            <div>
-                                {% if selected_project %}Identifier: {% endif %}
-                                <span class="grey">{{ project.application_identifier }}</span>
-                            </div>
-                            <div id="project_{{ project.id }}_details" class="collapse {% if selected_project %}in{% endif %}">
-                                <div style="height:10px"></div>
-                                <div id="add_user_to_project_{{ project.id }}">
-                                    <label class="control-label" style="min-width: 250px"><input id="search_user_for_project_{{ project.id }}" type="text" class="form-control user_search" placeholder="Search for a user to add" data-project-id="{{ project.id }}"></label>
-                                </div>
-                                <div id="project_{{ project.id }}_users">
-                                    {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-				{% empty %}
-					<h4 class="grey">This account does not have any projects</h4>
+{% endblock %}
+{% block pagination_content %}
+	<table class="table table-bordered table-condensed table-hover thead-light">
+			<thead>
+				<tr>
+					<th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
+					<th>Project Identifier</th>
+					<th class="button-column-minimum">{% include 'pagination/pagination_column.html' with order_by='active' name='Active' align='yes' %}</th>
+					<th class="button-column-minimum"></th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for account in page %}
+					<tr style="background-color: #f9f9f9">
+						<td id="chevron_{{ account.id }}" data-toggle="collapse" data-target=".projects_{{ account.id }}" onclick="toggle_details($('#chevron_{{ account.id }}'))" style="font-weight: bold">
+							<span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>
+							{{ account.name }}
+						</td>
+						<td data-toggle="collapse" data-target=".projects_{{ account.id }}" onclick="toggle_details($('#chevron_{{ account.id }}'))"></td>
+						<td class="text-center">
+							<form method="post" action="{% url 'toggle_active' 'account' account.id %}">
+								{% csrf_token %}
+								{% if account.active %}
+									<button type="submit" class="btn btn-xs btn-success" title="Deactivate"><i class="glyphicon glyphicon-ok"></i></button>
+								{% else %}
+									<button type="submit" class="btn btn-xs btn-danger" title="Reactivate"><i class="glyphicon glyphicon-remove"></i></button>
+								{% endif %}
+							</form>
+						</td>
+						<td>
+							<button type="button" class="btn btn-xs btn-primary" title="View account" onclick="window.location = '{% url 'account' account.id %}'"><i class="glyphicon glyphicon-search"></i></button>
+						</td>
+					</tr>
+					{% for project in account.project_set.all %}
+						<tr class="collapse in projects_{{ account.id }}">
+							<td style="padding-left: 28px">{{ project.name }}</td>
+							<td>{{ project.application_identifier }}</td>
+							<td class="text-center">
+								<form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
+									{% csrf_token %}
+									{% if project.active %}
+										<button type="submit" class="btn btn-xs btn-success" title="Deactivate"><i class="glyphicon glyphicon-ok"></i></button>
+									{% else %}
+										<button type="submit" class="btn btn-xs btn-danger" title="Reactivate"><i class="glyphicon glyphicon-remove"></i></button>
+									{% endif %}
+								</form>
+							</td>
+							<td>
+								<button type="button" class="btn btn-xs btn-primary" title="View project" onclick="window.location = '{% url 'project' project.id %}'"><i class="glyphicon glyphicon-search"></i></button>
+							</td>
+						</tr>
+					{% empty %}
+						<tr class="collapse in projects_{{ account.id }}">
+							<td colspan="4" style="padding-left: 28px">
+								<span class="grey">This account does not have any projects</span>
+							</td>
+						</tr>
+					{% endfor %}
 				{% endfor %}
-			</div>
-		</div>
-	{% endif %}
+			</tbody>
+		</table>
+{% endblock %}
+{% block after_pagination %}
 	<script>
 		function get_account(jquery_event, search_selection, dataset_name)
 		{
@@ -81,24 +91,11 @@
 			else if(search_selection.type === 'account')
 				window.location.href = "{% url 'account' 999 %}".replace('999', search_selection.id);
 		}
-		function add_user_to_project(jquery_event, search_selection, dataset_name)
-		{
-			let project_id = $(this).data('project-id');
-			$(this).typeahead('val', '').focus();
-			let complete_callback = ajax_complete_callback('Unable to modify project');
-			$("#project_" + project_id + "_users").load("{% url 'add_user_to_project' %}", {'user_id': search_selection.id, 'project_id': project_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
-		}
-		function remove_user_from_project(user_id, project_id)
-		{
-			let complete_callback = ajax_complete_callback('Unable to remove user from project');
-			$("#project_" + project_id + "_users").load("{% url 'remove_user_from_project' %}", {'user_id': user_id, 'project_id': project_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
-		}
 		function on_load()
 		{
 			$('#search').autocomplete('accounts_and_projects', get_account, {% json_search_base_with_extra_fields accounts_and_projects 'application_identifier' %});
-			$('.user_search').autocomplete('users', add_user_to_project, {{ users|json_search_base }});
 		}
-		$(on_load);
+		window.addEventListener('load', on_load, true);
 	</script>
 	<style>
 		#search_container .tt-dropdown-menu
