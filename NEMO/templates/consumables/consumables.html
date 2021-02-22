@@ -62,8 +62,8 @@
         </form>
     </div>
 
-    <div class="col-md-6 col-md-offset-1">
-        <div id="consumables_order" class="affix col-md-5">
+    <div class="col-md-6">
+        <div id="consumables_order" class="affix" style="margin-right: 5%;margin-left: 5%">
             {% include 'consumables/consumables_order.html' %}
         </div>
     </div>
@@ -153,6 +153,12 @@
                 $('#withdrawal_form_order .tooltip').remove();
 				return false;
             });
+            $(window).scroll(function(e)
+            {
+              let consumables_order = $('#consumables_order');
+              if ($(this).scrollTop() > 50) consumables_order.css({'top': '30px'});
+              else consumables_order.css({'top': 'inherit'});
+            });
             {# Prevent refresh resubmit #}
             if (window.history.replaceState)
             {
@@ -167,9 +173,11 @@
     }
     @media (max-width: 992px)
     {
-        .affix
+        #consumables_order.affix
         {
             position: static;
+            margin-right: 0 !important;
+            margin-left: 0 !important;
         }
     }
     </style>
