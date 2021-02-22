@@ -707,3 +707,29 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	padding-inline-start: 40px;
 	font-size: large;
 }
+
+/* Make tooltips in consumable opaque */
+#withdrawal_form_order .tooltip
+{
+	opacity: 1 !important;
+}
+
+#consumables_order
+{
+	margin-right: 5%;
+	margin-left: 5%;
+	height: 100%;
+	padding-bottom: 100px;
+	overflow-y: scroll;
+}
+
+/* Make consumable order stay in place for small screens */
+@media (max-width: 992px)
+{
+	#consumables_order.affix
+	{
+		position: static;
+		margin-right: 0 !important;
+		margin-left: 0 !important;
+	}
+}

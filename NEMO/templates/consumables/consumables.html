@@ -63,7 +63,7 @@
     </div>
 
     <div class="col-md-6">
-        <div id="consumables_order" class="affix" style="margin-right: 5%;margin-left: 5%">
+        <div id="consumables_order" class="affix">
             {% include 'consumables/consumables_order.html' %}
         </div>
     </div>
@@ -166,19 +166,4 @@
             }
         }, true);
 	</script>
-    <style>
-    .tooltip
-    {
-        opacity: 1 !important;
-    }
-    @media (max-width: 992px)
-    {
-        #consumables_order.affix
-        {
-            position: static;
-            margin-right: 0 !important;
-            margin-left: 0 !important;
-        }
-    }
-    </style>
 {% endblock %}
