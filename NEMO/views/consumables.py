@@ -64,6 +64,7 @@ def remove_withdraw_at_index(request, index: str):
 		withdrawals: List = request.session.get('withdrawals')
 		if withdrawals:
 			del withdrawals[index]
+			request.session['withdrawals'] = withdrawals
 	except Exception as e:
 		consumables_logger.exception(e)
 	return render(request, "consumables/consumables_order.html")
