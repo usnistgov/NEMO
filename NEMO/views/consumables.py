@@ -3,9 +3,10 @@ from typing import List
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpResponseBadRequest
 from django.shortcuts import render, redirect
 from django.template import Template, Context
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import require_http_methods, require_POST, require_GET
 
 from NEMO import rates
 from NEMO.forms import ConsumableWithdrawForm
@@ -19,25 +20,23 @@ consumables_logger = getLogger(__name__)
 @staff_member_required(login_url=None)
 @require_http_methods(['GET', 'POST'])
 def consumables(request):
-	form = ConsumableWithdrawForm(request.POST or None, initial={'quantity': 1})
-	rate_dict = rates.rate_class.get_consumable_rates(Consumable.objects.all())
+	if request.method == "GET":
+		rate_dict = rates.rate_class.get_consumable_rates(Consumable.objects.all())
 
-	dictionary = {
-		'users': User.objects.filter(is_active=True),
-		'consumables': Consumable.objects.filter(visible=True).order_by('category', 'name'),
-		'rates': rate_dict,
-	}
-
-	if form.is_valid():
-		withdraw = form.save(commit=False)
-		add_withdraw_to_session(request, withdraw)
-		dictionary['projects'] = form.cleaned_data['customer'].active_projects()
-	else:
-		if hasattr(form, 'cleaned_data') and 'customer' in form.cleaned_data:
-			dictionary['projects'] = form.cleaned_data['customer'].active_projects()
-
-	dictionary['form'] = form
-	return render(request, 'consumables.html', dictionary)
+		dictionary = {
+			'users': User.objects.filter(is_active=True),
+			'consumables': Consumable.objects.filter(visible=True).order_by('category', 'name'),
+			'rates': rate_dict,
+		}
+		return render(request, 'consumables/consumables.html', dictionary)
+	elif request.method == "POST":
+		form = ConsumableWithdrawForm(request.POST)
+		if form.is_valid():
+			withdraw = form.save(commit=False)
+			add_withdraw_to_session(request, withdraw)
+		else:
+			return HttpResponseBadRequest(form.errors.as_ul())
+		return render(request, "consumables/consumables_order.html")
 
 
 def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
@@ -58,7 +57,7 @@ def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
 
 
 @staff_member_required(login_url=None)
-@require_POST
+@require_GET
 def remove_withdraw_at_index(request, index: str):
 	try:
 		index = int(index)
@@ -67,7 +66,7 @@ def remove_withdraw_at_index(request, index: str):
 			del withdrawals[index]
 	except Exception as e:
 		consumables_logger.exception(e)
-	return redirect("consumables")
+	return render(request, "consumables/consumables_order.html")
 
 
 @staff_member_required(login_url=None)

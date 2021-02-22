@@ -2,12 +2,6 @@
 {% load custom_tags_and_filters %}
 {% block title %}Withdraw consumables{% endblock %}
 {% block content %}
-	{% if form.errors %}
-		<div class="alert alert-danger">
-			Oops! Something went wrong. Please correct the errors highlighted below.<br>
-			{{ form.non_field_errors }}
-		</div>
-	{% endif %}
 	<h1>Withdraw consumables</h1>
     <div style="height: 15px"></div>
     <div class="col-md-5">
@@ -18,21 +12,10 @@
             <div class="form-group">
                 <label class="control-label col-md-3" for="customer_search">Customer</label>
                 <div class="col-md-9">
-                    {% if form.cleaned_data.customer %}
-                        <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer" style="display:none">
-                        <input type="button" id="chosen_customer" class="btn btn-default" onclick="clear_selected_customer()" value="{{ form.cleaned_data.customer }}">
-                        <input type="hidden" id="customer" name="customer" value="{{ form.cleaned_data.customer.id }}">
-                    {% else %}
-                        <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer" required>
-                        <input type="button" id="chosen_customer" class="btn btn-default" style="display:none" onclick="clear_selected_customer()">
-                        <input type="hidden" id="customer" name="customer">
-                    {% endif %}
+                    <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer" required>
+                    <input type="button" id="chosen_customer" class="btn btn-default" style="display:none" onclick="clear_selected_customer()">
+                    <input type="hidden" id="customer" name="customer">
                 </div>
-                {% if form.customer.errors %}
-                    <div class="col-md-12 form-control-static danger-highlight">
-                        {{ form.customer.errors|striptags }}
-                    </div>
-                {% endif %}
             </div>
 
             <div class="form-group">
@@ -40,22 +23,17 @@
                 <div class="col-md-9">
                     <select id="project" name="project" class="form-control" {% if not projects %}disabled{% endif %} required>
                         {% if projects|length == 0 %}
-                            <option>{% if form.cleaned_data.customer %}No active projects!{% endif %}</option>
+                            <option></option>
                         {% elif projects|length == 1 %}
                             <option value="{{ projects.0.id }}">{{ projects.0 }}</option>
                         {% elif projects %}
                             <option disabled selected value="">Choose a project to bill</option>
                             {% for p in projects %}
-                                <option value="{{ p.id }}" {% if form.cleaned_data.project.id == p.id %}selected{% endif %}>{{ p }}</option>
+                                <option value="{{ p.id }}">{{ p }}</option>
                             {% endfor %}
                         {% endif %}
                     </select>
                 </div>
-                {% if form.project.errors %}
-                    <div class="col-md-12 form-control-static danger-highlight">
-                        {{ form.project.errors|striptags }}
-                    </div>
-                {% endif %}
             </div>
 
             <div class="form-group">
@@ -74,17 +52,6 @@
                             {% endif %}
                             {% for item in category.list %}
                                 <tr><td {% if categories|length > 1 or category.grouper %}style="padding-left: 15px;"{% endif %}>
-                                    {% if form.cleaned_data.consumable.id == item.id %}
-                                        {% if form.quantity.errors %}
-                                            <div class="form-control-static danger-highlight">
-                                                Quantity: {{ form.quantity.errors|striptags }}
-                                            </div>
-                                        {% elif form.consumable.errors %}
-                                            <div class="form-control-static danger-highlight">
-                                                Consumable: {{ form.consumable.errors|striptags }}
-                                            </div>
-                                        {% endif %}
-                                    {% endif %}
                                     <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %} <span class="glyphicon glyphicon-plus-sign success-highlight" style="vertical-align: text-top"></span></span>
                                 </td></tr>
                             {% endfor %}
@@ -95,40 +62,11 @@
         </form>
     </div>
 
-    {% if request.session.withdrawals %}
-        <div class="col-md-6 col-md-offset-1">
-            <p>Current order:</p>
-            <table class="table table-condensed table-striped thead-light">
-                <thead>
-                    <tr>
-                        <th>Customer</th>
-                        <th>Project</th>
-                        <th>Consumable</th>
-                        <th>Quantity</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                {% for withdraw in request.session.withdrawals %}
-                    <tr>
-                        <td>{{ withdraw.customer }}</td>
-                        <td>{{ withdraw.project }}</td>
-                        <td>{{ withdraw.consumable }}</td>
-                        <td>{{ withdraw.quantity }}</td>
-                        <td>
-                            <form id="remove_withdrawal_{{ forloop.counter0 }}" method="post" action="{% url 'remove_consumable' forloop.counter0 %}">
-                                {% csrf_token %}
-                                <span class="glyphicon glyphicon-remove pull-right" style="cursor:pointer" onclick="$('#remove_withdrawal_{{ forloop.counter0 }}').submit()" data-toggle="tooltip" data-placement="top" title="Remove this withdrawal"></span>
-                            </form>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </table>
-            <form action="{% url 'withdraw_consumables' %}" class="form-horizontal text-right" method="post">
-                {% csrf_token %}
-                <input type="submit" class="btn btn-success" value="Confirm">
-            </form>
+    <div class="col-md-6 col-md-offset-1">
+        <div id="consumables_order" class="affix col-md-5">
+            {% include 'consumables/consumables_order.html' %}
         </div>
-    {% endif %}
+    </div>
 
 	<script type="text/javascript">
         function add_tooltip(element, consumable_id)
@@ -151,7 +89,6 @@
 			$("#customer").val('');
 			$('#project').find('option').remove().end().attr('disabled', 'disabled');
 		}
-
 		function fetch_projects(jquery_event, search_selection, dataset_name)
 		{
 			$('#customer_search').prop('required', false).hide();
@@ -159,7 +96,6 @@
 			$('#customer').val(search_selection.id);
 			ajax_get("{% url 'get_projects' %}", {'user_id': search_selection.id}, update_projects);
 		}
-
 		function update_projects(response, status, xml_http_request)
 		{
 		    let project_selector = $('#project');
@@ -184,11 +120,11 @@
 				});
 			}
 		}
-
         window.addEventListener("load", function ()
         {
             $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
-            $('#withdrawal_form_order').on('shown.bs.tooltip', function(e)
+            let withdrawal_order_form = $('#withdrawal_form_order');
+            withdrawal_order_form.on('shown.bs.tooltip', function(e)
             {
                 $('#quantity').focus();
             });
@@ -207,6 +143,16 @@
                 let consumable_id = $(this).data("item-id");
                 add_tooltip($(this), consumable_id);
             });
+            {# Form will be submitted with ajax #}
+            withdrawal_order_form.submit(function(e)
+            {
+                e.preventDefault();
+				let data = serialize($(this));
+				let failure = ajax_failure_callback('Withdrawal error');
+				ajax_post('{% url 'consumables' %}', data, function(response) {$('#consumables_order').html(response)}, failure);
+                $('#withdrawal_form_order .tooltip').remove();
+				return false;
+            });
             {# Prevent refresh resubmit #}
             if (window.history.replaceState)
             {
@@ -218,6 +164,13 @@
     .tooltip
     {
         opacity: 1 !important;
+    }
+    @media (max-width: 992px)
+    {
+        .affix
+        {
+            position: static;
+        }
     }
     </style>
 {% endblock %}

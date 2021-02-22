@@ -1,0 +1,29 @@
+{% if request.session.withdrawals %}
+    <p>Current order:</p>
+    <table class="table table-condensed table-striped thead-light">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Project</th>
+                <th>Consumable</th>
+                <th>Quantity</th>
+                <th></th>
+            </tr>
+        </thead>
+        {% for withdraw in request.session.withdrawals %}
+            <tr>
+                <td>{{ withdraw.customer }}</td>
+                <td>{{ withdraw.project }}</td>
+                <td>{{ withdraw.consumable }}</td>
+                <td>{{ withdraw.quantity }}</td>
+                <td>
+                    <span class="glyphicon glyphicon-remove pull-right" style="cursor:pointer" onclick="$('#consumables_order').load('{% url 'remove_consumable' forloop.counter0 %}')" title="Remove this withdrawal"></span>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+    <form action="{% url 'withdraw_consumables' %}" class="form-horizontal text-right" method="post">
+        {% csrf_token %}
+        <input type="submit" class="btn btn-success" value="Confirm">
+    </form>
+{% endif %}
