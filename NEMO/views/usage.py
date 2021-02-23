@@ -52,7 +52,6 @@ def get_project_applications():
 
 
 def date_parameters_dictionary(request):
-	billing_service = get_billing_service()
 	if request.GET.get('start_date') and request.GET.get('end_date'):
 		start_date, end_date = parse_start_and_end_date(request.GET.get('start_date'), request.GET.get('end_date'))
 	else:
@@ -66,7 +65,7 @@ def date_parameters_dictionary(request):
 		'kind': kind,
 		'identifier': identifier,
 		'tab_url': get_url_for_other_tab(request),
-		'billing_service': billing_service.get('available', False),
+		'billing_service': get_billing_service().get('available', False),
 	}
 	return dictionary, start_date, end_date, kind, identifier
 
