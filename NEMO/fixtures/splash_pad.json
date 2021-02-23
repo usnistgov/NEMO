@@ -478,6 +478,18 @@
     }
   },
   {
+    "model": "NEMO.physicalaccesslevel",
+    "pk": 1,
+    "fields": {
+      "name": "Cleanroom access",
+      "area": 1,
+      "schedule": 0,
+      "weekdays_start_time": null,
+      "weekdays_end_time": null,
+      "allow_staff_access": true
+    }
+  },
+  {
     "model": "NEMO.alert",
     "pk": 1,
     "fields": {
