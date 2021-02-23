@@ -3,7 +3,7 @@ from logging import getLogger
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_GET
 from requests import get
@@ -89,6 +89,8 @@ def usage(request):
 @login_required
 @require_GET
 def billing(request):
+	if not settings.BILLING_SERVICE or not settings.BILLING_SERVICE['available']:
+		return redirect('usage')
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	formatted_applications = ','.join(map(str, set(request.user.active_projects().values_list('application_identifier', flat=True))))
 	try:
@@ -159,6 +161,8 @@ def project_usage(request):
 @staff_member_required(login_url=None)
 @require_GET
 def project_billing(request):
+	if not settings.BILLING_SERVICE or not settings.BILLING_SERVICE['available']:
+		return redirect('project_usage')
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	base_dictionary['project_autocomplete'] = True
 	base_dictionary['search_items'] = set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()) | set(User.objects.filter(is_active=True))
