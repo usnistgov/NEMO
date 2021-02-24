@@ -47,5 +47,12 @@
     "rate_class": "full cost",
     "rate": 5.0,
     "item": "Tweezers"
+  },
+  {
+    "item_id": 2,
+    "table_id": "inventory_rate",
+    "rate_class": "full cost",
+    "rate": 15.0,
+    "item": "2 inch wafer tray"
   }
 ]
