@@ -111,6 +111,10 @@ class ToolAdminForm(forms.ModelForm):
 		widget=FilteredSelectMultiple(verbose_name="Nonrequired resources", is_stacked=False),
 	)
 
+	_tool_calendar_color = forms.CharField(
+		required=False, max_length=9,
+		widget=forms.TextInput(attrs={'type': 'color'}))
+
 	def __init__(self, *args, **kwargs):
 		super(ToolAdminForm, self).__init__(*args, **kwargs)
 		if self.instance.pk:
@@ -126,6 +130,7 @@ class ToolAdminForm(forms.ModelForm):
 		phone_number = cleaned_data.get("_phone_number")
 		primary_owner = cleaned_data.get("_primary_owner")
 		image = cleaned_data.get("_image")
+		tool_calendar_color = cleaned_data.get("_tool_calendar_color")
 
 		# only resize if an image is present and  has changed
 		if image and not isinstance(image, FieldFile):
@@ -211,7 +216,7 @@ class ToolAdmin(admin.ModelAdmin):
 				)
 			},
 		),
-		("Additional Information", {"fields": ("_description", "_serial", "_image")}),
+		("Additional Information", {"fields": ("_description", "_serial", "_image", "_tool_calendar_color")}),
 		("Current state", {"fields": ("visible", "_operational")}),
 		(
 			"Contact information",
@@ -293,6 +298,16 @@ class ToolAdmin(admin.ModelAdmin):
 				obj.nonrequired_resource_set.set(form.cleaned_data["nonrequired_resources"])
 
 
+
+class AreaAdminForm(forms.ModelForm):
+	class Meta:
+		model = Area
+		fields = "__all__"
+	_area_calendar_color = forms.CharField(
+		required=False, max_length=9,
+		widget=forms.TextInput(attrs={'type': 'color'}))
+
+
 @register(Area)
 class AreaAdmin(DraggableMPTTAdmin):
 	list_display = (
@@ -340,6 +355,8 @@ class AreaAdmin(DraggableMPTTAdmin):
 				)
 			},
 		),
+		("Additional Information", {"fields": ("_area_calendar_color",)}),
+
 	)
 	list_display_links = ("indented_title",)
 	list_filter = ("requires_reservation", ("parent_area", TreeRelatedFieldListFilter))
@@ -347,6 +364,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	actions = [rebuild_area_tree]
 
 	mptt_level_indent = 20
+	form = AreaAdminForm
 
 	def get_fieldsets(self, request, obj: Area = None):
 		"""

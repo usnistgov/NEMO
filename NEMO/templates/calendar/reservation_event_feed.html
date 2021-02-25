@@ -7,6 +7,12 @@
 		{% elif personal_schedule and x.area %}
 			"title": "{{ x.title|default:x.reservation_item.name|escapejs }}",
 			"color": "#84CD84",
+		{% elif all_tools or all_areastools and x.tool %}
+			"title": "{{ x.reservation_item.name|escapejs }}\n{{ x.title|escapejs }}",
+			"color": "{{ x.reservation_item.tool_calendar_color|default:'#33ad33'|escapejs }}",
+		{% elif all_areas or all_areastools and x.area %}
+			"title": "{{ x.reservation_item.name|escapejs }}\n{{ x.title|escapejs }}",
+			"color": "{{ x.reservation_item.area_calendar_color|default:'#84CD84'|escapejs }}",
 		{% else %}
 			"title": "{{ x.title|default:x.user|escapejs }}",
 			"color": {% if x.user.id == user.id %}"#3a87ad"{% else %}"#88B7CD"{% endif %},

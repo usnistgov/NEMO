@@ -105,6 +105,20 @@ function get_selected_item() {
 	{
 		return 'personal_schedule';
 	}
+
+	if(jq_selected_item.hasClass('all_tools'))
+	{
+		return 'all_tools';
+	}
+	if(jq_selected_item.hasClass('all_areas'))
+	{
+		return 'all_areas';
+	}
+	if(jq_selected_item.hasClass('all_areastools'))
+	{
+		return 'all_areastools';
+	}
+
 	return JSON.stringify({'id': jq_selected_item.data('item-id'), 'type': jq_selected_item.data('item-type'), 'element_name': jq_selected_item.data('item-name')});
 }
 
@@ -120,6 +134,16 @@ function set_selected_item_by_id(item_id, item_type)
 {
 	let item = $("#" + item_type + "-" + item_id);
 	if(item.length === 1)
+	{
+		$("#sidebar a").removeClass('selected');
+		item.addClass('selected');
+	}
+}
+
+function set_selected_item_by_class(item_class)
+{
+	let item =$("."+item_class);
+		if(item.length === 1)
 	{
 		$("#sidebar a").removeClass('selected');
 		item.addClass('selected');
@@ -156,7 +180,10 @@ function load_sidebar_state()
 		}
 	}
 	let selected = localStorage['Selected item ID'];
-	if(selected && selected !== 'personal_schedule')
+	if (selected === 'personal_schedule' || selected === 'all_tools' || selected === 'all_areas' || selected === 'all_areastools' )
+	{
+		set_selected_item_by_class(selected);
+	} else if(selected)
 	{
 		let selected_item = JSON.parse(selected)
 		set_selected_item_by_id(selected_item.id, selected_item.type);

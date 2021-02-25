@@ -358,6 +358,7 @@ class Tool(models.Model):
 	_policy_off_start_time = models.TimeField(db_column="policy_off_start_time", null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
 	_policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
 	_policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
+	_tool_calendar_color = models.CharField(db_column="tool_calendar_color", max_length=9, default="#33ad33", help_text="Color for tool reservations in calendar overviews")
 
 	class Meta:
 		ordering = ['name']
@@ -397,7 +398,7 @@ class Tool(models.Model):
 	def image(self, value):
 		self.raise_setter_error_if_child_tool("image")
 		self._image = value
-		
+
 	@property
 	def operational(self):
 		return self.parent_tool.operational if self.is_child_tool() else self._operational
@@ -604,6 +605,15 @@ class Tool(models.Model):
 	def policy_off_weekend(self, value):
 		self.raise_setter_error_if_child_tool("policy_off_weekend")
 		self._policy_off_weekend = value
+
+	@property
+	def tool_calendar_color(self):
+		return self.parent_tool.tool_calendar_color if self.is_child_tool() else self._tool_calendar_color
+
+	@tool_calendar_color.setter
+	def tool_calendar_color(self, value):
+		self.raise_setter_error_if_child_tool("tool_calendar_color")
+		self._tool_calendar_color = value
 
 	def name_or_child_in_use_name(self, parent_ids = None) -> str:
 		""" This method returns the tool name unless one of its children is in use."""
@@ -953,6 +963,8 @@ class Area(MPTTModel):
 	policy_off_start_time = models.TimeField(db_column="policy_off_start_time", null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
 	policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
 	policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
+	_area_calendar_color = models.CharField(db_column="area_calendar_color", max_length=9, default="#88B7CD", help_text="Color for tool reservations in calendar overviews")
+
 
 	class MPTTMeta:
 		parent_attr = 'parent_area'
@@ -1042,6 +1054,18 @@ class Area(MPTTModel):
 
 	def reservation_email_list(self):
 		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.reservation_email]
+
+	@property
+	def area_calendar_color(self):
+		for a in self.get_ancestors(ascending=True, include_self=True):
+			if a._area_calendar_color:
+				return a._area_calendar_color
+		return None
+
+	@area_calendar_color.setter
+	def area_calendar_color(self, value):
+		self._area_calendar_color = value
+
 
 
 class AreaAccessRecord(CalendarDisplay):
@@ -1387,7 +1411,7 @@ class TaskImages(models.Model):
 		verbose_name_plural = "Task images"
 		ordering = ['-uploaded_at']
 
-		
+
 # These two auto-delete tool images from filesystem when they are unneeded:
 @receiver(models.signals.post_delete, sender=Tool)
 def auto_delete_file_on_tool_delete(sender, instance: Tool, **kwargs):
