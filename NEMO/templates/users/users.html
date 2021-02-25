@@ -1,16 +1,49 @@
-{% extends 'base.html' %}
+{% extends 'pagination/pagination_base.html' %}
 {% load custom_tags_and_filters %}
 {% block title %}Users{% endblock %}
-{% block content %}
+{% block before_pagination %}
 	<h1>
 		Users
 		<a href="{% url 'create_or_modify_user' 'new' %}" class="btn btn-success pull-right">New user</a>
 	</h1>
-	<div class="row">
-		<div class="col-md-4">
+	<div class="row" style="margin-bottom: 20px">
+		<div class="col-sm-4">
 			<input id="search" type="text" placeholder="Search for a user" class="form-control" autofocus>
 		</div>
 	</div>
+{% endblock %}
+{% block pagination_content %}
+	<table class="table table-bordered table-condensed table-striped table-hover thead-light">
+			<thead>
+				<tr>
+					<th>{% include 'pagination/pagination_column.html' with order_by='first_name' name='First Name' %}</th>
+					<th>{% include 'pagination/pagination_column.html' with order_by='last_name' name='Last Name' %}</th>
+					<th>{% include 'pagination/pagination_column.html' with order_by='username' name='Username' %}</th>
+					<th>{% include 'pagination/pagination_column.html' with order_by='is_active' name='Active' %}</th>
+					<th>{% include 'pagination/pagination_column.html' with order_by='is_staff' name='Staff' %}</th>
+					<th>{% include 'pagination/pagination_column.html' with order_by='is_superuser' name='Admin' %}</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for user in page %}
+					<tr>
+						<td>{{ user.first_name }}</td>
+						<td>{{ user.last_name }}</td>
+						<td>{{ user.username }}</td>
+						<td><span class="glyphicon {% if user.is_active %}glyphicon-ok success-highlight{% else %}glyphicon-remove danger-highlight{% endif %}"></span></td>
+						<td><span class="glyphicon {% if user.is_staff %}glyphicon-ok success-highlight{% endif %}"></span></td>
+						<td><span class="glyphicon {% if user.is_superuser %}glyphicon-ok success-highlight{% endif %}"></span></td>
+						<td class="text-center button-column-minimum">
+							<button type="button" class="btn btn-xs btn-default" title="Edit user" onclick="window.location = '{% url 'create_or_modify_user' user.id %}'"><i class="glyphicon glyphicon-pencil"></i></button>
+							<button type="button" class="btn btn-xs btn-danger {% if not user.is_active %}invisible{% endif %}" title="Deactivate user" onclick="window.location = '{% url 'deactivate_user' user.id %}'"><i class="glyphicon glyphicon-remove"></i></button>
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+{% endblock %}
+{% block after_pagination %}
 	<script>
 		function get_user(jquery_event, search_selection, dataset_name)
 		{
@@ -20,6 +53,6 @@
 		{
 			$("#search").autocomplete('users', get_user, {{ users|json_search_base }}).focus();
 		}
-		$(on_load);
+		window.addEventListener('load', on_load, true);
 	</script>
 {% endblock %}

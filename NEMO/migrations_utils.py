@@ -20,7 +20,7 @@ def migration_format_datetime(universal_time):
     )
 
 
-def create_news_for_version(apps, version, extra_content):
+def create_news_for_version(apps, version, extra_content=None):
     if getattr(settings, "NEW_VERSION_NEWS", True):
         News = apps.get_model("NEMO", "News")
         Notification = apps.get_model("NEMO", "Notification")

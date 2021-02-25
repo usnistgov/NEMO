@@ -2,13 +2,16 @@ from datetime import timedelta, datetime
 from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.http import JsonResponse
 from django.shortcuts import render
+from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.models import Project, Reservation, Tool, UsageEvent, User, BadgeReader
+from NEMO.tasks import synchronized
 from NEMO.utilities import quiet_int, localize
 from NEMO.views.calendar import (
 	determine_insufficient_notice,
@@ -22,6 +25,7 @@ from NEMO.views.policy import (
 	check_policy_to_save_reservation,
 )
 from NEMO.views.status_dashboard import create_tool_summary
+from NEMO.views.tool_control import interlock_error, interlock_bypass_allowed
 from NEMO.widgets.dynamic_form import DynamicForm
 
 
@@ -29,9 +33,15 @@ from NEMO.widgets.dynamic_form import DynamicForm
 @permission_required("NEMO.kiosk")
 @require_POST
 def enable_tool(request):
-	tool = Tool.objects.get(id=request.POST["tool_id"])
+	return do_enable_tool(request, request.POST["tool_id"])
+
+
+@synchronized('tool_id')
+def do_enable_tool(request, tool_id):
+	tool = Tool.objects.get(id=tool_id)
 	customer = User.objects.get(id=request.POST["customer_id"])
 	project = Project.objects.get(id=request.POST["project_id"])
+	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
 
 	response = check_policy_to_enable_tool(tool, operator=customer, user=customer, project=project, staff_charge=False)
 	if response.status_code != HTTPStatus.OK:
@@ -43,10 +53,10 @@ def enable_tool(request):
 
 	# All policy checks passed so enable the tool for the user.
 	if tool.interlock and not tool.interlock.unlock():
-		raise Exception(
-			"The interlock command for this tool failed. The error message returned: "
-			+ str(tool.interlock.most_recent_reply)
-		)
+		if bypass_interlock and interlock_bypass_allowed(customer):
+			pass
+		else:
+			return interlock_error("Enable", customer)
 
 	# Create a new usage event to track how long the user uses the tool.
 	new_usage_event = UsageEvent()
@@ -64,35 +74,49 @@ def enable_tool(request):
 @permission_required("NEMO.kiosk")
 @require_POST
 def disable_tool(request):
-	tool = Tool.objects.get(id=request.POST["tool_id"])
+	return do_disable_tool(request, request.POST["tool_id"])
+
+
+@synchronized('tool_id')
+def do_disable_tool(request, tool_id):
+	tool = Tool.objects.get(id=tool_id)
 	customer = User.objects.get(id=request.POST["customer_id"])
 	downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
+	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
 	response = check_policy_to_disable_tool(tool, customer, downtime)
 	if response.status_code != HTTPStatus.OK:
 		dictionary = {"message": response.content, "delay": 10}
 		return render(request, "kiosk/acknowledgement.html", dictionary)
 
+	# All policy checks passed so try to disable the tool for the user.
+	if tool.interlock and not tool.interlock.lock():
+		if bypass_interlock and interlock_bypass_allowed(customer):
+			pass
+		else:
+			return interlock_error("Disable", customer)
+
 	# Shorten the user's tool reservation since we are now done using the tool
 	shorten_reservation(user=customer, item=tool, new_end=timezone.now() + downtime)
 
-	# All policy checks passed so disable the tool for the user.
-	if tool.interlock and not tool.interlock.lock():
-		raise Exception(
-			"The interlock command for this tool failed. The error message returned: "
-			+ str(tool.interlock.most_recent_reply)
-		)
 	# End the current usage event for the tool and save it.
 	current_usage_event = tool.get_current_usage_event()
 	current_usage_event.end = timezone.now() + downtime
 
 	# Collect post-usage questions
 	dynamic_form = DynamicForm(tool.post_usage_questions, tool.id)
-	current_usage_event.run_data = dynamic_form.extract(request)
+
+	try:
+		current_usage_event.run_data = dynamic_form.extract(request)
+	except Exception as e:
+		dictionary = {"message": str(e), "delay": 10}
+		return render(request, "kiosk/acknowledgement.html", dictionary)
+
 	dynamic_form.charge_for_consumables(
 		current_usage_event.user,
 		current_usage_event.operator,
 		current_usage_event.project,
 		current_usage_event.run_data,
+		request
 	)
 	dynamic_form.update_counters(current_usage_event.run_data)
 
@@ -214,6 +238,7 @@ def choices(request):
 				shortened=False,
 			)
 				.exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now)
+				.exclude(ancestor__shortened=True)
 				.order_by("start")
 		)
 	except:

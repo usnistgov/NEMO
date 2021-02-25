@@ -9,8 +9,9 @@ from typing import Dict
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseServerError
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone, formats
 from django.views.decorators.http import require_GET, require_POST
 
@@ -32,6 +33,7 @@ from NEMO.models import (
 	ToolUsageCounter,
 	AreaAccessRecord,
 )
+from NEMO.tasks import synchronized
 from NEMO.utilities import (
 	extract_times,
 	quiet_int,
@@ -42,6 +44,7 @@ from NEMO.utilities import (
 	EmailCategory,
 )
 from NEMO.views.calendar import shorten_reservation
+from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, PostUsageQuestion
@@ -277,6 +280,7 @@ def determine_tool_status(tool):
 
 @login_required
 @require_POST
+@synchronized('tool_id')
 def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	""" Enable a tool for a user. The user must be qualified to do so based on the lab usage policy. """
 
@@ -290,16 +294,17 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	user = get_object_or_404(User, id=user_id)
 	project = get_object_or_404(Project, id=project_id)
 	staff_charge = staff_charge == "true"
+	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
 	response = check_policy_to_enable_tool(tool, operator, user, project, staff_charge)
 	if response.status_code != HTTPStatus.OK:
 		return response
 
 	# All policy checks passed so enable the tool for the user.
 	if tool.interlock and not tool.interlock.unlock():
-		raise Exception(
-			"The interlock command for this tool failed. The error message returned: "
-			+ str(tool.interlock.most_recent_reply)
-		)
+		if bypass_interlock and interlock_bypass_allowed(user):
+			pass
+		else:
+			return interlock_error("Enable", user)
 
 	# Start staff charge before tool usage
 	if staff_charge:
@@ -330,6 +335,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 
 @login_required
 @require_POST
+@synchronized('tool_id')
 def disable_tool(request, tool_id):
 	if not settings.ALLOW_CONDITIONAL_URLS:
 		return HttpResponseBadRequest("Tool control is only available on campus.")
@@ -338,18 +344,20 @@ def disable_tool(request, tool_id):
 	if tool.get_current_usage_event() is None:
 		return HttpResponse()
 	downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
+	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
 	response = check_policy_to_disable_tool(tool, request.user, downtime)
 	if response.status_code != HTTPStatus.OK:
 		return response
 
-	# Shorten the user's tool reservation since we are now done using the tool
-	shorten_reservation(user=request.user, item=tool, new_end=timezone.now() + downtime)
-
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
-		error_message = f"The interlock command for the {tool} failed. The error message returned: {tool.interlock.most_recent_reply}"
-		tool_control_logger.error(error_message)
-		return HttpResponseServerError(error_message)
+		if bypass_interlock and interlock_bypass_allowed(request.user):
+			pass
+		else:
+			return interlock_error("Disable", request.user)
+
+	# Shorten the user's tool reservation since we are now done using the tool
+	shorten_reservation(user=request.user, item=tool, new_end=timezone.now() + downtime)
 
 	# End the current usage event for the tool
 	current_usage_event = tool.get_current_usage_event()
@@ -357,12 +365,18 @@ def disable_tool(request, tool_id):
 
 	# Collect post-usage questions
 	dynamic_form = DynamicForm(tool.post_usage_questions, tool.id)
-	current_usage_event.run_data = dynamic_form.extract(request)
+
+	try:
+		current_usage_event.run_data = dynamic_form.extract(request)
+	except Exception as e:
+		return HttpResponseBadRequest(str(e))
+
 	dynamic_form.charge_for_consumables(
 		current_usage_event.user,
 		current_usage_event.operator,
 		current_usage_event.project,
 		current_usage_event.run_data,
+		request
 	)
 	dynamic_form.update_counters(current_usage_event.run_data)
 
@@ -467,3 +481,17 @@ Its last value was {counter.last_reset_value}."""
 			email_category=EmailCategory.SYSTEM,
 		)
 	return redirect("tool_control")
+
+
+def interlock_bypass_allowed(user: User):
+	return user.is_staff or get_customization('allow_bypass_interlock_on_failure') == 'enabled'
+
+
+def interlock_error(action:str, user:User):
+	error_message = get_customization('tool_interlock_failure_message')
+	dictionary = {
+		"message": linebreaksbr(error_message),
+		"bypass_allowed": interlock_bypass_allowed(user),
+		"action": action
+	}
+	return JsonResponse(dictionary, status=501)

@@ -3,7 +3,7 @@ from logging import getLogger
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_GET
 from requests import get
@@ -65,7 +65,7 @@ def date_parameters_dictionary(request):
 		'kind': kind,
 		'identifier': identifier,
 		'tab_url': get_url_for_other_tab(request),
-		'billing_service': False if not hasattr(settings, 'BILLING_SERVICE') or not settings.BILLING_SERVICE['available'] else True,
+		'billing_service': get_billing_service().get('available', False),
 	}
 	return dictionary, start_date, end_date, kind, identifier
 
@@ -89,6 +89,8 @@ def usage(request):
 @login_required
 @require_GET
 def billing(request):
+	if not get_billing_service().get('available', False):
+		return redirect('usage')
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	formatted_applications = ','.join(map(str, set(request.user.active_projects().values_list('application_identifier', flat=True))))
 	try:
@@ -159,6 +161,8 @@ def project_usage(request):
 @staff_member_required(login_url=None)
 @require_GET
 def project_billing(request):
+	if not get_billing_service().get('available', False):
+		return redirect('project_usage')
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	base_dictionary['project_autocomplete'] = True
 	base_dictionary['search_items'] = set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()) | set(User.objects.filter(is_active=True))
@@ -206,12 +210,13 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 	# This is useful on the admin project billing page tp display other project users for example
 	dictionary = {}
 
-	if not settings.BILLING_SERVICE or not settings.BILLING_SERVICE['available']:
+	billing_service = get_billing_service()
+	if not billing_service.get('available', False):
 		return dictionary
 
-	cost_activity_url = settings.BILLING_SERVICE['cost_activity_url']
-	project_lead_url = settings.BILLING_SERVICE['project_lead_url']
-	keyword_arguments = settings.BILLING_SERVICE['keyword_arguments']
+	cost_activity_url = billing_service['cost_activity_url']
+	project_lead_url = billing_service['project_lead_url']
+	keyword_arguments = billing_service['keyword_arguments']
 
 	cost_activity_params = {
 		'created_date_gte': f"'{start_date.strftime('%m/%d/%Y')}'",
@@ -266,3 +271,7 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 		'user_pi_applications': user_pi_applications
 	} if cost_activities_tree else {'activities': {}}
 	return dictionary
+
+
+def get_billing_service():
+	return getattr(settings, 'BILLING_SERVICE', {})

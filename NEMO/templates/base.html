@@ -72,6 +72,7 @@
 					</div>
 				{% endfor %}
 			{% endif %}
+            {# Content goes here #}
             {% block content %}{% endblock %}
         </div>
         {% block extra_whitespace %}
@@ -94,15 +95,9 @@
 	{
 		return '{{ csrf_token }}';
 	}
-	{# Add a global AJAX completion callback if sessions are able to timeout. #}
-	{# When an AJAX request receives an HTTP 403 (unauthorized) reply the user is #}
-	{# sent to the logoff page, which then redirects them back to the login page. #}
-	{% if logout_allowed %}
-		$(document).ajaxComplete(function (event, xhr, status, error){navigate_to_login_on_session_expiration('{% url 'logout' %}', event, xhr, status, error)});
-	{% endif %}
 	function show_alerts()
 	{
-		var alert_users = $(".alert.show-on-load");
+		let alert_users = $(".alert.show-on-load");
 		alert_users.each(function(index, element) {
 		    let speed = 4500;
 		    if ($(element).data('speed')) speed = $(element).data('speed')
@@ -111,7 +106,18 @@
 			});
 		});
 	}
-    $(show_alerts());
+	{# Add an event listener on load for scripts. UseCapture is False so this is executed a bit later #}
+	window.addEventListener("load", function ()
+    {
+        show_alerts();
+
+	    {# Add a global AJAX completion callback if sessions are able to timeout. #}
+        {# When an AJAX request receives an HTTP 403 (unauthorized) reply the user is #}
+        {# sent to the logoff page, which then redirects them back to the login page. #}
+        {% if logout_allowed %}
+            $(document).ajaxComplete(function (event, xhr, status, error){navigate_to_login_on_session_expiration('{% url 'logout' %}', event, xhr, status, error)});
+        {% endif %}
+    }, false);
 </script>
 
 </body>

@@ -1,3 +1,4 @@
+import importlib
 import json
 from abc import ABC, abstractmethod
 from logging import getLogger
@@ -110,4 +111,12 @@ class NISTRates(Rates):
 				return matching_rates[0]['rate']
 
 
-rate_class = NISTRates()
+def get_rate_class():
+	rates_class = getattr(settings, "RATES_CLASS", "NEMO.rates.NISTRates")
+	assert isinstance(rates_class, str)
+	pkg, attr = rates_class.rsplit(".", 1)
+	ret = getattr(importlib.import_module(pkg), attr)
+	return ret()
+
+
+rate_class = get_rate_class()

@@ -213,6 +213,13 @@ table > tbody > tr.no-border > td, table > tbody > tr.no-border > th {
 	border: none;
 }
 
+.table .thead-light th, .table.thead-light th
+{
+    color: #495057;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
 .split-screen-left-panel
 {
 	position: absolute;
@@ -699,4 +706,43 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	margin-top: 20px;
 	padding-inline-start: 40px;
 	font-size: large;
+}
+
+/* Make tooltips in consumable opaque */
+#withdrawal_form_order .tooltip
+{
+	opacity: 1 !important;
+}
+
+#consumables_order
+{
+	margin-right: 5%;
+	margin-left: 5%;
+	height: 100%;
+	padding-bottom: 100px;
+	overflow-y: scroll;
+}
+
+/* Make consumable order stay in place for small screens */
+@media (max-width: 992px)
+{
+	#consumables_order.affix
+	{
+		position: static;
+		margin-right: 0 !important;
+		margin-left: 0 !important;
+	}
+}
+
+/* Pagination */
+.button-column-minimum
+{
+    width: 1px;
+    white-space: nowrap;
+    word-break: keep-all;
+}
+
+.pagination-column a
+{
+    color: inherit;
 }

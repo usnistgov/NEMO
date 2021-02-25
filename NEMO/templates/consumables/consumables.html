@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Withdraw consumables{% endblock %}
+{% block content %}
+	<h1>Withdraw consumables</h1>
+    <div style="height: 15px"></div>
+    <div class="col-md-5">
+        <p>Use this form to charge users for consumable items & supplies.</p>
+        <form id="withdrawal_form_order" action="{% url 'consumables' %}" class="form-horizontal" method="post">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="control-label col-md-3" for="customer_search">Customer</label>
+                <div class="col-md-9">
+                    <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer" required>
+                    <input type="button" id="chosen_customer" class="btn btn-default" style="display:none" onclick="clear_selected_customer()">
+                    <input type="hidden" id="customer" name="customer">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-md-3" for="project">Project</label>
+                <div class="col-md-9">
+                    <select id="project" name="project" class="form-control" {% if not projects %}disabled{% endif %} required>
+                        {% if projects|length == 0 %}
+                            <option></option>
+                        {% elif projects|length == 1 %}
+                            <option value="{{ projects.0.id }}">{{ projects.0 }}</option>
+                        {% elif projects %}
+                            <option disabled selected value="">Choose a project to bill</option>
+                            {% for p in projects %}
+                                <option value="{{ p.id }}">{{ p }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-md-3">Consumables</label>
+                <div class="col-md-9 control-label" style="text-align: left">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-12">
+                    <table class="table">
+                        {% regroup consumables by category as categories %}
+                        {% for category in categories %}
+                            {% if categories|length > 1 or category.grouper %}
+                                <tr><th>{{ category.grouper|default_if_none:"Uncategorized" }}</th></tr>
+                            {% endif %}
+                            {% for item in category.list %}
+                                <tr><td {% if categories|length > 1 or category.grouper %}style="padding-left: 15px;"{% endif %}>
+                                    <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %} <span class="glyphicon glyphicon-plus-sign success-highlight" style="vertical-align: text-top"></span></span>
+                                </td></tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <div id="consumables_order" class="affix">
+            {% include 'consumables/consumables_order.html' %}
+        </div>
+    </div>
+
+	<script type="text/javascript">
+        function add_tooltip(element, consumable_id)
+        {
+            let consumable_tooltip_content =
+                "<div style='margin: 10px;'>" +
+                "<input type='hidden' id='consumable' name='consumable' value='" + consumable_id + "'>" +
+                "<div style='margin-bottom: 10px'>" +
+                "<label for=quantity class='control-label'>How many?</label>" +
+                "<input style='padding-right: 0;margin-left: 10px; min-width: 20px; max-width: 50px; display: inline-block' class='form-control input-sm' type='number' id='quantity' name='quantity' min='1' inputmode='numeric' pattern='[0-9]*' required>" +
+                "</div>" +
+                "<button id='order_add_button' class='btn btn-sm btn-success' type='submit'>Add to order</button>" +
+                "</div>"
+            $(element).tooltip({trigger: 'manual', placement: 'right', html: 'true', title: consumable_tooltip_content}).tooltip('show');
+        }
+		function clear_selected_customer()
+		{
+			$("#chosen_customer").val('').hide();
+			$("#customer_search").typeahead('val', '').prop('required', true).show().focus();
+			$("#customer").val('');
+			$('#project').find('option').remove().end().attr('disabled', 'disabled');
+		}
+		function fetch_projects(jquery_event, search_selection, dataset_name)
+		{
+			$('#customer_search').prop('required', false).hide();
+			$('#chosen_customer').val(search_selection.name).show();
+			$('#customer').val(search_selection.id);
+			ajax_get("{% url 'get_projects' %}", {'user_id': search_selection.id}, update_projects);
+		}
+		function update_projects(response, status, xml_http_request)
+		{
+		    let project_selector = $('#project');
+			project_selector.find('option').remove().end().removeAttr('disabled');
+			let projects = response['projects'];
+
+			if(projects.length === 0)
+				project_selector.append($('<option/>', {text: "No active projects!"})).attr('disabled', 'disabled');
+			else if(projects.length === 1)
+				project_selector.append($('<option/>', {value: response['projects'][0].id, text: response['projects'][0].name}));
+			else
+			{
+				project_selector.append($('<option/>', {
+					text: "Choose a project to bill",
+					disabled: true,
+					selected: true,
+                    value: ""
+				}));
+				$.each(projects, function(count, project)
+				{
+					project_selector.append($('<option/>', {value: project.id, text: project.name}));
+				});
+			}
+		}
+        window.addEventListener("load", function ()
+        {
+            $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
+            let withdrawal_order_form = $('#withdrawal_form_order');
+            withdrawal_order_form.on('shown.bs.tooltip', function(e)
+            {
+                $('#quantity').focus();
+            });
+            $(document).on('click', function(e)
+            {
+                {# Dimiss tooltip when clicking on everything outside the tooltip itself #}
+                if($(e.target).closest(".tooltip").length === 0 )
+                {
+                    $('#withdrawal_form_order .tooltip').remove();
+                }
+            });
+            $('.consumable_trigger').on('click', function (event)
+            {
+                $('#withdrawal_form_order .tooltip').remove();
+                event.stopPropagation();
+                let consumable_id = $(this).data("item-id");
+                add_tooltip($(this), consumable_id);
+            });
+            {# Form will be submitted with ajax #}
+            withdrawal_order_form.submit(function(e)
+            {
+                e.preventDefault();
+				let data = serialize($(this));
+				let failure = ajax_failure_callback('Withdrawal error');
+				ajax_post('{% url 'consumables' %}', data, function(response) {$('#consumables_order').html(response)}, failure);
+                $('#withdrawal_form_order .tooltip').remove();
+				return false;
+            });
+            $(window).scroll(function(e)
+            {
+              let consumables_order = $('#consumables_order');
+              if ($(this).scrollTop() > 50) consumables_order.css({'top': '30px'});
+              else consumables_order.css({'top': 'inherit'});
+            });
+            {# Prevent refresh resubmit #}
+            if (window.history.replaceState)
+            {
+                window.history.replaceState(null, null, window.location.href);
+            }
+        }, true);
+	</script>
+{% endblock %}

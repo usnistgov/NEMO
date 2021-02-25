@@ -337,9 +337,20 @@
 				{% endif %}
 			{% endif %}
 		</form>
+
+        <div style="height:15px">{# Spacer #}</div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    {{message}}
+                </div>
+            {% endfor %}
+        {% endif %}
 		
 		{% if tool.description or tool.image %}		
-			<div style="background-color: #f5f5f5; margin-top: 15px">
+			<div style="background-color: #f5f5f5;">
 				<div class="row" style="margin:0; padding: 15px 0">
 					{% if tool.description %}
 					<div class="col-md-8">
@@ -623,6 +634,7 @@
 		}
 	}
 
+    show_alerts();
 	update_stop_button();
 	$('body').on('question-group-changed', update_stop_button);
 	$('body').on('change keyup', '#tool_control input[required], #tool_control select[required], #downtime', update_stop_button);

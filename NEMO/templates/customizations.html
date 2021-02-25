@@ -200,6 +200,45 @@
 			</div>
 		</div>
 
+        <div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="interlock_settings">Interlock settings</h3>
+				<form method="POST" action="{% url 'customize' 'interlock_settings' %}#interlock_settings" class="form-horizontal">
+					{% csrf_token %}
+                    <div class="form-group">
+						<label class="control-label col-md-2" for="tool_interlock_failure_message">Tool interlock failure message</label>
+						<div class="col-md-5">
+							<textarea id="tool_interlock_failure_message" name="tool_interlock_failure_message" class="form-control">{{ tool_interlock_failure_message }}</textarea>
+						</div>
+						<div class="col-md-5 form-control-static light-grey">
+							The message to display when a tool interlock command fails.
+						</div>
+					</div>
+                    <div class="form-group">
+						<label class="control-label col-md-2" for="door_interlock_failure_message">Door interlock failure message</label>
+						<div class="col-md-5">
+							<textarea id="door_interlock_failure_message" name="door_interlock_failure_message" class="form-control">{{ door_interlock_failure_message }}</textarea>
+						</div>
+						<div class="col-md-5 form-control-static light-grey">
+							The message to display when a door interlock command fails.
+						</div>
+					</div>
+                    <div class="form-group">
+						<div class="col-md-12">
+							<div class="checkbox">
+								<label><input type="checkbox" name="allow_bypass_interlock_on_failure" {% if allow_bypass_interlock_on_failure %}checked{% endif %} value="enabled">Check this box to offer users the option to bypass lock/unlock command when there is an interlock error.</label><br/>
+							</div>
+						</div>
+					</div>
+                    <div class="form-group">
+						<div class="col-md-3">
+							<input type="submit" value="Save settings" class="btn btn-success">
+						</div>
+					</div>
+                </form>
+            </div>
+        </div>
+
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<h3 id="banner_login">Login banner</h3>

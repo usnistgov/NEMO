@@ -160,6 +160,8 @@ urlpatterns = [
 
 	# Consumables:
 	url(r'^consumables/$', consumables.consumables, name='consumables'),
+	url(r'^consumables/(?P<index>\d+)/remove$', consumables.remove_withdraw_at_index, name='remove_consumable'),
+	url(r'^consumables/withdraw$', consumables.make_withdrawals, name='withdraw_consumables'),
 
 	# Training:
 	url(r'^training/$', training.training, name='training'),
@@ -245,8 +247,8 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# Account & project management:
 		url(r'^accounts_and_projects/$', accounts_and_projects.accounts_and_projects, name='accounts_and_projects'),
-		url(r'^project/(?P<identifier>\d+)/$', accounts_and_projects.accounts_and_projects, kwargs={'kind': 'project'}, name='project'),
-		url(r'^account/(?P<identifier>\d+)/$', accounts_and_projects.accounts_and_projects, kwargs={'kind': 'account'}, name='account'),
+		url(r'^project/(?P<identifier>\d+)/$', accounts_and_projects.select_accounts_and_projects, kwargs={'kind': 'project'}, name='project'),
+		url(r'^account/(?P<identifier>\d+)/$', accounts_and_projects.select_accounts_and_projects, kwargs={'kind': 'account'}, name='account'),
 		url(r'^toggle_active/(?P<kind>account|project)/(?P<identifier>\d+)/$', accounts_and_projects.toggle_active, name='toggle_active'),
 		url(r'^create_project/$', accounts_and_projects.create_project, name='create_project'),
 		url(r'^create_account/$', accounts_and_projects.create_account, name='create_account'),

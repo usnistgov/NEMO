@@ -18,6 +18,7 @@ from NEMO.actions import (
 	duplicate_tool_configuration,
 	rebuild_area_tree,
 )
+from NEMO.forms import BuddyRequestForm
 from NEMO.models import (
 	Account,
 	ActivityHistory,
@@ -70,7 +71,8 @@ from NEMO.models import (
 	ToolUsageCounter,
 	PhysicalAccessException,
 	BuddyRequest,
-	EmailLog, BuddyRequestMessage,
+	EmailLog,
+	BuddyRequestMessage,
 )
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion
 
@@ -81,8 +83,8 @@ class ToolAdminForm(forms.ModelForm):
 		fields = "__all__"
 
 	class Media:
-		js = ("tool_form_admin.js",)
-		css = {"": ("tool_form_admin.css",)}
+		js = ("admin/tool/tool.js",)
+		css = {"": ("admin/tool/tool.css",)}
 
 	qualified_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
@@ -806,7 +808,7 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 		fields = "__all__"
 
 	class Media:
-		js = ("physical_access_level_form_admin.js",)
+		js = ("admin/physical_access_level/access_level.js",)
 
 	authorized_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
@@ -861,6 +863,9 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 		model = PhysicalAccessException
 		fields = "__all__"
 
+	class Media:
+		js = ("admin/time_options_override.js",)
+
 	physical_access_levels = forms.ModelMultipleChoiceField(
 		queryset=PhysicalAccessLevel.objects.all(),
 		required=False,
@@ -868,6 +873,8 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 	)
 
 	def clean(self):
+		if any(self.errors):
+			return
 		cleaned_data = super().clean()
 		start_time = cleaned_data.get("start_time")
 		end_time = cleaned_data.get("end_time")
@@ -976,12 +983,6 @@ class CounterAdmin(admin.ModelAdmin):
 	form = CounterAdminForm
 
 
-class BuddyRequestForm(forms.ModelForm):
-	class Meta:
-		model = BuddyRequest
-		fields = "__all__"
-
-
 @register(BuddyRequest)
 class BuddyRequestAdmin(admin.ModelAdmin):
 	form = BuddyRequestForm
@@ -998,9 +999,11 @@ class BuddyRequestAdmin(admin.ModelAdmin):
 @register(BuddyRequestMessage)
 class BuddyRequestMessageAdmin(admin.ModelAdmin):
 	list_display = ("id", "link_to_buddy_request", "author", "creation_date")
+
 	def link_to_buddy_request(self, obj):
 		link = reverse("admin:NEMO_buddyrequest_change", args=[obj.buddy_request.id])  # model name has to be lowercase
 		return format_html('<a href="%s">%s</a>' % (link, obj.buddy_request))
+
 	link_to_buddy_request.short_description = "BUDDY REQUEST"
 
 

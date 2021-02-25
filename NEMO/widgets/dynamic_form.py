@@ -106,7 +106,7 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}'
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
 		for choice in self.properties["choices"]:
 			result += '<div class="radio">'
 			required = "required" if self.required else ""
@@ -126,7 +126,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}'
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
 		required = "required" if self.required else ""
 		result += f'<select name="{self.name}" {required} style="margin-top: 5px;max-width:{self.max_width}px" class="form-control">'
 		blank_disabled = 'disabled="disabled"' if required else ""
@@ -210,7 +210,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			sub_question.validate()
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}</div>'
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div></div>'
 		result += f'<div id="{self.group_name}_container">'
 		result += self.render_group_question()
 		result += "</div>"
@@ -350,6 +350,8 @@ class DynamicForm:
 		results = {}
 		for question in self.questions:
 			results[question.name] = question.extract(request)
+			if not isinstance(question, PostUsageGroupQuestion) and question.required and not results[question.name].get('user_input'):
+				raise Exception(f"You have to answer the question \"{question.title}\"")
 		return dumps(results, indent="\t") if len(results) else ""
 
 	def filter_questions(self, function: Callable[[PostUsageQuestion], bool]) -> List[PostUsageQuestion]:
@@ -363,7 +365,7 @@ class DynamicForm:
 						results.append(sub_question)
 		return results
 
-	def charge_for_consumables(self, customer, merchant, project, run_data: str):
+	def charge_for_consumables(self, customer, merchant, project, run_data: str, request=None):
 		try:
 			run_data_json = loads(run_data)
 		except Exception as error:
@@ -379,11 +381,12 @@ class DynamicForm:
 							quantity = int(run_data_json[question.name]["user_input"])
 					if quantity > 0:
 						make_withdrawal(
-							consumable=consumable,
-							customer=customer,
+							consumable_id=consumable.id,
+							customer_id=customer.id,
 							merchant=merchant,
 							quantity=quantity,
-							project=project,
+							project_id=project.id,
+							request=request
 						)
 				except Exception as e:
 					dynamic_form_logger.warning(
