@@ -17,7 +17,7 @@ from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import rates
-from NEMO.exceptions import RequiredUnansweredQuestions
+from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import (
 	Comment,
@@ -370,7 +370,7 @@ def disable_tool(request, tool_id):
 
 	try:
 		current_usage_event.run_data = dynamic_form.extract(request)
-	except RequiredUnansweredQuestions as e:
+	except RequiredUnansweredQuestionsException as e:
 		if request.user.is_staff and request.user != current_usage_event.operator and current_usage_event.user != request.user:
 			# if a staff is forcing somebody off the tool and there are required questions, send an email and proceed
 			current_usage_event.run_data = e.run_data

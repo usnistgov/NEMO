@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.exceptions import RequiredUnansweredQuestions
+from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Project, Reservation, Tool, UsageEvent, User, BadgeReader
 from NEMO.tasks import synchronized
 from NEMO.utilities import quiet_int, localize
@@ -106,7 +106,7 @@ def do_disable_tool(request, tool_id):
 
 	try:
 		current_usage_event.run_data = dynamic_form.extract(request)
-	except RequiredUnansweredQuestions as e:
+	except RequiredUnansweredQuestionsException as e:
 		if customer.is_staff and customer != current_usage_event.operator and current_usage_event.user != customer:
 			# if a staff is forcing somebody off the tool and there are required questions, send an email and proceed
 			current_usage_event.run_data = e.run_data

@@ -107,7 +107,7 @@ class ReservationRequiredUserError(UserAccessError):
 		super().__init__(user=user, msg=details)
 
 
-class RequiredUnansweredQuestions(NEMOException):
+class RequiredUnansweredQuestionsException(NEMOException):
 	def __init__(self, run_data:str, questions: List):
 		self.run_data = run_data
 		self.questions = questions

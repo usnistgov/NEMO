@@ -8,7 +8,7 @@ from django.urls import reverse, NoReverseMatch
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 
-from NEMO.exceptions import RequiredUnansweredQuestions
+from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Consumable, ToolUsageCounter
 from NEMO.views.consumables import make_withdrawal
 
@@ -416,7 +416,7 @@ class DynamicForm:
 			required_unanswered_questions.extend(self._check_for_required_unanswered_questions(results, question))
 		run_data = dumps(results, indent="\t") if len(results) else ""
 		if required_unanswered_questions:
-			raise RequiredUnansweredQuestions(run_data, required_unanswered_questions)
+			raise RequiredUnansweredQuestionsException(run_data, required_unanswered_questions)
 		return run_data
 
 	def _check_for_required_unanswered_questions(self, results: Dict, question: PostUsageQuestion) -> Optional[List[PostUsageQuestion]]:
@@ -429,7 +429,7 @@ class DynamicForm:
 		elif isinstance(question, PostUsageGroupQuestion):
 			blank_user_input = {0: {}}
 			for sub_question in question.sub_questions:
-				if sub_question.required and (not user_input or not user_input.get(0, {}).get(question.name)):
+				if sub_question.required and (not user_input or not user_input.get(0, {}).get(sub_question.name)):
 					blank_user_input[0][sub_question.name] = ""
 					required_unanswered_questions.append(sub_question)
 			if required_unanswered_questions:
