@@ -301,7 +301,7 @@
 		textDelete: 'Del',
 		textClear: 'Clear',
 		textCancel: 'Cancel',
-		decimalSeparator: ',',
+		decimalSeparator: '.',
 		precision: null,
 		min: null,
 		max: null,

@@ -19,11 +19,13 @@ class PostUsageQuestion:
 	question_type = "Question"
 
 	number_type = "number"
+	float_type = "float"
 	text_type = "textbox"
+	textarea_type = "textarea"
 	radio_type = "radio"
 	dropdown_type = "dropdown"
 	group_type = "group"
-	question_types = [number_type, text_type, radio_type, dropdown_type, group_type]
+	question_types = [number_type, float_type, text_type, textarea_type, radio_type, dropdown_type, group_type]
 
 	def __init__(self, properties: Dict, tool_id: int, virtual_inputs: bool = False, index: int = None):
 		self.properties = properties
@@ -40,6 +42,7 @@ class PostUsageQuestion:
 		self.min = self._init_property("min")
 		self.max = self._init_property("max")
 		self.step = self._init_property("step")
+		self.rows = self._init_property("rows")
 		self.consumable = self._init_property("consumable")
 		self.required = self._init_property("required", True)
 		self.default_choice = self._init_property("default_choice")
@@ -93,7 +96,9 @@ class PostUsageQuestion:
 	def load_questions(questions: List[Dict], tool_id: int, virtual_inputs: bool = False, index: int = None):
 		constructor = {
 			PostUsageQuestion.number_type: PostUsageNumberFieldQuestion,
+			PostUsageQuestion.float_type: PostUsageFloatFieldQuestion,
 			PostUsageQuestion.text_type: PostUsageTextFieldQuestion,
+			PostUsageQuestion.textarea_type: PostUsageTextAreaFieldQuestion,
 			PostUsageQuestion.radio_type: PostUsageRadioQuestion,
 			PostUsageQuestion.dropdown_type: PostUsageDropdownQuestion,
 			PostUsageQuestion.group_type: PostUsageGroupQuestion,
@@ -192,6 +197,14 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 		return result
 
 
+class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
+	question_type = "Question of type textarea"
+
+	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
+		rows = f'rows="{self.rows}"' if self.rows else ""
+		return f'<textarea class="form-control" id="{self.name}" name="{self.name}" {rows} {placeholder} {required} style="max-width:{self.max_width}px;height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>'
+
+
 class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 	question_type = "Question of type number"
 
@@ -218,6 +231,19 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 				result += f"max: {self.min}"
 			result += ")"
 		return result
+
+
+class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
+	question_type = "Question of type float"
+
+	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
+		pattern = 'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{1,2})?\s*$"'
+		return f'<input type="text" class="form-control" id="{self.name}" name="{self.name}" {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+
+	def render_script(self):
+		if self.virtual_inputs:
+			return f"<script>$('#{self.name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': false}});</script>"
+		return super().render_script()
 
 
 class PostUsageGroupQuestion(PostUsageQuestion):
