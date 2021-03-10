@@ -73,6 +73,7 @@ from NEMO.models import (
 	BuddyRequest,
 	EmailLog,
 	BuddyRequestMessage,
+	ToolDocuments
 )
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion
 
@@ -174,8 +175,14 @@ class ToolAdminForm(forms.ModelForm):
 					self.add_error("_policy_off_end_time", "End time must be specified")
 
 
+class ToolDocumentsInline(admin.TabularInline):
+	model = ToolDocuments
+	extra = 0
+
+
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
+	inlines = [ToolDocumentsInline,]
 	list_display = (
 		"name_display",
 		"_category",

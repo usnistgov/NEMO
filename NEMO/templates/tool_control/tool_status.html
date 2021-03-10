@@ -349,7 +349,7 @@
             {% endfor %}
         {% endif %}
 		
-		{% if tool.description or tool.image %}		
+		{% if tool.description or tool.image or tool.tool_documents %}
 			<div style="background-color: #f5f5f5;">
 				<div class="row" style="margin:0; padding: 15px 0">
 					{% if tool.description %}
@@ -362,6 +362,16 @@
 						<img src="{{ tool.image.url }}" class="img-fluid img-thumbnail" style="max-width:300px ;max-height:300px" >
 					</div>
 				{% endif %}
+                {% if tool.tool_documents %}
+                    <div class="col-md-12">
+                        Documents:
+                        <ul>
+                        {% for tool_doc in tool.tool_documents %}
+                            <li><a href="{{ tool_doc.document.url }}" target="_blank">{{ tool_doc.filename }}</a></li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
 				</div>
 			</div>
 		{% endif %}

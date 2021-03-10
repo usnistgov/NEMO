@@ -23,7 +23,8 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from NEMO import fields
-from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename, EmailCategory
+from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename, EmailCategory, \
+	get_tool_document_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -769,6 +770,50 @@ class Tool(models.Model):
 
 	def active_counters(self):
 		return self.toolusagecounter_set.filter(is_active=True)
+
+	def tool_documents(self):
+		return ToolDocuments.objects.filter(tool=self).order_by()
+
+class ToolDocuments(models.Model):
+	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+	document = models.FileField(upload_to=get_tool_document_filename, verbose_name='Document')
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	def filename(self):
+		return os.path.basename(self.document.name)
+
+	def __str__(self):
+		return self.filename()
+
+	class Meta:
+		verbose_name_plural = "Tool documents"
+		ordering = ['-uploaded_at']
+
+
+# These two auto-delete task images from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=ToolDocuments)
+def auto_delete_file_on_tool_document_delete(sender, instance: ToolDocuments, **kwargs):
+	"""	Deletes file from filesystem when corresponding `ToolDocuments` object is deleted.	"""
+	if instance.document:
+		if os.path.isfile(instance.document.path):
+			os.remove(instance.document.path)
+
+
+@receiver(models.signals.pre_save, sender=ToolDocuments)
+def auto_delete_file_on_tool_document_change(sender, instance: ToolDocuments, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `ToolDocuments` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = ToolDocuments.objects.get(pk=instance.pk).document
+	except ToolDocuments.DoesNotExist:
+		return False
+
+	new_file = instance.document
+	if not old_file == new_file:
+		if os.path.isfile(old_file.path):
+			os.remove(old_file.path)
 
 
 class Configuration(models.Model):

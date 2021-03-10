@@ -328,6 +328,13 @@ def get_tool_image_filename(tool, filename):
 	return f"tool_images/{tool_name}{ext}"
 
 
+def get_tool_document_filename(tool_documents, filename):
+	from django.template.defaultfilters import slugify
+
+	tool_name = slugify(tool_documents.tool)
+	return f"tool_documents/{tool_name}/{filename}"
+
+
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
 	""" Returns a resized image based on the given maximum size """
 	with Image.open(image) as img:
