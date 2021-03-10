@@ -177,7 +177,7 @@ class ToolAdminForm(forms.ModelForm):
 
 class ToolDocumentsInline(admin.TabularInline):
 	model = ToolDocuments
-	extra = 0
+	extra = 1
 
 
 @register(Tool)
