@@ -461,7 +461,7 @@ class DynamicForm:
 					consumable = Consumable.objects.get(name=question.consumable)
 					quantity = 0
 					if isinstance(question, PostUsageNumberFieldQuestion):
-						if question.name in run_data_json and "user_input" in run_data_json[question.name]:
+						if question.name in run_data_json and "user_input" in run_data_json[question.name] and run_data_json[question.name]["user_input"]:
 							quantity = int(run_data_json[question.name]["user_input"])
 					if quantity > 0:
 						make_withdrawal(
@@ -495,6 +495,7 @@ class DynamicForm:
 							question.name == counter.tool_usage_question
 							and question.name in run_data_json
 							and "user_input" in run_data_json[question.name]
+							and run_data_json[question.name]["user_input"]
 					):
 						additional_value = float(run_data_json[question.name]["user_input"])
 				elif isinstance(question, PostUsageGroupQuestion):
@@ -506,7 +507,7 @@ class DynamicForm:
 									and "user_input" in run_data_json[question.name]
 							):
 								for user_input in run_data_json[question.name]["user_input"].values():
-									if sub_question.name in user_input:
+									if sub_question.name in user_input and user_input[sub_question.name]:
 										additional_value += float(user_input[sub_question.name])
 			if additional_value:
 				counter.value += additional_value
