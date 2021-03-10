@@ -1931,6 +1931,9 @@ class ToolUsageCounter(models.Model):
 	def __str__(self):
 		return str(self.name)
 
+	class Meta:
+		ordering = ['tool__name']
+
 
 class BuddyRequest(models.Model):
 	creation_time = models.DateTimeField(default=timezone.now, help_text="The date and time when the request was created.")
