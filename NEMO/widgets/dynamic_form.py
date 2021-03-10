@@ -41,6 +41,7 @@ class PostUsageQuestion:
 		self.pattern = self._init_property("pattern")
 		self.min = self._init_property("min")
 		self.max = self._init_property("max")
+		self.precision = self._init_property("precision")
 		self.step = self._init_property("step")
 		self.rows = self._init_property("rows")
 		self.consumable = self._init_property("consumable")
@@ -201,7 +202,7 @@ class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
 	question_type = "Question of type textarea"
 
 	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
-		rows = f'rows="{self.rows}"' if self.rows else ""
+		rows = f'rows="{str(self.rows)}"' if self.rows else ""
 		return f'<textarea class="form-control" id="{self.name}" name="{self.name}" {rows} {placeholder} {required} style="max-width:{self.max_width}px;height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>'
 
 
@@ -237,7 +238,8 @@ class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
 	question_type = "Question of type float"
 
 	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
-		pattern = 'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{1,2})?\s*$"'
+		precision = self.precision if self.precision else 2
+		pattern = f'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{"{1,"+str(precision)+ "}"})?\s*$"'
 		return f'<input type="text" class="form-control" id="{self.name}" name="{self.name}" {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
 	def render_script(self):
