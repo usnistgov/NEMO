@@ -74,7 +74,7 @@ from NEMO.models import (
 	EmailLog,
 	BuddyRequestMessage,
 )
-from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion
 
 
 class ToolAdminForm(forms.ModelForm):
@@ -958,16 +958,16 @@ class CounterAdminForm(forms.ModelForm):
 			if tool.post_usage_questions:
 				post_usage_form = DynamicForm(tool.post_usage_questions, tool.id)
 				tool_question = post_usage_form.filter_questions(
-					lambda x: isinstance(x, PostUsageNumberFieldQuestion) and x.name == tool_usage_question_name
+					lambda x: (isinstance(x, PostUsageNumberFieldQuestion) or isinstance(x, PostUsageFloatFieldQuestion)) and x.name == tool_usage_question_name
 				)
 				if not tool_question:
 					candidates = [
 						question.name
 						for question in post_usage_form.filter_questions(
-							lambda x: isinstance(x, PostUsageNumberFieldQuestion)
+							lambda x: isinstance(x, PostUsageNumberFieldQuestion) or isinstance(x, PostUsageFloatFieldQuestion)
 						)
 					]
-					error = "The tool has no post usage question of type Number with this name."
+					error = "The tool has no post usage question of type Number or Float with this name."
 					if candidates:
 						error += f" Valid question names are: {', '.join(candidates)}"
 			else:

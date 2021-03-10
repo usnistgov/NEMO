@@ -490,23 +490,24 @@ class DynamicForm:
 		for counter in active_counters:
 			additional_value = 0
 			for question in self.questions:
-				if isinstance(question, PostUsageNumberFieldQuestion):
+				if isinstance(question, PostUsageNumberFieldQuestion) or isinstance(question, PostUsageFloatFieldQuestion):
 					if (
 							question.name == counter.tool_usage_question
 							and question.name in run_data_json
 							and "user_input" in run_data_json[question.name]
 					):
-						additional_value = int(run_data_json[question.name]["user_input"])
+						additional_value = float(run_data_json[question.name]["user_input"])
 				elif isinstance(question, PostUsageGroupQuestion):
 					for sub_question in question.sub_questions:
-						if (
-								sub_question.name == counter.tool_usage_question
-								and question.name in run_data_json
-								and "user_input" in run_data_json[question.name]
-						):
-							for user_input in run_data_json[question.name]["user_input"].values():
-								if sub_question.name in user_input:
-									additional_value += int(user_input[sub_question.name])
+						if isinstance(sub_question, PostUsageNumberFieldQuestion) or isinstance(sub_question, PostUsageFloatFieldQuestion):
+							if (
+									sub_question.name == counter.tool_usage_question
+									and question.name in run_data_json
+									and "user_input" in run_data_json[question.name]
+							):
+								for user_input in run_data_json[question.name]["user_input"].values():
+									if sub_question.name in user_input:
+										additional_value += float(user_input[sub_question.name])
 			if additional_value:
 				counter.value += additional_value
 				counter.save(update_fields=["value"])
