@@ -4,7 +4,7 @@ from http import HTTPStatus
 from itertools import chain
 from json import loads, JSONDecodeError
 from logging import getLogger
-from typing import Dict
+from typing import Dict, List
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
@@ -13,9 +13,11 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFou
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone, formats
+from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import rates
+from NEMO.exceptions import RequiredUnansweredQuestions
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import (
 	Comment,
@@ -368,8 +370,13 @@ def disable_tool(request, tool_id):
 
 	try:
 		current_usage_event.run_data = dynamic_form.extract(request)
-	except Exception as e:
-		return HttpResponseBadRequest(str(e))
+	except RequiredUnansweredQuestions as e:
+		if request.user.is_staff and request.user != current_usage_event.operator and current_usage_event.user != request.user:
+			# if a staff is forcing somebody off the tool and there are required questions, send an email and proceed
+			current_usage_event.run_data = e.run_data
+			email_managers_required_questions_disable_tool(current_usage_event.operator, request.user, tool, e.questions)
+		else:
+			return HttpResponseBadRequest(str(e))
 
 	dynamic_form.charge_for_consumables(
 		current_usage_event.user,
@@ -495,3 +502,23 @@ def interlock_error(action:str, user:User):
 		"action": action
 	}
 	return JsonResponse(dictionary, status=501)
+
+
+def email_managers_required_questions_disable_tool(tool_user:User, staff_member:User, tool:Tool, questions:List[PostUsageQuestion]):
+	abuse_email_address = get_customization('abuse_email_address')
+	managers = []
+	if hasattr(settings, 'LAB_MANAGERS'):
+		managers = settings.LAB_MANAGERS
+	ccs = set(tuple([r for r in [staff_member.email, tool.primary_owner.email, *tool.backup_owners.all().values_list('email', flat=True), *managers] if r]))
+	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
+	message = f"""
+Dear {tool_user.get_name()},<br/>
+You have been logged off by staff from the {tool} that requires answers to the following post-usage questions:<br/>
+<br/>
+{display_questions}
+<br/>
+Regards,<br/>
+<br/>
+NanoFab Management<br/>
+"""
+	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=[tool_user.email], cc=ccs, email_category=EmailCategory.ABUSE)

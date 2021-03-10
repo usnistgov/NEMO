@@ -13,7 +13,7 @@ from django.contrib.auth.models import BaseUserManager, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.template import loader
@@ -414,7 +414,7 @@ class Tool(models.Model):
 		self._primary_owner = value
 
 	@property
-	def backup_owners(self) -> List[User]:
+	def backup_owners(self) -> QuerySet:
 		return self.parent_tool.backup_owners if self.is_child_tool() else self._backup_owners
 
 	@backup_owners.setter

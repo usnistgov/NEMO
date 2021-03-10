@@ -2,14 +2,13 @@ from datetime import timedelta, datetime
 from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.http import JsonResponse
 from django.shortcuts import render
-from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.exceptions import RequiredUnansweredQuestions
 from NEMO.models import Project, Reservation, Tool, UsageEvent, User, BadgeReader
 from NEMO.tasks import synchronized
 from NEMO.utilities import quiet_int, localize
@@ -25,7 +24,7 @@ from NEMO.views.policy import (
 	check_policy_to_save_reservation,
 )
 from NEMO.views.status_dashboard import create_tool_summary
-from NEMO.views.tool_control import interlock_error, interlock_bypass_allowed
+from NEMO.views.tool_control import interlock_error, interlock_bypass_allowed, email_managers_required_questions_disable_tool
 from NEMO.widgets.dynamic_form import DynamicForm
 
 
@@ -107,9 +106,14 @@ def do_disable_tool(request, tool_id):
 
 	try:
 		current_usage_event.run_data = dynamic_form.extract(request)
-	except Exception as e:
-		dictionary = {"message": str(e), "delay": 10}
-		return render(request, "kiosk/acknowledgement.html", dictionary)
+	except RequiredUnansweredQuestions as e:
+		if customer.is_staff and customer != current_usage_event.operator and current_usage_event.user != customer:
+			# if a staff is forcing somebody off the tool and there are required questions, send an email and proceed
+			current_usage_event.run_data = e.run_data
+			email_managers_required_questions_disable_tool(current_usage_event.operator, customer, tool, e.questions)
+		else:
+			dictionary = {"message": str(e), "delay": 10}
+			return render(request, "kiosk/acknowledgement.html", dictionary)
 
 	dynamic_form.charge_for_consumables(
 		current_usage_event.user,

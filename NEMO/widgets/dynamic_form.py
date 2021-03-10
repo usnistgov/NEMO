@@ -2,12 +2,13 @@ from collections import Counter
 from copy import copy
 from json import dumps, loads
 from logging import getLogger
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Optional, Any
 
 from django.urls import reverse, NoReverseMatch
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 
+from NEMO.exceptions import RequiredUnansweredQuestions
 from NEMO.models import Consumable, ToolUsageCounter
 from NEMO.views.consumables import make_withdrawal
 
@@ -48,7 +49,7 @@ class PostUsageQuestion:
 			self.name = f"{self.name}_{index}"
 		pass
 
-	def _init_property(self, prop: str, boolean: bool = False):
+	def _init_property(self, prop: str, boolean: bool = False) -> Any:
 		if boolean:
 			return True if prop in self.properties and self.properties[prop] is True else False
 		else:
@@ -61,6 +62,13 @@ class PostUsageQuestion:
 
 	def render(self) -> str:
 		return self.render_element() + self.render_script()
+
+	def render_as_text(self) -> str:
+		result = f"{self.title}\n"
+		result += "<strong>your answer</strong>"
+		if self.choices:
+			result += " (possible choices: " + "|".join(self.choices) + ")"
+		return result
 
 	def render_element(self):
 		return ""
@@ -107,7 +115,7 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 
 	def render_element(self) -> str:
 		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
-		for choice in self.properties["choices"]:
+		for choice in self.choices:
 			result += '<div class="radio">'
 			required = "required" if self.required else ""
 			is_default_choice = "checked" if self.default_choice and self.default_choice == choice else ""
@@ -174,6 +182,15 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 			return f"<script>$('#{self.name}').keyboard();</script>"
 		return super().render_script()
 
+	def render_as_text(self) -> str:
+		result = f"{self.title}\n"
+		if self.prefix:
+			result += self.prefix
+		result += "<strong>your answer</strong>"
+		if self.suffix:
+			result += f" {self.suffix}"
+		return result
+
 
 class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 	question_type = "Question of type number"
@@ -188,6 +205,19 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 		if self.virtual_inputs:
 			return f"<script>$('#{self.name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true}});</script>"
 		return super().render_script()
+
+	def render_as_text(self) -> str:
+		result = super().render_as_text()
+		if self.min or self.max:
+			result += " ("
+			if self.min:
+				result += f"min: {self.min}"
+			if self.max:
+				if self.min:
+					result += ", "
+				result += f"max: {self.min}"
+			result += ")"
+		return result
 
 
 class PostUsageGroupQuestion(PostUsageQuestion):
@@ -263,6 +293,12 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 				}});
 			}}
 		</script>"""
+
+	def render_as_text(self) -> str:
+		result = f"{self.title}\n"
+		for question in self.sub_questions:
+			result += question.render_as_text()
+		return result
 
 	def extract(self, request) -> Dict:
 		# For group question, we also have to look for answers submitted with a numbered suffix (i.e. question, question_1, question_2 etc.)
@@ -348,11 +384,31 @@ class DynamicForm:
 
 	def extract(self, request):
 		results = {}
+		required_unanswered_questions = []
 		for question in self.questions:
 			results[question.name] = question.extract(request)
-			if not isinstance(question, PostUsageGroupQuestion) and question.required and not results[question.name].get('user_input'):
-				raise Exception(f"You have to answer the question \"{question.title}\"")
-		return dumps(results, indent="\t") if len(results) else ""
+			required_unanswered_questions.extend(self._check_for_required_unanswered_questions(results, question))
+		run_data = dumps(results, indent="\t") if len(results) else ""
+		if required_unanswered_questions:
+			raise RequiredUnansweredQuestions(run_data, required_unanswered_questions)
+		return run_data
+
+	def _check_for_required_unanswered_questions(self, results: Dict, question: PostUsageQuestion) -> Optional[List[PostUsageQuestion]]:
+		# This method will check for required unanswered questions and if some are found, will fill them with blank and return them
+		required_unanswered_questions = []
+		user_input = results[question.name].get('user_input')
+		if not isinstance(question, PostUsageGroupQuestion) and question.required and not user_input:
+			results[question.name]['user_input'] = ""
+			required_unanswered_questions.append(question)
+		elif isinstance(question, PostUsageGroupQuestion):
+			blank_user_input = {0: {}}
+			for sub_question in question.sub_questions:
+				if sub_question.required and (not user_input or not user_input.get(0, {}).get(question.name)):
+					blank_user_input[0][sub_question.name] = ""
+					required_unanswered_questions.append(sub_question)
+			if required_unanswered_questions:
+				results[question.name]['user_input'] = blank_user_input
+		return required_unanswered_questions
 
 	def filter_questions(self, function: Callable[[PostUsageQuestion], bool]) -> List[PostUsageQuestion]:
 		results = []
