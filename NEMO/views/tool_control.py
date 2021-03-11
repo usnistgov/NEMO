@@ -147,15 +147,27 @@ def usage_data_history(request, tool_id):
 	""" This method return a dictionary of headers and rows containing run_data information for Usage Events """
 	csv_export = bool(request.POST.get("csv", False))
 	start, end = extract_times(request.POST, start_required=False, end_required=False)
-	if not start and not end:
-		# Default to last 30 days of usage data
-		end = timezone.now().astimezone(timezone.get_current_timezone())
-		start = end + timedelta(days=-30)
+	last = request.POST.get("data_history_last")
+	user_id = request.POST.get("data_history_user_id")
+	if not last and not start and not end:
+		# Default to last 25 records
+		last = 25
 	usage_events = UsageEvent.objects.filter(tool_id=tool_id, end__isnull=False).order_by("-end")
 	if start:
 		usage_events = usage_events.filter(end__gte=beginning_of_the_day(start))
 	if end:
 		usage_events = usage_events.filter(end__lte=end_of_the_day(end))
+	if user_id:
+		try:
+			usage_events = usage_events.filter(user_id=int(user_id))
+		except ValueError:
+			pass
+	if last:
+		try:
+			last = int(last)
+		except ValueError:
+			last = 25
+		usage_events = usage_events[:last]
 	table_result = BasicDisplayTable()
 	table_result.add_header(("user", "User"))
 	table_result.add_header(("date", "Date"))
@@ -204,7 +216,10 @@ def usage_data_history(request, tool_id):
 			"tool_id": tool_id,
 			"data_history_start": start,
 			"data_history_end": end,
+			"data_history_last": str(last),
 			"usage_data_table": table_result,
+			"data_history_user": User.objects.get(id=user_id) if user_id else None,
+			"users": User.objects.filter(is_active=True)
 		}
 		return render(request, "tool_control/usage_data.html", dictionary)
 
