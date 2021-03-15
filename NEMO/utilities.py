@@ -144,7 +144,7 @@ def get_month_timeframe(date=None):
 		start = timezone.now()
 	first_of_the_month = localize(datetime(start.year, start.month, 1))
 	last_of_the_month = localize(
-		datetime(start.year, start.month, monthrange(start.year, start.month)[1], 23, 59, 59, 0)
+		datetime(start.year, start.month, monthrange(start.year, start.month)[1], 23, 59, 59, 999999)
 	)
 	return first_of_the_month, last_of_the_month
 
