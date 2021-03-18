@@ -794,6 +794,8 @@ class ToolDocuments(models.Model):
 	def clean(self):
 		if not self.document and not self.url:
 			raise ValidationError({'document': 'Either document or URL should be provided.'})
+		elif self.document and self.url:
+			raise ValidationError({'document': 'Choose either document or URL but not both.'})
 
 	class Meta:
 		verbose_name_plural = "Tool documents"
