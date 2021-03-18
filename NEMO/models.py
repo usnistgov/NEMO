@@ -12,6 +12,7 @@ from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, QuerySet
 from django.db.models.signals import pre_delete
@@ -776,14 +777,23 @@ class Tool(models.Model):
 
 class ToolDocuments(models.Model):
 	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
-	document = models.FileField(upload_to=get_tool_document_filename, verbose_name='Document')
+	document = models.FileField(null=True, blank=True, upload_to=get_tool_document_filename, verbose_name='Document')
+	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
+	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
 	uploaded_at = models.DateTimeField(auto_now_add=True)
 
 	def filename(self):
-		return os.path.basename(self.document.name)
+		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1]
+
+	def link(self):
+		return self.document.url if self.document else self.url
 
 	def __str__(self):
 		return self.filename()
+
+	def clean(self):
+		if not self.document and not self.url:
+			raise ValidationError({'document': 'Either document or URL should be provided.'})
 
 	class Meta:
 		verbose_name_plural = "Tool documents"

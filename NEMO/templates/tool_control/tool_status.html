@@ -367,7 +367,7 @@
                         Documents:
                         <ul>
                         {% for tool_doc in tool.tool_documents %}
-                            <li><a href="{{ tool_doc.document.url }}" target="_blank">{{ tool_doc.filename }}</a></li>
+                            <li><a href="{{ tool_doc.link }}" target="_blank">{{ tool_doc.filename }}</a></li>
                         {% endfor %}
                         </ul>
                     </div>
