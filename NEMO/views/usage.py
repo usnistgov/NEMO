@@ -3,7 +3,8 @@ from logging import getLogger
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
+from django.db.models import Q
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.decorators.http import require_GET
 from requests import get
@@ -73,15 +74,28 @@ def date_parameters_dictionary(request):
 @login_required
 @require_GET
 def usage(request):
+	user:User = request.user
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
+	customer_filter = Q(customer=user)
+	user_filter = Q(user=user)
+	trainee_filter = Q(trainee=user)
+	project_id = request.GET.get("pi_project")
+	if project_id:
+		project = get_object_or_404(Project, id=project_id)
+		base_dictionary['selected_project'] = project
+		customer_filter = (customer_filter | Q(project__principal_investigator=user)) & Q(project=project)
+		user_filter = (user_filter | Q(project__principal_investigator=user)) & Q(project=project)
+		trainee_filter = (trainee_filter | Q(project__principal_investigator=user)) & Q(project=project)
 	dictionary = {
-		'area_access': AreaAccessRecord.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date).order_by('-start'),
-		'consumables': ConsumableWithdraw.objects.filter(customer=request.user, date__gt=start_date, date__lte=end_date),
-		'missed_reservations': Reservation.objects.filter(user=request.user, missed=True, end__gt=start_date, end__lte=end_date),
-		'staff_charges': StaffCharge.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date),
-		'training_sessions': TrainingSession.objects.filter(trainee=request.user, date__gt=start_date, date__lte=end_date),
-		'usage_events': UsageEvent.objects.filter(user=request.user, end__gt=start_date, end__lte=end_date),
+		'area_access': AreaAccessRecord.objects.filter(customer_filter).filter(end__gt=start_date, end__lte=end_date).order_by('-start'),
+		'consumables': ConsumableWithdraw.objects.filter(customer_filter).filter(date__gt=start_date, date__lte=end_date),
+		'missed_reservations': Reservation.objects.filter(user_filter).filter(missed=True, end__gt=start_date, end__lte=end_date),
+		'staff_charges': StaffCharge.objects.filter(customer_filter).filter(end__gt=start_date, end__lte=end_date),
+		'training_sessions': TrainingSession.objects.filter(trainee_filter).filter(date__gt=start_date, date__lte=end_date),
+		'usage_events': UsageEvent.objects.filter(user_filter).filter(end__gt=start_date, end__lte=end_date)
 	}
+	if user.active_project_count() > 1 or user.pi_project_set.exists():
+		dictionary['pi_projects'] = set(user.pi_project_set.all())
 	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
 	return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
 

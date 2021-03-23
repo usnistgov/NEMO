@@ -39,6 +39,16 @@
 				{{ form.application_identifier.errors|striptags }}
 			</div>
 		</div>
+        <div class="form-group">
+			<label for="pi_search" class="control-label col-sm-2">Principal Investigator</label>
+			<div class="col-sm-4">
+				<input type="text" id="pi_search" name="principal_investigator" class="form-control">
+				<input type="button" id="selected_pi" class="btn btn-default" onclick="clear_pi_selection()" style="display:none">
+			</div>
+			<div class="col-sm-6 form-control-static danger-highlight">
+				{{ form.principal_investigator.errors|striptags }}
+			</div>
+		</div>
 		<div class="form-group">
 			<div class="col-sm-offset-2 col-sm-10">
 				<div class="checkbox">
@@ -60,6 +70,16 @@
 		</div>
 	</form>
 	<script>
+        function select_pi(jquery_event, search_selection, dataset_name)
+		{
+			$('#pi_search').typeahead('val', search_selection.id).hide();
+			$("#selected_pi").val(search_selection.name).show();
+		}
+		function clear_pi_selection()
+		{
+			$("#selected_pi").hide();
+			$('#pi_search').typeahead('val', '').show().focus();
+		}
 		function select_account(jquery_event, search_selection, dataset_name)
 		{
 			$('#account_search').typeahead('val', search_selection.id).hide();
@@ -72,6 +92,7 @@
 		}
 		function on_load()
 		{
+			$('#pi_search').autocomplete('pi', select_pi, {{ user_list|json_search_base }});
 			$('#account_search').autocomplete('account', select_account, {{ account_list|json_search_base }});
 		}
 		$(on_load);

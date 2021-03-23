@@ -1,5 +1,5 @@
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
@@ -66,6 +66,7 @@ def toggle_active(request, kind, identifier):
 def create_project(request):
 	dictionary = {
 		'account_list': Account.objects.all(),
+		'user_list': User.objects.filter(is_active=True),
 	}
 	if request.method == 'GET':
 		return render(request, 'accounts_and_projects/create_project.html', dictionary)
@@ -143,3 +144,17 @@ def add_user_to_project(request):
 		'project': project
 	}
 	return render(request, 'accounts_and_projects/users_for_project.html', dictionary)
+
+
+@staff_member_required(login_url=None)
+@require_POST
+def set_pi_on_project(request):
+	project = get_object_or_404(Project, id=request.POST['project_id'])
+	user_id = request.POST.get('user_id')
+	if user_id:
+		user = get_object_or_404(User, id=request.POST['user_id'])
+	else:
+		user = None
+	project.principal_investigator = user
+	project.save(update_fields=['principal_investigator'])
+	return HttpResponse()

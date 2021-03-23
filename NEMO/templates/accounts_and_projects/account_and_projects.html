@@ -51,15 +51,24 @@
                             </form>
                         </h3>
                         <div style="margin-left:34px">
-                            {% if selected_project %}Account: <a href="{% url 'account' project.account.id %}">{{ project.account }}</a>{% endif %}
-                            <div>
-                                {% if selected_project %}Identifier: {% endif %}
-                                <span class="grey">{{ project.application_identifier }}</span>
-                            </div>
+                            {% if selected_project %}<label class="control-label">Account:</label> <a href="{% url 'account' project.account.id %}">{{ project.account }}</a>{% endif %}
                             <div id="project_{{ project.id }}_details" class="collapse {% if selected_project %}in{% endif %}">
-                                <div style="height:10px"></div>
+                                <div>
+                                    <label class="control-label">Identifier:</label>
+                                    <span class="grey">{{ project.application_identifier }}</span>
+                                </div>
+                                <div class="set-pi">
+                                    <div>
+                                        <label class="control-label" for="set_pi_on_project_{{ project.id }}">Principal Investigator:</label>
+                                        <input type="text" id="set_pi_on_project_{{ project.id }}" class="form-control input-sm pi_search" data-project-id="{{ project.id }}" style="min-width: 250px;{% if project.principal_investigator %}display:none{% endif %}">
+                                        <button id="selected_pi_project_{{ project.id }}" class="btn btn-sm btn-default" onclick="clear_project_pi('{{ project.id }}')" {% if not project.principal_investigator %}style="display:none"{% endif %}>
+                                            <span class="grey glyphicon glyphicon-remove-circle"></span>
+                                            <span id="selected_pi_project_{{ project.id }}_name">{% if project.principal_investigator %}{{ project.principal_investigator }}{% endif %}</span>
+                                        </button>
+                                    </div>
+                                </div>
                                 <div id="add_user_to_project_{{ project.id }}">
-                                    <label class="control-label" style="min-width: 250px"><input id="search_user_for_project_{{ project.id }}" type="text" class="form-control user_search" placeholder="Search for a user to add" data-project-id="{{ project.id }}"></label>
+                                    <label class="control-label">Users:<input id="search_user_for_project_{{ project.id }}" type="text" class="form-control user_search" placeholder="Search for a user to add" data-project-id="{{ project.id }}" style="min-width: 250px;"></label>
                                 </div>
                                 <div id="project_{{ project.id }}_users">
                                     {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
@@ -81,6 +90,30 @@
 			else if(search_selection.type === 'account')
 				window.location.href = "{% url 'account' 999 %}".replace('999', search_selection.id);
 		}
+        function clear_project_pi(project_id)
+        {
+            let failure_callback = ajax_failure_callback('Unable to remove pi from project');
+            let success_callback = function ()
+            {
+                $("#selected_pi_project_"+project_id).hide();
+                $("#selected_pi_project_"+project_id+"_name").html('');
+                $('#set_pi_on_project_'+project_id).show()
+            };
+            ajax_post("{% url 'set_pi_on_project' %}", {'user_id': '', 'project_id': project_id}, success_callback, failure_callback)
+        }
+		function set_pi_on_project(jquery_event, search_selection, dataset_name)
+		{
+			let project_id = $(this).data('project-id');
+			$(this).typeahead('val', '').focus();
+			let failure_callback = ajax_failure_callback('Unable to set pi on project');
+			let success_callback = function ()
+            {
+                $("#selected_pi_project_"+project_id+"_name").html(search_selection.name);
+                $("#selected_pi_project_"+project_id).show();
+                $('#set_pi_on_project_'+project_id).hide()
+            };
+			ajax_post("{% url 'set_pi_on_project' %}", {'user_id': search_selection.id, 'project_id': project_id}, success_callback, failure_callback);
+		}
 		function add_user_to_project(jquery_event, search_selection, dataset_name)
 		{
 			let project_id = $(this).data('project-id');
@@ -96,11 +129,16 @@
 		function on_load()
 		{
 			$('#search').autocomplete('accounts_and_projects', get_account, {% json_search_base_with_extra_fields accounts_and_projects 'application_identifier' %});
+			$('.pi_search').autocomplete('pis', set_pi_on_project, {{ users|json_search_base }});
 			$('.user_search').autocomplete('users', add_user_to_project, {{ users|json_search_base }});
 		}
 		window.addEventListener('load', on_load, true);
 	</script>
 	<style>
+        .set-pi .twitter-typeahead
+        {
+            display: inline-block !important;
+        }
 		#search_container .tt-dropdown-menu
 		{
 			min-width: 400px;
