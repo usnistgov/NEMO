@@ -1,4 +1,4 @@
-from rest_framework.fields import FloatField, CharField, IntegerField, DateTimeField, ChoiceField
+from rest_framework.fields import CharField, IntegerField, DateTimeField, ChoiceField, DecimalField
 from rest_framework.serializers import Serializer, ModelSerializer
 
 from NEMO.models import User, Project, Account, Reservation, AreaAccessRecord, UsageEvent, Task, TaskHistory, ScheduledOutage, Tool
@@ -75,11 +75,12 @@ class BillableItemSerializer(Serializer):
 	project = CharField(max_length=200, read_only=True)
 	project_id = IntegerField(read_only=True)
 	application = CharField(max_length=200, read_only=True)
+	user = CharField(max_length=255, read_only=True)
 	username = CharField(max_length=200, read_only=True)
 	user_id = IntegerField(read_only=True)
 	start = DateTimeField(read_only=True)
 	end = DateTimeField(read_only=True)
-	quantity = FloatField(read_only=True)
+	quantity = DecimalField(read_only=True, decimal_places=2, max_digits=8)
 
 	def update(self, instance, validated_data):
 		pass
