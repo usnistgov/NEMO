@@ -52,11 +52,9 @@
                 </div>
             </div>
             <div class="col-md-4">
-                {% if user.is_staff %}
-                    <div class="form-group pull-right extra-side-padding">
-                        <input type="button" class="btn btn-info" value="Export" onclick="load_usage_data('{{ tool_id }}', true)">
-                    </div>
-                {% endif %}
+                <div class="form-group pull-right extra-side-padding">
+                    <input type="button" class="btn btn-info" value="Export" onclick="load_usage_data('{{ tool_id }}', true)">
+                </div>
                 <div class="form-group pull-right extra-side-padding">
                     <input type="button" class="btn btn-success" value="Update" onclick="load_usage_data('{{ tool_id }}')">
                 </div>
