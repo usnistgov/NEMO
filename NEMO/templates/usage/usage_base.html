@@ -56,8 +56,12 @@
             {% endif %}
 			{% if not project_autocomplete %}
 				<div class="hidden-lg hidden-md hidden-sm">&nbsp;</div>
-				<div class="col-sm-2">
-					<input type="submit" class="btn btn-success" value="Update">
+				<div class="col-md-3">
+					<input type="button" class="btn btn-success" onclick="$('#csv_export').val('');this.form.submit()" value="Update">
+                    {% if can_export %}
+                        <input id="csv_export" type="hidden" name="csv" value="">
+                        <input type="button" class="btn btn-info" style="margin-left: 15px" onclick="$('#csv_export').val('true');this.form.submit()" value="Export">
+                    {% endif %}
 				</div>
 			{% endif %}
 		</div>
@@ -103,8 +107,12 @@
 					<input id="search" type="text" class="form-control" style="width: 100%" autofocus {% if selection %}placeholder="{{ selection }}" {% else %}placeholder="Search for an account, project, application or user"{% endif %}>
 				</div>
 				<div class="hidden-lg hidden-md hidden-sm">&nbsp;</div>
-				<div class="col-sm-2">
-					<input type="submit" class="btn btn-success" value="Update">
+				<div class="col-md-3">
+					<input type="button" class="btn btn-success" onclick="$('#csv_export').val('');this.form.submit()" value="Update">
+                    {% if can_export %}
+                        <input id="csv_export" type="hidden" name="csv" value="">
+                        <input type="button" class="btn btn-info" style="margin-left: 15px" onclick="$('#csv_export').val('true');this.form.submit()" value="Export">
+                    {% endif %}
 				</div>
 			</div>
 			<script>

@@ -1,4 +1,6 @@
+from datetime import datetime
 from logging import getLogger
+from typing import List
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
@@ -10,7 +12,16 @@ from django.views.decorators.http import require_GET
 from requests import get
 
 from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, StaffCharge, TrainingSession, UsageEvent, User, Project, Account
-from NEMO.utilities import get_month_timeframe, month_list, parse_start_and_end_date
+from NEMO.utilities import get_month_timeframe, month_list, parse_start_and_end_date, BasicDisplayTable
+from NEMO.views.api_billing import (
+	BillableItem,
+	billable_items_usage_events,
+	billable_items_area_access_records,
+	billable_items_missed_reservations,
+	billable_items_staff_charges,
+	billable_items_consumable_withdrawals,
+	billable_items_training_sessions
+)
 
 logger = getLogger(__name__)
 
@@ -80,24 +91,35 @@ def usage(request):
 	user_filter = Q(user=user)
 	trainee_filter = Q(trainee=user)
 	project_id = request.GET.get("pi_project")
+	csv_export = bool(request.GET.get("csv", False))
 	if project_id:
 		project = get_object_or_404(Project, id=project_id)
 		base_dictionary['selected_project'] = project
 		customer_filter = (customer_filter | Q(project__in=user.managed_projects.all())) & Q(project=project)
 		user_filter = (user_filter | Q(project__in=user.managed_projects.all())) & Q(project=project)
 		trainee_filter = (trainee_filter | Q(project__in=user.managed_projects.all())) & Q(project=project)
-	dictionary = {
-		'area_access': AreaAccessRecord.objects.filter(customer_filter).filter(end__gt=start_date, end__lte=end_date).order_by('-start'),
-		'consumables': ConsumableWithdraw.objects.filter(customer_filter).filter(date__gt=start_date, date__lte=end_date),
-		'missed_reservations': Reservation.objects.filter(user_filter).filter(missed=True, end__gt=start_date, end__lte=end_date),
-		'staff_charges': StaffCharge.objects.filter(customer_filter).filter(end__gt=start_date, end__lte=end_date),
-		'training_sessions': TrainingSession.objects.filter(trainee_filter).filter(date__gt=start_date, date__lte=end_date),
-		'usage_events': UsageEvent.objects.filter(user_filter).filter(end__gt=start_date, end__lte=end_date)
-	}
-	if user.active_project_count() > 1 or user.managed_projects.exists():
-		dictionary['pi_projects'] = set(user.managed_projects.all())
-	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
-	return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
+	area_access = AreaAccessRecord.objects.filter(customer_filter).filter(end__gt=start_date, end__lte=end_date).order_by('-start')
+	consumables = ConsumableWithdraw.objects.filter(customer_filter).filter(date__gt=start_date, date__lte=end_date)
+	missed_reservations = Reservation.objects.filter(user_filter).filter(missed=True, end__gt=start_date, end__lte=end_date)
+	staff_charges = StaffCharge.objects.filter(customer_filter).filter(end__gt=start_date, end__lte=end_date)
+	training_sessions = TrainingSession.objects.filter(trainee_filter).filter(date__gt=start_date, date__lte=end_date)
+	usage_events = UsageEvent.objects.filter(user_filter).filter(end__gt=start_date, end__lte=end_date)
+	if csv_export:
+		return csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations)
+	else:
+		dictionary = {
+			'area_access': area_access,
+			'consumables': consumables,
+			'missed_reservations': missed_reservations,
+			'staff_charges': staff_charges,
+			'training_sessions': training_sessions,
+			'usage_events': usage_events,
+			'can_export': True,
+		}
+		if user.active_project_count() > 1 or user.managed_projects.exists():
+			dictionary['pi_projects'] = set(user.managed_projects.all())
+		dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
+		return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
 
 
 @login_required
@@ -155,6 +177,8 @@ def project_usage(request):
 				staff_charges = staff_charges.filter(customer=user)
 				training_sessions = training_sessions.filter(trainee=user)
 				usage_events = usage_events.filter(user=user)
+			if bool(request.GET.get("csv", False)):
+				return csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations)
 	except:
 		pass
 	dictionary = {
@@ -166,7 +190,8 @@ def project_usage(request):
 		'training_sessions': training_sessions,
 		'usage_events': usage_events,
 		'project_autocomplete': True,
-		'selection': selection
+		'selection': selection,
+		'can_export': True,
 	}
 	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
 	return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
@@ -285,6 +310,31 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 		'user_pi_applications': user_pi_applications
 	} if cost_activities_tree else {'activities': {}}
 	return dictionary
+
+
+def csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations):
+	table_result = BasicDisplayTable()
+	table_result.add_header(("type", "Type"))
+	table_result.add_header(("user", "User"))
+	table_result.add_header(("name", "Item"))
+	table_result.add_header(("details", "Details"))
+	table_result.add_header(("project", "Project"))
+	table_result.add_header(("start", "Start time"))
+	table_result.add_header(("end", "End time"))
+	table_result.add_header(("quantity", "Quantity"))
+	data: List[BillableItem] = []
+	data.extend(billable_items_missed_reservations(missed_reservations))
+	data.extend(billable_items_consumable_withdrawals(consumables))
+	data.extend(billable_items_staff_charges(staff_charges))
+	data.extend(billable_items_training_sessions(training_sessions))
+	data.extend(billable_items_area_access_records(area_access))
+	data.extend(billable_items_usage_events(usage_events))
+	for billable_item in data:
+		table_result.add_row(vars(billable_item))
+	response = table_result.to_csv()
+	filename = f"usage_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+	response["Content-Disposition"] = f'attachment; filename="{filename}"'
+	return response
 
 
 def get_billing_service():

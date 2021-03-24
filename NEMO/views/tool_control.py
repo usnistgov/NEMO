@@ -208,7 +208,7 @@ def usage_data_history(request, tool_id):
 				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
 	if csv_export:
 		response = table_result.to_csv()
-		filename = f"usage_data_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+		filename = f"tool_usage_data_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 		response["Content-Disposition"] = f'attachment; filename="{filename}"'
 		return response
 	else:
