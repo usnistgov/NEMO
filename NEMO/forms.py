@@ -60,7 +60,7 @@ class UserForm(ModelForm):
 class ProjectForm(ModelForm):
 	class Meta:
 		model = Project
-		fields = ["name", "application_identifier", "account", "active", "principal_investigator"]
+		fields = ["name", "application_identifier", "account", "active"]
 
 
 class AccountForm(ModelForm):

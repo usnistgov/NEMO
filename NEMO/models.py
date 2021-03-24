@@ -153,6 +153,7 @@ class User(models.Model):
 	# Facility information:
 	qualifications = models.ManyToManyField('Tool', blank=True, help_text='Select the tools that the user is qualified to use.')
 	projects = models.ManyToManyField('Project', blank=True, help_text='Select the projects that this user is currently working on.')
+	managed_projects = models.ManyToManyField('Project', related_name="manager_set", blank=True, help_text='Select the projects that this user is a PI for.')
 
 	# Preferences
 	preferences: UserPreferences = models.OneToOneField(UserPreferences, null=True, on_delete=models.SET_NULL)
@@ -1091,7 +1092,6 @@ class Project(models.Model):
 	name = models.CharField(max_length=100, unique=True)
 	application_identifier = models.CharField(max_length=100)
 	account = models.ForeignKey(Account, help_text="All charges for this project will be billed to the selected account.", on_delete=models.CASCADE)
-	principal_investigator = models.ForeignKey(User, related_name="pi_project_set", null=True, blank=True, on_delete=models.SET_NULL)
 	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
 
 	class Meta:

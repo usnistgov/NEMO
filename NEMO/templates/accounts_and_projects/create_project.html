@@ -39,16 +39,6 @@
 				{{ form.application_identifier.errors|striptags }}
 			</div>
 		</div>
-        <div class="form-group">
-			<label for="pi_search" class="control-label col-sm-2">Principal Investigator</label>
-			<div class="col-sm-4">
-				<input type="text" id="pi_search" name="principal_investigator" class="form-control">
-				<input type="button" id="selected_pi" class="btn btn-default" onclick="clear_pi_selection()" style="display:none">
-			</div>
-			<div class="col-sm-6 form-control-static danger-highlight">
-				{{ form.principal_investigator.errors|striptags }}
-			</div>
-		</div>
 		<div class="form-group">
 			<div class="col-sm-offset-2 col-sm-10">
 				<div class="checkbox">

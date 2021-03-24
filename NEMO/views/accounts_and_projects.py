@@ -148,13 +148,27 @@ def add_user_to_project(request):
 
 @staff_member_required(login_url=None)
 @require_POST
-def set_pi_on_project(request):
+def remove_manager_from_project(request):
+	user = get_object_or_404(User, id=request.POST['user_id'])
 	project = get_object_or_404(Project, id=request.POST['project_id'])
-	user_id = request.POST.get('user_id')
-	if user_id:
-		user = get_object_or_404(User, id=request.POST['user_id'])
-	else:
-		user = None
-	project.principal_investigator = user
-	project.save(update_fields=['principal_investigator'])
-	return HttpResponse()
+	if project.manager_set.filter(id=user.id).exists():
+		project.manager_set.remove(user)
+	dictionary = {
+		'users': project.manager_set.all(),
+		'project': project
+	}
+	return render(request, 'accounts_and_projects/managers_for_project.html', dictionary)
+
+
+@staff_member_required(login_url=None)
+@require_POST
+def add_manager_to_project(request):
+	user = get_object_or_404(User, id=request.POST['user_id'])
+	project = get_object_or_404(Project, id=request.POST['project_id'])
+	if user not in project.manager_set.all():
+		project.manager_set.add(user)
+	dictionary = {
+		'users': project.manager_set.all(),
+		'project': project
+	}
+	return render(request, 'accounts_and_projects/managers_for_project.html', dictionary)

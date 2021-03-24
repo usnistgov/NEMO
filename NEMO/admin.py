@@ -684,7 +684,7 @@ class UserAdminForm(forms.ModelForm):
 @register(User)
 class UserAdmin(admin.ModelAdmin):
 	form = UserAdminForm
-	filter_horizontal = ("groups", "user_permissions", "qualifications", "projects", "physical_access_levels")
+	filter_horizontal = ("groups", "user_permissions", "qualifications", "projects", "managed_projects", "physical_access_levels")
 	fieldsets = (
 		(
 			"Personal information",
@@ -707,7 +707,7 @@ class UserAdmin(admin.ModelAdmin):
 			},
 		),
 		("Important dates", {"fields": ("date_joined", "last_login", "access_expiration")}),
-		("Facility information", {"fields": ("qualifications", "projects")}),
+		("Facility information", {"fields": ("qualifications", "projects", "managed_projects")}),
 	)
 	search_fields = ("first_name", "last_name", "username", "email")
 	list_display = (
