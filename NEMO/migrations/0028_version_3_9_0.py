@@ -45,5 +45,10 @@ class Migration(migrations.Migration):
                 'ordering': ['-uploaded_at'],
             },
         ),
+        migrations.AddField(
+            model_name='user',
+            name='managed_projects',
+            field=models.ManyToManyField(blank=True, help_text='Select the projects that this user is a PI for.', related_name='manager_set', to='NEMO.Project'),
+        ),
         migrations.RunPython(new_version_news),
     ]
