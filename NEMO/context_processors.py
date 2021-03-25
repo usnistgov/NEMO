@@ -33,7 +33,7 @@ def base_context(request):
 	except:
 		tools_exist = False
 	try:
-		areas_exist = Area.objects.filter(requires_reservation=True).exists() and PhysicalAccessLevel.objects.exists()
+		areas_exist = Area.objects.exists() and PhysicalAccessLevel.objects.exists()
 	except:
 		areas_exist = False
 	try:
