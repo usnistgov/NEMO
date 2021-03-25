@@ -58,18 +58,18 @@
                                     <span class="grey">{{ project.application_identifier }}</span>
                                 </div>
                                 <div style="height:10px"></div>
-                                <div id="add_manager_to_project_{{ project.id }}">
-                                    <label class="control-label">Principal Investigators:<input id="search_manager_for_project_{{ project.id }}" type="text" class="form-control manager_search" placeholder="Search for a PI to add" data-project-id="{{ project.id }}" style="min-width: 250px;"></label>
-                                </div>
-                                <div id="project_{{ project.id }}_managers">
-                                    {% include 'accounts_and_projects/managers_for_project.html' with users=project.manager_set.all %}
-                                </div>
-                                <div style="height:10px"></div>
                                 <div id="add_user_to_project_{{ project.id }}">
                                     <label class="control-label">Users:<input id="search_user_for_project_{{ project.id }}" type="text" class="form-control user_search" placeholder="Search for a user to add" data-project-id="{{ project.id }}" style="min-width: 250px;"></label>
                                 </div>
                                 <div id="project_{{ project.id }}_users">
                                     {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
+                                </div>
+                                <div style="height:10px"></div>
+                                <div id="add_manager_to_project_{{ project.id }}">
+                                    <label class="control-label">Principal Investigators:<input id="search_manager_for_project_{{ project.id }}" type="text" class="form-control manager_search" placeholder="Search for a PI to add" data-project-id="{{ project.id }}" style="min-width: 250px;"></label>
+                                </div>
+                                <div id="project_{{ project.id }}_managers">
+                                    {% include 'accounts_and_projects/managers_for_project.html' with users=project.manager_set.all %}
                                 </div>
                             </div>
                         </div>
