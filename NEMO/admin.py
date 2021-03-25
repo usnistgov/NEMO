@@ -427,10 +427,17 @@ class ProjectAdminForm(forms.ModelForm):
 		widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
 	)
 
+	principal_investigators = forms.ModelMultipleChoiceField(
+		queryset=User.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(verbose_name="Principal investigators", is_stacked=False),
+	)
+
 	def __init__(self, *args, **kwargs):
 		super(ProjectAdminForm, self).__init__(*args, **kwargs)
 		if self.instance.pk:
 			self.fields["members"].initial = self.instance.user_set.all()
+			self.fields["principal_investigators"].initial = self.instance.manager_set.all()
 
 
 @register(Project)
@@ -469,6 +476,9 @@ class ProjectAdmin(admin.ModelAdmin):
 
 		# Record whether the project is active or not.
 		record_active_state(request, obj, form, "active", not change)
+
+		if "principal_investigators" in form.changed_data:
+			obj.manager_set.set(form.cleaned_data["principal_investigators"])
 
 
 @register(Reservation)
