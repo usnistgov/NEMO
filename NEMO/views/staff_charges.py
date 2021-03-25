@@ -12,7 +12,8 @@ from NEMO.views.area_access import load_areas_for_use_in_template
 @staff_member_required(login_url=None)
 @require_GET
 def staff_charges(request):
-	staff_charge: StaffCharge = request.user.get_staff_charge()
+	staff_member:User = request.user
+	staff_charge: StaffCharge = staff_member.get_staff_charge()
 	dictionary = dict()
 	if staff_charge:
 		try:
@@ -21,7 +22,7 @@ def staff_charges(request):
 			charges = [{'type': 'Start time charge', 'start': staff_charge.start, 'end': staff_charge.end}]
 			for area_charge in AreaAccessRecord.objects.filter(staff_charge_id=staff_charge.id):
 				charges.append({'type': area_charge.area.name + ' access', 'start': area_charge.start, 'end': area_charge.end, 'class': 'primary-highlight'})
-			for tool_charge in UsageEvent.objects.filter(operator=staff_charge.staff_member, user=staff_charge.customer, start__gt=staff_charge.start):
+			for tool_charge in UsageEvent.objects.filter(operator=staff_member, user=staff_charge.customer, start__gt=staff_charge.start):
 				charges.append({'type': tool_charge.tool.name + ' usage', 'start': tool_charge.start, 'end': tool_charge.end, 'class': 'warning-highlight'})
 			charges.sort(key=lambda x: x['start'], reverse=True)
 			dictionary['charges'] = charges
@@ -30,7 +31,7 @@ def staff_charges(request):
 			dictionary['area'] = area_access_record.area
 			return render(request, 'staff_charges/end_area_charge.html', dictionary)
 		except AreaAccessRecord.DoesNotExist:
-			dictionary['user_accessible_areas'], dictionary['areas'] = load_areas_for_use_in_template()
+			dictionary['user_accessible_areas'], dictionary['areas'] = load_areas_for_use_in_template(staff_member)
 			return render(request, 'staff_charges/change_status.html', dictionary)
 	error = None
 	customer = None
