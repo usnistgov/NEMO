@@ -262,6 +262,6 @@ def billable_items_training_sessions(training_sessions: QuerySet) -> List[Billab
 	return billable_items
 
 
-def get_minutes_between_dates(start, end, round_digits=2):
+def get_minutes_between_dates(start, end, round_digits=2) -> Decimal:
 	diff: timedelta = end - start
-	return round(diff.total_seconds() / 60, round_digits)
+	return round(Decimal(diff.total_seconds()) / Decimal(60), round_digits)
