@@ -1,6 +1,6 @@
 from datetime import datetime
 from logging import getLogger
-from typing import List
+from typing import List, Set
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
@@ -85,19 +85,20 @@ def date_parameters_dictionary(request):
 @login_required
 @require_GET
 def usage(request):
-	user:User = request.user
+	user: User = request.user
+	user_managed_projects = get_managed_projects(user)
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
-	customer_filter = Q(customer=user)
-	user_filter = Q(user=user)
-	trainee_filter = Q(trainee=user)
+	customer_filter = Q(customer=user) | Q(project__in=user_managed_projects)
+	user_filter = Q(user=user) | Q(project__in=user_managed_projects)
+	trainee_filter = Q(trainee=user) | Q(project__in=user_managed_projects)
 	project_id = request.GET.get("pi_project")
 	csv_export = bool(request.GET.get("csv", False))
 	if project_id:
 		project = get_object_or_404(Project, id=project_id)
 		base_dictionary['selected_project'] = project
-		customer_filter = (customer_filter | Q(project__in=user.managed_projects.all())) & Q(project=project)
-		user_filter = (user_filter | Q(project__in=user.managed_projects.all())) & Q(project=project)
-		trainee_filter = (trainee_filter | Q(project__in=user.managed_projects.all())) & Q(project=project)
+		customer_filter = customer_filter & Q(project=project)
+		user_filter = user_filter & Q(project=project)
+		trainee_filter = trainee_filter & Q(project=project)
 	area_access = AreaAccessRecord.objects.filter(customer_filter).filter(end__gt=start_date, end__lte=end_date).order_by('-start')
 	consumables = ConsumableWithdraw.objects.filter(customer_filter).filter(date__gt=start_date, date__lte=end_date)
 	missed_reservations = Reservation.objects.filter(user_filter).filter(missed=True, end__gt=start_date, end__lte=end_date)
@@ -116,8 +117,8 @@ def usage(request):
 			'usage_events': usage_events,
 			'can_export': True,
 		}
-		if user.active_project_count() > 1 or user.managed_projects.exists():
-			dictionary['pi_projects'] = set(user.managed_projects.all())
+		if user_managed_projects:
+			dictionary['pi_projects'] = user_managed_projects
 		dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
 		return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
 
@@ -125,9 +126,9 @@ def usage(request):
 @login_required
 @require_GET
 def billing(request):
-	if not get_billing_service().get('available', False):
-		return redirect('usage')
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
+	if not base_dictionary['billing_service']:
+		return redirect('usage')
 	formatted_applications = ','.join(map(str, set(request.user.active_projects().values_list('application_identifier', flat=True))))
 	try:
 		billing_dictionary = billing_dict(start_date, end_date, request.user, formatted_applications)
@@ -200,9 +201,9 @@ def project_usage(request):
 @staff_member_required(login_url=None)
 @require_GET
 def project_billing(request):
-	if not get_billing_service().get('available', False):
-		return redirect('project_usage')
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
+	if not base_dictionary['billing_service']:
+		return redirect('project_usage')
 	base_dictionary['project_autocomplete'] = True
 	base_dictionary['search_items'] = set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()) | set(User.objects.filter(is_active=True))
 
@@ -335,6 +336,27 @@ def csv_export_response(usage_events, area_access, training_sessions, staff_char
 	filename = f"usage_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 	response["Content-Disposition"] = f'attachment; filename="{filename}"'
 	return response
+
+
+def get_managed_projects(user: User) -> Set[Project]:
+	# This function will get managed projects from NEMO and also attempt to get them from billing service
+	managed_projects = set(list(user.managed_projects.all()))
+	billing_service = get_billing_service()
+	if billing_service.get('available', False):
+		# if we have a billing service, use it to determine project lead
+		project_lead_url = billing_service['project_lead_url']
+		keyword_arguments = billing_service['keyword_arguments']
+		latest_pis_params = {'$format': 'json'}
+		latest_pis_response = get(project_lead_url, params=latest_pis_params, **keyword_arguments)
+		latest_pis_data = latest_pis_response.json()['d']
+		for project_lead in latest_pis_data:
+			if project_lead['username'] == user.username or (
+					project_lead['first_name'] == user.first_name and project_lead['last_name'] == user.last_name):
+				try:
+					managed_projects.add(Project.objects.get(application_identifier=project_lead['application_name']))
+				except Project.DoesNotExist:
+					pass
+	return managed_projects
 
 
 def get_billing_service():

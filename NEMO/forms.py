@@ -54,6 +54,7 @@ class UserForm(ModelForm):
 			"physical_access_levels",
 			"qualifications",
 			"projects",
+			"managed_projects",
 		]
 
 
