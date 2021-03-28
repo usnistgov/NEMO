@@ -263,21 +263,23 @@ def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	return localize(midnight) if in_local_timezone else midnight
 
 
-def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachments=None, email_category:EmailCategory = EmailCategory.GENERAL, fail_silently=True):
+def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachments=None, email_category:EmailCategory = EmailCategory.GENERAL, fail_silently=True) -> int:
 	mail = EmailMessage(
 		subject=subject, body=content, from_email=from_email, to=to, bcc=bcc, cc=cc, attachments=attachments
 	)
 	mail.content_subtype = "html"
+	msg_sent = 0
 	if mail.recipients():
 		email_record = create_email_log(mail, email_category)
 		try:
-			mail.send()
+			msg_sent = mail.send()
 		except:
 			email_record.ok = False
 			if not fail_silently:
 				raise
 		finally:
 			email_record.save()
+	return msg_sent
 
 
 def create_email_log(email: EmailMessage, email_category: EmailCategory):
