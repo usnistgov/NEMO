@@ -93,6 +93,8 @@ def usage(request):
 	trainee_filter = Q(trainee=user) | Q(project__in=user_managed_projects)
 	project_id = request.GET.get("pi_project")
 	csv_export = bool(request.GET.get("csv", False))
+	if user_managed_projects:
+		base_dictionary['selected_project'] = "all"
 	if project_id:
 		project = get_object_or_404(Project, id=project_id)
 		base_dictionary['selected_project'] = project
