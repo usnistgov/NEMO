@@ -130,7 +130,8 @@ def billing(request):
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	if not base_dictionary['billing_service']:
 		return redirect('usage')
-	formatted_applications = ','.join(map(str, set(user.active_projects().values_list('application_identifier', flat=True))))
+	user_project_applications = list(user.active_projects().values_list('application_identifier', flat=True)) + list(user.managed_projects.values_list('application_identifier', flat=True))
+	formatted_applications = ','.join(map(str, set(user_project_applications)))
 	try:
 		billing_dictionary = billing_dict(start_date, end_date, user, formatted_applications)
 		return render(request, 'usage/billing.html', {**base_dictionary, **billing_dictionary})
