@@ -126,12 +126,13 @@ def usage(request):
 @login_required
 @require_GET
 def billing(request):
+	user: User = request.user
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
 	if not base_dictionary['billing_service']:
 		return redirect('usage')
-	formatted_applications = ','.join(map(str, set(request.user.active_projects().values_list('application_identifier', flat=True))))
+	formatted_applications = ','.join(map(str, set(user.active_projects().values_list('application_identifier', flat=True))))
 	try:
-		billing_dictionary = billing_dict(start_date, end_date, request.user, formatted_applications)
+		billing_dictionary = billing_dict(start_date, end_date, user, formatted_applications)
 		return render(request, 'usage/billing.html', {**base_dictionary, **billing_dictionary})
 	except Exception as e:
 		logger.warning(str(e))
@@ -241,8 +242,14 @@ def project_billing(request):
 		return render(request, 'usage/billing.html', base_dictionary)
 
 
-def is_user_pi(user, application_pi_row):
-	return application_pi_row is not None and (user.username == application_pi_row['username'] or (user.first_name == application_pi_row['first_name'] and user.last_name == application_pi_row['last_name']))
+def is_user_pi(user: User, latest_pis_data, activity, user_managed_applications: List[str]):
+	# Check if the user is set as a PI in NEMO, otherwise check from latest_pis_data
+	application = activity['application_name']
+	if application in user_managed_applications:
+		return True
+	else:
+		application_pi_row = next((x for x in latest_pis_data if x['application_name'] == application), None)
+		return application_pi_row is not None and (user.username == application_pi_row['username'] or (user.first_name == application_pi_row['first_name'] and user.last_name == application_pi_row['last_name']))
 
 
 def billing_dict(start_date, end_date, user, formatted_applications, project_id=None, account_id=None, force_pi=False):
@@ -278,6 +285,7 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 	user_pi_applications = list()
 	# Construct a tree of account, application, project, and member total spending
 	cost_activities_tree = {}
+	user_managed_applications = [project.application_identifier for project in user.managed_projects.all()]
 	for activity in cost_activity_data:
 		if (project_id and activity['project_id'] != str(project_id)) or (account_id and activity['account_id'] != str(account_id)):
 			continue
@@ -288,7 +296,7 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 		application_key = (activity['application_id'], activity['application_name'])
 		project_key = (activity['project_id'], activity['project_name'])
 		user_key = (activity['member_id'], User.objects.filter(id__in=[activity['member_id']]).first())
-		user_is_pi = is_user_pi(user, next((x for x in latest_pis_data if x['application_name'] == activity['application_name']), None)) if not force_pi else True
+		user_is_pi = is_user_pi(user, latest_pis_data, activity, user_managed_applications) if not force_pi else True
 		if user_is_pi:
 			user_pi_applications.append(activity['application_id'])
 		if user_is_pi or str(user.id) == activity['member_id']:

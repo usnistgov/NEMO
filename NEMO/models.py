@@ -1044,7 +1044,6 @@ class Area(MPTTModel):
 		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.reservation_email]
 
 
-
 class AreaAccessRecord(CalendarDisplay):
 	area = TreeForeignKey(Area, on_delete=models.CASCADE)
 	customer = models.ForeignKey(User, on_delete=models.CASCADE)
