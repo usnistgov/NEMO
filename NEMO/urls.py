@@ -34,7 +34,27 @@ router.register(r'scheduled_outages', api.ScheduledOutageViewSet)
 
 reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
 
-urlpatterns = [
+urlpatterns = []
+
+# Include urls for all NEMO plugins (that start with prefix NEMO)
+# URLs in plugins with exact same path will take precedence over regular NEMO URLs
+# Note that the path MUST be the same, down to the last "/"
+for app in apps.get_app_configs():
+	app_name = app.name
+	if app_name != 'NEMO' and app_name.startswith('NEMO'):
+		try:
+			mod = import_module('%s.urls' % app_name)
+		except ModuleNotFoundError:
+			logger.warning(f"no urls found for NEMO plugin: {app_name}")
+			pass
+		except Exception as e:
+			logger.warning(f"could not import urls for NEMO plugin: {app_name} {str(e)}")
+			pass
+		else:
+			urlpatterns += [path('', include('%s.urls' % app_name))]
+			logger.debug(f"automatically including urls for plugin: {app_name}")
+
+urlpatterns += [
 	# Authentication & error pages:
 	url(r'^login/$', authentication.login_user, name='login'),
 	url(r'^logout/$', LogoutView.as_view(next_page = 'landing' if not settings.LOGOUT_REDIRECT_URL else None), name='logout'),
@@ -276,22 +296,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		# Billing:
 		url(r'^billing/$', usage.billing, name='billing'),
 	]
-
-# Include urls for all NEMO plugins (that start with prefix NEMO)
-for app in apps.get_app_configs():
-	app_name = app.name
-	if app_name != 'NEMO' and app_name.startswith('NEMO'):
-		try:
-			mod = import_module('%s.urls' % app_name)
-		except ModuleNotFoundError:
-			logger.warning(f"no urls found for NEMO plugin: {app_name}")
-			pass
-		except Exception as e:
-			logger.warning(f"could not import urls for NEMO plugin: {app_name} {str(e)}")
-			pass
-		else:
-			urlpatterns += [path('', include('%s.urls' % app_name))]
-			logger.debug(f"automatically including urls for plugin: {app_name}")
 
 
 if settings.DEBUG:
