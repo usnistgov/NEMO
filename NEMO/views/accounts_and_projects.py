@@ -86,7 +86,7 @@ def create_project(request):
 	project_history.action = project.active
 	project_history.content_object = project
 	project_history.save()
-	return redirect('account', project.account.id)
+	return redirect('project', project.id)
 
 
 @staff_member_required(login_url=None)
