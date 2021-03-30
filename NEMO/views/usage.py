@@ -364,7 +364,8 @@ def get_managed_projects(user: User) -> Set[Project]:
 			if project_lead['username'] == user.username or (
 					project_lead['first_name'] == user.first_name and project_lead['last_name'] == user.last_name):
 				try:
-					managed_projects.add(Project.objects.get(application_identifier=project_lead['application_name']))
+					for managed_project in Project.objects.filter(application_identifier=project_lead['application_name']):
+						managed_projects.add(managed_project)
 				except Project.DoesNotExist:
 					pass
 	return managed_projects
