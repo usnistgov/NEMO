@@ -13,7 +13,7 @@ from django.utils.decorators import method_decorator
 from django.utils.module_loading import import_string
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_GET
-from ldap3 import Tls, Server, Connection, AUTO_BIND_TLS_BEFORE_BIND, SIMPLE, AUTO_BIND_NO_TLS, ANONYMOUS
+from ldap3 import Tls, Server, Connection, SIMPLE, AUTO_BIND_NO_TLS, ANONYMOUS
 from ldap3.core.exceptions import LDAPBindError, LDAPException
 
 from NEMO.exceptions import InactiveUserError
@@ -167,7 +167,8 @@ class LDAPAuthenticationBackend(ModelBackend):
 				domain = server.get("domain")
 				t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=server.get("certificate"))
 				s = Server(server["url"], port=port, use_ssl=use_ssl, tls=t)
-				auto_bind = AUTO_BIND_TLS_BEFORE_BIND if use_ssl else AUTO_BIND_NO_TLS
+				# We are securing the connection to the server with use_ssl, so no need for TLS
+				auto_bind = AUTO_BIND_NO_TLS
 				ldap_bind_user = f"{domain}\\{username}" if domain else username
 				if not bind_as_authentication:
 					# binding to LDAP first, then search for user
