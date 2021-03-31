@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name='NEMO',
-	version='3.8.0',
+	version='3.9.0',
 	python_requires='>=3.6',
 	packages=find_packages(exclude=['NEMO.tests','NEMO.tests.*']),
 	include_package_data=True,
@@ -24,15 +24,15 @@ setup(
 		'Programming Language :: Python :: 3.6',
 	],
 	install_requires=[
-		'cryptography==3.3.2',
-		'Django==2.2.13',
-		'django-filter==2.2.0',
-		'djangorestframework==3.11.0',
-		'ldap3==2.6.1',
+		'cryptography==3.4.6',
+		'Django==2.2.19',
+		'django-filter==2.4.0',
+		'djangorestframework==3.12.2',
+		'ldap3==2.9',
 		'python-dateutil==2.8.1',
-		'requests==2.22.0',
-		'Pillow==7.2.0',
-		'django-mptt==0.11.0',
+		'requests==2.25.1',
+		'Pillow==8.1.2',
+		'django-mptt==0.12.0',
 	],
 	entry_points={
 		'console_scripts': ['nemo=NEMO.provisioning:entry_point'],

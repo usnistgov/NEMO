@@ -14,7 +14,7 @@ class NEMOException(Exception):
 			site_title = get_customization('site_title')
 			msg = self.default_msg.format(site_title)
 		self.msg = msg
-		super(NEMOException, self).__init__(msg)
+		super().__init__(msg)
 
 
 class InvalidCustomizationException(NEMOException):
@@ -22,7 +22,7 @@ class InvalidCustomizationException(NEMOException):
 		msg = f"Invalid customization ({name})"
 		if value is not None:
 			msg += f" for value: [{value}]"
-		super(InvalidCustomizationException, self).__init__(msg)
+		super().__init__(msg)
 
 
 class InterlockError(NEMOException):
@@ -34,7 +34,7 @@ class InterlockError(NEMOException):
 		if msg is not None:
 			error_message += f": {msg}"
 		self.interlock = interlock
-		super(InterlockError, self).__init__(error_message)
+		super().__init__(error_message)
 
 
 class UserAccessError(NEMOException):
@@ -49,7 +49,7 @@ class UserAccessError(NEMOException):
 		elif self.detailed_msg:
 			message += f": {self.detailed_msg}"
 		self.user = user
-		super(UserAccessError, self).__init__(message)
+		super().__init__(message)
 
 
 class InactiveUserError(UserAccessError):
@@ -69,13 +69,13 @@ class NoPhysicalAccessUserError(UserAccessError):
 
 
 class NoAccessiblePhysicalAccessUserError(UserAccessError):
-	def __init__(self, user: User, area: Area, access_exception: PhysicalAccessException=None):
+	def __init__(self, user: User, area: Area, access_exception: PhysicalAccessException = None):
 		self.area = area
 		self.access_exception = access_exception
 		details = f"This user is not assigned to a physical access that allow access to this area [{area}] at this time"
 		if self.access_exception:
 			details = f"This user was denied access to this area [{area}] due to the following exception: {access_exception.name}"
-		super(NoAccessiblePhysicalAccessUserError, self).__init__(user=user, msg=details)
+		super().__init__(user=user, msg=details)
 
 
 class UnavailableResourcesUserError(UserAccessError):
@@ -83,22 +83,34 @@ class UnavailableResourcesUserError(UserAccessError):
 		self.area = area
 		self.resources = resources
 		details = f"This user was denied access to this area [{area}] because a required resource was unavailable [{resources}"
-		super(UnavailableResourcesUserError, self).__init__(user=user, msg=details)
+		super().__init__(user=user, msg=details)
+
 
 class MaximumCapacityReachedError(UserAccessError):
 	def __init__(self, user: User, area: Area):
 		self.area = area
 		details = f"This user was denied access to this area [{area}] because the area's maximum capacity of [{area.maximum_capacity}] has been reached"
-		super(MaximumCapacityReachedError, self).__init__(user=user, msg=details)
+		super().__init__(user=user, msg=details)
+
 
 class ScheduledOutageInProgressError(UserAccessError):
 	def __init__(self, user: User, area: Area):
 		self.area = area
 		details = f"This user was denied access to this area [{area}] because there is a scheduled outage in progress"
-		super(ScheduledOutageInProgressError, self).__init__(user=user, msg=details)
+		super().__init__(user=user, msg=details)
+
 
 class ReservationRequiredUserError(UserAccessError):
 	def __init__(self, user: User, area: Area):
 		self.area = area
 		details = f"This user was denied access to this area [{area}] because the user doesn't have a current reservation for that area"
-		super(ReservationRequiredUserError, self).__init__(user=user, msg=details)
+		super().__init__(user=user, msg=details)
+
+
+class RequiredUnansweredQuestionsException(NEMOException):
+	def __init__(self, run_data:str, questions: List):
+		self.run_data = run_data
+		self.questions = questions
+		display_questions = ", ".join([f"\"{question.title}\"" for question in questions])
+		msg = f"You have to answer the following required questions: {display_questions}"
+		super().__init__(msg)

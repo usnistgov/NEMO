@@ -1,5 +1,5 @@
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
@@ -66,6 +66,7 @@ def toggle_active(request, kind, identifier):
 def create_project(request):
 	dictionary = {
 		'account_list': Account.objects.all(),
+		'user_list': User.objects.filter(is_active=True),
 	}
 	if request.method == 'GET':
 		return render(request, 'accounts_and_projects/create_project.html', dictionary)
@@ -85,7 +86,7 @@ def create_project(request):
 	project_history.action = project.active
 	project_history.content_object = project
 	project_history.save()
-	return redirect('account', project.account.id)
+	return redirect('project', project.id)
 
 
 @staff_member_required(login_url=None)
@@ -143,3 +144,31 @@ def add_user_to_project(request):
 		'project': project
 	}
 	return render(request, 'accounts_and_projects/users_for_project.html', dictionary)
+
+
+@staff_member_required(login_url=None)
+@require_POST
+def remove_manager_from_project(request):
+	user = get_object_or_404(User, id=request.POST['user_id'])
+	project = get_object_or_404(Project, id=request.POST['project_id'])
+	if project.manager_set.filter(id=user.id).exists():
+		project.manager_set.remove(user)
+	dictionary = {
+		'users': project.manager_set.all(),
+		'project': project
+	}
+	return render(request, 'accounts_and_projects/managers_for_project.html', dictionary)
+
+
+@staff_member_required(login_url=None)
+@require_POST
+def add_manager_to_project(request):
+	user = get_object_or_404(User, id=request.POST['user_id'])
+	project = get_object_or_404(Project, id=request.POST['project_id'])
+	if user not in project.manager_set.all():
+		project.manager_set.add(user)
+	dictionary = {
+		'users': project.manager_set.all(),
+		'project': project
+	}
+	return render(request, 'accounts_and_projects/managers_for_project.html', dictionary)

@@ -66,7 +66,7 @@
         <div class="container">
 			{% if messages %}
 				{% for message in messages %}
-					<div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
+					<div class="alert alert-{% if message.level_tag == 'error' %}danger{% else %}{{ message.level_tag }}{% endif %} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
 						<button type="button" class="close" data-dismiss="alert">&times;</button>
 						{{message}}
 					</div>

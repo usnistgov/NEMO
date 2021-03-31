@@ -21,7 +21,7 @@
 				{% for m in missed_reservations %}
 					<div class="alert alert-danger">
 						<span style="font-weight:bold">{{ m.reservation_item }}</span><br>
-						{% if project_autocomplete %}Missed by {{ m.user }}<br>{% endif %}
+						{% if project_autocomplete or selected_project %}Missed by {{ m.user }}<br>{% endif %}
 						{{ m.start }}<br>
 						Charged to project {{ m.project }}
 					</div>
@@ -32,7 +32,7 @@
 				{% for c in consumables %}
 					<div class="alert alert-info">
 						<span style="font-weight:bold">{{ c.consumable }}</span><br>
-						{% if project_autocomplete %}<span style="font-weight:bold">For {{ c.customer }}</span><br>{% endif %}
+						{% if project_autocomplete or selected_project %}<span style="font-weight:bold">For {{ c.customer }}</span><br>{% endif %}
 						Quantity {{ c.quantity }}<br>
 						Purchased from {{ c.merchant }} on {{ c.date }}<br>
 						Charged to project {{ c.project }}
@@ -43,7 +43,7 @@
 				<h3>Staff charges</h3>
 				{% for s in staff_charges %}
 					<div class="alert alert-info">
-						<span style="font-weight:bold">Work performed by {{ s.staff_member }} {% if project_autocomplete %}on behalf of {{ s.customer }}{% else %}on your behalf{% endif %}</span><br>
+						<span style="font-weight:bold">Work performed by {{ s.staff_member }} {% if project_autocomplete or selected_project %}on behalf of {{ s.customer }}{% else %}on your behalf{% endif %}</span><br>
 						{{ s.start }}<br>
 						{{ s.end }}<br>
 						Charged to project {{ s.project }}
@@ -54,7 +54,7 @@
 				<h3>Training sessions</h3>
 				{% for t in training_sessions %}
 					<div class="alert alert-info">
-						{{ t.get_type_display }} training {% if project_autocomplete %}for {{ t.trainee }} {% endif %}for {{ t.duration }} minutes taught by <span style="font-weight:bold">{{ t.trainer }}</span>
+						{{ t.get_type_display }} training {% if project_autocomplete or selected_project %}for {{ t.trainee }} {% endif %}for {{ t.duration }} minutes taught by <span style="font-weight:bold">{{ t.trainer }}</span>
 						for the <span style="font-weight:bold">{{ t.tool }}</span>. Charged to project {{ t.project }} on {{ t.date }}.
 					</div>
 				{% endfor %}
@@ -64,8 +64,8 @@
 				{% for a in area_access %}
 					<div class="alert {% if not a.staff_charge %}alert-info{% else %}alert-warning{% endif %}">
 						<span style="font-weight:bold">{{ a.area }}</span><br>
-						{% if a.staff_charge %}<span style="font-weight:bold">Area accessed by {{ a.staff_charge.staff_member }} {% if project_autocomplete %}on behalf of {{ a.customer }}{% else %}on your behalf{% endif %}</span><br>
-						{% else %}{% if project_autocomplete %}<span style="font-weight:bold">Area accessed by {{ a.customer }}</span><br>{% endif %}
+						{% if a.staff_charge %}<span style="font-weight:bold">Area accessed by {{ a.staff_charge.staff_member }} {% if project_autocomplete or selected_project %}on behalf of {{ a.customer }}{% else %}on your behalf{% endif %}</span><br>
+						{% else %}{% if project_autocomplete or selected_project %}<span style="font-weight:bold">Area accessed by {{ a.customer }}</span><br>{% endif %}
 						{% endif %}
 						{{ a.start }}<br>
 						{{ a.end|default_if_none:"In progress" }}<br>
@@ -78,8 +78,8 @@
 				{% for u in usage_events %}
 					<div class="alert {% if u.user == u.operator %}alert-info{% else %}alert-warning{% endif %}">
 						<span style="font-weight:bold">{{ u.tool }}</span><br>
-						{% if u.user != u.operator %}<span style="font-weight:bold">Operated by {{ u.operator }} {% if project_autocomplete %}on behalf of {{ u.user }}{% else %}on your behalf{% endif %}</span><br>
-						{% else %}<span style="font-weight:bold">Operated by {{ u.user }}</span><br>
+						{% if u.user != u.operator %}<span style="font-weight:bold">Operated by {{ u.operator }} {% if project_autocomplete or selected_project %}on behalf of {{ u.user }}{% else %}on your behalf{% endif %}</span><br>
+						{% else %}{% if project_autocomplete or selected_project %}<span style="font-weight:bold">Operated by {{ u.user }}</span><br>{% endif %}
 						{% endif %}
 						{{ u.start }}<br>
 						{{ u.end }}<br>

@@ -60,6 +60,16 @@
 		</div>
 	</form>
 	<script>
+        function select_pi(jquery_event, search_selection, dataset_name)
+		{
+			$('#pi_search').typeahead('val', search_selection.id).hide();
+			$("#selected_pi").val(search_selection.name).show();
+		}
+		function clear_pi_selection()
+		{
+			$("#selected_pi").hide();
+			$('#pi_search').typeahead('val', '').show().focus();
+		}
 		function select_account(jquery_event, search_selection, dataset_name)
 		{
 			$('#account_search').typeahead('val', search_selection.id).hide();
@@ -72,6 +82,7 @@
 		}
 		function on_load()
 		{
+			$('#pi_search').autocomplete('pi', select_pi, {{ user_list|json_search_base }});
 			$('#account_search').autocomplete('account', select_account, {{ account_list|json_search_base }});
 		}
 		$(on_load);

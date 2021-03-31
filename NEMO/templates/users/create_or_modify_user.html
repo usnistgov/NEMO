@@ -177,6 +177,17 @@
 				This user has no assigned projects.
 			</div>
 		</div>
+        <div class="form-group">
+			<label class="control-label col-sm-2" for="add_a_managed_project">Managed projects</label>
+			<div class="col-sm-4">
+				<input id="add_a_managed_project" type="text" autocomplete="off" class="form-control" placeholder="Add a managed project">
+			</div>
+		</div>
+		<div class="form-group">
+			<div id="project-managed-list" class="col-sm-offset-2 col-sm-4">
+				This user is not a PI on any projects.
+			</div>
+		</div>
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="add_a_tool_qualification">Tool qualifications</label>
 			<div class="col-sm-4">
@@ -308,11 +319,21 @@
 	{% endif %}
 
 	<script>
+		function add_managed_project(project_name, project_id)
+		{
+			add_to_list("#project-managed-list", "remove_managed_project", project_id, project_name, "Remove this user from " + project_name, "managed_projects");
+		}
+		function remove_managed_project(project_id)
+		{
+			remove_from_list("#project-managed-list", "#managed_projects_" + project_id, "This user is not a PI on any projects.");
+		}
 		function on_search_selection(jquery_event, search_selection, dataset_name)
 		{
 			$(this).typeahead('val', '').focus();
 			if(dataset_name === 'projects')
 				add_project(search_selection.name, search_selection.id);
+			else if(dataset_name === 'managed_projects')
+				add_managed_project(search_selection.name, search_selection.id);
 			else if(dataset_name === 'tools')
 				add_tool_qualification(search_selection.name, search_selection.id);
 		}
@@ -336,10 +357,14 @@
 		{
 			$('[data-toggle="tooltip"]').tooltip();
 			$("#access_expiration").datetimepicker({format: 'MM/DD/YYYY'});
+			$('#add_a_managed_project').autocomplete('managed_projects', on_search_selection, {% json_search_base_with_extra_fields projects 'application_identifier' %});
 			$('#add_a_project').autocomplete('projects', on_search_selection, {% json_search_base_with_extra_fields projects 'application_identifier' %});
 			$('#add_a_tool_qualification').autocomplete('tools', on_search_selection, {{ tools|json_search_base }});
 			{% if form.instance.id %} {# Only look for projects and qualifications if this is an existing user (and not a new user). #}
-				{% for project in form.instance.projects.all %}
+				{% for project in form.instance.managed_projects.all %}
+					add_managed_project('{{ project.name }}', {{ project.id }});
+				{% endfor %}
+                {% for project in form.instance.projects.all %}
 					add_project('{{ project.name }}', {{ project.id }});
 				{% endfor %}
 				{% for tool in form.instance.qualifications.all %}

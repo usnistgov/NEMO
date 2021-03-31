@@ -4,26 +4,63 @@
 	<input type="hidden" name="csv" id="hidden_data_csv"/>
 	<input type="hidden" name="start" id="hidden_data_start"/>
 	<input type="hidden" name="end" id="hidden_data_end"/>
-	<div class="form-group extra-side-padding">
-		<label for="data_history_start_date">From</label>
-	</div>
-	<div class="datetimepicker-container form-group extra-side-padding">
-		<input type="text" id="data_history_start_date" name="data_history_start_date" class="form-control text-center small-input" placeholder="Choose a date" value="{{ data_history_start|date:"m/d/Y" }}">
-	</div>
-	<div class="form-group extra-side-padding">
-		<label for="data_history_end_date">to</label>
-	</div>
-	<div class="datetimepicker-container form-group extra-side-padding">
-		<input type="text" id="data_history_end_date" name="data_history_end_date" class="form-control text-center small-input" placeholder="Choose a date" value="{{ data_history_end|date:"m/d/Y" }}">
-	</div>
-	<div class="form-group extra-side-padding">
-		<input type="button" class="btn btn-success" value="Update" onclick="load_usage_data('{{ tool_id }}')">
-	</div>
-	{% if user.is_staff %}
-		<div class="form-group pull-right extra-side-padding">
-			<input type="button" class="btn btn-info" value="Export" onclick="load_usage_data('{{ tool_id }}', true)">
-		</div>
-	{% endif %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="row" style="margin-bottom: 15px">
+                    <div class="container">
+                        <div class="form-group extra-side-padding">
+                            <label for="data_history_start_date">From</label>
+                        </div>
+                        <div class="datetimepicker-container form-group extra-side-padding">
+                            <input type="text" id="data_history_start_date" name="data_history_start_date" class="form-control text-center small-input" placeholder="Start date" value="{{ data_history_start|date:"m/d/Y" }}">
+                        </div>
+                        <div class="form-group extra-side-padding">
+                            <label for="data_history_end_date">to</label>
+                        </div>
+                        <div class="datetimepicker-container form-group extra-side-padding">
+                            <input type="text" id="data_history_end_date" name="data_history_end_date" class="form-control text-center small-input" placeholder="End date" value="{{ data_history_end|date:"m/d/Y" }}">
+                        </div>
+                        <div class="form-group extra-side-padding">
+                            <label for="data_history_last">or last</label>
+                        </div>
+                        <div class="form-group extra-side-padding">
+                            <select id="data_history_last" name="data_history_last" class="form-control small-input" onchange="if (this.value !== '') {$('#data_history_start_date').val('');$('#data_history_end_date').val('')}">
+                                <option value=""></option>
+                                <option value="10" {% if data_history_last == '10' %}selected{% endif %}>10</option>
+                                <option value="25" {% if data_history_last == '25' %}selected{% endif %}>25</option>
+                                <option value="50" {% if data_history_last == '50' %}selected{% endif %}>50</option>
+                                <option value="100" {% if data_history_last == '100' %}selected{% endif %}>100</option>
+                            </select>
+                        </div>
+                        <div class="form-group extra-side-padding">
+                            <label>records</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="container">
+                        <div class="form-group extra-side-padding">
+                            <label for="user_search">Filter by user:</label>
+                        </div>
+                        <div class="form-group extra-side-padding">
+                            <input type="text" class="form-control" id="user_search" placeholder="Search for a user" {% if data_history_user %}style="display:none"{% endif %} required>
+                            <input type="button" id="chosen_user" class="btn btn-default" {% if not data_history_user %}style="display:none"{% endif %} onclick="clear_selected_user()" value="{{ data_history_user }}">
+                            <input type="hidden" id="data_history_user_id" name="data_history_user_id" value="{{ data_history_user.id }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group pull-right extra-side-padding">
+                    <input type="button" class="btn btn-info" value="Export" onclick="load_usage_data('{{ tool_id }}', true)">
+                </div>
+                <div class="form-group pull-right extra-side-padding">
+                    <input type="button" class="btn btn-success" value="Update" onclick="load_usage_data('{{ tool_id }}')">
+                </div>
+            </div>
+        </div>
+    </div>
 </form>
 
 {% if usage_data_table.rows %}
@@ -50,6 +87,19 @@
 {% endif %}
 
 <script>
-	$('#data_history_start_date').datetimepicker({format: 'MM/DD/YYYY'});
-	$('#data_history_end_date').datetimepicker({format: 'MM/DD/YYYY'});
+    function clear_selected_user()
+    {
+        $("#chosen_user").val('').hide();
+        $("#user_search").typeahead('val', '').show().focus();
+        $("#data_history_user_id").val('');
+    }
+    function select_user(jquery_event, search_selection, dataset_name)
+    {
+        $('#user_search').hide();
+        $('#chosen_user').val(search_selection.name).show();
+        $('#data_history_user_id').val(search_selection.id);
+    }
+    $('#user_search').autocomplete('users', select_user, {{ users|json_search_base }});
+    $('#data_history_start_date').datetimepicker({format: 'MM/DD/YYYY'}).on('dp.change', function (e) { $('#data_history_last').val('') });
+    $('#data_history_end_date').datetimepicker({format: 'MM/DD/YYYY'}).on('dp.change', function (e) { $('#data_history_last').val('') });
 </script>

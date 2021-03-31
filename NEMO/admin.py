@@ -73,8 +73,9 @@ from NEMO.models import (
 	BuddyRequest,
 	EmailLog,
 	BuddyRequestMessage,
+	ToolDocuments
 )
-from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion
 
 
 class ToolAdminForm(forms.ModelForm):
@@ -174,8 +175,14 @@ class ToolAdminForm(forms.ModelForm):
 					self.add_error("_policy_off_end_time", "End time must be specified")
 
 
+class ToolDocumentsInline(admin.TabularInline):
+	model = ToolDocuments
+	extra = 1
+
+
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
+	inlines = [ToolDocumentsInline,]
 	list_display = (
 		"name_display",
 		"_category",
@@ -420,10 +427,17 @@ class ProjectAdminForm(forms.ModelForm):
 		widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
 	)
 
+	principal_investigators = forms.ModelMultipleChoiceField(
+		queryset=User.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(verbose_name="Principal investigators", is_stacked=False),
+	)
+
 	def __init__(self, *args, **kwargs):
 		super(ProjectAdminForm, self).__init__(*args, **kwargs)
 		if self.instance.pk:
 			self.fields["members"].initial = self.instance.user_set.all()
+			self.fields["principal_investigators"].initial = self.instance.manager_set.all()
 
 
 @register(Project)
@@ -462,6 +476,9 @@ class ProjectAdmin(admin.ModelAdmin):
 
 		# Record whether the project is active or not.
 		record_active_state(request, obj, form, "active", not change)
+
+		if "principal_investigators" in form.changed_data:
+			obj.manager_set.set(form.cleaned_data["principal_investigators"])
 
 
 @register(Reservation)
@@ -677,7 +694,7 @@ class UserAdminForm(forms.ModelForm):
 @register(User)
 class UserAdmin(admin.ModelAdmin):
 	form = UserAdminForm
-	filter_horizontal = ("groups", "user_permissions", "qualifications", "projects", "physical_access_levels")
+	filter_horizontal = ("groups", "user_permissions", "qualifications", "projects", "managed_projects", "physical_access_levels")
 	fieldsets = (
 		(
 			"Personal information",
@@ -700,7 +717,7 @@ class UserAdmin(admin.ModelAdmin):
 			},
 		),
 		("Important dates", {"fields": ("date_joined", "last_login", "access_expiration")}),
-		("Facility information", {"fields": ("qualifications", "projects")}),
+		("Facility information", {"fields": ("qualifications", "projects", "managed_projects")}),
 	)
 	search_fields = ("first_name", "last_name", "username", "email")
 	list_display = (
@@ -958,16 +975,16 @@ class CounterAdminForm(forms.ModelForm):
 			if tool.post_usage_questions:
 				post_usage_form = DynamicForm(tool.post_usage_questions, tool.id)
 				tool_question = post_usage_form.filter_questions(
-					lambda x: isinstance(x, PostUsageNumberFieldQuestion) and x.name == tool_usage_question_name
+					lambda x: (isinstance(x, PostUsageNumberFieldQuestion) or isinstance(x, PostUsageFloatFieldQuestion)) and x.name == tool_usage_question_name
 				)
 				if not tool_question:
 					candidates = [
 						question.name
 						for question in post_usage_form.filter_questions(
-							lambda x: isinstance(x, PostUsageNumberFieldQuestion)
+							lambda x: isinstance(x, PostUsageNumberFieldQuestion) or isinstance(x, PostUsageFloatFieldQuestion)
 						)
 					]
-					error = "The tool has no post usage question of type Number with this name."
+					error = "The tool has no post usage question of type Number or Float with this name."
 					if candidates:
 						error += f" Valid question names are: {', '.join(candidates)}"
 			else:
@@ -980,6 +997,7 @@ class CounterAdminForm(forms.ModelForm):
 @register(ToolUsageCounter)
 class CounterAdmin(admin.ModelAdmin):
 	list_display = ("name", "tool", "tool_usage_question", "value", "last_reset", "last_reset_by", "is_active")
+	list_filter = ("tool",)
 	form = CounterAdminForm
 
 

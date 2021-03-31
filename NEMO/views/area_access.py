@@ -80,7 +80,7 @@ def area_access(request):
 		dictionary['access_records'] = area_access_records
 	except:
 		pass
-	dictionary['area_select_field'] = TreeNodeChoiceField(Area.objects.filter(requires_reservation=True).only('name'), empty_label="All").widget.render('area', area_id)
+	dictionary['area_select_field'] = TreeNodeChoiceField(Area.objects.filter(area_children_set__isnull=True).only('name'), empty_label="All").widget.render('area', area_id)
 	return render(request, 'area_access/area_access.html', dictionary)
 
 
@@ -391,12 +391,12 @@ def able_to_self_log_in_to_area(user):
 	return True
 
 
-def load_areas_for_use_in_template(user: User = None):
+def load_areas_for_use_in_template(user: User):
 	"""
 	This method returns accessible areas for the user and a queryset ready to be used in template view.
 	The template view needs to use the {% recursetree %} tag from mptt
 	"""
-	accessible_areas = user.accessible_areas() if user else Area.objects.filter(requires_reservation=True)
+	accessible_areas = user.accessible_areas()
 	areas = list(set([ancestor for area in accessible_areas for ancestor in area.get_ancestors(include_self=True)]))
 	areas.sort(key=lambda x: x.tree_category())
 	areas = Area.objects.filter(id__in=[area.id for area in areas])
