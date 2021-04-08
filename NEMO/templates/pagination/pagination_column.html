@@ -2,7 +2,7 @@
 {% with order_list=order_by|add:','|add:'-'|add:order_by %}
 	{% with order=page.paginator.order_by|cut:order_by|yesno:order_list %}
 		<a href="?o={{ order }}&p={{ page.paginator.page_number }}&pp={{ page.paginator.per_page }}">{{ name }}</a>
-		<a class="{% if not align %}pull-right{% endif %} {% if order_by not in page.paginator.order_by %}invisible{% endif %}" href="?o={{ order }}&p={{ page.paginator.page_number }}&pp={{ page.paginator.per_page }}"><span class="glyphicon glyphicon-triangle-{% if order == order_by %}top{% else %}bottom{% endif %}"></span></a>
+		<a class="{% if not align %}pull-right{% endif %} {% if order_by not in page.paginator.order_by %}invisible{% endif %}" href="?o={{ order }}&p={{ page.paginator.page_number }}&pp={{ page.paginator.per_page }}"><span class="glyphicon glyphicon-triangle-{% if order == order_by %}bottom{% else %}top{% endif %}"></span></a>
 	{% endwith %}
 {% endwith %}
 </span>
