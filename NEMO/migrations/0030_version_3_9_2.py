@@ -9,10 +9,26 @@ class Migration(migrations.Migration):
         ('NEMO', '0028_version_3_9_0'),
     ]
 
+    def copy_badge_number_data(apps, schema_editor):
+        User = apps.get_model("NEMO", "User")
+        for user in User.objects.all():
+            user.badge_number = user.badge_number_tmp
+            user.save()
+
     operations = [
-        migrations.AlterField(
+        migrations.RenameField(
+            model_name='user',
+            old_name='badge_number',
+            new_name='badge_number_tmp',
+        ),
+        migrations.AddField(
             model_name='user',
             name='badge_number',
             field=models.CharField(blank=True, help_text='The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.', max_length=50, null=True, unique=True),
+        ),
+        migrations.RunPython(copy_badge_number_data),
+        migrations.RemoveField(
+            model_name='user',
+            name='badge_number_tmp',
         ),
     ]
