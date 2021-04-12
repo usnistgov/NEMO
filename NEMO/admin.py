@@ -677,6 +677,17 @@ class UserAdminForm(forms.ModelForm):
 		model = User
 		fields = "__all__"
 
+	backup_owner_on_tools = forms.ModelMultipleChoiceField(
+		queryset=Tool.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
+	)
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		if self.instance.pk:
+			self.fields["backup_owner_on_tools"].initial = self.instance.backup_for_tools.all()
+
 	def clean(self):
 		cleaned_data = super().clean()
 		staff_status = cleaned_data.get("is_staff")
@@ -717,7 +728,7 @@ class UserAdmin(admin.ModelAdmin):
 			},
 		),
 		("Important dates", {"fields": ("date_joined", "last_login", "access_expiration")}),
-		("Facility information", {"fields": ("qualifications", "projects", "managed_projects")}),
+		("Facility information", {"fields": ("qualifications", "backup_owner_on_tools", "projects", "managed_projects")}),
 	)
 	search_fields = ("first_name", "last_name", "username", "email")
 	list_display = (
@@ -757,6 +768,8 @@ class UserAdmin(admin.ModelAdmin):
 		record_local_many_to_many_changes(request, obj, form, "qualifications")
 		record_local_many_to_many_changes(request, obj, form, "physical_access_levels")
 		record_active_state(request, obj, form, "is_active", not change)
+		if "backup_owner_on_tools" in form.changed_data:
+			obj.backup_for_tools.set(form.cleaned_data["backup_owner_on_tools"])
 
 
 @register(PhysicalAccessLog)
@@ -883,12 +896,6 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 	class Media:
 		js = ("admin/time_options_override.js",)
 
-	physical_access_levels = forms.ModelMultipleChoiceField(
-		queryset=PhysicalAccessLevel.objects.all(),
-		required=False,
-		widget=FilteredSelectMultiple(verbose_name="Physical Access Levels", is_stacked=False),
-	)
-
 	def clean(self):
 		if any(self.errors):
 			return
@@ -903,7 +910,8 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 class PhysicalAccessExceptionAdmin(admin.ModelAdmin):
 	form = PhysicalAccessExceptionAdminForm
 	list_display = ("name", "start_time", "end_time")
-	list_filter = (("physical_access_levels__area"),)
+	filter_horizontal = ("physical_access_levels",)
+	list_filter = ("physical_access_levels__area",)
 
 
 @register(ContactInformationCategory)
