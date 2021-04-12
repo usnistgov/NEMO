@@ -71,6 +71,14 @@ def remove_withdraw_at_index(request, index: str):
 
 
 @staff_member_required(login_url=None)
+@require_GET
+def clear_withdrawals(request):
+	if 'withdrawals' in request.session:
+		del request.session['withdrawals']
+	return render(request, "consumables/consumables_order.html")
+
+
+@staff_member_required(login_url=None)
 @require_POST
 def make_withdrawals(request):
 	withdrawals: List = request.session.get('withdrawals')

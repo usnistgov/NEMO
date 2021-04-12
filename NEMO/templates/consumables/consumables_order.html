@@ -22,8 +22,11 @@
             </tr>
         {% endfor %}
     </table>
-    <form action="{% url 'withdraw_consumables' %}" class="form-horizontal text-right" method="post">
+    <div class="pull-left">
+        <button class="btn btn-sm btn-danger" onclick="$('#consumables_order').load('{% url 'clear_withdrawals' %}')">Clear</button>
+    </div>
+    <form action="{% url 'withdraw_consumables' %}" class="form-horizontal pull-right" method="post">
         {% csrf_token %}
-        <input type="submit" class="btn btn-success" value="Confirm">
+        <input type="submit" class="btn btn-sm btn-success" value="Confirm">
     </form>
 {% endif %}
