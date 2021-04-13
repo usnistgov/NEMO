@@ -1042,5 +1042,6 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	ics.seek(0)
 
 	filename = 'cancelled_reservation.ics' if cancelled else 'reservation.ics'
-
-	return create_email_attachment(ics, filename)
+	attachment = create_email_attachment(ics, filename, 'text', 'calendar', False)
+	attachment.set_param('method','REQUEST')
+	return attachment
