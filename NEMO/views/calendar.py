@@ -1027,21 +1027,20 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
 
 def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	site_title = get_customization('site_title')
-	method = 'METHOD:CANCEL\n' if cancelled else 'METHOD:PUBLISH\n'
+	method_name = 'CANCEL' if cancelled else 'REQUEST'
+	method = f'METHOD:{method_name}\n'
 	status = 'STATUS:CANCELLED\n' if cancelled else 'STATUS:CONFIRMED\n'
 	uid = 'UID:'+str(reservation.id)+'\n'
 	sequence = 'SEQUENCE:2\n' if cancelled else 'SEQUENCE:0\n'
 	priority = 'PRIORITY:5\n' if cancelled else 'PRIORITY:0\n'
-	now = datetime.now().strftime('%Y%m%dT%H%M%S')
-	start = timezone.localtime(reservation.start).strftime('%Y%m%dT%H%M%S')
-	end = timezone.localtime(reservation.end).strftime('%Y%m%dT%H%M%S')
+	now = datetime.now().strftime('%Y%m%dT%H%M%SZ')
+	start = reservation.start.strftime('%Y%m%dT%H%M%SZ')
+	end = reservation.end.strftime('%Y%m%dT%H%M%SZ')
 	reservation_name = reservation.reservation_item.name
-	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
+	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'ATTENDEE:{reservation.user.email}\n', f'ORGANIZER:{reservation.user.email}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
 	ics = io.StringIO('')
 	ics.writelines(lines)
 	ics.seek(0)
 
-	filename = 'cancelled_reservation.ics' if cancelled else 'reservation.ics'
-	attachment = create_email_attachment(ics, filename, 'text', 'calendar', False)
-	attachment.set_param('method','REQUEST')
+	attachment = create_email_attachment(ics, maintype='text', subtype='calendar', method=method_name)
 	return attachment

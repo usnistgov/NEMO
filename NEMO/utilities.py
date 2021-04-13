@@ -295,11 +295,11 @@ def create_email_log(email: EmailMessage, email_category: EmailCategory):
 	return email_record
 
 
-def create_email_attachment(stream, filename, maintype="application", subtype="octet-stream", use_dispositon=True) -> MIMEBase:
-	attachment = MIMEBase(maintype, subtype)
+def create_email_attachment(stream, filename=None, maintype="application", subtype="octet-stream", **content_type_params) -> MIMEBase:
+	attachment = MIMEBase(maintype, subtype, **content_type_params)
 	attachment.set_payload(stream.read())
 	encoders.encode_base64(attachment)
-	if use_dispositon:
+	if filename:
 		attachment.add_header("Content-Disposition", f'attachment; filename="{filename}"')
 	return attachment
 
