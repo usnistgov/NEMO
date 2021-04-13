@@ -289,17 +289,18 @@ def create_email_log(email: EmailMessage, email_category: EmailCategory):
 		email_attachments = []
 		for attachment in email.attachments:
 			if isinstance(attachment, MIMEBase):
-				email_attachments.append(attachment.get_filename())
+				email_attachments.append(attachment.get_filename() or '')
 		if email_attachments:
 			email_record.attachments = ', '.join(email_attachments)
 	return email_record
 
 
-def create_email_attachment(stream, filename) -> MIMEBase:
-	attachment = MIMEBase("application", "octet-stream")
+def create_email_attachment(stream, filename, maintype="application", subtype="octet-stream", use_dispositon=True) -> MIMEBase:
+	attachment = MIMEBase(maintype, subtype)
 	attachment.set_payload(stream.read())
 	encoders.encode_base64(attachment)
-	attachment.add_header("Content-Disposition", f'attachment; filename="{filename}"')
+	if use_dispositon:
+		attachment.add_header("Content-Disposition", f'attachment; filename="{filename}"')
 	return attachment
 
 
