@@ -17,8 +17,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='area',
-            name='_area_calendar_color',
-            field=models.CharField(db_column='area_calendar_color', default='#88B7CD', help_text='Color for tool reservations in calendar overviews', max_length=9),
+            name='area_calendar_color',
+            field=models.CharField(default='#88B7CD', help_text='Color for tool reservations in calendar overviews', max_length=9),
         ),
 
     ]

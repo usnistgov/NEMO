@@ -302,7 +302,7 @@ class AreaAdminForm(MPTTAdminForm):
 	class Meta:
 		model = Area
 		fields = "__all__"
-	_area_calendar_color = forms.CharField(
+	area_calendar_color = forms.CharField(
 		required=False, max_length=9,  initial='#88B7CD', label="Area calendar color",
 		widget=forms.TextInput(attrs={'type': 'color'}))
 
@@ -322,7 +322,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	)
 	fieldsets = (
 		(None, {"fields": ("name", "parent_area", "category", "reservation_email", "abuse_email")}),
-		("Additional Information", {"fields": ("_area_calendar_color",)}),
+		("Additional Information", {"fields": ("area_calendar_color",)}),
 		(
 			"Area access",
 			{"fields": ("requires_reservation", "logout_grace_period", "welcome_message", "buddy_system_allowed")},

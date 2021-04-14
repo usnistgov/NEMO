@@ -940,7 +940,7 @@ class Area(MPTTModel):
 	reservation_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users create or cancel reservations in the area or in children areas. A comma-separated list can be used.")
 
 	# Additional informations
-	_area_calendar_color = models.CharField(db_column="area_calendar_color", max_length=9, default="#88B7CD", help_text="Color for tool reservations in calendar overviews")
+	area_calendar_color = models.CharField(max_length=9, default="#88B7CD", help_text="Color for tool reservations in calendar overviews")
 
 	# Area access
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
@@ -1059,11 +1059,11 @@ class Area(MPTTModel):
 
 	@property
 	def area_calendar_color(self):
-		return self._area_calendar_color
+		return self.area_calendar_color
 
 	@area_calendar_color.setter
 	def area_calendar_color(self, value):
-		self._area_calendar_color = value
+		self.area_calendar_color = value
 
 
 
