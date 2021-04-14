@@ -112,7 +112,7 @@ class ToolAdminForm(forms.ModelForm):
 	)
 
 	_tool_calendar_color = forms.CharField(
-		required=False, max_length=9, initial='#33ad33', label="Tool calendar color",
+		required=False, max_length=9, initial='#33ad33',
 		widget=forms.TextInput(attrs={'type': 'color'}))
 
 	def __init__(self, *args, **kwargs):
