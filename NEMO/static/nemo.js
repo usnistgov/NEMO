@@ -142,8 +142,8 @@ function set_selected_item_by_id(item_id, item_type)
 
 function set_selected_item_by_class(item_class)
 {
-	let item =$("."+item_class);
-		if(item.length === 1)
+	let item = $("."+item_class);
+	if(item.length === 1)
 	{
 		$("#sidebar a").removeClass('selected');
 		item.addClass('selected');
