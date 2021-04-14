@@ -130,7 +130,6 @@ class ToolAdminForm(forms.ModelForm):
 		phone_number = cleaned_data.get("_phone_number")
 		primary_owner = cleaned_data.get("_primary_owner")
 		image = cleaned_data.get("_image")
-		tool_calendar_color = cleaned_data.get("_tool_calendar_color")
 
 		# only resize if an image is present and  has changed
 		if image and not isinstance(image, FieldFile):
