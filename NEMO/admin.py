@@ -9,7 +9,7 @@ from django.db.models.fields.files import FieldFile
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
+from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFilter
 
 from NEMO.actions import (
 	lock_selected_interlocks,
@@ -112,7 +112,7 @@ class ToolAdminForm(forms.ModelForm):
 	)
 
 	_tool_calendar_color = forms.CharField(
-		required=False, max_length=9,
+		required=False, max_length=9, initial='#33ad33', label="Tool calendar color",
 		widget=forms.TextInput(attrs={'type': 'color'}))
 
 	def __init__(self, *args, **kwargs):
@@ -298,12 +298,12 @@ class ToolAdmin(admin.ModelAdmin):
 
 
 
-class AreaAdminForm(forms.ModelForm):
+class AreaAdminForm(MPTTAdminForm):
 	class Meta:
 		model = Area
 		fields = "__all__"
 	_area_calendar_color = forms.CharField(
-		required=False, max_length=9,
+		required=False, max_length=9,  initial='#88B7CD', label="Area calendar color",
 		widget=forms.TextInput(attrs={'type': 'color'}))
 
 

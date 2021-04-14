@@ -333,6 +333,7 @@ class Tool(models.Model):
 	_description = models.TextField(db_column="description", null=True, blank=True, help_text="HTML syntax could be used")
 	_serial = models.CharField(db_column="serial", null=True, blank=True, max_length=100, help_text="Serial Number")
 	_image = models.ImageField(db_column="image", upload_to=get_tool_image_filename, blank=True, help_text="An image that represent the tool. Maximum width and height are 500px")
+	_tool_calendar_color = models.CharField(db_column="tool_calendar_color", max_length=9, default="#33ad33", help_text="Color for tool reservations in calendar overviews")
 	_category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
 	_operational = models.BooleanField(db_column="operational", default=False, help_text="Marking the tool non-operational will prevent users from using the tool.")
 	_primary_owner = models.ForeignKey(User, db_column="primary_owner_id", null=True, blank=True, related_name="primary_tool_owner", help_text="The staff member who is responsible for administration of this tool.", on_delete=models.PROTECT)
@@ -358,7 +359,6 @@ class Tool(models.Model):
 	_policy_off_start_time = models.TimeField(db_column="policy_off_start_time", null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
 	_policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
 	_policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
-	_tool_calendar_color = models.CharField(db_column="tool_calendar_color", max_length=9, default="#33ad33", help_text="Color for tool reservations in calendar overviews")
 
 	class Meta:
 		ordering = ['name']
@@ -939,6 +939,9 @@ class Area(MPTTModel):
 	abuse_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users overstay in the area or in children areas (logged in with expired reservation). A comma-separated list can be used.")
 	reservation_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users create or cancel reservations in the area or in children areas. A comma-separated list can be used.")
 
+	# Additional informations
+	_area_calendar_color = models.CharField(db_column="area_calendar_color", max_length=9, default="#88B7CD", help_text="Color for tool reservations in calendar overviews")
+
 	# Area access
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login.")
@@ -963,7 +966,6 @@ class Area(MPTTModel):
 	policy_off_start_time = models.TimeField(db_column="policy_off_start_time", null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
 	policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
 	policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
-	_area_calendar_color = models.CharField(db_column="area_calendar_color", max_length=9, default="#88B7CD", help_text="Color for tool reservations in calendar overviews")
 
 
 	class MPTTMeta:
@@ -1057,10 +1059,7 @@ class Area(MPTTModel):
 
 	@property
 	def area_calendar_color(self):
-		for a in self.get_ancestors(ascending=True, include_self=True):
-			if a._area_calendar_color:
-				return a._area_calendar_color
-		return None
+		return self._area_calendar_color
 
 	@area_calendar_color.setter
 	def area_calendar_color(self, value):
