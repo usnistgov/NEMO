@@ -26,7 +26,7 @@ window.addEventListener("load", function() {
         /* set a separate form for testing post_usage data */
         $('#tool_form').after('<form id="post_usage_preview_form"></form>')
         function update_input_form() {
-            $('.post_usage_preview input, .post_usage_preview select').each(function (index, element) {
+            $('.post_usage_preview input, .post_usage_preview textarea, .post_usage_preview select').each(function (index, element) {
                 $(element).attr('form', 'post_usage_preview_form')
             })
         }
@@ -43,7 +43,7 @@ window.addEventListener("load", function() {
                 }
             }
         }
-        $('.post_usage_preview').on('change keyup', "input[required][form='post_usage_preview_form'], select[required][form='post_usage_preview_form']", update_validation_button);
+        $('.post_usage_preview').on('change keyup', "input[required][form='post_usage_preview_form'], textarea[required][form='post_usage_preview_form'], select[required][form='post_usage_preview_form']", update_validation_button);
         $('body').on('question-group-changed', function(){
             update_input_form();
             update_validation_button();
