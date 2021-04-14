@@ -322,6 +322,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	)
 	fieldsets = (
 		(None, {"fields": ("name", "parent_area", "category", "reservation_email", "abuse_email")}),
+		("Additional Information", {"fields": ("_area_calendar_color",)}),
 		(
 			"Area access",
 			{"fields": ("requires_reservation", "logout_grace_period", "welcome_message", "buddy_system_allowed")},
@@ -354,7 +355,6 @@ class AreaAdmin(DraggableMPTTAdmin):
 				)
 			},
 		),
-		("Additional Information", {"fields": ("_area_calendar_color",)}),
 
 	)
 	list_display_links = ("indented_title",)
