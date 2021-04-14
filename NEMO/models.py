@@ -1057,15 +1057,6 @@ class Area(MPTTModel):
 	def reservation_email_list(self):
 		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.reservation_email]
 
-	@property
-	def area_calendar_color(self):
-		return self.area_calendar_color
-
-	@area_calendar_color.setter
-	def area_calendar_color(self, value):
-		self.area_calendar_color = value
-
-
 
 class AreaAccessRecord(CalendarDisplay):
 	area = TreeForeignKey(Area, on_delete=models.CASCADE)
