@@ -303,7 +303,7 @@ class AreaAdminForm(MPTTAdminForm):
 		model = Area
 		fields = "__all__"
 	area_calendar_color = forms.CharField(
-		required=False, max_length=9,  initial='#88B7CD'
+		required=False, max_length=9, initial='#88B7CD',
 		widget=forms.TextInput(attrs={'type': 'color'}))
 
 
