@@ -72,6 +72,9 @@ def calendar(request, item_type=None, item_id=None):
 	calendar_month_column_format = get_customization('calendar_month_column_format')
 	calendar_start_of_the_day = get_customization('calendar_start_of_the_day')
 	calendar_now_indicator = get_customization('calendar_now_indicator')
+	calendar_all_tools = get_customization('calendar_all_tools')
+	calendar_all_areas = get_customization('calendar_all_areas')
+	calendar_all_areastools = get_customization('calendar_all_areastools')
 
 	dictionary = {
 		'rendered_item_tree_html': rendered_item_tree_html,
@@ -86,6 +89,9 @@ def calendar(request, item_type=None, item_id=None):
 		'calendar_month_column_format' : calendar_month_column_format,
 		'calendar_start_of_the_day' : calendar_start_of_the_day,
 		'calendar_now_indicator' : calendar_now_indicator,
+		'calendar_all_tools': calendar_all_tools,
+		'calendar_all_areas': calendar_all_areas,
+		'calendar_all_areastools': calendar_all_areastools,
 		'self_login': False,
 		'self_logout': False,
 	}

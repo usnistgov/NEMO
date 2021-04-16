@@ -51,6 +51,13 @@ customizable_key_values = {
 	'calendar_start_of_the_day': '07:00:00',
 	'calendar_now_indicator': '',
 	'calendar_display_not_qualified_areas': '',
+<<<<<<< HEAD
+	'calendar_all_tools': 'enabled',
+=======
+	'calendar_all_tools': '',
+>>>>>>> 56058b9... Make the all... calendar views customizable
+	'calendar_all_areas': '',
+	'calendar_all_areastools': '',
 	'buddy_board_disclaimer': '',
 	'allow_bypass_interlock_on_failure': '',
 	'tool_interlock_failure_message': 'Communication with the interlock failed',
@@ -162,6 +169,13 @@ def customize(request, element):
 		set_customization('calendar_week_column_format', request.POST.get('calendar_week_column_format', ''))
 		set_customization('calendar_month_column_format', request.POST.get('calendar_month_column_format', ''))
 		set_customization('calendar_display_not_qualified_areas', request.POST.get('calendar_display_not_qualified_areas', ''))
+<<<<<<< HEAD
+		set_customization('calendar_all_tools', request.POST.get('calendar_all_tools', 'enabled'))
+=======
+		set_customization('calendar_all_tools', request.POST.get('calendar_all_tools', ''))
+>>>>>>> 56058b9... Make the all... calendar views customizable
+		set_customization('calendar_all_areas', request.POST.get('calendar_all_areas', ''))
+		set_customization('calendar_all_areastools', request.POST.get('calendar_all_areastools', ''))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
 	return redirect('customization')
