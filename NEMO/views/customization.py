@@ -51,11 +51,7 @@ customizable_key_values = {
 	'calendar_start_of_the_day': '07:00:00',
 	'calendar_now_indicator': '',
 	'calendar_display_not_qualified_areas': '',
-<<<<<<< HEAD
-	'calendar_all_tools': 'enabled',
-=======
 	'calendar_all_tools': '',
->>>>>>> 56058b9... Make the all... calendar views customizable
 	'calendar_all_areas': '',
 	'calendar_all_areastools': '',
 	'buddy_board_disclaimer': '',

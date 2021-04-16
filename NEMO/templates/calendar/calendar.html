@@ -34,10 +34,6 @@
 	{# The following menu tree code was take from an example at http://www.bootply.com/120625 #}
 	<ul id="extra-links" class="nav nav-list" style="margin-top: 10px; margin-bottom: 8px;">
 		<li><a href="javascript:void(0)" class="selected personal_schedule" data-item-id="personal_schedule" onclick="set_selected_item(this); update_event_sources()">Personal schedule</a></li>
-<<<<<<< HEAD
-		{{ calendar_all_tools }}
-=======
->>>>>>> 56058b9... Make the all... calendar views customizable
 		{% if calendar_all_tools %}
 		<li><a href="javascript:void(0)" class="all_tools" data-item-id="all_tools" onclick="set_selected_item(this); update_event_sources()">All tools</a></li>
 		{% endif %}
