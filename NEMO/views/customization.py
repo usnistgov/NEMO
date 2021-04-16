@@ -165,11 +165,7 @@ def customize(request, element):
 		set_customization('calendar_week_column_format', request.POST.get('calendar_week_column_format', ''))
 		set_customization('calendar_month_column_format', request.POST.get('calendar_month_column_format', ''))
 		set_customization('calendar_display_not_qualified_areas', request.POST.get('calendar_display_not_qualified_areas', ''))
-<<<<<<< HEAD
-		set_customization('calendar_all_tools', request.POST.get('calendar_all_tools', 'enabled'))
-=======
 		set_customization('calendar_all_tools', request.POST.get('calendar_all_tools', ''))
->>>>>>> 56058b9... Make the all... calendar views customizable
 		set_customization('calendar_all_areas', request.POST.get('calendar_all_areas', ''))
 		set_customization('calendar_all_areastools', request.POST.get('calendar_all_areastools', ''))
 	else:
