@@ -20,5 +20,20 @@ class Migration(migrations.Migration):
             name='only_allow_tools',
             field=models.ManyToManyField(blank=True, help_text='Selected tools will be the only ones allowed for this project.', to='NEMO.Tool'),
         ),
+        migrations.AddField(
+            model_name='toolusagecounter',
+            name='warning_email',
+            field=models.EmailField(blank=True, help_text='The address to send the warning email to.', max_length=254, null=True),
+        ),
+        migrations.AddField(
+            model_name='toolusagecounter',
+            name='warning_threshold',
+            field=models.FloatField(blank=True, help_text='When set in combination with the email address, a warning email will be sent when the counter reaches this value.', null=True),
+        ),
+        migrations.AddField(
+            model_name='toolusagecounter',
+            name='warning_threshold_reached',
+            field=models.BooleanField(default=False),
+        ),
         migrations.RunPython(new_version_news),
     ]

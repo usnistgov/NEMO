@@ -396,6 +396,38 @@
 			</div>
 		</div>
 
+        <div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="counter_threshold_reached_email">Counter threshold reached email</h3>
+				<p>
+					This email is sent to the counter's warning email when the value of an counter reaches the warning threshold.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>counter</b> - the counter which quantity reached the warning threshold</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'counter_threshold_reached_email' %}#counter_threshold_reached_email" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('counter_threshold_reached_email')">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="counter_threshold_reached_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#counter_threshold_reached_email_span').hide()">
+						{% if counter_threshold_reached_email %}<a id="counter_threshold_reached_email_span" href="data:text/html,{{ counter_threshold_reached_email|urlencode }}" download="counter_threshold_reached_email.html" target="_blank">counter_threshold_reached_email.html</a>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload reorder supplies reminder email" class="btn btn-success">
+					</div>
+				</form>
+				{% if counter_threshold_reached_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#counter_threshold_reached_email_render">Show current content</button>
+					<table id="counter_threshold_reached_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ counter_threshold_reached_email|safe }}</td>
+						</tr>
+					</table>
+				{% endif %}
+			</div>
+		</div>
+
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<h3 id="feedback">Feedback email</h3>

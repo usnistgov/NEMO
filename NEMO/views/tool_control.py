@@ -11,6 +11,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template import Template, Context
 from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone, formats
 from django.utils.safestring import mark_safe
@@ -46,7 +47,7 @@ from NEMO.utilities import (
 	EmailCategory,
 )
 from NEMO.views.calendar import shorten_reservation
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, PostUsageQuestion
@@ -537,3 +538,12 @@ Regards,<br/>
 NanoFab Management<br/>
 """
 	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=[tool_user.email], cc=ccs, email_category=EmailCategory.ABUSE)
+
+
+def send_tool_usage_counter_email(counter: ToolUsageCounter):
+	user_office_email = get_customization('user_office_email_address')
+	message = get_media_file_contents('counter_threshold_reached_email.html')
+	if user_office_email and message:
+		subject = f"Warning threshold reached for {counter.name} counter"
+		rendered_message = Template(message).render(Context({'counter': counter}))
+		send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=[counter.warning_email], email_category=EmailCategory.SYSTEM)

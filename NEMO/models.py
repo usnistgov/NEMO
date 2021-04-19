@@ -25,7 +25,7 @@ from mptt.models import MPTTModel
 
 from NEMO import fields
 from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename, EmailCategory, \
-	get_tool_document_filename
+	get_tool_document_filename, bootstrap_primary_color
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -1984,13 +1984,44 @@ class ToolUsageCounter(models.Model):
 	last_reset_value = models.FloatField(null=True, blank=True, help_text="The last value before the counter was reset")
 	last_reset = models.DateTimeField(null=True, blank=True, help_text="The date and time this counter was last reset")
 	last_reset_by = models.ForeignKey(User, null=True, blank=True, help_text="The user who last reset this counter", on_delete=models.SET_NULL)
+	warning_threshold = models.FloatField(null=True, blank=True, help_text="When set in combination with the email address, a warning email will be sent when the counter reaches this value.")
+	warning_email = models.EmailField(null=True, blank=True, help_text="The address to send the warning email to.")
+	warning_threshold_reached = models.BooleanField(default=False)
 	is_active = models.BooleanField(default=True, help_text="The state of the counter")
+
+	def value_color(self):
+		color = None
+		if self.warning_threshold:
+			if self.value < self.warning_threshold:
+				color = "success"
+			elif self.value == self.warning_threshold:
+				color = "warning"
+			elif self.value > self.warning_threshold:
+				color = "danger"
+		return bootstrap_primary_color(color)
 
 	def __str__(self):
 		return str(self.name)
 
 	class Meta:
 		ordering = ['tool__name']
+
+
+# This method is used to check when a tool usage counter value gets over the threshold
+@receiver(models.signals.pre_save, sender=ToolUsageCounter)
+def check_tool_usage_counter_threshold(sender, instance: ToolUsageCounter, **kwargs):
+	try:
+		if instance.is_active and not instance.warning_threshold_reached and instance.value >= instance.warning_threshold:
+			# value is over threshold. set flag and send email
+			instance.warning_threshold_reached = True
+			from NEMO.views.tool_control import send_tool_usage_counter_email
+			send_tool_usage_counter_email(instance)
+		if instance.warning_threshold_reached and instance.value < instance.warning_threshold:
+			# it has been reset. reset flag
+			instance.warning_threshold_reached = False
+	except Exception as e:
+		models_logger.exception(e)
+		pass
 
 
 class BuddyRequest(models.Model):

@@ -79,6 +79,7 @@ customizable_content = [
 	('reservation_cancelled_user_email', '.html'),
 	('reservation_created_user_email', '.html'),
 	('reorder_supplies_reminder_email', '.html'),
+	('counter_threshold_reached_email', '.html'),
 	('rates', '.json'),
 	('jumbotron_watermark', '.png'),
 ]
