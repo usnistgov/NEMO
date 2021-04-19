@@ -17,14 +17,13 @@ from mptt.forms import TreeNodeChoiceField
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, InactiveUserError, \
 	NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError, \
-	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
+	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError, ProjectChargeException
 from NEMO.models import Area, AreaAccessRecord, Project, User
 from NEMO.tasks import synchronized
 from NEMO.utilities import parse_start_and_end_date, quiet_int
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization
-from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
-
+from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area, check_billing_to_project
 
 area_access_logger = getLogger(__name__)
 
@@ -117,7 +116,11 @@ def new_area_access_record(request):
 			if error_message:
 				dictionary['error_message'] = error_message
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
+			check_billing_to_project(project, user, area)
 			check_policy_to_enter_this_area(area=area, user=user)
+		except ProjectChargeException as e:
+			dictionary['error_message'] = e.msg
+			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except NoAccessiblePhysicalAccessUserError as error:
 			if error.access_exception:
 				dictionary['error_message'] = '{} does not have access to the {} at this time due to the following exception: {}.'.format(user, area.name, error.access_exception.name)
@@ -194,9 +197,11 @@ def change_project(request, new_project=None):
 	if old_project.id == new_project:
 		return redirect(reverse('landing'))
 	new_project = get_object_or_404(Project, id=new_project)
-	if new_project not in user.active_projects():
+	try:
+		check_billing_to_project(new_project, user, user.area_access_record().area)
+	except ProjectChargeException as e:
 		dictionary = {
-			'error': 'You do not have permission to bill that project.'
+			'error': e.msg
 		}
 		return render(request, 'area_access/change_project.html', dictionary)
 	# Stop billing the user's initial project
@@ -283,8 +288,11 @@ def self_log_in(request, load_areas=True):
 			a = Area.objects.get(id=request.POST['area'])
 			p = Project.objects.get(id=request.POST['project'])
 			check_policy_to_enter_this_area(a, request.user)
-			if p in dictionary['projects']:
-				log_in_user_to_area(a, request.user, p)
+			check_billing_to_project(p, user, a)
+			log_in_user_to_area(a, request.user, p)
+		except ProjectChargeException as e:
+			dictionary['area_error_message'] = e.msg
+			return render(request, 'area_access/self_login.html', dictionary)
 		except NoAccessiblePhysicalAccessUserError as error:
 			if error.access_exception:
 				dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time due to the following exception: {error.access_exception.name}. The exception ends on {localize(error.access_exception.end_time.astimezone(timezone.get_current_timezone()))}"

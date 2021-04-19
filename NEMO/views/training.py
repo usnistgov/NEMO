@@ -10,8 +10,9 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.exceptions import ProjectChargeException
 from NEMO.models import User, Tool, TrainingSession, Project, MembershipHistory
-
+from NEMO.views.policy import check_billing_to_project
 
 training_logger = getLogger(__name__)
 
@@ -62,6 +63,9 @@ def charge_training(request):
 					charges[index].qualified = (value == "on")
 		for c in charges.values():
 			c.full_clean()
+			check_billing_to_project(c.project, c.trainee, c.tool)
+	except ProjectChargeException as e:
+		return HttpResponseBadRequest(e.msg)
 	except Exception as e:
 		training_logger.exception(e)
 		return HttpResponseBadRequest('An error occurred while processing the training charges. None of the charges were committed to the database. Please review the form for errors and omissions then submit the form again.')

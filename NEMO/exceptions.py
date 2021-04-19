@@ -107,6 +107,26 @@ class ReservationRequiredUserError(UserAccessError):
 		super().__init__(user=user, msg=details)
 
 
+# Project policy errors
+class ProjectChargeException(NEMOException):
+	def __init__(self, project, user, msg=None):
+		self.project = project
+		self.user = user
+		super().__init__(msg)
+
+
+class NotAllowedToChargeProjectException(ProjectChargeException):
+	def __init__(self, project, user, msg=None):
+		new_msg = f"Permission to bill project {project.name} was denied."
+		super().__init__(project, user, msg or new_msg)
+
+
+class ItemNotAllowedForProjectException(ProjectChargeException):
+	def __init__(self, project, user, item_name, msg=None):
+		self.item_name = item_name
+		super().__init__(project, user, msg)
+
+
 class RequiredUnansweredQuestionsException(NEMOException):
 	def __init__(self, run_data:str, questions: List):
 		self.run_data = run_data

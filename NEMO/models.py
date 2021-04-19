@@ -1092,6 +1092,7 @@ class Project(models.Model):
 	application_identifier = models.CharField(max_length=100)
 	account = models.ForeignKey(Account, help_text="All charges for this project will be billed to the selected account.", on_delete=models.CASCADE)
 	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
+	only_allow_tools = models.ManyToManyField(Tool, blank=True, help_text="Selected tools will be the only ones allowed for this project.")
 
 	class Meta:
 		ordering = ['name']

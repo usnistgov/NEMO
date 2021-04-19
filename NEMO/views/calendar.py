@@ -18,11 +18,12 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
+from NEMO.exceptions import ProjectChargeException
 from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area, ReservationItemType
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize, EmailCategory
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
-from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations, check_tool_reservation_requiring_area
+from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations, check_tool_reservation_requiring_area, check_billing_to_project
 
 calendar_logger = getLogger(__name__)
 
@@ -285,7 +286,7 @@ def create_item_reservation(request, start, end, item_type: ReservationItemType,
 	new_reservation.short_notice = determine_insufficient_notice(item, start) if item_type == ReservationItemType.TOOL else False
 	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 
-	# If there was a problem in saving the reservation then return the error...
+	# If there was a policy problem with the reservation then return the error...
 	if policy_problems:
 		return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': overridable and request.user.is_staff, 'reservation_action': 'create'})
 
@@ -303,10 +304,12 @@ def create_item_reservation(request, start, end, item_type: ReservationItemType,
 			except:
 				return render(request, 'calendar/project_choice.html', {'active_projects': active_projects})
 
-		# Make sure the user is actually enrolled on the project. We wouldn't want someone
-		# forging a request to reserve against a project they don't belong to.
-		if new_reservation.project not in new_reservation.user.active_projects():
-			return render(request, 'calendar/project_choice.html', {'active_projects': active_projects})
+		# Check if we are allowed to bill to project
+		try:
+			check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item)
+		except ProjectChargeException as e:
+			policy_problems.append(e.msg)
+			return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': False, 'reservation_action': 'create'})
 
 	# Configuration rules only apply to tools
 	if item_type == ReservationItemType.TOOL:

@@ -18,6 +18,7 @@ from NEMO.exceptions import (
 	MaximumCapacityReachedError,
 	ReservationRequiredUserError,
 	ScheduledOutageInProgressError,
+	ProjectChargeException,
 )
 from NEMO.models import (
 	Door,
@@ -31,7 +32,7 @@ from NEMO.models import (
 from NEMO.tasks import postpone
 from NEMO.views.area_access import log_out_user, log_in_user_to_area
 from NEMO.views.customization import get_customization
-from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
+from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area, check_billing_to_project
 from NEMO.views.tool_control import interlock_bypass_allowed
 
 
@@ -193,13 +194,12 @@ def login_to_area(request, door_id):
 				return render(request, "area_access/choose_project.html", {"area": door.area, "user": user})
 			else:
 				project = get_object_or_404(Project, id=project_id)
-				if project not in user.active_projects():
-					log.details = "The user attempted to bill the project named {}, but they are not a member of that project.".format(
-						project.name
-					)
+				try:
+					check_billing_to_project(project, user, door.area)
+				except ProjectChargeException as e:
+					log.details = "The user attempted to bill the project named {} but got error: {}".format(project.name, e.msg)
 					log.save()
-					message = "You are not authorized to bill this project."
-					return render(request, "area_access/physical_access_denied.html", {"message": message})
+					return render(request, "area_access/physical_access_denied.html", {"message": e.msg})
 
 		log.result = PhysicalAccessType.ALLOW
 		log.save()

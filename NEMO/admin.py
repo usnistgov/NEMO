@@ -442,7 +442,9 @@ class ProjectAdminForm(forms.ModelForm):
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
+	fields = ("name", "application_identifier", "account", "active", "members", "principal_investigators", "only_allow_tools")
 	list_display = ("name", "id", "application_identifier", "account", "active")
+	filter_horizontal = ('only_allow_tools',)
 	search_fields = ("name", "application_identifier", "account__name")
 	list_filter = ("active",)
 	form = ProjectAdminForm

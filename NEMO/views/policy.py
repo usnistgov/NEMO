@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import timedelta, date, datetime
-from typing import Optional, List
+from typing import Optional, List, Union
 
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -10,10 +10,11 @@ from django.utils.formats import localize
 
 from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
 	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
-	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
+	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError, \
+	NotAllowedToChargeProjectException, ItemNotAllowedForProjectException, ProjectChargeException
 from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, \
-	ReservationItemType, Tool, Project, PhysicalAccessException
-from NEMO.utilities import format_datetime, send_mail, EmailCategory
+	ReservationItemType, Tool, Project, PhysicalAccessException, Consumable, StaffCharge
+from NEMO.utilities import format_datetime, send_mail, EmailCategory, distinct_qs_value_list
 from NEMO.views.customization import get_customization, get_media_file_contents
 
 
@@ -90,9 +91,11 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 	if staff_charge and operator == user:
 		return HttpResponseBadRequest('You cannot charge staff time to yourself.')
 
-	# Users may only charge to projects they are members of.
-	if project not in user.active_projects():
-		return HttpResponseBadRequest('The designated user is not assigned to the selected project.')
+	# Check if we are allowed to bill to project
+	try:
+		check_billing_to_project(project, user, tool)
+	except ProjectChargeException as e:
+		return HttpResponseBadRequest(e.msg)
 
 	# The tool operator must not have a lock on usage
 	if operator.training_required:
@@ -156,12 +159,11 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 		else:
 			policy_problems.append(str(user) + " does not belong to any active projects and cannot have reservations.")
 
-	# The user must associate their reservation with a project they belong to.
-	if new_reservation.project and new_reservation.project not in user.active_projects():
-		if user == user_creating_reservation:
-			policy_problems.append("You do not belong to the project associated with this reservation.")
-		else:
-			policy_problems.append(str(user) + " does not belong to the project named " + str(new_reservation.project) + ".")
+	# Check if we are allowed to bill to project
+	try:
+		check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item)
+	except ProjectChargeException as e:
+		policy_problems.append(e.msg)
 
 	# If the user is a staff member or there's an explicit policy override then the policy check is finished.
 	if user.is_staff or explicit_policy_override:
@@ -556,6 +558,27 @@ def check_policy_to_enter_this_area(area:Area, user:User):
 
 		if area.requires_reservation and not area.get_current_reservation_for_user(user):
 			raise ReservationRequiredUserError(user=user, area=area)
+
+
+def check_billing_to_project(project: Project, user: User, item: Union[Tool, Area, Consumable, StaffCharge] = None):
+	if project:
+		if project not in user.active_projects():
+			raise NotAllowedToChargeProjectException(project=project, user=user)
+
+		if item:
+			# Check if project only allows billing for certain tools
+			allowed_tools = project.only_allow_tools.all()
+			if allowed_tools.exists():
+				if isinstance(item, Tool) and item not in allowed_tools:
+					msg = f"{item.name} is not allowed for project {project.name}"
+					raise ItemNotAllowedForProjectException(project, user, item.name, msg)
+				elif isinstance(item, Area) and item.id not in distinct_qs_value_list(
+						allowed_tools, '_requires_area_access_id'):
+					msg = f"{item.name} is not allowed for project {project.name}"
+					raise ItemNotAllowedForProjectException(project, user, item.name, msg)
+				elif isinstance(item, StaffCharge):
+					msg = f"Staff Charges are not allowed for project {project.name}"
+					raise ItemNotAllowedForProjectException(project, user, "Staff Charges", msg)
 
 
 def maximum_users_in_overlapping_reservations(reservations: List[Reservation]) -> (int, datetime):
