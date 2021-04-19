@@ -2,6 +2,8 @@
 
 from django.db import migrations, models
 
+from NEMO.migrations_utils import create_news_for_version
+
 
 class Migration(migrations.Migration):
 
@@ -9,10 +11,14 @@ class Migration(migrations.Migration):
         ('NEMO', '0030_version_3_9_2'),
     ]
 
+    def new_version_news(apps, schema_editor):
+        create_news_for_version(apps, "3.10.0")
+
     operations = [
         migrations.AddField(
             model_name='project',
             name='only_allow_tools',
             field=models.ManyToManyField(blank=True, help_text='Selected tools will be the only ones allowed for this project.', to='NEMO.Tool'),
         ),
+        migrations.RunPython(new_version_news),
     ]
