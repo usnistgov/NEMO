@@ -138,9 +138,9 @@
 						<div class="col-md-12">
 							<label class="control-label col-md-2" >Overview options:</label>
 							<div class="checkbox">
-								<label><input type="checkbox" id="calendar_all_tools" name="calendar_all_tools" {% if calendar_all_tools  %}checked{% endif %} value="enabled"> Enable all tools display</label>
-								<label><input type="checkbox" id="calendar_all_areas" name="calendar_all_areas" {% if calendar_all_areas %}checked{% endif %} value="enabled"> Enable all areas display</label>
-								<label><input type="checkbox" id="calendar_all_areastools" name="calendar_all_areastools" {% if calendar_all_areastools %}checked{% endif %} value="enabled"> Enable all areas+tools display</label>
+								<label style="padding-right: 20px;"><input type="checkbox" id="calendar_all_tools" name="calendar_all_tools" {% if calendar_all_tools  %}checked{% endif %} value="enabled"> Enable all tools option</label>
+								<label style="padding-right: 20px;"><input type="checkbox" id="calendar_all_areas" name="calendar_all_areas" {% if calendar_all_areas %}checked{% endif %} value="enabled"> Enable all areas option</label>
+								<label style="padding-right: 20px;"><input type="checkbox" id="calendar_all_areastools" name="calendar_all_areastools" {% if calendar_all_areastools %}checked{% endif %} value="enabled"> Enable all tools & areas option</label>
 							</div>
 						</div>
 					</div>
@@ -301,8 +301,8 @@
 					<br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.
 					<br>
 					<ul>
-				<li>The form should include <b>{% templatetag openblock %} csrf_token {% templatetag closeblock %}</b> inside the form tags.</li>
-				<li>Completion of the HTML form should be POSTed to <b>"{% templatetag openblock %} url 'facility_rules' {% templatetag closeblock %}"</b> (exactly as is).</li>
+                        <li>The form should include <b>{% templatetag openblock %} csrf_token {% templatetag closeblock %}</b> inside the form tags.</li>
+                        <li>Completion of the HTML form should be POSTed to <b>"{% templatetag openblock %} url 'facility_rules' {% templatetag closeblock %}"</b> (exactly as is).</li>
 					</ul>
 					Upon completion, the user's "training required" attribute is set to false, and they are able to make reservations and control tools.
 				</p>
