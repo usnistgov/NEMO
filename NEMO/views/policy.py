@@ -576,8 +576,10 @@ def check_billing_to_project(project: Project, user: User, item: Union[Tool, Are
 						allowed_tools, '_requires_area_access_id'):
 					msg = f"{item.name} is not allowed for project {project.name}"
 					raise ItemNotAllowedForProjectException(project, user, item.name, msg)
-				elif isinstance(item, StaffCharge):
-					msg = f"Staff Charges are not allowed for project {project.name}"
+			# Check if consumable withdrawals are allowed
+			if isinstance(item, Consumable):
+				if not project.allow_consumable_withdrawals:
+					msg = f"Consumable withdrawals are not allowed for project {project.name}"
 					raise ItemNotAllowedForProjectException(project, user, "Staff Charges", msg)
 
 

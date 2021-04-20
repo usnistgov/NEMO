@@ -1093,6 +1093,7 @@ class Project(models.Model):
 	account = models.ForeignKey(Account, help_text="All charges for this project will be billed to the selected account.", on_delete=models.CASCADE)
 	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
 	only_allow_tools = models.ManyToManyField(Tool, blank=True, help_text="Selected tools will be the only ones allowed for this project.")
+	allow_consumable_withdrawals = models.BooleanField(default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project")
 
 	class Meta:
 		ordering = ['name']
@@ -1985,7 +1986,7 @@ class ToolUsageCounter(models.Model):
 	last_reset = models.DateTimeField(null=True, blank=True, help_text="The date and time this counter was last reset")
 	last_reset_by = models.ForeignKey(User, null=True, blank=True, help_text="The user who last reset this counter", on_delete=models.SET_NULL)
 	warning_threshold = models.FloatField(null=True, blank=True, help_text="When set in combination with the email address, a warning email will be sent when the counter reaches this value.")
-	warning_email = models.EmailField(null=True, blank=True, help_text="The address to send the warning email to.")
+	warning_email = fields.MultiEmailField(null=True, blank=True, help_text="The address to send the warning email to. A comma-separated list can be used.")
 	warning_threshold_reached = models.BooleanField(default=False)
 	is_active = models.BooleanField(default=True, help_text="The state of the counter")
 

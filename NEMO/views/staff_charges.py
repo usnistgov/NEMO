@@ -98,6 +98,9 @@ def begin_staff_area_charge(request):
 		return HttpResponseBadRequest('You cannot create an area access charge when one is already in progress.')
 	try:
 		area = Area.objects.get(id=request.POST['area'])
+		check_billing_to_project(charge.project, charge.customer, area)
+	except ProjectChargeException as e:
+		return HttpResponseBadRequest(e.msg)
 	except:
 		return HttpResponseBadRequest('Invalid area')
 	area_access = AreaAccessRecord()

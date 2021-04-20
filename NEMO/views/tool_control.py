@@ -544,6 +544,6 @@ def send_tool_usage_counter_email(counter: ToolUsageCounter):
 	user_office_email = get_customization('user_office_email_address')
 	message = get_media_file_contents('counter_threshold_reached_email.html')
 	if user_office_email and message:
-		subject = f"Warning threshold reached for {counter.name} counter"
+		subject = f"Warning threshold reached for {counter.tool.name} {counter.name} counter"
 		rendered_message = Template(message).render(Context({'counter': counter}))
-		send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=[counter.warning_email], email_category=EmailCategory.SYSTEM)
+		send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=counter.warning_email, email_category=EmailCategory.SYSTEM)

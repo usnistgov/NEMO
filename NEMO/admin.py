@@ -442,7 +442,7 @@ class ProjectAdminForm(forms.ModelForm):
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-	fields = ("name", "application_identifier", "account", "active", "members", "principal_investigators", "only_allow_tools")
+	fields = ("name", "application_identifier", "account", "allow_consumable_withdrawals", "active", "members", "principal_investigators", "only_allow_tools")
 	list_display = ("name", "id", "application_identifier", "account", "active")
 	filter_horizontal = ('only_allow_tools',)
 	search_fields = ("name", "application_identifier", "account__name")
@@ -1008,6 +1008,7 @@ class CounterAdminForm(forms.ModelForm):
 class CounterAdmin(admin.ModelAdmin):
 	list_display = ("name", "tool", "tool_usage_question", "value", "warning_threshold", "last_reset", "last_reset_by", "is_active")
 	list_filter = ("tool",)
+	readonly_fields = ("warning_threshold_reached",)
 	form = CounterAdminForm
 
 
