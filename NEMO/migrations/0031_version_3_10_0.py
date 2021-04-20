@@ -41,5 +41,10 @@ class Migration(migrations.Migration):
             name='allow_consumable_withdrawals',
             field=models.BooleanField(default=True, help_text='Uncheck this box if consumable withdrawals are forbidden under this project'),
         ),
+        migrations.AlterField(
+            model_name='alert',
+            name='title',
+            field=models.CharField(blank=True, max_length=150),
+        ),
         migrations.RunPython(new_version_news),
     ]
