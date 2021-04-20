@@ -25,7 +25,7 @@
 	{
 		"title": "Reservation for the {{ x.reservation_item.name }}{% if x.title %}, titled \"{{ x.title }}\"{% endif %}",
 		"id": {{ x.id }},
-		"color": {% if x.tool %}"#3a87ad"{% elif x.area %}"#88B7CD"{% endif %},
+		"color": {% if x.tool %}"{{ x.reservation_item.tool_calendar_color|default:'#33ad33' }}"{% elif x.area %}"{{ x.reservation_item.area_calendar_color|default:'#88B7CD' }}"{% endif %},
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'reservation_details' x.id %}"

@@ -9,7 +9,7 @@ from django.db.models.fields.files import FieldFile
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
+from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFilter
 
 from NEMO.actions import (
 	lock_selected_interlocks,
@@ -111,6 +111,10 @@ class ToolAdminForm(forms.ModelForm):
 		widget=FilteredSelectMultiple(verbose_name="Nonrequired resources", is_stacked=False),
 	)
 
+	_tool_calendar_color = forms.CharField(
+		required=False, max_length=9, initial='#33ad33',
+		widget=forms.TextInput(attrs={'type': 'color'}))
+
 	def __init__(self, *args, **kwargs):
 		super(ToolAdminForm, self).__init__(*args, **kwargs)
 		if self.instance.pk:
@@ -211,7 +215,7 @@ class ToolAdmin(admin.ModelAdmin):
 				)
 			},
 		),
-		("Additional Information", {"fields": ("_description", "_serial", "_image")}),
+		("Additional Information", {"fields": ("_description", "_serial", "_image", "_tool_calendar_color")}),
 		("Current state", {"fields": ("visible", "_operational")}),
 		(
 			"Contact information",
@@ -293,6 +297,16 @@ class ToolAdmin(admin.ModelAdmin):
 				obj.nonrequired_resource_set.set(form.cleaned_data["nonrequired_resources"])
 
 
+
+class AreaAdminForm(MPTTAdminForm):
+	class Meta:
+		model = Area
+		fields = "__all__"
+	area_calendar_color = forms.CharField(
+		required=False, max_length=9, initial='#88B7CD',
+		widget=forms.TextInput(attrs={'type': 'color'}))
+
+
 @register(Area)
 class AreaAdmin(DraggableMPTTAdmin):
 	list_display = (
@@ -308,6 +322,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	)
 	fieldsets = (
 		(None, {"fields": ("name", "parent_area", "category", "reservation_email", "abuse_email")}),
+		("Additional Information", {"fields": ("area_calendar_color",)}),
 		(
 			"Area access",
 			{"fields": ("requires_reservation", "logout_grace_period", "welcome_message", "buddy_system_allowed")},
@@ -340,6 +355,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 				)
 			},
 		),
+
 	)
 	list_display_links = ("indented_title",)
 	list_filter = ("requires_reservation", ("parent_area", TreeRelatedFieldListFilter))
@@ -347,6 +363,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	actions = [rebuild_area_tree]
 
 	mptt_level_indent = 20
+	form = AreaAdminForm
 
 	def get_fieldsets(self, request, obj: Area = None):
 		"""

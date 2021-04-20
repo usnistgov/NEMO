@@ -73,6 +73,9 @@ def calendar(request, item_type=None, item_id=None):
 	calendar_month_column_format = get_customization('calendar_month_column_format')
 	calendar_start_of_the_day = get_customization('calendar_start_of_the_day')
 	calendar_now_indicator = get_customization('calendar_now_indicator')
+	calendar_all_tools = get_customization('calendar_all_tools')
+	calendar_all_areas = get_customization('calendar_all_areas')
+	calendar_all_areastools = get_customization('calendar_all_areastools')
 
 	dictionary = {
 		'rendered_item_tree_html': rendered_item_tree_html,
@@ -87,6 +90,9 @@ def calendar(request, item_type=None, item_id=None):
 		'calendar_month_column_format' : calendar_month_column_format,
 		'calendar_start_of_the_day' : calendar_start_of_the_day,
 		'calendar_now_indicator' : calendar_now_indicator,
+		'calendar_all_tools': calendar_all_tools,
+		'calendar_all_areas': calendar_all_areas,
+		'calendar_all_areastools': calendar_all_areastools,
 		'self_login': False,
 		'self_logout': False,
 	}
@@ -140,13 +146,20 @@ def reservation_event_feed(request, start, end):
 	# The event starts and ends after the time-window.
 	events = events.exclude(start__lt=start, end__lt=start)
 	events = events.exclude(start__gt=end, end__gt=end)
+	all_tools = request.GET.get('all_tools')
+	all_areas = request.GET.get('all_areas')
+	all_areastools = request.GET.get('all_areastools')
 
 	# Filter events that only have to do with the relevant tool/area.
 	item_type = request.GET.get('item_type')
+	if all_tools:
+		events = events.filter(area=None)
+	elif all_areas:
+		events = events.filter(tool=None)
 	if item_type:
 		item_type = ReservationItemType(item_type)
 		item_id = request.GET.get('item_id')
-		if item_id:
+		if item_id and not (all_tools or all_areas or all_areastools):
 			events = events.filter(**{f'{item_type.value}__id': item_id})
 			if item_type == ReservationItemType.TOOL:
 				outages = ScheduledOutage.objects.filter(Q(tool=item_id) | Q(resource__fully_dependent_tools__in=[item_id]))
@@ -168,6 +181,9 @@ def reservation_event_feed(request, start, end):
 		'events': events,
 		'outages': outages,
 		'personal_schedule': personal_schedule,
+		'all_tools': all_tools,
+		'all_areas': all_areas,
+		'all_areastools': all_areastools,
 	}
 	return render(request, 'calendar/reservation_event_feed.html', dictionary)
 
@@ -181,12 +197,26 @@ def usage_event_feed(request, start, end):
 	item_type = ReservationItemType(request.GET.get('item_type')) if request.GET.get('item_type') else None
 
 	personal_schedule = request.GET.get('personal_schedule')
+	all_areas = request.GET.get('all_areas')
+	all_tools = request.GET.get('all_tools')
+	all_areastools = request.GET.get('all_areastools')
+
 	if personal_schedule:
 		# Filter events that only have to do with the current user.
 		# Display missed reservations, tool and area usage when 'personal schedule' is selected
 		usage_events = UsageEvent.objects.filter(user=request.user)
 		area_access_events = AreaAccessRecord.objects.filter(customer=request.user)
 		missed_reservations = Reservation.objects.filter(missed=True, user=request.user)
+	elif all_areas:
+		area_access_events = AreaAccessRecord.objects.filter()
+		missed_reservations = Reservation.objects.filter(missed=True, tool=None)
+	elif all_tools:
+		usage_events = UsageEvent.objects.filter()
+		missed_reservations = Reservation.objects.filter(missed=True, area=None)
+	elif all_areastools:
+		usage_events = UsageEvent.objects.all()
+		area_access_events = AreaAccessRecord.objects.filter()
+		missed_reservations = Reservation.objects.filter(missed=True)
 	elif item_type:
 		reservation_filter = {item_type.value: item_id}
 		missed_reservations = Reservation.objects.filter(missed=True).filter(**reservation_filter)
@@ -211,6 +241,9 @@ def usage_event_feed(request, start, end):
 		'area_access_events': area_access_events,
 		'personal_schedule': personal_schedule,
 		'missed_reservations': missed_reservations,
+		'all_tools': all_tools,
+		'all_areas': all_areas,
+		'all_areastools': all_areastools,
 	}
 	return render(request, 'calendar/usage_event_feed.html', dictionary)
 

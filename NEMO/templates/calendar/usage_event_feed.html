@@ -15,7 +15,9 @@
 		"start": "{{ x.start|date:"c" }}",
 		{# Usage events that are less than 15 minutes are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
-		"details_url": "{% url 'usage_details' x.id %}"
+		"details_url": "{% url 'usage_details' x.id %}",
+		"color": "{{ x.tool.tool_calendar_color|default:'#33ad33'|escapejs }}"
+
 	}{% if not forloop.last %},{% elif area_access_events or missed_reservations %},{% endif %}
 	{% endfor %}
 	{% for x in area_access_events %}
@@ -23,11 +25,11 @@
 		"title": "{{ x.area }} access billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
 		"tooltip": "{{ x.area }} access for {{ x.customer }} billed to project {{ x.project }} {% if x.staff_charge %}by {{ x.staff_charge.staff_member }}{% endif %}",
 		"id": {{ x.id }},
-		"color": "#e68a00",
 		"start": "{{ x.start|date:"c" }}",
 		{# Area access events that are less than 15 minutes are artificially lengthened for display purposes. #}
 		"end": "{{ x.get_visual_end|date:"c" }}",
-		"details_url": "{% url 'area_access_details' x.id %}"
+		"details_url": "{% url 'area_access_details' x.id %}",
+		"color": "{{ x.area.area_calendar_color|default:'#e68a00'|escapejs }}"
 	}{% if not forloop.last %},{% elif missed_reservations %},{% endif %}
 	{% endfor %}
 	{% for x in missed_reservations %}
