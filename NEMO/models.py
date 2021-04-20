@@ -1789,7 +1789,7 @@ class AlertCategory(models.Model):
 
 
 class Alert(models.Model):
-	title = models.CharField(blank=True, max_length=100)
+	title = models.CharField(blank=True, max_length=150)
 	category = models.CharField(blank=True, max_length=200,	help_text="A category/type for this alert.")
 	contents = models.CharField(max_length=500)
 	creation_time = models.DateTimeField(default=timezone.now)

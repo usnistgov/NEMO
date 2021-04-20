@@ -2,6 +2,7 @@
 
 from django.db import migrations, models
 
+import NEMO.fields
 from NEMO.migrations_utils import create_news_for_version
 
 
@@ -23,7 +24,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='toolusagecounter',
             name='warning_email',
-            field=models.EmailField(blank=True, help_text='The address to send the warning email to.', max_length=254, null=True),
+            field=NEMO.fields.MultiEmailField(blank=True, help_text='The address to send the warning email to. A comma-separated list can be used.', max_length=2000, null=True),
         ),
         migrations.AddField(
             model_name='toolusagecounter',
@@ -34,6 +35,11 @@ class Migration(migrations.Migration):
             model_name='toolusagecounter',
             name='warning_threshold_reached',
             field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name='project',
+            name='allow_consumable_withdrawals',
+            field=models.BooleanField(default=True, help_text='Uncheck this box if consumable withdrawals are forbidden under this project'),
         ),
         migrations.RunPython(new_version_news),
     ]
