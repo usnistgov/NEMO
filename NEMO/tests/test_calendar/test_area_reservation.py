@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from django.test import TestCase
 from django.urls import reverse
 
+from NEMO.exceptions import NotAllowedToChargeProjectException
 from NEMO.models import User, ScheduledOutage, Reservation, Account, Project, Area, PhysicalAccessLevel, \
 	AreaAccessRecord
 from NEMO.tests.test_utilities import login_as_user, login_as
@@ -214,7 +215,8 @@ class AreaReservationTestCase(TestCase):
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(Reservation.objects.all().count(), 0)
-		self.assertContains(response, "Associate your reservation with a project.")
+		expected_exception = NotAllowedToChargeProjectException(not_my_project, consumer)
+		self.assertContains(response, expected_exception.msg)
 
 		# test not sending project id
 		data['project_id'] = ''
