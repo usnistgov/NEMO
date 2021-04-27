@@ -729,6 +729,44 @@ def send_email_reservation_reminders():
 @login_required
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 @require_GET
+def email_reservation_ending_reminders(request):
+	return send_email_reservation_ending_reminders()
+
+
+def send_email_reservation_ending_reminders():
+	# Exit early if the reservation ending reminder email template has not been customized for the organization yet.
+	reservation_ending_reminder_message = get_media_file_contents('reservation_ending_reminder_email.html')
+	user_office_email = get_customization('user_office_email_address')
+	if not reservation_ending_reminder_message:
+		calendar_logger.error("Reservation ending reminder email couldn't be send because either reservation_ending_reminder_email.html is not defined")
+		return HttpResponseNotFound('The reservation ending reminder template has not been customized for your organization yet. Please visit the customization page to upload one, then reservation ending reminder email notifications can be sent.')
+
+	# We only send ending reservation reminders to users that are currently logged in
+	current_logged_in_user = AreaAccessRecord.objects.filter(end=None, staff_charge=None, customer__is_staff=False)
+	valid_reservations = Reservation.objects.filter(cancelled=False, missed=False, shortened=False)
+	user_area_reservations = valid_reservations.filter(area__isnull=False, user__in=current_logged_in_user.values_list('customer', flat=True))
+
+	# Find all reservations that end 30 or 15 min from now, plus or minus 3 minutes to allow for time skew.
+	reminder_times = [30,15]
+	tolerance = 3
+	time_filter = Q()
+	for reminder_time in reminder_times:
+		earliest_end = timezone.now() + timedelta(minutes=reminder_time) - timedelta(minutes=tolerance)
+		latest_end = timezone.now() + timedelta(minutes=reminder_time) + timedelta(minutes=tolerance)
+		new_filter = Q(end__gt=earliest_end, end__lt=latest_end)
+		time_filter = time_filter | new_filter
+	ending_reservations = user_area_reservations.filter(time_filter)
+	# Email a reminder to each user with an reservation ending soon.
+	for reservation in ending_reservations:
+		subject = reservation.reservation_item.name + " reservation ending soon"
+		rendered_message = Template(reservation_ending_reminder_message).render(Context({'reservation': reservation}))
+		reservation.user.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
+	return HttpResponse()
+
+
+@login_required
+@permission_required('NEMO.trigger_timed_services', raise_exception=True)
+@require_GET
 def email_usage_reminders(request):
 	projects_to_exclude = request.GET.getlist("projects_to_exclude[]")
 	return send_email_usage_reminders(projects_to_exclude)

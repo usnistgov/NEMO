@@ -251,6 +251,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# Reminders and periodic events
 		url(r'^email_reservation_reminders/$', calendar.email_reservation_reminders, name='email_reservation_reminders'),
+		url(r'^email_reservation_ending_reminders/$', calendar.email_reservation_ending_reminders, name='email_reservation_ending_reminders'),
 		url(r'^email_usage_reminders/$', calendar.email_usage_reminders, name='email_usage_reminders'),
 		url(r'^email_out_of_time_reservation_notification/$', calendar.email_out_of_time_reservation_notification, name='email_out_of_time_reservation_notification'),
 		url(r'^cancel_unused_reservations/$', calendar.cancel_unused_reservations, name='cancel_unused_reservations'),

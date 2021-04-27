@@ -670,6 +670,38 @@
 			</div>
 		</div>
 
+        <div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="reservation_ending_reminder">Reservation ending reminder email</h3>
+				<p>
+					This email is sent to a user 30 and 15 minutes before their area reservation ends.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>reservation</b> - the user's reservation ending</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'reservation_ending_reminder_email' %}#reservation_ending_reminder" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('reservation_ending_reminder_email')">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="reservation_ending_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_ending_reminder_email_span').hide()">
+						{% if reservation_ending_reminder_email %}<a id="reservation_ending_reminder_email_span" href="data:text/html,{{ reservation_ending_reminder_email|urlencode }}" download="reservation_ending_reminder_email.html" target="_blank">reservation_ending_reminder_email.html</a>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload reservation ending reminder email" class="btn btn-success">
+					</div>
+				</form>
+				{% if reservation_ending_reminder_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_ending_reminder_email_render">Show current content</button>
+					<table id="reservation_ending_reminder_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ reservation_ending_reminder_email|safe }}</td>
+						</tr>
+					</table>
+				{% endif %}
+			</div>
+		</div>
+
 		<div class="panel panel-default">
 			<div class="panel-body">
 				<h3 id="reservation_reminder">Reservation reminder email</h3>
