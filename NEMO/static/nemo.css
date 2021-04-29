@@ -755,3 +755,17 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 {
     color: inherit;
 }
+
+.pagination-column
+{
+	display: flex;
+    justify-content: space-between;
+    white-space: nowrap;
+}
+
+.pagination-column .glyphicon
+{
+	font-size: 10px;
+	padding-left: 5px;
+	vertical-align: middle;
+}
