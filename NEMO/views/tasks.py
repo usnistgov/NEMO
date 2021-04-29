@@ -134,17 +134,26 @@ def cancel(request, task_id):
 	task.resolution_time = timezone.now()
 	task.save()
 	determine_tool_status(task.tool)
+	try:
+		send_task_updated_email(task, request.build_absolute_uri(task.tool.get_absolute_url()))
+	except Exception as error:
+		site_title = get_customization('site_title')
+		error_message = f"{site_title} was unable to send the task updated email. The error message that was received is: " + str(error)
+		tasks_logger.exception(error_message)
 	return redirect('tool_control')
 
 
-def send_task_updated_email(task, url, task_images: List[TaskImages]):
+def send_task_updated_email(task, url, task_images: List[TaskImages] = None):
 	if not hasattr(settings, 'LAB_MANAGERS'):
 		return
 	attachments = None
 	if task_images:
 		attachments = [create_email_attachment(task_image.image, task_image.image.name) for task_image in task_images]
 	task.refresh_from_db()
-	if task.resolved:
+	if task.cancelled:
+		task_user = task.resolver
+		task_status = 'cancelled'
+	elif task.resolved:
 		task_user = task.resolver
 		task_status = 'resolved'
 	else:
@@ -195,7 +204,6 @@ def update(request, task_id):
 		site_title = get_customization('site_title')
 		error_message = f"{site_title} was unable to send the task updated email. The error message that was received is: " + str(error)
 		tasks_logger.exception(error_message)
-		pass
 	if next_page == 'maintenance':
 		return redirect('maintenance')
 	else:
