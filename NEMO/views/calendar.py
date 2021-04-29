@@ -20,6 +20,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import disable_session_expiry_refresh
 from NEMO.exceptions import ProjectChargeException
 from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area, ReservationItemType
+from NEMO.tasks import synchronized
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize, EmailCategory
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
@@ -291,27 +292,28 @@ def create_reservation(request):
 		item_id = request.POST.get('item_id')
 	except Exception as e:
 		return HttpResponseBadRequest(str(e))
-	return create_item_reservation(request, start, end, ReservationItemType(item_type), item_id)
+	return create_item_reservation(request, request.user, start, end, ReservationItemType(item_type), item_id)
 
 
-def create_item_reservation(request, start, end, item_type: ReservationItemType, item_id):
+@synchronized("current_user")
+def create_item_reservation(request, current_user, start, end, item_type: ReservationItemType, item_id):
 	item = get_object_or_404(item_type.get_object_class(), id=item_id)
 	explicit_policy_override = False
-	if request.user.is_staff:
+	if current_user.is_staff:
 		try:
 			user = User.objects.get(id=request.POST['impersonate'])
 		except:
-			user = request.user
+			user = current_user
 		try:
 			explicit_policy_override = request.POST['explicit_policy_override'] == 'true'
 		except:
 			pass
 	else:
-		user = request.user
+		user = current_user
 	# Create the new reservation:
 	new_reservation = Reservation()
 	new_reservation.user = user
-	new_reservation.creator = request.user
+	new_reservation.creator = current_user
 	# set tool or area
 	setattr(new_reservation, item_type.value, item)
 	new_reservation.start = start
