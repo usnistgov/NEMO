@@ -280,7 +280,7 @@ class User(models.Model):
 			return access_record.project
 
 	def active_project_count(self):
-		return self.projects.filter(active=True, account__active=True).count()
+		return self.active_projects().count()
 
 	def active_projects(self):
 		return self.projects.filter(active=True, account__active=True)

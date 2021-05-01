@@ -276,8 +276,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		url(r'^create_account/$', accounts_and_projects.create_account, name='create_account'),
 		url(r'^remove_user_from_project/$', accounts_and_projects.remove_user_from_project, name='remove_user_from_project'),
 		url(r'^add_user_to_project/$', accounts_and_projects.add_user_to_project, name='add_user_to_project'),
-		url(r'^remove_manager_from_project/$', accounts_and_projects.remove_manager_from_project, name='remove_manager_from_project'),
-		url(r'^add_manager_to_project/$', accounts_and_projects.add_manager_to_project, name='add_manager_to_project'),
 
 		# Account, project, and user history
 		url(r'^history/(?P<item_type>account|project|user)/(?P<item_id>\d+)/$', history.history, name='history'),
