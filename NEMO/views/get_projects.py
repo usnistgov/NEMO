@@ -5,9 +5,10 @@ from django.shortcuts import render, get_object_or_404
 from django.views.decorators.http import require_GET
 
 from NEMO.models import User
+from NEMO.tasks import staff_member_or_tool_superuser_required
 
 
-@staff_member_required(login_url=None)
+@staff_member_or_tool_superuser_required(login_url=None)
 @require_GET
 def get_projects(request):
 	""" Gets a list of all active projects for a specific user. This is only accessible by staff members. """

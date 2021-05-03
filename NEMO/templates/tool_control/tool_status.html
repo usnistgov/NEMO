@@ -401,6 +401,21 @@
 					{% endfor %}
 					</p>
 				{% endif %}
+                {% if tool.superusers.all.count == 1 %}
+					{% with tool.superusers.all|first as superuser %}
+						<p>You can also contact the tool superuser, {{ superuser.get_contact_info_html|safe }}.</p>
+					{% endwith %}
+				{% elif tool.superusers.all.count > 1 %}
+					<p>You can also contact one of the tool superusers
+					{% for x in tool.superusers.all %}
+						{% if not forloop.last %}
+							{{ x.get_contact_info_html|safe }},
+						{% else %}
+							or {{ x.get_contact_info_html|safe }}.
+						{% endif %}
+					{% endfor %}
+					</p>
+				{% endif %}
 				{% if tool.notification_email_address %}
 					<p>Problem reports for the {{ tool.name_or_child_in_use_name }} are automatically emailed to <a href="{% url 'get_email_form' %}?recipient={{ tool.notification_email_address }}" title="Email {{ tool.notification_email_address }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.notification_email_address }}</a>.</p>
 				{% endif %}

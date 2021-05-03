@@ -54,6 +54,7 @@ def duplicate_tool_configuration(model_admin, request, queryset):
 				old_required_resources = tool.required_resource_set.all()
 				old_nonrequired_resources = tool.nonrequired_resource_set.all()
 				old_backup_users = tool.backup_owners.all()
+				old_superusers = tool.superusers.all()
 				old_qualified_users = User.objects.filter(qualifications__id=tool.pk).distinct()
 				tool.pk = None
 				tool.interlock = None
@@ -67,6 +68,7 @@ def duplicate_tool_configuration(model_admin, request, queryset):
 				tool.required_resource_set.set(old_required_resources)
 				tool.nonrequired_resource_set.set(old_nonrequired_resources)
 				tool.backup_owners.set(old_backup_users)
+				tool.superusers.set(old_superusers)
 				for user in old_qualified_users:
 					user.qualifications.add(tool)
 				messages.success(

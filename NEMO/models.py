@@ -215,6 +215,10 @@ class User(models.Model):
 	def is_anonymous(self):
 		return False
 
+	@property
+	def is_tool_superuser(self):
+		return self.superuser_for_tools.exists()
+
 	def get_username(self):
 		return self.username
 
@@ -338,6 +342,7 @@ class Tool(models.Model):
 	_operational = models.BooleanField(db_column="operational", default=False, help_text="Marking the tool non-operational will prevent users from using the tool.")
 	_primary_owner = models.ForeignKey(User, db_column="primary_owner_id", null=True, blank=True, related_name="primary_tool_owner", help_text="The staff member who is responsible for administration of this tool.", on_delete=models.PROTECT)
 	_backup_owners = models.ManyToManyField(User, db_table='NEMO_tool_backup_owners', blank=True, related_name="backup_for_tools", help_text="Alternate staff members who are responsible for administration of this tool when the primary owner is unavailable.")
+	_superusers = models.ManyToManyField(User, db_table='NEMO_tool_superusers', blank=True, related_name="superuser_for_tools", help_text="Superusers who can train users on this tool.")
 	_location = models.CharField(db_column="location", null=True, blank=True, max_length=100)
 	_phone_number = models.CharField(db_column="phone_number", null=True, blank=True, max_length=100)
 	_notification_email_address = models.EmailField(db_column="notification_email_address", blank=True, null=True, help_text="Messages that relate to this tool (such as comments, problems, and shutdowns) will be forwarded to this email address. This can be a normal email address or a mailing list address.")
@@ -425,6 +430,15 @@ class Tool(models.Model):
 	def backup_owners(self, value):
 		self.raise_setter_error_if_child_tool("backup_owners")
 		self._backup_owners = value
+
+	@property
+	def superusers(self) -> QuerySet:
+		return self.parent_tool.superusers if self.is_child_tool() else self._superusers
+
+	@superusers.setter
+	def superusers(self, value):
+		self.raise_setter_error_if_child_tool("superusers")
+		self._superusers = value
 
 	@property
 	def location(self):

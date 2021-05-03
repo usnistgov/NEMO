@@ -4,7 +4,6 @@ from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
-from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
@@ -12,21 +11,26 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.exceptions import ProjectChargeException
 from NEMO.models import User, Tool, TrainingSession, Project, MembershipHistory
+from NEMO.tasks import staff_member_or_tool_superuser_required
 from NEMO.views.policy import check_billing_to_project
+from NEMO.views.users import get_identity_service
 
 training_logger = getLogger(__name__)
 
 
-@staff_member_required(login_url=None)
+@staff_member_or_tool_superuser_required(login_url=None)
 @require_GET
 def training(request):
-	""" Present a web page to allow staff to charge training and qualify users on particular tools. """
-	users = User.objects.filter(is_active=True).exclude(id=request.user.id)
+	""" Present a web page to allow staff or tool superusers to charge training and qualify users on particular tools. """
+	user: User = request.user
+	users = User.objects.filter(is_active=True).exclude(id=user.id)
 	tools = Tool.objects.filter(visible=True)
+	if user.is_tool_superuser:
+		tools = tools.filter(_superusers__in=[user])
 	return render(request, 'training/training.html', {'users': users, 'tools': tools, 'charge_types': TrainingSession.Type.Choices})
 
 
-@staff_member_required(login_url=None)
+@staff_member_or_tool_superuser_required(login_url=None)
 @require_GET
 def training_entry(request):
 	entry_number = int(request.GET['entry_number'])
@@ -37,9 +41,10 @@ def is_valid_field(field):
 	return search("^(chosen_user|chosen_tool|chosen_project|duration|charge_type|qualify)__[0-9]+$", field) is not None
 
 
-@staff_member_required(login_url=None)
+@staff_member_or_tool_superuser_required(login_url=None)
 @require_POST
 def charge_training(request):
+	trainer: User = request.user
 	try:
 		charges = {}
 		for key, value in request.POST.items():
@@ -48,11 +53,13 @@ def charge_training(request):
 				index = int(index)
 				if index not in charges:
 					charges[index] = TrainingSession()
-					charges[index].trainer = request.user
+					charges[index].trainer = trainer
 				if attribute == "chosen_user":
 					charges[index].trainee = User.objects.get(id=value)
 				if attribute == "chosen_tool":
 					charges[index].tool = Tool.objects.get(id=value)
+					if trainer.is_tool_superuser and charges[index].tool not in trainer.superuser_for_tools.all():
+						raise Exception("The trainer is not authorized to train on this tool")
 				if attribute == "chosen_project":
 					charges[index].project = Project.objects.get(id=value)
 				if attribute == "duration":
@@ -103,7 +110,7 @@ def qualify(authorizer, user, tool):
 			entry.action = entry.Action.ADDED
 			entry.save()
 
-	if settings.IDENTITY_SERVICE['available']:
+	if get_identity_service().get('available', False):
 		if tool.grant_badge_reader_access_upon_qualification:
 			parameters = {
 				'username': user.username,
