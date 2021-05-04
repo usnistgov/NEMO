@@ -403,10 +403,10 @@
 				{% endif %}
                 {% if tool.superusers.all.count == 1 %}
 					{% with tool.superusers.all|first as superuser %}
-						<p>You can also contact the tool superuser, {{ superuser.get_contact_info_html|safe }}.</p>
+						<p>For equipment training, you can contact the primary, backup or the superuser, {{ superuser.get_contact_info_html|safe }}.</p>
 					{% endwith %}
 				{% elif tool.superusers.all.count > 1 %}
-					<p>You can also contact one of the tool superusers
+					<p>For equipment training, you can contact the primary, backup or one of the superusers
 					{% for x in tool.superusers.all %}
 						{% if not forloop.last %}
 							{{ x.get_contact_info_html|safe }},
