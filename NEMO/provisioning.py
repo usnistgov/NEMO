@@ -214,6 +214,8 @@ def install_systemd_service():
 		'group': 'nemo',
 		'process_identifier_file': '/tmp/nemo.pid',
 		'gunicorn': '/home/nemo/python/bin/gunicorn',
+		'settings_path': '/home/nemo/',
+		'settings_name': 'settings',
 	}
 
 	service = """
@@ -222,6 +224,8 @@ def install_systemd_service():
 	After=network.target syslog.target nss-lookup.target
 
 	[Service]
+	Environment="PYTHONPATH=$PYTHONPATH:{settings_path}"
+	Environment="DJANGO_SETTINGS_MODULE={settings_name}"
 	User={user}
 	Group={group}
 	PIDFile={process_identifier_file}
