@@ -414,7 +414,7 @@
 					The following context variables are provided when the email is rendered:
 				</p>
 				<ul>
-					<li><b>counter</b> - the counter which quantity reached the warning threshold</li>
+					<li><b>counter</b> - the counter which value reached the warning threshold</li>
 				</ul>
 				<form method="POST" action="{% url 'customize' 'counter_threshold_reached_email' %}#counter_threshold_reached_email" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('counter_threshold_reached_email')">
 					{% csrf_token %}
@@ -423,7 +423,7 @@
 						{% if counter_threshold_reached_email %}<a id="counter_threshold_reached_email_span" href="data:text/html,{{ counter_threshold_reached_email|urlencode }}" download="counter_threshold_reached_email.html" target="_blank">counter_threshold_reached_email.html</a>{% endif %}
 					</div>
 					<div class="form-group">
-						<input type="submit" value="Upload reorder supplies reminder email" class="btn btn-success">
+						<input type="submit" value="Upload counter threshold reached email" class="btn btn-success">
 					</div>
 				</form>
 				{% if counter_threshold_reached_email %}
@@ -674,7 +674,7 @@
 			<div class="panel-body">
 				<h3 id="reservation_ending_reminder">Reservation ending reminder email</h3>
 				<p>
-					This email is sent to a user 30 and 15 minutes before their area reservation ends.
+					This email is sent to a user that is logged in an area 30 and 15 minutes before their area reservation ends.
 					The following context variables are provided when the email is rendered:
 				</p>
 				<ul>
