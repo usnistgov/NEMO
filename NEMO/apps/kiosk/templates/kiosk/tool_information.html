@@ -59,7 +59,7 @@
 	<div class="tool-counters">
 		{% for counter in tool.active_counters %}
 			<div class="tool-counter">
-				<div class="tool-counter-name">{{ counter.name }}: <span style="font-weight: bold">{{ counter.value }}</span></div>
+				<div class="tool-counter-name">{{ counter.name }}: <span style="font-weight: bold; {% if counter.value_color %}color: {{ counter.value_color }}{% endif %}">{{ counter.value|floatformat:-2 }}</span></div>
 				<div class="tool-counter-description">{{ counter.description|linebreaksbr }}</div>
 			</div>
 		{% endfor %}
