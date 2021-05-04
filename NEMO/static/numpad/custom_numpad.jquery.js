@@ -170,7 +170,6 @@
 			*/
 			nmpd.setValue = function(value){
 				if (nmpd.display.attr('maxLength') < value.toString().length) value = value.toString().substr(0, nmpd.display.attr('maxLength'));
-				if (Number(nmpd.display.attr('min')) > Number(value.toString())) value = nmpd.display.attr('min');
 				if (Number(nmpd.display.attr('max')) < Number(value.toString())) value = nmpd.display.attr('max');
 				nmpd.display.val(value);
 				nmpd.find('.dirty').val('1');
@@ -186,10 +185,12 @@
 			nmpd.close = function(target){
 				// If a target element is given, set it's value to the display value of the numpad. Otherwise just hide the numpad
 				if (target){
+					let value = nmpd.getValue().toString();
+					if (value !== '' && Number(nmpd.display.attr('min')) > Number(value)) value = nmpd.display.attr('min');
 					if (target.prop("tagName") === 'INPUT'){
-						target.val(nmpd.getValue().toString().replace('.', options.decimalSeparator));
+						target.val(value.replace('.', options.decimalSeparator));
 					} else {
-						target.html(nmpd.getValue().toString().replace('.', options.decimalSeparator));
+						target.html(value.replace('.', options.decimalSeparator));
 					}
 				}	
 				// Hide the numpad and trigger numpad.close
@@ -300,7 +301,7 @@
 		textDelete: 'Del',
 		textClear: 'Clear',
 		textCancel: 'Cancel',
-		decimalSeparator: ',',
+		decimalSeparator: '.',
 		precision: null,
 		min: null,
 		max: null,

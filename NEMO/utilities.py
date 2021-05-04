@@ -144,7 +144,7 @@ def get_month_timeframe(date=None):
 		start = timezone.now()
 	first_of_the_month = localize(datetime(start.year, start.month, 1))
 	last_of_the_month = localize(
-		datetime(start.year, start.month, monthrange(start.year, start.month)[1], 23, 59, 59, 0)
+		datetime(start.year, start.month, monthrange(start.year, start.month)[1], 23, 59, 59, 999999)
 	)
 	return first_of_the_month, last_of_the_month
 
@@ -263,21 +263,23 @@ def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	return localize(midnight) if in_local_timezone else midnight
 
 
-def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachments=None, email_category:EmailCategory = EmailCategory.GENERAL, fail_silently=True):
+def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachments=None, email_category:EmailCategory = EmailCategory.GENERAL, fail_silently=True) -> int:
 	mail = EmailMessage(
 		subject=subject, body=content, from_email=from_email, to=to, bcc=bcc, cc=cc, attachments=attachments
 	)
 	mail.content_subtype = "html"
+	msg_sent = 0
 	if mail.recipients():
 		email_record = create_email_log(mail, email_category)
 		try:
-			mail.send()
+			msg_sent = mail.send()
 		except:
 			email_record.ok = False
 			if not fail_silently:
 				raise
 		finally:
 			email_record.save()
+	return msg_sent
 
 
 def create_email_log(email: EmailMessage, email_category: EmailCategory):
@@ -326,6 +328,13 @@ def get_tool_image_filename(tool, filename):
 	tool_name = slugify(tool)
 	ext = os.path.splitext(filename)[1]
 	return f"tool_images/{tool_name}{ext}"
+
+
+def get_tool_document_filename(tool_documents, filename):
+	from django.template.defaultfilters import slugify
+
+	tool_name = slugify(tool_documents.tool)
+	return f"tool_documents/{tool_name}/{filename}"
 
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:

@@ -1,5 +1,16 @@
 [
   {
+    "model": "NEMO.userpreferences",
+    "pk": 1,
+    "fields": {
+      "attach_created_reservation": false,
+      "attach_cancelled_reservation": false,
+      "display_new_buddy_request_notification": true,
+      "display_new_buddy_request_reply_notification": true,
+      "email_new_buddy_request_reply": true
+    }
+  },
+  {
     "model": "NEMO.usertype",
     "pk": 1,
     "fields": {
@@ -153,9 +164,12 @@
       "name": "Cleanroom",
       "parent_area": 2,
       "category": null,
+      "abuse_email": "",
+      "reservation_email": "",
       "welcome_message": "Welcome to the cleanroom!",
       "requires_reservation": true,
       "logout_grace_period": null,
+      "buddy_system_allowed": true,
       "maximum_capacity": 5,
       "count_staff_in_occupancy": true,
       "count_service_personnel_in_occupancy": true,
@@ -184,9 +198,12 @@
       "name": "Campus",
       "parent_area": null,
       "category": null,
+      "abuse_email": "",
+      "reservation_email": "",
       "welcome_message": "",
       "requires_reservation": false,
       "logout_grace_period": null,
+      "buddy_system_allowed": false,
       "maximum_capacity": 10,
       "count_staff_in_occupancy": true,
       "count_service_personnel_in_occupancy": true,
@@ -224,7 +241,7 @@
     "model": "NEMO.account",
     "pk": 1,
     "fields": {
-      "name": "Account 1",
+      "name": "Cleanroom Staff",
       "active": true
     }
   },
@@ -248,8 +265,8 @@
     "model": "NEMO.project",
     "pk": 1,
     "fields": {
-      "name": "Project 1",
-      "application_identifier": "PROJ.123",
+      "name": "Cleanroom Eng",
+      "application_identifier": "PROJ.2019.02",
       "account": 1,
       "active": true
     }
@@ -297,7 +314,8 @@
       "quantity": 10,
       "visible": true,
       "reminder_threshold": 5,
-      "reminder_email": "service@nautilus.com"
+      "reminder_email": "service@nautilus.com",
+      "reminder_threshold_reached": false
     }
   },
   {
@@ -309,7 +327,8 @@
       "quantity": 10,
       "visible": true,
       "reminder_threshold": 5,
-      "reminder_email": "service@nautilus.com"
+      "reminder_email": "service@nautilus.com",
+      "reminder_threshold_reached": false
     }
   },
   {
@@ -459,6 +478,18 @@
     }
   },
   {
+    "model": "NEMO.physicalaccesslevel",
+    "pk": 1,
+    "fields": {
+      "name": "Cleanroom access",
+      "area": 1,
+      "schedule": 0,
+      "weekdays_start_time": null,
+      "weekdays_end_time": null,
+      "allow_staff_access": true
+    }
+  },
+  {
     "model": "NEMO.alert",
     "pk": 1,
     "fields": {
@@ -502,7 +533,8 @@
       "office_phone": "123-456-7890",
       "office_location": "123/A456",
       "mobile_phone": "098-765-4321",
-      "mobile_phone_is_sms_capable": true
+      "mobile_phone_is_sms_capable": true,
+      "user": 1
     }
   },
   {
@@ -516,7 +548,8 @@
       "office_phone": "314-159-2653",
       "office_location": "271/A828",
       "mobile_phone": "",
-      "mobile_phone_is_sms_capable": false
+      "mobile_phone_is_sms_capable": false,
+      "user": 2
     }
   },
   {
@@ -530,7 +563,28 @@
       "office_phone": "123-456-7899",
       "office_location": "123/A458",
       "mobile_phone": "",
-      "mobile_phone_is_sms_capable": false
+      "mobile_phone_is_sms_capable": false,
+      "user": 3
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "content_type": ["NEMO", "buddyrequest"],
+      "object_id": 1
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 2,
+    "fields": {
+      "user": 2,
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "content_type": ["NEMO", "buddyrequest"],
+      "object_id": 1
     }
   },
   {
@@ -1000,6 +1054,20 @@
     }
   },
   {
+    "model": "NEMO.buddyrequest",
+    "pk": 1,
+    "fields": {
+      "creation_time": "2021-02-23T17:28:47.930Z",
+      "start": "2021-02-23",
+      "end": "2099-02-23",
+      "description": "I am looking for somebody to come in on a weekend.\r\nDates are flexible.\r\nLet me know",
+      "area": 1,
+      "user": 3,
+      "expired": false,
+      "deleted": false
+    }
+  },
+  {
     "model": "NEMO.user",
     "pk": 1,
     "fields": {
@@ -1010,15 +1078,16 @@
       "type": 3,
       "domain": "",
       "badge_number": null,
-      "access_expiration": "2014-09-09",
+      "access_expiration": null,
       "is_active": true,
       "is_staff": true,
+      "is_service_personnel": false,
       "is_technician": false,
       "is_superuser": true,
       "training_required": false,
       "date_joined": "2012-12-10T16:43:37Z",
       "last_login": "2020-06-25T01:48:39.684Z",
-      "preferences": null,
+      "preferences": 1,
       "physical_access_levels": [],
       "groups": [],
       "user_permissions": [],
@@ -1040,6 +1109,7 @@
       "access_expiration": "2014-09-09",
       "is_active": true,
       "is_staff": false,
+      "is_service_personnel": false,
       "is_technician": false,
       "is_superuser": false,
       "training_required": false,
@@ -1067,6 +1137,7 @@
       "access_expiration": "2014-09-09",
       "is_active": true,
       "is_staff": false,
+      "is_service_personnel": false,
       "is_technician": false,
       "is_superuser": false,
       "training_required": false,

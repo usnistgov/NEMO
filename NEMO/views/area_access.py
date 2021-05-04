@@ -19,6 +19,7 @@ from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableReso
 	NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError, \
 	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
 from NEMO.models import Area, AreaAccessRecord, Project, User
+from NEMO.tasks import synchronized
 from NEMO.utilities import parse_start_and_end_date, quiet_int
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization
@@ -79,7 +80,7 @@ def area_access(request):
 		dictionary['access_records'] = area_access_records
 	except:
 		pass
-	dictionary['area_select_field'] = TreeNodeChoiceField(Area.objects.filter(requires_reservation=True).only('name'), empty_label="All").widget.render('area', area_id)
+	dictionary['area_select_field'] = TreeNodeChoiceField(Area.objects.filter(area_children_set__isnull=True).only('name'), empty_label="All").widget.render('area', area_id)
 	return render(request, 'area_access/area_access.html', dictionary)
 
 
@@ -283,7 +284,7 @@ def self_log_in(request, load_areas=True):
 			p = Project.objects.get(id=request.POST['project'])
 			check_policy_to_enter_this_area(a, request.user)
 			if p in dictionary['projects']:
-				AreaAccessRecord.objects.create(area=a, customer=request.user, project=p)
+				log_in_user_to_area(a, request.user, p)
 		except NoAccessiblePhysicalAccessUserError as error:
 			if error.access_exception:
 				dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time due to the following exception: {error.access_exception.name}. The exception ends on {localize(error.access_exception.end_time.astimezone(timezone.get_current_timezone()))}"
@@ -339,6 +340,12 @@ def occupancy(request):
 	return render(request, 'occupancy/occupancy.html', dictionary)
 
 
+@synchronized("user")
+def log_in_user_to_area(area, user, project):
+	return AreaAccessRecord.objects.create(area=area, customer=user, project=project)
+
+
+@synchronized("user")
 def log_out_user(user: User):
 	record = user.area_access_record()
 	# Allow the user to log out of any area, even if this is a logout tablet for a different area.
@@ -384,12 +391,12 @@ def able_to_self_log_in_to_area(user):
 	return True
 
 
-def load_areas_for_use_in_template(user: User = None):
+def load_areas_for_use_in_template(user: User):
 	"""
 	This method returns accessible areas for the user and a queryset ready to be used in template view.
 	The template view needs to use the {% recursetree %} tag from mptt
 	"""
-	accessible_areas = user.accessible_areas() if user else Area.objects.filter(requires_reservation=True)
+	accessible_areas = user.accessible_areas()
 	areas = list(set([ancestor for area in accessible_areas for ancestor in area.get_ancestors(include_self=True)]))
 	areas.sort(key=lambda x: x.tree_category())
 	areas = Area.objects.filter(id__in=[area.id for area in areas])

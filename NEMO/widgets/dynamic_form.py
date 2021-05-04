@@ -2,12 +2,13 @@ from collections import Counter
 from copy import copy
 from json import dumps, loads
 from logging import getLogger
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Optional, Any
 
 from django.urls import reverse, NoReverseMatch
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 
+from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Consumable, ToolUsageCounter
 from NEMO.views.consumables import make_withdrawal
 
@@ -18,11 +19,13 @@ class PostUsageQuestion:
 	question_type = "Question"
 
 	number_type = "number"
+	float_type = "float"
 	text_type = "textbox"
+	textarea_type = "textarea"
 	radio_type = "radio"
 	dropdown_type = "dropdown"
 	group_type = "group"
-	question_types = [number_type, text_type, radio_type, dropdown_type, group_type]
+	question_types = [number_type, float_type, text_type, textarea_type, radio_type, dropdown_type, group_type]
 
 	def __init__(self, properties: Dict, tool_id: int, virtual_inputs: bool = False, index: int = None):
 		self.properties = properties
@@ -38,7 +41,9 @@ class PostUsageQuestion:
 		self.pattern = self._init_property("pattern")
 		self.min = self._init_property("min")
 		self.max = self._init_property("max")
+		self.precision = self._init_property("precision")
 		self.step = self._init_property("step")
+		self.rows = self._init_property("rows")
 		self.consumable = self._init_property("consumable")
 		self.required = self._init_property("required", True)
 		self.default_choice = self._init_property("default_choice")
@@ -48,7 +53,7 @@ class PostUsageQuestion:
 			self.name = f"{self.name}_{index}"
 		pass
 
-	def _init_property(self, prop: str, boolean: bool = False):
+	def _init_property(self, prop: str, boolean: bool = False) -> Any:
 		if boolean:
 			return True if prop in self.properties and self.properties[prop] is True else False
 		else:
@@ -61,6 +66,13 @@ class PostUsageQuestion:
 
 	def render(self) -> str:
 		return self.render_element() + self.render_script()
+
+	def render_as_text(self) -> str:
+		result = f"{self.title}\n"
+		result += "<strong>your answer</strong>"
+		if self.choices:
+			result += " (possible choices: " + "|".join(self.choices) + ")"
+		return result
 
 	def render_element(self):
 		return ""
@@ -85,7 +97,9 @@ class PostUsageQuestion:
 	def load_questions(questions: List[Dict], tool_id: int, virtual_inputs: bool = False, index: int = None):
 		constructor = {
 			PostUsageQuestion.number_type: PostUsageNumberFieldQuestion,
+			PostUsageQuestion.float_type: PostUsageFloatFieldQuestion,
 			PostUsageQuestion.text_type: PostUsageTextFieldQuestion,
+			PostUsageQuestion.textarea_type: PostUsageTextAreaFieldQuestion,
 			PostUsageQuestion.radio_type: PostUsageRadioQuestion,
 			PostUsageQuestion.dropdown_type: PostUsageDropdownQuestion,
 			PostUsageQuestion.group_type: PostUsageGroupQuestion,
@@ -106,8 +120,8 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}'
-		for choice in self.properties["choices"]:
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
+		for choice in self.choices:
 			result += '<div class="radio">'
 			required = "required" if self.required else ""
 			is_default_choice = "checked" if self.default_choice and self.default_choice == choice else ""
@@ -126,7 +140,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}'
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
 		required = "required" if self.required else ""
 		result += f'<select name="{self.name}" {required} style="margin-top: 5px;max-width:{self.max_width}px" class="form-control">'
 		blank_disabled = 'disabled="disabled"' if required else ""
@@ -174,6 +188,23 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 			return f"<script>$('#{self.name}').keyboard();</script>"
 		return super().render_script()
 
+	def render_as_text(self) -> str:
+		result = f"{self.title}\n"
+		if self.prefix:
+			result += self.prefix
+		result += "<strong>your answer</strong>"
+		if self.suffix:
+			result += f" {self.suffix}"
+		return result
+
+
+class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
+	question_type = "Question of type textarea"
+
+	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
+		rows = f'rows="{str(self.rows)}"' if self.rows else ""
+		return f'<textarea class="form-control" id="{self.name}" name="{self.name}" {rows} {placeholder} {required} style="max-width:{self.max_width}px;height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>'
+
 
 class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 	question_type = "Question of type number"
@@ -187,6 +218,33 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 	def render_script(self):
 		if self.virtual_inputs:
 			return f"<script>$('#{self.name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true}});</script>"
+		return super().render_script()
+
+	def render_as_text(self) -> str:
+		result = super().render_as_text()
+		if self.min or self.max:
+			result += " ("
+			if self.min:
+				result += f"min: {self.min}"
+			if self.max:
+				if self.min:
+					result += ", "
+				result += f"max: {self.min}"
+			result += ")"
+		return result
+
+
+class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
+	question_type = "Question of type float"
+
+	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
+		precision = self.precision if self.precision else 2
+		pattern = f'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{"{1,"+str(precision)+ "}"})?\s*$"'
+		return f'<input type="text" class="form-control" id="{self.name}" name="{self.name}" {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+
+	def render_script(self):
+		if self.virtual_inputs:
+			return f"<script>$('#{self.name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': false}});</script>"
 		return super().render_script()
 
 
@@ -210,7 +268,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			sub_question.validate()
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group" style="white-space: pre-wrap">{self.title}</div>'
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div></div>'
 		result += f'<div id="{self.group_name}_container">'
 		result += self.render_group_question()
 		result += "</div>"
@@ -263,6 +321,12 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 				}});
 			}}
 		</script>"""
+
+	def render_as_text(self) -> str:
+		result = f"{self.title}\n"
+		for question in self.sub_questions:
+			result += question.render_as_text()
+		return result
 
 	def extract(self, request) -> Dict:
 		# For group question, we also have to look for answers submitted with a numbered suffix (i.e. question, question_1, question_2 etc.)
@@ -348,9 +412,31 @@ class DynamicForm:
 
 	def extract(self, request):
 		results = {}
+		required_unanswered_questions = []
 		for question in self.questions:
 			results[question.name] = question.extract(request)
-		return dumps(results, indent="\t") if len(results) else ""
+			required_unanswered_questions.extend(self._check_for_required_unanswered_questions(results, question))
+		run_data = dumps(results, indent="\t") if len(results) else ""
+		if required_unanswered_questions:
+			raise RequiredUnansweredQuestionsException(run_data, required_unanswered_questions)
+		return run_data
+
+	def _check_for_required_unanswered_questions(self, results: Dict, question: PostUsageQuestion) -> Optional[List[PostUsageQuestion]]:
+		# This method will check for required unanswered questions and if some are found, will fill them with blank and return them
+		required_unanswered_questions = []
+		user_input = results[question.name].get('user_input')
+		if not isinstance(question, PostUsageGroupQuestion) and question.required and not user_input:
+			results[question.name]['user_input'] = ""
+			required_unanswered_questions.append(question)
+		elif isinstance(question, PostUsageGroupQuestion):
+			blank_user_input = {0: {}}
+			for sub_question in question.sub_questions:
+				if sub_question.required and (not user_input or not user_input.get(0, {}).get(sub_question.name)):
+					blank_user_input[0][sub_question.name] = ""
+					required_unanswered_questions.append(sub_question)
+			if required_unanswered_questions:
+				results[question.name]['user_input'] = blank_user_input
+		return required_unanswered_questions
 
 	def filter_questions(self, function: Callable[[PostUsageQuestion], bool]) -> List[PostUsageQuestion]:
 		results = []
@@ -363,7 +449,7 @@ class DynamicForm:
 						results.append(sub_question)
 		return results
 
-	def charge_for_consumables(self, customer, merchant, project, run_data: str):
+	def charge_for_consumables(self, customer, merchant, project, run_data: str, request=None):
 		try:
 			run_data_json = loads(run_data)
 		except Exception as error:
@@ -375,15 +461,16 @@ class DynamicForm:
 					consumable = Consumable.objects.get(name=question.consumable)
 					quantity = 0
 					if isinstance(question, PostUsageNumberFieldQuestion):
-						if question.name in run_data_json and "user_input" in run_data_json[question.name]:
+						if question.name in run_data_json and "user_input" in run_data_json[question.name] and run_data_json[question.name]["user_input"]:
 							quantity = int(run_data_json[question.name]["user_input"])
 					if quantity > 0:
 						make_withdrawal(
-							consumable=consumable,
-							customer=customer,
+							consumable_id=consumable.id,
+							customer_id=customer.id,
 							merchant=merchant,
 							quantity=quantity,
-							project=project,
+							project_id=project.id,
+							request=request
 						)
 				except Exception as e:
 					dynamic_form_logger.warning(
@@ -403,23 +490,25 @@ class DynamicForm:
 		for counter in active_counters:
 			additional_value = 0
 			for question in self.questions:
-				if isinstance(question, PostUsageNumberFieldQuestion):
+				if isinstance(question, PostUsageNumberFieldQuestion) or isinstance(question, PostUsageFloatFieldQuestion):
 					if (
 							question.name == counter.tool_usage_question
 							and question.name in run_data_json
 							and "user_input" in run_data_json[question.name]
+							and run_data_json[question.name]["user_input"]
 					):
-						additional_value = int(run_data_json[question.name]["user_input"])
+						additional_value = float(run_data_json[question.name]["user_input"])
 				elif isinstance(question, PostUsageGroupQuestion):
 					for sub_question in question.sub_questions:
-						if (
-								sub_question.name == counter.tool_usage_question
-								and question.name in run_data_json
-								and "user_input" in run_data_json[question.name]
-						):
-							for user_input in run_data_json[question.name]["user_input"].values():
-								if sub_question.name in user_input:
-									additional_value += int(user_input[sub_question.name])
+						if isinstance(sub_question, PostUsageNumberFieldQuestion) or isinstance(sub_question, PostUsageFloatFieldQuestion):
+							if (
+									sub_question.name == counter.tool_usage_question
+									and question.name in run_data_json
+									and "user_input" in run_data_json[question.name]
+							):
+								for user_input in run_data_json[question.name]["user_input"].values():
+									if sub_question.name in user_input and user_input[sub_question.name]:
+										additional_value += float(user_input[sub_question.name])
 			if additional_value:
 				counter.value += additional_value
 				counter.save(update_fields=["value"])

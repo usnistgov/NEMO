@@ -12,8 +12,9 @@ from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.template import loader
@@ -23,7 +24,8 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from NEMO import fields
-from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename, EmailCategory
+from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename, EmailCategory, \
+	get_tool_document_filename
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -130,7 +132,7 @@ class User(models.Model):
 	domain = models.CharField(max_length=100, blank=True, help_text="The Active Directory domain that the account resides on")
 
 	# Physical access fields
-	badge_number = models.PositiveIntegerField(null=True, blank=True, unique=True, help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.")
+	badge_number = models.CharField(null=True, blank=True, unique=True, max_length=50, help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.")
 	access_expiration = models.DateField(blank=True, null=True, help_text="The user will lose all access rights after this date. Typically this is used to ensure that safety training has been completed by the user every year.")
 	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True)
 
@@ -151,6 +153,7 @@ class User(models.Model):
 	# Facility information:
 	qualifications = models.ManyToManyField('Tool', blank=True, help_text='Select the tools that the user is qualified to use.')
 	projects = models.ManyToManyField('Project', blank=True, help_text='Select the projects that this user is currently working on.')
+	managed_projects = models.ManyToManyField('Project', related_name="manager_set", blank=True, help_text='Select the projects that this user is a PI for.')
 
 	# Preferences
 	preferences: UserPreferences = models.OneToOneField(UserPreferences, null=True, on_delete=models.SET_NULL)
@@ -261,8 +264,9 @@ class User(models.Model):
 			return None
 
 	def is_logged_in_area_without_reservation(self) -> bool:
-		if self.in_area():
-			area = self.area_access_record().area
+		access_record = self.area_access_record()
+		if access_record:
+			area = access_record.area
 			if area.requires_reservation:
 				end_time = timezone.now() if not area.logout_grace_period else timezone.now() - timedelta(minutes=area.logout_grace_period)
 				return not Reservation.objects.filter(cancelled=False, missed=False, shortened=False, area=area, user=self, start__lte=timezone.now(), end__gte=end_time).exists()
@@ -413,7 +417,7 @@ class Tool(models.Model):
 		self._primary_owner = value
 
 	@property
-	def backup_owners(self) -> List[User]:
+	def backup_owners(self) -> QuerySet:
 		return self.parent_tool.backup_owners if self.is_child_tool() else self._backup_owners
 
 	@backup_owners.setter
@@ -769,6 +773,61 @@ class Tool(models.Model):
 	def active_counters(self):
 		return self.toolusagecounter_set.filter(is_active=True)
 
+	def tool_documents(self):
+		return ToolDocuments.objects.filter(tool=self).order_by()
+
+class ToolDocuments(models.Model):
+	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+	document = models.FileField(null=True, blank=True, upload_to=get_tool_document_filename, verbose_name='Document')
+	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
+	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	def filename(self):
+		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1]
+
+	def link(self):
+		return self.document.url if self.document else self.url
+
+	def __str__(self):
+		return self.filename()
+
+	def clean(self):
+		if not self.document and not self.url:
+			raise ValidationError({'document': 'Either document or URL should be provided.'})
+		elif self.document and self.url:
+			raise ValidationError({'document': 'Choose either document or URL but not both.'})
+
+	class Meta:
+		verbose_name_plural = "Tool documents"
+		ordering = ['-uploaded_at']
+
+
+# These two auto-delete tool documents from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=ToolDocuments)
+def auto_delete_file_on_tool_document_delete(sender, instance: ToolDocuments, **kwargs):
+	"""	Deletes file from filesystem when corresponding `ToolDocuments` object is deleted.	"""
+	if instance.document:
+		if os.path.isfile(instance.document.path):
+			os.remove(instance.document.path)
+
+
+@receiver(models.signals.pre_save, sender=ToolDocuments)
+def auto_delete_file_on_tool_document_change(sender, instance: ToolDocuments, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `ToolDocuments` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = ToolDocuments.objects.get(pk=instance.pk).document
+	except ToolDocuments.DoesNotExist:
+		return False
+
+	new_file = instance.document
+	if not old_file == new_file:
+		if os.path.isfile(old_file.path):
+			os.remove(old_file.path)
+
 
 class Configuration(models.Model):
 	tool = models.ForeignKey(Tool, help_text="The tool that this configuration option applies to.", on_delete=models.CASCADE)
@@ -983,7 +1042,6 @@ class Area(MPTTModel):
 
 	def reservation_email_list(self):
 		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.reservation_email]
-
 
 
 class AreaAccessRecord(CalendarDisplay):
@@ -1919,16 +1977,19 @@ class BadgeReader(models.Model):
 class ToolUsageCounter(models.Model):
 	name = models.CharField(max_length=200, help_text="The name of this counter")
 	description = models.TextField(null=True, blank=True, help_text="The counter description to be displayed next to it on the tool control page")
-	value = models.PositiveIntegerField(default=0, help_text="The current value of this counter")
+	value = models.FloatField(default=0, help_text="The current value of this counter")
 	tool = models.ForeignKey(Tool, help_text="The tool this counter is for.", on_delete=models.CASCADE)
 	tool_usage_question = models.CharField(max_length=200, help_text="The name of the tool's post usage question which should be used to increment this counter")
-	last_reset_value = models.PositiveIntegerField(null=True, blank=True, help_text="The last value before the counter was reset")
+	last_reset_value = models.FloatField(null=True, blank=True, help_text="The last value before the counter was reset")
 	last_reset = models.DateTimeField(null=True, blank=True, help_text="The date and time this counter was last reset")
 	last_reset_by = models.ForeignKey(User, null=True, blank=True, help_text="The user who last reset this counter", on_delete=models.SET_NULL)
 	is_active = models.BooleanField(default=True, help_text="The state of the counter")
 
 	def __str__(self):
 		return str(self.name)
+
+	class Meta:
+		ordering = ['tool__name']
 
 
 class BuddyRequest(models.Model):

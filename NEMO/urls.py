@@ -34,7 +34,27 @@ router.register(r'scheduled_outages', api.ScheduledOutageViewSet)
 
 reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
 
-urlpatterns = [
+urlpatterns = []
+
+# Include urls for all NEMO plugins (that start with prefix NEMO)
+# URLs in plugins with exact same path will take precedence over regular NEMO URLs
+# Note that the path MUST be the same, down to the last "/"
+for app in apps.get_app_configs():
+	app_name = app.name
+	if app_name != 'NEMO' and app_name.startswith('NEMO'):
+		try:
+			mod = import_module('%s.urls' % app_name)
+		except ModuleNotFoundError:
+			logger.warning(f"no urls found for NEMO plugin: {app_name}")
+			pass
+		except Exception as e:
+			logger.warning(f"could not import urls for NEMO plugin: {app_name} {str(e)}")
+			pass
+		else:
+			urlpatterns += [path('', include('%s.urls' % app_name))]
+			logger.debug(f"automatically including urls for plugin: {app_name}")
+
+urlpatterns += [
 	# Authentication & error pages:
 	url(r'^login/$', authentication.login_user, name='login'),
 	url(r'^logout/$', LogoutView.as_view(next_page = 'landing' if not settings.LOGOUT_REDIRECT_URL else None), name='logout'),
@@ -160,6 +180,8 @@ urlpatterns = [
 
 	# Consumables:
 	url(r'^consumables/$', consumables.consumables, name='consumables'),
+	url(r'^consumables/(?P<index>\d+)/remove$', consumables.remove_withdraw_at_index, name='remove_consumable'),
+	url(r'^consumables/withdraw$', consumables.make_withdrawals, name='withdraw_consumables'),
 
 	# Training:
 	url(r'^training/$', training.training, name='training'),
@@ -245,13 +267,15 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# Account & project management:
 		url(r'^accounts_and_projects/$', accounts_and_projects.accounts_and_projects, name='accounts_and_projects'),
-		url(r'^project/(?P<identifier>\d+)/$', accounts_and_projects.accounts_and_projects, kwargs={'kind': 'project'}, name='project'),
-		url(r'^account/(?P<identifier>\d+)/$', accounts_and_projects.accounts_and_projects, kwargs={'kind': 'account'}, name='account'),
+		url(r'^project/(?P<identifier>\d+)/$', accounts_and_projects.select_accounts_and_projects, kwargs={'kind': 'project'}, name='project'),
+		url(r'^account/(?P<identifier>\d+)/$', accounts_and_projects.select_accounts_and_projects, kwargs={'kind': 'account'}, name='account'),
 		url(r'^toggle_active/(?P<kind>account|project)/(?P<identifier>\d+)/$', accounts_and_projects.toggle_active, name='toggle_active'),
 		url(r'^create_project/$', accounts_and_projects.create_project, name='create_project'),
 		url(r'^create_account/$', accounts_and_projects.create_account, name='create_account'),
 		url(r'^remove_user_from_project/$', accounts_and_projects.remove_user_from_project, name='remove_user_from_project'),
 		url(r'^add_user_to_project/$', accounts_and_projects.add_user_to_project, name='add_user_to_project'),
+		url(r'^remove_manager_from_project/$', accounts_and_projects.remove_manager_from_project, name='remove_manager_from_project'),
+		url(r'^add_manager_to_project/$', accounts_and_projects.add_manager_to_project, name='add_manager_to_project'),
 
 		# Account, project, and user history
 		url(r'^history/(?P<item_type>account|project|user)/(?P<item_id>\d+)/$', history.history, name='history'),
@@ -272,22 +296,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		# Billing:
 		url(r'^billing/$', usage.billing, name='billing'),
 	]
-
-# Include urls for all NEMO plugins (that start with prefix NEMO)
-for app in apps.get_app_configs():
-	app_name = app.name
-	if app_name != 'NEMO' and app_name.startswith('NEMO'):
-		try:
-			mod = import_module('%s.urls' % app_name)
-		except ModuleNotFoundError:
-			logger.warning(f"no urls found for NEMO plugin: {app_name}")
-			pass
-		except Exception as e:
-			logger.warning(f"could not import urls for NEMO plugin: {app_name} {str(e)}")
-			pass
-		else:
-			urlpatterns += [path('', include('%s.urls' % app_name))]
-			logger.debug(f"automatically including urls for plugin: {app_name}")
 
 
 if settings.DEBUG:

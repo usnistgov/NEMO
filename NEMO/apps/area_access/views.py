@@ -1,7 +1,9 @@
 from time import sleep
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
 from django.utils.formats import localize
 from django.views.decorators.http import require_GET, require_POST
@@ -18,7 +20,6 @@ from NEMO.exceptions import (
 	ScheduledOutageInProgressError,
 )
 from NEMO.models import (
-	AreaAccessRecord,
 	Door,
 	PhysicalAccessLog,
 	PhysicalAccessType,
@@ -28,9 +29,10 @@ from NEMO.models import (
 	BadgeReader,
 )
 from NEMO.tasks import postpone
-from NEMO.views.area_access import log_out_user
+from NEMO.views.area_access import log_out_user, log_in_user_to_area
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area
+from NEMO.views.tool_control import interlock_bypass_allowed
 
 
 @login_required
@@ -64,6 +66,7 @@ def login_to_area(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
 
 	badge_number = request.POST.get("badge_number", "")
+	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
 	if badge_number == "":
 		return render(request, "area_access/badge_not_found.html")
 	try:
@@ -179,7 +182,6 @@ def login_to_area(request, door_id):
 		message = "You do not have a current reservation for this area. Please make a reservation before trying to access this area."
 		return render(request, "area_access/physical_access_denied.html", {"message": message})
 
-	previous_area = None
 	if user.active_project_count() >= 1:
 		if user.active_project_count() == 1:
 			project = user.active_projects()[0]
@@ -203,29 +205,32 @@ def login_to_area(request, door_id):
 		log.save()
 
 		# Automatically log the user out of any previous area before logging them in to the new area.
+		previous_area = None
 		if user.in_area():
-			previous_area_access_record = user.area_access_record()
-			previous_area_access_record.end = timezone.now()
-			previous_area_access_record.save()
-			previous_area = previous_area_access_record.area
+			previous_area = user.area_access_record().area
+			log_out_user(user)
 
-		record = AreaAccessRecord()
-		record.area = door.area
-		record.customer = user
-		record.project = project
-		record.save()
-		unlock_door(door.id)
+		# All policy checks passed so open the door for the user.
+		if not door.interlock.unlock():
+			if bypass_interlock and interlock_bypass_allowed(user):
+				pass
+			else:
+				return interlock_error("Login", user)
+
+		delay_lock_door(door.id)
+
+		log_in_user_to_area(door.area, user, project)
+
 		return render(
 			request,
 			"area_access/login_success.html",
-			{"area": door.area, "name": user.first_name, "project": record.project, "previous_area": previous_area},
+			{"area": door.area, "name": user.first_name, "project": project, "previous_area": previous_area},
 		)
 
 
 @postpone
-def unlock_door(door_id):
+def delay_lock_door(door_id):
 	door = Door.objects.get(id=door_id)
-	door.interlock.unlock()
 	sleep(8)
 	door.interlock.lock()
 
@@ -281,6 +286,20 @@ def open_door(request, door_id):
 			details="The user was permitted to enter this area, and already had an active area access record for this area.",
 		)
 		log.save()
-		unlock_door(door.id)
+		# If we cannot open the door, display message and let them try again or exit since there is nothing else to do (user is already logged in).
+		if not door.interlock.unlock():
+			return interlock_error(bypass_allowed=False)
+		delay_lock_door(door.id)
 		return render(request, "area_access/door_is_open.html")
 	return render(request, "area_access/not_logged_in.html", {"area": door.area})
+
+
+def interlock_error(action: str = None, user: User = None, bypass_allowed: bool = None):
+	error_message = get_customization('door_interlock_failure_message')
+	bypass_allowed = interlock_bypass_allowed(user) if bypass_allowed is None else bypass_allowed
+	dictionary = {
+		"message": linebreaksbr(error_message),
+		"bypass_allowed": bypass_allowed,
+		"action": action
+	}
+	return JsonResponse(dictionary, status=501)

@@ -14,8 +14,9 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from NEMO.forms import UserForm, UserPreferencesForm
-from NEMO.models import User, Project, Tool, PhysicalAccessLevel, Reservation, StaffCharge, UsageEvent, AreaAccessRecord, ActivityHistory, UserPreferences, record_local_many_to_many_changes, record_active_state, Area
+from NEMO.models import User, Project, Tool, PhysicalAccessLevel, Reservation, StaffCharge, UsageEvent, AreaAccessRecord, ActivityHistory, record_local_many_to_many_changes, record_active_state, Area
 from NEMO.views.customization import get_customization
+from NEMO.views.pagination import SortedPaginator
 
 users_logger = getLogger(__name__)
 
@@ -23,7 +24,10 @@ users_logger = getLogger(__name__)
 @require_GET
 def users(request):
 	all_users = User.objects.all()
-	return render(request, 'users/users.html', {'users': all_users})
+
+	page = SortedPaginator(all_users, request, order_by="last_name").get_current_page()
+
+	return render(request, "users/users.html", {"page": page, "users": all_users})
 
 
 @staff_member_required(login_url=None)
@@ -194,7 +198,7 @@ def deactivate(request, user_id):
 		return render(request, 'users/safe_deactivation.html', dictionary)
 	elif request.method == 'POST':
 		identity_service = get_identity_service()
-		if identity_service['available']:
+		if identity_service.get('available', False):
 			parameters = {
 				'username': user_to_deactivate.username,
 				'domain': user_to_deactivate.domain,

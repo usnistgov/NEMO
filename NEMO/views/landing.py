@@ -42,7 +42,7 @@ def landing(request):
 
 	upcoming_reservations = Reservation.objects.filter(
 		user=user.id, end__gt=timezone.now(), cancelled=False, missed=False, shortened=False
-	).exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now)
+	).exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now).exclude(ancestor__shortened=True)
 	if user.in_area():
 		upcoming_reservations = upcoming_reservations.exclude(
 			area=user.area_access_record().area, start__lte=fifteen_minutes_from_now

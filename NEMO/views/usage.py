@@ -1,15 +1,27 @@
+from datetime import datetime
 from logging import getLogger
+from typing import List, Set
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.db.models import Q
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.decorators.http import require_GET
 from requests import get
 
 from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, StaffCharge, TrainingSession, UsageEvent, User, Project, Account
-from NEMO.utilities import get_month_timeframe, month_list, parse_start_and_end_date
+from NEMO.utilities import get_month_timeframe, month_list, parse_start_and_end_date, BasicDisplayTable
+from NEMO.views.api_billing import (
+	BillableItem,
+	billable_items_usage_events,
+	billable_items_area_access_records,
+	billable_items_missed_reservations,
+	billable_items_staff_charges,
+	billable_items_consumable_withdrawals,
+	billable_items_training_sessions
+)
 
 logger = getLogger(__name__)
 
@@ -65,7 +77,7 @@ def date_parameters_dictionary(request):
 		'kind': kind,
 		'identifier': identifier,
 		'tab_url': get_url_for_other_tab(request),
-		'billing_service': False if not hasattr(settings, 'BILLING_SERVICE') or not settings.BILLING_SERVICE['available'] else True,
+		'billing_service': get_billing_service().get('available', False),
 	}
 	return dictionary, start_date, end_date, kind, identifier
 
@@ -73,26 +85,57 @@ def date_parameters_dictionary(request):
 @login_required
 @require_GET
 def usage(request):
+	user: User = request.user
+	user_managed_projects = get_managed_projects(user)
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
-	dictionary = {
-		'area_access': AreaAccessRecord.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date).order_by('-start'),
-		'consumables': ConsumableWithdraw.objects.filter(customer=request.user, date__gt=start_date, date__lte=end_date),
-		'missed_reservations': Reservation.objects.filter(user=request.user, missed=True, end__gt=start_date, end__lte=end_date),
-		'staff_charges': StaffCharge.objects.filter(customer=request.user, end__gt=start_date, end__lte=end_date),
-		'training_sessions': TrainingSession.objects.filter(trainee=request.user, date__gt=start_date, date__lte=end_date),
-		'usage_events': UsageEvent.objects.filter(user=request.user, end__gt=start_date, end__lte=end_date),
-	}
-	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
-	return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
+	customer_filter = Q(customer=user) | Q(project__in=user_managed_projects)
+	user_filter = Q(user=user) | Q(project__in=user_managed_projects)
+	trainee_filter = Q(trainee=user) | Q(project__in=user_managed_projects)
+	project_id = request.GET.get("pi_project")
+	csv_export = bool(request.GET.get("csv", False))
+	if user_managed_projects:
+		base_dictionary['selected_project'] = "all"
+	if project_id:
+		project = get_object_or_404(Project, id=project_id)
+		base_dictionary['selected_project'] = project
+		customer_filter = customer_filter & Q(project=project)
+		user_filter = user_filter & Q(project=project)
+		trainee_filter = trainee_filter & Q(project=project)
+	area_access = AreaAccessRecord.objects.filter(customer_filter).filter(end__gt=start_date, end__lte=end_date).order_by('-start')
+	consumables = ConsumableWithdraw.objects.filter(customer_filter).filter(date__gt=start_date, date__lte=end_date)
+	missed_reservations = Reservation.objects.filter(user_filter).filter(missed=True, end__gt=start_date, end__lte=end_date)
+	staff_charges = StaffCharge.objects.filter(customer_filter).filter(end__gt=start_date, end__lte=end_date)
+	training_sessions = TrainingSession.objects.filter(trainee_filter).filter(date__gt=start_date, date__lte=end_date)
+	usage_events = UsageEvent.objects.filter(user_filter).filter(end__gt=start_date, end__lte=end_date)
+	if csv_export:
+		return csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations)
+	else:
+		dictionary = {
+			'area_access': area_access,
+			'consumables': consumables,
+			'missed_reservations': missed_reservations,
+			'staff_charges': staff_charges,
+			'training_sessions': training_sessions,
+			'usage_events': usage_events,
+			'can_export': True,
+		}
+		if user_managed_projects:
+			dictionary['pi_projects'] = user_managed_projects
+		dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
+		return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
 
 
 @login_required
 @require_GET
 def billing(request):
+	user: User = request.user
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
-	formatted_applications = ','.join(map(str, set(request.user.active_projects().values_list('application_identifier', flat=True))))
+	if not base_dictionary['billing_service']:
+		return redirect('usage')
+	user_project_applications = list(user.active_projects().values_list('application_identifier', flat=True)) + list(user.managed_projects.values_list('application_identifier', flat=True))
+	formatted_applications = ','.join(map(str, set(user_project_applications)))
 	try:
-		billing_dictionary = billing_dict(start_date, end_date, request.user, formatted_applications)
+		billing_dictionary = billing_dict(start_date, end_date, user, formatted_applications)
 		return render(request, 'usage/billing.html', {**base_dictionary, **billing_dictionary})
 	except Exception as e:
 		logger.warning(str(e))
@@ -139,6 +182,8 @@ def project_usage(request):
 				staff_charges = staff_charges.filter(customer=user)
 				training_sessions = training_sessions.filter(trainee=user)
 				usage_events = usage_events.filter(user=user)
+			if bool(request.GET.get("csv", False)):
+				return csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations)
 	except:
 		pass
 	dictionary = {
@@ -150,7 +195,8 @@ def project_usage(request):
 		'training_sessions': training_sessions,
 		'usage_events': usage_events,
 		'project_autocomplete': True,
-		'selection': selection
+		'selection': selection,
+		'can_export': True,
 	}
 	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
 	return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
@@ -160,6 +206,8 @@ def project_usage(request):
 @require_GET
 def project_billing(request):
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
+	if not base_dictionary['billing_service']:
+		return redirect('project_usage')
 	base_dictionary['project_autocomplete'] = True
 	base_dictionary['search_items'] = set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()) | set(User.objects.filter(is_active=True))
 
@@ -197,8 +245,14 @@ def project_billing(request):
 		return render(request, 'usage/billing.html', base_dictionary)
 
 
-def is_user_pi(user, application_pi_row):
-	return application_pi_row is not None and (user.username == application_pi_row['username'] or (user.first_name == application_pi_row['first_name'] and user.last_name == application_pi_row['last_name']))
+def is_user_pi(user: User, latest_pis_data, activity, user_managed_applications: List[str]):
+	# Check if the user is set as a PI in NEMO, otherwise check from latest_pis_data
+	application = activity['application_name']
+	if application in user_managed_applications:
+		return True
+	else:
+		application_pi_row = next((x for x in latest_pis_data if x['application_name'] == application), None)
+		return application_pi_row is not None and (user.username == application_pi_row['username'] or (user.first_name == application_pi_row['first_name'] and user.last_name == application_pi_row['last_name']))
 
 
 def billing_dict(start_date, end_date, user, formatted_applications, project_id=None, account_id=None, force_pi=False):
@@ -206,12 +260,13 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 	# This is useful on the admin project billing page tp display other project users for example
 	dictionary = {}
 
-	if not settings.BILLING_SERVICE or not settings.BILLING_SERVICE['available']:
+	billing_service = get_billing_service()
+	if not billing_service.get('available', False):
 		return dictionary
 
-	cost_activity_url = settings.BILLING_SERVICE['cost_activity_url']
-	project_lead_url = settings.BILLING_SERVICE['project_lead_url']
-	keyword_arguments = settings.BILLING_SERVICE['keyword_arguments']
+	cost_activity_url = billing_service['cost_activity_url']
+	project_lead_url = billing_service['project_lead_url']
+	keyword_arguments = billing_service['keyword_arguments']
 
 	cost_activity_params = {
 		'created_date_gte': f"'{start_date.strftime('%m/%d/%Y')}'",
@@ -233,6 +288,7 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 	user_pi_applications = list()
 	# Construct a tree of account, application, project, and member total spending
 	cost_activities_tree = {}
+	user_managed_applications = [project.application_identifier for project in user.managed_projects.all()]
 	for activity in cost_activity_data:
 		if (project_id and activity['project_id'] != str(project_id)) or (account_id and activity['account_id'] != str(account_id)):
 			continue
@@ -243,7 +299,7 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 		application_key = (activity['application_id'], activity['application_name'])
 		project_key = (activity['project_id'], activity['project_name'])
 		user_key = (activity['member_id'], User.objects.filter(id__in=[activity['member_id']]).first())
-		user_is_pi = is_user_pi(user, next((x for x in latest_pis_data if x['application_name'] == activity['application_name']), None)) if not force_pi else True
+		user_is_pi = is_user_pi(user, latest_pis_data, activity, user_managed_applications) if not force_pi else True
 		if user_is_pi:
 			user_pi_applications.append(activity['application_id'])
 		if user_is_pi or str(user.id) == activity['member_id']:
@@ -266,3 +322,54 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 		'user_pi_applications': user_pi_applications
 	} if cost_activities_tree else {'activities': {}}
 	return dictionary
+
+
+def csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations):
+	table_result = BasicDisplayTable()
+	table_result.add_header(("type", "Type"))
+	table_result.add_header(("user", "User"))
+	table_result.add_header(("name", "Item"))
+	table_result.add_header(("details", "Details"))
+	table_result.add_header(("project", "Project"))
+	table_result.add_header(("start", "Start time"))
+	table_result.add_header(("end", "End time"))
+	table_result.add_header(("quantity", "Quantity"))
+	data: List[BillableItem] = []
+	data.extend(billable_items_missed_reservations(missed_reservations))
+	data.extend(billable_items_consumable_withdrawals(consumables))
+	data.extend(billable_items_staff_charges(staff_charges))
+	data.extend(billable_items_training_sessions(training_sessions))
+	data.extend(billable_items_area_access_records(area_access))
+	data.extend(billable_items_usage_events(usage_events))
+	for billable_item in data:
+		table_result.add_row(vars(billable_item))
+	response = table_result.to_csv()
+	filename = f"usage_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+	response["Content-Disposition"] = f'attachment; filename="{filename}"'
+	return response
+
+
+def get_managed_projects(user: User) -> Set[Project]:
+	# This function will get managed projects from NEMO and also attempt to get them from billing service
+	managed_projects = set(list(user.managed_projects.all()))
+	billing_service = get_billing_service()
+	if billing_service.get('available', False):
+		# if we have a billing service, use it to determine project lead
+		project_lead_url = billing_service['project_lead_url']
+		keyword_arguments = billing_service['keyword_arguments']
+		latest_pis_params = {'$format': 'json'}
+		latest_pis_response = get(project_lead_url, params=latest_pis_params, **keyword_arguments)
+		latest_pis_data = latest_pis_response.json()['d']
+		for project_lead in latest_pis_data:
+			if project_lead['username'] == user.username or (
+					project_lead['first_name'] == user.first_name and project_lead['last_name'] == user.last_name):
+				try:
+					for managed_project in Project.objects.filter(application_identifier=project_lead['application_name']):
+						managed_projects.add(managed_project)
+				except Project.DoesNotExist:
+					pass
+	return managed_projects
+
+
+def get_billing_service():
+	return getattr(settings, 'BILLING_SERVICE', {})

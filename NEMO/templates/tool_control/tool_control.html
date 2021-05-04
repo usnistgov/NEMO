@@ -32,6 +32,9 @@
 			<div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
 		</div>
 	{% endif %}
+        <div id="interlock_error_contents" style="display: none">
+            {% include 'tool_control/interlock_error.html' %}
+        </div>
 
 	<script>
 
@@ -99,6 +102,63 @@
 				$("#customer_project").html("Unable to retrieve a list of projects for this user.")
 		}
 
+		function try_post_catch_interlock_error(url, data, success_callback, always_callback)
+        {
+            ajax_post(url, data, success_callback, function(response, status, xml_http_request) { return interlock_failure_callback(response, status, xml_http_request, url, data, success_callback) }, always_callback);
+        }
+
+		function interlock_failure_callback(response, status, xml_http_request, url, data, success_callback, always_callback)
+        {
+            if(data === undefined)
+            {
+                data = {};
+            }
+            {# Specific case here where we have an error but it could be bypassed #}
+            if (status === 'error' && response.status === 501)
+            {
+                let modal_dialog = $('#dialog');
+                $("#dialog .modal-content").html($('#interlock_error_contents').html());
+		        modal_dialog.modal('show');
+		        let bypass_button = $($("#dialog .inter_bypass")[0]);
+                let response_data = response.responseJSON;
+                $("#dialog .interlock_message").html(response_data['message'])
+                bypass_button.hide();
+                {# we can bypass, show the button #}
+                if (response_data["bypass_allowed"] === true)
+                {
+                    bypass_button.off("click")
+                    $('#dialog .bypass_text').html(response_data['action'] + " anyway");
+                    bypass_button.show();
+                    bypass_button.one('click', function ()
+                    {
+                        modal_dialog.on('hidden.bs.modal', function ()
+                        {
+                            data["bypass"] = 'True';
+                            try_post_catch_interlock_error(url, data, success_callback, always_callback);
+                            modal_dialog.off();
+                        });
+                        modal_dialog.modal('hide');
+                    });
+                }
+                {# hook up try again button #}
+                let inter_try_again_button = $($("#dialog .inter_try_again")[0]);
+                inter_try_again_button.off("click");
+                inter_try_again_button.one('click', function ()
+                {
+		            modal_dialog.on('hidden.bs.modal', function ()
+                    {
+                        try_post_catch_interlock_error(url, data, success_callback, always_callback);
+                        modal_dialog.off();
+                    });
+                    modal_dialog.modal('hide');
+                });
+            }
+            else
+            {
+                ajax_failure_callback("Couldn't change tool status")(response, status, xml_http_request);
+            }
+        }
+
 		function enable_tool(tool_id)
 		{
 			$("#start button").prop("disabled", true);
@@ -110,23 +170,21 @@
 			    staff_charge = true;
             }
 			let url = "{% url 'enable_tool' tool_id=111 user_id=22222222 project_id=33333333 staff_charge='false' %}".replace('111', tool_id).replace('22222222', user_id.toString()).replace('33333333', project_id.toString()).replace('false', staff_charge.toString())
-			let failure_dialog = ajax_failure_callback("Couldn't change tool status");
 			let success_callbacks;
 			if(staff_charge === true)
 				success_callbacks = [reload_page]; {# If there's a new staff charge then we need to reload the whole page so it's displayed in the menu bar. #}
 			else
 				success_callbacks = [refresh_tool_status, ajax_success_callback];
 			let enable_start_button = function() { $("#start button").prop("disabled", false); };
-			ajax_post(url, undefined, success_callbacks, failure_dialog, enable_start_button);
+			try_post_catch_interlock_error(url, undefined, success_callbacks, enable_start_button);
 		}
 
-		function disable_tool(url, confirm, downtime)
+		function disable_tool(url)
 		{
 			$("#stop").prop("disabled", true);
 			let contents = serialize("#tool_control");
-			let failure_dialog = ajax_failure_callback("Couldn't change tool status");
 			let enable_stop_button = function() { $("#stop").prop("disabled", false); };
-			ajax_post(url, contents, ajax_success_callback, failure_dialog, refresh_tool_status, enable_stop_button);
+			try_post_catch_interlock_error(url, contents, [refresh_tool_status, ajax_success_callback], enable_stop_button);
 		}
 
 		{% if user.is_staff %}

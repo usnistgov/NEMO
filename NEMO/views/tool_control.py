@@ -4,17 +4,20 @@ from http import HTTPStatus
 from itertools import chain
 from json import loads, JSONDecodeError
 from logging import getLogger
-from typing import Dict
+from typing import Dict, List
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseServerError
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone, formats
+from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import rates
+from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import (
 	Comment,
@@ -32,6 +35,7 @@ from NEMO.models import (
 	ToolUsageCounter,
 	AreaAccessRecord,
 )
+from NEMO.tasks import synchronized
 from NEMO.utilities import (
 	extract_times,
 	quiet_int,
@@ -42,6 +46,7 @@ from NEMO.utilities import (
 	EmailCategory,
 )
 from NEMO.views.calendar import shorten_reservation
+from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, PostUsageQuestion
@@ -142,15 +147,27 @@ def usage_data_history(request, tool_id):
 	""" This method return a dictionary of headers and rows containing run_data information for Usage Events """
 	csv_export = bool(request.POST.get("csv", False))
 	start, end = extract_times(request.POST, start_required=False, end_required=False)
-	if not start and not end:
-		# Default to last 30 days of usage data
-		end = timezone.now().astimezone(timezone.get_current_timezone())
-		start = end + timedelta(days=-30)
+	last = request.POST.get("data_history_last")
+	user_id = request.POST.get("data_history_user_id")
+	if not last and not start and not end:
+		# Default to last 25 records
+		last = 25
 	usage_events = UsageEvent.objects.filter(tool_id=tool_id, end__isnull=False).order_by("-end")
 	if start:
 		usage_events = usage_events.filter(end__gte=beginning_of_the_day(start))
 	if end:
 		usage_events = usage_events.filter(end__lte=end_of_the_day(end))
+	if user_id:
+		try:
+			usage_events = usage_events.filter(user_id=int(user_id))
+		except ValueError:
+			pass
+	if last:
+		try:
+			last = int(last)
+		except ValueError:
+			last = 25
+		usage_events = usage_events[:last]
 	table_result = BasicDisplayTable()
 	table_result.add_header(("user", "User"))
 	table_result.add_header(("date", "Date"))
@@ -191,7 +208,7 @@ def usage_data_history(request, tool_id):
 				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
 	if csv_export:
 		response = table_result.to_csv()
-		filename = f"usage_data_{start.strftime('%m_%d_%Y')}_to_{end.strftime('%m_%d_%Y')}.csv"
+		filename = f"tool_usage_data_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 		response["Content-Disposition"] = f'attachment; filename="{filename}"'
 		return response
 	else:
@@ -199,7 +216,10 @@ def usage_data_history(request, tool_id):
 			"tool_id": tool_id,
 			"data_history_start": start,
 			"data_history_end": end,
+			"data_history_last": str(last),
 			"usage_data_table": table_result,
+			"data_history_user": User.objects.get(id=user_id) if user_id else None,
+			"users": User.objects.filter(is_active=True)
 		}
 		return render(request, "tool_control/usage_data.html", dictionary)
 
@@ -277,6 +297,7 @@ def determine_tool_status(tool):
 
 @login_required
 @require_POST
+@synchronized('tool_id')
 def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	""" Enable a tool for a user. The user must be qualified to do so based on the lab usage policy. """
 
@@ -290,16 +311,17 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	user = get_object_or_404(User, id=user_id)
 	project = get_object_or_404(Project, id=project_id)
 	staff_charge = staff_charge == "true"
+	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
 	response = check_policy_to_enable_tool(tool, operator, user, project, staff_charge)
 	if response.status_code != HTTPStatus.OK:
 		return response
 
 	# All policy checks passed so enable the tool for the user.
 	if tool.interlock and not tool.interlock.unlock():
-		raise Exception(
-			"The interlock command for this tool failed. The error message returned: "
-			+ str(tool.interlock.most_recent_reply)
-		)
+		if bypass_interlock and interlock_bypass_allowed(user):
+			pass
+		else:
+			return interlock_error("Enable", user)
 
 	# Start staff charge before tool usage
 	if staff_charge:
@@ -330,6 +352,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 
 @login_required
 @require_POST
+@synchronized('tool_id')
 def disable_tool(request, tool_id):
 	if not settings.ALLOW_CONDITIONAL_URLS:
 		return HttpResponseBadRequest("Tool control is only available on campus.")
@@ -338,18 +361,20 @@ def disable_tool(request, tool_id):
 	if tool.get_current_usage_event() is None:
 		return HttpResponse()
 	downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
+	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
 	response = check_policy_to_disable_tool(tool, request.user, downtime)
 	if response.status_code != HTTPStatus.OK:
 		return response
 
-	# Shorten the user's tool reservation since we are now done using the tool
-	shorten_reservation(user=request.user, item=tool, new_end=timezone.now() + downtime)
-
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
-		error_message = f"The interlock command for the {tool} failed. The error message returned: {tool.interlock.most_recent_reply}"
-		tool_control_logger.error(error_message)
-		return HttpResponseServerError(error_message)
+		if bypass_interlock and interlock_bypass_allowed(request.user):
+			pass
+		else:
+			return interlock_error("Disable", request.user)
+
+	# Shorten the user's tool reservation since we are now done using the tool
+	shorten_reservation(user=request.user, item=tool, new_end=timezone.now() + downtime)
 
 	# End the current usage event for the tool
 	current_usage_event = tool.get_current_usage_event()
@@ -357,12 +382,23 @@ def disable_tool(request, tool_id):
 
 	# Collect post-usage questions
 	dynamic_form = DynamicForm(tool.post_usage_questions, tool.id)
-	current_usage_event.run_data = dynamic_form.extract(request)
+
+	try:
+		current_usage_event.run_data = dynamic_form.extract(request)
+	except RequiredUnansweredQuestionsException as e:
+		if request.user.is_staff and request.user != current_usage_event.operator and current_usage_event.user != request.user:
+			# if a staff is forcing somebody off the tool and there are required questions, send an email and proceed
+			current_usage_event.run_data = e.run_data
+			email_managers_required_questions_disable_tool(current_usage_event.operator, request.user, tool, e.questions)
+		else:
+			return HttpResponseBadRequest(str(e))
+
 	dynamic_form.charge_for_consumables(
 		current_usage_event.user,
 		current_usage_event.operator,
 		current_usage_event.project,
 		current_usage_event.run_data,
+		request
 	)
 	dynamic_form.update_counters(current_usage_event.run_data)
 
@@ -467,3 +503,37 @@ Its last value was {counter.last_reset_value}."""
 			email_category=EmailCategory.SYSTEM,
 		)
 	return redirect("tool_control")
+
+
+def interlock_bypass_allowed(user: User):
+	return user.is_staff or get_customization('allow_bypass_interlock_on_failure') == 'enabled'
+
+
+def interlock_error(action:str, user:User):
+	error_message = get_customization('tool_interlock_failure_message')
+	dictionary = {
+		"message": linebreaksbr(error_message),
+		"bypass_allowed": interlock_bypass_allowed(user),
+		"action": action
+	}
+	return JsonResponse(dictionary, status=501)
+
+
+def email_managers_required_questions_disable_tool(tool_user:User, staff_member:User, tool:Tool, questions:List[PostUsageQuestion]):
+	abuse_email_address = get_customization('abuse_email_address')
+	managers = []
+	if hasattr(settings, 'LAB_MANAGERS'):
+		managers = settings.LAB_MANAGERS
+	ccs = set(tuple([r for r in [staff_member.email, tool.primary_owner.email, *tool.backup_owners.all().values_list('email', flat=True), *managers] if r]))
+	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
+	message = f"""
+Dear {tool_user.get_name()},<br/>
+You have been logged off by staff from the {tool} that requires answers to the following post-usage questions:<br/>
+<br/>
+{display_questions}
+<br/>
+Regards,<br/>
+<br/>
+NanoFab Management<br/>
+"""
+	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=[tool_user.email], cc=ccs, email_category=EmailCategory.ABUSE)
