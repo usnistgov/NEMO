@@ -64,13 +64,6 @@
                                 <div id="project_{{ project.id }}_users">
                                     {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
                                 </div>
-                                <div style="height:10px"></div>
-                                <div id="add_manager_to_project_{{ project.id }}">
-                                    <label class="control-label">Principal Investigators:<input id="search_manager_for_project_{{ project.id }}" type="text" class="form-control manager_search" placeholder="Search for a PI to add" data-project-id="{{ project.id }}" style="min-width: 250px;"></label>
-                                </div>
-                                <div id="project_{{ project.id }}_managers">
-                                    {% include 'accounts_and_projects/managers_for_project.html' with users=project.manager_set.all %}
-                                </div>
                             </div>
                         </div>
                     {% endif %}
@@ -88,18 +81,6 @@
 			else if(search_selection.type === 'account')
 				window.location.href = "{% url 'account' 999 %}".replace('999', search_selection.id);
 		}
-        function add_manager_to_project(jquery_event, search_selection, dataset_name)
-		{
-			let project_id = $(this).data('project-id');
-			$(this).typeahead('val', '').focus();
-			let complete_callback = ajax_complete_callback('Unable to add principal investigator to project');
-			$("#project_" + project_id + "_managers").load("{% url 'add_manager_to_project' %}", {'user_id': search_selection.id, 'project_id': project_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
-		}
-		function remove_manager_from_project(user_id, project_id)
-		{
-			let complete_callback = ajax_complete_callback('Unable to remove principal investigator from project');
-			$("#project_" + project_id + "_managers").load("{% url 'remove_manager_from_project' %}", {'user_id': user_id, 'project_id': project_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
-		}
 		function add_user_to_project(jquery_event, search_selection, dataset_name)
 		{
 			let project_id = $(this).data('project-id');
@@ -115,7 +96,6 @@
 		function on_load()
 		{
 			$('#search').autocomplete('accounts_and_projects', get_account, {% json_search_base_with_extra_fields accounts_and_projects 'application_identifier' %});
-			$('.manager_search').autocomplete('managers', add_manager_to_project, {{ users|json_search_base }});
 			$('.user_search').autocomplete('users', add_user_to_project, {{ users|json_search_base }});
 		}
 		window.addEventListener('load', on_load, true);

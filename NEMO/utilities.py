@@ -5,7 +5,7 @@ from datetime import timedelta, datetime
 from email import encoders
 from email.mime.base import MIMEBase
 from io import BytesIO
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Set
 
 from PIL import Image
 from dateutil import parser
@@ -14,6 +14,7 @@ from dateutil.rrule import MONTHLY, rrule
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
+from django.db.models import QuerySet
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.timezone import localtime
@@ -289,17 +290,18 @@ def create_email_log(email: EmailMessage, email_category: EmailCategory):
 		email_attachments = []
 		for attachment in email.attachments:
 			if isinstance(attachment, MIMEBase):
-				email_attachments.append(attachment.get_filename())
+				email_attachments.append(attachment.get_filename() or '')
 		if email_attachments:
 			email_record.attachments = ', '.join(email_attachments)
 	return email_record
 
 
-def create_email_attachment(stream, filename) -> MIMEBase:
-	attachment = MIMEBase("application", "octet-stream")
+def create_email_attachment(stream, filename=None, maintype="application", subtype="octet-stream", **content_type_params) -> MIMEBase:
+	attachment = MIMEBase(maintype, subtype, **content_type_params)
 	attachment.set_payload(stream.read())
 	encoders.encode_base64(attachment)
-	attachment.add_header("Content-Disposition", f'attachment; filename="{filename}"')
+	if filename:
+		attachment.add_header("Content-Disposition", f'attachment; filename="{filename}"')
 	return attachment
 
 
@@ -359,3 +361,7 @@ def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryU
 	return InMemoryUploadedFile(
 		resized_image, "ImageField", "%s.png" % file_name_without_ext, "image/png", resized_image.tell(), None
 	)
+
+
+def distinct_qs_value_list(qs: QuerySet, field_name:str) -> Set:
+	return set(list(qs.values_list(field_name, flat=True)))

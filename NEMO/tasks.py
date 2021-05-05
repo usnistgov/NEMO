@@ -2,6 +2,8 @@ import inspect
 from logging import getLogger
 from threading import Thread, Lock, RLock
 
+from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.auth.decorators import user_passes_test
 from django.utils.text import slugify
 
 postponed_tasks_logger = getLogger("NEMO.PostponedTasks")
@@ -41,3 +43,18 @@ def synchronized(method_argument=""):
 		return decorator
 
 	return inner
+
+
+def staff_member_or_tool_superuser_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url='admin:login'):
+	"""
+	Decorator for views that checks that the user is logged in and is either a staff
+	member or a superuser on a tool (any tool), redirecting to the login page if necessary.
+	"""
+	actual_decorator = user_passes_test(
+		lambda u: u.is_active and (u.is_staff or u.is_tool_superuser),
+		login_url=login_url,
+		redirect_field_name=redirect_field_name
+	)
+	if view_func:
+		return actual_decorator(view_func)
+	return actual_decorator

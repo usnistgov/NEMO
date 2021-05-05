@@ -1,6 +1,9 @@
 .idea/
 __pycache__/
 venv/
+build/
+dist/
+NEMO.egg-info/
 settings.py
 NEMO/media
 nemo.db

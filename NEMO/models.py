@@ -25,7 +25,7 @@ from mptt.models import MPTTModel
 
 from NEMO import fields
 from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename, EmailCategory, \
-	get_tool_document_filename
+	get_tool_document_filename, bootstrap_primary_color
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -215,6 +215,10 @@ class User(models.Model):
 	def is_anonymous(self):
 		return False
 
+	@property
+	def is_tool_superuser(self):
+		return self.superuser_for_tools.exists()
+
 	def get_username(self):
 		return self.username
 
@@ -280,7 +284,7 @@ class User(models.Model):
 			return access_record.project
 
 	def active_project_count(self):
-		return self.projects.filter(active=True, account__active=True).count()
+		return self.active_projects().count()
 
 	def active_projects(self):
 		return self.projects.filter(active=True, account__active=True)
@@ -333,10 +337,12 @@ class Tool(models.Model):
 	_description = models.TextField(db_column="description", null=True, blank=True, help_text="HTML syntax could be used")
 	_serial = models.CharField(db_column="serial", null=True, blank=True, max_length=100, help_text="Serial Number")
 	_image = models.ImageField(db_column="image", upload_to=get_tool_image_filename, blank=True, help_text="An image that represent the tool. Maximum width and height are 500px")
+	_tool_calendar_color = models.CharField(db_column="tool_calendar_color", max_length=9, default="#33ad33", help_text="Color for tool reservations in calendar overviews")
 	_category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
 	_operational = models.BooleanField(db_column="operational", default=False, help_text="Marking the tool non-operational will prevent users from using the tool.")
 	_primary_owner = models.ForeignKey(User, db_column="primary_owner_id", null=True, blank=True, related_name="primary_tool_owner", help_text="The staff member who is responsible for administration of this tool.", on_delete=models.PROTECT)
 	_backup_owners = models.ManyToManyField(User, db_table='NEMO_tool_backup_owners', blank=True, related_name="backup_for_tools", help_text="Alternate staff members who are responsible for administration of this tool when the primary owner is unavailable.")
+	_superusers = models.ManyToManyField(User, db_table='NEMO_tool_superusers', blank=True, related_name="superuser_for_tools", help_text="Superusers who can train users on this tool.")
 	_location = models.CharField(db_column="location", null=True, blank=True, max_length=100)
 	_phone_number = models.CharField(db_column="phone_number", null=True, blank=True, max_length=100)
 	_notification_email_address = models.EmailField(db_column="notification_email_address", blank=True, null=True, help_text="Messages that relate to this tool (such as comments, problems, and shutdowns) will be forwarded to this email address. This can be a normal email address or a mailing list address.")
@@ -397,7 +403,7 @@ class Tool(models.Model):
 	def image(self, value):
 		self.raise_setter_error_if_child_tool("image")
 		self._image = value
-		
+
 	@property
 	def operational(self):
 		return self.parent_tool.operational if self.is_child_tool() else self._operational
@@ -424,6 +430,15 @@ class Tool(models.Model):
 	def backup_owners(self, value):
 		self.raise_setter_error_if_child_tool("backup_owners")
 		self._backup_owners = value
+
+	@property
+	def superusers(self) -> QuerySet:
+		return self.parent_tool.superusers if self.is_child_tool() else self._superusers
+
+	@superusers.setter
+	def superusers(self, value):
+		self.raise_setter_error_if_child_tool("superusers")
+		self._superusers = value
 
 	@property
 	def location(self):
@@ -604,6 +619,15 @@ class Tool(models.Model):
 	def policy_off_weekend(self, value):
 		self.raise_setter_error_if_child_tool("policy_off_weekend")
 		self._policy_off_weekend = value
+
+	@property
+	def tool_calendar_color(self):
+		return self.parent_tool.tool_calendar_color if self.is_child_tool() else self._tool_calendar_color
+
+	@tool_calendar_color.setter
+	def tool_calendar_color(self, value):
+		self.raise_setter_error_if_child_tool("tool_calendar_color")
+		self._tool_calendar_color = value
 
 	def name_or_child_in_use_name(self, parent_ids = None) -> str:
 		""" This method returns the tool name unless one of its children is in use."""
@@ -929,6 +953,9 @@ class Area(MPTTModel):
 	abuse_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users overstay in the area or in children areas (logged in with expired reservation). A comma-separated list can be used.")
 	reservation_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users create or cancel reservations in the area or in children areas. A comma-separated list can be used.")
 
+	# Additional informations
+	area_calendar_color = models.CharField(max_length=9, default="#88B7CD", help_text="Color for tool reservations in calendar overviews")
+
 	# Area access
 	welcome_message = models.TextField(null=True, blank=True, help_text='The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.')
 	requires_reservation = models.BooleanField(default=False, help_text="Check this box to require a reservation for this area before a user can login.")
@@ -953,6 +980,7 @@ class Area(MPTTModel):
 	policy_off_start_time = models.TimeField(db_column="policy_off_start_time", null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
 	policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
 	policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
+
 
 	class MPTTMeta:
 		parent_attr = 'parent_area'
@@ -1092,6 +1120,8 @@ class Project(models.Model):
 	application_identifier = models.CharField(max_length=100)
 	account = models.ForeignKey(Account, help_text="All charges for this project will be billed to the selected account.", on_delete=models.CASCADE)
 	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
+	only_allow_tools = models.ManyToManyField(Tool, blank=True, help_text="Selected tools will be the only ones allowed for this project.")
+	allow_consumable_withdrawals = models.BooleanField(default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project")
 
 	class Meta:
 		ordering = ['name']
@@ -1387,7 +1417,7 @@ class TaskImages(models.Model):
 		verbose_name_plural = "Task images"
 		ordering = ['-uploaded_at']
 
-		
+
 # These two auto-delete tool images from filesystem when they are unneeded:
 @receiver(models.signals.post_delete, sender=Tool)
 def auto_delete_file_on_tool_delete(sender, instance: Tool, **kwargs):
@@ -1787,7 +1817,7 @@ class AlertCategory(models.Model):
 
 
 class Alert(models.Model):
-	title = models.CharField(blank=True, max_length=100)
+	title = models.CharField(blank=True, max_length=150)
 	category = models.CharField(blank=True, max_length=200,	help_text="A category/type for this alert.")
 	contents = models.CharField(max_length=500)
 	creation_time = models.DateTimeField(default=timezone.now)
@@ -1983,13 +2013,44 @@ class ToolUsageCounter(models.Model):
 	last_reset_value = models.FloatField(null=True, blank=True, help_text="The last value before the counter was reset")
 	last_reset = models.DateTimeField(null=True, blank=True, help_text="The date and time this counter was last reset")
 	last_reset_by = models.ForeignKey(User, null=True, blank=True, help_text="The user who last reset this counter", on_delete=models.SET_NULL)
+	warning_threshold = models.FloatField(null=True, blank=True, help_text="When set in combination with the email address, a warning email will be sent when the counter reaches this value.")
+	warning_email = fields.MultiEmailField(null=True, blank=True, help_text="The address to send the warning email to. A comma-separated list can be used.")
+	warning_threshold_reached = models.BooleanField(default=False)
 	is_active = models.BooleanField(default=True, help_text="The state of the counter")
+
+	def value_color(self):
+		color = None
+		if self.warning_threshold:
+			if self.value < self.warning_threshold:
+				color = "success"
+			elif self.value == self.warning_threshold:
+				color = "warning"
+			elif self.value > self.warning_threshold:
+				color = "danger"
+		return bootstrap_primary_color(color)
 
 	def __str__(self):
 		return str(self.name)
 
 	class Meta:
 		ordering = ['tool__name']
+
+
+# This method is used to check when a tool usage counter value gets over the threshold
+@receiver(models.signals.pre_save, sender=ToolUsageCounter)
+def check_tool_usage_counter_threshold(sender, instance: ToolUsageCounter, **kwargs):
+	try:
+		if instance.is_active and not instance.warning_threshold_reached and instance.value >= instance.warning_threshold:
+			# value is over threshold. set flag and send email
+			instance.warning_threshold_reached = True
+			from NEMO.views.tool_control import send_tool_usage_counter_email
+			send_tool_usage_counter_email(instance)
+		if instance.warning_threshold_reached and instance.value < instance.warning_threshold:
+			# it has been reset. reset flag
+			instance.warning_threshold_reached = False
+	except Exception as e:
+		models_logger.exception(e)
+		pass
 
 
 class BuddyRequest(models.Model):

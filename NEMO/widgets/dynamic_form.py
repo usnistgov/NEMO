@@ -511,4 +511,4 @@ class DynamicForm:
 										additional_value += float(user_input[sub_question.name])
 			if additional_value:
 				counter.value += additional_value
-				counter.save(update_fields=["value"])
+				counter.save()

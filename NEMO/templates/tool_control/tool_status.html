@@ -88,7 +88,7 @@
 				<div class="tool-counters">
 					{% for counter in tool.active_counters %}
 						<div class="tool-counter">
-							<div class="tool-counter-name">{{ counter.name }}: <span style="font-weight: bold">{{ counter.value|floatformat:-2 }}</span></div>
+							<div class="tool-counter-name">{{ counter.name }}: <span style="font-weight: bold; {% if counter.value_color %}color: {{ counter.value_color }}{% endif %}">{{ counter.value|floatformat:-2 }}</span></div>
 							{% if user.is_staff %}<div class="tool-counter-reset"><a class="btn btn-xs btn-warning" href="{% url 'reset_tool_counter' counter.id %}" onclick="return confirm('You are about to reset the {{ counter.name }} counter to 0.\nAre you sure?')">Reset</a></div>{% endif %}
 							<div class="tool-counter-description">{{ counter.description|linebreaksbr }}</div>
 						</div>
@@ -401,6 +401,21 @@
 					{% endfor %}
 					</p>
 				{% endif %}
+                {% if tool.superusers.all.count == 1 %}
+					{% with tool.superusers.all|first as superuser %}
+						<p>For equipment training, you can contact the primary, backup or the superuser, {{ superuser.get_contact_info_html|safe }}.</p>
+					{% endwith %}
+				{% elif tool.superusers.all.count > 1 %}
+					<p>For equipment training, you can contact the primary, backup or one of the superusers
+					{% for x in tool.superusers.all %}
+						{% if not forloop.last %}
+							{{ x.get_contact_info_html|safe }},
+						{% else %}
+							or {{ x.get_contact_info_html|safe }}.
+						{% endif %}
+					{% endfor %}
+					</p>
+				{% endif %}
 				{% if tool.notification_email_address %}
 					<p>Problem reports for the {{ tool.name_or_child_in_use_name }} are automatically emailed to <a href="{% url 'get_email_form' %}?recipient={{ tool.notification_email_address }}" title="Email {{ tool.notification_email_address }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.notification_email_address }}</a>.</p>
 				{% endif %}
@@ -647,6 +662,6 @@
     show_alerts();
 	update_stop_button();
 	$('body').on('question-group-changed', update_stop_button);
-	$('body').on('change keyup', '#tool_control input[required], #tool_control select[required], #downtime', update_stop_button);
+	$('body').on('change keyup', '#tool_control input[required], #tool_control select[required], #tool_control textarea[required], #downtime', update_stop_button);
 
 </script>

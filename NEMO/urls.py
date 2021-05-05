@@ -182,6 +182,7 @@ urlpatterns += [
 	url(r'^consumables/$', consumables.consumables, name='consumables'),
 	url(r'^consumables/(?P<index>\d+)/remove$', consumables.remove_withdraw_at_index, name='remove_consumable'),
 	url(r'^consumables/withdraw$', consumables.make_withdrawals, name='withdraw_consumables'),
+	url(r'^consumables/clear$', consumables.clear_withdrawals, name='clear_withdrawals'),
 
 	# Training:
 	url(r'^training/$', training.training, name='training'),
@@ -250,6 +251,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# Reminders and periodic events
 		url(r'^email_reservation_reminders/$', calendar.email_reservation_reminders, name='email_reservation_reminders'),
+		url(r'^email_reservation_ending_reminders/$', calendar.email_reservation_ending_reminders, name='email_reservation_ending_reminders'),
 		url(r'^email_usage_reminders/$', calendar.email_usage_reminders, name='email_usage_reminders'),
 		url(r'^email_out_of_time_reservation_notification/$', calendar.email_out_of_time_reservation_notification, name='email_out_of_time_reservation_notification'),
 		url(r'^cancel_unused_reservations/$', calendar.cancel_unused_reservations, name='cancel_unused_reservations'),
@@ -274,8 +276,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		url(r'^create_account/$', accounts_and_projects.create_account, name='create_account'),
 		url(r'^remove_user_from_project/$', accounts_and_projects.remove_user_from_project, name='remove_user_from_project'),
 		url(r'^add_user_to_project/$', accounts_and_projects.add_user_to_project, name='add_user_to_project'),
-		url(r'^remove_manager_from_project/$', accounts_and_projects.remove_manager_from_project, name='remove_manager_from_project'),
-		url(r'^add_manager_to_project/$', accounts_and_projects.add_manager_to_project, name='add_manager_to_project'),
 
 		# Account, project, and user history
 		url(r'^history/(?P<item_type>account|project|user)/(?P<item_id>\d+)/$', history.history, name='history'),

@@ -44,6 +44,11 @@ class MultiEmailFormField(forms.CharField):
 		attrs["separator"] = self.separator
 		return attrs
 
+	def prepare_value(self, value):
+		if value is None:
+			return value
+		return self.separator.join(value)
+
 
 class MultiEmailField(models.CharField):
 	description = "A multi e-mail field stored as a configurable character separated string"

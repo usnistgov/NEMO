@@ -9,10 +9,12 @@ from django.template import Template, Context
 from django.views.decorators.http import require_http_methods, require_POST, require_GET
 
 from NEMO import rates
+from NEMO.exceptions import ProjectChargeException
 from NEMO.forms import ConsumableWithdrawForm
 from NEMO.models import Consumable, User, ConsumableWithdraw
 from NEMO.utilities import send_mail, EmailCategory
 from NEMO.views.customization import get_media_file_contents, get_customization
+from NEMO.views.policy import check_billing_to_project
 
 consumables_logger = getLogger(__name__)
 
@@ -33,6 +35,10 @@ def consumables(request):
 		form = ConsumableWithdrawForm(request.POST)
 		if form.is_valid():
 			withdraw = form.save(commit=False)
+			try:
+				check_billing_to_project(withdraw.project, withdraw.customer, withdraw.consumable)
+			except ProjectChargeException as e:
+				return HttpResponseBadRequest(e.msg)
 			add_withdraw_to_session(request, withdraw)
 		else:
 			return HttpResponseBadRequest(form.errors.as_ul())
@@ -67,6 +73,14 @@ def remove_withdraw_at_index(request, index: str):
 			request.session['withdrawals'] = withdrawals
 	except Exception as e:
 		consumables_logger.exception(e)
+	return render(request, "consumables/consumables_order.html")
+
+
+@staff_member_required(login_url=None)
+@require_GET
+def clear_withdrawals(request):
+	if 'withdrawals' in request.session:
+		del request.session['withdrawals']
 	return render(request, "consumables/consumables_order.html")
 
 

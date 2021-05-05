@@ -18,11 +18,13 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
+from NEMO.exceptions import ProjectChargeException
 from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area, ReservationItemType
+from NEMO.tasks import synchronized
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize, EmailCategory
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
-from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations, check_tool_reservation_requiring_area
+from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations, check_tool_reservation_requiring_area, check_billing_to_project
 
 calendar_logger = getLogger(__name__)
 
@@ -72,6 +74,9 @@ def calendar(request, item_type=None, item_id=None):
 	calendar_month_column_format = get_customization('calendar_month_column_format')
 	calendar_start_of_the_day = get_customization('calendar_start_of_the_day')
 	calendar_now_indicator = get_customization('calendar_now_indicator')
+	calendar_all_tools = get_customization('calendar_all_tools')
+	calendar_all_areas = get_customization('calendar_all_areas')
+	calendar_all_areastools = get_customization('calendar_all_areastools')
 
 	dictionary = {
 		'rendered_item_tree_html': rendered_item_tree_html,
@@ -86,6 +91,9 @@ def calendar(request, item_type=None, item_id=None):
 		'calendar_month_column_format' : calendar_month_column_format,
 		'calendar_start_of_the_day' : calendar_start_of_the_day,
 		'calendar_now_indicator' : calendar_now_indicator,
+		'calendar_all_tools': calendar_all_tools,
+		'calendar_all_areas': calendar_all_areas,
+		'calendar_all_areastools': calendar_all_areastools,
 		'self_login': False,
 		'self_logout': False,
 	}
@@ -139,13 +147,20 @@ def reservation_event_feed(request, start, end):
 	# The event starts and ends after the time-window.
 	events = events.exclude(start__lt=start, end__lt=start)
 	events = events.exclude(start__gt=end, end__gt=end)
+	all_tools = request.GET.get('all_tools')
+	all_areas = request.GET.get('all_areas')
+	all_areastools = request.GET.get('all_areastools')
 
 	# Filter events that only have to do with the relevant tool/area.
 	item_type = request.GET.get('item_type')
+	if all_tools:
+		events = events.filter(area=None)
+	elif all_areas:
+		events = events.filter(tool=None)
 	if item_type:
 		item_type = ReservationItemType(item_type)
 		item_id = request.GET.get('item_id')
-		if item_id:
+		if item_id and not (all_tools or all_areas or all_areastools):
 			events = events.filter(**{f'{item_type.value}__id': item_id})
 			if item_type == ReservationItemType.TOOL:
 				outages = ScheduledOutage.objects.filter(Q(tool=item_id) | Q(resource__fully_dependent_tools__in=[item_id]))
@@ -167,6 +182,9 @@ def reservation_event_feed(request, start, end):
 		'events': events,
 		'outages': outages,
 		'personal_schedule': personal_schedule,
+		'all_tools': all_tools,
+		'all_areas': all_areas,
+		'all_areastools': all_areastools,
 	}
 	return render(request, 'calendar/reservation_event_feed.html', dictionary)
 
@@ -180,12 +198,26 @@ def usage_event_feed(request, start, end):
 	item_type = ReservationItemType(request.GET.get('item_type')) if request.GET.get('item_type') else None
 
 	personal_schedule = request.GET.get('personal_schedule')
+	all_areas = request.GET.get('all_areas')
+	all_tools = request.GET.get('all_tools')
+	all_areastools = request.GET.get('all_areastools')
+
 	if personal_schedule:
 		# Filter events that only have to do with the current user.
 		# Display missed reservations, tool and area usage when 'personal schedule' is selected
 		usage_events = UsageEvent.objects.filter(user=request.user)
 		area_access_events = AreaAccessRecord.objects.filter(customer=request.user)
 		missed_reservations = Reservation.objects.filter(missed=True, user=request.user)
+	elif all_areas:
+		area_access_events = AreaAccessRecord.objects.filter()
+		missed_reservations = Reservation.objects.filter(missed=True, tool=None)
+	elif all_tools:
+		usage_events = UsageEvent.objects.filter()
+		missed_reservations = Reservation.objects.filter(missed=True, area=None)
+	elif all_areastools:
+		usage_events = UsageEvent.objects.all()
+		area_access_events = AreaAccessRecord.objects.filter()
+		missed_reservations = Reservation.objects.filter(missed=True)
 	elif item_type:
 		reservation_filter = {item_type.value: item_id}
 		missed_reservations = Reservation.objects.filter(missed=True).filter(**reservation_filter)
@@ -210,6 +242,9 @@ def usage_event_feed(request, start, end):
 		'area_access_events': area_access_events,
 		'personal_schedule': personal_schedule,
 		'missed_reservations': missed_reservations,
+		'all_tools': all_tools,
+		'all_areas': all_areas,
+		'all_areastools': all_areastools,
 	}
 	return render(request, 'calendar/usage_event_feed.html', dictionary)
 
@@ -257,27 +292,28 @@ def create_reservation(request):
 		item_id = request.POST.get('item_id')
 	except Exception as e:
 		return HttpResponseBadRequest(str(e))
-	return create_item_reservation(request, start, end, ReservationItemType(item_type), item_id)
+	return create_item_reservation(request, request.user, start, end, ReservationItemType(item_type), item_id)
 
 
-def create_item_reservation(request, start, end, item_type: ReservationItemType, item_id):
+@synchronized("current_user")
+def create_item_reservation(request, current_user, start, end, item_type: ReservationItemType, item_id):
 	item = get_object_or_404(item_type.get_object_class(), id=item_id)
 	explicit_policy_override = False
-	if request.user.is_staff:
+	if current_user.is_staff:
 		try:
 			user = User.objects.get(id=request.POST['impersonate'])
 		except:
-			user = request.user
+			user = current_user
 		try:
 			explicit_policy_override = request.POST['explicit_policy_override'] == 'true'
 		except:
 			pass
 	else:
-		user = request.user
+		user = current_user
 	# Create the new reservation:
 	new_reservation = Reservation()
 	new_reservation.user = user
-	new_reservation.creator = request.user
+	new_reservation.creator = current_user
 	# set tool or area
 	setattr(new_reservation, item_type.value, item)
 	new_reservation.start = start
@@ -285,7 +321,7 @@ def create_item_reservation(request, start, end, item_type: ReservationItemType,
 	new_reservation.short_notice = determine_insufficient_notice(item, start) if item_type == ReservationItemType.TOOL else False
 	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 
-	# If there was a problem in saving the reservation then return the error...
+	# If there was a policy problem with the reservation then return the error...
 	if policy_problems:
 		return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': overridable and request.user.is_staff, 'reservation_action': 'create'})
 
@@ -303,10 +339,12 @@ def create_item_reservation(request, start, end, item_type: ReservationItemType,
 			except:
 				return render(request, 'calendar/project_choice.html', {'active_projects': active_projects})
 
-		# Make sure the user is actually enrolled on the project. We wouldn't want someone
-		# forging a request to reserve against a project they don't belong to.
-		if new_reservation.project not in new_reservation.user.active_projects():
-			return render(request, 'calendar/project_choice.html', {'active_projects': active_projects})
+		# Check if we are allowed to bill to project
+		try:
+			check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item)
+		except ProjectChargeException as e:
+			policy_problems.append(e.msg)
+			return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': False, 'reservation_action': 'create'})
 
 	# Configuration rules only apply to tools
 	if item_type == ReservationItemType.TOOL:
@@ -693,6 +731,44 @@ def send_email_reservation_reminders():
 @login_required
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 @require_GET
+def email_reservation_ending_reminders(request):
+	return send_email_reservation_ending_reminders()
+
+
+def send_email_reservation_ending_reminders():
+	# Exit early if the reservation ending reminder email template has not been customized for the organization yet.
+	reservation_ending_reminder_message = get_media_file_contents('reservation_ending_reminder_email.html')
+	user_office_email = get_customization('user_office_email_address')
+	if not reservation_ending_reminder_message:
+		calendar_logger.error("Reservation ending reminder email couldn't be send because either reservation_ending_reminder_email.html is not defined")
+		return HttpResponseNotFound('The reservation ending reminder template has not been customized for your organization yet. Please visit the customization page to upload one, then reservation ending reminder email notifications can be sent.')
+
+	# We only send ending reservation reminders to users that are currently logged in
+	current_logged_in_user = AreaAccessRecord.objects.filter(end=None, staff_charge=None, customer__is_staff=False)
+	valid_reservations = Reservation.objects.filter(cancelled=False, missed=False, shortened=False)
+	user_area_reservations = valid_reservations.filter(area__isnull=False, user__in=current_logged_in_user.values_list('customer', flat=True))
+
+	# Find all reservations that end 30 or 15 min from now, plus or minus 3 minutes to allow for time skew.
+	reminder_times = [30,15]
+	tolerance = 3
+	time_filter = Q()
+	for reminder_time in reminder_times:
+		earliest_end = timezone.now() + timedelta(minutes=reminder_time) - timedelta(minutes=tolerance)
+		latest_end = timezone.now() + timedelta(minutes=reminder_time) + timedelta(minutes=tolerance)
+		new_filter = Q(end__gt=earliest_end, end__lt=latest_end)
+		time_filter = time_filter | new_filter
+	ending_reservations = user_area_reservations.filter(time_filter)
+	# Email a reminder to each user with an reservation ending soon.
+	for reservation in ending_reservations:
+		subject = reservation.reservation_item.name + " reservation ending soon"
+		rendered_message = Template(reservation_ending_reminder_message).render(Context({'reservation': reservation}))
+		reservation.user.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
+	return HttpResponse()
+
+
+@login_required
+@permission_required('NEMO.trigger_timed_services', raise_exception=True)
+@require_GET
 def email_usage_reminders(request):
 	projects_to_exclude = request.GET.getlist("projects_to_exclude[]")
 	return send_email_usage_reminders(projects_to_exclude)
@@ -1027,20 +1103,20 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
 
 def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	site_title = get_customization('site_title')
-	method = 'METHOD:CANCEL\n' if cancelled else 'METHOD:PUBLISH\n'
+	method_name = 'CANCEL' if cancelled else 'REQUEST'
+	method = f'METHOD:{method_name}\n'
 	status = 'STATUS:CANCELLED\n' if cancelled else 'STATUS:CONFIRMED\n'
 	uid = 'UID:'+str(reservation.id)+'\n'
 	sequence = 'SEQUENCE:2\n' if cancelled else 'SEQUENCE:0\n'
 	priority = 'PRIORITY:5\n' if cancelled else 'PRIORITY:0\n'
-	now = datetime.now().strftime('%Y%m%dT%H%M%S')
-	start = timezone.localtime(reservation.start).strftime('%Y%m%dT%H%M%S')
-	end = timezone.localtime(reservation.end).strftime('%Y%m%dT%H%M%S')
+	now = datetime.now().strftime('%Y%m%dT%H%M%SZ')
+	start = reservation.start.strftime('%Y%m%dT%H%M%SZ')
+	end = reservation.end.strftime('%Y%m%dT%H%M%SZ')
 	reservation_name = reservation.reservation_item.name
-	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
+	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'ATTENDEE:{reservation.user.email}\n', f'ORGANIZER:{reservation.user.email}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
 	ics = io.StringIO('')
 	ics.writelines(lines)
 	ics.seek(0)
 
-	filename = 'cancelled_reservation.ics' if cancelled else 'reservation.ics'
-
-	return create_email_attachment(ics, filename)
+	attachment = create_email_attachment(ics, maintype='text', subtype='calendar', method=method_name)
+	return attachment

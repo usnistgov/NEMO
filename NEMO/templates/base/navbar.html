@@ -23,30 +23,34 @@
 						{% endif %}
 					</a></li>
 				{% endif %}
-				{% if user.is_staff %}
+				{% if user.is_staff or user.is_tool_superuser %}
 					<li class="dropdown">
 						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Administration <b class="caret"></b></a>
 						<ul class="dropdown-menu">
 							{# The navigation_url tag will display the item if the URL name can be reversed. #}
 							{# This allows items to be easily removed from the public facing version. #}
-							{% navigation_url 'abuse' 'Abuse' %}
-							{% navigation_url 'accounts_and_projects' 'Accounts and projects' %}
-							{% navigation_url 'alerts' 'Alerts' %}
-							{% if areas_exist %}{% navigation_url 'area_access' 'Area access' %}{% endif %}
-							{% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' %}{% endif %}
-							{% navigation_url 'customization' 'Customization' %}
-							{% navigation_url 'admin:index' 'Detailed administration' %}
-							{% navigation_url 'email_broadcast' 'Email' %}
-							{% if user.is_superuser %}{% navigation_url 'impersonate' 'Impersonate' %}{% endif %}
-							{% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' %}{% endif %}
-							{% navigation_url 'project_billing' 'Project billing' %}
-							{% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' %}{% endif %}
-							{% navigation_url 'remote_work' 'Remote work' %}
-							{% navigation_url 'resources' 'Resources' %}
-							{% navigation_url 'staff_charges' 'Staff charges' %}
-							{% navigation_url 'consumables' 'Supplies' %}
+							{% if user.is_staff %}
+                                {% navigation_url 'abuse' 'Abuse' %}
+                                {% navigation_url 'accounts_and_projects' 'Accounts and projects' %}
+                                {% navigation_url 'alerts' 'Alerts' %}
+                                {% if areas_exist %}{% navigation_url 'area_access' 'Area access' %}{% endif %}
+                                {% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' %}{% endif %}
+                                {% navigation_url 'customization' 'Customization' %}
+                                {% navigation_url 'admin:index' 'Detailed administration' %}
+                                {% navigation_url 'email_broadcast' 'Email' %}
+                                {% if user.is_superuser %}{% navigation_url 'impersonate' 'Impersonate' %}{% endif %}
+                                {% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' %}{% endif %}
+                                {% navigation_url 'project_billing' 'Project billing' %}
+                                {% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' %}{% endif %}
+                                {% navigation_url 'remote_work' 'Remote work' %}
+                                {% navigation_url 'resources' 'Resources' %}
+                                {% navigation_url 'staff_charges' 'Staff charges' %}
+                                {% navigation_url 'consumables' 'Supplies' %}
+                            {% endif %}
 							{% if tools_exist %}{% navigation_url 'training' 'Training' %}{% endif %}
-							{% navigation_url 'users' 'Users' %}
+							{% if user.is_staff %}
+                                {% navigation_url 'users' 'Users' %}
+                            {% endif %}
 						</ul>
 					</li>
 				{% endif %}

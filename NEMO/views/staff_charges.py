@@ -5,8 +5,10 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.exceptions import ProjectChargeException
 from NEMO.models import User, StaffCharge, AreaAccessRecord, Project, Area, UsageEvent
 from NEMO.views.area_access import load_areas_for_use_in_template
+from NEMO.views.policy import check_billing_to_project
 
 
 @staff_member_required(login_url=None)
@@ -59,6 +61,11 @@ def begin_staff_charge(request):
 	charge = StaffCharge()
 	charge.customer = User.objects.get(id=request.POST['customer'])
 	charge.project = Project.objects.get(id=request.POST['project'])
+	# Check if we are allowed to bill to project
+	try:
+		check_billing_to_project(charge.project, charge.customer, charge)
+	except ProjectChargeException as e:
+		return HttpResponseBadRequest(e.msg)
 	charge.staff_member = request.user
 	charge.save()
 	return redirect(reverse('staff_charges'))
@@ -91,6 +98,9 @@ def begin_staff_area_charge(request):
 		return HttpResponseBadRequest('You cannot create an area access charge when one is already in progress.')
 	try:
 		area = Area.objects.get(id=request.POST['area'])
+		check_billing_to_project(charge.project, charge.customer, area)
+	except ProjectChargeException as e:
+		return HttpResponseBadRequest(e.msg)
 	except:
 		return HttpResponseBadRequest('Invalid area')
 	area_access = AreaAccessRecord()

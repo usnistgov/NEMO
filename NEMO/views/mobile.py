@@ -9,11 +9,12 @@ from django.utils import timezone
 from django.utils.dateparse import parse_time, parse_date
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.exceptions import ProjectChargeException
 from NEMO.models import Reservation, Tool, Project, ScheduledOutage, User, Area, ReservationItemType
 from NEMO.utilities import extract_date, localize, beginning_of_the_day, end_of_the_day
 from NEMO.views.calendar import extract_configuration, determine_insufficient_notice
 from NEMO.views.customization import get_customization
-from NEMO.views.policy import check_policy_to_save_reservation
+from NEMO.views.policy import check_policy_to_save_reservation, check_billing_to_project
 
 
 @login_required
@@ -103,6 +104,10 @@ def make_reservation(request):
 	# All policy checks have passed.
 	try:
 		reservation.project = Project.objects.get(id=request.POST['project_id'])
+		# Check if we are allowed to bill to project
+		check_billing_to_project(reservation.project, request.user, reservation.reservation_item)
+	except ProjectChargeException as e:
+		return render(request, 'mobile/error.html', {'message': e.msg})
 	except:
 		if not request.user.is_staff:
 			return render(request, 'mobile/error.html', {'message': 'You must specify a project for your reservation'})

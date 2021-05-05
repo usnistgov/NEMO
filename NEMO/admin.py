@@ -9,7 +9,7 @@ from django.db.models.fields.files import FieldFile
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from mptt.admin import DraggableMPTTAdmin, TreeRelatedFieldListFilter
+from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFilter
 
 from NEMO.actions import (
 	lock_selected_interlocks,
@@ -93,12 +93,6 @@ class ToolAdminForm(forms.ModelForm):
 		widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
 	)
 
-	_backup_owners = forms.ModelMultipleChoiceField(
-		queryset=User.objects.all(),
-		required=False,
-		widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
-	)
-
 	required_resources = forms.ModelMultipleChoiceField(
 		queryset=Resource.objects.all(),
 		required=False,
@@ -110,6 +104,10 @@ class ToolAdminForm(forms.ModelForm):
 		required=False,
 		widget=FilteredSelectMultiple(verbose_name="Nonrequired resources", is_stacked=False),
 	)
+
+	_tool_calendar_color = forms.CharField(
+		required=False, max_length=9, initial='#33ad33',
+		widget=forms.TextInput(attrs={'type': 'color'}))
 
 	def __init__(self, *args, **kwargs):
 		super(ToolAdminForm, self).__init__(*args, **kwargs)
@@ -192,6 +190,7 @@ class ToolAdmin(admin.ModelAdmin):
 		"is_configurable",
 		"id",
 	)
+	filter_horizontal = ("_backup_owners", "_superusers")
 	search_fields = ("name", "_description", "_serial")
 	list_filter = ("visible", "_operational", "_category", "_location")
 	readonly_fields = ("_post_usage_preview",)
@@ -211,7 +210,7 @@ class ToolAdmin(admin.ModelAdmin):
 				)
 			},
 		),
-		("Additional Information", {"fields": ("_description", "_serial", "_image")}),
+		("Additional Information", {"fields": ("_description", "_serial", "_image", "_tool_calendar_color")}),
 		("Current state", {"fields": ("visible", "_operational")}),
 		(
 			"Contact information",
@@ -219,6 +218,7 @@ class ToolAdmin(admin.ModelAdmin):
 				"fields": (
 					"_primary_owner",
 					"_backup_owners",
+					"_superusers",
 					"_notification_email_address",
 					"_location",
 					"_phone_number",
@@ -293,6 +293,16 @@ class ToolAdmin(admin.ModelAdmin):
 				obj.nonrequired_resource_set.set(form.cleaned_data["nonrequired_resources"])
 
 
+
+class AreaAdminForm(MPTTAdminForm):
+	class Meta:
+		model = Area
+		fields = "__all__"
+	area_calendar_color = forms.CharField(
+		required=False, max_length=9, initial='#88B7CD',
+		widget=forms.TextInput(attrs={'type': 'color'}))
+
+
 @register(Area)
 class AreaAdmin(DraggableMPTTAdmin):
 	list_display = (
@@ -308,6 +318,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	)
 	fieldsets = (
 		(None, {"fields": ("name", "parent_area", "category", "reservation_email", "abuse_email")}),
+		("Additional Information", {"fields": ("area_calendar_color",)}),
 		(
 			"Area access",
 			{"fields": ("requires_reservation", "logout_grace_period", "welcome_message", "buddy_system_allowed")},
@@ -340,6 +351,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 				)
 			},
 		),
+
 	)
 	list_display_links = ("indented_title",)
 	list_filter = ("requires_reservation", ("parent_area", TreeRelatedFieldListFilter))
@@ -347,6 +359,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 	actions = [rebuild_area_tree]
 
 	mptt_level_indent = 20
+	form = AreaAdminForm
 
 	def get_fieldsets(self, request, obj: Area = None):
 		"""
@@ -442,7 +455,9 @@ class ProjectAdminForm(forms.ModelForm):
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
+	fields = ("name", "application_identifier", "account", "allow_consumable_withdrawals", "active", "members", "principal_investigators", "only_allow_tools")
 	list_display = ("name", "id", "application_identifier", "account", "active")
+	filter_horizontal = ('only_allow_tools',)
 	search_fields = ("name", "application_identifier", "account__name")
 	list_filter = ("active",)
 	form = ProjectAdminForm
@@ -677,6 +692,24 @@ class UserAdminForm(forms.ModelForm):
 		model = User
 		fields = "__all__"
 
+	backup_owner_on_tools = forms.ModelMultipleChoiceField(
+		queryset=Tool.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
+	)
+
+	superuser_on_tools = forms.ModelMultipleChoiceField(
+		queryset=Tool.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
+	)
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		if self.instance.pk:
+			self.fields["backup_owner_on_tools"].initial = self.instance.backup_for_tools.all()
+			self.fields["superuser_on_tools"].initial = self.instance.superuser_for_tools.all()
+
 	def clean(self):
 		cleaned_data = super().clean()
 		staff_status = cleaned_data.get("is_staff")
@@ -717,7 +750,7 @@ class UserAdmin(admin.ModelAdmin):
 			},
 		),
 		("Important dates", {"fields": ("date_joined", "last_login", "access_expiration")}),
-		("Facility information", {"fields": ("qualifications", "projects", "managed_projects")}),
+		("Facility information", {"fields": ("qualifications", "backup_owner_on_tools", "superuser_on_tools", "projects", "managed_projects")}),
 	)
 	search_fields = ("first_name", "last_name", "username", "email")
 	list_display = (
@@ -757,6 +790,10 @@ class UserAdmin(admin.ModelAdmin):
 		record_local_many_to_many_changes(request, obj, form, "qualifications")
 		record_local_many_to_many_changes(request, obj, form, "physical_access_levels")
 		record_active_state(request, obj, form, "is_active", not change)
+		if "backup_owner_on_tools" in form.changed_data:
+			obj.backup_for_tools.set(form.cleaned_data["backup_owner_on_tools"])
+		if "superuser_on_tools" in form.changed_data:
+			obj.superuser_for_tools.set(form.cleaned_data["superuser_on_tools"])
 
 
 @register(PhysicalAccessLog)
@@ -883,12 +920,6 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 	class Media:
 		js = ("admin/time_options_override.js",)
 
-	physical_access_levels = forms.ModelMultipleChoiceField(
-		queryset=PhysicalAccessLevel.objects.all(),
-		required=False,
-		widget=FilteredSelectMultiple(verbose_name="Physical Access Levels", is_stacked=False),
-	)
-
 	def clean(self):
 		if any(self.errors):
 			return
@@ -903,7 +934,8 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 class PhysicalAccessExceptionAdmin(admin.ModelAdmin):
 	form = PhysicalAccessExceptionAdminForm
 	list_display = ("name", "start_time", "end_time")
-	list_filter = (("physical_access_levels__area"),)
+	filter_horizontal = ("physical_access_levels",)
+	list_filter = ("physical_access_levels__area",)
 
 
 @register(ContactInformationCategory)
@@ -996,8 +1028,9 @@ class CounterAdminForm(forms.ModelForm):
 
 @register(ToolUsageCounter)
 class CounterAdmin(admin.ModelAdmin):
-	list_display = ("name", "tool", "tool_usage_question", "value", "last_reset", "last_reset_by", "is_active")
+	list_display = ("name", "tool", "tool_usage_question", "value", "warning_threshold", "last_reset", "last_reset_by", "is_active")
 	list_filter = ("tool",)
+	readonly_fields = ("warning_threshold_reached",)
 	form = CounterAdminForm
 
 

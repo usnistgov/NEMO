@@ -135,6 +135,16 @@
 						</div>
 					</div>
 					<div class="form-group">
+						<div class="col-md-12">
+							<label class="control-label col-md-2" >Overview options:</label>
+							<div class="checkbox">
+								<label style="padding-right: 20px;"><input type="checkbox" id="calendar_all_tools" name="calendar_all_tools" {% if calendar_all_tools  %}checked{% endif %} value="enabled"> Enable all tools option</label>
+								<label style="padding-right: 20px;"><input type="checkbox" id="calendar_all_areas" name="calendar_all_areas" {% if calendar_all_areas %}checked{% endif %} value="enabled"> Enable all areas option</label>
+								<label style="padding-right: 20px;"><input type="checkbox" id="calendar_all_areastools" name="calendar_all_areastools" {% if calendar_all_areastools %}checked{% endif %} value="enabled"> Enable all tools & areas option</label>
+							</div>
+						</div>
+					</div>
+					<div class="form-group">
 						<div class="col-md-3">
 							<input type="submit" value="Save settings" class="btn btn-success">
 						</div>
@@ -291,8 +301,8 @@
 					<br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.
 					<br>
 					<ul>
-				<li>The form should include <b>{% templatetag openblock %} csrf_token {% templatetag closeblock %}</b> inside the form tags.</li>
-				<li>Completion of the HTML form should be POSTed to <b>"{% templatetag openblock %} url 'facility_rules' {% templatetag closeblock %}"</b> (exactly as is).</li>
+                        <li>The form should include <b>{% templatetag openblock %} csrf_token {% templatetag closeblock %}</b> inside the form tags.</li>
+                        <li>Completion of the HTML form should be POSTed to <b>"{% templatetag openblock %} url 'facility_rules' {% templatetag closeblock %}"</b> (exactly as is).</li>
 					</ul>
 					Upon completion, the user's "training required" attribute is set to false, and they are able to make reservations and control tools.
 				</p>
@@ -390,6 +400,38 @@
 					<table id="cancellation_email_render" class="collapse customization-content-email">
 						<tr>
 							<td>{{ cancellation_email|safe }}</td>
+						</tr>
+					</table>
+				{% endif %}
+			</div>
+		</div>
+
+        <div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="counter_threshold_reached_email">Counter threshold reached email</h3>
+				<p>
+					This email is sent to the counter's warning email when the value of an counter reaches the warning threshold.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>counter</b> - the counter which value reached the warning threshold</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'counter_threshold_reached_email' %}#counter_threshold_reached_email" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('counter_threshold_reached_email')">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="counter_threshold_reached_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#counter_threshold_reached_email_span').hide()">
+						{% if counter_threshold_reached_email %}<a id="counter_threshold_reached_email_span" href="data:text/html,{{ counter_threshold_reached_email|urlencode }}" download="counter_threshold_reached_email.html" target="_blank">counter_threshold_reached_email.html</a>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload counter threshold reached email" class="btn btn-success">
+					</div>
+				</form>
+				{% if counter_threshold_reached_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#counter_threshold_reached_email_render">Show current content</button>
+					<table id="counter_threshold_reached_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ counter_threshold_reached_email|safe }}</td>
 						</tr>
 					</table>
 				{% endif %}
@@ -622,6 +664,38 @@
 					<table id="reorder_supplies_reminder_email_render" class="collapse customization-content-email">
 						<tr>
 							<td>{{ reorder_supplies_reminder_email|safe }}</td>
+						</tr>
+					</table>
+				{% endif %}
+			</div>
+		</div>
+
+        <div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="reservation_ending_reminder">Reservation ending reminder email</h3>
+				<p>
+					This email is sent to a user that is logged in an area 30 and 15 minutes before their area reservation ends.
+					The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>reservation</b> - the user's reservation ending</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'reservation_ending_reminder_email' %}#reservation_ending_reminder" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('reservation_ending_reminder_email')">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="reservation_ending_reminder_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_ending_reminder_email_span').hide()">
+						{% if reservation_ending_reminder_email %}<a id="reservation_ending_reminder_email_span" href="data:text/html,{{ reservation_ending_reminder_email|urlencode }}" download="reservation_ending_reminder_email.html" target="_blank">reservation_ending_reminder_email.html</a>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload reservation ending reminder email" class="btn btn-success">
+					</div>
+				</form>
+				{% if reservation_ending_reminder_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_ending_reminder_email_render">Show current content</button>
+					<table id="reservation_ending_reminder_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ reservation_ending_reminder_email|safe }}</td>
 						</tr>
 					</table>
 				{% endif %}

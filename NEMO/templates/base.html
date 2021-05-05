@@ -63,6 +63,9 @@
 {% endif %}
 {% block body %}
     <div class="body-container">
+        <div id="loading-div-page" class="spinner-full-page spinner-container" style="display: none">
+            <div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
+        </div>
         <div class="container">
 			{% if messages %}
 				{% for message in messages %}
@@ -95,6 +98,20 @@
 	{
 		return '{{ csrf_token }}';
 	}
+	function show_spinner(form_to_check)
+    {
+        if (form_to_check !== undefined)
+		{
+			if (!form_to_check.checkValidity()) return
+		}
+        $('body').css({overflow: 'hidden'});
+        $('#loading-div-page').show();
+    }
+    function hide_spinner()
+    {
+        $('body').css({overflow: 'initial'});
+        $('#loading-div-page').hide();
+    }
 	function show_alerts()
 	{
 		let alert_users = $(".alert.show-on-load");
