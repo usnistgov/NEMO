@@ -39,7 +39,8 @@ from NEMO.views.tool_control import interlock_bypass_allowed
 @permission_required("NEMO.add_areaaccessrecord")
 @require_GET
 def welcome_screen(request, door_id):
-	door = get_object_or_404(Door, id=door_id)
+	door = \
+		get_object_or_404(Door, id=door_id)
 	reader_id = request.GET.get("reader_id")
 	badge_reader = BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default()
 	return render(

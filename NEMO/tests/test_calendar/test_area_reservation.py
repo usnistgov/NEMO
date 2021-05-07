@@ -511,3 +511,23 @@ class AreaReservationTestCase(TestCase):
 	def test_reservation_policy_off(self):
 		# TODO: create those tests
 		self.assertTrue(True)
+
+	def test_reservation_success(self):
+		# create reservation
+		start = datetime.now() + timedelta(hours=1)
+		end = start + timedelta(hours=1)
+		data = self.get_reservation_data(start, end, area)
+
+		login_as(self.client, consumer)
+		response = self.client.post(reverse('create_reservation'), data, follow=True)
+		self.assertEquals(response.status_code, 200)
+		reservation = Reservation.objects.get(area=area)
+		self.assertTrue(reservation.id)
+
+		area.reservation_warning = 1
+		area.save()
+		response = self.client.post(reverse('move_reservation'), {'delta': 10, 'id': reservation.id}, follow=True)
+		self.assertEquals(response.status_code, 201)
+
+
+

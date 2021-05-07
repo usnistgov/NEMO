@@ -199,8 +199,8 @@ def extract_dates(parameters):
 	"""
 	try:
 		start = parameters["start"]
-	except:
-		raise Exception("The request parameters did not contain a start time.")
+	except KeyError:
+		raise KeyError("The request parameters did not contain a start time.")
 
 	try:
 		end = parameters["end"]
