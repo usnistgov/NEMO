@@ -113,7 +113,7 @@ class AreaAccessRecordViewSet(ReadOnlyModelViewSet):
 		"project_id": ["exact"],
 		"customer_id": ["exact"],
 		"area_id": ["exact"],
-		"staff_charge_id": ["exact"],
+		"staff_charge_id": ["exact", "isnull"],
 	}
 
 
