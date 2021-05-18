@@ -7,6 +7,7 @@ from logging import getLogger
 from re import match
 from typing import List, Optional, Union
 
+import pytz
 from dateutil import rrule
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
@@ -1109,9 +1110,9 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	uid = 'UID:'+str(reservation.id)+'\n'
 	sequence = 'SEQUENCE:2\n' if cancelled else 'SEQUENCE:0\n'
 	priority = 'PRIORITY:5\n' if cancelled else 'PRIORITY:0\n'
-	now = datetime.now().strftime('%Y%m%dT%H%M%SZ')
-	start = reservation.start.strftime('%Y%m%dT%H%M%SZ')
-	end = reservation.end.strftime('%Y%m%dT%H%M%SZ')
+	now = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+	start = reservation.start.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
+	end = reservation.end.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
 	reservation_name = reservation.reservation_item.name
 	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'ATTENDEE:{reservation.user.email}\n', f'ORGANIZER:{reservation.user.email}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
 	ics = io.StringIO('')
