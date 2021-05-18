@@ -498,9 +498,9 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
-	list_display = ("id", "user", "creator", "tool", "project", "start", "end", "duration", "cancelled", "missed")
+	list_display = ("id", "user", "creator", "tool", "area", "project", "start", "end", "duration", "cancelled", "missed")
 	readonly_fields = ("descendant",)
-	list_filter = ("cancelled", "missed", "tool")
+	list_filter = ("cancelled", "missed", "tool", "area")
 	date_hierarchy = "start"
 
 
