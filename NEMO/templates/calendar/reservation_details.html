@@ -30,9 +30,8 @@
 	{% if reservation.tool %}
 		Tool: <a title="Click to go to the tool control page for this tool" href="{% url 'tool_control' reservation.tool.id %}">{{ reservation.tool }}</a><br>
 	{% elif reservation.area %}
-		Area: {{ reservation.area }}
+		Area: {{ reservation.area }}<br>
 	{% endif %}
-	<br>
 	{% if reservation.project %}
 		<div id="reservation_project">
 			Project: {{ reservation.project }}
@@ -58,6 +57,9 @@
 	Start: {{ reservation.start }}<br>
 	End: {{ reservation.end }}<br>
 	Identifier: {{ reservation.id }}<br>
+    {% for question_name, data in reservation.question_data_json.items %}
+        {{ question_name }}: {{ data.user_input }}<br>
+    {% endfor %}
 	{% if reservation.self_configuration %}
 		{{ reservation.user }} has opted to perform the tool configuration.<br>
 	{% endif %}

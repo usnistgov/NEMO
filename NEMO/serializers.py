@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from rest_framework.fields import CharField, IntegerField, DateTimeField, ChoiceField, DecimalField
 from rest_framework.serializers import Serializer, ModelSerializer
 
@@ -53,6 +54,8 @@ class ToolSerializer(ModelSerializer):
 
 
 class ReservationSerializer(ModelSerializer):
+	question_data = serializers.JSONField(source="question_data_json")
+
 	class Meta:
 		model = Reservation
 		fields = "__all__"
@@ -91,7 +94,9 @@ class ScheduledOutageSerializer(ModelSerializer):
 
 
 class BillableItemSerializer(Serializer):
-	type = ChoiceField(["missed_reservation", "tool_usage", "area_access", "consumable", "staff_charge", "training_session"])
+	type = ChoiceField(
+		["missed_reservation", "tool_usage", "area_access", "consumable", "staff_charge", "training_session"]
+	)
 	name = CharField(max_length=200, read_only=True)
 	details = CharField(max_length=500, read_only=True)
 	account = CharField(max_length=200, read_only=True)

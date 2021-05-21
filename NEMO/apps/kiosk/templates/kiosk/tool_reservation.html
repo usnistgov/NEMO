@@ -30,6 +30,12 @@
 		{% endif %}
 		{% include 'calendar/configuration_helper.html' %}
 	{% endif %}
+    {% if reservation_questions %}
+        <div id="reservation_questions">
+            <h4>Please answer the following questions</h4>
+            {{ reservation_questions }}
+        </div>
+    {% endif %}
 	<h4>When would you like to reserve the {{ tool }}?</h4>
 	<div class="form-group">
 		<input type="text" id="date" name="date" class="form-control" placeholder="Choose a date">

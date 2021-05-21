@@ -94,7 +94,8 @@ class PostUsageQuestion:
 			raise Exception(f"{self.question_type} requires property '{prop}' to be defined")
 
 	@staticmethod
-	def load_questions(questions: List[Dict], tool_id: int, virtual_inputs: bool = False, index: int = None):
+	def load_questions(questions: Optional[List[Dict]], tool_id: int, virtual_inputs: bool = False, index: int = None):
+		questions_to_load = questions or []
 		constructor = {
 			PostUsageQuestion.number_type: PostUsageNumberFieldQuestion,
 			PostUsageQuestion.float_type: PostUsageFloatFieldQuestion,
@@ -105,7 +106,7 @@ class PostUsageQuestion:
 			PostUsageQuestion.group_type: PostUsageGroupQuestion,
 		}
 		post_usage_questions: List[PostUsageQuestion] = []
-		for question in questions:
+		for question in questions_to_load:
 			post_usage_questions.append(
 				constructor.get(question["type"], PostUsageQuestion)(question, tool_id, virtual_inputs, index)
 			)
@@ -349,7 +350,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
 
 class DynamicForm:
-	def __init__(self, questions, tool_id, virtual_inputs: bool = False):
+	def __init__(self, questions, tool_id = None, virtual_inputs: bool = False):
 		self.untreated_questions = []
 		self.questions = []
 		if questions:

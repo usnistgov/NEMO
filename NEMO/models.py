@@ -4,6 +4,7 @@ import sys
 from datetime import timedelta
 from enum import Enum
 from html import escape
+from json import loads
 from logging import getLogger
 from typing import Union, List
 
@@ -1164,6 +1165,7 @@ class Reservation(CalendarDisplay):
 	additional_information = models.TextField(null=True, blank=True)
 	self_configuration = models.BooleanField(default=False, help_text="When checked, indicates that the user will perform their own tool configuration (instead of requesting that the staff configure it for them).")
 	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
+	question_data = models.TextField(null=True, blank=True)
 
 	@property
 	def reservation_item(self) -> Union[Tool, Area]:
@@ -1209,11 +1211,29 @@ class Reservation(CalendarDisplay):
 		else:
 			send_user_created_reservation_notification(self)
 
+	def question_data_json(self):
+		return loads(self.question_data) if self.question_data else None
+
 	class Meta:
 		ordering = ['-start']
 
 	def __str__(self):
 		return str(self.id)
+
+
+class ReservationQuestions(models.Model):
+	name = models.CharField(max_length=100, help_text="The name of this ")
+	questions = models.TextField(help_text="Upon making a reservation, the user will be asked these questions. This field will only accept JSON format")
+	tool_reservations = models.BooleanField(default=True, help_text="Check this box to apply these questions to tool reservations")
+	area_reservations = models.BooleanField(default=False, help_text="Check this box to apply these questions to area reservations")
+	only_for_projects = models.ManyToManyField(Project, blank=True, help_text="Select the projects these questions only apply to. Leave blank for all projects")
+
+	class Meta:
+		ordering = ['name']
+		verbose_name_plural = 'Reservation questions'
+
+	def __str__(self):
+		return self.name
 
 
 class UsageEvent(CalendarDisplay):
