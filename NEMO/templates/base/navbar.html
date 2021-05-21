@@ -14,7 +14,13 @@
 			<ul class="nav navbar-nav">
 				<li><a href="{% url 'calendar' %}">Calendar</a></li>
 				{% if tools_exist %}<li><a href="{% url 'tool_control' %}">Tool control</a></li>{% endif %}
-				{% if tools_exist or areas_exist %}<li><a href="{% url 'status_dashboard' %}">Status dashboard</a></li>{% endif %}
+				{% if tools_exist or areas_exist %}
+                    {% if areas_exists %}
+                        <li><a href="{% url 'status_dashboard' %}">Status dashboard</a></li>
+                    {% else %}
+                        <li><a href="{% url 'status_dashboard_tab' 'tools' %}">Status dashboard</a></li>
+                    {% endif %}
+                {% endif %}
 				{% if buddy_system_areas_exist %}
 					<li><a href="{% url 'buddy_system' %}">
 						Buddy board
