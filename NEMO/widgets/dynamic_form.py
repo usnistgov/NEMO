@@ -35,6 +35,7 @@ class PostUsageQuestion:
 		self.title = self._init_property("title")
 		self.type = self._init_property("type")
 		self.max_width = self._init_property("max-width")
+		self.maxlength = self._init_property("maxlength")
 		self.placeholder = self._init_property("placeholder")
 		self.prefix = self._init_property("prefix")
 		self.suffix = self._init_property("suffix")
@@ -182,7 +183,8 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 		return result
 
 	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
-		return f'<input type="text" class="form-control" id="{self.name}" name="{self.name}" {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+		maxlength = f'maxlength="{self.maxlength}"' if self.maxlength else ""
+		return f'<input type="text" class="form-control" id="{self.name}" name="{self.name}" {maxlength} {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
 	def render_script(self):
 		if self.virtual_inputs:
