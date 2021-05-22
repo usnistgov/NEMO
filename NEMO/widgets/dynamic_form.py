@@ -27,6 +27,8 @@ class PostUsageQuestion:
 	group_type = "group"
 	question_types = [number_type, float_type, text_type, textarea_type, radio_type, dropdown_type, group_type]
 
+	required_span = '<span style="color:red">*</span>'
+
 	def __init__(self, properties: Dict, tool_id: int, virtual_inputs: bool = False, index: int = None):
 		self.properties = properties
 		self.tool_id = tool_id
@@ -122,7 +124,7 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}{self.required_span if self.required else ""}</div>'
 		for choice in self.choices:
 			result += '<div class="radio">'
 			required = "required" if self.required else ""
@@ -142,7 +144,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}{self.required_span if self.required else ""}</div>'
 		required = "required" if self.required else ""
 		result += f'<select name="{self.name}" {required} style="margin-top: 5px;max-width:{self.max_width}px" class="form-control">'
 		blank_disabled = 'disabled="disabled"' if required else ""
@@ -165,7 +167,7 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 
 	def render_element(self) -> str:
 		result = '<div class="form-group">'
-		result += f'<label for="{self.name}" style="white-space: pre-wrap">{self.title}</label>'
+		result += f'<label for="{self.name}" style="white-space: pre-wrap">{self.title}{self.required_span if self.required else ""}</label>'
 		input_group_required = True if self.prefix or self.suffix else False
 		if input_group_required:
 			result += f'<div class="input-group" style="max-width:{self.max_width}px">'
