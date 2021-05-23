@@ -3,6 +3,11 @@ label
     text-transform:capitalize
 }
 
+.questions_preview label
+{
+    text-transform: none;
+}
+
 .questions_preview
 {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
