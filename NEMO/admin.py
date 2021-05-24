@@ -544,10 +544,20 @@ class ReservationQuestionsForm(forms.ModelForm):
 		cleaned_data = super().clean()
 		reservation_questions = cleaned_data.get("questions")
 		tool_reservations = cleaned_data.get("tool_reservations")
+		only_tools = cleaned_data.get("only_for_tools")
 		area_reservations = cleaned_data.get("area_reservations")
+		only_areas = cleaned_data.get("only_for_areas")
 		if not tool_reservations and not area_reservations:
 			self.add_error("tool_reservations", "Reservation questions have to apply to tool and/or area reservations")
 			self.add_error("area_reservations", "Reservation questions have to apply to tool and/or area reservations")
+		if not tool_reservations and only_tools:
+			self.add_error(
+				"tool_reservations", "You cannot restrict tools these questions apply to without enabling it for tools"
+			)
+		if not area_reservations and only_areas:
+			self.add_error(
+				"area_reservations", "You cannot restrict areas these questions apply to without enabling it for areas"
+			)
 		# Validate reservation_questions JSON format
 		if reservation_questions:
 			try:
@@ -570,7 +580,7 @@ class ReservationQuestionsForm(forms.ModelForm):
 @register(ReservationQuestions)
 class ReservationQuestionsAdmin(admin.ModelAdmin):
 	form = ReservationQuestionsForm
-	filter_horizontal = ("only_for_projects",)
+	filter_horizontal = ("only_for_tools", "only_for_areas", "only_for_projects",)
 	readonly_fields = ("questions_preview",)
 	fieldsets = (
 		(
@@ -581,7 +591,9 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 					"questions",
 					"questions_preview",
 					"tool_reservations",
+					"only_for_tools",
 					"area_reservations",
+					"only_for_areas",
 					"only_for_projects",
 				)
 			},
@@ -827,7 +839,14 @@ class UserAdminForm(forms.ModelForm):
 @register(User)
 class UserAdmin(admin.ModelAdmin):
 	form = UserAdminForm
-	filter_horizontal = ("groups", "user_permissions", "qualifications", "projects", "managed_projects", "physical_access_levels")
+	filter_horizontal = (
+		"groups",
+		"user_permissions",
+		"qualifications",
+		"projects",
+		"managed_projects",
+		"physical_access_levels",
+	)
 	fieldsets = (
 		(
 			"Personal information",
@@ -1139,7 +1158,16 @@ class CounterAdminForm(forms.ModelForm):
 
 @register(ToolUsageCounter)
 class CounterAdmin(admin.ModelAdmin):
-	list_display = ("name", "tool", "tool_usage_question", "value", "warning_threshold", "last_reset", "last_reset_by", "is_active")
+	list_display = (
+		"name",
+		"tool",
+		"tool_usage_question",
+		"value",
+		"warning_threshold",
+		"last_reset",
+		"last_reset_by",
+		"is_active",
+	)
 	list_filter = ("tool",)
 	readonly_fields = ("warning_threshold_reached",)
 	form = CounterAdminForm

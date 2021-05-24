@@ -75,7 +75,7 @@ def new_reservation(request, item_type, item_id, date=None):
 	if not user.is_staff:
 		reservation_question_dict = {}
 		for project in user.active_projects():
-			reservation_questions = get_and_combine_reservation_questions(item_type, project)
+			reservation_questions = get_and_combine_reservation_questions(item_type, item_id, project)
 			if reservation_questions:
 				dynamic_form = DynamicForm(reservation_questions)
 				reservation_question_dict[project.id] = dynamic_form.render()
@@ -130,7 +130,7 @@ def make_reservation(request):
 		reservation.short_notice = False
 
 	# Reservation questions if applicable
-	reservation_questions = get_and_combine_reservation_questions(item_type, reservation.project)
+	reservation_questions = get_and_combine_reservation_questions(item_type, item.id, reservation.project)
 	if reservation_questions:
 		try:
 			dynamic_form = DynamicForm(reservation_questions)

@@ -185,7 +185,7 @@ def reserve_tool(request):
 		reservation.short_notice = False
 
 	# Reservation questions if applicable
-	reservation_questions = get_and_combine_reservation_questions(ReservationItemType.TOOL, reservation.project)
+	reservation_questions = get_and_combine_reservation_questions(ReservationItemType.TOOL, tool.id, reservation.project)
 	if reservation_questions:
 		dynamic_form = DynamicForm(reservation_questions)
 		try:
@@ -233,7 +233,7 @@ def tool_reservation(request, tool_id, user_id, back):
 	)
 
 	# Reservation questions if applicable
-	reservation_questions = get_and_combine_reservation_questions(ReservationItemType.TOOL, project)
+	reservation_questions = get_and_combine_reservation_questions(ReservationItemType.TOOL, tool_id, project)
 	if reservation_questions:
 		dynamic_form = DynamicForm(reservation_questions, virtual_inputs=True)
 		dictionary["reservation_questions"] = dynamic_form.render()

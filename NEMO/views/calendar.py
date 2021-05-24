@@ -350,7 +350,7 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 			return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': False, 'reservation_action': 'create'})
 
 	# Reservation questions if applicable
-	reservation_questions = get_and_combine_reservation_questions(item_type, new_reservation.project)
+	reservation_questions = get_and_combine_reservation_questions(item_type, item_id, new_reservation.project)
 	if reservation_questions:
 		dynamic_form = DynamicForm(reservation_questions)
 		dynamic_form_rendered = dynamic_form.render()
@@ -990,12 +990,14 @@ def proxy_reservation(request):
 	return render(request, 'calendar/proxy_reservation.html', {'users': User.objects.filter(is_active=True)})
 
 
-def get_and_combine_reservation_questions(item_type: ReservationItemType, project: Optional[Project] = None) -> str:
+def get_and_combine_reservation_questions(item_type: ReservationItemType, item_id: int, project: Project = None) -> str:
 	reservation_questions = ReservationQuestions.objects.all()
 	if item_type == ReservationItemType.TOOL:
 		reservation_questions = reservation_questions.filter(tool_reservations=True)
+		reservation_questions = reservation_questions.filter(Q(only_for_tools=None) | Q(only_for_tools__in=[item_id]))
 	if item_type == ReservationItemType.AREA:
 		reservation_questions = reservation_questions.filter(area_reservations=True)
+		reservation_questions = reservation_questions.filter(Q(only_for_areas=None) | Q(only_for_areas__in=[item_id]))
 	if project:
 		reservation_questions = reservation_questions.filter(Q(only_for_projects=None) | Q(only_for_projects__in=[project.id]))
 	else:
