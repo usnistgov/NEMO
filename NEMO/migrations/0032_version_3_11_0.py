@@ -21,7 +21,9 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(help_text='The name of this ', max_length=100)),
                 ('questions', models.TextField(help_text='Upon making a reservation, the user will be asked these questions. This field will only accept JSON format')),
                 ('tool_reservations', models.BooleanField(default=True, help_text='Check this box to apply these questions to tool reservations')),
+                ('only_for_tools', models.ManyToManyField(blank=True, help_text='Select the tools these questions only apply to. Leave blank for all tools', to='NEMO.Tool')),
                 ('area_reservations', models.BooleanField(default=False, help_text='Check this box to apply these questions to area reservations')),
+                ('only_for_areas', models.ManyToManyField(blank=True, help_text='Select the areas these questions only apply to. Leave blank for all areas', to='NEMO.Area')),
                 ('only_for_projects', models.ManyToManyField(blank=True, help_text='Select the projects these questions only apply to. Leave blank for all projects', to='NEMO.Project')),
             ],
             options={
