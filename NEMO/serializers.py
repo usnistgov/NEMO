@@ -13,6 +13,7 @@ from NEMO.models import (
 	TaskHistory,
 	ScheduledOutage,
 	Tool,
+	TrainingSession,
 )
 
 
@@ -90,6 +91,12 @@ class TaskSerializer(ModelSerializer):
 class ScheduledOutageSerializer(ModelSerializer):
 	class Meta:
 		model = ScheduledOutage
+		fields = "__all__"
+
+
+class TrainingSessionSerializer(ModelSerializer):
+	class Meta:
+		model = TrainingSession
 		fields = "__all__"
 
 

@@ -5,7 +5,18 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from NEMO.models import User, Project, Account, Reservation, UsageEvent, AreaAccessRecord, Task, ScheduledOutage, Tool
+from NEMO.models import (
+	User,
+	Project,
+	Account,
+	Reservation,
+	UsageEvent,
+	AreaAccessRecord,
+	Task,
+	ScheduledOutage,
+	Tool,
+	TrainingSession,
+)
 from NEMO.serializers import (
 	UserSerializer,
 	ProjectSerializer,
@@ -17,6 +28,7 @@ from NEMO.serializers import (
 	ScheduledOutageSerializer,
 	ToolSerializer,
 	BillableItemSerializer,
+	TrainingSessionSerializer,
 )
 from NEMO.views.api_billing import (
 	BillableItem,
@@ -125,6 +137,21 @@ class TaskViewSet(ReadOnlyModelViewSet):
 class ScheduledOutageViewSet(ReadOnlyModelViewSet):
 	queryset = ScheduledOutage.objects.all()
 	serializer_class = ScheduledOutageSerializer
+
+
+class TrainingSessionViewSet(ReadOnlyModelViewSet):
+	queryset = TrainingSession.objects.all()
+	serializer_class = TrainingSessionSerializer
+	filterset_fields = {
+		"trainer_id": ["exact"],
+		"trainee_id": ["exact"],
+		"tool_id": ["exact"],
+		"project_id": ["exact"],
+		"duration": ["exact", "gte", "lte", "gt", "lt"],
+		"type": ["exact", "in"],
+		"date": ["gte", "gt", "lte", "lt"],
+		"qualified": ["exact"],
+	}
 
 
 @api_view(["GET"])
