@@ -35,6 +35,7 @@ class PostUsageQuestion:
 		self.virtual_inputs = virtual_inputs
 		self.name = self._init_property("name")
 		self.title = self._init_property("title")
+		self.help = self._init_property("help")
 		self.type = self._init_property("type")
 		self.max_width = self._init_property("max-width")
 		self.maxlength = self._init_property("maxlength")
@@ -154,6 +155,8 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 			is_default_choice = "selected" if self.default_choice and self.default_choice == choice else ""
 			result += f'<option value="{choice}" {is_default_choice}>{choice}</option>'
 		result += "</select>"
+		if self.help:
+			result += f'<div style="font-size:smaller;color:#999">{self.help}</div>'
 		result += "</div>"
 		return result
 
@@ -181,6 +184,8 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 			result += f'<span class="input-group-addon">{self.suffix}</span>'
 		if input_group_required:
 			result += "</div>"
+		if self.help:
+			result += f'<div style="font-size:smaller;color:#999">{self.help}</div>'
 		result += "</div>"
 		return result
 
