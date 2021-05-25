@@ -13,8 +13,15 @@
 	<form method="post" action="{% url 'publish_news_update' story.id %}">
 		{% csrf_token %}
 		<div class="form-group">
-			<textarea name="update" class="form-control" rows="6" required placeholder="Provide an update"></textarea>
+			<textarea name="update" class="form-control" rows="6" placeholder="Provide an update"></textarea>
 		</div>
+        <div class="form-group">
+            <div class="checkbox">
+                <label for="pinned">
+                    <input id="pinned" name="pinned" type="checkbox" {% if story.pinned %}checked{% endif %}> Keep this news story at the top of the news feed
+                </label>
+            </div>
+        </div>
 		<div class="form-group">
 			<input type="submit" class="btn btn-success pull-right" name="publish" value="Publish">
 		</div>

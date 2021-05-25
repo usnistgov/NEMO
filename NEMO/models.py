@@ -1996,6 +1996,7 @@ class ScheduledOutage(models.Model):
 
 class News(models.Model):
 	title = models.CharField(max_length=200)
+	pinned = models.BooleanField(default=False, help_text="Check this box to keep this story at the top of the news feed")
 	created = models.DateTimeField(help_text="The date and time this story was first published")
 	original_content = models.TextField(help_text="The content of the story when it was first published, useful for visually hiding updates 'in the middle' of the story")
 	all_content = models.TextField(help_text="The entire content of the story")

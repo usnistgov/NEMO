@@ -1109,8 +1109,8 @@ class ScheduledOutageAdmin(admin.ModelAdmin):
 
 @register(News)
 class NewsAdmin(admin.ModelAdmin):
-	list_display = ("id", "created", "last_updated", "archived", "title")
-	list_filter = ("archived",)
+	list_display = ("id", "title", "created", "last_updated", "archived", "pinned")
+	list_filter = ("archived", "pinned")
 
 
 @register(Notification)
