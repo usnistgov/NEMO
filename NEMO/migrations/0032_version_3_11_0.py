@@ -36,4 +36,9 @@ class Migration(migrations.Migration):
             name='question_data',
             field=models.TextField(blank=True, null=True),
         ),
+        migrations.AddField(
+            model_name='news',
+            name='pinned',
+            field=models.BooleanField(default=False, help_text='Check this box to keep this story at the top of the news feed'),
+        ),
     ]
