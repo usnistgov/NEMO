@@ -220,6 +220,10 @@ class User(models.Model):
 	def is_tool_superuser(self):
 		return self.superuser_for_tools.exists()
 
+	@property
+	def is_project_pi(self):
+		return self.managed_projects.exists()
+
 	def get_username(self):
 		return self.username
 

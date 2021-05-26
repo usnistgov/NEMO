@@ -1,4 +1,5 @@
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
@@ -144,3 +145,11 @@ def add_user_to_project(request):
 		'project': project
 	}
 	return render(request, 'accounts_and_projects/users_for_project.html', dictionary)
+
+
+@login_required
+@require_GET
+def projects(request):
+	user: User = request.user
+	dictionary = {'managed_projects': user.managed_projects.all()}
+	return render(request, 'accounts_and_projects/projects.html', dictionary)

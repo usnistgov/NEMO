@@ -270,6 +270,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# Account & project management:
 		url(r'^accounts_and_projects/$', accounts_and_projects.accounts_and_projects, name='accounts_and_projects'),
+		url(r'^projects/$', accounts_and_projects.projects, name='projects'),
 		url(r'^project/(?P<identifier>\d+)/$', accounts_and_projects.select_accounts_and_projects, kwargs={'kind': 'project'}, name='project'),
 		url(r'^account/(?P<identifier>\d+)/$', accounts_and_projects.select_accounts_and_projects, kwargs={'kind': 'account'}, name='account'),
 		url(r'^toggle_active/(?P<kind>account|project)/(?P<identifier>\d+)/$', accounts_and_projects.toggle_active, name='toggle_active'),
