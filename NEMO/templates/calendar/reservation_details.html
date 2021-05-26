@@ -58,7 +58,7 @@
 	End: {{ reservation.end }}<br>
 	Identifier: {{ reservation.id }}<br>
     {% for question_name, data in reservation.question_data_json.items %}
-        {{ question_name }}: {{ data.user_input }}<br>
+        {{ data.title }}: {{ data.user_input|linebreaksbr }}<br>
     {% endfor %}
 	{% if reservation.self_configuration %}
 		{{ reservation.user }} has opted to perform the tool configuration.<br>

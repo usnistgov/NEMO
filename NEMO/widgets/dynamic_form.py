@@ -35,6 +35,7 @@ class PostUsageQuestion:
 		self.virtual_inputs = virtual_inputs
 		self.name = self._init_property("name")
 		self.title = self._init_property("title")
+		self.title_html = self._init_property("title_html")
 		self.help = self._init_property("help")
 		self.type = self._init_property("type")
 		self.max_width = self._init_property("max-width")
@@ -127,7 +128,8 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}{self.required_span if self.required else ""}</div>'
+		title = self.title_html or self.title
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
 		for choice in self.choices:
 			result += '<div class="radio">'
 			required = "required" if self.required else ""
@@ -147,7 +149,8 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}{self.required_span if self.required else ""}</div>'
+		title = self.title_html or self.title
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
 		required = "required" if self.required else ""
 		result += f'<select name="{self.form_name}" {required} style="margin-top: 5px;max-width:{self.max_width}px" class="form-control">'
 		blank_disabled = 'disabled="disabled"' if required else ""
@@ -171,8 +174,9 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 		self.validate_property_exists("max-width")
 
 	def render_element(self) -> str:
+		title = self.title_html or self.title
 		result = '<div class="form-group">'
-		result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{self.title}{self.required_span if self.required else ""}</label>'
+		result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
 		input_group_required = True if self.prefix or self.suffix else False
 		if input_group_required:
 			result += f'<div class="input-group" style="max-width:{self.max_width}px">'
@@ -280,7 +284,8 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			sub_question.validate()
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div></div>'
+		title = self.title_html or self.title
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}</div></div>'
 		result += f'<div id="{self.group_name}_container">'
 		result += self.render_group_question()
 		result += "</div>"
