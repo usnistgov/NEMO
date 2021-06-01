@@ -1,11 +1,30 @@
+from distutils.util import strtobool
+
 from django import forms
 from django.core import validators
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 from django.db import models
+from django.db.models import Field
+from django.db.models.lookups import BuiltinLookup
 from django.utils.translation import gettext_lazy as _
 
 DEFAULT_SEPARATOR = ","
+
+
+@Field.register_lookup
+class IsEmpty(BuiltinLookup):
+	# Custom lookup allowing to use __isempty in filters and REST API
+	lookup_name = "isempty"
+	prepare_rhs = False
+
+	def as_sql(self, compiler, connection):
+		sql, params = compiler.compile(self.lhs)
+		condition = self.rhs if isinstance(self.rhs, bool) else bool(strtobool(self.rhs))
+		if condition:
+			return "%s IS NULL or %s = ''" % (sql, sql), params
+		else:
+			return "%s <> ''" % sql, params
 
 
 class MultiEmailWidget(forms.TextInput):

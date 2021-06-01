@@ -16,6 +16,9 @@ from NEMO.models import (
 	ScheduledOutage,
 	Tool,
 	TrainingSession,
+	Area,
+	Resource,
+	StaffCharge,
 )
 from NEMO.serializers import (
 	UserSerializer,
@@ -29,6 +32,9 @@ from NEMO.serializers import (
 	ToolSerializer,
 	BillableItemSerializer,
 	TrainingSessionSerializer,
+	AreaSerializer,
+	ResourceSerializer,
+	StaffChargeSerializer,
 )
 from NEMO.views.api_billing import (
 	BillableItem,
@@ -48,8 +54,8 @@ class UserViewSet(ReadOnlyModelViewSet):
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
 	filterset_fields = {
-		"id": ["exact"],
-		"username": ["exact"],
+		"id": ["exact", "in"],
+		"username": ["exact", "in"],
 		"first_name": ["exact"],
 		"last_name": ["exact"],
 		"email": ["exact"],
@@ -59,7 +65,7 @@ class UserViewSet(ReadOnlyModelViewSet):
 		"is_superuser": ["exact"],
 		"is_service_personnel": ["exact"],
 		"is_technician": ["exact"],
-		"date_joined": ["month", "year"],
+		"date_joined": ["month", "year", "gte", "gt", "lte", "lt"],
 	}
 
 
@@ -67,37 +73,76 @@ class ProjectViewSet(ReadOnlyModelViewSet):
 	queryset = Project.objects.all()
 	serializer_class = ProjectSerializer
 	filterset_fields = {
-		"id": ["exact"],
+		"id": ["exact", "in"],
 		"name": ["exact"],
 		"application_identifier": ["exact"],
 		"active": ["exact"],
-		"account_id": ["exact"],
+		"account_id": ["exact", "in"],
 	}
 
 
 class AccountViewSet(ReadOnlyModelViewSet):
 	queryset = Account.objects.all()
 	serializer_class = AccountSerializer
-	filterset_fields = {"id": ["exact"], "name": ["exact"], "active": ["exact"]}
+	filterset_fields = {"id": ["exact", "in"], "name": ["exact"], "active": ["exact"]}
 
 
 class ToolViewSet(ReadOnlyModelViewSet):
 	queryset = Tool.objects.all()
 	serializer_class = ToolSerializer
-	filterset_fields = {"id": ["exact"]}
+	filterset_fields = {
+		"id": ["exact", "in"],
+		"name": ["exact"],
+		"visible": ["exact"],
+		"_category": ["exact"],
+		"_operational": ["exact"],
+		"_location": ["exact"],
+		"_requires_area_access": ["exact", "isnull"],
+		"_post_usage_questions": ["isempty"],
+	}
+
+
+class AreaViewSet(ReadOnlyModelViewSet):
+	queryset = Area.objects.all()
+	serializer_class = AreaSerializer
+	filterset_fields = {
+		"id": ["exact", "in"],
+		"name": ["exact"],
+		"parent_area": ["exact", "in"],
+		"category": ["exact"],
+		"requires_reservation": ["exact"],
+		"buddy_system_allowed": ["exact"],
+		"maximum_capacity": ["exact", "gte", "gt", "lte", "lt", "isnull"],
+		"count_staff_in_occupancy": ["exact"],
+		"count_service_personnel_in_occupancy": ["exact"],
+	}
+
+
+class ResourceViewSet(ReadOnlyModelViewSet):
+	queryset = Resource.objects.all()
+	serializer_class = ResourceSerializer
+	filterset_fields = {
+		"id": ["exact", "in"],
+		"name": ["exact"],
+		"available": ["exact"],
+		"fully_dependent_tools": ["in"],
+		"partially_dependent_tools": ["in"],
+		"dependent_areas": ["in"],
+	}
 
 
 class ReservationViewSet(ReadOnlyModelViewSet):
 	queryset = Reservation.objects.all()
 	serializer_class = ReservationSerializer
 	filterset_fields = {
+		"id": ["exact", "in"],
 		"start": ["gte", "gt", "lte", "lt"],
 		"end": ["gte", "gt", "lte", "lt", "isnull"],
-		"project_id": ["exact"],
-		"user_id": ["exact"],
-		"creator_id": ["exact"],
-		"tool_id": ["exact"],
-		"area_id": ["exact"],
+		"project_id": ["exact", "in"],
+		"user_id": ["exact", "in"],
+		"creator_id": ["exact", "in"],
+		"tool_id": ["exact", "in", "isnull"],
+		"area_id": ["exact", "in", "isnull"],
 		"cancelled": ["exact"],
 		"missed": ["exact"],
 	}
@@ -107,12 +152,13 @@ class UsageEventViewSet(ReadOnlyModelViewSet):
 	queryset = UsageEvent.objects.all()
 	serializer_class = UsageEventSerializer
 	filterset_fields = {
+		"id": ["exact", "in"],
 		"start": ["gte", "gt", "lte", "lt"],
 		"end": ["gte", "gt", "lte", "lt", "isnull"],
-		"project_id": ["exact"],
-		"user_id": ["exact"],
-		"operator_id": ["exact"],
-		"tool_id": ["exact"],
+		"project_id": ["exact", "in"],
+		"user_id": ["exact", "in"],
+		"operator_id": ["exact", "in"],
+		"tool_id": ["exact", "in"],
 	}
 
 
@@ -120,33 +166,75 @@ class AreaAccessRecordViewSet(ReadOnlyModelViewSet):
 	queryset = AreaAccessRecord.objects.all().order_by("-start")
 	serializer_class = AreaAccessRecordSerializer
 	filterset_fields = {
+		"id": ["exact", "in"],
 		"start": ["gte", "gt", "lte", "lt"],
 		"end": ["gte", "gt", "lte", "lt", "isnull"],
-		"project_id": ["exact"],
-		"customer_id": ["exact"],
-		"area_id": ["exact"],
-		"staff_charge_id": ["exact", "isnull"],
+		"project_id": ["exact", "in"],
+		"customer_id": ["exact", "in"],
+		"area_id": ["exact", "in"],
+		"staff_charge_id": ["exact", "isnull", "in"],
 	}
 
 
 class TaskViewSet(ReadOnlyModelViewSet):
 	queryset = Task.objects.all()
 	serializer_class = TaskSerializer
+	filterset_fields = {
+		"id": ["exact", "in"],
+		"urgency": ["exact", "gte", "gt", "lte", "lt"],
+		"tool_id": ["exact", "in"],
+		"force_shutdown": ["exact"],
+		"safety_hazard": ["exact"],
+		"creator_id": ["exact", "in"],
+		"creation_time": ["gte", "gt", "lte", "lt"],
+		"estimated_resolution_time": ["gte", "gt", "lte", "lt"],
+		"problem_category": ["exact", "in"],
+		"cancelled": ["exact"],
+		"resolved": ["exact"],
+		"resolution_time": ["gte", "gt", "lte", "lt"],
+		"resolver_id": ["exact", "in"],
+		"resolution_category": ["exact", "in"],
+	}
 
 
 class ScheduledOutageViewSet(ReadOnlyModelViewSet):
 	queryset = ScheduledOutage.objects.all()
 	serializer_class = ScheduledOutageSerializer
+	filterset_fields = {
+		"id": ["exact", "in"],
+		"start": ["gte", "gt", "lte", "lt"],
+		"end": ["gte", "gt", "lte", "lt", "isnull"],
+		"creator_id": ["exact", "in"],
+		"category": ["exact", "in"],
+		"tool_id": ["exact", "in", "isnull"],
+		"area_id": ["exact", "in", "isnull"],
+		"resource_id": ["exact", "in", "isnull"],
+	}
+
+
+class StaffChargeViewSet(ReadOnlyModelViewSet):
+	queryset = StaffCharge.objects.all()
+	serializer_class = StaffChargeSerializer
+	filterset_fields = {
+		"id": ["exact", "in"],
+		"staff_member_id": ["exact", "in"],
+		"customer_id": ["exact", "in"],
+		"project_id": ["exact", "in"],
+		"start": ["gte", "gt", "lte", "lt"],
+		"end": ["gte", "gt", "lte", "lt", "isnull"],
+		"validated": ["exact"],
+	}
 
 
 class TrainingSessionViewSet(ReadOnlyModelViewSet):
 	queryset = TrainingSession.objects.all()
 	serializer_class = TrainingSessionSerializer
 	filterset_fields = {
-		"trainer_id": ["exact"],
-		"trainee_id": ["exact"],
-		"tool_id": ["exact"],
-		"project_id": ["exact"],
+		"id": ["exact", "in"],
+		"trainer_id": ["exact", "in"],
+		"trainee_id": ["exact", "in"],
+		"tool_id": ["exact", "in"],
+		"project_id": ["exact", "in"],
 		"duration": ["exact", "gte", "lte", "gt", "lt"],
 		"type": ["exact", "in"],
 		"date": ["gte", "gt", "lte", "lt"],
