@@ -45,8 +45,8 @@ class ProjectSerializer(FlexFieldsModelSerializer):
 		model = Project
 		fields = "__all__"
 		expandable_fields = {
-			"account": "serializers.AccountSerializer",
-			"only_allow_tools": ("serializers.ToolSerializer", {"many": True}),
+			"account": "NEMO.serializers.AccountSerializer",
+			"only_allow_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
 		}
 
 
@@ -61,13 +61,13 @@ class ToolSerializer(FlexFieldsModelSerializer):
 		model = Tool
 		fields = "__all__"
 		expandable_fields = {
-			"parent_tool": "serializers.ToolSerializer",
-			"_primary_owner": "serializers.UserSerializer",
-			"_backup_owners": ("serializers.UserSerializer", {"many": True}),
-			"_superusers": ("serializers.UserSerializer", {"many": True}),
-			"_requires_area_access": "serializers.AreaSerializer",
-			"project": "serializers.ProjectSerializer",
-			"descendant": "serializers.ReservationSerializer",
+			"parent_tool": "NEMO.serializers.ToolSerializer",
+			"_primary_owner": "NEMO.serializers.UserSerializer",
+			"_backup_owners": ("NEMO.serializers.UserSerializer", {"many": True}),
+			"_superusers": ("NEMO.serializers.UserSerializer", {"many": True}),
+			"_requires_area_access": "NEMO.serializers.AreaSerializer",
+			"project": "NEMO.serializers.ProjectSerializer",
+			"descendant": "NEMO.serializers.ReservationSerializer",
 		}
 
 
@@ -75,7 +75,7 @@ class AreaSerializer(FlexFieldsModelSerializer):
 	class Meta:
 		model = Area
 		fields = "__all__"
-		expandable_fields = {"parent_area": "serializers.AreaSerializer"}
+		expandable_fields = {"parent_area": "NEMO.serializers.AreaSerializer"}
 
 
 class ReservationSerializer(FlexFieldsModelSerializer):
@@ -85,12 +85,12 @@ class ReservationSerializer(FlexFieldsModelSerializer):
 		model = Reservation
 		fields = "__all__"
 		expandable_fields = {
-			"user": "serializers.UserSerializer",
-			"creator": "serializers.UserSerializer",
-			"tool": "serializers.ToolSerializer",
-			"area": "serializers.AreaSerializer",
-			"project": "serializers.ProjectSerializer",
-			"descendant": "serializers.ReservationSerializer",
+			"user": "NEMO.serializers.UserSerializer",
+			"creator": "NEMO.serializers.UserSerializer",
+			"tool": "NEMO.serializers.ToolSerializer",
+			"area": "NEMO.serializers.AreaSerializer",
+			"project": "NEMO.serializers.ProjectSerializer",
+			"descendant": "NEMO.serializers.ReservationSerializer",
 		}
 
 
@@ -99,10 +99,10 @@ class UsageEventSerializer(FlexFieldsModelSerializer):
 		model = UsageEvent
 		fields = "__all__"
 		expandable_fields = {
-			"user": "serializers.UserSerializer",
-			"operator": "serializers.UserSerializer",
-			"tool": "serializers.ToolSerializer",
-			"project": "serializers.ProjectSerializer",
+			"user": "NEMO.serializers.UserSerializer",
+			"operator": "NEMO.serializers.UserSerializer",
+			"tool": "NEMO.serializers.ToolSerializer",
+			"project": "NEMO.serializers.ProjectSerializer",
 		}
 
 
@@ -111,10 +111,10 @@ class AreaAccessRecordSerializer(FlexFieldsModelSerializer):
 		model = AreaAccessRecord
 		fields = "__all__"
 		expandable_fields = {
-			"customer": "serializers.UserSerializer",
-			"area": "serializers.AreaSerializer",
-			"project": "serializers.ProjectSerializer",
-			"staff_charge": "serializers.StaffChargeSerializer",
+			"customer": "NEMO.serializers.UserSerializer",
+			"area": "NEMO.serializers.AreaSerializer",
+			"project": "NEMO.serializers.ProjectSerializer",
+			"staff_charge": "NEMO.serializers.StaffChargeSerializer",
 		}
 
 
@@ -122,7 +122,7 @@ class TaskHistorySerializer(FlexFieldsModelSerializer):
 	class Meta:
 		model = TaskHistory
 		fields = "__all__"
-		expandable_fields = {"user": "serializers.UserSerializer", "task": "serializers.TaskSerializer"}
+		expandable_fields = {"user": "NEMO.serializers.UserSerializer", "task": "NEMO.serializers.TaskSerializer"}
 
 
 class TaskSerializer(FlexFieldsModelSerializer):
@@ -132,10 +132,10 @@ class TaskSerializer(FlexFieldsModelSerializer):
 		model = Task
 		fields = "__all__"
 		expandable_fields = {
-			"tool": "serializers.ToolSerializer",
-			"creator": "serializers.UserSerializer",
-			"last_updated_by": "serializers.UserSerializer",
-			"resolver": "serializers.UserSerializer",
+			"tool": "NEMO.serializers.ToolSerializer",
+			"creator": "NEMO.serializers.UserSerializer",
+			"last_updated_by": "NEMO.serializers.UserSerializer",
+			"resolver": "NEMO.serializers.UserSerializer",
 		}
 
 
@@ -144,10 +144,10 @@ class ScheduledOutageSerializer(FlexFieldsModelSerializer):
 		model = ScheduledOutage
 		fields = "__all__"
 		expandable_fields = {
-			"creator": "serializers.UserSerializer",
-			"tool": "serializers.ToolSerializer",
-			"area": "serializers.AreaSerializer",
-			"resource": "serializers.ResourceSerializer",
+			"creator": "NEMO.serializers.UserSerializer",
+			"tool": "NEMO.serializers.ToolSerializer",
+			"area": "NEMO.serializers.AreaSerializer",
+			"resource": "NEMO.serializers.ResourceSerializer",
 		}
 
 
@@ -156,10 +156,10 @@ class TrainingSessionSerializer(FlexFieldsModelSerializer):
 		model = TrainingSession
 		fields = "__all__"
 		expandable_fields = {
-			"trainer": "serializers.UserSerializer",
-			"trainee": "serializers.UserSerializer",
-			"tool": "serializers.ToolSerializer",
-			"project": "serializers.ProjectSerializer",
+			"trainer": "NEMO.serializers.UserSerializer",
+			"trainee": "NEMO.serializers.UserSerializer",
+			"tool": "NEMO.serializers.ToolSerializer",
+			"project": "NEMO.serializers.ProjectSerializer",
 		}
 
 
@@ -168,9 +168,9 @@ class StaffChargeSerializer(FlexFieldsModelSerializer):
 		model = StaffCharge
 		fields = "__all__"
 		expandable_fields = {
-			"customer": "serializers.UserSerializer",
-			"staff_member": "serializers.UserSerializer",
-			"project": "serializers.ProjectSerializer",
+			"customer": "NEMO.serializers.UserSerializer",
+			"staff_member": "NEMO.serializers.UserSerializer",
+			"project": "NEMO.serializers.ProjectSerializer",
 		}
 
 
@@ -179,9 +179,9 @@ class ResourceSerializer(FlexFieldsModelSerializer):
 		model = Resource
 		fields = "__all__"
 		expandable_fields = {
-			"fully_dependent_tools": ("serializers.ToolSerializer", {"many": True}),
-			"partially_dependent_tools": ("serializers.ToolSerializer", {"many": True}),
-			"dependent_areas": ("serializers.AreaSerializer", {"many": True}),
+			"fully_dependent_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
+			"partially_dependent_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
+			"dependent_areas": ("NEMO.serializers.AreaSerializer", {"many": True}),
 		}
 
 
