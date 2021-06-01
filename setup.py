@@ -28,6 +28,7 @@ setup(
 		'Django==2.2.20',
 		'django-filter==2.4.0',
 		'djangorestframework==3.12.2',
+		'drf-flex-fields==0.9.0',
 		'ldap3==2.9',
 		'python-dateutil==2.8.1',
 		'requests==2.25.1',

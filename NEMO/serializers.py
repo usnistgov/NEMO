@@ -1,3 +1,4 @@
+from rest_flex_fields import FlexFieldsModelSerializer
 from rest_framework import serializers
 from rest_framework.fields import CharField, IntegerField, DateTimeField, ChoiceField, DecimalField
 from rest_framework.serializers import Serializer, ModelSerializer
@@ -13,7 +14,10 @@ from NEMO.models import (
 	TaskHistory,
 	ScheduledOutage,
 	Tool,
+	Area,
 	TrainingSession,
+	StaffCharge,
+	Resource,
 )
 
 
@@ -36,10 +40,14 @@ class UserSerializer(ModelSerializer):
 		)
 
 
-class ProjectSerializer(ModelSerializer):
+class ProjectSerializer(FlexFieldsModelSerializer):
 	class Meta:
 		model = Project
 		fields = "__all__"
+		expandable_fields = {
+			"account": "serializers.AccountSerializer",
+			"only_allow_tools": ("serializers.ToolSerializer", {"many": True}),
+		}
 
 
 class AccountSerializer(ModelSerializer):
@@ -48,56 +56,133 @@ class AccountSerializer(ModelSerializer):
 		fields = "__all__"
 
 
-class ToolSerializer(ModelSerializer):
+class ToolSerializer(FlexFieldsModelSerializer):
 	class Meta:
 		model = Tool
 		fields = "__all__"
+		expandable_fields = {
+			"parent_tool": "serializers.ToolSerializer",
+			"_primary_owner": "serializers.UserSerializer",
+			"_backup_owners": ("serializers.UserSerializer", {"many": True}),
+			"_superusers": ("serializers.UserSerializer", {"many": True}),
+			"_requires_area_access": "serializers.AreaSerializer",
+			"project": "serializers.ProjectSerializer",
+			"descendant": "serializers.ReservationSerializer",
+		}
 
 
-class ReservationSerializer(ModelSerializer):
+class AreaSerializer(FlexFieldsModelSerializer):
+	class Meta:
+		model = Area
+		fields = "__all__"
+		expandable_fields = {"parent_area": "serializers.AreaSerializer"}
+
+
+class ReservationSerializer(FlexFieldsModelSerializer):
 	question_data = serializers.JSONField(source="question_data_json")
 
 	class Meta:
 		model = Reservation
 		fields = "__all__"
+		expandable_fields = {
+			"user": "serializers.UserSerializer",
+			"creator": "serializers.UserSerializer",
+			"tool": "serializers.ToolSerializer",
+			"area": "serializers.AreaSerializer",
+			"project": "serializers.ProjectSerializer",
+			"descendant": "serializers.ReservationSerializer",
+		}
 
 
-class UsageEventSerializer(ModelSerializer):
+class UsageEventSerializer(FlexFieldsModelSerializer):
 	class Meta:
 		model = UsageEvent
 		fields = "__all__"
+		expandable_fields = {
+			"user": "serializers.UserSerializer",
+			"operator": "serializers.UserSerializer",
+			"tool": "serializers.ToolSerializer",
+			"project": "serializers.ProjectSerializer",
+		}
 
 
-class AreaAccessRecordSerializer(ModelSerializer):
+class AreaAccessRecordSerializer(FlexFieldsModelSerializer):
 	class Meta:
 		model = AreaAccessRecord
 		fields = "__all__"
+		expandable_fields = {
+			"customer": "serializers.UserSerializer",
+			"area": "serializers.AreaSerializer",
+			"project": "serializers.ProjectSerializer",
+			"staff_charge": "serializers.StaffChargeSerializer",
+		}
 
 
-class TaskHistorySerializer(ModelSerializer):
+class TaskHistorySerializer(FlexFieldsModelSerializer):
 	class Meta:
 		model = TaskHistory
 		fields = "__all__"
+		expandable_fields = {"user": "serializers.UserSerializer", "task": "serializers.TaskSerializer"}
 
 
-class TaskSerializer(ModelSerializer):
+class TaskSerializer(FlexFieldsModelSerializer):
 	history = TaskHistorySerializer(many=True, read_only=True)
 
 	class Meta:
 		model = Task
 		fields = "__all__"
+		expandable_fields = {
+			"tool": "serializers.ToolSerializer",
+			"creator": "serializers.UserSerializer",
+			"last_updated_by": "serializers.UserSerializer",
+			"resolver": "serializers.UserSerializer",
+		}
 
 
-class ScheduledOutageSerializer(ModelSerializer):
+class ScheduledOutageSerializer(FlexFieldsModelSerializer):
 	class Meta:
 		model = ScheduledOutage
 		fields = "__all__"
+		expandable_fields = {
+			"creator": "serializers.UserSerializer",
+			"tool": "serializers.ToolSerializer",
+			"area": "serializers.AreaSerializer",
+			"resource": "serializers.ResourceSerializer",
+		}
 
 
-class TrainingSessionSerializer(ModelSerializer):
+class TrainingSessionSerializer(FlexFieldsModelSerializer):
 	class Meta:
 		model = TrainingSession
 		fields = "__all__"
+		expandable_fields = {
+			"trainer": "serializers.UserSerializer",
+			"trainee": "serializers.UserSerializer",
+			"tool": "serializers.ToolSerializer",
+			"project": "serializers.ProjectSerializer",
+		}
+
+
+class StaffChargeSerializer(FlexFieldsModelSerializer):
+	class Meta:
+		model = StaffCharge
+		fields = "__all__"
+		expandable_fields = {
+			"customer": "serializers.UserSerializer",
+			"staff_member": "serializers.UserSerializer",
+			"project": "serializers.ProjectSerializer",
+		}
+
+
+class ResourceSerializer(FlexFieldsModelSerializer):
+	class Meta:
+		model = Resource
+		fields = "__all__"
+		expandable_fields = {
+			"fully_dependent_tools": ("serializers.ToolSerializer", {"many": True}),
+			"partially_dependent_tools": ("serializers.ToolSerializer", {"many": True}),
+			"dependent_areas": ("serializers.AreaSerializer", {"many": True}),
+		}
 
 
 class BillableItemSerializer(Serializer):
