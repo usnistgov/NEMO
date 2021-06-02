@@ -41,4 +41,29 @@ class Migration(migrations.Migration):
             name='pinned',
             field=models.BooleanField(default=False, help_text='Check this box to keep this story at the top of the news feed'),
         ),
+        migrations.CreateModel(
+            name='AccountType',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=100, unique=True)),
+            ],
+            options={
+                'ordering': ['name'],
+            },
+        ),
+        migrations.AddField(
+            model_name='account',
+            name='start_date',
+            field=models.DateField(blank=True, null=True),
+        ),
+        migrations.AddField(
+            model_name='project',
+            name='start_date',
+            field=models.DateField(blank=True, null=True),
+        ),
+        migrations.AddField(
+            model_name='account',
+            name='type',
+            field=models.ForeignKey(blank=True, null=True, on_delete=models.deletion.SET_NULL, to='NEMO.AccountType'),
+        ),
     ]
