@@ -25,33 +25,33 @@ def accounts_and_projects(request):
 def select_accounts_and_projects(request, kind=None, identifier=None):
 	selected_project = None
 	try:
-		if kind == 'project':
+		if kind == "project":
 			selected_project = Project.objects.get(id=identifier)
 			account = selected_project.account
-		elif kind == 'account':
+		elif kind == "account":
 			account = Account.objects.get(id=identifier)
 		else:
 			account = None
 	except:
 		account = None
 	dictionary = {
-		'account': account,
-		'selected_project': selected_project,
-		'accounts_and_projects': set(Account.objects.all()) | set(Project.objects.all()),
-		'users': User.objects.all(),
+		"account": account,
+		"selected_project": selected_project,
+		"accounts_and_projects": set(Account.objects.all()) | set(Project.objects.all()),
+		"users": User.objects.all(),
 	}
-	return render(request, 'accounts_and_projects/account_and_projects.html', dictionary)
+	return render(request, "accounts_and_projects/account_and_projects.html", dictionary)
 
 
 @staff_member_required(login_url=None)
 @require_POST
 def toggle_active(request, kind, identifier):
-	if kind == 'account':
+	if kind == "account":
 		entity = get_object_or_404(Account, id=identifier)
-	elif kind == 'project':
+	elif kind == "project":
 		entity = get_object_or_404(Project, id=identifier)
 	else:
-		return HttpResponseBadRequest('Invalid entity for active toggle request.')
+		return HttpResponseBadRequest("Invalid entity for active toggle request.")
 	entity.active = not entity.active
 	entity.save()
 	history = ActivityHistory()
@@ -59,22 +59,18 @@ def toggle_active(request, kind, identifier):
 	history.action = entity.active
 	history.content_object = entity
 	history.save()
-	return redirect(request.META.get('HTTP_REFERER', 'accounts_and_projects'))
+	return redirect(request.META.get("HTTP_REFERER", "accounts_and_projects"))
 
 
 @staff_member_required(login_url=None)
-@require_http_methods(['GET', 'POST'])
+@require_http_methods(["GET", "POST"])
 def create_project(request):
-	dictionary = {
-		'account_list': Account.objects.all(),
-		'user_list': User.objects.filter(is_active=True),
-	}
-	if request.method == 'GET':
-		return render(request, 'accounts_and_projects/create_project.html', dictionary)
-	form = ProjectForm(request.POST)
+	form = ProjectForm(request.POST or None)
+	dictionary = {"account_list": Account.objects.all(), "user_list": User.objects.filter(is_active=True), "form": form}
+	if request.method == "GET":
+		return render(request, "accounts_and_projects/create_project.html", dictionary)
 	if not form.is_valid():
-		dictionary['form'] = form
-		return render(request, 'accounts_and_projects/create_project.html', dictionary)
+		return render(request, "accounts_and_projects/create_project.html", dictionary)
 	project = form.save()
 	account_history = MembershipHistory()
 	account_history.authorizer = request.user
@@ -87,31 +83,32 @@ def create_project(request):
 	project_history.action = project.active
 	project_history.content_object = project
 	project_history.save()
-	return redirect('project', project.id)
+	return redirect("project", project.id)
 
 
 @staff_member_required(login_url=None)
-@require_http_methods(['GET', 'POST'])
+@require_http_methods(["GET", "POST"])
 def create_account(request):
-	if request.method == 'GET':
-		return render(request, 'accounts_and_projects/create_account.html')
-	form = AccountForm(request.POST)
+	form = AccountForm(request.POST or None)
+	dictionary = {"form": form}
+	if request.method == "GET":
+		return render(request, "accounts_and_projects/create_account.html", dictionary)
 	if not form.is_valid():
-		return render(request, 'accounts_and_projects/create_account.html', {'form': form})
+		return render(request, "accounts_and_projects/create_account.html", dictionary)
 	account = form.save()
 	history = ActivityHistory()
 	history.authorizer = request.user
 	history.action = account.active
 	history.content_object = account
 	history.save()
-	return redirect('account', account.id)
+	return redirect("account", account.id)
 
 
 @staff_member_required(login_url=None)
 @require_POST
 def remove_user_from_project(request):
-	user = get_object_or_404(User, id=request.POST['user_id'])
-	project = get_object_or_404(Project, id=request.POST['project_id'])
+	user = get_object_or_404(User, id=request.POST["user_id"])
+	project = get_object_or_404(Project, id=request.POST["project_id"])
 	if project.user_set.filter(id=user.id).exists():
 		history = MembershipHistory()
 		history.action = MembershipHistory.Action.REMOVED
@@ -120,18 +117,15 @@ def remove_user_from_project(request):
 		history.child_content_object = user
 		history.save()
 		project.user_set.remove(user)
-	dictionary = {
-		'users': project.user_set.all(),
-		'project': project
-	}
-	return render(request, 'accounts_and_projects/users_for_project.html', dictionary)
+	dictionary = {"users": project.user_set.all(), "project": project}
+	return render(request, "accounts_and_projects/users_for_project.html", dictionary)
 
 
 @staff_member_required(login_url=None)
 @require_POST
 def add_user_to_project(request):
-	user = get_object_or_404(User, id=request.POST['user_id'])
-	project = get_object_or_404(Project, id=request.POST['project_id'])
+	user = get_object_or_404(User, id=request.POST["user_id"])
+	project = get_object_or_404(Project, id=request.POST["project_id"])
 	if user not in project.user_set.all():
 		history = MembershipHistory()
 		history.action = MembershipHistory.Action.ADDED
@@ -140,16 +134,13 @@ def add_user_to_project(request):
 		history.child_content_object = user
 		history.save()
 		project.user_set.add(user)
-	dictionary = {
-		'users': project.user_set.all(),
-		'project': project
-	}
-	return render(request, 'accounts_and_projects/users_for_project.html', dictionary)
+	dictionary = {"users": project.user_set.all(), "project": project}
+	return render(request, "accounts_and_projects/users_for_project.html", dictionary)
 
 
 @login_required
 @require_GET
 def projects(request):
 	user: User = request.user
-	dictionary = {'managed_projects': user.managed_projects.all()}
-	return render(request, 'accounts_and_projects/projects.html', dictionary)
+	dictionary = {"managed_projects": user.managed_projects.all()}
+	return render(request, "accounts_and_projects/projects.html", dictionary)

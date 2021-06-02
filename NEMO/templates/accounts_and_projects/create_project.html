@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
+{% load static %}
 {% block title %}New project{% endblock %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+{% endblock %}
 {% block content %}
 	<h1>New project</h1>
 	{% if form.non_field_errors %}
@@ -12,18 +17,18 @@
 	<form method="post" action="{% url 'create_project' %}" class="form-horizontal">
 		{% csrf_token %}
 		<div class="form-group">
-			<label for="name" class="control-label col-sm-2">Name</label>
+			<label for="name" class="control-label col-sm-2"><b>Name</b></label>
 			<div class="col-sm-4">
-				<input type="text" name="name" id="name" maxlength="100" class="form-control" value="{{ form.name.value }}" autofocus>
+				<input type="text" name="name" id="name" maxlength="100" class="form-control" value="{{ form.name.value|default_if_none:'' }}" autofocus required>
 			</div>
 			<div class="col-sm-6 form-control-static danger-highlight">
 				{{ form.name.errors|striptags }}
 			</div>
 		</div>
 		<div class="form-group">
-			<label for="account_search" class="control-label col-sm-2">Account</label>
+			<label for="account_search" class="control-label col-sm-2"><b>Account</b></label>
 			<div class="col-sm-4">
-				<input type="text" id="account_search" name="account" class="form-control">
+				<input type="text" id="account_search" name="account" class="form-control" required>
 				<input type="button" id="selected_account" class="btn btn-default" onclick="clear_account_selection()" style="display:none">
 			</div>
 			<div class="col-sm-6 form-control-static danger-highlight">
@@ -31,23 +36,32 @@
 			</div>
 		</div>
 		<div class="form-group">
-			<label for="application_identifier" class="control-label col-sm-2">Application identifier</label>
+            <label for="application_identifier" class="control-label col-sm-2"><b>Application identifier</b></label>
 			<div class="col-sm-4">
-				<input type="text" name="application_identifier" id="application_identifier" maxlength="100" class="form-control" value="{{ form.application_identifier.value }}">
+				<input type="text" name="application_identifier" id="application_identifier" maxlength="100" class="form-control" value="{{ form.application_identifier.value|default_if_none:'' }}" required>
 			</div>
 			<div class="col-sm-6 form-control-static danger-highlight">
 				{{ form.application_identifier.errors|striptags }}
 			</div>
 		</div>
-		<div class="form-group">
-			<div class="col-sm-offset-2 col-sm-10">
-				<div class="checkbox">
-					<label>
-						<input type="checkbox" name="active" checked> Active
-					</label>
-				</div>
+        <div class="form-group">
+            <label for="start_date" class="control-label col-sm-2">Start date</label>
+            <div class="col-sm-4">
+				<input type="text" id="start_date" name="start_date" class="form-control" placeholder="Choose a date" value="{{ form.start_date|date:"m/d/Y" }}">
+            </div>
+            <div class="col-sm-6 form-control-static danger-highlight">
+				{{ form.start_date.errors|striptags }}
 			</div>
-		</div>
+        </div>
+		<div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" name="active" {% if form.active.value %}checked{% endif %}> Active
+                    </label>
+                </div>
+            </div>
+        </div>
 		<div class="form-group">
 			<div class="col-sm-offset-2 col-sm-10">
 				<input type="submit" class="btn btn-success" value="Create new project">
@@ -60,31 +74,20 @@
 		</div>
 	</form>
 	<script>
-        function select_pi(jquery_event, search_selection, dataset_name)
-		{
-			$('#pi_search').typeahead('val', search_selection.id).hide();
-			$("#selected_pi").val(search_selection.name).show();
-		}
-		function clear_pi_selection()
-		{
-			$("#selected_pi").hide();
-			$('#pi_search').typeahead('val', '').show().focus();
-		}
 		function select_account(jquery_event, search_selection, dataset_name)
 		{
-			$('#account_search').typeahead('val', search_selection.id).hide();
+			$('#account_search').prop('required', false).typeahead('val', search_selection.id).hide();
 			$("#selected_account").val(search_selection.name).show();
 		}
 		function clear_account_selection()
 		{
 			$("#selected_account").hide();
-			$('#account_search').typeahead('val', '').show().focus();
+			$('#account_search').prop('required', true).typeahead('val', '').show().focus();
 		}
-		function on_load()
+		window.addEventListener("load", function ()
 		{
-			$('#pi_search').autocomplete('pi', select_pi, {{ user_list|json_search_base }});
+		    $('#start_date').datetimepicker({format: 'MM/DD/YYYY'});
 			$('#account_search').autocomplete('account', select_account, {{ account_list|json_search_base }});
-		}
-		$(on_load);
+		});
 	</script>
 {% endblock %}

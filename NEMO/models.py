@@ -1109,8 +1109,20 @@ class ConfigurationHistory(models.Model):
 		return str(self.id)
 
 
+class AccountType(models.Model):
+	name = models.CharField(max_length=100, unique=True)
+
+	class Meta:
+		ordering = ['name']
+
+	def __str__(self):
+		return str(self.name)
+
+
 class Account(models.Model):
 	name = models.CharField(max_length=100, unique=True)
+	type = models.ForeignKey(AccountType, null=True, blank=True, on_delete=models.SET_NULL)
+	start_date = models.DateField(null=True, blank=True)
 	active = models.BooleanField(default=True, help_text="Users may only charge to an account if it is active. Deactivate the account to block future billable activity (such as tool usage and consumable check-outs) of all the projects that belong to it.")
 
 	class Meta:
@@ -1123,6 +1135,7 @@ class Account(models.Model):
 class Project(models.Model):
 	name = models.CharField(max_length=100, unique=True)
 	application_identifier = models.CharField(max_length=100)
+	start_date = models.DateField(null=True, blank=True)
 	account = models.ForeignKey(Account, help_text="All charges for this project will be billed to the selected account.", on_delete=models.CASCADE)
 	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
 	only_allow_tools = models.ManyToManyField(Tool, blank=True, help_text="Selected tools will be the only ones allowed for this project.")

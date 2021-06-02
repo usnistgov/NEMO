@@ -76,6 +76,7 @@ from NEMO.models import (
 	BuddyRequestMessage,
 	ToolDocuments,
 	ReservationQuestions,
+	AccountType,
 )
 from NEMO.widgets.dynamic_form import (
 	DynamicForm,
@@ -425,9 +426,9 @@ class ConfigurationHistoryAdmin(admin.ModelAdmin):
 
 @register(Account)
 class AccountAdmin(admin.ModelAdmin):
-	list_display = ("name", "id", "active")
+	list_display = ("name", "id", "active", "type", "start_date")
 	search_fields = ("name",)
-	list_filter = ("active",)
+	list_filter = ("active", "type", "start_date")
 
 	def save_model(self, request, obj, form, change):
 		""" Audit account and project active status. """
@@ -471,10 +472,10 @@ class ProjectAdmin(admin.ModelAdmin):
 		"principal_investigators",
 		"only_allow_tools",
 	)
-	list_display = ("name", "id", "application_identifier", "account", "active")
+	list_display = ("name", "id", "application_identifier", "account", "active", "start_date")
 	filter_horizontal = ("only_allow_tools",)
 	search_fields = ("name", "application_identifier", "account__name")
-	list_filter = ("active",)
+	list_filter = ("active", "account", "start_date")
 	form = ProjectAdminForm
 
 	def save_model(self, request, obj, form, change):
@@ -580,7 +581,7 @@ class ReservationQuestionsForm(forms.ModelForm):
 @register(ReservationQuestions)
 class ReservationQuestionsAdmin(admin.ModelAdmin):
 	form = ReservationQuestionsForm
-	filter_horizontal = ("only_for_tools", "only_for_areas", "only_for_projects",)
+	filter_horizontal = ("only_for_tools", "only_for_areas", "only_for_projects")
 	readonly_fields = ("questions_preview",)
 	fieldsets = (
 		(
@@ -1218,5 +1219,6 @@ class EmailLogAdmin(admin.ModelAdmin):
 		return False
 
 
+admin.site.register(AccountType)
 admin.site.register(ResourceCategory)
 admin.site.register(Permission)
