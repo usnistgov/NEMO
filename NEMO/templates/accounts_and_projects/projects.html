@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Projects{% endblock %}
 {% block content %}
+    <h1 style="margin-bottom: 30px">
+		Managed projects
+    </h1>
     {% for project in managed_projects %}
         <h3>
             <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#project_{{ project.id }}_details" class="pointer" style="text-decoration:none">
