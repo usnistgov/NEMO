@@ -466,6 +466,7 @@ class ProjectAdmin(admin.ModelAdmin):
 		"name",
 		"application_identifier",
 		"account",
+		"start_date",
 		"allow_consumable_withdrawals",
 		"active",
 		"members",

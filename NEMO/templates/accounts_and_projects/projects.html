@@ -20,6 +20,10 @@
                 <span class="grey">{{ project.account }}</span><br>
                 <label class="control-label">Identifier:</label>
                 <span class="grey">{{ project.application_identifier }}</span>
+                {% if project.start_date %}
+                    <label class="control-label">Start date:</label>
+                    <span class="grey">{{ project.start_date }}</span>
+                {% endif %}
                 <div style="height:10px"></div>
                 <div>
                     <label class="control-label">Users:</label>

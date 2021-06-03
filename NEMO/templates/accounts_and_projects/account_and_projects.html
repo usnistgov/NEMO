@@ -57,6 +57,12 @@
                                     <label class="control-label">Identifier:</label>
                                     <span class="grey">{{ project.application_identifier }}</span>
                                 </div>
+                                {% if project.start_date %}
+                                    <div>
+                                        <label class="control-label">Start Date:</label>
+                                        <span class="grey">{{ project.start_date }}</span>
+                                    </div>
+                                {% endif %}
                                 <div style="height:10px"></div>
                                 <div id="add_user_to_project_{{ project.id }}">
                                     <label class="control-label">Users:<input id="search_user_for_project_{{ project.id }}" type="text" class="form-control user_search" placeholder="Search for a user to add" data-project-id="{{ project.id }}" style="min-width: 250px;"></label>
