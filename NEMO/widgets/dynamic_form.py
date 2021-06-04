@@ -150,9 +150,10 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 
 	def render_element(self) -> str:
 		title = self.title_html or self.title
+		max_width = f"max-width:{self.max_width}px"
 		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
 		required = "required" if self.required else ""
-		result += f'<select name="{self.form_name}" {required} style="margin-top: 5px;max-width:{self.max_width}px" class="form-control">'
+		result += f'<select name="{self.form_name}" {required} style="margin-top: 5px;{max_width}" class="form-control">'
 		blank_disabled = 'disabled="disabled"' if required else ""
 		placeholder = self.placeholder if self.placeholder else "Select an option"
 		result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
@@ -161,7 +162,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 			result += f'<option value="{choice}" {is_default_choice}>{choice}</option>'
 		result += "</select>"
 		if self.help:
-			result += f'<div style="font-size:smaller;color:#999">{self.help}</div>'
+			result += f'<div style="font-size:smaller;color:#999;{max_width}">{self.help}</div>'
 		result += "</div>"
 		return result
 
@@ -175,11 +176,12 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 
 	def render_element(self) -> str:
 		title = self.title_html or self.title
+		max_width = f"max-width:{self.max_width}px"
 		result = '<div class="form-group">'
 		result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
 		input_group_required = True if self.prefix or self.suffix else False
 		if input_group_required:
-			result += f'<div class="input-group" style="max-width:{self.max_width}px">'
+			result += f'<div class="input-group" style="{max_width}">'
 		if self.prefix:
 			result += f'<span class="input-group-addon">{self.prefix}</span>'
 		required = "required" if self.required else ""
@@ -191,7 +193,7 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 		if input_group_required:
 			result += "</div>"
 		if self.help:
-			result += f'<div style="font-size:smaller;color:#999">{self.help}</div>'
+			result += f'<div style="font-size:smaller;color:#999;{max_width}">{self.help}</div>'
 		result += "</div>"
 		return result
 
