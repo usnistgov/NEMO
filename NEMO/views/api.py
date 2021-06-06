@@ -145,6 +145,7 @@ class ReservationViewSet(ReadOnlyModelViewSet):
 		"area_id": ["exact", "in", "isnull"],
 		"cancelled": ["exact"],
 		"missed": ["exact"],
+		"question_data": ["isempty"],
 	}
 
 
