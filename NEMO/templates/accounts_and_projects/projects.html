@@ -17,10 +17,12 @@
         <div style="margin-left:34px">
             <div id="project_{{ project.id }}_details" class="collapse in">
                 <label class="control-label">Account:</label>
-                <span class="grey">{{ project.account }}</span><br>
+                <span class="grey">{{ project.account }}</span>
+                <br>
                 <label class="control-label">Identifier:</label>
                 <span class="grey">{{ project.application_identifier }}</span>
                 {% if project.start_date %}
+                    <br>
                     <label class="control-label">Start date:</label>
                     <span class="grey">{{ project.start_date }}</span>
                 {% endif %}
