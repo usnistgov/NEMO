@@ -25,14 +25,14 @@ setup(
 	],
 	install_requires=[
 		'cryptography==3.4.6',
-		'Django==2.2.21',
+		'Django==2.2.24',
 		'django-filter==2.4.0',
 		'djangorestframework==3.12.2',
 		'drf-flex-fields==0.9.0',
 		'ldap3==2.9',
 		'python-dateutil==2.8.1',
 		'requests==2.25.1',
-		'Pillow==8.1.2',
+		'Pillow==8.2.0',
 		'django-mptt==0.12.0',
 	],
 	entry_points={
