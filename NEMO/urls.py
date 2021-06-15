@@ -22,15 +22,19 @@ if apps.is_installed("django.contrib.admin"):
 
 # REST API URLs
 router = routers.DefaultRouter()
-router.register(r'users', api.UserViewSet)
-router.register(r'projects', api.ProjectViewSet)
 router.register(r'accounts', api.AccountViewSet)
-router.register(r'tools', api.ToolViewSet)
-router.register(r'reservations', api.ReservationViewSet)
-router.register(r'usage_events', api.UsageEventViewSet)
 router.register(r'area_access_records', api.AreaAccessRecordViewSet)
-router.register(r'tasks', api.TaskViewSet)
+router.register(r'areas', api.AreaViewSet)
+router.register(r'projects', api.ProjectViewSet)
+router.register(r'reservations', api.ReservationViewSet)
+router.register(r'resources', api.ResourceViewSet)
 router.register(r'scheduled_outages', api.ScheduledOutageViewSet)
+router.register(r'staff_charges', api.StaffChargeViewSet)
+router.register(r'tasks', api.TaskViewSet)
+router.register(r'tools', api.ToolViewSet)
+router.register(r'training_sessions', api.TrainingSessionViewSet)
+router.register(r'usage_events', api.UsageEventViewSet)
+router.register(r'users', api.UserViewSet)
 
 reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
 
@@ -269,6 +273,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# Account & project management:
 		url(r'^accounts_and_projects/$', accounts_and_projects.accounts_and_projects, name='accounts_and_projects'),
+		url(r'^projects/$', accounts_and_projects.projects, name='projects'),
 		url(r'^project/(?P<identifier>\d+)/$', accounts_and_projects.select_accounts_and_projects, kwargs={'kind': 'project'}, name='project'),
 		url(r'^account/(?P<identifier>\d+)/$', accounts_and_projects.select_accounts_and_projects, kwargs={'kind': 'account'}, name='account'),
 		url(r'^toggle_active/(?P<kind>account|project)/(?P<identifier>\d+)/$', accounts_and_projects.toggle_active, name='toggle_active'),

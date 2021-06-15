@@ -27,14 +27,19 @@ class PostUsageQuestion:
 	group_type = "group"
 	question_types = [number_type, float_type, text_type, textarea_type, radio_type, dropdown_type, group_type]
 
+	required_span = '<span style="color:red">*</span>'
+
 	def __init__(self, properties: Dict, tool_id: int, virtual_inputs: bool = False, index: int = None):
 		self.properties = properties
 		self.tool_id = tool_id
 		self.virtual_inputs = virtual_inputs
 		self.name = self._init_property("name")
 		self.title = self._init_property("title")
+		self.title_html = self._init_property("title_html")
+		self.help = self._init_property("help")
 		self.type = self._init_property("type")
 		self.max_width = self._init_property("max-width")
+		self.maxlength = self._init_property("maxlength")
 		self.placeholder = self._init_property("placeholder")
 		self.prefix = self._init_property("prefix")
 		self.suffix = self._init_property("suffix")
@@ -51,6 +56,8 @@ class PostUsageQuestion:
 		self.index = index
 		if index and not isinstance(self, PostUsageGroupQuestion):
 			self.name = f"{self.name}_{index}"
+		# form_name is used in forms and extraction to avoid potential conflicts with other data
+		self.form_name = f"df_{self.name}"
 		pass
 
 	def _init_property(self, prop: str, boolean: bool = False) -> Any:
@@ -82,7 +89,7 @@ class PostUsageQuestion:
 
 	def extract(self, request) -> Dict:
 		answered_question = copy(self.properties)
-		user_input = request.POST.get(self.name)
+		user_input = request.POST.get(self.form_name)
 		if user_input:
 			answered_question["user_input"] = user_input
 		return answered_question
@@ -94,7 +101,8 @@ class PostUsageQuestion:
 			raise Exception(f"{self.question_type} requires property '{prop}' to be defined")
 
 	@staticmethod
-	def load_questions(questions: List[Dict], tool_id: int, virtual_inputs: bool = False, index: int = None):
+	def load_questions(questions: Optional[List[Dict]], tool_id: int, virtual_inputs: bool = False, index: int = None):
+		questions_to_load = questions or []
 		constructor = {
 			PostUsageQuestion.number_type: PostUsageNumberFieldQuestion,
 			PostUsageQuestion.float_type: PostUsageFloatFieldQuestion,
@@ -105,7 +113,7 @@ class PostUsageQuestion:
 			PostUsageQuestion.group_type: PostUsageGroupQuestion,
 		}
 		post_usage_questions: List[PostUsageQuestion] = []
-		for question in questions:
+		for question in questions_to_load:
 			post_usage_questions.append(
 				constructor.get(question["type"], PostUsageQuestion)(question, tool_id, virtual_inputs, index)
 			)
@@ -120,12 +128,13 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
+		title = self.title_html or self.title
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
 		for choice in self.choices:
 			result += '<div class="radio">'
 			required = "required" if self.required else ""
 			is_default_choice = "checked" if self.default_choice and self.default_choice == choice else ""
-			result += f'<label><input type="radio" name="{self.name}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
+			result += f'<label><input type="radio" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
 			result += "</div>"
 		result += "</div>"
 		return result
@@ -140,9 +149,11 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 		self.validate_property_exists("choices")
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div>'
+		title = self.title_html or self.title
+		max_width = f"max-width:{self.max_width}px"
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
 		required = "required" if self.required else ""
-		result += f'<select name="{self.name}" {required} style="margin-top: 5px;max-width:{self.max_width}px" class="form-control">'
+		result += f'<select name="{self.form_name}" {required} style="margin-top: 5px;{max_width}" class="form-control">'
 		blank_disabled = 'disabled="disabled"' if required else ""
 		placeholder = self.placeholder if self.placeholder else "Select an option"
 		result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
@@ -150,6 +161,8 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 			is_default_choice = "selected" if self.default_choice and self.default_choice == choice else ""
 			result += f'<option value="{choice}" {is_default_choice}>{choice}</option>'
 		result += "</select>"
+		if self.help:
+			result += f'<div style="font-size:smaller;color:#999;{max_width}">{self.help}</div>'
 		result += "</div>"
 		return result
 
@@ -162,11 +175,13 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 		self.validate_property_exists("max-width")
 
 	def render_element(self) -> str:
+		title = self.title_html or self.title
+		max_width = f"max-width:{self.max_width}px"
 		result = '<div class="form-group">'
-		result += f'<label for="{self.name}" style="white-space: pre-wrap">{self.title}</label>'
+		result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
 		input_group_required = True if self.prefix or self.suffix else False
 		if input_group_required:
-			result += f'<div class="input-group" style="max-width:{self.max_width}px">'
+			result += f'<div class="input-group" style="{max_width}">'
 		if self.prefix:
 			result += f'<span class="input-group-addon">{self.prefix}</span>'
 		required = "required" if self.required else ""
@@ -177,15 +192,18 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 			result += f'<span class="input-group-addon">{self.suffix}</span>'
 		if input_group_required:
 			result += "</div>"
+		if self.help:
+			result += f'<div style="font-size:smaller;color:#999;{max_width}">{self.help}</div>'
 		result += "</div>"
 		return result
 
 	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
-		return f'<input type="text" class="form-control" id="{self.name}" name="{self.name}" {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+		maxlength = f'maxlength="{self.maxlength}"' if self.maxlength else ""
+		return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
 	def render_script(self):
 		if self.virtual_inputs:
-			return f"<script>$('#{self.name}').keyboard();</script>"
+			return f"<script>$('#{self.form_name}').keyboard();</script>"
 		return super().render_script()
 
 	def render_as_text(self) -> str:
@@ -203,7 +221,7 @@ class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
 
 	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
 		rows = f'rows="{str(self.rows)}"' if self.rows else ""
-		return f'<textarea class="form-control" id="{self.name}" name="{self.name}" {rows} {placeholder} {required} style="max-width:{self.max_width}px;height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>'
+		return f'<textarea class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} style="max-width:{self.max_width}px;height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>'
 
 
 class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
@@ -213,11 +231,11 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
 		minimum = f'min="{self.min}"' if self.min else ""
 		maximum = f'max="{self.max}"' if self.max else ""
 		step = f'step="{self.step}"' if self.step else ""
-		return f'<input type="number" class="form-control" id="{self.name}" name="{self.name}" {placeholder} {pattern} {minimum} {maximum} {step} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+		return f'<input type="number" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {minimum} {maximum} {step} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
 	def render_script(self):
 		if self.virtual_inputs:
-			return f"<script>$('#{self.name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true}});</script>"
+			return f"<script>$('#{self.form_name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true}});</script>"
 		return super().render_script()
 
 	def render_as_text(self) -> str:
@@ -240,11 +258,11 @@ class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
 	def render_input(self, required: str, pattern: str, placeholder: str) -> str:
 		precision = self.precision if self.precision else 2
 		pattern = f'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{"{1,"+str(precision)+ "}"})?\s*$"'
-		return f'<input type="text" class="form-control" id="{self.name}" name="{self.name}" {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+		return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
 	def render_script(self):
 		if self.virtual_inputs:
-			return f"<script>$('#{self.name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': false}});</script>"
+			return f"<script>$('#{self.form_name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': false}});</script>"
 		return super().render_script()
 
 
@@ -268,7 +286,8 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			sub_question.validate()
 
 	def render_element(self) -> str:
-		result = f'<div class="form-group"><div style="white-space: pre-wrap">{self.title}</div></div>'
+		title = self.title_html or self.title
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}</div></div>'
 		result += f'<div id="{self.group_name}_container">'
 		result += self.render_group_question()
 		result += "</div>"
@@ -333,23 +352,26 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 		# The result of the extraction will be a dictionary, with the keys being the group number, and the values the user inputs for all questions of the group.
 		sub_results = copy(self.properties)
 		user_inputs = {}
+		question_form_names = [sub_question.form_name for sub_question in self.sub_questions]
 		for key, value in request.POST.items():
-			if key in [sub_question.name for sub_question in self.sub_questions]:
-				user_inputs.setdefault(0, {})
-				user_inputs[0][key] = value
+			if key in question_form_names:
+				for sub_question in self.sub_questions:
+					if key == sub_question.form_name:
+						user_inputs.setdefault(0, {})
+						user_inputs[0][sub_question.name] = value
 			else:
 				for sub_question in self.sub_questions:
-					name = sub_question.name
+					name = sub_question.form_name
 					if key.startswith(name + "_"):
 						index = int(key.rsplit("_", 1)[1])
 						user_inputs.setdefault(index, {})
-						user_inputs[index][name] = value
+						user_inputs[index][sub_question.name] = value
 		sub_results["user_input"] = user_inputs
 		return sub_results
 
 
 class DynamicForm:
-	def __init__(self, questions, tool_id, virtual_inputs: bool = False):
+	def __init__(self, questions, tool_id = None, virtual_inputs: bool = False):
 		self.untreated_questions = []
 		self.questions = []
 		if questions:

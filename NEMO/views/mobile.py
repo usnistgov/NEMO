@@ -9,12 +9,13 @@ from django.utils import timezone
 from django.utils.dateparse import parse_time, parse_date
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.exceptions import ProjectChargeException
+from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.models import Reservation, Tool, Project, ScheduledOutage, User, Area, ReservationItemType
 from NEMO.utilities import extract_date, localize, beginning_of_the_day, end_of_the_day
-from NEMO.views.calendar import extract_configuration, determine_insufficient_notice
+from NEMO.views.calendar import extract_configuration, determine_insufficient_notice, get_and_combine_reservation_questions
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_policy_to_save_reservation, check_billing_to_project
+from NEMO.widgets.dynamic_form import DynamicForm
 
 
 @login_required
@@ -55,7 +56,8 @@ def choose_item(request, next_page):
 @require_GET
 def new_reservation(request, item_type, item_id, date=None):
 	# If the user has no active projects then they're not allowed to make reservations.
-	if request.user.active_project_count() == 0:
+	user: User = request.user
+	if user.active_project_count() == 0:
 		return render(request, 'mobile/no_active_projects.html')
 
 	item_type = ReservationItemType(item_type)
@@ -68,6 +70,16 @@ def new_reservation(request, item_type, item_id, date=None):
 	dictionary['item_type'] = item_type.value
 	dictionary['date'] = date
 	dictionary['item_reservation_times'] = list(Reservation.objects.filter(**{item_type.value: item}).filter(cancelled=False, missed=False, shortened=False, start__gte=timezone.now()))
+
+	# Reservation questions if applicable
+	if not user.is_staff:
+		reservation_question_dict = {}
+		for project in user.active_projects():
+			reservation_questions = get_and_combine_reservation_questions(item_type, item_id, project)
+			if reservation_questions:
+				dynamic_form = DynamicForm(reservation_questions)
+				reservation_question_dict[project.id] = dynamic_form.render()
+		dictionary['reservation_questions'] = reservation_question_dict
 
 	return render(request, 'mobile/new_reservation.html', dictionary)
 
@@ -116,6 +128,16 @@ def make_reservation(request):
 	# Reservation can't be short notice if the user is configuring the tool themselves.
 	if reservation.self_configuration:
 		reservation.short_notice = False
+
+	# Reservation questions if applicable
+	reservation_questions = get_and_combine_reservation_questions(item_type, item.id, reservation.project)
+	if reservation_questions:
+		try:
+			dynamic_form = DynamicForm(reservation_questions)
+			reservation.question_data = dynamic_form.extract(request)
+		except RequiredUnansweredQuestionsException as e:
+			return render(request, 'mobile/error.html', {'message': str(e)})
+
 	reservation.save_and_notify()
 	return render(request, 'mobile/reservation_success.html', {'new_reservation': reservation})
 

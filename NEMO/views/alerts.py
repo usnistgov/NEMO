@@ -17,9 +17,7 @@ def alerts(request):
 		alert = Alert.objects.get(id=alert_id)
 	except Alert.DoesNotExist:
 		alert = None
-	if request.method == 'GET':
-		form = AlertForm(instance=alert)
-	elif request.method == 'POST':
+	if request.method == 'POST':
 		form = AlertForm(data=request.POST, instance=alert)
 		if form.is_valid():
 			alert = form.save()
@@ -28,7 +26,7 @@ def alerts(request):
 			alert.save()
 			form = AlertForm()
 	else:
-		form = AlertForm()
+		form = AlertForm(instance=alert)
 	dictionary = {
 		'form': form,
 		'editing': True if form.instance.id else False,
@@ -42,16 +40,13 @@ def alerts(request):
 @login_required
 @require_POST
 def delete_alert(request, alert_id):
-	try:
-		alert = get_object_or_404(Alert, id=alert_id)
-		if alert.user == request.user:  # Users can delete their own alerts
-			alert.deleted = True
-			alert.save(update_fields=['deleted'])
-		elif alert.user is None and request.user.is_staff:  # Staff can delete global alerts
-			alert.deleted = True
-			alert.save(update_fields=['deleted'])
-	except Http404:
-		pass
+	alert = get_object_or_404(Alert, id=alert_id)
+	if alert.user == request.user:  # Users can delete their own alerts
+		alert.deleted = True
+		alert.save(update_fields=['deleted'])
+	elif alert.user is None and request.user.is_staff:  # Staff can delete global alerts
+		alert.deleted = True
+		alert.save(update_fields=['deleted'])
 	return redirect(request.META.get('HTTP_REFERER', 'landing'))
 
 

@@ -3,10 +3,12 @@ from collections import Iterable
 from copy import deepcopy
 from datetime import timedelta, datetime
 from http import HTTPStatus
+from json import loads, dumps
 from logging import getLogger
 from re import match
 from typing import List, Optional, Union
 
+import pytz
 from dateutil import rrule
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
@@ -18,13 +20,14 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.exceptions import ProjectChargeException
-from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area, ReservationItemType
+from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
+from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area, ReservationItemType, ReservationQuestions
 from NEMO.tasks import synchronized
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize, EmailCategory
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations, check_tool_reservation_requiring_area, check_billing_to_project
+from NEMO.widgets.dynamic_form import DynamicForm
 
 calendar_logger = getLogger(__name__)
 
@@ -345,6 +348,22 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 		except ProjectChargeException as e:
 			policy_problems.append(e.msg)
 			return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': False, 'reservation_action': 'create'})
+
+	# Reservation questions if applicable
+	reservation_questions = get_and_combine_reservation_questions(item_type, item_id, new_reservation.project)
+	if reservation_questions:
+		dynamic_form = DynamicForm(reservation_questions)
+		dynamic_form_rendered = dynamic_form.render()
+		if not bool(request.POST.get("reservation_questions", False)):
+			# We have not yet asked the questions
+			return render(request, 'calendar/reservation_questions.html', {'reservation_questions': dynamic_form_rendered})
+		else:
+			# We already asked before, now we need to extract the results
+			try:
+				new_reservation.question_data = dynamic_form.extract(request)
+			except RequiredUnansweredQuestionsException as e:
+				dictionary = {'error': str(e), 'reservation_questions': dynamic_form_rendered}
+				return render(request, 'calendar/reservation_questions.html', dictionary)
 
 	# Configuration rules only apply to tools
 	if item_type == ReservationItemType.TOOL:
@@ -971,6 +990,24 @@ def proxy_reservation(request):
 	return render(request, 'calendar/proxy_reservation.html', {'users': User.objects.filter(is_active=True)})
 
 
+def get_and_combine_reservation_questions(item_type: ReservationItemType, item_id: int, project: Project = None) -> str:
+	reservation_questions = ReservationQuestions.objects.all()
+	if item_type == ReservationItemType.TOOL:
+		reservation_questions = reservation_questions.filter(tool_reservations=True)
+		reservation_questions = reservation_questions.filter(Q(only_for_tools=None) | Q(only_for_tools__in=[item_id]))
+	if item_type == ReservationItemType.AREA:
+		reservation_questions = reservation_questions.filter(area_reservations=True)
+		reservation_questions = reservation_questions.filter(Q(only_for_areas=None) | Q(only_for_areas__in=[item_id]))
+	if project:
+		reservation_questions = reservation_questions.filter(Q(only_for_projects=None) | Q(only_for_projects__in=[project.id]))
+	else:
+		reservation_questions = reservation_questions.filter(only_for_projects=None)
+	reservation_questions_json = []
+	for reservation_question in reservation_questions:
+		reservation_questions_json.extend(loads(reservation_question.questions))
+	return dumps(reservation_questions_json) if len(reservation_questions_json) else ""
+
+
 def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime = None):
 	try:
 		if new_end is None:
@@ -1109,9 +1146,9 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	uid = 'UID:'+str(reservation.id)+'\n'
 	sequence = 'SEQUENCE:2\n' if cancelled else 'SEQUENCE:0\n'
 	priority = 'PRIORITY:5\n' if cancelled else 'PRIORITY:0\n'
-	now = datetime.now().strftime('%Y%m%dT%H%M%SZ')
-	start = reservation.start.strftime('%Y%m%dT%H%M%SZ')
-	end = reservation.end.strftime('%Y%m%dT%H%M%SZ')
+	now = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+	start = reservation.start.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
+	end = reservation.end.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
 	reservation_name = reservation.reservation_item.name
 	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'ATTENDEE:{reservation.user.email}\n', f'ORGANIZER:{reservation.user.email}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
 	ics = io.StringIO('')

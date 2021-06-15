@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Projects{% endblock %}
+{% block content %}
+    <h1 style="margin-bottom: 30px">
+		Managed projects
+    </h1>
+    {% for project in managed_projects %}
+        <h3>
+            <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#project_{{ project.id }}_details" class="pointer" style="text-decoration:none">
+                <span id="project_{{ project.id }}_chevron" class="glyphicon glyphicon-chevron-down pull-left chevron"></span>
+                {{ project }}
+            </a>
+            <span class="label {% if project.active %}label-success{% else %}label-danger{% endif %}" style="vertical-align:50%; font-size:small">
+                {% if project.active %}Active{% else %}Inactive{% endif %}
+            </span>
+        </h3>
+        <div style="margin-left:34px">
+            <div id="project_{{ project.id }}_details" class="collapse in">
+                <label class="control-label">Account:</label>
+                <span class="grey">{{ project.account }}</span>
+                <br>
+                <label class="control-label">Identifier:</label>
+                <span class="grey">{{ project.application_identifier }}</span>
+                {% if project.start_date %}
+                    <br>
+                    <label class="control-label">Start date:</label>
+                    <span class="grey">{{ project.start_date }}</span>
+                {% endif %}
+                <div style="height:10px"></div>
+                <div>
+                    <label class="control-label">Users:</label>
+                </div>
+                <div>
+                    {% if project.user_set.all %}
+                        <ul>
+                        {% for u in project.user_set.all %}
+                            <li class="{% if not u.is_active %}light-grey{% endif %}">{{ u }}</li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <span class="grey">This project does not have any members.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

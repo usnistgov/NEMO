@@ -1,0 +1,182 @@
+label
+{
+    text-transform:capitalize
+}
+
+.questions_preview label
+{
+    text-transform: none;
+}
+
+.questions_preview
+{
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.42857143;
+    border: 1px solid lightgray;
+    width: max-content;
+    padding: 20px 30px;
+}
+
+div.questions_preview:empty
+{
+    display: none;
+}
+
+.questions_preview_help
+{
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+.questions_preview *
+{
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+.questions_preview .form-group
+{
+    margin-bottom: 15px;
+}
+
+.questions_preview .form-group label
+{
+    display: inline-block;
+    max-width: 100%;
+    margin-bottom: 5px;
+    font-weight: normal;
+    width: initial;
+    color: #333;
+    float: none;
+    padding: 0;
+    font-size: 14px;
+    line-height: inherit;
+}
+
+.questions_preview .form-group label:after
+{
+    height: initial !important;
+}
+
+.questions_preview .form-group .input-group
+{
+    position: relative;
+    display: table;
+    border-collapse: separate;
+}
+
+.questions_preview .form-group .input-group .input-group-addon
+{
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 1;
+    color: #555;
+    text-align: center;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 1%;
+    white-space: nowrap;
+    vertical-align: middle;
+    display: table-cell;
+}
+
+.questions_preview .form-group .input-group .input-group-addon:last-child
+{
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.questions_preview .form-group .form-control
+{
+    display: block;
+    width: 100%;
+    height: 34px;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.42857143;
+    color: #555;
+    background-color: #fff;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+    -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;
+    -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+    transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+}
+
+.questions_preview .form-group .input-group .form-control
+{
+    display: table-cell;
+    position: relative;
+    z-index: 2;
+    float: left;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.questions_preview .form-group .input-group .form-control:first-child
+{
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.questions_preview .form-group .radio, .questions_preview .form-group .checkbox
+{
+    position: relative;
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.questions_preview .form-group .radio label, .questions_preview .form-group .checkbox label
+{
+    min-height: 20px;
+    padding-left: 20px;
+    margin-bottom: 0;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.questions_preview .form-group .radio input[type="radio"], .questions_preview .form-group .radio-inline input[type="radio"], .post_usage_preview .form-group .checkbox input[type="checkbox"], .post_usage_preview .form-group .checkbox-inline input[type="checkbox"]
+{
+    position: absolute;
+    margin-top: 4px \9;
+    margin-left: -20px;
+}
+
+.questions_preview .form-group input[type="radio"], .questions_preview .form-group input[type="checkbox"]
+{
+    margin: 4px 0 0;
+    margin-top: 1px \9;
+    line-height: normal;
+}
+
+.questions_preview .form-group input[type="checkbox"], .questions_preview .form-group input[type="radio"]
+{
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    padding: 0;
+}
+
+#form_validity
+{
+    margin-top: 15px;
+    padding: 5px;
+    text-align: center;
+    color: inherit;
+    background-color: #5cb85c;
+}
+
+#form_validity.invalid
+{
+    color: whitesmoke;
+    background-color: #ac2925;
+}

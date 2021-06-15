@@ -1,5 +1,6 @@
 import sys
 from json import loads
+
 from django import forms
 from django.contrib import admin
 from django.contrib.admin import register
@@ -73,9 +74,16 @@ from NEMO.models import (
 	BuddyRequest,
 	EmailLog,
 	BuddyRequestMessage,
-	ToolDocuments
+	ToolDocuments,
+	ReservationQuestions,
+	AccountType,
 )
-from NEMO.widgets.dynamic_form import DynamicForm, PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion
+from NEMO.widgets.dynamic_form import (
+	DynamicForm,
+	PostUsageNumberFieldQuestion,
+	PostUsageFloatFieldQuestion,
+	PostUsageGroupQuestion,
+)
 
 
 class ToolAdminForm(forms.ModelForm):
@@ -84,8 +92,8 @@ class ToolAdminForm(forms.ModelForm):
 		fields = "__all__"
 
 	class Media:
-		js = ("admin/tool/tool.js",)
-		css = {"": ("admin/tool/tool.css",)}
+		js = ("admin/tool/tool.js", "admin/questions_preview/questions_preview.js")
+		css = {"": ("admin/questions_preview/questions_preview.css",)}
 
 	qualified_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
@@ -106,8 +114,8 @@ class ToolAdminForm(forms.ModelForm):
 	)
 
 	_tool_calendar_color = forms.CharField(
-		required=False, max_length=9, initial='#33ad33',
-		widget=forms.TextInput(attrs={'type': 'color'}))
+		required=False, max_length=9, initial="#33ad33", widget=forms.TextInput(attrs={"type": "color"})
+	)
 
 	def __init__(self, *args, **kwargs):
 		super(ToolAdminForm, self).__init__(*args, **kwargs)
@@ -180,7 +188,7 @@ class ToolDocumentsInline(admin.TabularInline):
 
 @register(Tool)
 class ToolAdmin(admin.ModelAdmin):
-	inlines = [ToolDocumentsInline,]
+	inlines = [ToolDocumentsInline]
 	list_display = (
 		"name_display",
 		"_category",
@@ -261,7 +269,7 @@ class ToolAdmin(admin.ModelAdmin):
 		if obj.id:
 			form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ""
 			return mark_safe(
-				'<div class="post_usage_preview">{}{}</div><div class="help post_usage_preview_help">Save form to preview post usage questions</div>'.format(
+				'<div class="questions_preview">{}{}</div><div class="help questions_preview_help">Save form to preview post usage questions</div>'.format(
 					DynamicForm(obj.post_usage_questions, obj.id).render(), form_validity_div
 				)
 			)
@@ -293,14 +301,14 @@ class ToolAdmin(admin.ModelAdmin):
 				obj.nonrequired_resource_set.set(form.cleaned_data["nonrequired_resources"])
 
 
-
 class AreaAdminForm(MPTTAdminForm):
 	class Meta:
 		model = Area
 		fields = "__all__"
+
 	area_calendar_color = forms.CharField(
-		required=False, max_length=9, initial='#88B7CD',
-		widget=forms.TextInput(attrs={'type': 'color'}))
+		required=False, max_length=9, initial="#88B7CD", widget=forms.TextInput(attrs={"type": "color"})
+	)
 
 
 @register(Area)
@@ -351,7 +359,6 @@ class AreaAdmin(DraggableMPTTAdmin):
 				)
 			},
 		),
-
 	)
 	list_display_links = ("indented_title",)
 	list_filter = ("requires_reservation", ("parent_area", TreeRelatedFieldListFilter))
@@ -419,9 +426,9 @@ class ConfigurationHistoryAdmin(admin.ModelAdmin):
 
 @register(Account)
 class AccountAdmin(admin.ModelAdmin):
-	list_display = ("name", "id", "active")
+	list_display = ("name", "id", "active", "type", "start_date")
 	search_fields = ("name",)
-	list_filter = ("active",)
+	list_filter = ("active", "type", "start_date")
 
 	def save_model(self, request, obj, form, change):
 		""" Audit account and project active status. """
@@ -455,11 +462,21 @@ class ProjectAdminForm(forms.ModelForm):
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-	fields = ("name", "application_identifier", "account", "allow_consumable_withdrawals", "active", "members", "principal_investigators", "only_allow_tools")
-	list_display = ("name", "id", "application_identifier", "account", "active")
-	filter_horizontal = ('only_allow_tools',)
+	fields = (
+		"name",
+		"application_identifier",
+		"account",
+		"start_date",
+		"allow_consumable_withdrawals",
+		"active",
+		"members",
+		"principal_investigators",
+		"only_allow_tools",
+	)
+	list_display = ("name", "id", "application_identifier", "account", "active", "start_date")
+	filter_horizontal = ("only_allow_tools",)
 	search_fields = ("name", "application_identifier", "account__name")
-	list_filter = ("active",)
+	list_filter = ("active", "account", "start_date")
 	form = ProjectAdminForm
 
 	def save_model(self, request, obj, form, change):
@@ -498,10 +515,107 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
-	list_display = ("id", "user", "creator", "tool", "project", "start", "end", "duration", "cancelled", "missed")
+	list_display = (
+		"id",
+		"user",
+		"creator",
+		"tool",
+		"area",
+		"project",
+		"start",
+		"end",
+		"duration",
+		"cancelled",
+		"missed",
+	)
 	readonly_fields = ("descendant",)
-	list_filter = ("cancelled", "missed", "tool")
+	list_filter = ("cancelled", "missed", "tool", "area")
 	date_hierarchy = "start"
+
+
+class ReservationQuestionsForm(forms.ModelForm):
+	class Meta:
+		model = ReservationQuestions
+		fields = "__all__"
+
+	class Media:
+		js = ("admin/reservation_questions/reservation_questions.js", "admin/questions_preview/questions_preview.js")
+		css = {"": ("admin/questions_preview/questions_preview.css",)}
+
+	def clean(self):
+		cleaned_data = super().clean()
+		reservation_questions = cleaned_data.get("questions")
+		tool_reservations = cleaned_data.get("tool_reservations")
+		only_tools = cleaned_data.get("only_for_tools")
+		area_reservations = cleaned_data.get("area_reservations")
+		only_areas = cleaned_data.get("only_for_areas")
+		if not tool_reservations and not area_reservations:
+			self.add_error("tool_reservations", "Reservation questions have to apply to tool and/or area reservations")
+			self.add_error("area_reservations", "Reservation questions have to apply to tool and/or area reservations")
+		if not tool_reservations and only_tools:
+			self.add_error(
+				"tool_reservations", "You cannot restrict tools these questions apply to without enabling it for tools"
+			)
+		if not area_reservations and only_areas:
+			self.add_error(
+				"area_reservations", "You cannot restrict areas these questions apply to without enabling it for areas"
+			)
+		# Validate reservation_questions JSON format
+		if reservation_questions:
+			try:
+				loads(reservation_questions)
+			except ValueError:
+				self.add_error("questions", "This field needs to be a valid JSON string")
+			try:
+				dynamic_form = DynamicForm(reservation_questions)
+				if any([isinstance(question, PostUsageGroupQuestion) for question in dynamic_form.questions]):
+					self.add_error("questions", "Group question is not allowed for reservation questions")
+					return
+				dynamic_form.validate()
+			except KeyError as e:
+				self.add_error("questions", f"{e} property is required")
+			except Exception:
+				error_info = sys.exc_info()
+				self.add_error("questions", error_info[0].__name__ + ": " + str(error_info[1]))
+
+
+@register(ReservationQuestions)
+class ReservationQuestionsAdmin(admin.ModelAdmin):
+	form = ReservationQuestionsForm
+	filter_horizontal = ("only_for_tools", "only_for_areas", "only_for_projects")
+	readonly_fields = ("questions_preview",)
+	fieldsets = (
+		(
+			None,
+			{
+				"fields": (
+					"name",
+					"questions",
+					"questions_preview",
+					"tool_reservations",
+					"only_for_tools",
+					"area_reservations",
+					"only_for_areas",
+					"only_for_projects",
+				)
+			},
+		),
+	)
+
+	def questions_preview(self, obj):
+		form_validity_div = ""
+		rendered_form = ""
+		try:
+			rendered_form = DynamicForm(obj.questions).render()
+			if obj.questions:
+				form_validity_div = '<div id="form_validity"></div>'
+		except:
+			pass
+		return mark_safe(
+			'<div class="questions_preview">{}{}</div><div class="help questions_preview_help">Save form to preview reservation questions</div>'.format(
+				rendered_form, form_validity_div
+			)
+		)
 
 
 @register(UsageEvent)
@@ -727,7 +841,14 @@ class UserAdminForm(forms.ModelForm):
 @register(User)
 class UserAdmin(admin.ModelAdmin):
 	form = UserAdminForm
-	filter_horizontal = ("groups", "user_permissions", "qualifications", "projects", "managed_projects", "physical_access_levels")
+	filter_horizontal = (
+		"groups",
+		"user_permissions",
+		"qualifications",
+		"projects",
+		"managed_projects",
+		"physical_access_levels",
+	)
 	fieldsets = (
 		(
 			"Personal information",
@@ -750,7 +871,18 @@ class UserAdmin(admin.ModelAdmin):
 			},
 		),
 		("Important dates", {"fields": ("date_joined", "last_login", "access_expiration")}),
-		("Facility information", {"fields": ("qualifications", "backup_owner_on_tools", "superuser_on_tools", "projects", "managed_projects")}),
+		(
+			"Facility information",
+			{
+				"fields": (
+					"qualifications",
+					"backup_owner_on_tools",
+					"superuser_on_tools",
+					"projects",
+					"managed_projects",
+				)
+			},
+		),
 	)
 	search_fields = ("first_name", "last_name", "username", "email")
 	list_display = (
@@ -979,8 +1111,8 @@ class ScheduledOutageAdmin(admin.ModelAdmin):
 
 @register(News)
 class NewsAdmin(admin.ModelAdmin):
-	list_display = ("id", "created", "last_updated", "archived", "title")
-	list_filter = ("archived",)
+	list_display = ("id", "title", "created", "last_updated", "archived", "pinned")
+	list_filter = ("archived", "pinned")
 
 
 @register(Notification)
@@ -1028,7 +1160,16 @@ class CounterAdminForm(forms.ModelForm):
 
 @register(ToolUsageCounter)
 class CounterAdmin(admin.ModelAdmin):
-	list_display = ("name", "tool", "tool_usage_question", "value", "warning_threshold", "last_reset", "last_reset_by", "is_active")
+	list_display = (
+		"name",
+		"tool",
+		"tool_usage_question",
+		"value",
+		"warning_threshold",
+		"last_reset",
+		"last_reset_by",
+		"is_active",
+	)
 	list_filter = ("tool",)
 	readonly_fields = ("warning_threshold_reached",)
 	form = CounterAdminForm
@@ -1079,5 +1220,6 @@ class EmailLogAdmin(admin.ModelAdmin):
 		return False
 
 
+admin.site.register(AccountType)
 admin.site.register(ResourceCategory)
 admin.site.register(Permission)

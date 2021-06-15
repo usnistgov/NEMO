@@ -9,7 +9,7 @@ from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.models import Project, Reservation, Tool, UsageEvent, User, BadgeReader
+from NEMO.models import Project, Reservation, Tool, UsageEvent, User, BadgeReader, ReservationItemType
 from NEMO.tasks import synchronized
 from NEMO.utilities import quiet_int, localize
 from NEMO.views.calendar import (
@@ -17,6 +17,7 @@ from NEMO.views.calendar import (
 	extract_configuration,
 	cancel_the_reservation,
 	shorten_reservation,
+	get_and_combine_reservation_questions,
 )
 from NEMO.views.policy import (
 	check_policy_to_disable_tool,
@@ -24,7 +25,11 @@ from NEMO.views.policy import (
 	check_policy_to_save_reservation,
 )
 from NEMO.views.status_dashboard import create_tool_summary
-from NEMO.views.tool_control import interlock_error, interlock_bypass_allowed, email_managers_required_questions_disable_tool
+from NEMO.views.tool_control import (
+	interlock_error,
+	interlock_bypass_allowed,
+	email_managers_required_questions_disable_tool,
+)
 from NEMO.widgets.dynamic_form import DynamicForm
 
 
@@ -35,12 +40,12 @@ def enable_tool(request):
 	return do_enable_tool(request, request.POST["tool_id"])
 
 
-@synchronized('tool_id')
+@synchronized("tool_id")
 def do_enable_tool(request, tool_id):
 	tool = Tool.objects.get(id=tool_id)
 	customer = User.objects.get(id=request.POST["customer_id"])
 	project = Project.objects.get(id=request.POST["project_id"])
-	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
+	bypass_interlock = request.POST.get("bypass", "False") == "True"
 
 	response = check_policy_to_enable_tool(tool, operator=customer, user=customer, project=project, staff_charge=False)
 	if response.status_code != HTTPStatus.OK:
@@ -76,12 +81,12 @@ def disable_tool(request):
 	return do_disable_tool(request, request.POST["tool_id"])
 
 
-@synchronized('tool_id')
+@synchronized("tool_id")
 def do_disable_tool(request, tool_id):
 	tool = Tool.objects.get(id=tool_id)
 	customer = User.objects.get(id=request.POST["customer_id"])
 	downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
-	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
+	bypass_interlock = request.POST.get("bypass", "False") == "True"
 	response = check_policy_to_disable_tool(tool, customer, downtime)
 	if response.status_code != HTTPStatus.OK:
 		dictionary = {"message": response.content, "delay": 10}
@@ -120,7 +125,7 @@ def do_disable_tool(request, tool_id):
 		current_usage_event.operator,
 		current_usage_event.project,
 		current_usage_event.run_data,
-		request
+		request,
 	)
 	dynamic_form.update_counters(current_usage_event.run_data)
 
@@ -178,6 +183,17 @@ def reserve_tool(request):
 	# Reservation can't be short notice if the user is configuring the tool themselves.
 	if reservation.self_configuration:
 		reservation.short_notice = False
+
+	# Reservation questions if applicable
+	reservation_questions = get_and_combine_reservation_questions(ReservationItemType.TOOL, tool.id, reservation.project)
+	if reservation_questions:
+		dynamic_form = DynamicForm(reservation_questions)
+		try:
+			reservation.question_data = dynamic_form.extract(request)
+		except RequiredUnansweredQuestionsException as e:
+			error_dictionary["message"] = str(e)
+			return render(request, "kiosk/error.html", error_dictionary)
+
 	reservation.save_and_notify()
 	return render(request, "kiosk/success.html", {"new_reservation": reservation, "customer": customer})
 
@@ -215,6 +231,12 @@ def tool_reservation(request, tool_id, user_id, back):
 	dictionary["tool_reservation_times"] = list(
 		Reservation.objects.filter(cancelled=False, missed=False, shortened=False, tool=tool, start__gte=timezone.now())
 	)
+
+	# Reservation questions if applicable
+	reservation_questions = get_and_combine_reservation_questions(ReservationItemType.TOOL, tool_id, project)
+	if reservation_questions:
+		dynamic_form = DynamicForm(reservation_questions, virtual_inputs=True)
+		dictionary["reservation_questions"] = dynamic_form.render()
 
 	return render(request, "kiosk/tool_reservation.html", dictionary)
 

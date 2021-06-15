@@ -12,6 +12,9 @@
 	Starting {{ reservation.start|time }}<br>
 	Ending {{ reservation.end|time }}<br>
 	<div id="extended_reservation_information_{{ reservation.id }}" class="collapse">
+        {% for question_name, data in reservation.question_data_json.items %}
+            {{ question_name }}: {{ data.user_input }}<br>
+        {% endfor %}
 		<div style="height:10px">{# Vertical spacer #}</div>
 		{% if reservation.project %}
 			For project {{ reservation.project }}<br>

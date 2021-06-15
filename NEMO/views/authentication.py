@@ -283,7 +283,7 @@ def impersonate(request):
 		return HttpResponse(
 			f"'{impersonate_middleware_name}' needs to be in settings.MIDDLEWARE for this feature to work", status=400
 		)
-	if "unimpersonate" in request.GET:
+	if "unimpersonate" in request.GET and "impersonate_id" in request.session:
 		del request.session["impersonate_id"]
 		del request.session["impersonated_user"]
 		return redirect(reverse("landing"))

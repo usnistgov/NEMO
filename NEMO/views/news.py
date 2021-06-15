@@ -15,7 +15,7 @@ from NEMO.views.notifications import create_news_notification, delete_news_notif
 @require_GET
 def view_recent_news(request):
 	dictionary = {
-		'news': News.objects.filter(archived=False),
+		'news': News.objects.filter(archived=False).order_by('-pinned', '-last_updated'),
 		'notifications': get_notifications(request.user, News),
 	}
 	return render(request, 'news/recent_news.html', dictionary)
@@ -72,14 +72,22 @@ def news_update_form(request, story_id):
 @require_POST
 def publish(request, story_id=None):
 	now = timezone.now()
+	pinned: bool = request.POST.get("pinned") == "on"
+	notify = True
 	if story_id:
 		try:
 			story = News.objects.get(id=story_id)
-			update = f'\n\nUpdated on {format_datetime(now)} by {request.user.get_full_name()}:\n' + request.POST['update'].strip()
-			story.all_content += update
-			story.last_updated = now
-			story.last_update_content = update.strip()
-			story.update_count += 1
+			update = request.POST.get('update')
+			if update:
+				update = f'\n\nUpdated on {format_datetime(now)} by {request.user.get_full_name()}:\n' + request.POST['update'].strip()
+				story.all_content += update
+				story.last_updated = now
+				story.last_update_content = update.strip()
+				story.update_count += 1
+			else:
+				# don't notify if all that's changed is the pinned value
+				notify = False
+			story.pinned = pinned
 		except News.DoesNotExist:
 			return redirect(reverse('view_recent_news'))
 	else:
@@ -91,7 +99,9 @@ def publish(request, story_id=None):
 		story.all_content = content
 		story.last_updated = now
 		story.last_update_content = content
+		story.pinned = pinned
 		story.update_count = 0
 	story.save()
-	create_news_notification(story)
+	if notify:
+		create_news_notification(story)
 	return redirect(reverse('view_recent_news'))

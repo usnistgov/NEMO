@@ -4,6 +4,7 @@ import sys
 from datetime import timedelta
 from enum import Enum
 from html import escape
+from json import loads
 from logging import getLogger
 from typing import Union, List
 
@@ -218,6 +219,10 @@ class User(models.Model):
 	@property
 	def is_tool_superuser(self):
 		return self.superuser_for_tools.exists()
+
+	@property
+	def is_project_pi(self):
+		return self.managed_projects.exists()
 
 	def get_username(self):
 		return self.username
@@ -1104,8 +1109,20 @@ class ConfigurationHistory(models.Model):
 		return str(self.id)
 
 
+class AccountType(models.Model):
+	name = models.CharField(max_length=100, unique=True)
+
+	class Meta:
+		ordering = ['name']
+
+	def __str__(self):
+		return str(self.name)
+
+
 class Account(models.Model):
 	name = models.CharField(max_length=100, unique=True)
+	type = models.ForeignKey(AccountType, null=True, blank=True, on_delete=models.SET_NULL)
+	start_date = models.DateField(null=True, blank=True)
 	active = models.BooleanField(default=True, help_text="Users may only charge to an account if it is active. Deactivate the account to block future billable activity (such as tool usage and consumable check-outs) of all the projects that belong to it.")
 
 	class Meta:
@@ -1118,6 +1135,7 @@ class Account(models.Model):
 class Project(models.Model):
 	name = models.CharField(max_length=100, unique=True)
 	application_identifier = models.CharField(max_length=100)
+	start_date = models.DateField(null=True, blank=True)
 	account = models.ForeignKey(Account, help_text="All charges for this project will be billed to the selected account.", on_delete=models.CASCADE)
 	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
 	only_allow_tools = models.ManyToManyField(Tool, blank=True, help_text="Selected tools will be the only ones allowed for this project.")
@@ -1164,6 +1182,7 @@ class Reservation(CalendarDisplay):
 	additional_information = models.TextField(null=True, blank=True)
 	self_configuration = models.BooleanField(default=False, help_text="When checked, indicates that the user will perform their own tool configuration (instead of requesting that the staff configure it for them).")
 	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
+	question_data = models.TextField(null=True, blank=True)
 
 	@property
 	def reservation_item(self) -> Union[Tool, Area]:
@@ -1209,11 +1228,31 @@ class Reservation(CalendarDisplay):
 		else:
 			send_user_created_reservation_notification(self)
 
+	def question_data_json(self):
+		return loads(self.question_data) if self.question_data else None
+
 	class Meta:
 		ordering = ['-start']
 
 	def __str__(self):
 		return str(self.id)
+
+
+class ReservationQuestions(models.Model):
+	name = models.CharField(max_length=100, help_text="The name of this ")
+	questions = models.TextField(help_text="Upon making a reservation, the user will be asked these questions. This field will only accept JSON format")
+	tool_reservations = models.BooleanField(default=True, help_text="Check this box to apply these questions to tool reservations")
+	only_for_tools = models.ManyToManyField(Tool, blank=True, help_text="Select the tools these questions only apply to. Leave blank for all tools")
+	area_reservations = models.BooleanField(default=False, help_text="Check this box to apply these questions to area reservations")
+	only_for_areas = models.ManyToManyField(Area, blank=True, help_text="Select the areas these questions only apply to. Leave blank for all areas")
+	only_for_projects = models.ManyToManyField(Project, blank=True, help_text="Select the projects these questions only apply to. Leave blank for all projects")
+
+	class Meta:
+		ordering = ['name']
+		verbose_name_plural = 'Reservation questions'
+
+	def __str__(self):
+		return self.name
 
 
 class UsageEvent(CalendarDisplay):
@@ -1974,6 +2013,7 @@ class ScheduledOutage(models.Model):
 
 class News(models.Model):
 	title = models.CharField(max_length=200)
+	pinned = models.BooleanField(default=False, help_text="Check this box to keep this story at the top of the news feed")
 	created = models.DateTimeField(help_text="The date and time this story was first published")
 	original_content = models.TextField(help_text="The content of the story when it was first published, useful for visually hiding updates 'in the middle' of the story")
 	all_content = models.TextField(help_text="The entire content of the story")

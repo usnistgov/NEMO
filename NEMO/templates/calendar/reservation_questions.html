@@ -1,0 +1,43 @@
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal">&times;</button>
+	<h4 class="modal-title">Reservation questions</h4>
+</div>
+
+<div class="modal-body">
+	<p>This reservation requires extra information to be provided:</p>
+    {% if error %}
+        <div class="alert alert-danger">
+			Oops! Something went wrong. Please correct the errors highlighted below.<br><br>
+			<ul><li>{{ error }}</li></ul>
+		</div>
+    {% endif %}
+	<input type="hidden" id="dialog_cancelled" value="true">
+	<form id="additional_event_parameters">
+        <input type="hidden" name="reservation_questions" value=true>
+		{{ reservation_questions }}
+	</form>
+</div>
+
+<div class="modal-footer">
+    <p id="answer_to_proceed" style="text-align:center">Please answer the required questions (above) to proceed</p>
+    <button id="reservation_questions_submit" type="button" class="btn btn-success" data-dismiss="modal" onclick="$('#dialog_cancelled').val(false)">Submit</button>
+</div>
+
+<script>
+	function update_submit_button()
+	{
+		if(document.querySelector('#additional_event_parameters').checkValidity())
+		{
+			$('#answer_to_proceed').hide();
+			$("#reservation_questions_submit").show();
+		}
+		else
+		{
+			$('#answer_to_proceed').show();
+			$("#reservation_questions_submit").hide();
+		}
+	}
+
+	update_submit_button();
+	$('body').on('change keyup', '#additional_event_parameters input[required], #additional_event_parameters select[required], #additional_event_parameters textarea[required]', update_submit_button);
+</script>
