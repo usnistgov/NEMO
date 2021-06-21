@@ -53,6 +53,7 @@ class PostUsageQuestion:
 		self.required = self._init_property("required", True)
 		self.default_choice = self._init_property("default_choice")
 		self.choices = self._init_property("choices")
+		self.group_add_button_name = self._init_property("group_add_button_name") or "Add"
 		self.index = index
 		if index and not isinstance(self, PostUsageGroupQuestion):
 			self.name = f"{self.name}_{index}"
@@ -293,7 +294,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 		result += "</div>"
 		result += "</div>"
 		result += '<div class="form-group">'
-		result += f'<button id="{self.group_name}_add_button" type="button" onclick="add_question_{self.group_name}()">Add</button>'
+		result += f'<button id="{self.group_name}_add_button" type="button" onclick="add_question_{self.group_name}()">{self.group_add_button_name}</button>'
 		result += "</div>"
 		return result
 
