@@ -207,12 +207,12 @@
 			let data = serialize('#tool_control');
 			status_element.html("<h1>Loading tool reservation...</h1>").show().load(url, data, load_complete);
 		}
-		function cancel_reservation(url)
+		function cancel_reservation(url, reservation_id)
 		{
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
-			let data = serialize('#cancel_reservation');
+            let data = serialize('#cancel_reservation_' + reservation_id);
 			status_element.html("<h1>Cancelling reservation...</h1>").show().load(url, data, load_complete);
 		}
 		function reserve_tool()
