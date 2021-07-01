@@ -471,7 +471,6 @@ def export_comments_and_tasks_to_text(comments_and_tasks: List):
 			content += f"{comment.content}\n"
 			if comment.hide_date:
 				content += f"{comment.hidden_by} hid the comment on {format_datetime(comment.hide_date)}.\n"
-			content += "\n\n"
 		elif isinstance(item, Task):
 			task: Task = item
 			content += f"On {format_datetime(task.creation_time)} {task.creator} created this task:\n"
@@ -487,7 +486,7 @@ def export_comments_and_tasks_to_text(comments_and_tasks: List):
 				content += f"Resolved {task.resolution_category} On {format_datetime(task.resolution_time)} by {task.resolver }.\n"
 				if task.resolution_description:
 					content += f"{task.resolution_description}\n"
-			content += "\n\n"
+		content += "\n---------------------------------------------------\n\n"
 	response = HttpResponse(content, content_type='text/plain')
 	response['Content-Disposition'] = 'attachment; filename={0}'.format(f"comments_and_tasks_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt")
 	return response
