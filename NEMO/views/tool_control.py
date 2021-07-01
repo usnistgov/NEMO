@@ -481,7 +481,8 @@ def export_comments_and_tasks_to_text(comments_and_tasks: List):
 			if task.progress_description:
 				content += f"\n{task.progress_description}\n"
 			if task.resolved:
-				content += f"\nResolved {task.resolution_category} On {format_datetime(task.resolution_time)} by {task.resolver }.\n"
+				resolution_category = f"({task.resolution_category}) " if task.resolution_category else ""
+				content += f"\nResolved {resolution_category}On {format_datetime(task.resolution_time)} by {task.resolver }.\n"
 				if task.resolution_description:
 					content += f"{task.resolution_description}\n"
 			elif task.cancelled:
