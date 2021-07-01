@@ -477,15 +477,15 @@ def export_comments_and_tasks_to_text(comments_and_tasks: List):
 			if task.problem_category:
 				content += f"{task.problem_category.name}\n"
 			if task.force_shutdown:
-				content += "The tool was shut down because of this task.\n"
+				content += "\nThe tool was shut down because of this task.\n"
 			if task.progress_description:
 				content += f"\n{task.progress_description}\n"
-			if task.cancelled:
-				content += f"Cancelled On {format_datetime(task.resolution_time)} by {task.resolver}.\n"
-			elif task.resolved:
-				content += f"Resolved {task.resolution_category} On {format_datetime(task.resolution_time)} by {task.resolver }.\n"
+			if task.resolved:
+				content += f"\nResolved {task.resolution_category} On {format_datetime(task.resolution_time)} by {task.resolver }.\n"
 				if task.resolution_description:
 					content += f"{task.resolution_description}\n"
+			elif task.cancelled:
+				content += f"\nCancelled On {format_datetime(task.resolution_time)} by {task.resolver}.\n"
 		content += "\n---------------------------------------------------\n\n"
 	response = HttpResponse(content, content_type='text/plain')
 	response['Content-Disposition'] = 'attachment; filename={0}'.format(f"comments_and_tasks_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt")
