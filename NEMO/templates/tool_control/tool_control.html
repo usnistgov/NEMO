@@ -37,7 +37,7 @@
         </div>
 
 	<script>
-
+        let previous_tasks_and_comments_url;
 		function refresh_tool_status()
 		{
 			let selected_item = {% if device == 'mobile' %}{{ selected_tool }}{% else %}get_selected_item(){% endif %};
@@ -243,29 +243,56 @@
 			}
 		{% endif %}
 
-		function load_tasks_and_comments(tool_id)
+		function load_tasks_and_comments(ten_most_recent)
 		{
-			let failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
 			let data = serialize("#history_form");
 			if (data.start)	data.start = moment(data.start, "MM/DD/YYYY").unix();
 			if (data.end) data.end = moment(data.end, "MM/DD/YYYY").add(1, 'day').unix();
 			{# Add one day because by default the time is midnight the day of. We want to include the full duration of the last day. #}
-			$("#past_tasks_and_comments").load("{% url 'past_comments_and_tasks' %}?" + $.param(data), failure_dialog);
+            let tasks_and_comments_url = "{% url 'past_comments_and_tasks' %}?" + $.param(data);
+			if (ten_most_recent)
+            {
+                tasks_and_comments_url = "{% url 'ten_most_recent_past_comments_and_tasks' 999 %}?".replace('999', data.tool_id);
+            }
+            {# Load results, set previous url only if successfull #}
+            let failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
+            let callback = function(response, status, xml_header_request)
+            {
+                if (status !== "error") {
+                    previous_tasks_and_comments_url = tasks_and_comments_url;
+                }
+                return failure_dialog(response, status, xml_header_request);
+            }
+            $("#past_tasks_and_comments").load(tasks_and_comments_url, callback);
 		}
 
-		function load_tasks_and_comments_for_last_three_months(tool_id)
+		function export_tasks_and_comments()
+        {
+            {# Reload and export results of last url used #}
+            let export_url = previous_tasks_and_comments_url + "&export=true";
+            let export_failure_dialog = ajax_complete_callback("Unable to export past tasks & comments", "There was a problem exporting past tasks & comments.");
+            let export_callback = function(response, status, xml_header_request)
+            {
+                if (status !== "error") {
+                    window.location = export_url;
+                }
+                return export_failure_dialog(response, status, xml_header_request);
+            }
+            $("#past_tasks_and_comments").load(previous_tasks_and_comments_url, export_callback);
+        }
+
+		function load_tasks_and_comments_for_last_three_months()
 		{
 			let start = moment().subtract(3, 'months').format("MM/DD/YYYY");
 			let end = moment().format("MM/DD/YYYY");
 			$("#task_and_comment_start").val(start);
 			$("#task_and_comment_end").val(end);
-			load_tasks_and_comments(tool_id);
+			load_tasks_and_comments();
 		}
 
-		function load_ten_most_recent_tasks_and_comments(url)
+		function load_ten_most_recent_tasks_and_comments()
 		{
-			let failure_dialog = ajax_complete_callback("Unable to find past tasks & comments", "There was a problem looking up past tasks & comments.");
-			$("#past_tasks_and_comments").load(url, failure_dialog);
+			load_tasks_and_comments(true);
 		}
 
 		function load_usage_data(tool_id, csv_export)
