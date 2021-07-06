@@ -11,12 +11,12 @@
 	<td id="project__{{ entry_number }}" style="vertical-align: middle">
 
 	</td>
-	<td><input type="number" class="form-control" name="duration__{{ entry_number }}" id="duration__{{ entry_number }}" min="1" inputmode="numeric" pattern="[0-9]*"></td>
+	<td><input type="number" class="form-control" name="duration__{{ entry_number }}" id="duration__{{ entry_number }}" min="1" inputmode="numeric" pattern="[0-9]*" required></td>
 	<td>
-		<select class="form-control" name="charge_type__{{ entry_number }}">
-			<option value="-1">&nbsp;</option>
-			{% for c in charge_types %}
-				<option value="{{ c.0 }}">{{ c.1 }}</option>
+		<select class="form-control" name="charge_type__{{ entry_number }}" required>
+			<option disabled selected value="">&nbsp;</option>
+			{% for charge_type in charge_types %}
+				<option value="{{ charge_type.0 }}">{{ charge_type.1 }}</option>
 			{% endfor %}
 		</select>
 	</td>

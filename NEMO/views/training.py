@@ -25,7 +25,7 @@ def training(request):
 	user: User = request.user
 	users = User.objects.filter(is_active=True).exclude(id=user.id)
 	tools = Tool.objects.filter(visible=True)
-	if user.is_tool_superuser:
+	if not user.is_staff and user.is_tool_superuser:
 		tools = tools.filter(_superusers__in=[user])
 	return render(request, 'training/training.html', {'users': users, 'tools': tools, 'charge_types': TrainingSession.Type.Choices})
 
@@ -55,13 +55,13 @@ def charge_training(request):
 					charges[index] = TrainingSession()
 					charges[index].trainer = trainer
 				if attribute == "chosen_user":
-					charges[index].trainee = User.objects.get(id=value)
+					charges[index].trainee = User.objects.get(id=to_int_or_negative(value))
 				if attribute == "chosen_tool":
-					charges[index].tool = Tool.objects.get(id=value)
-					if trainer.is_tool_superuser and charges[index].tool not in trainer.superuser_for_tools.all():
+					charges[index].tool = Tool.objects.get(id=to_int_or_negative(value))
+					if not trainer.is_staff and trainer.is_tool_superuser and charges[index].tool not in trainer.superuser_for_tools.all():
 						raise Exception("The trainer is not authorized to train on this tool")
 				if attribute == "chosen_project":
-					charges[index].project = Project.objects.get(id=value)
+					charges[index].project = Project.objects.get(id=to_int_or_negative(value))
 				if attribute == "duration":
 					charges[index].duration = int(value)
 				if attribute == "charge_type":
@@ -73,6 +73,12 @@ def charge_training(request):
 			check_billing_to_project(c.project, c.trainee, c.tool)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
+	except User.DoesNotExist:
+		return HttpResponseBadRequest("Please select a trainee from the list")
+	except Tool.DoesNotExist:
+		return HttpResponseBadRequest("Please select a tool from the list")
+	except Project.DoesNotExist:
+		return HttpResponseBadRequest("Please select a project from the list")
 	except Exception as e:
 		training_logger.exception(e)
 		return HttpResponseBadRequest('An error occurred while processing the training charges. None of the charges were committed to the database. Please review the form for errors and omissions then submit the form again.')
@@ -119,3 +125,10 @@ def qualify(authorizer, user, tool):
 			}
 			timeout = settings.IDENTITY_SERVICE.get('timeout', 3)
 			requests.put(urljoin(settings.IDENTITY_SERVICE['url'], '/add/'), data=parameters, timeout=timeout)
+
+
+def to_int_or_negative(value: str):
+	try:
+		return int(value)
+	except ValueError:
+		return -1
