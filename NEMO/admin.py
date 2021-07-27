@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.contrib.admin import register
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
+from django.db.models import Q
 from django.db.models.fields.files import FieldFile
 from django.urls import reverse
 from django.utils.html import format_html
@@ -389,6 +390,12 @@ class TrainingSessionAdmin(admin.ModelAdmin):
 	list_display = ("id", "trainer", "trainee", "tool", "project", "type", "date", "duration", "qualified")
 	list_filter = ("qualified", "date", "type", "tool")
 	date_hierarchy = "date"
+
+	def formfield_for_foreignkey(self, db_field, request, **kwargs):
+		""" We only want staff user and tool superusers to be possible trainers """
+		if db_field.name == "trainer":
+			kwargs["queryset"] = User.objects.filter(Q(is_staff=True) | Q(superuser_for_tools__isnull=False)).distinct()
+		return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @register(StaffCharge)
