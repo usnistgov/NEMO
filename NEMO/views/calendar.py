@@ -478,10 +478,12 @@ def create_outage(request):
 
 	# Make sure there is at least an outage title
 	if not request.POST.get('title'):
+		calendar_outage_recurrence_limit = get_customization("calendar_outage_recurrence_limit")
 		dictionary = {
 			'categories': ScheduledOutageCategory.objects.all(),
 			'recurrence_intervals': recurrence_frequency_display,
 			'recurrence_date_start': start.date(),
+			'calendar_outage_recurrence_limit': calendar_outage_recurrence_limit,
 		}
 		return render(request, 'calendar/scheduled_outage_information.html', dictionary)
 

@@ -54,6 +54,7 @@ customizable_key_values = {
 	'calendar_all_tools': '',
 	'calendar_all_areas': '',
 	'calendar_all_areastools': '',
+	'calendar_outage_recurrence_limit': '90',
 	'buddy_board_disclaimer': '',
 	'allow_bypass_interlock_on_failure': '',
 	'tool_interlock_failure_message': 'Communication with the interlock failed',
@@ -170,6 +171,7 @@ def customize(request, element):
 		set_customization('calendar_all_tools', request.POST.get('calendar_all_tools', ''))
 		set_customization('calendar_all_areas', request.POST.get('calendar_all_areas', ''))
 		set_customization('calendar_all_areastools', request.POST.get('calendar_all_areastools', ''))
+		set_customization('calendar_outage_recurrence_limit', request.POST.get('calendar_outage_recurrence_limit', '90'))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
 	return redirect('customization')
