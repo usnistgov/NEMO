@@ -38,7 +38,7 @@
 			<textarea class="form-control" rows="3" name="description" id="description" maxlength="{{ form.fields.description.max_length }}" placeholder="Describe your request">{{ form.description.value|default_if_none:"" }}</textarea>
 		</div>
 		<div class="form-group">
-			<input type="submit" class="btn btn-success pull-right" value="{% if form.instance.id %}Save changes{% else %}Create buddy request{% endif %}">
+			<input type="submit" class="btn btn-success pull-right" onclick="submit_and_disable(this)" value="{% if form.instance.id %}Save changes{% else %}Create buddy request{% endif %}">
 		</div>
 	</form>
 	<script>

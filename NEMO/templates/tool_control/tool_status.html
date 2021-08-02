@@ -594,7 +594,7 @@
 				<input id="fileupload" type="file" name="image" multiple>
 			</div>
 			<div class="form-group">
-				<button type="submit" class="btn btn-danger">Report problem</button>
+				<button type="submit" class="btn btn-danger" onclick="submit_and_disable(this);">Report problem</button>
 			</div>
 		</form>
 		<div style="height:150px">{# Spacer #}</div>
@@ -634,7 +634,7 @@
 				</div>
 			{% endif %}
 			<div class="form-group">
-				<button type="submit" class="btn btn-info">Post comment</button>
+				<button type="submit" class="btn btn-info" onclick="submit_and_disable(this)">Post comment</button>
 			</div>
 		</form>
 		<div style="height:150px">{# Spacer #}</div>

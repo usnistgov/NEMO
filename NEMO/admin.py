@@ -709,6 +709,7 @@ class TaskAdmin(admin.ModelAdmin):
 		"tool",
 		"creator",
 		"creation_time",
+		"last_updated",
 		"problem_category",
 		"cancelled",
 		"resolved",
