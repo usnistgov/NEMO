@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name='NEMO',
-	version='3.11.0',
+	version='3.12.0',
 	python_requires='>=3.6',
 	packages=find_packages(exclude=['NEMO.tests','NEMO.tests.*']),
 	include_package_data=True,
@@ -28,7 +28,7 @@ setup(
 		'Django==2.2.24',
 		'django-filter==2.4.0',
 		'djangorestframework==3.12.4',
-		'drf-flex-fields==0.9.0',
+		'drf-flex-fields==0.9.1',
 		'ldap3==2.9',
 		'python-dateutil==2.8.1',
 		'requests==2.25.1',

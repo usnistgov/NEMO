@@ -475,10 +475,10 @@
 					<form id="history_form">
 						<input type="hidden" name="tool_id" value="{{ tool.id }}">
 						<div class="form-group">
-							<input type="button" class="btn btn-info" onclick="load_tasks_and_comments_for_last_three_months('{{ tool.id }}')" value="Created in the last 3 months">
+							<input type="button" class="btn btn-info" onclick="load_tasks_and_comments_for_last_three_months()" value="Created in the last 3 months">
 						</div>
 						<div class="form-group">
-							<input type="button" class="btn btn-info" onclick="load_ten_most_recent_tasks_and_comments('{% url 'ten_most_recent_past_comments_and_tasks' tool.id %}')" value="10 most recent"><br>
+							<input type="button" class="btn btn-info" onclick="load_ten_most_recent_tasks_and_comments()" value="10 most recent"><br>
 						</div>
 						<div class="panel panel-default" style="display:inline-block">
 							<div class="panel-body">
@@ -501,7 +501,12 @@
 									</div>
 								</div>
 								<div class="form-group" style="margin-bottom:0">
-									<a href="javascript:load_tasks_and_comments('{{ tool.id }}')" type="button" class="btn btn-default">Go</a>
+                                    <div class="col-sm-6" style="padding-left: 0">
+									    <a href="javascript:load_tasks_and_comments()" type="button" class="btn btn-default">Go</a>
+                                    </div>
+                                    <div class="col-sm-6" style="padding-right: 0">
+									    <a style="float: right" href="javascript:export_tasks_and_comments()" type="button" class="btn btn-info">Export</a>
+                                    </div>
 								</div>
 							</div>
 						</div>
@@ -589,7 +594,7 @@
 				<input id="fileupload" type="file" name="image" multiple>
 			</div>
 			<div class="form-group">
-				<button type="submit" class="btn btn-danger">Report problem</button>
+				<button type="submit" class="btn btn-danger" onclick="submit_and_disable(this);">Report problem</button>
 			</div>
 		</form>
 		<div style="height:150px">{# Spacer #}</div>
@@ -629,7 +634,7 @@
 				</div>
 			{% endif %}
 			<div class="form-group">
-				<button type="submit" class="btn btn-info">Post comment</button>
+				<button type="submit" class="btn btn-info" onclick="submit_and_disable(this)">Post comment</button>
 			</div>
 		</form>
 		<div style="height:150px">{# Spacer #}</div>

@@ -62,7 +62,7 @@
 					<label for="resolution_time" class="control-label">When do you think the problem will be resolved? Leave this field blank if it's difficult to predict.</label>
 					<input id="resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off" value="{{ task.estimated_resolution_time|date:"m/d/Y g:i A" }}">
 					<script>
-						var timepicker_properties =
+						let timepicker_properties =
 						{
 							sideBySide: true,
 							showClose: true
@@ -91,7 +91,7 @@
 					<input id="fileupload" type="file" name="image" multiple>
 				</div>
 				<div class="form-group">
-					<input type="submit" class="btn btn-success" value="Update">
+					<input type="submit" class="btn btn-success" onclick="submit_and_disable(this);" value="Update">
 				</div>
 			</form>
 		</div>

@@ -45,6 +45,7 @@ from NEMO.utilities import (
 	send_mail,
 	BasicDisplayTable,
 	EmailCategory,
+	format_datetime,
 )
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization, get_media_file_contents
@@ -441,8 +442,9 @@ def past_comments_and_tasks(request):
 	past = list(chain(tasks, comments))
 	past.sort(key=lambda x: getattr(x, "creation_time", None) or getattr(x, "creation_date", None))
 	past.reverse()
-	dictionary = {"past": past}
-	return render(request, "tool_control/past_tasks_and_comments.html", dictionary)
+	if request.GET.get("export"):
+		return export_comments_and_tasks_to_text(past)
+	return render(request, "tool_control/past_tasks_and_comments.html", {"past": past})
 
 
 @login_required
@@ -454,8 +456,41 @@ def ten_most_recent_past_comments_and_tasks(request, tool_id):
 	past.sort(key=lambda x: getattr(x, "creation_time", None) or getattr(x, "creation_date", None))
 	past.reverse()
 	past = past[0:10]
-	dictionary = {"past": past}
-	return render(request, "tool_control/past_tasks_and_comments.html", dictionary)
+	if request.GET.get("export"):
+		return export_comments_and_tasks_to_text(past)
+	return render(request, "tool_control/past_tasks_and_comments.html", {"past": past})
+
+
+def export_comments_and_tasks_to_text(comments_and_tasks: List):
+	content = "No tasks or comments were created between these dates." if not comments_and_tasks else ""
+	for item in comments_and_tasks:
+		if isinstance(item, Comment):
+			comment: Comment = item
+			staff_only = "staff only " if comment.staff_only else ""
+			content += f"On {format_datetime(comment.creation_date)} {comment.author} wrote this {staff_only}comment:\n"
+			content += f"{comment.content}\n"
+			if comment.hide_date:
+				content += f"{comment.hidden_by} hid the comment on {format_datetime(comment.hide_date)}.\n"
+		elif isinstance(item, Task):
+			task: Task = item
+			content += f"On {format_datetime(task.creation_time)} {task.creator} created this task:\n"
+			if task.problem_category:
+				content += f"{task.problem_category.name}\n"
+			if task.force_shutdown:
+				content += "\nThe tool was shut down because of this task.\n"
+			if task.progress_description:
+				content += f"\n{task.progress_description}\n"
+			if task.resolved:
+				resolution_category = f"({task.resolution_category}) " if task.resolution_category else ""
+				content += f"\nResolved {resolution_category}On {format_datetime(task.resolution_time)} by {task.resolver }.\n"
+				if task.resolution_description:
+					content += f"{task.resolution_description}\n"
+			elif task.cancelled:
+				content += f"\nCancelled On {format_datetime(task.resolution_time)} by {task.resolver}.\n"
+		content += "\n---------------------------------------------------\n\n"
+	response = HttpResponse(content, content_type='text/plain')
+	response['Content-Disposition'] = 'attachment; filename={0}'.format(f"comments_and_tasks_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt")
+	return response
 
 
 @login_required

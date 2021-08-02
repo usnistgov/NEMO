@@ -88,6 +88,18 @@
 							The time the day starts in the calendar view (24h format).
 						</div>
 					</div>
+                    <div class="form-group">
+						<label class="control-label col-md-2" for="calendar_outage_recurrence_limit">Outage recurrence limit</label>
+						<div class="col-md-3">
+                            <div class="input-group">
+							    <input type="number" id="calendar_outage_recurrence_limit" name="calendar_outage_recurrence_limit" class="form-control" value="{{ calendar_outage_recurrence_limit }}">
+                                <span class="input-group-addon">days</span>
+                            </div>
+						</div>
+						<div class="col-md-7 form-control-static light-grey">
+							The maximum number of days a recurring scheduled outage can be set in advance.
+						</div>
+					</div>
 					<div class="form-group">
 						<div class="col-md-12" style="margin-top: 15px">
 							The following settings allow to customize the date format in the different calendar views. See <a href="https://fullcalendar.io/docs/v1/formatDate" target="_blank">FullCalendar documentation</a> for more information on the syntax.

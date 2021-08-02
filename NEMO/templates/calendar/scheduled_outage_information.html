@@ -73,5 +73,5 @@
 <script>
 	autofocus('#title');
 	$('#title').on('input', function() { if(this.value) $('#schedule_outage').prop('disabled', false); else $('#schedule_outage').prop('disabled', true); });
-	$('#recurrence_until').datepicker({format: 'mm/dd/yyyy', endDate: moment('{{ recurrence_date_start|date:"m/d/Y" }}').add(90, 'days').toDate(), startDate:'{{ recurrence_date_start|date:"m/d/Y" }}', autoclose: true});
+	$('#recurrence_until').datepicker({format: 'mm/dd/yyyy', endDate: moment('{{ recurrence_date_start|date:"m/d/Y" }}').add({{ calendar_outage_recurrence_limit }}, 'days').toDate(), startDate:'{{ recurrence_date_start|date:"m/d/Y" }}', autoclose: true});
 </script>

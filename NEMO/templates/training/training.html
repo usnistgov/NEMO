@@ -32,10 +32,10 @@
 
 	<script type="text/javascript">
 
-		var current_entry_number = 1;
+		let current_entry_number = 1;
 		function add_participant()
 		{
-			var failure_dialog = ajax_failure_callback("Cannot add new entry", "The web browser was not able to communicate with the server.");
+			let failure_dialog = ajax_failure_callback("Cannot add new entry", "The web browser was not able to communicate with the server.");
 			ajax_get("{% url 'training_entry' %}", { "entry_number": current_entry_number }, add_entry_success_callback, failure_dialog);
 			function add_entry_success_callback(response, status, xml_http_request)
 			{
@@ -47,10 +47,10 @@
 
 		function enable_autocompletion(entry_number)
 		{
-			var id = "#user_textbox__" + entry_number;
-			$(id).autocomplete('user', on_autocomplete_selection, {{ users|json_search_base }}).focus();
+			let id = "#user_textbox__" + entry_number;
+			$(id).autocomplete('user', on_autocomplete_selection, {{ users|json_search_base }}).prop('required', true).focus();
 			id = "#tool_textbox__" + entry_number;
-			$(id).autocomplete('tool', on_autocomplete_selection, {{ tools|json_search_base }});
+			$(id).autocomplete('tool', on_autocomplete_selection, {{ tools|json_search_base }}).prop('required', true);
 		}
 
 		function remove_row(number)
@@ -61,11 +61,13 @@
 		function on_autocomplete_selection(jquery_event, search_selection, dataset_name)
 		{
 			$(this).typeahead('val', search_selection.id).hide();
-			var row = $(this).data('row');
-			var button_id = "#" + dataset_name + "_button__" + row;
+			let row = $(this).data('row');
+			let button_id = "#" + dataset_name + "_button__" + row;
+			let textbox_id = "#" + dataset_name + "_textbox__" + row;
+			$(textbox_id).prop('required', false);
 			$(button_id).val(search_selection.name).show();
 
-			if(dataset_name == "user")
+			if(dataset_name === "user")
 				fetch_projects(row, search_selection.id);
 
 			advance_focus(dataset_name, row);
@@ -73,17 +75,17 @@
 
 		function advance_focus(type, row)
 		{
-			var project_select_id = "#chosen_project__" + row;
-			var tool_textbox_id = "#tool_textbox__" + row;
-			var duration_id = "#duration__" + row;
-			if(type == "user")
+			let project_select_id = "#chosen_project__" + row;
+			let tool_textbox_id = "#tool_textbox__" + row;
+			let duration_id = "#duration__" + row;
+			if(type === "user")
 			{
 				if($(tool_textbox_id).is(":visible"))
 					$(tool_textbox_id).focus();
 				else
 					$(duration_id).focus();
 			}
-			else if(type == "tool")
+			else if(type === "tool")
 			{
 				if($(project_select_id).length > 0)
 					$(project_select_id).focus();
@@ -94,15 +96,15 @@
 
 		function fetch_projects(row, user_id)
 		{
-			var parameters =
+			let parameters =
 			{
 				"source_template": "training",
 				"user_id": user_id,
 				"entry_number": row
 			};
-			var target_element = "#project__" + row;
-			var url = "{% url 'get_projects' %}?" + jQuery.param(parameters);
-			var report_error = ajax_complete_callback("Could not fetch projects for user", "There was a problem obtaining the list of projects for the user.");
+			let target_element = "#project__" + row;
+			let url = "{% url 'get_projects' %}?" + jQuery.param(parameters);
+			let report_error = ajax_complete_callback("Could not fetch projects for user", "There was a problem obtaining the list of projects for the user.");
 			$(target_element).load(url, undefined, report_error);
 		}
 
@@ -110,18 +112,18 @@
 		{
 			$("#user_button__" + row).hide();
 			$("#project__" + row).html("");
-			$("#user_textbox__" + row).typeahead('val', '').show().focus();
+			$("#user_textbox__" + row).typeahead('val', '').prop('required', true).show().focus();
 		}
 
 		function purge_tool(row)
 		{
 			$("#tool_button__" + row).hide();
-			$("#tool_textbox__" + row).typeahead('val', '').show().focus();
+			$("#tool_textbox__" + row).typeahead('val', '').prop('required', true).show().focus();
 		}
 
 		function on_submit()
 		{
-			var failure_dialog = ajax_failure_callback("Could not record training sessions");
+			let failure_dialog = ajax_failure_callback("Could not record training sessions");
 			ajax_post("{% url 'charge_training' %}", serialize("#training_session_form"), ajax_success_callback, failure_dialog);
 			return false;
 		}

@@ -626,6 +626,7 @@ function clear_specific_user()
 
 function on_load()
 {
+    $("html").css("overflow", "hidden");
 	create_calendar();
 	set_interval_when_visible(document, refresh_calendar_and_sidebar, 30000);
 	set_item_link_callback(update_event_sources);
