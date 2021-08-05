@@ -66,14 +66,13 @@ def farewell_screen(request, door_id):
 def login_to_area(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
 
-	badge_number = request.POST.get("badge_number", "")
+	badge_number = request.POST.get("badge_number")
 	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
-	if badge_number == "":
+	if not badge_number:
 		return render(request, "area_access/badge_not_found.html")
 	try:
-		badge_number = int(badge_number)
 		user = User.objects.get(badge_number=badge_number)
-	except (User.DoesNotExist, ValueError):
+	except User.DoesNotExist:
 		return render(request, "area_access/badge_not_found.html")
 
 	log = PhysicalAccessLog()
@@ -239,10 +238,12 @@ def delay_lock_door(door_id):
 @permission_required("NEMO.change_areaaccessrecord")
 @require_POST
 def logout_of_area(request, door_id):
+	badge_number = request.POST.get("badge_number")
+	if not badge_number:
+		return render(request, "area_access/badge_not_found.html")
 	try:
-		badge_number = int(request.POST.get("badge_number", ""))
 		user = User.objects.get(badge_number=badge_number)
-	except (User.DoesNotExist, ValueError):
+	except User.DoesNotExist:
 		return render(request, "area_access/badge_not_found.html")
 	record = user.area_access_record()
 	if record:
@@ -271,11 +272,12 @@ def logout_of_area(request, door_id):
 @require_POST
 def open_door(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
-	badge_number = request.POST.get("badge_number", "")
+	badge_number = request.POST.get("badge_number")
+	if not badge_number:
+		return render(request, "area_access/badge_not_found.html")
 	try:
-		badge_number = int(badge_number)
 		user = User.objects.get(badge_number=badge_number)
-	except (User.DoesNotExist, ValueError):
+	except User.DoesNotExist:
 		return render(request, "area_access/badge_not_found.html")
 	if user.area_access_record() and user.area_access_record().area == door.area:
 		log = PhysicalAccessLog(
