@@ -1,5 +1,5 @@
 <div class="row" style="margin-top:30px">
-	<div class="col-xs-offset-3 col-xs-6" onclick="{% if back == 'back_to_start' %}load_choices({{ customer.badge_number }}){% elif back == 'back_to_category' %}view_category('{% url 'kiosk_category_choices' tool.category customer.id %}'){% endif %}">
+	<div class="col-xs-offset-3 col-xs-6" onclick="{% if back == 'back_to_start' %}load_choices('{{ customer.badge_number }}'){% elif back == 'back_to_category' %}view_category('{% url 'kiosk_category_choices' tool.category customer.id %}'){% endif %}">
 		<div class="alert alert-warning" style="text-align:center; margin-bottom:0; font-size:x-large">
 			Go back
 		</div>

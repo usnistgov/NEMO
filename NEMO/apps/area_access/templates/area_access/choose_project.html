@@ -3,7 +3,7 @@
 <h2>You can always change your choice later.</h2>
 {% for project in user.active_projects %}
 	<p>
-		<button type="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area({{ user.badge_number }}, {{ project.id }})">
+		<button type="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area('{{ user.badge_number }}', {{ project.id }})">
 			{{ project.name }}
 		</button>
 	</p>
