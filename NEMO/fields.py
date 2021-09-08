@@ -64,9 +64,10 @@ class MultiEmailFormField(forms.CharField):
 		return attrs
 
 	def prepare_value(self, value):
-		if value is None:
+		if type(value) is list:
+			return self.separator.join(value)
+		else:
 			return value
-		return self.separator.join(value)
 
 
 class MultiEmailField(models.CharField):
