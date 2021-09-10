@@ -10,6 +10,7 @@ from typing import List, Optional, Union
 
 import pytz
 from dateutil import rrule
+from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
@@ -1142,6 +1143,8 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
 
 def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	site_title = get_customization('site_title')
+	reservation_organizer_email = getattr(settings, "RESERVATION_ORGANIZER_EMAIL", "no_reply")
+	reservation_organizer = getattr(settings, "RESERVATION_ORGANIZER", site_title)
 	method_name = 'CANCEL' if cancelled else 'REQUEST'
 	method = f'METHOD:{method_name}\n'
 	status = 'STATUS:CANCELLED\n' if cancelled else 'STATUS:CONFIRMED\n'
@@ -1152,7 +1155,7 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	start = reservation.start.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
 	end = reservation.end.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
 	reservation_name = reservation.reservation_item.name
-	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'ATTENDEE:{reservation.user.email}\n', f'ORGANIZER:{reservation.user.email}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
+	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'ATTENDEE;CN="{reservation.user.get_name()}";RSVP=TRUE:mailto:{reservation.user.email}\n', f'ORGANIZER;CN="{reservation_organizer}":mailto:{reservation_organizer_email}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
 	ics = io.StringIO('')
 	ics.writelines(lines)
 	ics.seek(0)
