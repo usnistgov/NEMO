@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
 	name='NEMO',
@@ -27,6 +27,7 @@ setup(
 		'cryptography==3.4.7',
 		'Django==2.2.24',
 		'django-filter==2.4.0',
+		'drf-renderer-xlsx==0.4.1',
 		'djangorestframework==3.12.4',
 		'drf-flex-fields==0.9.3',
 		'ldap3==2.9',

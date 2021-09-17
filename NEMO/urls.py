@@ -12,7 +12,42 @@ from django.views.static import serve
 from rest_framework import routers
 
 from NEMO.models import ReservationItemType
-from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users, buddy_system
+from NEMO.views import (
+	abuse,
+	accounts_and_projects,
+	alerts,
+	api,
+	area_access,
+	authentication,
+	buddy_system,
+	calendar,
+	configuration_agenda,
+	consumables,
+	contact_staff,
+	customization,
+	email,
+	feedback,
+	get_projects,
+	history,
+	jumbotron,
+	landing,
+	maintenance,
+	mobile,
+	news,
+	qualifications,
+	remote_work,
+	resources,
+	safety,
+	sidebar,
+	staff_charges,
+	status_dashboard,
+	tasks,
+	tool_control,
+	training,
+	tutorials,
+	usage,
+	users,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +60,7 @@ router = routers.DefaultRouter()
 router.register(r'accounts', api.AccountViewSet)
 router.register(r'area_access_records', api.AreaAccessRecordViewSet)
 router.register(r'areas', api.AreaViewSet)
+router.register(r'billing', api.BillingViewSet, basename="billing")
 router.register(r'projects', api.ProjectViewSet)
 router.register(r'reservations', api.ReservationViewSet)
 router.register(r'resources', api.ResourceViewSet)
@@ -247,7 +283,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# REST API
 		url(r'^api/', include(router.urls)),
-		url(r'^api/billing/?$', api.billing),
 
 		# Area access
 		url(r'^area_access/$', area_access.area_access, name='area_access'),
