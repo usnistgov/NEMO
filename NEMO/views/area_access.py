@@ -2,7 +2,6 @@ from datetime import timedelta
 from html.parser import HTMLParser
 from logging import getLogger
 
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.db.models import F
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -14,16 +13,24 @@ from django.utils.http import urlencode
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from mptt.forms import TreeNodeChoiceField
 
-from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.exceptions import NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, InactiveUserError, \
-	NoActiveProjectsForUserError, NoPhysicalAccessUserError, PhysicalAccessExpiredUserError, \
-	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError, ProjectChargeException
+from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
+from NEMO.exceptions import (
+	InactiveUserError,
+	MaximumCapacityReachedError,
+	NoAccessiblePhysicalAccessUserError,
+	NoActiveProjectsForUserError,
+	NoPhysicalAccessUserError,
+	PhysicalAccessExpiredUserError,
+	ProjectChargeException,
+	ReservationRequiredUserError,
+	ScheduledOutageInProgressError,
+	UnavailableResourcesUserError,
+)
 from NEMO.models import Area, AreaAccessRecord, Project, User
-from NEMO.tasks import synchronized
 from NEMO.utilities import parse_start_and_end_date, quiet_int
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization
-from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area, check_billing_to_project
+from NEMO.views.policy import check_billing_to_project, check_policy_to_enter_any_area, check_policy_to_enter_this_area
 
 area_access_logger = getLogger(__name__)
 
@@ -50,7 +57,7 @@ class ParseSelfLoginErrorMessage(HTMLParser):
 		pass
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def area_access(request):
 	""" Presents a page that displays audit records for all areas. """
@@ -83,7 +90,7 @@ def area_access(request):
 	return render(request, 'area_access/area_access.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_http_methods(['GET', 'POST'])
 def new_area_access_record(request):
 	dictionary = {
@@ -169,7 +176,7 @@ def check_policy_for_user(customer: User):
 	return error_message
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def force_area_logout(request, user_id):
 	user = get_object_or_404(User, id=user_id)

@@ -2,24 +2,24 @@ from logging import getLogger
 from typing import List
 
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponseBadRequest
-from django.shortcuts import render, redirect
-from django.template import Template, Context
-from django.views.decorators.http import require_http_methods, require_POST, require_GET
+from django.shortcuts import redirect, render
+from django.template import Context, Template
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO import rates
+from NEMO.decorators import staff_member_required
 from NEMO.exceptions import ProjectChargeException
 from NEMO.forms import ConsumableWithdrawForm
-from NEMO.models import Consumable, User, ConsumableWithdraw
-from NEMO.utilities import send_mail, EmailCategory
-from NEMO.views.customization import get_media_file_contents, get_customization
+from NEMO.models import Consumable, ConsumableWithdraw, User
+from NEMO.utilities import EmailCategory, send_mail
+from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_billing_to_project
 
 consumables_logger = getLogger(__name__)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_http_methods(['GET', 'POST'])
 def consumables(request):
 	if request.method == "GET":
@@ -62,7 +62,7 @@ def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
 	request.session['withdrawals'] = withdrawals
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def remove_withdraw_at_index(request, index: str):
 	try:
@@ -76,7 +76,7 @@ def remove_withdraw_at_index(request, index: str):
 	return render(request, "consumables/consumables_order.html")
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def clear_withdrawals(request):
 	if 'withdrawals' in request.session:
@@ -84,7 +84,7 @@ def clear_withdrawals(request):
 	return render(request, "consumables/consumables_order.html")
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def make_withdrawals(request):
 	withdrawals: List = request.session.get('withdrawals')

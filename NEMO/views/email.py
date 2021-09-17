@@ -1,20 +1,20 @@
 from logging import getLogger
 from smtplib import SMTPException
 
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.validators import validate_email
 from django.db.models import Q
-from django.http import HttpResponseBadRequest, HttpResponse
-from django.shortcuts import render, get_object_or_404
-from django.template import Template, Context
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404, render
+from django.template import Context, Template
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.decorators import staff_member_required
 from NEMO.forms import EmailBroadcastForm
-from NEMO.models import Tool, Account, Project, User, Area
-from NEMO.utilities import send_mail, EmailCategory
-from NEMO.views.customization import get_media_file_contents, get_customization
+from NEMO.models import Account, Area, Project, Tool, User
+from NEMO.utilities import EmailCategory, send_mail
+from NEMO.views.customization import get_customization, get_media_file_contents
 
 logger = getLogger(__name__)
 
@@ -70,7 +70,7 @@ def send_email(request):
 	return render(request, 'acknowledgement.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def email_broadcast(request, audience=''):
 	dictionary = {}
@@ -86,7 +86,7 @@ def email_broadcast(request, audience=''):
 	return render(request, 'email/email_broadcast.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def compose_email(request):
 	audience = request.GET.get('audience')
@@ -128,7 +128,7 @@ def compose_email(request):
 	return render(request, 'email/compose_email.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def send_broadcast_email(request):
 	content = get_media_file_contents('generic_email.html')
@@ -188,7 +188,7 @@ def send_broadcast_email(request):
 	return render(request, 'acknowledgement.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def email_preview(request):
 	generic_email_template = get_media_file_contents('generic_email.html')

@@ -1,15 +1,14 @@
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.http import Http404
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
 
+from NEMO.decorators import staff_member_required
 from NEMO.forms import AlertForm
 from NEMO.models import Alert, AlertCategory
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_http_methods(['GET', 'POST'])
 def alerts(request):
 	alert_id = request.GET.get('alert_id') or request.POST.get('alert_id')

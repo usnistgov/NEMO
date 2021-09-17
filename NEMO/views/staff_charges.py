@@ -1,17 +1,17 @@
-from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponseBadRequest
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.decorators import staff_member_required
 from NEMO.exceptions import ProjectChargeException
-from NEMO.models import User, StaffCharge, AreaAccessRecord, Project, Area, UsageEvent
+from NEMO.models import Area, AreaAccessRecord, Project, StaffCharge, UsageEvent, User
 from NEMO.views.area_access import load_areas_for_use_in_template
 from NEMO.views.policy import check_billing_to_project
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def staff_charges(request):
 	staff_member:User = request.user
@@ -53,7 +53,7 @@ def staff_charges(request):
 	return render(request, 'staff_charges/new_staff_charge.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def begin_staff_charge(request):
 	if request.user.charging_staff_time():
@@ -71,7 +71,7 @@ def begin_staff_charge(request):
 	return redirect(reverse('staff_charges'))
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def end_staff_charge(request):
 	if not request.user.charging_staff_time():
@@ -88,7 +88,7 @@ def end_staff_charge(request):
 	return redirect(reverse('staff_charges'))
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def begin_staff_area_charge(request):
 	charge = request.user.get_staff_charge()
@@ -112,7 +112,7 @@ def begin_staff_area_charge(request):
 	return redirect(reverse('staff_charges'))
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def end_staff_area_charge(request):
 	charge = request.user.get_staff_charge()

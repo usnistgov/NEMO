@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required, permission_required
@@ -8,16 +8,16 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.decorators import synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.models import Project, Reservation, Tool, UsageEvent, User, BadgeReader, ReservationItemType
-from NEMO.tasks import synchronized
-from NEMO.utilities import quiet_int, localize
+from NEMO.models import BadgeReader, Project, Reservation, ReservationItemType, Tool, UsageEvent, User
+from NEMO.utilities import localize, quiet_int
 from NEMO.views.calendar import (
+	cancel_the_reservation,
 	determine_insufficient_notice,
 	extract_configuration,
-	cancel_the_reservation,
-	shorten_reservation,
 	get_and_combine_reservation_questions,
+	shorten_reservation,
 )
 from NEMO.views.policy import (
 	check_policy_to_disable_tool,
@@ -26,9 +26,9 @@ from NEMO.views.policy import (
 )
 from NEMO.views.status_dashboard import create_tool_summary
 from NEMO.views.tool_control import (
-	interlock_error,
-	interlock_bypass_allowed,
 	email_managers_required_questions_disable_tool,
+	interlock_bypass_allowed,
+	interlock_error,
 )
 from NEMO.widgets.dynamic_form import DynamicForm
 

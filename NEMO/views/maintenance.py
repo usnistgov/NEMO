@@ -1,14 +1,14 @@
 from itertools import chain
 
-from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET
 
+from NEMO.decorators import staff_member_required
 from NEMO.models import Task, TaskCategory, TaskStatus
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def maintenance(request, sort_by=''):
 	pending_tasks = Task.objects.filter(cancelled=False, resolved=False)
@@ -31,7 +31,7 @@ def maintenance(request, sort_by=''):
 	return render(request, 'maintenance/maintenance.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def task_details(request, task_id):
 	task = get_object_or_404(Task, id=task_id)

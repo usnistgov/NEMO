@@ -8,31 +8,23 @@ from django.utils import timezone
 from django.utils.formats import localize
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.decorators import postpone
 from NEMO.exceptions import (
 	InactiveUserError,
-	NoActiveProjectsForUserError,
-	PhysicalAccessExpiredUserError,
-	NoPhysicalAccessUserError,
-	NoAccessiblePhysicalAccessUserError,
-	UnavailableResourcesUserError,
 	MaximumCapacityReachedError,
+	NoAccessiblePhysicalAccessUserError,
+	NoActiveProjectsForUserError,
+	NoPhysicalAccessUserError,
+	PhysicalAccessExpiredUserError,
+	ProjectChargeException,
 	ReservationRequiredUserError,
 	ScheduledOutageInProgressError,
-	ProjectChargeException,
+	UnavailableResourcesUserError,
 )
-from NEMO.models import (
-	Door,
-	PhysicalAccessLog,
-	PhysicalAccessType,
-	Project,
-	User,
-	UsageEvent,
-	BadgeReader,
-)
-from NEMO.tasks import postpone
-from NEMO.views.area_access import log_out_user, log_in_user_to_area
+from NEMO.models import (BadgeReader, Door, PhysicalAccessLog, PhysicalAccessType, Project, UsageEvent, User)
+from NEMO.views.area_access import log_in_user_to_area, log_out_user
 from NEMO.views.customization import get_customization
-from NEMO.views.policy import check_policy_to_enter_this_area, check_policy_to_enter_any_area, check_billing_to_project
+from NEMO.views.policy import check_billing_to_project, check_policy_to_enter_any_area, check_policy_to_enter_this_area
 from NEMO.views.tool_control import interlock_bypass_allowed
 
 

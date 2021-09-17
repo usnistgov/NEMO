@@ -1,14 +1,14 @@
 from datetime import timedelta
 
-from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
-from NEMO.models import Tool, Reservation
+from NEMO.decorators import staff_member_required
+from NEMO.models import Reservation, Tool
 from NEMO.utilities import localize, naive_local_current_datetime
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def configuration_agenda(request, time_period='today'):
 	tools = Tool.objects.exclude(configuration__isnull=True).exclude(configuration__exclude_from_configuration_agenda=True).values_list('id', flat=True)

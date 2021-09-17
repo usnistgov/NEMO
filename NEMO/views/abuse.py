@@ -1,17 +1,17 @@
 from collections import defaultdict
 
-from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 from mptt.forms import TreeNodeChoiceField
 
+from NEMO.decorators import staff_member_required
 from NEMO.forms import ReservationAbuseForm
-from NEMO.models import Reservation, Tool, User, Area, ReservationItemType
+from NEMO.models import Area, Reservation, ReservationItemType, Tool, User
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def abuse(request):
 	dictionary = {
@@ -50,7 +50,7 @@ def abuse(request):
 	return render(request, 'abuse/abuse.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def user_drill_down(request):
 	try:

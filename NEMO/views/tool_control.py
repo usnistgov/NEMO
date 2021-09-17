@@ -1,26 +1,27 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from distutils.util import strtobool
 from http import HTTPStatus
 from itertools import chain
-from json import loads, JSONDecodeError
+from json import JSONDecodeError, loads
 from logging import getLogger
 from typing import Dict, List
 
 from django.conf import settings
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import Template, Context
+from django.template import Context, Template
 from django.template.defaultfilters import linebreaksbr
-from django.utils import timezone, formats
+from django.utils import formats, timezone
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import rates
+from NEMO.decorators import staff_member_required, synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import (
+	AreaAccessRecord,
 	Comment,
 	Configuration,
 	ConfigurationHistory,
@@ -31,21 +32,19 @@ from NEMO.models import (
 	TaskCategory,
 	TaskStatus,
 	Tool,
+	ToolUsageCounter,
 	UsageEvent,
 	User,
-	ToolUsageCounter,
-	AreaAccessRecord,
 )
-from NEMO.tasks import synchronized
 from NEMO.utilities import (
-	extract_times,
-	quiet_int,
-	beginning_of_the_day,
-	end_of_the_day,
-	send_mail,
 	BasicDisplayTable,
 	EmailCategory,
+	beginning_of_the_day,
+	end_of_the_day,
+	extract_times,
 	format_datetime,
+	quiet_int,
+	send_mail,
 )
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization, get_media_file_contents
@@ -115,7 +114,7 @@ def tool_status(request, tool_id):
 	return render(request, "tool_control/tool_status.html", dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def use_tool_for_other(request):
 	dictionary = {"users": User.objects.filter(is_active=True).exclude(id=request.user.id)}

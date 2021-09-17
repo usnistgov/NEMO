@@ -2,15 +2,15 @@ from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
-from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponseBadRequest, HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.models import Tool, MembershipHistory, User
+from NEMO.decorators import staff_member_required
+from NEMO.models import MembershipHistory, Tool, User
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def qualifications(request):
 	""" Present a web page to allow staff to qualify or disqualify users on particular tools. """
@@ -19,7 +19,7 @@ def qualifications(request):
 	return render(request, 'qualifications.html', {'users': users, 'tools': tools})
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def modify_qualifications(request):
 	""" Change the tools that a set of users is qualified to use. """
@@ -94,7 +94,7 @@ def modify_qualifications(request):
 		return HttpResponse()
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def get_qualified_users(request):
 	tool = get_object_or_404(Tool, id=request.GET.get('tool_id'))

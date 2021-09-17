@@ -1,9 +1,9 @@
 import io
 from collections import Iterable
 from copy import deepcopy
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from http import HTTPStatus
-from json import loads, dumps
+from json import dumps, loads
 from logging import getLogger
 from re import match
 from typing import List, Optional, Union
@@ -11,23 +11,52 @@ from typing import List, Optional, Union
 import pytz
 from dateutil import rrule
 from django.conf import settings
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
-from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound
-from django.shortcuts import render, get_object_or_404, redirect
-from django.template import Template, Context
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template import Context, Template
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import disable_session_expiry_refresh
+from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
-from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area, ReservationItemType, ReservationQuestions
-from NEMO.tasks import synchronized
-from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize, EmailCategory
+from NEMO.models import (
+	Area,
+	AreaAccessRecord,
+	Configuration,
+	Project,
+	Reservation,
+	ReservationItemType,
+	ReservationQuestions,
+	ScheduledOutage,
+	ScheduledOutageCategory,
+	StaffCharge,
+	Tool,
+	UsageEvent,
+	User,
+)
+from NEMO.utilities import (
+	EmailCategory,
+	bootstrap_primary_color,
+	create_email_attachment,
+	extract_dates,
+	extract_times,
+	format_datetime,
+	localize,
+	parse_parameter_string,
+	send_mail,
+)
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
-from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations, check_tool_reservation_requiring_area, check_billing_to_project
+from NEMO.views.policy import (
+	check_billing_to_project,
+	check_policy_to_cancel_reservation,
+	check_policy_to_create_outage,
+	check_policy_to_save_reservation,
+	check_tool_reservation_requiring_area,
+	maximum_users_in_overlapping_reservations,
+)
 from NEMO.widgets.dynamic_form import DynamicForm
 
 calendar_logger = getLogger(__name__)
@@ -453,7 +482,7 @@ def parse_configuration_entry(key, value):
 		return display_priority, configuration.configurable_item_name + " #" + str(slot + 1) + " needs to be set to " + available_setting + "."
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def create_outage(request):
 	""" Create an outage. """
@@ -536,7 +565,7 @@ def resize_reservation(request):
 	return modify_reservation(request, None, delta)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def resize_outage(request):
 	""" Resize an outage """
@@ -558,7 +587,7 @@ def move_reservation(request):
 	return modify_reservation(request, delta, delta)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def move_outage(request):
 	""" Move a reservation for a user. """
@@ -676,7 +705,7 @@ def cancel_reservation(request, reservation_id):
 			return render(request, 'mobile/error.html', {'message': response.content})
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def cancel_outage(request, outage_id):
 	outage = get_object_or_404(ScheduledOutage, id=outage_id)
@@ -688,7 +717,7 @@ def cancel_outage(request, outage_id):
 		return render(request, 'mobile/cancellation_result.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def set_reservation_title(request, reservation_id):
 	""" Change reservation title for a user. """
@@ -987,7 +1016,7 @@ def send_email_out_of_time_reservation_notification():
 	return HttpResponse()
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def proxy_reservation(request):
 	return render(request, 'calendar/proxy_reservation.html', {'users': User.objects.filter(is_active=True)})
