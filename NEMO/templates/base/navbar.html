@@ -39,6 +39,7 @@
                                 {% navigation_url 'abuse' 'Abuse' %}
                                 {% navigation_url 'accounts_and_projects' 'Accounts and projects' %}
                                 {% navigation_url 'alerts' 'Alerts' %}
+                                {% if user.is_superuser %}{% navigation_url 'api-root' 'API' %}{% endif %}
                                 {% if areas_exist %}{% navigation_url 'area_access' 'Area access' %}{% endif %}
                                 {% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' %}{% endif %}
                                 {% if user.is_superuser %}{% navigation_url 'customization' 'Customization' %}{% endif %}
