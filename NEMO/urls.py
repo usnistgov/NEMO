@@ -160,6 +160,7 @@ urlpatterns += [
 	url(r'^event_details/usage/(?P<event_id>\d+)/$', calendar.usage_details, name='usage_details'),
 	url(r'^event_details/area_access/(?P<event_id>\d+)/$', calendar.area_access_details, name='area_access_details'),
 	url(r'^proxy_reservation/$', calendar.proxy_reservation, name='proxy_reservation'),
+	url(r'^reservation_group_question/(?P<reservation_question_id>\d+)/(?P<group_name>\w+)/$', calendar.reservation_group_question, name='reservation_group_question'),
 
 	# Qualifications:
 	url(r'^qualifications/$', qualifications.qualifications, name='qualifications'),

@@ -17,6 +17,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFou
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
@@ -57,7 +58,7 @@ from NEMO.views.policy import (
 	check_tool_reservation_requiring_area,
 	maximum_users_in_overlapping_reservations,
 )
-from NEMO.widgets.dynamic_form import DynamicForm
+from NEMO.widgets.dynamic_form import DynamicForm, render_group_questions
 
 calendar_logger = getLogger(__name__)
 
@@ -380,19 +381,17 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 			return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': False, 'reservation_action': 'create'})
 
 	# Reservation questions if applicable
-	reservation_questions = get_and_combine_reservation_questions(item_type, item_id, new_reservation.project)
+	reservation_questions = render_reservation_questions(item_type, item_id, new_reservation.project)
 	if reservation_questions:
-		dynamic_form = DynamicForm(reservation_questions)
-		dynamic_form_rendered = dynamic_form.render()
 		if not bool(request.POST.get("reservation_questions", False)):
 			# We have not yet asked the questions
-			return render(request, 'calendar/reservation_questions.html', {'reservation_questions': dynamic_form_rendered})
+			return render(request, 'calendar/reservation_questions.html', {'reservation_questions': reservation_questions})
 		else:
 			# We already asked before, now we need to extract the results
 			try:
-				new_reservation.question_data = dynamic_form.extract(request)
+				new_reservation.question_data = extract_reservation_questions(request, item_type, item_id, new_reservation.project)
 			except RequiredUnansweredQuestionsException as e:
-				dictionary = {'error': str(e), 'reservation_questions': dynamic_form_rendered}
+				dictionary = {'error': str(e), 'reservation_questions': reservation_questions}
 				return render(request, 'calendar/reservation_questions.html', dictionary)
 
 	# Configuration rules only apply to tools
@@ -1022,7 +1021,14 @@ def proxy_reservation(request):
 	return render(request, 'calendar/proxy_reservation.html', {'users': User.objects.filter(is_active=True)})
 
 
-def get_and_combine_reservation_questions(item_type: ReservationItemType, item_id: int, project: Project = None) -> str:
+@login_required
+@require_GET
+def reservation_group_question(request, reservation_question_id, group_name):
+	reservation_questions = get_object_or_404(ReservationQuestions, id=reservation_question_id)
+	return HttpResponse(render_group_questions(request, reservation_questions.questions, "reservation_group_question", reservation_question_id, group_name))
+
+
+def get_and_combine_reservation_questions(item_type: ReservationItemType, item_id: int, project: Project = None) -> List[ReservationQuestions]:
 	reservation_questions = ReservationQuestions.objects.all()
 	if item_type == ReservationItemType.TOOL:
 		reservation_questions = reservation_questions.filter(tool_reservations=True)
@@ -1034,10 +1040,23 @@ def get_and_combine_reservation_questions(item_type: ReservationItemType, item_i
 		reservation_questions = reservation_questions.filter(Q(only_for_projects=None) | Q(only_for_projects__in=[project.id]))
 	else:
 		reservation_questions = reservation_questions.filter(only_for_projects=None)
+	return reservation_questions
+
+
+def render_reservation_questions(item_type: ReservationItemType, item_id: int, project: Project = None, virtual_inputs: bool = False) -> str:
+	reservation_questions = get_and_combine_reservation_questions(item_type, item_id, project)
+	rendered_questions = ""
+	for reservation_question in reservation_questions:
+		rendered_questions += DynamicForm(reservation_question.questions).render("reservation_group_question", reservation_question.id, virtual_inputs)
+	return mark_safe(rendered_questions)
+
+
+def extract_reservation_questions(request, item_type: ReservationItemType, item_id: int, project: Project = None) -> str:
+	reservation_questions = get_and_combine_reservation_questions(item_type, item_id, project)
 	reservation_questions_json = []
 	for reservation_question in reservation_questions:
 		reservation_questions_json.extend(loads(reservation_question.questions))
-	return dumps(reservation_questions_json) if len(reservation_questions_json) else ""
+	return DynamicForm(dumps(reservation_questions_json)).extract(request) if len(reservation_questions_json) else ""
 
 
 def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime = None):

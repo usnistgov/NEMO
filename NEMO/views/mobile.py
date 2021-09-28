@@ -4,18 +4,22 @@ from itertools import chain
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponseBadRequest
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
-from django.utils.dateparse import parse_time, parse_date
+from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
-from NEMO.models import Reservation, Tool, Project, ScheduledOutage, User, Area, ReservationItemType
-from NEMO.utilities import extract_date, localize, beginning_of_the_day, end_of_the_day
-from NEMO.views.calendar import extract_configuration, determine_insufficient_notice, get_and_combine_reservation_questions
+from NEMO.models import Area, Project, Reservation, ReservationItemType, ScheduledOutage, Tool, User
+from NEMO.utilities import beginning_of_the_day, end_of_the_day, extract_date, localize
+from NEMO.views.calendar import (
+	determine_insufficient_notice,
+	extract_configuration,
+	extract_reservation_questions,
+	render_reservation_questions,
+)
 from NEMO.views.customization import get_customization
-from NEMO.views.policy import check_policy_to_save_reservation, check_billing_to_project
-from NEMO.widgets.dynamic_form import DynamicForm
+from NEMO.views.policy import check_billing_to_project, check_policy_to_save_reservation
 
 
 @login_required
@@ -75,10 +79,7 @@ def new_reservation(request, item_type, item_id, date=None):
 	if not user.is_staff:
 		reservation_question_dict = {}
 		for project in user.active_projects():
-			reservation_questions = get_and_combine_reservation_questions(item_type, item_id, project)
-			if reservation_questions:
-				dynamic_form = DynamicForm(reservation_questions)
-				reservation_question_dict[project.id] = dynamic_form.render()
+			reservation_question_dict[project.id] = render_reservation_questions(item_type, item_id, project)
 		dictionary['reservation_questions'] = reservation_question_dict
 
 	return render(request, 'mobile/new_reservation.html', dictionary)
@@ -130,13 +131,10 @@ def make_reservation(request):
 		reservation.short_notice = False
 
 	# Reservation questions if applicable
-	reservation_questions = get_and_combine_reservation_questions(item_type, item.id, reservation.project)
-	if reservation_questions:
-		try:
-			dynamic_form = DynamicForm(reservation_questions)
-			reservation.question_data = dynamic_form.extract(request)
-		except RequiredUnansweredQuestionsException as e:
-			return render(request, 'mobile/error.html', {'message': str(e)})
+	try:
+		reservation.question_data = extract_reservation_questions(request, item_type, item.id, reservation.project)
+	except RequiredUnansweredQuestionsException as e:
+		return render(request, 'mobile/error.html', {'message': str(e)})
 
 	reservation.save_and_notify()
 	return render(request, 'mobile/reservation_success.html', {'new_reservation': reservation})

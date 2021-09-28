@@ -16,7 +16,8 @@ from NEMO.views.calendar import (
 	cancel_the_reservation,
 	determine_insufficient_notice,
 	extract_configuration,
-	get_and_combine_reservation_questions,
+	extract_reservation_questions,
+	render_reservation_questions,
 	shorten_reservation,
 )
 from NEMO.views.policy import (
@@ -107,7 +108,7 @@ def do_disable_tool(request, tool_id):
 	current_usage_event.end = timezone.now() + downtime
 
 	# Collect post-usage questions
-	dynamic_form = DynamicForm(tool.post_usage_questions, tool.id)
+	dynamic_form = DynamicForm(tool.post_usage_questions)
 
 	try:
 		current_usage_event.run_data = dynamic_form.extract(request)
@@ -127,7 +128,7 @@ def do_disable_tool(request, tool_id):
 		current_usage_event.run_data,
 		request,
 	)
-	dynamic_form.update_counters(current_usage_event.run_data)
+	dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
 
 	current_usage_event.save()
 	dictionary = {"message": "You are no longer using the {}".format(tool), "badge_number": customer.badge_number}
@@ -185,14 +186,11 @@ def reserve_tool(request):
 		reservation.short_notice = False
 
 	# Reservation questions if applicable
-	reservation_questions = get_and_combine_reservation_questions(ReservationItemType.TOOL, tool.id, reservation.project)
-	if reservation_questions:
-		dynamic_form = DynamicForm(reservation_questions)
-		try:
-			reservation.question_data = dynamic_form.extract(request)
-		except RequiredUnansweredQuestionsException as e:
-			error_dictionary["message"] = str(e)
-			return render(request, "kiosk/error.html", error_dictionary)
+	try:
+		reservation.question_data = extract_reservation_questions(request, ReservationItemType.TOOL, tool.id, reservation.project)
+	except RequiredUnansweredQuestionsException as e:
+		error_dictionary["message"] = str(e)
+		return render(request, "kiosk/error.html", error_dictionary)
 
 	reservation.save_and_notify()
 	return render(request, "kiosk/success.html", {"new_reservation": reservation, "customer": customer})
@@ -233,10 +231,7 @@ def tool_reservation(request, tool_id, user_id, back):
 	)
 
 	# Reservation questions if applicable
-	reservation_questions = get_and_combine_reservation_questions(ReservationItemType.TOOL, tool_id, project)
-	if reservation_questions:
-		dynamic_form = DynamicForm(reservation_questions, virtual_inputs=True)
-		dictionary["reservation_questions"] = dynamic_form.render()
+	dictionary["reservation_questions"] = render_reservation_questions(ReservationItemType.TOOL, tool_id, project, True)
 
 	return render(request, "kiosk/tool_reservation.html", dictionary)
 
@@ -330,9 +325,9 @@ def tool_information(request, tool_id, user_id, back):
 		"customer": customer,
 		"tool": tool,
 		"rendered_configuration_html": tool.configuration_widget(customer),
-		"post_usage_questions": DynamicForm(
-			questions=tool.post_usage_questions, tool_id=tool.id, virtual_inputs=True
-		).render(),
+		"post_usage_questions": DynamicForm(tool.post_usage_questions).render(
+			"tool_usage_group_question", tool.id, virtual_inputs=True
+		),
 		"back": back,
 	}
 	try:
