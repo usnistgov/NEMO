@@ -1,23 +1,23 @@
 from rest_flex_fields import FlexFieldsModelSerializer
 from rest_framework import serializers
-from rest_framework.fields import CharField, IntegerField, DateTimeField, ChoiceField, DecimalField
-from rest_framework.serializers import Serializer, ModelSerializer
+from rest_framework.fields import CharField, ChoiceField, DateTimeField, DecimalField, IntegerField
+from rest_framework.serializers import ModelSerializer, Serializer
 
 from NEMO.models import (
-	User,
-	Project,
 	Account,
-	Reservation,
+	Area,
 	AreaAccessRecord,
-	UsageEvent,
+	Project,
+	Reservation,
+	Resource,
+	ScheduledOutage,
+	StaffCharge,
 	Task,
 	TaskHistory,
-	ScheduledOutage,
 	Tool,
-	Area,
 	TrainingSession,
-	StaffCharge,
-	Resource,
+	UsageEvent,
+	User,
 )
 
 
@@ -26,17 +26,22 @@ class UserSerializer(ModelSerializer):
 		model = User
 		fields = (
 			"id",
+			"type",
+			"domain",
 			"first_name",
 			"last_name",
 			"username",
 			"email",
 			"date_joined",
+			"last_login",
+			"access_expiration",
 			"badge_number",
 			"is_active",
 			"is_staff",
 			"is_superuser",
 			"is_technician",
 			"is_service_personnel",
+			"training_required",
 		)
 
 

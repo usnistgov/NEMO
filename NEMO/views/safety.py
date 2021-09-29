@@ -1,4 +1,3 @@
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
@@ -6,9 +5,10 @@ from django.template import Context, Template
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
+from NEMO.decorators import staff_member_required
 from NEMO.forms import SafetyIssueCreationForm, SafetyIssueUpdateForm
 from NEMO.models import SafetyIssue
-from NEMO.utilities import send_mail, EmailCategory
+from NEMO.utilities import EmailCategory, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.notifications import create_safety_notification, delete_safety_notification, get_notifications
 
@@ -58,7 +58,7 @@ def resolved_safety_issues(request):
 	return render(request, 'safety/resolved_issues.html', {'tickets': tickets})
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_http_methods(['GET', 'POST'])
 def update_safety_issue(request, ticket_id):
 	if request.method == 'POST':

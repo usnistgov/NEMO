@@ -1,15 +1,15 @@
-from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import F, Q
 from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.models import UsageEvent, StaffCharge, User, Project
-from NEMO.utilities import month_list, get_month_timeframe, parse_start_and_end_date, BasicDisplayTable
+from NEMO.decorators import staff_member_required
+from NEMO.models import Project, StaffCharge, UsageEvent, User
+from NEMO.utilities import BasicDisplayTable, get_month_timeframe, month_list, parse_start_and_end_date
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def remote_work(request):
 	if request.GET.get("start_date") and request.GET.get("end_date"):
@@ -124,7 +124,7 @@ def remote_work(request):
 	return render(request, "remote_work.html", dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def validate_staff_charge(request, staff_charge_id):
 	staff_charge = get_object_or_404(StaffCharge, id=staff_charge_id)
@@ -133,7 +133,7 @@ def validate_staff_charge(request, staff_charge_id):
 	return HttpResponse()
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def validate_usage_event(request, usage_event_id):
 	usage_event = get_object_or_404(UsageEvent, id=usage_event_id)

@@ -1,8 +1,8 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
 	name='NEMO',
-	version='3.12.2',
+	version='3.13.0',
 	python_requires='>=3.6',
 	packages=find_packages(exclude=['NEMO.tests','NEMO.tests.*']),
 	include_package_data=True,
@@ -27,12 +27,13 @@ setup(
 		'cryptography==3.4.7',
 		'Django==2.2.24',
 		'django-filter==2.4.0',
+		'drf-renderer-xlsx==0.4.1',
 		'djangorestframework==3.12.4',
-		'drf-flex-fields==0.9.1',
+		'drf-flex-fields==0.9.3',
 		'ldap3==2.9',
 		'python-dateutil==2.8.1',
 		'requests==2.25.1',
-		'Pillow==8.2.0',
+		'Pillow==8.3.2',
 		'django-mptt==0.12.0',
 	],
 	entry_points={

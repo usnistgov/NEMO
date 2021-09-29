@@ -1,33 +1,64 @@
 import io
 from collections import Iterable
 from copy import deepcopy
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from http import HTTPStatus
-from json import loads, dumps
+from json import dumps, loads
 from logging import getLogger
 from re import match
 from typing import List, Optional, Union
 
 import pytz
 from dateutil import rrule
-from django.contrib.admin.views.decorators import staff_member_required
+from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
-from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound
-from django.shortcuts import render, get_object_or_404, redirect
-from django.template import Template, Context
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template import Context, Template
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import disable_session_expiry_refresh
+from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
-from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccessRecord, StaffCharge, User, Project, ScheduledOutage, ScheduledOutageCategory, Area, ReservationItemType, ReservationQuestions
-from NEMO.tasks import synchronized
-from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize, EmailCategory
+from NEMO.models import (
+	Area,
+	AreaAccessRecord,
+	Configuration,
+	Project,
+	Reservation,
+	ReservationItemType,
+	ReservationQuestions,
+	ScheduledOutage,
+	ScheduledOutageCategory,
+	StaffCharge,
+	Tool,
+	UsageEvent,
+	User,
+)
+from NEMO.utilities import (
+	EmailCategory,
+	bootstrap_primary_color,
+	create_email_attachment,
+	extract_dates,
+	extract_times,
+	format_datetime,
+	localize,
+	parse_parameter_string,
+	send_mail,
+)
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
-from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations, check_tool_reservation_requiring_area, check_billing_to_project
-from NEMO.widgets.dynamic_form import DynamicForm
+from NEMO.views.policy import (
+	check_billing_to_project,
+	check_policy_to_cancel_reservation,
+	check_policy_to_create_outage,
+	check_policy_to_save_reservation,
+	check_tool_reservation_requiring_area,
+	maximum_users_in_overlapping_reservations,
+)
+from NEMO.widgets.dynamic_form import DynamicForm, render_group_questions
 
 calendar_logger = getLogger(__name__)
 
@@ -350,19 +381,17 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 			return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': False, 'reservation_action': 'create'})
 
 	# Reservation questions if applicable
-	reservation_questions = get_and_combine_reservation_questions(item_type, item_id, new_reservation.project)
+	reservation_questions = render_reservation_questions(item_type, item_id, new_reservation.project)
 	if reservation_questions:
-		dynamic_form = DynamicForm(reservation_questions)
-		dynamic_form_rendered = dynamic_form.render()
 		if not bool(request.POST.get("reservation_questions", False)):
 			# We have not yet asked the questions
-			return render(request, 'calendar/reservation_questions.html', {'reservation_questions': dynamic_form_rendered})
+			return render(request, 'calendar/reservation_questions.html', {'reservation_questions': reservation_questions})
 		else:
 			# We already asked before, now we need to extract the results
 			try:
-				new_reservation.question_data = dynamic_form.extract(request)
+				new_reservation.question_data = extract_reservation_questions(request, item_type, item_id, new_reservation.project)
 			except RequiredUnansweredQuestionsException as e:
-				dictionary = {'error': str(e), 'reservation_questions': dynamic_form_rendered}
+				dictionary = {'error': str(e), 'reservation_questions': reservation_questions}
 				return render(request, 'calendar/reservation_questions.html', dictionary)
 
 	# Configuration rules only apply to tools
@@ -452,7 +481,7 @@ def parse_configuration_entry(key, value):
 		return display_priority, configuration.configurable_item_name + " #" + str(slot + 1) + " needs to be set to " + available_setting + "."
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def create_outage(request):
 	""" Create an outage. """
@@ -535,7 +564,7 @@ def resize_reservation(request):
 	return modify_reservation(request, None, delta)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def resize_outage(request):
 	""" Resize an outage """
@@ -557,7 +586,7 @@ def move_reservation(request):
 	return modify_reservation(request, delta, delta)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def move_outage(request):
 	""" Move a reservation for a user. """
@@ -675,7 +704,7 @@ def cancel_reservation(request, reservation_id):
 			return render(request, 'mobile/error.html', {'message': response.content})
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def cancel_outage(request, outage_id):
 	outage = get_object_or_404(ScheduledOutage, id=outage_id)
@@ -687,7 +716,7 @@ def cancel_outage(request, outage_id):
 		return render(request, 'mobile/cancellation_result.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def set_reservation_title(request, reservation_id):
 	""" Change reservation title for a user. """
@@ -986,13 +1015,20 @@ def send_email_out_of_time_reservation_notification():
 	return HttpResponse()
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def proxy_reservation(request):
 	return render(request, 'calendar/proxy_reservation.html', {'users': User.objects.filter(is_active=True)})
 
 
-def get_and_combine_reservation_questions(item_type: ReservationItemType, item_id: int, project: Project = None) -> str:
+@login_required
+@require_GET
+def reservation_group_question(request, reservation_question_id, group_name):
+	reservation_questions = get_object_or_404(ReservationQuestions, id=reservation_question_id)
+	return HttpResponse(render_group_questions(request, reservation_questions.questions, "reservation_group_question", reservation_question_id, group_name))
+
+
+def get_and_combine_reservation_questions(item_type: ReservationItemType, item_id: int, project: Project = None) -> List[ReservationQuestions]:
 	reservation_questions = ReservationQuestions.objects.all()
 	if item_type == ReservationItemType.TOOL:
 		reservation_questions = reservation_questions.filter(tool_reservations=True)
@@ -1004,10 +1040,23 @@ def get_and_combine_reservation_questions(item_type: ReservationItemType, item_i
 		reservation_questions = reservation_questions.filter(Q(only_for_projects=None) | Q(only_for_projects__in=[project.id]))
 	else:
 		reservation_questions = reservation_questions.filter(only_for_projects=None)
+	return reservation_questions
+
+
+def render_reservation_questions(item_type: ReservationItemType, item_id: int, project: Project = None, virtual_inputs: bool = False) -> str:
+	reservation_questions = get_and_combine_reservation_questions(item_type, item_id, project)
+	rendered_questions = ""
+	for reservation_question in reservation_questions:
+		rendered_questions += DynamicForm(reservation_question.questions).render("reservation_group_question", reservation_question.id, virtual_inputs)
+	return mark_safe(rendered_questions)
+
+
+def extract_reservation_questions(request, item_type: ReservationItemType, item_id: int, project: Project = None) -> str:
+	reservation_questions = get_and_combine_reservation_questions(item_type, item_id, project)
 	reservation_questions_json = []
 	for reservation_question in reservation_questions:
 		reservation_questions_json.extend(loads(reservation_question.questions))
-	return dumps(reservation_questions_json) if len(reservation_questions_json) else ""
+	return DynamicForm(dumps(reservation_questions_json)).extract(request) if len(reservation_questions_json) else ""
 
 
 def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime = None):
@@ -1142,6 +1191,8 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
 
 def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	site_title = get_customization('site_title')
+	reservation_organizer_email = getattr(settings, "RESERVATION_ORGANIZER_EMAIL", "no_reply")
+	reservation_organizer = getattr(settings, "RESERVATION_ORGANIZER", site_title)
 	method_name = 'CANCEL' if cancelled else 'REQUEST'
 	method = f'METHOD:{method_name}\n'
 	status = 'STATUS:CANCELLED\n' if cancelled else 'STATUS:CONFIRMED\n'
@@ -1152,7 +1203,7 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 	start = reservation.start.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
 	end = reservation.end.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
 	reservation_name = reservation.reservation_item.name
-	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'ATTENDEE:{reservation.user.email}\n', f'ORGANIZER:{reservation.user.email}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
+	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'ATTENDEE;CN="{reservation.user.get_name()}";RSVP=TRUE:mailto:{reservation.user.email}\n', f'ORGANIZER;CN="{reservation_organizer}":mailto:{reservation_organizer_email}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
 	ics = io.StringIO('')
 	ics.writelines(lines)
 	ics.seek(0)

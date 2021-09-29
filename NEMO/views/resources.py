@@ -1,21 +1,21 @@
 from datetime import datetime
 
-from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404
-from django.shortcuts import render, get_object_or_404, redirect
-from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
+from NEMO.decorators import staff_member_required
 from NEMO.forms import ScheduledOutageForm
-from NEMO.models import Resource, UsageEvent, Tool, ScheduledOutage, ScheduledOutageCategory
+from NEMO.models import Resource, ScheduledOutage, ScheduledOutageCategory, Tool, UsageEvent
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def resources(request):
 	return render(request, 'resources/resources.html', {'resources': Resource.objects.all().order_by('category', 'name')})
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def resource_details(request, resource_id):
 	resource = get_object_or_404(Resource, id=resource_id)
@@ -26,7 +26,7 @@ def resource_details(request, resource_id):
 	return render(request, 'resources/resource_details.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_http_methods(['GET', 'POST'])
 def modify_resource(request, resource_id):
 	resource = get_object_or_404(Resource, id=resource_id)
@@ -56,7 +56,7 @@ def modify_resource(request, resource_id):
 		return redirect('resources')
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_http_methods(['GET', 'POST'])
 def schedule_outage(request, resource_id):
 	resource = get_object_or_404(Resource, id=resource_id)
@@ -88,7 +88,7 @@ def schedule_outage(request, resource_id):
 	return render(request, 'resources/scheduled_outage.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def delete_scheduled_outage(request, resource_id, outage_id):
 	try:

@@ -1,4 +1,3 @@
-from django.contrib.admin.views.decorators import staff_member_required
 from django.core.files.storage import get_storage_class
 from django.core.validators import validate_email
 from django.http import HttpResponseBadRequest
@@ -6,6 +5,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import init_admin_site
+from NEMO.decorators import superuser_required
 from NEMO.exceptions import InvalidCustomizationException
 from NEMO.models import Customization
 
@@ -120,7 +120,7 @@ def set_customization(name, value):
 			pass
 
 
-@staff_member_required(login_url=None)
+@superuser_required
 @require_GET
 def customization(request):
 	dictionary = {name: get_media_file_contents(name + extension) for name, extension in customizable_content}
@@ -128,7 +128,7 @@ def customization(request):
 	return render(request, 'customizations.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@superuser_required
 @require_POST
 def customize(request, element):
 	item = None

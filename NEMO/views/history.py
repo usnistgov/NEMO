@@ -1,14 +1,14 @@
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render
 from django.utils.text import capfirst
 from django.views.decorators.http import require_GET
 
-from NEMO.models import Account, Project, User, ActivityHistory, MembershipHistory
+from NEMO.decorators import staff_member_required
+from NEMO.models import Account, ActivityHistory, MembershipHistory, Project, User
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def history(request, item_type, item_id):
 	if item_type == "account":

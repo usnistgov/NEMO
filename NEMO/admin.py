@@ -14,19 +14,24 @@ from django.utils.safestring import mark_safe
 from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFilter
 
 from NEMO.actions import (
+	duplicate_tool_configuration,
 	lock_selected_interlocks,
+	rebuild_area_tree,
 	synchronize_with_tool_usage,
 	unlock_selected_interlocks,
-	duplicate_tool_configuration,
-	rebuild_area_tree,
 )
 from NEMO.forms import BuddyRequestForm
 from NEMO.models import (
 	Account,
+	AccountType,
 	ActivityHistory,
 	Alert,
+	AlertCategory,
 	Area,
 	AreaAccessRecord,
+	BadgeReader,
+	BuddyRequest,
+	BuddyRequestMessage,
 	Comment,
 	Configuration,
 	ConfigurationHistory,
@@ -34,20 +39,23 @@ from NEMO.models import (
 	ConsumableCategory,
 	ConsumableWithdraw,
 	ContactInformation,
-	BadgeReader,
 	ContactInformationCategory,
 	Customization,
 	Door,
+	EmailLog,
 	Interlock,
 	InterlockCard,
+	InterlockCardCategory,
 	LandingPageChoice,
 	MembershipHistory,
 	News,
 	Notification,
+	PhysicalAccessException,
 	PhysicalAccessLevel,
 	PhysicalAccessLog,
 	Project,
 	Reservation,
+	ReservationQuestions,
 	Resource,
 	ResourceCategory,
 	SafetyIssue,
@@ -57,33 +65,24 @@ from NEMO.models import (
 	Task,
 	TaskCategory,
 	TaskHistory,
+	TaskImages,
 	TaskStatus,
 	Tool,
+	ToolDocuments,
+	ToolUsageCounter,
 	TrainingSession,
 	UsageEvent,
 	User,
-	UserType,
 	UserPreferences,
-	TaskImages,
-	InterlockCardCategory,
-	record_remote_many_to_many_changes_and_save,
-	record_local_many_to_many_changes,
+	UserType,
 	record_active_state,
-	AlertCategory,
-	ToolUsageCounter,
-	PhysicalAccessException,
-	BuddyRequest,
-	EmailLog,
-	BuddyRequestMessage,
-	ToolDocuments,
-	ReservationQuestions,
-	AccountType,
+	record_local_many_to_many_changes,
+	record_remote_many_to_many_changes_and_save,
 )
 from NEMO.widgets.dynamic_form import (
 	DynamicForm,
-	PostUsageNumberFieldQuestion,
 	PostUsageFloatFieldQuestion,
-	PostUsageGroupQuestion,
+	PostUsageNumberFieldQuestion,
 )
 
 
@@ -167,7 +166,7 @@ class ToolAdminForm(forms.ModelForm):
 				except ValueError:
 					self.add_error("_post_usage_questions", "This field needs to be a valid JSON string")
 				try:
-					DynamicForm(post_usage_questions, self.instance.id).validate()
+					DynamicForm(post_usage_questions).validate("tool_usage_group_question", self.instance.id)
 				except Exception:
 					error_info = sys.exc_info()
 					self.add_error("_post_usage_questions", error_info[0].__name__ + ": " + str(error_info[1]))
@@ -271,7 +270,7 @@ class ToolAdmin(admin.ModelAdmin):
 			form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ""
 			return mark_safe(
 				'<div class="questions_preview">{}{}</div><div class="help questions_preview_help">Save form to preview post usage questions</div>'.format(
-					DynamicForm(obj.post_usage_questions, obj.id).render(), form_validity_div
+					DynamicForm(obj.post_usage_questions).render("tool_usage_group_question", obj.id), form_validity_div
 				)
 			)
 
@@ -575,10 +574,7 @@ class ReservationQuestionsForm(forms.ModelForm):
 				self.add_error("questions", "This field needs to be a valid JSON string")
 			try:
 				dynamic_form = DynamicForm(reservation_questions)
-				if any([isinstance(question, PostUsageGroupQuestion) for question in dynamic_form.questions]):
-					self.add_error("questions", "Group question is not allowed for reservation questions")
-					return
-				dynamic_form.validate()
+				dynamic_form.validate("reservation_group_question", self.instance.id)
 			except KeyError as e:
 				self.add_error("questions", f"{e} property is required")
 			except Exception:
@@ -613,7 +609,7 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 		form_validity_div = ""
 		rendered_form = ""
 		try:
-			rendered_form = DynamicForm(obj.questions).render()
+			rendered_form = DynamicForm(obj.questions).render("reservation_group_question", obj.id)
 			if obj.questions:
 				form_validity_div = '<div id="form_validity"></div>'
 		except:
@@ -1145,7 +1141,7 @@ class CounterAdminForm(forms.ModelForm):
 		if tool and tool_usage_question_name:
 			error = None
 			if tool.post_usage_questions:
-				post_usage_form = DynamicForm(tool.post_usage_questions, tool.id)
+				post_usage_form = DynamicForm(tool.post_usage_questions)
 				tool_question = post_usage_form.filter_questions(
 					lambda x: (isinstance(x, PostUsageNumberFieldQuestion) or isinstance(x, PostUsageFloatFieldQuestion)) and x.name == tool_usage_question_name
 				)

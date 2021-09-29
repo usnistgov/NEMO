@@ -12,7 +12,42 @@ from django.views.static import serve
 from rest_framework import routers
 
 from NEMO.models import ReservationItemType
-from NEMO.views import abuse, accounts_and_projects, alerts, api, area_access, authentication, calendar, configuration_agenda, consumables, contact_staff, customization, email, feedback, get_projects, history, jumbotron, landing, maintenance, mobile, usage, news, qualifications, remote_work, resources, safety, sidebar, staff_charges, status_dashboard, tasks, tool_control, training, tutorials, users, buddy_system
+from NEMO.views import (
+	abuse,
+	accounts_and_projects,
+	alerts,
+	api,
+	area_access,
+	authentication,
+	buddy_system,
+	calendar,
+	configuration_agenda,
+	consumables,
+	contact_staff,
+	customization,
+	email,
+	feedback,
+	get_projects,
+	history,
+	jumbotron,
+	landing,
+	maintenance,
+	mobile,
+	news,
+	qualifications,
+	remote_work,
+	resources,
+	safety,
+	sidebar,
+	staff_charges,
+	status_dashboard,
+	tasks,
+	tool_control,
+	training,
+	tutorials,
+	usage,
+	users,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +60,7 @@ router = routers.DefaultRouter()
 router.register(r'accounts', api.AccountViewSet)
 router.register(r'area_access_records', api.AreaAccessRecordViewSet)
 router.register(r'areas', api.AreaViewSet)
+router.register(r'billing', api.BillingViewSet, basename="billing")
 router.register(r'projects', api.ProjectViewSet)
 router.register(r'reservations', api.ReservationViewSet)
 router.register(r'resources', api.ResourceViewSet)
@@ -124,6 +160,7 @@ urlpatterns += [
 	url(r'^event_details/usage/(?P<event_id>\d+)/$', calendar.usage_details, name='usage_details'),
 	url(r'^event_details/area_access/(?P<event_id>\d+)/$', calendar.area_access_details, name='area_access_details'),
 	url(r'^proxy_reservation/$', calendar.proxy_reservation, name='proxy_reservation'),
+	url(r'^reservation_group_question/(?P<reservation_question_id>\d+)/(?P<group_name>\w+)/$', calendar.reservation_group_question, name='reservation_group_question'),
 
 	# Qualifications:
 	url(r'^qualifications/$', qualifications.qualifications, name='qualifications'),
@@ -165,7 +202,7 @@ urlpatterns += [
 	url(r'^get_email_form_for_user/(?P<user_id>\d+)/$', email.get_email_form_for_user, name='get_email_form_for_user'),
 	url(r'^send_email/$', email.send_email, name='send_email'),
 	url(r'^email_broadcast/$', email.email_broadcast, name='email_broadcast'),
-	url(r'^email_broadcast/(?P<audience>tool|area|account|project)/$', email.email_broadcast, name='email_broadcast'),
+	url(r'^email_broadcast/(?P<audience>tool|area|account|project|user)/$', email.email_broadcast, name='email_broadcast'),
 	url(r'^email_preview/$', email.email_preview, name='email_preview'),
 	url(r'^compose_email/$', email.compose_email, name='compose_email'),
 	url(r'^send_broadcast_email/$', email.send_broadcast_email, name='send_broadcast_email'),
@@ -247,7 +284,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# REST API
 		url(r'^api/', include(router.urls)),
-		url(r'^api/billing/?$', api.billing),
 
 		# Area access
 		url(r'^area_access/$', area_access.area_access, name='area_access'),

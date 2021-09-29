@@ -2,7 +2,6 @@ from logging import getLogger
 from typing import List
 
 from django.conf import settings
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,9 +10,27 @@ from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.forms import TaskForm, nice_errors, TaskImagesForm
-from NEMO.models import Interlock, Reservation, SafetyIssue, Task, TaskCategory, TaskHistory, TaskStatus, UsageEvent, TaskImages
-from NEMO.utilities import bootstrap_primary_color, format_datetime, send_mail, create_email_attachment, resize_image, EmailCategory
+from NEMO.decorators import staff_member_required
+from NEMO.forms import TaskForm, TaskImagesForm, nice_errors
+from NEMO.models import (
+	Interlock,
+	Reservation,
+	SafetyIssue,
+	Task,
+	TaskCategory,
+	TaskHistory,
+	TaskImages,
+	TaskStatus,
+	UsageEvent,
+)
+from NEMO.utilities import (
+	EmailCategory,
+	bootstrap_primary_color,
+	create_email_attachment,
+	format_datetime,
+	resize_image,
+	send_mail,
+)
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.tool_control import determine_tool_status
@@ -178,7 +195,7 @@ Visit {url} to view the tool control page for the task.<br/>
 		tasks_logger.exception(error_message)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def update(request, task_id):
 	task = get_object_or_404(Task, id=task_id)
@@ -205,7 +222,7 @@ def update(request, task_id):
 		return redirect('tool_control')
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def task_update_form(request, task_id):
 	task = get_object_or_404(Task, id=task_id)
@@ -219,7 +236,7 @@ def task_update_form(request, task_id):
 	return render(request, 'tasks/update.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def task_resolution_form(request, task_id):
 	task = get_object_or_404(Task, id=task_id)

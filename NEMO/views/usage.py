@@ -3,24 +3,34 @@ from logging import getLogger
 from typing import List, Set
 
 from django.conf import settings
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET
 from requests import get
 
-from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, StaffCharge, TrainingSession, UsageEvent, User, Project, Account
-from NEMO.utilities import get_month_timeframe, month_list, parse_start_and_end_date, BasicDisplayTable
+from NEMO.decorators import staff_member_required
+from NEMO.models import (
+	Account,
+	AreaAccessRecord,
+	ConsumableWithdraw,
+	Project,
+	Reservation,
+	StaffCharge,
+	TrainingSession,
+	UsageEvent,
+	User,
+)
+from NEMO.utilities import BasicDisplayTable, get_month_timeframe, month_list, parse_start_and_end_date
 from NEMO.views.api_billing import (
 	BillableItem,
-	billable_items_usage_events,
 	billable_items_area_access_records,
+	billable_items_consumable_withdrawals,
 	billable_items_missed_reservations,
 	billable_items_staff_charges,
-	billable_items_consumable_withdrawals,
-	billable_items_training_sessions
+	billable_items_training_sessions,
+	billable_items_usage_events,
 )
 
 logger = getLogger(__name__)
@@ -142,7 +152,7 @@ def billing(request):
 		return render(request, 'usage/billing.html', base_dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def project_usage(request):
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
@@ -202,7 +212,7 @@ def project_usage(request):
 	return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def project_billing(request):
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)

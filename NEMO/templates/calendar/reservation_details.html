@@ -57,9 +57,28 @@
 	Start: {{ reservation.start }}<br>
 	End: {{ reservation.end }}<br>
 	Identifier: {{ reservation.id }}<br>
-    {% for question_name, data in reservation.question_data_json.items %}
-        {{ data.title }}: {{ data.user_input|linebreaksbr }}<br>
-    {% endfor %}
+    {% if reservation.question_data_json.items %}
+        Reservation questions:
+        <ul style="margin-bottom: 0">
+        {% for question_name, data in reservation.question_data_json.items %}
+            {% if data.type == 'group' %}
+                <li>{{ data.title }}{% if data.title|slice:"-1:" != ":" %}:{% endif %}</li>
+                <ul style="margin-bottom: 0">
+                {% for number, data_input in data.user_input.items %}
+                    <li><span>{{ number }}:</span></li>
+                    <ul style="margin-bottom: 0">
+                        {% for name, input in data_input.items %}
+                            <li><span style="margin-left: 15px">{{ name }}: {{ input|linebreaksbr }}</span></li>
+                        {% endfor %}
+                    </ul>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <li>{{ data.title }}: {{ data.user_input|linebreaksbr }}</li>
+            {% endif %}
+        {% endfor %}
+        </ul>
+    {% endif %}
 	{% if reservation.self_configuration %}
 		{{ reservation.user }} has opted to perform the tool configuration.<br>
 	{% endif %}

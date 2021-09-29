@@ -6,21 +6,34 @@ from urllib.parse import urljoin
 import requests
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
+from NEMO.decorators import staff_member_required
 from NEMO.forms import UserForm, UserPreferencesForm
-from NEMO.models import User, Project, Tool, PhysicalAccessLevel, Reservation, StaffCharge, UsageEvent, AreaAccessRecord, ActivityHistory, record_local_many_to_many_changes, record_active_state, Area
+from NEMO.models import (
+	ActivityHistory,
+	Area,
+	AreaAccessRecord,
+	PhysicalAccessLevel,
+	Project,
+	Reservation,
+	StaffCharge,
+	Tool,
+	UsageEvent,
+	User,
+	record_active_state,
+	record_local_many_to_many_changes,
+)
 from NEMO.views.customization import get_customization
 from NEMO.views.pagination import SortedPaginator
 
 users_logger = getLogger(__name__)
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def users(request):
 	all_users = User.objects.all()
@@ -30,7 +43,7 @@ def users(request):
 	return render(request, "users/users.html", {"page": page, "users": all_users})
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_http_methods(['GET', 'POST'])
 def create_or_modify_user(request, user_id):
 	identity_service = get_identity_service()
@@ -184,7 +197,7 @@ def create_or_modify_user(request, user_id):
 		return HttpResponseBadRequest('Invalid method')
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_http_methods(['GET', 'POST'])
 def deactivate(request, user_id):
 	dictionary = {
@@ -271,7 +284,7 @@ def deactivate(request, user_id):
 		return redirect('users')
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def reset_password(request, user_id):
 	try:
@@ -299,7 +312,7 @@ def reset_password(request, user_id):
 	return render(request, 'acknowledgement.html', dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_POST
 def unlock_account(request, user_id):
 	try:

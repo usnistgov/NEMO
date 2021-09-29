@@ -1,75 +1,84 @@
 from typing import List
 
+from django.utils import timezone
+from drf_renderer_xlsx.mixins import XLSXFileMixin
 from rest_framework import status
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
 
 from NEMO.models import (
-	User,
-	Project,
 	Account,
-	Reservation,
-	UsageEvent,
+	Area,
 	AreaAccessRecord,
-	Task,
+	Project,
+	Reservation,
+	Resource,
 	ScheduledOutage,
+	StaffCharge,
+	Task,
 	Tool,
 	TrainingSession,
-	Area,
-	Resource,
-	StaffCharge,
+	UsageEvent,
+	User,
 )
 from NEMO.serializers import (
-	UserSerializer,
-	ProjectSerializer,
 	AccountSerializer,
-	ReservationSerializer,
-	UsageEventSerializer,
 	AreaAccessRecordSerializer,
-	TaskSerializer,
-	ScheduledOutageSerializer,
-	ToolSerializer,
-	BillableItemSerializer,
-	TrainingSessionSerializer,
 	AreaSerializer,
+	BillableItemSerializer,
+	ProjectSerializer,
+	ReservationSerializer,
 	ResourceSerializer,
+	ScheduledOutageSerializer,
 	StaffChargeSerializer,
+	TaskSerializer,
+	ToolSerializer,
+	TrainingSessionSerializer,
+	UsageEventSerializer,
+	UserSerializer,
 )
 from NEMO.views.api_billing import (
 	BillableItem,
 	BillingFilterForm,
-	get_usage_events_for_billing,
 	get_area_access_for_billing,
 	get_consumables_for_billing,
 	get_missed_reservations_for_billing,
 	get_staff_charges_for_billing,
 	get_training_sessions_for_billing,
+	get_usage_events_for_billing,
 )
 
-date_time_format = "%m/%d/%Y %H:%M:%S"
+date_time_format_export = "%m_%d_%Y-%H_%M_%S"
 
 
-class UserViewSet(ReadOnlyModelViewSet):
+class UserViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
 	filterset_fields = {
 		"id": ["exact", "in"],
+		"type": ["exact", "in"],
+		"domain": ["exact", "in", "isempty"],
 		"username": ["exact", "in"],
-		"first_name": ["exact"],
-		"last_name": ["exact"],
-		"email": ["exact"],
+		"first_name": ["exact", "icontains"],
+		"last_name": ["exact", "icontains"],
+		"email": ["exact", "icontains"],
 		"badge_number": ["exact"],
 		"is_active": ["exact"],
 		"is_staff": ["exact"],
 		"is_superuser": ["exact"],
 		"is_service_personnel": ["exact"],
 		"is_technician": ["exact"],
+		"training_required": ["exact"],
 		"date_joined": ["month", "year", "gte", "gt", "lte", "lt"],
+		"last_login": ["month", "year", "gte", "gt", "lte", "lt", "isnull"],
+		"access_expiration": ["month", "year", "gte", "gt", "lte", "lt", "isnull"],
 	}
 
+	def get_filename(self):
+		return f"users-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class ProjectViewSet(ReadOnlyModelViewSet):
+
+class ProjectViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = Project.objects.all()
 	serializer_class = ProjectSerializer
 	filterset_fields = {
@@ -80,14 +89,20 @@ class ProjectViewSet(ReadOnlyModelViewSet):
 		"account_id": ["exact", "in"],
 	}
 
+	def get_filename(self):
+		return f"projects-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class AccountViewSet(ReadOnlyModelViewSet):
+
+class AccountViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = Account.objects.all()
 	serializer_class = AccountSerializer
 	filterset_fields = {"id": ["exact", "in"], "name": ["exact"], "active": ["exact"]}
 
+	def get_filename(self):
+		return f"accounts-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class ToolViewSet(ReadOnlyModelViewSet):
+
+class ToolViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = Tool.objects.all()
 	serializer_class = ToolSerializer
 	filterset_fields = {
@@ -101,8 +116,11 @@ class ToolViewSet(ReadOnlyModelViewSet):
 		"_post_usage_questions": ["isempty"],
 	}
 
+	def get_filename(self):
+		return f"tools-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class AreaViewSet(ReadOnlyModelViewSet):
+
+class AreaViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = Area.objects.all()
 	serializer_class = AreaSerializer
 	filterset_fields = {
@@ -117,8 +135,11 @@ class AreaViewSet(ReadOnlyModelViewSet):
 		"count_service_personnel_in_occupancy": ["exact"],
 	}
 
+	def get_filename(self):
+		return f"areas-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class ResourceViewSet(ReadOnlyModelViewSet):
+
+class ResourceViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = Resource.objects.all()
 	serializer_class = ResourceSerializer
 	filterset_fields = {
@@ -130,8 +151,11 @@ class ResourceViewSet(ReadOnlyModelViewSet):
 		"dependent_areas": ["in"],
 	}
 
+	def get_filename(self):
+		return f"resources-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class ReservationViewSet(ReadOnlyModelViewSet):
+
+class ReservationViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = Reservation.objects.all()
 	serializer_class = ReservationSerializer
 	filterset_fields = {
@@ -148,8 +172,11 @@ class ReservationViewSet(ReadOnlyModelViewSet):
 		"question_data": ["isempty"],
 	}
 
+	def get_filename(self):
+		return f"reservations-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class UsageEventViewSet(ReadOnlyModelViewSet):
+
+class UsageEventViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = UsageEvent.objects.all()
 	serializer_class = UsageEventSerializer
 	filterset_fields = {
@@ -162,8 +189,11 @@ class UsageEventViewSet(ReadOnlyModelViewSet):
 		"tool_id": ["exact", "in"],
 	}
 
+	def get_filename(self):
+		return f"usage_events-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class AreaAccessRecordViewSet(ReadOnlyModelViewSet):
+
+class AreaAccessRecordViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = AreaAccessRecord.objects.all().order_by("-start")
 	serializer_class = AreaAccessRecordSerializer
 	filterset_fields = {
@@ -176,8 +206,11 @@ class AreaAccessRecordViewSet(ReadOnlyModelViewSet):
 		"staff_charge_id": ["exact", "isnull", "in"],
 	}
 
+	def get_filename(self):
+		return f"area_access_records-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class TaskViewSet(ReadOnlyModelViewSet):
+
+class TaskViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = Task.objects.all()
 	serializer_class = TaskSerializer
 	filterset_fields = {
@@ -197,8 +230,11 @@ class TaskViewSet(ReadOnlyModelViewSet):
 		"resolution_category": ["exact", "in"],
 	}
 
+	def get_filename(self):
+		return f"tasks-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class ScheduledOutageViewSet(ReadOnlyModelViewSet):
+
+class ScheduledOutageViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = ScheduledOutage.objects.all()
 	serializer_class = ScheduledOutageSerializer
 	filterset_fields = {
@@ -212,8 +248,11 @@ class ScheduledOutageViewSet(ReadOnlyModelViewSet):
 		"resource_id": ["exact", "in", "isnull"],
 	}
 
+	def get_filename(self):
+		return f"outages-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class StaffChargeViewSet(ReadOnlyModelViewSet):
+
+class StaffChargeViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = StaffCharge.objects.all()
 	serializer_class = StaffChargeSerializer
 	filterset_fields = {
@@ -226,8 +265,11 @@ class StaffChargeViewSet(ReadOnlyModelViewSet):
 		"validated": ["exact"],
 	}
 
+	def get_filename(self):
+		return f"staff_charges-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-class TrainingSessionViewSet(ReadOnlyModelViewSet):
+
+class TrainingSessionViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = TrainingSession.objects.all()
 	serializer_class = TrainingSessionSerializer
 	filterset_fields = {
@@ -242,20 +284,35 @@ class TrainingSessionViewSet(ReadOnlyModelViewSet):
 		"qualified": ["exact"],
 	}
 
+	def get_filename(self):
+		return f"training_sessions-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
 
-@api_view(["GET"])
-def billing(request):
-	form = BillingFilterForm(request.GET)
-	if not form.is_valid():
-		return Response(status=status.HTTP_400_BAD_REQUEST, data=form.errors)
 
-	data: List[BillableItem] = []
-	data.extend(get_usage_events_for_billing(form))
-	data.extend(get_area_access_for_billing(form))
-	data.extend(get_consumables_for_billing(form))
-	data.extend(get_missed_reservations_for_billing(form))
-	data.extend(get_staff_charges_for_billing(form))
-	data.extend(get_training_sessions_for_billing(form))
+class BillingViewSet(XLSXFileMixin, GenericViewSet):
+	serializer_class = BillableItemSerializer
 
-	serializer = BillableItemSerializer(data, many=True)
-	return Response(serializer.data)
+	def list(self, request, *args, **kwargs):
+		billing_form = BillingFilterForm(self.request.GET)
+		if not billing_form.is_valid():
+			return Response(status=status.HTTP_400_BAD_REQUEST, data=billing_form.errors)
+		queryset = self.get_queryset()
+		serializer = self.serializer_class(queryset, many=True)
+		return Response(serializer.data)
+
+	def get_queryset(self):
+		billing_form = BillingFilterForm(self.request.GET)
+		billing_form.full_clean()
+
+		data: List[BillableItem] = []
+		data.extend(get_usage_events_for_billing(billing_form))
+		data.extend(get_area_access_for_billing(billing_form))
+		data.extend(get_consumables_for_billing(billing_form))
+		data.extend(get_missed_reservations_for_billing(billing_form))
+		data.extend(get_staff_charges_for_billing(billing_form))
+		data.extend(get_training_sessions_for_billing(billing_form))
+
+		data.sort(key=lambda x: x.start, reverse=True)
+		return data
+
+	def get_filename(self):
+		return f"billing-{timezone.localtime().strftime(date_time_format_export)}.xlsx"

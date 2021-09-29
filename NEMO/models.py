@@ -682,7 +682,7 @@ class Tool(models.Model):
 
 	def name_display(self):
 		return f"{self.name} ({self.parent_tool.name})" if self.is_child_tool() else f"{self.name}"
-	name_display.admin_order_field = '_name'
+	name_display.admin_order_field = 'name'
 	name_display.short_description = 'Name'
 
 	def operational_display(self):

@@ -39,9 +39,10 @@
                                 {% navigation_url 'abuse' 'Abuse' %}
                                 {% navigation_url 'accounts_and_projects' 'Accounts and projects' %}
                                 {% navigation_url 'alerts' 'Alerts' %}
+                                {% if user.is_superuser %}{% navigation_url 'api-root' 'API' %}{% endif %}
                                 {% if areas_exist %}{% navigation_url 'area_access' 'Area access' %}{% endif %}
                                 {% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' %}{% endif %}
-                                {% navigation_url 'customization' 'Customization' %}
+                                {% if user.is_superuser %}{% navigation_url 'customization' 'Customization' %}{% endif %}
                                 {% navigation_url 'admin:index' 'Detailed administration' %}
                                 {% navigation_url 'email_broadcast' 'Email' %}
                                 {% if user.is_superuser %}{% navigation_url 'impersonate' 'Impersonate' %}{% endif %}
@@ -84,7 +85,7 @@
 					</li>
 				{% endif %}
 				<li class="hidden-sm"><p class="navbar-text">Welcome, {{ user.first_name }}</p></li>
-				<li class="navbar-preferences"><a href="{%  url 'user_preferences' %}"><img src="{% static 'icons/preferences.png' %}"/></a></li>
+				<li class="navbar-preferences"><a href="{%  url 'user_preferences' %}"><img src="{% static 'icons/preferences.png' %}" alt="preferences"/></a></li>
 				{% if logout_allowed %}
 					<li><a href="{% url 'logout' %}">Logout</a></li>
 				{% endif %}

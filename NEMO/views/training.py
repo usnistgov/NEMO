@@ -9,16 +9,16 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.decorators import staff_member_or_tool_superuser_required
 from NEMO.exceptions import ProjectChargeException
-from NEMO.models import User, Tool, TrainingSession, Project, MembershipHistory
-from NEMO.tasks import staff_member_or_tool_superuser_required
+from NEMO.models import MembershipHistory, Project, Tool, TrainingSession, User
 from NEMO.views.policy import check_billing_to_project
 from NEMO.views.users import get_identity_service
 
 training_logger = getLogger(__name__)
 
 
-@staff_member_or_tool_superuser_required(login_url=None)
+@staff_member_or_tool_superuser_required
 @require_GET
 def training(request):
 	""" Present a web page to allow staff or tool superusers to charge training and qualify users on particular tools. """
@@ -30,7 +30,7 @@ def training(request):
 	return render(request, 'training/training.html', {'users': users, 'tools': tools, 'charge_types': TrainingSession.Type.Choices})
 
 
-@staff_member_or_tool_superuser_required(login_url=None)
+@staff_member_or_tool_superuser_required
 @require_GET
 def training_entry(request):
 	entry_number = int(request.GET['entry_number'])
@@ -41,7 +41,7 @@ def is_valid_field(field):
 	return search("^(chosen_user|chosen_tool|chosen_project|duration|charge_type|qualify)__[0-9]+$", field) is not None
 
 
-@staff_member_or_tool_superuser_required(login_url=None)
+@staff_member_or_tool_superuser_required
 @require_POST
 def charge_training(request):
 	trainer: User = request.user

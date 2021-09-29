@@ -4,12 +4,18 @@ from typing import List, Optional
 
 from django import forms
 from django.db.models import QuerySet
-from django.utils import timezone
 
-from NEMO.models import Project, User, UsageEvent, AreaAccessRecord, ConsumableWithdraw, Reservation, StaffCharge, TrainingSession
+from NEMO.models import (
+	AreaAccessRecord,
+	ConsumableWithdraw,
+	Project,
+	Reservation,
+	StaffCharge,
+	TrainingSession,
+	UsageEvent,
+	User,
+)
 from NEMO.utilities import localize
-
-date_time_format = '%m/%d/%Y %H:%M:%S'
 
 
 class BillingFilterForm(forms.Form):
@@ -23,35 +29,35 @@ class BillingFilterForm(forms.Form):
 	project_id = forms.IntegerField(required=False)
 
 	def get_start_date(self):
-		return localize(datetime.combine(self.cleaned_data['start'], datetime.min.time()))
+		return localize(datetime.combine(self.cleaned_data["start"], datetime.min.time()))
 
 	def get_end_date(self):
-		return localize(datetime.combine(self.cleaned_data['end'], datetime.max.time()))
+		return localize(datetime.combine(self.cleaned_data["end"], datetime.max.time()))
 
 	def get_project_id(self):
-		return self.cleaned_data['project_id']
+		return self.cleaned_data["project_id"]
 
 	def get_project_name(self):
-		return self.cleaned_data['project_name']
+		return self.cleaned_data["project_name"]
 
 	def get_account_id(self):
-		return self.cleaned_data['account_id']
+		return self.cleaned_data["account_id"]
 
 	def get_account_name(self):
-		return self.cleaned_data['account_name']
+		return self.cleaned_data["account_name"]
 
 	def get_username(self):
-		return self.cleaned_data['username']
+		return self.cleaned_data["username"]
 
 	def get_application_name(self):
-		return self.cleaned_data['application_name']
+		return self.cleaned_data["application_name"]
 
 
 class BillableItem(object):
 	def __init__(self, item_type: str, project: Project, user: User):
 		self.type: Optional[str] = item_type
 		self.name: Optional[str] = None
-		self.details: Optional[str] = ''
+		self.details: Optional[str] = ""
 		if project:
 			self.account: Optional[str] = project.account.name
 			self.account_id: Optional[int] = project.account.id
@@ -185,11 +191,15 @@ def billable_items_usage_events(usage_events: QuerySet) -> List[BillableItem]:
 	billable_items: List[BillableItem] = []
 	usage_event: UsageEvent
 	for usage_event in usage_events:
-		item = BillableItem('tool_usage', usage_event.project, usage_event.user)
+		item = BillableItem("tool_usage", usage_event.project, usage_event.user)
 		item.name = usage_event.tool.name
-		item.details = f"Work performed by {usage_event.operator} on user's behalf" if usage_event.operator != usage_event.user else ''
-		item.start = usage_event.start.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
-		item.end = usage_event.end.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
+		item.details = (
+			f"Work performed by {usage_event.operator} on user's behalf"
+			if usage_event.operator != usage_event.user
+			else ""
+		)
+		item.start = usage_event.start
+		item.end = usage_event.end
 		item.quantity = get_minutes_between_dates(usage_event.start, usage_event.end)
 		billable_items.append(item)
 	return billable_items
@@ -199,11 +209,15 @@ def billable_items_area_access_records(area_access_records: QuerySet) -> List[Bi
 	billable_items: List[BillableItem] = []
 	area_access_record: AreaAccessRecord
 	for area_access_record in area_access_records:
-		item = BillableItem('area_access', area_access_record.project, area_access_record.customer)
+		item = BillableItem("area_access", area_access_record.project, area_access_record.customer)
 		item.name = area_access_record.area.name
-		item.details = f"Area accessed by {area_access_record.staff_charge.staff_member} on user's behalf" if area_access_record.staff_charge else ''
-		item.start = area_access_record.start.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
-		item.end = area_access_record.end.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
+		item.details = (
+			f"Area accessed by {area_access_record.staff_charge.staff_member} on user's behalf"
+			if area_access_record.staff_charge
+			else ""
+		)
+		item.start = area_access_record.start
+		item.end = area_access_record.end
 		item.quantity = get_minutes_between_dates(area_access_record.start, area_access_record.end)
 		billable_items.append(item)
 	return billable_items
@@ -213,10 +227,10 @@ def billable_items_consumable_withdrawals(withdrawals: QuerySet) -> List[Billabl
 	billable_items: List[BillableItem] = []
 	consumable_withdrawal: ConsumableWithdraw
 	for consumable_withdrawal in withdrawals:
-		item = BillableItem('consumable', consumable_withdrawal.project, consumable_withdrawal.customer)
+		item = BillableItem("consumable", consumable_withdrawal.project, consumable_withdrawal.customer)
 		item.name = consumable_withdrawal.consumable.name
-		item.start = consumable_withdrawal.date.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
-		item.end = consumable_withdrawal.date.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
+		item.start = consumable_withdrawal.date
+		item.end = consumable_withdrawal.date
 		item.quantity = consumable_withdrawal.quantity
 		billable_items.append(item)
 	return billable_items
@@ -226,10 +240,10 @@ def billable_items_missed_reservations(missed_reservations: QuerySet) -> List[Bi
 	billable_items: List[BillableItem] = []
 	missed_reservation: Reservation
 	for missed_reservation in missed_reservations:
-		item = BillableItem('missed_reservation', missed_reservation.project, missed_reservation.user)
+		item = BillableItem("missed_reservation", missed_reservation.project, missed_reservation.user)
 		item.name = missed_reservation.reservation_item.name
-		item.start = missed_reservation.start.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
-		item.end = missed_reservation.end.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
+		item.start = missed_reservation.start
+		item.end = missed_reservation.end
 		item.quantity = 1
 		billable_items.append(item)
 	return billable_items
@@ -239,10 +253,10 @@ def billable_items_staff_charges(staff_charges: QuerySet) -> List[BillableItem]:
 	billable_items: List[BillableItem] = []
 	staff_charge: StaffCharge
 	for staff_charge in staff_charges:
-		item = BillableItem('staff_charge', staff_charge.project, staff_charge.customer)
-		item.name = f'Work performed by {staff_charge.staff_member}'
-		item.start = staff_charge.start.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
-		item.end = staff_charge.end.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
+		item = BillableItem("staff_charge", staff_charge.project, staff_charge.customer)
+		item.name = f"Work performed by {staff_charge.staff_member}"
+		item.start = staff_charge.start
+		item.end = staff_charge.end
 		item.quantity = get_minutes_between_dates(staff_charge.start, staff_charge.end)
 		billable_items.append(item)
 	return billable_items
@@ -252,11 +266,11 @@ def billable_items_training_sessions(training_sessions: QuerySet) -> List[Billab
 	billable_items: List[BillableItem] = []
 	training_session: TrainingSession
 	for training_session in training_sessions:
-		item = BillableItem('training_session', training_session.project, training_session.trainee)
+		item = BillableItem("training_session", training_session.project, training_session.trainee)
 		item.name = training_session.tool.name
-		item.details = f'{training_session.get_type_display()} training provided by {training_session.trainer}'
-		item.start = training_session.date.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
-		item.end = training_session.date.astimezone(timezone.get_current_timezone()).strftime(date_time_format)
+		item.details = f"{training_session.get_type_display()} training provided by {training_session.trainer}"
+		item.start = training_session.date
+		item.end = training_session.date
 		item.quantity = training_session.duration
 		billable_items.append(item)
 	return billable_items

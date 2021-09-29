@@ -1,26 +1,26 @@
-from datetime import timedelta, datetime
-from distutils.util import strtobool
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from itertools import chain
-from json import loads, JSONDecodeError
+from json import JSONDecodeError, loads
 from logging import getLogger
 from typing import Dict, List
 
 from django.conf import settings
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import Template, Context
+from django.template import Context, Template
 from django.template.defaultfilters import linebreaksbr
-from django.utils import timezone, formats
+from django.utils import formats, timezone
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import rates
+from NEMO.decorators import staff_member_required, synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import (
+	AreaAccessRecord,
 	Comment,
 	Configuration,
 	ConfigurationHistory,
@@ -31,27 +31,25 @@ from NEMO.models import (
 	TaskCategory,
 	TaskStatus,
 	Tool,
+	ToolUsageCounter,
 	UsageEvent,
 	User,
-	ToolUsageCounter,
-	AreaAccessRecord,
 )
-from NEMO.tasks import synchronized
 from NEMO.utilities import (
-	extract_times,
-	quiet_int,
-	beginning_of_the_day,
-	end_of_the_day,
-	send_mail,
 	BasicDisplayTable,
 	EmailCategory,
+	beginning_of_the_day,
+	end_of_the_day,
+	extract_times,
 	format_datetime,
+	quiet_int,
+	send_mail,
 )
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization, get_media_file_contents
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
-from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion, PostUsageQuestion
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageQuestion, render_group_questions
 from NEMO.widgets.item_tree import ItemTree
 
 tool_control_logger = getLogger(__name__)
@@ -89,7 +87,7 @@ def tool_status(request, tool_id):
 		"rendered_configuration_html": tool.configuration_widget(request.user),
 		"mobile": request.device == "mobile",
 		"task_statuses": TaskStatus.objects.all(),
-		"post_usage_questions": DynamicForm(tool.post_usage_questions, tool.id).render(),
+		"post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
 		"configs": get_tool_full_config_history(tool),
 	}
 
@@ -115,7 +113,7 @@ def tool_status(request, tool_id):
 	return render(request, "tool_control/tool_status.html", dictionary)
 
 
-@staff_member_required(login_url=None)
+@staff_member_required
 @require_GET
 def use_tool_for_other(request):
 	dictionary = {"users": User.objects.filter(is_active=True).exclude(id=request.user.id)}
@@ -383,7 +381,7 @@ def disable_tool(request, tool_id):
 	current_usage_event.end = timezone.now() + downtime
 
 	# Collect post-usage questions
-	dynamic_form = DynamicForm(tool.post_usage_questions, tool.id)
+	dynamic_form = DynamicForm(tool.post_usage_questions)
 
 	try:
 		current_usage_event.run_data = dynamic_form.extract(request)
@@ -402,7 +400,7 @@ def disable_tool(request, tool_id):
 		current_usage_event.run_data,
 		request
 	)
-	dynamic_form.update_counters(current_usage_event.run_data)
+	dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
 
 	current_usage_event.save()
 	user: User = request.user
@@ -497,15 +495,7 @@ def export_comments_and_tasks_to_text(comments_and_tasks: List):
 @require_GET
 def tool_usage_group_question(request, tool_id, group_name):
 	tool = get_object_or_404(Tool, id=tool_id)
-	question_index = request.GET["index"]
-	virtual_inputs = bool(strtobool((request.GET["virtual_inputs"])))
-	if tool.post_usage_questions:
-		for question in PostUsageQuestion.load_questions(
-				loads(tool.post_usage_questions), tool.id, virtual_inputs, question_index
-		):
-			if isinstance(question, PostUsageGroupQuestion) and question.group_name == group_name:
-				return HttpResponse(question.render_group_question())
-	return HttpResponse()
+	return HttpResponse(render_group_questions(request, tool.post_usage_questions, "tool_usage_group_question", tool_id, group_name))
 
 
 @staff_member_required
