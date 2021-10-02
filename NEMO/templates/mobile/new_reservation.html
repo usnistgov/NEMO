@@ -39,7 +39,7 @@
             {% if user.active_project_count == 1 %}
                 <div id="reservation_questions">
                     <h4>Please answer the following questions</h4>
-                    {{ reservation_questions|get_item:user.active_project.0.id }}
+                    {{ reservation_questions|get_item:user.active_projects.0.id }}
                 </div>
             {% else %}
                 <div id="reservation_questions">
