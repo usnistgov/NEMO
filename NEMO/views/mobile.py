@@ -79,7 +79,9 @@ def new_reservation(request, item_type, item_id, date=None):
 	if not user.is_staff:
 		reservation_question_dict = {}
 		for project in user.active_projects():
-			reservation_question_dict[project.id] = render_reservation_questions(item_type, item_id, project)
+			reservation_questions = render_reservation_questions(item_type, item_id, project)
+			if reservation_questions:
+				reservation_question_dict[project.id] = reservation_questions
 		dictionary['reservation_questions'] = reservation_question_dict
 
 	return render(request, 'mobile/new_reservation.html', dictionary)
