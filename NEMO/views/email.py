@@ -1,9 +1,10 @@
 from logging import getLogger
 from smtplib import SMTPException
+from typing import List
 
 from django.contrib.auth.decorators import login_required
 from django.core.validators import validate_email
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
@@ -95,33 +96,11 @@ def email_broadcast(request, audience=''):
 @staff_member_required
 @require_GET
 def compose_email(request):
-	audience = request.GET.get('audience')
-	selection = request.GET.get('selection')
 	try:
-		if audience == 'tool':
-			users = User.objects.filter(qualifications__id=selection).distinct()
-		elif audience == 'area':
-			access_levels = Area.objects.get(pk=selection).get_physical_access_levels()
-			user_filter = Q(physical_access_levels__in=access_levels)
-			# if one of the access levels allows staff, add all staff
-			if access_levels.filter(allow_staff_access=True).exists():
-				user_filter = user_filter | Q(is_staff=True)
-			users = User.objects.filter(user_filter).distinct()
-		elif audience == 'project':
-			users = User.objects.filter(projects__id=selection).distinct()
-		elif audience == 'account':
-			users = User.objects.filter(projects__account__id=selection).distinct()
-		elif audience == 'user':
-			users = User.objects.all().distinct()
-			no_type = request.GET.get("no_type") == "on"
-			if selection:
-				selection = request.GET.getlist("selection")
-				users = users.filter(Q(type_id__in=selection) | Q(type_id__isnull=no_type)) if no_type else users.filter(type_id__in=selection)
-			elif no_type:
-				users = users.filter(type_id__isnull=True)
-		else:
-			dictionary = {'error': 'You specified an invalid audience'}
-			return render(request, 'email/email_broadcast.html', dictionary)
+		audience = request.GET['audience']
+		selection = request.GET.getlist('selection')
+		no_type = request.GET.get("no_type") == "on"
+		users = get_users_for_email(audience, selection, no_type)
 	except:
 		dictionary = {'error': 'You specified an invalid audience parameter'}
 		return render(request, 'email/email_broadcast.html', dictionary)
@@ -129,6 +108,7 @@ def compose_email(request):
 	dictionary = {
 		'audience': audience,
 		'selection': selection,
+		'no_type': no_type,
 		'users': users,
 	}
 	if generic_email_sample:
@@ -158,17 +138,12 @@ def send_broadcast_email(request):
 		'template_color': form.cleaned_data['color'],
 	}
 	content = Template(content).render(Context(dictionary))
-	users = None
-	audience = form.cleaned_data['audience']
-	selection = form.cleaned_data['selection']
 	active_choice = form.cleaned_data['only_active_users']
 	try:
-		if audience == 'tool':
-			users = User.objects.filter(qualifications__id=selection)
-		elif audience == 'project':
-			users = User.objects.filter(projects__id=selection)
-		elif audience == 'account':
-			users = User.objects.filter(projects__account__id=selection)
+		audience = form.cleaned_data['audience']
+		selection = form.cleaned_data['selection']
+		no_type = form.cleaned_data['no_type']
+		users = get_users_for_email(audience, selection, no_type)
 		if active_choice:
 			users = users.filter(is_active=True)
 	except Exception as error:
@@ -217,3 +192,28 @@ def email_preview(request):
 		email_content = Template(generic_email_template).render(Context(email_context))
 		return HttpResponse(mark_safe(email_content))
 	return HttpResponse()
+
+
+def get_users_for_email(audience: str, selection: List, no_type: bool) -> QuerySet:
+	users = User.objects.none()
+	if audience == 'tool':
+		users = User.objects.filter(qualifications__id__in=selection).distinct()
+	elif audience == 'area':
+		access_levels = Area.objects.get(pk__in=selection).get_physical_access_levels()
+		user_filter = Q(physical_access_levels__in=access_levels)
+		# if one of the access levels allows staff, add all staff
+		if access_levels.filter(allow_staff_access=True).exists():
+			user_filter = user_filter | Q(is_staff=True)
+		users = User.objects.filter(user_filter).distinct()
+	elif audience == 'project':
+		users = User.objects.filter(projects__id__in=selection).distinct()
+	elif audience == 'account':
+		users = User.objects.filter(projects__account__id__in=selection).distinct()
+	elif audience == 'user':
+		users = User.objects.all().distinct()
+		if selection:
+			users = users.filter(Q(type_id__in=selection) | Q(type_id__isnull=no_type)) if no_type else users.filter(
+				type_id__in=selection)
+		elif no_type:
+			users = users.filter(type_id__isnull=True)
+	return users

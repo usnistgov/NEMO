@@ -8,10 +8,10 @@ from django.forms import (
 	ChoiceField,
 	DateField,
 	Form,
+	ImageField,
 	IntegerField,
 	ModelChoiceField,
 	ModelForm,
-	ImageField,
 )
 from django.forms.utils import ErrorDict
 from django.utils import timezone
@@ -19,20 +19,20 @@ from django.utils import timezone
 from NEMO.models import (
 	Account,
 	Alert,
+	AlertCategory,
+	BuddyRequest,
 	Comment,
 	Consumable,
 	ConsumableWithdraw,
 	Project,
+	ReservationItemType,
 	SafetyIssue,
 	ScheduledOutage,
 	Task,
 	TaskCategory,
+	TaskImages,
 	User,
 	UserPreferences,
-	TaskImages,
-	AlertCategory,
-	ReservationItemType,
-	BuddyRequest,
 )
 from NEMO.utilities import bootstrap_primary_color, format_datetime
 
@@ -337,12 +337,16 @@ class EmailBroadcastForm(Form):
 	contents = CharField(required=False)
 	copy_me = BooleanField(initial=True)
 
-	audience = ChoiceField(choices=[("tool", "tool"), ("project", "project"), ("account", "account")])
-	selection = IntegerField()
+	audience = ChoiceField(choices=[("tool", "tool"), ("project", "project"), ("account", "account"), ("area", "area"), ("user", "user")])
+	selection = CharField(required=False)
+	no_type = BooleanField(initial=False, required=False)
 	only_active_users = BooleanField(initial=True)
 
 	def clean_title(self):
 		return self.cleaned_data["title"].upper()
+
+	def clean_selection(self):
+		return self.data.getlist('selection')
 
 
 class AlertForm(ModelForm):
