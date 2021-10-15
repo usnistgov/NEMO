@@ -76,7 +76,7 @@ class BillableItem(object):
 def get_usage_events_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:
 	queryset = UsageEvent.objects.filter()
 	start, end = billing_form.get_start_date(), billing_form.get_end_date()
-	queryset = queryset.filter(start__gte=start, end__lte=end, start__lte=end, end__gte=start)
+	queryset = queryset.filter(end__gte=start, end__lte=end)
 	if billing_form.get_account_id():
 		queryset = queryset.filter(project__account_id=billing_form.get_account_id())
 	if billing_form.get_account_name():
@@ -95,7 +95,7 @@ def get_usage_events_for_billing(billing_form: BillingFilterForm) -> List[Billab
 def get_area_access_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:
 	queryset = AreaAccessRecord.objects.filter()
 	start, end = billing_form.get_start_date(), billing_form.get_end_date()
-	queryset = queryset.filter(start__gte=start, end__lte=end, start__lte=end, end__gte=start)
+	queryset = queryset.filter(end__gte=start, end__lte=end)
 	if billing_form.get_account_id():
 		queryset = queryset.filter(project__account_id=billing_form.get_account_id())
 	if billing_form.get_account_name():
@@ -114,7 +114,7 @@ def get_area_access_for_billing(billing_form: BillingFilterForm) -> List[Billabl
 def get_missed_reservations_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:
 	queryset = Reservation.objects.filter(missed=True)
 	start, end = billing_form.get_start_date(), billing_form.get_end_date()
-	queryset = queryset.filter(start__gte=start, end__lte=end, start__lte=end, end__gte=start)
+	queryset = queryset.filter(end__gte=start, end__lte=end)
 	if billing_form.get_account_id():
 		queryset = queryset.filter(project__account_id=billing_form.get_account_id())
 	if billing_form.get_account_name():
@@ -133,7 +133,7 @@ def get_missed_reservations_for_billing(billing_form: BillingFilterForm) -> List
 def get_staff_charges_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:
 	queryset = StaffCharge.objects.filter()
 	start, end = billing_form.get_start_date(), billing_form.get_end_date()
-	queryset = queryset.filter(start__gte=start, end__lte=end, start__lte=end, end__gte=start)
+	queryset = queryset.filter(end__gte=start, end__lte=end)
 	if billing_form.get_account_id():
 		queryset = queryset.filter(project__account_id=billing_form.get_account_id())
 	if billing_form.get_account_name():
