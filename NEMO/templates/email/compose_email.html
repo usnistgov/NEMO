@@ -24,7 +24,10 @@
 				<div class="col-sm-6">
 					<h3>Email content</h3>
 					<input type="hidden" name="audience" value="{{ audience }}">
-					<input type="hidden" name="selection" value="{{ selection }}">
+					<input type="hidden" name="no_type" value="{{ no_type }}">
+                    {% for selection_value in selection %}
+					    <input type="hidden" name="selection" value="{{ selection_value }}">
+                    {% endfor %}
 					<div class="form-group">
 						<input type="text" name="subject" class="form-control" placeholder="Subject line" autofocus required>
 					</div>
