@@ -67,6 +67,7 @@ from NEMO.models import (
 	TaskHistory,
 	TaskImages,
 	TaskStatus,
+	TemporaryPhysicalAccess,
 	Tool,
 	ToolDocuments,
 	ToolUsageCounter,
@@ -1072,6 +1073,42 @@ class PhysicalAccessExceptionAdmin(admin.ModelAdmin):
 	list_display = ("name", "start_time", "end_time")
 	filter_horizontal = ("physical_access_levels",)
 	list_filter = ("physical_access_levels__area",)
+
+
+class TemporaryPhysicalAccessAdminForm(forms.ModelForm):
+	class Meta:
+		model = TemporaryPhysicalAccess
+		fields = "__all__"
+
+	class Media:
+		js = ("admin/time_options_override.js",)
+
+	def clean(self):
+		if any(self.errors):
+			return
+		cleaned_data = super().clean()
+		start_time = cleaned_data.get("start_time")
+		end_time = cleaned_data.get("end_time")
+		if end_time <= start_time:
+			self.add_error("end_time", "The end time must be later than the start time")
+
+
+@register(TemporaryPhysicalAccess)
+class TemporaryPhysicalAccessAdmin(admin.ModelAdmin):
+	list_display = ("id", "user", "start_time", "end_time", "get_area_name", "get_schedule_display_with_times")
+	list_filter = ("physical_access_level", "physical_access_level__area", "end_time", "start_time")
+	form = TemporaryPhysicalAccessAdminForm
+
+	def get_area_name(self, tpa: TemporaryPhysicalAccess) -> str:
+		return tpa.physical_access_level.area.name
+
+	get_area_name.admin_order_field = 'physical_access_level__area'
+	get_area_name.short_description = 'Area'
+
+	def get_schedule_display_with_times(self, tpa: TemporaryPhysicalAccess) -> str:
+		return tpa.physical_access_level.get_schedule_display_with_times()
+
+	get_schedule_display_with_times.short_description = 'Schedule'
 
 
 @register(ContactInformationCategory)

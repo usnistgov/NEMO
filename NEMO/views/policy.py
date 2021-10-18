@@ -1,20 +1,42 @@
 from collections import defaultdict
-from datetime import timedelta, date, datetime
-from typing import Optional, List, Union
+from datetime import date, datetime, timedelta
+from typing import List, Optional, Union
 
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.template import Template, Context
+from django.template import Context, Template
 from django.utils import timezone
 from django.utils.formats import localize
 
-from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, PhysicalAccessExpiredUserError, \
-	NoPhysicalAccessUserError, NoAccessiblePhysicalAccessUserError, UnavailableResourcesUserError, \
-	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError, \
-	NotAllowedToChargeProjectException, ItemNotAllowedForProjectException, ProjectChargeException
-from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, \
-	ReservationItemType, Tool, Project, PhysicalAccessException, Consumable, StaffCharge
-from NEMO.utilities import format_datetime, send_mail, EmailCategory, distinct_qs_value_list
+from NEMO.exceptions import (
+	InactiveUserError,
+	ItemNotAllowedForProjectException,
+	MaximumCapacityReachedError,
+	NoAccessiblePhysicalAccessUserError,
+	NoActiveProjectsForUserError,
+	NoPhysicalAccessUserError,
+	NotAllowedToChargeProjectException,
+	PhysicalAccessExpiredUserError,
+	ProjectChargeException,
+	ReservationRequiredUserError,
+	ScheduledOutageInProgressError,
+	UnavailableResourcesUserError,
+)
+from NEMO.models import (
+	Area,
+	AreaAccessRecord,
+	Consumable,
+	PhysicalAccessException,
+	PhysicalAccessLevel,
+	Project,
+	Reservation,
+	ReservationItemType,
+	ScheduledOutage,
+	StaffCharge,
+	Tool,
+	User,
+)
+from NEMO.utilities import EmailCategory, distinct_qs_value_list, format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 
 
@@ -236,6 +258,7 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 			# it could be inaccessible because of an ongoing exception at the start or end time
 			first_access_exception: PhysicalAccessException = next(iter([access_level.ongoing_exception(new_reservation.start) for access_level in user_access_levels]), None)
 			if not first_access_exception:
+				# if there is no exception at start, check at end time
 				first_access_exception = next(iter([access_level.ongoing_exception(new_reservation.end) for access_level in user_access_levels]), None)
 			if first_access_exception:
 				details = f" due to the following exception: {first_access_exception.name} (from {localize(first_access_exception.start_time.astimezone(timezone.get_current_timezone()))} to {localize(first_access_exception.end_time.astimezone(timezone.get_current_timezone()))}"
