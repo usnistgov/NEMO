@@ -16,13 +16,13 @@
 			<div class="table-responsive buddy-system-requests">
 				{% regroup buddy_requests by start as requests_by_date %}
 				{% for date in requests_by_date %}
-					<h3>{{ date.grouper|date:"l, F jS, Y" }}</h3>
+					<h3>{{ date.grouper|date }}</h3>
 					<ul class="buddy-list-day">
 						{% for br in date.list %}
 							<li>
 								<ul class="buddy-list list-unstyled">
 									{% if br.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
-									{{ br.user.get_name }} needs a buddy {% if not br.start|date:"Y-m-d" == br.end|date:"Y-m-d" %}between {{ br.start|date:"l, F jS, Y" }} and {{ br.end|date:"l, F jS, Y" }}{% endif %} in the {{ br.area.name }}
+									{{ br.user.get_name }} needs a buddy {% if not br.start|date == br.end|date %}between {{ br.start|date }} and {{ br.end|date }}{% endif %} in the {{ br.area.name }}
 									<li class="buddy-list-item">
 										<div class="buddy-list-item list-group-item-info">
 											<div class="buddy-list-item-description">

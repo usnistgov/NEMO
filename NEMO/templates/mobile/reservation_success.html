@@ -4,7 +4,7 @@
 	<h3>Reservation confirmed!</h3>
 	<div class="alert alert-success" role="alert">
 		<strong>{{ new_reservation.reservation_item }}</strong><br>
-		{{ new_reservation.start|date:"l, F jS" }}<br>
+		{{ new_reservation.start|date }}<br>
 		Starting {{ new_reservation.start|time }}<br>
 		Ending {{ new_reservation.end|time }}<br>
 	</div>

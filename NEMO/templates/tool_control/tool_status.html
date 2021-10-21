@@ -43,13 +43,13 @@
 							{% if current_usage_event.operator.id != current_usage_event.user.id %}
 								on behalf of {{ current_usage_event.user }}
 							{% endif %}
-							for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"l @ g:i A" }}.
+							for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"l @ " }}{{ current_usage_event.start|time }}.
 						</h2>
 					{% endwith %}
 				</div>
 				{% if time_left %}
 					<div>
-						Your reservation for this tool will end at {{ time_left|date:"g:i A" }}. The remainder of your reservation will be relinquished when you stop using this tool.
+						Your reservation for this tool will end at {{ time_left|time }}. The remainder of your reservation will be relinquished when you stop using this tool.
 					</div>
 				{% endif %}
 			{% elif tool.delayed_logoff_in_progress %}

@@ -349,7 +349,7 @@ def check_coincident_item_reservation_policy(cancelled_reservation: Optional[Res
 				# Check only distinct users since the same user could make reservations in different rooms
 				maximum_users, time = maximum_users_in_overlapping_reservations(reservations)
 				if maximum_users > area.maximum_capacity:
-					time_display = "at this time" if time is None else "at "+timezone.localtime(time).strftime('%I:%M %p')
+					time_display = "at this time" if time is None else "at "+ format_datetime(time, "TIME_FORMAT")
 					policy_problems.append(f"The {area} would be over its maximum capacity {time_display}. Please choose a different time.")
 
 	# The user may not create, move, or resize a reservation to coincide with a scheduled outage.

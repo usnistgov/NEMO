@@ -14,7 +14,7 @@
 				Adjustment activities <b>are not included</b> in the usage information.
 			</p>
 			{% if no_charges %}
-				<h3>There was no usage between {{ start_date|date:"F jS, Y" }} and {{ end_date|date:"F jS, Y" }}.</h3>
+				<h3>There was no usage between {{ start_date|date }} and {{ end_date|date }}.</h3>
 			{% endif %}
 			{% if missed_reservations %}
 				<h3>Missed reservations</h3>

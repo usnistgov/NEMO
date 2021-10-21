@@ -40,6 +40,7 @@ from NEMO.utilities import (
 	EmailCategory,
 	beginning_of_the_day,
 	end_of_the_day,
+	export_format_datetime,
 	extract_times,
 	format_datetime,
 	quiet_int,
@@ -176,7 +177,7 @@ def usage_data_history(request, tool_id):
 			usage_data = {}
 			try:
 				user_data = f"{usage_event.user.first_name} {usage_event.user.last_name}"
-				date_data = usage_event.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p")
+				date_data = format_datetime(usage_event.end, "SHORT_DATETIME_FORMAT")
 				run_data: Dict = loads(usage_event.run_data)
 				for question_key, question in run_data.items():
 					if "user_input" in question:
@@ -208,7 +209,7 @@ def usage_data_history(request, tool_id):
 				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
 	if csv_export:
 		response = table_result.to_csv()
-		filename = f"tool_usage_data_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+		filename = f"tool_usage_data_export_{export_format_datetime()}.csv"
 		response["Content-Disposition"] = f'attachment; filename="{filename}"'
 		return response
 	else:
@@ -487,7 +488,7 @@ def export_comments_and_tasks_to_text(comments_and_tasks: List):
 				content += f"\nCancelled On {format_datetime(task.resolution_time)} by {task.resolver}.\n"
 		content += "\n---------------------------------------------------\n\n"
 	response = HttpResponse(content, content_type='text/plain')
-	response['Content-Disposition'] = 'attachment; filename={0}'.format(f"comments_and_tasks_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt")
+	response['Content-Disposition'] = 'attachment; filename={0}'.format(f"comments_and_tasks_export_{export_format_datetime()}.txt")
 	return response
 
 

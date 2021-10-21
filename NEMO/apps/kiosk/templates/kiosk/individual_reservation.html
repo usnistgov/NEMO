@@ -7,7 +7,7 @@
         {% if reservation.title %}){% endif %}
     </strong>
     <br>
-    {{ reservation.start|date:"l, F jS" }}<br>
+    {{ reservation.start|date }}<br>
     Starting {{ reservation.start|time }}<br>
     Ending {{ reservation.end|time }}<br>
     <div>

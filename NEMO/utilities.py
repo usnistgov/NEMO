@@ -1,22 +1,24 @@
 import csv
 import os
 from calendar import monthrange
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from email import encoders
 from email.mime.base import MIMEBase
 from io import BytesIO
-from typing import Tuple, List, Dict, Set
+from typing import Dict, List, Set, Tuple
 
 from PIL import Image
 from dateutil import parser
 from dateutil.parser import parse
 from dateutil.rrule import MONTHLY, rrule
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.db.models import QuerySet
 from django.http import HttpResponse
 from django.utils import timezone
+from django.utils.formats import date_format
 from django.utils.timezone import localtime
 
 
@@ -224,20 +226,22 @@ def extract_dates(parameters):
 	return start, end
 
 
-def format_datetime(universal_time):
-	local_time = universal_time.astimezone(timezone.get_current_timezone())
-	day = int(local_time.strftime("%d"))
-	if 4 <= day <= 20 or 24 <= day <= 30:
-		suffix = "th"
-	else:
-		suffix = ["st", "nd", "rd"][day % 10 - 1]
-	return (
-			local_time.strftime("%A, %B ")
-			+ str(day)
-			+ suffix
-			+ local_time.strftime(", %Y @ ")
-			+ local_time.strftime("%I:%M %p").lstrip("0")
-	)
+def format_datetime(universal_time, datetime_format="DATETIME_FORMAT", as_current_timezone=True, use_l10n=None) -> str:
+	local_time = timezone.localtime(universal_time) if as_current_timezone else universal_time
+	return date_format(local_time, datetime_format, use_l10n)
+
+
+def export_format_datetime(date_time=None, date_format=True, time_format=True, underscore=True, as_current_timezone=True) -> str:
+	""" This function returns a formatted date/time for export files. Default returns date + time format, with underscores """
+	time = date_time if date_time else timezone.now() if as_current_timezone else datetime.now()
+	export_date_format = getattr(settings, 'EXPORT_DATE_FORMAT', 'm_d_Y').replace("-", "_")
+	export_time_format = getattr(settings, 'EXPORT_TIME_FORMAT', 'h_i_s').replace("-", "_")
+	if not underscore:
+		export_date_format = export_date_format.replace("_", "-")
+		export_time_format = export_time_format.replace("_", "-")
+	separator = "-" if underscore else "_"
+	datetime_format = export_date_format if date_format and not time_format else export_time_format if not date_format and time_format else export_date_format + separator + export_time_format
+	return format_datetime(time, datetime_format, as_current_timezone)
 
 
 def localize(dt, tz=None):
@@ -264,10 +268,8 @@ def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	return localize(midnight) if in_local_timezone else midnight
 
 
-def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachments=None, email_category:EmailCategory = EmailCategory.GENERAL, fail_silently=True) -> int:
-	mail = EmailMessage(
-		subject=subject, body=content, from_email=from_email, to=to, bcc=bcc, cc=cc, attachments=attachments
-	)
+def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachments=None, email_category: EmailCategory = EmailCategory.GENERAL, fail_silently=True) -> int:
+	mail = EmailMessage(subject=subject, body=content, from_email=from_email, to=to, bcc=bcc, cc=cc, attachments=attachments)
 	mail.content_subtype = "html"
 	msg_sent = 0
 	if mail.recipients():
@@ -285,14 +287,15 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 
 def create_email_log(email: EmailMessage, email_category: EmailCategory):
 	from NEMO.models import EmailLog
-	email_record: EmailLog = EmailLog.objects.create(category=email_category, sender=email.from_email, to=', '.join(email.recipients()), subject=email.subject, content=email.body)
+
+	email_record: EmailLog = EmailLog.objects.create(category=email_category, sender=email.from_email, to=", ".join(email.recipients()), subject=email.subject, content=email.body)
 	if email.attachments:
 		email_attachments = []
 		for attachment in email.attachments:
 			if isinstance(attachment, MIMEBase):
-				email_attachments.append(attachment.get_filename() or '')
+				email_attachments.append(attachment.get_filename() or "")
 		if email_attachments:
-			email_record.attachments = ', '.join(email_attachments)
+			email_record.attachments = ", ".join(email_attachments)
 	return email_record
 
 
@@ -312,13 +315,10 @@ def get_task_image_filename(task_images, filename):
 	task: Task = task_images.task
 	tool_name = slugify(task.tool)
 	now = datetime.now()
-	date = now.strftime("%Y-%m-%d")
+	date = export_format_datetime(now, time_format=False, as_current_timezone=False)
 	year = now.strftime("%Y")
 	number = "{:02d}".format(
-		TaskImages.objects.filter(
-			task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day
-		).count()
-		+ 1
+		TaskImages.objects.filter(task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day).count()	+ 1
 	)
 	ext = os.path.splitext(filename)[1]
 	return f"task_images/{year}/{tool_name}/{date}_{tool_name}_{number}{ext}"
@@ -363,5 +363,5 @@ def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryU
 	)
 
 
-def distinct_qs_value_list(qs: QuerySet, field_name:str) -> Set:
+def distinct_qs_value_list(qs: QuerySet, field_name: str) -> Set:
 	return set(list(qs.values_list(field_name, flat=True)))

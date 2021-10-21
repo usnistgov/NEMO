@@ -8,7 +8,7 @@
 {% endblock %}
 {% block content %}
 	<h1>Usage{% if billing_service %} and billing information{% endif %}
-		<small> between {{ start_date|date:"F jS, Y" }} and {{ end_date|date:"F jS, Y" }}</small>
+		<small> between {{ start_date|date }} and {{ end_date|date }}</small>
 	</h1>
 	<p>
 		This page presents a monthly report of your {{ facility_name }} usage{% if billing_service %} and billing information{% endif %}. Approved adjustments are{% if not billing_service %} not{% endif %} reflected{% if billing_service %} in the billing information data but not{% endif %} in the usage data.

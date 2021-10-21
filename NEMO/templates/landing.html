@@ -30,8 +30,8 @@
 						<div class="alert {% if r.start < now %}alert-warning{% else %}alert-success{% endif %}">
 							{% if r.title %}<b>{{ r.title }}</b><br>{% endif %}
 							<b>{% if r.start < now %}You're late for your {{ r.reservation_item }} reservation!{% else %}{{ r.reservation_item }}{% endif %}</b><br>
-							Starting on {{ r.start|date:"l, F jS @ g:i A" }}<br>
-							Ending on {{ r.end|date:"l, F jS @ g:i A" }}
+							Starting on {{ r.start }}<br>
+							Ending on {{ r.end }}
 						</div>
 					{% if r.tool or device == 'mobile' and r.area or self_log_in and r.area and r.start < now %}</a>{% endif %}
 				{% endfor %}

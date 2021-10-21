@@ -29,6 +29,7 @@ from NEMO import fields
 from NEMO.utilities import (
 	EmailCategory,
 	bootstrap_primary_color,
+	format_datetime,
 	get_task_image_filename,
 	get_tool_document_filename,
 	get_tool_image_filename,
@@ -152,7 +153,7 @@ class PhysicalAccessLevel(models.Model):
 		if self.schedule == self.Schedule.ALWAYS or self.schedule == self.Schedule.WEEKENDS:
 			return self.get_schedule_display()
 		else:
-			return self.get_schedule_display() + f" from {self.weekdays_start_time.strftime('%I:%M %p')} to {self.weekdays_end_time.strftime('%I:%M %p')}"
+			return self.get_schedule_display() + f" from {format_datetime(self.weekdays_start_time, 'TIME_FORMAT')} to {format_datetime(self.weekdays_end_time, 'TIME_FORMAT')}"
 	get_schedule_display_with_times.short_description = 'Schedule'
 
 	def accessible_at(self, time):
