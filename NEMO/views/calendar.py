@@ -357,7 +357,11 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 
 	# If there was a policy problem with the reservation then return the error...
 	if policy_problems:
-		return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': overridable and request.user.is_staff, 'reservation_action': 'create'})
+		return render(request, 'calendar/policy_dialog.html', {
+			'policy_problems': policy_problems,
+			'overridable': overridable and request.user.is_staff,
+			'reservation_action': 'create'
+		})
 
 	# All policy checks have passed.
 
@@ -371,7 +375,10 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 			try:
 				new_reservation.project = Project.objects.get(id=request.POST['project_id'])
 			except:
-				return render(request, 'calendar/project_choice.html', {'active_projects': active_projects})
+				return render(request, 'calendar/project_choice.html', {
+					'active_projects': active_projects,
+					'missed_reservation_threshold': new_reservation.reservation_item.missed_reservation_threshold
+				})
 
 		# Check if we are allowed to bill to project
 		try:
