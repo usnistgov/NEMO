@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div class="modal-header">
 	<button type="button" class="close" data-dismiss="modal">&times;</button>
 	<h4 class="modal-title">Which project is this for?</h4>
@@ -18,7 +19,7 @@
 		<input type="hidden" id="project_id" name="project_id">
 		{% for project in active_projects %}
 			<div class="form-group">
-				<button class="btn btn-default" data-dismiss="modal" onclick="$('#project_id').val({{ project.id }}); $('#dialog_cancelled').val(false)">{{ project }}</button>
+				<button class="btn btn-default" data-dismiss="modal" onclick="$('#project_id').val({{ project.id }}); $('#dialog_cancelled').val(false)">{% project_selection_display project %}</button>
 			</div>
 		{% endfor %}
 	</form>

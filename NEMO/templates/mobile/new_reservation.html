@@ -22,7 +22,7 @@
 			{% elif user.active_project_count > 1 %}
 				<h4>Which project is this for?</h4>
 				{% for project in user.active_projects %}
-					<div class="radio"><label><input type="radio" name="project_id" value="{{ project.id }}" required onclick="set_reservation_questions('{{ project.id }}')">{{ project }}</label></div>
+					<div class="radio"><label><input type="radio" name="project_id" value="{{ project.id }}" required onclick="set_reservation_questions('{{ project.id }}')">{% project_selection_display project %}</label></div>
 				{% endfor %}
 			{% endif %}
 		{% endif %}

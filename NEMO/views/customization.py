@@ -56,6 +56,7 @@ customizable_key_values = {
 	'calendar_all_areastools': '',
 	'calendar_outage_recurrence_limit': '90',
 	'buddy_board_disclaimer': '',
+	'project_selection_template': '{{ project.name }}',
 	'allow_bypass_interlock_on_failure': '',
 	'tool_interlock_failure_message': 'Communication with the interlock failed',
 	'door_interlock_failure_message': 'Communication with the interlock failed',
@@ -153,6 +154,7 @@ def customize(request, element):
 		set_customization('dashboard_display_not_qualified_areas', request.POST.get('dashboard_display_not_qualified_areas', ''))
 		set_customization('facility_name', request.POST.get('facility_name', ''))
 		set_customization('site_title', request.POST.get('site_title', ''))
+		set_customization('project_selection_template', request.POST.get('project_selection_template', ''))
 		set_customization('buddy_board_disclaimer', request.POST.get('buddy_board_disclaimer', ''))
 		init_admin_site()
 	elif element == 'interlock_settings':

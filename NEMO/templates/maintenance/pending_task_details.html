@@ -1,4 +1,5 @@
 {% load humanize %}
+{% load custom_tags_and_filters %}
 <h2>{{ task.tool.name }} task</h2>
 <p class="grey">
 	Primary tool owner: {{ task.tool.primary_owner }}<br>
@@ -20,7 +21,7 @@
 				<ul class="dropdown-menu">
 					<li class="dropdown-header">Using which project?</li>
 					{% for project in user.active_projects %}
-						<li><a href="javascript:void(0)" onclick="enable_tool('{% url 'enable_tool' tool_id=task.tool.id user_id=user.id project_id=project.id staff_charge='false' %}')">{{ project.name }}</a></li>
+						<li><a href="javascript:void(0)" onclick="enable_tool('{% url 'enable_tool' tool_id=task.tool.id user_id=user.id project_id=project.id staff_charge='false' %}')">{% project_selection_display project %}</a></li>
 					{% endfor %}
 				</ul>
 			</div>

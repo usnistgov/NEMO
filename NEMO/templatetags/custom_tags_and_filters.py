@@ -1,11 +1,14 @@
 from datetime import timedelta
 
 from django import template
-from django.urls import reverse, NoReverseMatch
+from django.template import Context, Template
+from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
-from pkg_resources import get_distribution, DistributionNotFound
+from pkg_resources import DistributionNotFound, get_distribution
+
+from NEMO.views.customization import get_customization
 
 register = template.Library()
 
@@ -66,6 +69,17 @@ def navigation_url(url_name, description):
 @register.filter
 def get_item(dictionary, key):
 	return dictionary.get(key)
+
+
+@register.simple_tag
+def project_selection_display(project):
+	project_selection_template = get_customization('project_selection_template')
+	contents = "{{ project.name }}"
+	try:
+		contents = Template(project_selection_template).render(Context({'project': project}))
+	except:
+		pass
+	return format_html(contents)
 
 
 dist_version: str = "0"
