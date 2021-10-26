@@ -25,5 +25,6 @@ class Migration(migrations.Migration):
                 ('physical_access_level', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='NEMO.PhysicalAccessLevel')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
+            options={'ordering': ['-end_time']},
         ),
     ]

@@ -232,13 +232,13 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	# An explicit policy override allows this rule to be broken.
 	extension_of_area_reservation = new_reservation.area and cancelled_reservation and cancelled_reservation.start == new_reservation.start
 	if not extension_of_area_reservation and new_reservation.start < timezone.now():
-		policy_problems.append("Reservation start time (" + format_datetime(new_reservation.start) + ") is earlier than the current time (" + format_datetime(timezone.now()) + ").")
+		policy_problems.append("Reservation start time (" + format_datetime(new_reservation.start) + ") is earlier than the current time (" + format_datetime() + ").")
 
 	# The user may not move or resize a reservation to have an end time that is earlier than the current time.
 	# Staff may break this rule.
 	# An explicit policy override allows this rule to be broken.
 	if new_reservation.end < timezone.now():
-		policy_problems.append("Reservation end time (" + format_datetime(new_reservation.end) + ") is earlier than the current time (" + format_datetime(timezone.now()) + ").")
+		policy_problems.append("Reservation end time (" + format_datetime(new_reservation.end) + ") is earlier than the current time (" + format_datetime() + ").")
 
 	# The user must be qualified on the tool in question in order to create, move, or resize a reservation.
 	# Staff may break this rule.

@@ -222,7 +222,7 @@ class SafetyIssueUpdateForm(ModelForm):
 		if progress_type == "updated" and self.cleaned_data["update"]:
 			progress = (
 					"On "
-					+ format_datetime(timezone.now())
+					+ format_datetime()
 					+ " "
 					+ self.user.get_full_name()
 					+ " updated this issue:\n"

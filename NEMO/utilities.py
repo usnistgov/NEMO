@@ -226,8 +226,9 @@ def extract_dates(parameters):
 	return start, end
 
 
-def format_datetime(universal_time, datetime_format="DATETIME_FORMAT", as_current_timezone=True, use_l10n=None) -> str:
-	local_time = timezone.localtime(universal_time) if as_current_timezone else universal_time
+def format_datetime(universal_time=None, datetime_format="DATETIME_FORMAT", as_current_timezone=True, use_l10n=None) -> str:
+	time = universal_time if universal_time else timezone.now() if as_current_timezone else datetime.now()
+	local_time = timezone.localtime(time) if as_current_timezone else time
 	return date_format(local_time, datetime_format, use_l10n)
 
 

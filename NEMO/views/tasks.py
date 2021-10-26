@@ -258,7 +258,7 @@ def set_task_status(request, task, status_name, user):
 	status = TaskStatus.objects.get(name=status_name)
 	TaskHistory.objects.create(task=task, status=status_name, user=user)
 
-	status_message = f'On {format_datetime(timezone.now())}, {user.get_full_name()} set the status of this task to "{status_name}".'
+	status_message = f'On {format_datetime()}, {user.get_full_name()} set the status of this task to "{status_name}".'
 	task.progress_description = status_message if task.progress_description is None else task.progress_description + '\n\n' + status_message
 	task.save()
 

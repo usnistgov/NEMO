@@ -153,7 +153,7 @@ class PhysicalAccessLevel(models.Model):
 		if self.schedule == self.Schedule.ALWAYS or self.schedule == self.Schedule.WEEKENDS:
 			return self.get_schedule_display()
 		else:
-			return self.get_schedule_display() + f" from {format_datetime(self.weekdays_start_time, 'TIME_FORMAT')} to {format_datetime(self.weekdays_end_time, 'TIME_FORMAT')}"
+			return self.get_schedule_display() + f" from {format_datetime(self.weekdays_start_time, 'TIME_FORMAT', as_current_timezone=False)} to {format_datetime(self.weekdays_end_time, 'TIME_FORMAT', as_current_timezone=False)}"
 	get_schedule_display_with_times.short_description = 'Schedule'
 
 	def accessible_at(self, time):
