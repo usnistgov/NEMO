@@ -1081,6 +1081,7 @@
       "access_expiration": null,
       "is_active": true,
       "is_staff": true,
+      "is_facility_manager": true,
       "is_service_personnel": false,
       "is_technician": false,
       "is_superuser": true,

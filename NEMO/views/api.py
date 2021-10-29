@@ -63,6 +63,7 @@ class UserViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"badge_number": ["exact"],
 		"is_active": ["exact"],
 		"is_staff": ["exact"],
+		"is_facility_manager": ["exact"],
 		"is_superuser": ["exact"],
 		"is_service_personnel": ["exact"],
 		"is_technician": ["exact"],

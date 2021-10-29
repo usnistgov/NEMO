@@ -284,10 +284,11 @@ class User(models.Model):
 
 	# Permissions
 	is_active = models.BooleanField('active', default=True, help_text='Designates whether this user can log in. Unselect this instead of deleting accounts.')
-	is_staff = models.BooleanField('staff status', default=False, help_text='Designates whether the user can log into this admin site.')
+	is_staff = models.BooleanField('staff', default=False, help_text='Designates whether the user can log into this admin site.')
 	is_service_personnel = models.BooleanField('service personnel', default=False, help_text='Designates this user as service personnel. Service personnel can operate qualified tools without a reservation even when they are shutdown or during an outage and can access authorized areas without a reservation.')
-	is_technician = models.BooleanField('technician status', default=False, help_text='Specifies how to bill staff time for this user. When checked, customers are billed at technician rates.')
-	is_superuser = models.BooleanField('superuser status', default=False, help_text='Designates that this user has all permissions without explicitly assigning them.')
+	is_technician = models.BooleanField('technician', default=False, help_text='Specifies how to bill staff time for this user. When checked, customers are billed at technician rates.')
+	is_facility_manager = models.BooleanField('facility manager', default=False, help_text='Designates this user as facility manager. Facility managers receive updates on all reported problems in the facility and can also review access requests.')
+	is_superuser = models.BooleanField('administrator', default=False, help_text='Designates that this user has all permissions without explicitly assigning them.')
 	training_required = models.BooleanField(default=True, help_text='When selected, the user is blocked from all reservation and tool usage capabilities.')
 	groups = models.ManyToManyField(Group, blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of his/her group.')
 	user_permissions = models.ManyToManyField(Permission, blank=True, help_text='Specific permissions for this user.')
@@ -314,7 +315,7 @@ class User(models.Model):
 		object is passed, it checks if the user has all required perms for this object.
 		"""
 
-		# Active superusers have all permissions.
+		# Active administrators have all permissions.
 		if self.is_active and self.is_superuser:
 			return True
 
@@ -340,7 +341,7 @@ class User(models.Model):
 		Returns True if the user has any permissions in the given app label.
 		Uses pretty much the same logic as has_perm, above.
 		"""
-		# Active superusers have all permissions.
+		# Active administrators have all permissions.
 		if self.is_active and self.is_superuser:
 			return True
 

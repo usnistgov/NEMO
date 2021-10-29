@@ -38,6 +38,7 @@ class UserSerializer(ModelSerializer):
 			"badge_number",
 			"is_active",
 			"is_staff",
+			"is_facility_manager",
 			"is_superuser",
 			"is_technician",
 			"is_service_personnel",

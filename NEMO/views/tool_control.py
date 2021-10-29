@@ -518,7 +518,8 @@ def reset_tool_counter(request, counter_id):
 	comment.save()
 
 	# Send an email to Lab Managers about the counter being reset.
-	if hasattr(settings, "LAB_MANAGERS"):
+	facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
+	if facility_managers:
 		message = f"""The {counter.name} counter for the {counter.tool.name} was reset to 0 on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.
 	
 Its last value was {counter.last_reset_value}."""
@@ -526,7 +527,7 @@ Its last value was {counter.last_reset_value}."""
 			subject=f"{counter.tool.name} counter reset",
 			content=message,
 			from_email=settings.SERVER_EMAIL,
-			to=settings.LAB_MANAGERS,
+			to=facility_managers,
 			email_category=EmailCategory.SYSTEM,
 		)
 	return redirect("tool_control")
@@ -548,10 +549,8 @@ def interlock_error(action:str, user:User):
 
 def email_managers_required_questions_disable_tool(tool_user:User, staff_member:User, tool:Tool, questions:List[PostUsageQuestion]):
 	abuse_email_address = get_customization('abuse_email_address')
-	managers = []
-	if hasattr(settings, 'LAB_MANAGERS'):
-		managers = settings.LAB_MANAGERS
-	ccs = set(tuple([r for r in [staff_member.email, tool.primary_owner.email, *tool.backup_owners.all().values_list('email', flat=True), *managers] if r]))
+	facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
+	ccs = set(tuple([r for r in [staff_member.email, tool.primary_owner.email, *tool.backup_owners.all().values_list('email', flat=True), *facility_managers] if r]))
 	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
 	message = f"""
 Dear {tool_user.get_name()},<br/>

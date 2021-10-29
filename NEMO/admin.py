@@ -20,7 +20,7 @@ from NEMO.actions import (
 	synchronize_with_tool_usage,
 	unlock_selected_interlocks,
 )
-from NEMO.forms import BuddyRequestForm
+from NEMO.forms import AccessRequestForm, BuddyRequestForm
 from NEMO.models import (
 	Account,
 	AccountType,
@@ -68,7 +68,7 @@ from NEMO.models import (
 	TaskImages,
 	TaskStatus,
 	TemporaryPhysicalAccess,
-	Tool,
+	TemporaryPhysicalAccessRequest, Tool,
 	ToolDocuments,
 	ToolUsageCounter,
 	TrainingSession,
@@ -865,6 +865,7 @@ class UserAdmin(admin.ModelAdmin):
 				"fields": (
 					"is_active",
 					"is_staff",
+					"is_facility_manager",
 					"is_technician",
 					"is_service_personnel",
 					"is_superuser",
@@ -900,6 +901,7 @@ class UserAdmin(admin.ModelAdmin):
 		"is_staff",
 		"is_technician",
 		"is_service_personnel",
+		"is_facility_manager",
 		"is_superuser",
 		"date_joined",
 		"last_login",
@@ -908,6 +910,7 @@ class UserAdmin(admin.ModelAdmin):
 		"is_active",
 		"domain",
 		"is_staff",
+		"is_facility_manager",
 		"is_technician",
 		"is_service_personnel",
 		"is_superuser",
