@@ -20,7 +20,7 @@ from NEMO.actions import (
 	synchronize_with_tool_usage,
 	unlock_selected_interlocks,
 )
-from NEMO.forms import BuddyRequestForm
+from NEMO.forms import AccessRequestForm, BuddyRequestForm
 from NEMO.models import (
 	Account,
 	AccountType,
@@ -68,7 +68,7 @@ from NEMO.models import (
 	TaskImages,
 	TaskStatus,
 	TemporaryPhysicalAccess,
-	TemporaryPhysicalAccessRequest, Tool,
+	Tool,
 	ToolDocuments,
 	ToolUsageCounter,
 	TrainingSession,
