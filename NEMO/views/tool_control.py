@@ -150,6 +150,7 @@ def usage_data_history(request, tool_id):
 	start, end = extract_times(request.POST, start_required=False, end_required=False)
 	last = request.POST.get("data_history_last")
 	user_id = request.POST.get("data_history_user_id")
+	show_project_info = request.POST.get("show_project_info")
 	if not last and not start and not end:
 		# Default to last 25 records
 		last = 25
@@ -171,6 +172,8 @@ def usage_data_history(request, tool_id):
 		usage_events = usage_events[:last]
 	table_result = BasicDisplayTable()
 	table_result.add_header(("user", "User"))
+	if show_project_info:
+		table_result.add_header(("project", "Project"))
 	table_result.add_header(("date", "Date"))
 	for usage_event in usage_events:
 		if usage_event.run_data:
@@ -197,6 +200,8 @@ def usage_data_history(request, tool_id):
 									if group_usage_data:
 										group_usage_data["user"] = user_data
 										group_usage_data["date"] = date_data
+										if show_project_info:
+											group_usage_data["project"] = usage_event.project.name
 										table_result.add_row(group_usage_data)
 						else:
 							table_result.add_header((question_key, question["title"]))
@@ -204,6 +209,8 @@ def usage_data_history(request, tool_id):
 				if usage_data:
 					usage_data["user"] = user_data
 					usage_data["date"] = date_data
+					if show_project_info:
+						usage_data["project"] = usage_event.project.name
 					table_result.add_row(usage_data)
 			except JSONDecodeError:
 				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
@@ -220,6 +227,7 @@ def usage_data_history(request, tool_id):
 			"data_history_last": str(last),
 			"usage_data_table": table_result,
 			"data_history_user": User.objects.get(id=user_id) if user_id else None,
+			"show_project_info": show_project_info or False,
 			"users": User.objects.filter(is_active=True)
 		}
 		return render(request, "tool_control/usage_data.html", dictionary)

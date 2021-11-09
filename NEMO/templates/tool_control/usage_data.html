@@ -48,6 +48,9 @@
                             <input type="button" id="chosen_user" class="btn btn-default" {% if not data_history_user %}style="display:none"{% endif %} onclick="clear_selected_user()" value="{{ data_history_user }}">
                             <input type="hidden" id="data_history_user_id" name="data_history_user_id" value="{{ data_history_user.id }}">
                         </div>
+                        <div class="checkbox">
+                            <label style="padding-left: 20px"><input type="checkbox" name="show_project_info" {% if show_project_info %}checked{% endif %}> Show project information</label>
+                        </div>
                     </div>
                 </div>
             </div>
