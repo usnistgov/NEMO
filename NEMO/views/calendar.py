@@ -959,8 +959,8 @@ def do_cancel_unused_reservations():
 			# Staff may abandon reservations.
 			if r.user.is_staff:
 				continue
-			# if there was no area access starting or ending since the threshold timestamp then we assume the reservation was missed
-			if not (AreaAccessRecord.objects.filter(area__id=area.id, customer=r.user, start__gte=threshold).exists() or AreaAccessRecord.objects.filter(area__id=area.id, customer=r.user, end__gte=threshold).exists()):
+			# if the user is not already logged in or if there was no area access starting or ending since the threshold timestamp then we assume the reservation was missed
+			if not (AreaAccessRecord.objects.filter(area__id=area.id, customer=r.user, staff_charge=None, end=None).exists() or AreaAccessRecord.objects.filter(area__id=area.id, customer=r.user, start__gte=threshold).exists() or AreaAccessRecord.objects.filter(area__id=area.id, customer=r.user, end__gte=threshold).exists()):
 				# Mark the reservation as missed and notify the user & staff.
 				r.missed = True
 				r.save()
