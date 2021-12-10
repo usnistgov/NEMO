@@ -93,6 +93,7 @@ class ReservationSerializer(FlexFieldsModelSerializer):
 		expandable_fields = {
 			"user": "NEMO.serializers.UserSerializer",
 			"creator": "NEMO.serializers.UserSerializer",
+			"cancelled_by": "NEMO.serializers.UserSerializer",
 			"tool": "NEMO.serializers.ToolSerializer",
 			"area": "NEMO.serializers.AreaSerializer",
 			"project": "NEMO.serializers.ProjectSerializer",
