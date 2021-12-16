@@ -25,6 +25,7 @@ from NEMO.views import (
 	consumables,
 	contact_staff,
 	customization,
+	details,
 	email,
 	feedback,
 	get_projects,
@@ -275,7 +276,13 @@ urlpatterns += [
 	url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}, name='media'),
 
 	# User Preferences
-	url(r'^user_preferences/$', users.user_preferences, name='user_preferences')
+	url(r'^user_preferences/$', users.user_preferences,
+		name='user_preferences'),
+
+	# Detail views
+	url(r'^view_reservation/(?P<reservation_id>\d+)/$', details.reservation,
+		name="view_reservation")
+
 ]
 
 if settings.ALLOW_CONDITIONAL_URLS:

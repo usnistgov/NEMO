@@ -729,13 +729,32 @@ def set_reservation_title(request, reservation_id):
 @login_required
 @require_POST
 def change_reservation_project(request, reservation_id):
-	""" Change reservation project for a user. """
-	reservation = get_object_or_404(Reservation, id=reservation_id)
-	project = get_object_or_404(Project, id=request.POST['project_id'])
-	if (request.user.is_staff or request.user == reservation.user) and reservation.has_not_ended() and reservation.has_not_started() and  project in reservation.user.active_projects():
-		reservation.project = project
-		reservation.save()
-	return HttpResponse()
+    """ Change reservation project for a user. """
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    project = get_object_or_404(Project, id=request.POST['project_id'])
+    if (request.user.is_staff or request.user == reservation.user) and \
+		reservation.has_not_ended() and reservation.has_not_started() and \
+		project in reservation.user.active_projects():
+        reservation.project = project
+        reservation.save()
+    else:
+        # project for reservation was not eligible to be changed
+        if not (request.user.is_staff or request.user == reservation.user):
+            return HttpResponse(
+                content=f"{request.user} is not authorized to change the "
+						f"project for this reservation",
+                status=403)
+        if not reservation.has_not_ended():
+            return HttpResponse(content="Reservation has already ended",
+                                status=405)
+        if not reservation.has_not_started():
+            return HttpResponse(content="Reservation has already started",
+                                status=405)
+        if project not in reservation.user.active_projects():
+            return HttpResponse(content=f"{project} is not one of "
+                                        f"{reservation.user}'s active projects",
+                                status=403)
+    return HttpResponse()
 
 
 @login_required
