@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_tags_and_filters %}
 
 {% block extrahead %}
     <script type="text/javascript">
@@ -146,28 +147,7 @@
                             <td>{{ data.title }}{% if data.title|slice:"-1:" != ":" %}:{% endif %}</td>
                             <td>
                                 <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>#</th>
-                                            {% for k, v in data.user_input.items %}
-                                                {% if forloop.first	 %}
-                                                    {% for kk, vv in v.items %}
-                                                        <th>{{ kk }}</th>
-                                                    {% endfor %}
-                                                {% endif %}
-                                            {% endfor %}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for number, data_input in data.user_input.items %}
-                                            <tr>
-                                                <td>{{ number }}</td>
-                                                {% for name, input in data_input.items %}
-                                                    <td>{{ input|linebreaksbr }}</td>
-                                                {% endfor %}
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
+                                    {% res_question_tbody data.user_input %}
                                 </table>
                             </td>
                         </tr>
