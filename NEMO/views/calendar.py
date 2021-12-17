@@ -899,27 +899,6 @@ def send_email_usage_reminders(projects_to_exclude=None):
 
 @login_required
 @require_GET
-def outage_details(request, outage_id):
-	outage = get_object_or_404(ScheduledOutage, id=outage_id)
-	return render(request, 'calendar/outage_details.html', {'outage': outage})
-
-
-@login_required
-@require_GET
-def usage_details(request, event_id):
-	event = get_object_or_404(UsageEvent, id=event_id)
-	return render(request, 'calendar/usage_details.html', {'event': event})
-
-
-@login_required
-@require_GET
-def area_access_details(request, event_id):
-	event = get_object_or_404(AreaAccessRecord, id=event_id)
-	return render(request, 'calendar/area_access_details.html', {'event': event})
-
-
-@login_required
-@require_GET
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def cancel_unused_reservations(request):
 	return do_cancel_unused_reservations()
