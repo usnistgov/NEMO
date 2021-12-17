@@ -894,17 +894,6 @@ def send_email_usage_reminders(projects_to_exclude=None):
 
 @login_required
 @require_GET
-def reservation_details(request, reservation_id):
-	reservation = get_object_or_404(Reservation, id=reservation_id)
-	if reservation.cancelled:
-		error_message = 'This reservation was cancelled by {0} at {1}.'.format(reservation.cancelled_by, format_datetime(reservation.cancellation_time))
-		return HttpResponseNotFound(error_message)
-	reservation_project_can_be_changed = (request.user.is_staff or request.user == reservation.user) and reservation.has_not_ended and reservation.has_not_started and reservation.user.active_project_count() > 1
-	return render(request, 'calendar/reservation_details.html', {'reservation': reservation, 'reservation_project_can_be_changed': reservation_project_can_be_changed})
-
-
-@login_required
-@require_GET
 def outage_details(request, outage_id):
 	outage = get_object_or_404(ScheduledOutage, id=outage_id)
 	return render(request, 'calendar/outage_details.html', {'outage': outage})

@@ -25,8 +25,8 @@ from NEMO.views import (
 	consumables,
 	contact_staff,
 	customization,
-	details,
 	email,
+	event_details,
 	feedback,
 	get_projects,
 	history,
@@ -156,12 +156,15 @@ urlpatterns += [
 	url(r'^cancel_outage/(?P<outage_id>\d+)/$', calendar.cancel_outage, name='cancel_outage'),
 	url(r'^set_reservation_title/(?P<reservation_id>\d+)/$', calendar.set_reservation_title, name='set_reservation_title'),
 	url(r'^change_reservation_project/(?P<reservation_id>\d+)/$', calendar.change_reservation_project, name='change_reservation_project'),
-	url(r'^event_details/reservation/(?P<reservation_id>\d+)/$', calendar.reservation_details, name='reservation_details'),
 	url(r'^event_details/outage/(?P<outage_id>\d+)/$', calendar.outage_details, name='outage_details'),
 	url(r'^event_details/usage/(?P<event_id>\d+)/$', calendar.usage_details, name='usage_details'),
 	url(r'^event_details/area_access/(?P<event_id>\d+)/$', calendar.area_access_details, name='area_access_details'),
 	url(r'^proxy_reservation/$', calendar.proxy_reservation, name='proxy_reservation'),
 	url(r'^reservation_group_question/(?P<reservation_question_id>\d+)/(?P<group_name>\w+)/$', calendar.reservation_group_question, name='reservation_group_question'),
+
+	# Event Details:
+	url(r'^event_details/reservation/(?P<reservation_id>\d+)/$', event_details.reservation_details,
+		name='reservation_details'),
 
 	# Qualifications:
 	url(r'^qualifications/$', qualifications.qualifications, name='qualifications'),
@@ -278,11 +281,6 @@ urlpatterns += [
 	# User Preferences
 	url(r'^user_preferences/$', users.user_preferences,
 		name='user_preferences'),
-
-	# Detail views
-	url(r'^view_reservation/(?P<reservation_id>\d+)/$', details.reservation,
-		name="view_reservation")
-
 ]
 
 if settings.ALLOW_CONDITIONAL_URLS:
