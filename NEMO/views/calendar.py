@@ -13,7 +13,7 @@ from dateutil import rrule
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
 from django.utils import timezone
@@ -739,9 +739,26 @@ def change_reservation_project(request, reservation_id):
 	""" Change reservation project for a user. """
 	reservation = get_object_or_404(Reservation, id=reservation_id)
 	project = get_object_or_404(Project, id=request.POST['project_id'])
-	if (request.user.is_staff or request.user == reservation.user) and reservation.has_not_ended() and reservation.has_not_started() and  project in reservation.user.active_projects():
+	try:
+		check_billing_to_project(project, reservation.user, reservation.reservation_item)
+	except ProjectChargeException as e:
+		return HttpResponseBadRequest(e.msg)
+
+	if (request.user.is_staff or request.user == reservation.user) and \
+		reservation.has_not_ended() and reservation.has_not_started() and \
+		project in reservation.user.active_projects():
 		reservation.project = project
 		reservation.save()
+	else:
+		# project for reservation was not eligible to be changed
+		if not (request.user.is_staff or request.user == reservation.user):
+			return HttpResponseForbidden(f"{request.user} is not authorized to change the project for this reservation")
+		if not reservation.has_not_ended():
+			return HttpResponseBadRequest("Project cannot be changed; reservation has already ended")
+		if not reservation.has_not_started():
+			return HttpResponseBadRequest("Project cannot be changed; reservation has already started")
+		if project not in reservation.user.active_projects():
+			return HttpResponseForbidden(content=f"{project} is not one of {reservation.user}'s active projects")
 	return HttpResponse()
 
 
@@ -878,17 +895,6 @@ def send_email_usage_reminders(projects_to_exclude=None):
 			staff_charge.staff_member.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
 
 	return HttpResponse()
-
-
-@login_required
-@require_GET
-def reservation_details(request, reservation_id):
-	reservation = get_object_or_404(Reservation, id=reservation_id)
-	if reservation.cancelled:
-		error_message = 'This reservation was cancelled by {0} at {1}.'.format(reservation.cancelled_by, format_datetime(reservation.cancellation_time))
-		return HttpResponseNotFound(error_message)
-	reservation_project_can_be_changed = (request.user.is_staff or request.user == reservation.user) and reservation.has_not_ended and reservation.has_not_started and reservation.user.active_project_count() > 1
-	return render(request, 'calendar/reservation_details.html', {'reservation': reservation, 'reservation_project_can_be_changed': reservation_project_can_be_changed})
 
 
 @login_required

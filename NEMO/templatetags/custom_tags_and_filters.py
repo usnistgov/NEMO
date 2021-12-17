@@ -66,6 +66,22 @@ def navigation_url(url_name, description):
 		return ""
 
 
+@register.simple_tag
+def res_question_tbody(dictionary):
+	input_dict = dictionary[list(dictionary.keys())[0]]
+	headers = list(input_dict.keys())
+	header_cells = ''.join([format_html('<th>{}</th>', h) for h in headers])
+	head_html = format_html('<thead><tr><th>#</th>{}</tr></thead>', mark_safe(header_cells))
+
+	rows = []
+	for i, (index, d) in enumerate(dictionary.items()):
+		data_cells_html = ''.join([format_html("<td>{}</td>", d[h]) for h in headers])
+		row_html = format_html('<tr><th>{}</th>{}</tr>', i + 1, mark_safe(data_cells_html))
+		rows.append(row_html)
+	body_html = format_html('<tbody>{}</tbody>', mark_safe(''.join(rows)))
+	return head_html + body_html
+
+
 @register.filter
 def get_item(dictionary, key):
 	return dictionary.get(key)
