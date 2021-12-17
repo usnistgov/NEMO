@@ -13,7 +13,7 @@ from dateutil import rrule
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
 from django.utils import timezone
@@ -758,7 +758,7 @@ def change_reservation_project(request, reservation_id):
 		if not reservation.has_not_started():
 			return HttpResponseBadRequest("Project cannot be changed; reservation has already started")
 		if project not in reservation.user.active_projects():
-			return HttpResponseForbidden(content=f"{project} is not one of {reservation.user}'s active projects")
+			return HttpResponseForbidden(f"{project} is not one of {reservation.user}'s active projects")
 	return HttpResponse()
 
 

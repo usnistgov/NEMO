@@ -48,7 +48,7 @@
 		"color": "#ff0000",
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.end|date:"c" }}",
-		"details_url": "{% url 'reservation_details' x.id %}?popup_view=true"
+		"details_url": "{% url 'reservation_details' x.id %}"
 	}{% if not forloop.last %},{% endif %}
 	{% endfor %}
 ]

@@ -62,8 +62,7 @@
             <div class="input-group">
                 <input type="text" id="title" class="form-control" placeholder="{{ reservation.user }}" maxlength="200" value="{{ reservation.title }}">
                 <span class="input-group-btn">
-                    <button type="button" class="btn btn-success" data-dismiss="modal"
-                            onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}set_reservation_title('{% url 'set_reservation_title' reservation.id %}', {{ reservation.id }}, $('#title').val()) {% if popup_view %}}){% endif %}">Set title</button>
+                    <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}set_reservation_title('{% url 'set_reservation_title' reservation.id %}', {{ reservation.id }}, $('#title').val()) {% if popup_view %}}){% endif %}">Set title</button>
                 </span>
             </div>
         </td>
@@ -176,26 +175,29 @@
     {% endif %}
     </table>
 
-{# Allow the user to cancel the reservation if they have that priviledge. #}
-{% if not reservation.missed and not reservation.cancelled %}
-	{% if reservation.user.id == user.id and reservation.has_not_ended or user.is_staff %}
-		<div class="modal-footer">
-			{# You must provide a reason if you are cancelling someone else's reservation. #}
-			{% if reservation.user == user %}
-				<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}') {% if popup_view %}}){% endif %}">Cancel this reservation</button>
-			{% else %}
-				<div class="input-group">
-					<input type="text" id="reason" class="form-control" placeholder="Reason for cancellation (required)" maxlength="3000">
-					<span class="input-group-btn">
-						<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}', $('#reason').val()) {% if popup_view %} }) {% endif %}">Cancel this reservation</button>
-					</span>
-				</div>
-				<script>
-					autofocus("#reason");
-				</script>
-			{% endif %}
-        </div>
-	{% endif %}
-{% endif %}
+    {# Allow the user to cancel the reservation if they have that priviledge. #}
+    {% if not reservation.missed and not reservation.cancelled %}
+        {% if reservation.user.id == user.id and reservation.has_not_ended or user.is_staff %}
+            <div class="modal-footer">
+                {# You must provide a reason if you are cancelling someone else's reservation. #}
+                {% if reservation.user == user %}
+                    <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}') {% if popup_view %}}){% endif %}">Cancel this reservation</button>
+                {% else %}
+                    <div class="input-group">
+                        <input type="text" id="reason" class="form-control" placeholder="Reason for cancellation (required)" maxlength="3000">
+                        <span class="input-group-btn">
+                            <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}', $('#reason').val()) {% if popup_view %} }) {% endif %}">Cancel this reservation</button>
+                        </span>
+                    </div>
+                    <script>
+                        autofocus("#reason");
+                    </script>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endif %}
 
+    {% if popup_view and reservation.question_data_json.items %}
+        <script>$('#dialog .modal-dialog').addClass('modal-lg');</script>
+    {% endif %}
 {% endblock %}

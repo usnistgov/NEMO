@@ -27,7 +27,7 @@
 		{% if user.id == x.user.id or user.is_staff %}"editable": true,{% endif %}
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
-		"details_url": "{% url 'reservation_details' x.id %}?popup_view=true"
+		"details_url": "{% url 'reservation_details' x.id %}"
 	}{% if not forloop.last %},{% elif outages %},{% endif %}
 	{% endfor %}
 	{% for x in outages %}

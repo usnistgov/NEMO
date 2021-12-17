@@ -28,7 +28,7 @@
 		"color": {% if x.tool %}"{{ x.reservation_item.tool_calendar_color|default:'#33ad33' }}"{% elif x.area %}"{{ x.reservation_item.area_calendar_color|default:'#88B7CD' }}"{% endif %},
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
-		"details_url": "{% url 'reservation_details' x.id %}?popup_view=true"
+		"details_url": "{% url 'reservation_details' x.id %}"
 	}{% if not forloop.last %},{% elif missed_reservations %},{% endif %}
 	{% endfor %}
 	{% for x in missed_reservations %}
@@ -38,7 +38,7 @@
 		"color": {% if x.tool %}"#ff0000"{% elif x.area %}"#FF6666"{% endif %},
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
-		"details_url": "{% url 'reservation_details' x.id %}?popup_view=true"
+		"details_url": "{% url 'reservation_details' x.id %}"
 	}{% if not forloop.last %},{% endif %}
 	{% endfor %}
 ]
