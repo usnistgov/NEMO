@@ -4,43 +4,37 @@
 {% if not popup_view %}
 {% block extrahead %}
     <script type="text/javascript">
+    function callback_success(){
+        // if on a standalone page, reload the browser window to display the results of the change to the reservation
+        location.reload()
+    }
 
     function cancel_reservation(url, reservation_id, reason)
     {
         let failure_dialog = ajax_failure_callback("Unable to cancel this reservation");
-        function reservation_cancel_success_callback()
-        {
-            location.reload();
-        }
         let contents = undefined;
         if(reason)
         {
             contents = {'reason': reason};
         }
-        ajax_post(url, contents, reservation_cancel_success_callback, [failure_dialog, reservation_cancel_success_callback]);
+        ajax_post(url, contents, callback_success, [failure_dialog, callback_success]);
     }
 
 
     function set_reservation_title(url, reservation_id, title)
     {
         let failure_dialog = ajax_failure_callback("Unable to set reservation title");
-                function callback_success(){
-            location.reload()
-        }
         ajax_post(url, {'title': title}, callback_success, [failure_dialog]);
     }
 
     function change_reservation_project(url, project_id)
     {
         let failure_dialog = ajax_failure_callback("Unable to change reservation project");
-        function callback_success(){
-            location.reload()
-        }
         function callback_failure(){
             $('#reservation_project').show();
             $('#reservation_change_project').hide();
         }
-        ajax_post(url, {'project_id': project_id}, callback_success, [failure_dialog]);
+        ajax_post(url, {'project_id': project_id}, callback_success, [failure_dialog, callback_failure]);
     }
     </script>
 {% endblock %}
@@ -68,7 +62,7 @@
             <div class="input-group">
                 <input type="text" id="title" class="form-control" placeholder="{{ reservation.user }}" maxlength="200" value="{{ reservation.title }}">
                 <span class="input-group-btn">
-                    <button type="button" class="btn btn-success"
+                    <button type="button" class="btn btn-success" data-dismiss="modal"
                             onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}set_reservation_title('{% url 'set_reservation_title' reservation.id %}', {{ reservation.id }}, $('#title').val()) {% if popup_view %}}){% endif %}">Set title</button>
                 </span>
             </div>
@@ -123,7 +117,7 @@
                             {% endfor %}
                         </select>
                         <span class="input-group-btn">
-                            <button type="button" class="btn btn-success" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %} change_reservation_project('{% url 'change_reservation_project' reservation.id %}', $('#change_project').val()) {% if popup_view %} }) {% endif %}">Change project</button>
+                            <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %} change_reservation_project('{% url 'change_reservation_project' reservation.id %}', $('#change_project').val()) {% if popup_view %} }) {% endif %}">Change project</button>
                         </span>
                     </div>
                 </td>
@@ -145,22 +139,22 @@
     {% if reservation.question_data_json.items %}
     <tr>
         <td>Reservation questions:</td>
-        <td>
-            <table class="table table-striped">
+        <td style="padding: 0;">
+            <table class="table table-striped" style="margin-bottom: 0;">
             {% for question_name, data in reservation.question_data_json.items %}
                 {% if data.type == 'group' %}
                     <tr>
-                        <td>{{ data.title }}{% if data.title|slice:"-1:" != ":" %}:{% endif %}</td>
-                        <td>
-                            <table class="table table-striped">
+                        <td {% if forloop.first %}style="border-top:none;"{% endif %}>{{ data.title }}{% if data.title|slice:"-1:" != ":" %}:{% endif %}</td>
+                        <td style="padding: 0;{% if forloop.first %}border-top:none;{% endif %}">
+                            <table class="table table-striped" style="margin-bottom: 0;">
                                 {% res_question_tbody data.user_input %}
                             </table>
                         </td>
                     </tr>
                 {% else %}
                     <tr>
-                        <td>{{ data.title }}{% if data.title|slice:"-1:" != ":" %}:{% endif %}</td>
-                        <td>{{ data.user_input|linebreaksbr }}</td>
+                        <td {% if forloop.first %}style="border-top:none;"{% endif %}>{{ data.title }}{% if data.title|slice:"-1:" != ":" %}:{% endif %}</td>
+                        <td {% if forloop.first %}style="border-top:none;"{% endif %}>{{ data.user_input|linebreaksbr }}</td>
                     </tr>
                 {% endif %}
             {% endfor %}
@@ -200,6 +194,7 @@
 					autofocus("#reason");
 				</script>
 			{% endif %}
+        </div>
 	{% endif %}
 {% endif %}
 

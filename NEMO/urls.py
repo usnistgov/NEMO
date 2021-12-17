@@ -163,8 +163,7 @@ urlpatterns += [
 	url(r'^reservation_group_question/(?P<reservation_question_id>\d+)/(?P<group_name>\w+)/$', calendar.reservation_group_question, name='reservation_group_question'),
 
 	# Event Details:
-	url(r'^event_details/reservation/(?P<reservation_id>\d+)/$', event_details.reservation_details,
-		name='reservation_details'),
+	url(r'^event_details/reservation/(?P<reservation_id>\d+)/$', event_details.reservation_details, name='reservation_details'),
 
 	# Qualifications:
 	url(r'^qualifications/$', qualifications.qualifications, name='qualifications'),
@@ -279,8 +278,7 @@ urlpatterns += [
 	url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}, name='media'),
 
 	# User Preferences
-	url(r'^user_preferences/$', users.user_preferences,
-		name='user_preferences'),
+	url(r'^user_preferences/$', users.user_preferences, name='user_preferences'),
 ]
 
 if settings.ALLOW_CONDITIONAL_URLS:
