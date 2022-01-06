@@ -1,0 +1,34 @@
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+<table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+	<tr>
+		<td align="center" style="color: white; background: #5bc0de; margin: 0; padding: 50px 0;" bgcolor="#5bc0de">
+			<h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
+				STAFF CHARGE REMINDER
+			</h1>
+		</td>
+	</tr>
+	<tr>
+		<td style="margin: 10px 10px 20px; padding: 10px;">
+			<h2>
+				Hi {{ staff_charge.staff_member.first_name }},
+			</h2>
+			<p>
+				This is a friendly reminder that you have been charging staff time to <b>{{ staff_charge.customer }}</b> while working on
+				the project named <b>{{ staff_charge.project }}</b> since <b>{{ staff_charge.start }}</b>.
+				<br>
+				You can	stop charging staff time by visiting the Staff Charges page in NEMO.
+				<br><br>
+				If you wish to adjust the amount of time charged then please contact the staff by replying to this email.
+			</p>
+		</td>
+	</tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</body>
+</html>

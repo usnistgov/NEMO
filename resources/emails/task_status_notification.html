@@ -1,0 +1,51 @@
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+<table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+	<tr>
+		<td align="center" style="color: white; background: {{ template_color }}; margin: 0; padding: 50px 0;" bgcolor="{{ template_color }}">
+			<h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
+				{{ title|upper }}
+			</h1>
+		</td>
+	</tr>
+	<tr>
+		<td style="margin: 10px 10px 20px; padding: 10px;">
+			<p>
+				{{ status_message|linebreaksbr }}
+			</p>
+			<p>
+				{{ notification_message|linebreaksbr }}
+			</p>
+			<p>
+				You can view and update this problem's status by visiting the <a href="{{ tool_control_absolute_url }}">{{ tool|lower }} tool control page</a>.
+			</p>
+
+			{% if task.problem_category %}
+			<p>
+				<b>Task status:	{{ task.status }}</b>
+			</p>
+			{% endif %}
+
+			{% if task.problem_category %}
+				<b>Problem category: {{ task.problem_category }}</b>
+			{% endif %}
+			{% if task.problem_description %}
+				<div style="border-left: 5px solid {{ template_color }}; padding-left: 7px; font-style: italic">{{ task.problem_description|linebreaksbr }}</div>
+				<br>
+			{% endif %}
+
+			{% if task.progress_description %}
+				<b>Progress Updates:</b>
+				<div style="border-left: 5px solid {{ template_color }}; padding-left: 7px; font-style: italic">{{ task.progress_description|linebreaksbr }}</div>
+			{% endif %}
+		</td>
+	</tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</body>
+</html>

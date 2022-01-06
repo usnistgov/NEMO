@@ -1,0 +1,87 @@
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+<table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+	<tr>
+		<td align="center" style="color: white; background: {{ template_color }}; margin: 0; padding: 50px 0;" bgcolor="{{ template_color }}">
+			<h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
+				RESERVATION {% if fatal_error %}PROBLEM{% else %}WARNING{% endif %}
+			</h1>
+		</td>
+	</tr>
+	<tr>
+		<td style="margin: 10px 10px 20px; padding: 10px;">
+			<h2>
+				Hi {{ reservation.user.first_name }},
+			</h2>
+			<p>
+				{% if fatal_error %}
+					There is a problem with your <b>{{ reservation.start|time }}</b> reservation for the <b>{{ reservation.tool }}</b>.
+					The tool was <b>shut down</b> when this email was sent. Please visit to NEMO to view current tool status.
+				{% else %}
+					There may be a problem with your <b>{{ reservation.start|time }}</b> reservation for the <b>{{ reservation.tool }}</b>.
+					The tool may be operating in a diminished capacity or may not be able to perform certain processes. Please visit NEMO to view current tool status.
+				{% endif %}
+			</p>
+
+			<h4>What's wrong and when will it be resolved?</h4>
+			{% with reservation.tool.problems as problems %}
+				{% for problem in problems %}
+					<div style="padding-left: 7px; {% if problem.force_shutdown %}border-left: 5px solid #d9534f;{% else %}border-left: 5px solid #f0ad4e;{% endif %}">
+						<p>
+							{% if problem.problem_category %}<em>{{ problem.problem_category }}</em><br>{% endif %}
+							{{ problem.problem_description|linebreaksbr }}
+						</p>
+						<p>
+							{% if problem.estimated_resolution_time %}
+								Estimated to be resolved by {{ problem.estimated_resolution_time }}.
+							{% else %}
+								No time estimate has been made for a resolution.
+							{% endif %}
+						</p>
+					</div>
+				{% endfor %}
+			{% endwith %}
+			{% with reservation.tool.unavailable_required_resources as unavailable_required_resources %}
+				{% for resource in unavailable_required_resources %}
+					<div style="padding-left: 7px; border-left: 5px solid #d9534f">
+						<p>
+							<em>A required tool resource is unavailable: {{ resource }}</em><br>
+							{{ resource.restriction_message|linebreaksbr }}
+						</p>
+					</div>
+				{% endfor %}
+			{% endwith %}
+			{% with reservation.tool.unavailable_nonrequired_resources as unavailable_nonrequired_resources %}
+				{% for resource in unavailable_nonrequired_resources %}
+					<div style="padding-left: 7px; border-left: 5px solid #f0ad4e">
+						<p>
+							<em>An optional tool resource is unavailable: {{ resource }}</em><br>
+							{{ resource.restriction_message|linebreaksbr }}
+						</p>
+					</div>
+				{% endfor %}
+			{% endwith %}
+
+			<h4>We're at your service</h4>
+			<p>
+				If you have any questions about the tool or your reservation, please contact the primary tool owner,
+				<a href="mailto:{{ reservation.tool.primary_owner.email }}">{{ reservation.tool.primary_owner.first_name }} {{ reservation.tool.primary_owner.last_name }}</a>.
+			</p>
+			<p>
+				If you are unable to reach the primary tool owner then you can contact the secondary tool owner,
+				<a href="mailto:{{ reservation.tool.secondary_owner.email }}">{{ reservation.tool.secondary_owner.first_name }} {{ reservation.tool.secondary_owner.last_name }}</a>.
+			</p>
+			<p>
+				The staff can provide answers to general inquiries.
+			</p>
+		</td>
+	</tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</body>
+</html>

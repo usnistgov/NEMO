@@ -1,0 +1,40 @@
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+<table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+	<tr>
+		<td align="center" style="color: white; background: #d9534f; margin: 0; padding: 50px 0;" bgcolor="#d9534f">
+			<h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
+				MISSED RESERVATION NOTIFICATION
+			</h1>
+		</td>
+	</tr>
+	<tr>
+		<td style="margin: 10px 10px 20px; padding: 10px;">
+			<h2>
+				{{ reservation.user.first_name }},
+			</h2>
+			<p>
+				You missed your reservation to use the {{ reservation.reservation_item }} in the facility starting at
+				{{ reservation.start }} and ending at {{ reservation.end }}.
+			</p>
+			<p>
+				{% if reservation.area %}You were still not logged in to the {{ reservation.area }}
+				{% else %}The tool was not used for more than
+				{% endif %}
+				{{ reservation.reservation_item.missed_reservation_threshold }} minutes after the start
+				of your reservation, therefore your reservation time has been marked as 'missed' in NEMO and cancelled on the calendar.
+			</p>
+			<p>
+				Please remember that the facility is a shared resource, and missing a reservation may inhibit the productivity of other facility users.
+			</p>
+		</td>
+	</tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</body>
+</html>

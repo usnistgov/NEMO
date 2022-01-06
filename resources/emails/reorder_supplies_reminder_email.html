@@ -1,0 +1,30 @@
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+<table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+	<tr>
+		<td align="center" style="color: white; margin: 0; padding: 50px 0;" bgcolor="#5bc0de">
+			<h1 style="max-width: 90%; margin: 0 auto; padding: 0;">Reorder {{ item.name }}</h1>
+		</td>
+	</tr>
+	<tr>
+		<td style="margin: 10px 10px 20px; padding: 10px;">
+			<p>
+				Hello,
+				<br>
+				The quantity of <b>{{ item.name }}</b> has fell below the reorder threshold of <b>{{ item.reminder_threshold }}</b>.
+			</p>
+			<br>
+			<p>
+				You can update the available quantity in the detailed administration of NEMO.
+			</p>
+		</td>
+	</tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</body>
+</html>
