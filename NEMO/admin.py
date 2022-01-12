@@ -8,6 +8,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models import Q
 from django.db.models.fields.files import FieldFile
+from django.template.defaultfilters import urlencode
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -68,6 +69,7 @@ from NEMO.models import (
 	TaskImages,
 	TaskStatus,
 	TemporaryPhysicalAccess,
+	TemporaryPhysicalAccessRequest,
 	Tool,
 	ToolDocuments,
 	ToolUsageCounter,
@@ -1252,7 +1254,10 @@ class EmailLogAdmin(admin.ModelAdmin):
 	date_hierarchy = "when"
 
 	def content_preview(self, obj):
-		return mark_safe(obj.content)
+		if obj.content:
+			return mark_safe(f'<div style="position: relative; display: block; overflow: hidden; padding-bottom: 75%"><iframe style="position: absolute; width:100%; height:100%; border:none" src="data:text/html,{urlencode(obj.content)}"></iframe></div>')
+		else:
+			return ""
 
 	def has_delete_permission(self, request, obj=None):
 		return False
