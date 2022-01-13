@@ -1,0 +1,23 @@
+{% load static %}
+{% with element_name=name.split|join:"_"|lower extension=extension|default:"html" %}
+    <form method="POST" action="{% url 'customize' element_name %}#{{ element_name }}_id" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('{{ element_name }}')">
+        {% csrf_token %}
+        <div class="form-group">
+            <input type="file" name="{{ element_name }}" class="customization-input-file" onchange="this.style.color = 'inherit';$('#{{ element_name }}_span').hide()">
+            {% if element %}
+                {% if extension == "html" %}
+                    <a id="{{ element_name }}_span" href="data:text/html,{{ element|urlencode }}" download="{{ element_name }}.html" target="_blank">{{ element_name }}.html</a>
+                {% else %}
+                    <span id="{{ element_name }}_span">{{ element_name }}.{{ extension }}</span>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <input type="submit" value="{% if button_name %}{{ button_name }}{% else %}Upload {{ name }}{% endif %}" class="btn btn-success">
+        </div>
+    </form>
+    {% if element and not hide_content %}
+        <div class="customization-separation"></div>
+        <a href="{% get_media_prefix %}{{ element_name }}.{{ extension }}" class="btn btn-info" target="_blank">Show current content</a>
+    {% endif %}
+{% endwith %}

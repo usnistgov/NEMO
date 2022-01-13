@@ -126,7 +126,7 @@ def set_customization(name, value):
 def customization(request):
 	dictionary = {name: get_media_file_contents(name + extension) for name, extension in customizable_content}
 	dictionary.update({name: get_customization(name) for name in customizable_key_values.keys()})
-	return render(request, 'customizations.html', dictionary)
+	return render(request, 'customizations/customizations.html', dictionary)
 
 
 @administrator_required
