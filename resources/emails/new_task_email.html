@@ -7,14 +7,14 @@
 <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
 <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
 	<tr>
-		<td align="center" style="color: white; background: {{ template_color }}; margin: 0; padding: 50px 0;" bgcolor="{{ template_color }}">
+		<td align="center" style="color: white; background: {{ template_color }}; padding: 50px 0;" bgcolor="{{ template_color }}">
 			<h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
 				{{ tool|upper }} {% if task.force_shutdown %}SHUTDOWN{% else %}PROBLEM{% endif %}
 			</h1>
 		</td>
 	</tr>
 	<tr>
-		<td style="margin: 10px 10px 20px; padding: 10px;">
+		<td style="padding: 10px;">
 			{% if task.safety_hazard %}
 				<h1>
 					{{ user }} has designated this problem as a safety hazard that must be addressed urgently!
