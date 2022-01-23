@@ -325,6 +325,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 		"requires_reservation",
 		"maximum_capacity",
 		"reservation_warning",
+		"buddy_system_allowed",
 		"id",
 	)
 	fieldsets = (
@@ -1042,8 +1043,8 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 @register(PhysicalAccessLevel)
 class PhysicalAccessLevelAdmin(admin.ModelAdmin):
 	form = PhysicalAccessLevelForm
-	list_display = ("name", "area", "get_schedule_display_with_times", "allow_staff_access")
-	list_filter = (("area", TreeRelatedFieldListFilter),)
+	list_display = ("name", "area", "get_schedule_display_with_times", "allow_staff_access", "allow_user_request")
+	list_filter = (("area", TreeRelatedFieldListFilter), "allow_staff_access", "allow_user_request")
 
 	def save_model(self, request, obj, form, change):
 		"""
@@ -1114,6 +1115,32 @@ class TemporaryPhysicalAccessAdmin(admin.ModelAdmin):
 		return tpa.physical_access_level.get_schedule_display_with_times()
 
 	get_schedule_display_with_times.short_description = 'Schedule'
+
+
+class TemporaryPhysicalAccessRequestFormAdmin(forms.ModelForm):
+	class Meta:
+		model = TemporaryPhysicalAccessRequest
+		fields = "__all__"
+
+
+@register(TemporaryPhysicalAccessRequest)
+class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
+	form = TemporaryPhysicalAccessRequestFormAdmin
+	list_display = ("creator", "other_users_display", "creation_time", "start_time", "end_time", "physical_access_level", "status_display", "reviewer", "deleted")
+	list_filter = ("status", "deleted")
+	filter_horizontal = ("other_users",)
+
+	def other_users_display(self, access_request: TemporaryPhysicalAccessRequest):
+		return ", ".join([str(u) for u in access_request.other_users.all()])
+
+	other_users_display.admin_order_field = "other_users"
+	other_users_display.short_description = "Other users"
+
+	def status_display(self, access_request: TemporaryPhysicalAccessRequest):
+		return access_request.get_status_display()
+
+	status_display.admin_order_field = "status"
+	status_display.short_description = "Status"
 
 
 @register(ContactInformationCategory)

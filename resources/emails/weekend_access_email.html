@@ -7,16 +7,18 @@
         <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
         <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
             <tr>
-                <td align="center" style="color: white; background: #5bc0de; padding: 50px 0;" bgcolor="#5bc0de">
+                <td align="center" style="color: white; background: {% if not weekend_access %}#d9534f{% else %}#5cb85c{% endif %}; padding: 50px 0;" bgcolor="{% if not weekend_access %}#d9534f{% else %}#5cb85c{% endif %}">
                     <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
-                        USER FEEDBACK
+                        {% if not weekend_access %}NO {% endif %}WEEKEND ACCESS
                     </h1>
                 </td>
             </tr>
             <tr>
                 <td style="padding: 10px;">
-                    <p>{{ user }} wrote:</p>
-                    <p>{{ contents|linebreaksbr }}</p>
+                    <p>Hello,</p>
+                    <p>
+                        This email is to inform you that there {% if not weekend_access %}won't{% else %}will{% endif %} be users in the facility this coming weekend.
+                    </p>
                 </td>
             </tr>
         </table>

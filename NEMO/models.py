@@ -6,7 +6,7 @@ from enum import Enum
 from html import escape
 from json import loads
 from logging import getLogger
-from typing import List, Union
+from typing import List, Set, Union
 
 from django.conf import settings
 from django.contrib import auth
@@ -132,22 +132,23 @@ class UserType(models.Model):
 
 
 class PhysicalAccessLevel(models.Model):
-	name = models.CharField(max_length=100)
-	area = TreeForeignKey("Area", on_delete=models.CASCADE)
-
 	class Schedule(object):
 		ALWAYS = 0
 		WEEKDAYS = 1
 		WEEKENDS = 2
 		Choices = (
-			(ALWAYS, "Always"),
+			(ALWAYS, "Anytime"),
 			(WEEKDAYS, "Weekdays"),
 			(WEEKENDS, "Weekends"),
 		)
+
+	name = models.CharField(max_length=100)
+	area = TreeForeignKey("Area", on_delete=models.CASCADE)
 	schedule = models.IntegerField(choices=Schedule.Choices)
 	weekdays_start_time = models.TimeField(default=datetime.time(hour=7), null=True, blank=True, help_text="The weekday access start time")
 	weekdays_end_time = models.TimeField(default=datetime.time(hour=0), null=True, blank=True, help_text="The weekday access end time")
 	allow_staff_access = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow access to Staff users without explicitly granting them access")
+	allow_user_request = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow users to request this access temporarily in \"Access requests\"")
 
 	def get_schedule_display_with_times(self):
 		if self.schedule == self.Schedule.ALWAYS or self.schedule == self.Schedule.WEEKENDS:
@@ -196,6 +197,9 @@ class PhysicalAccessLevel(models.Model):
 			accessible_time = timezone.localtime(timezone.now())
 		return self.physicalaccessexception_set.filter(start_time__lte=accessible_time, end_time__gt=accessible_time).first()
 
+	def display_value_for_select(self):
+		return f"{str(self.area.name)} ({self.get_schedule_display_with_times()})"
+
 	def __str__(self):
 		return str(self.name)
 
@@ -233,6 +237,46 @@ class TemporaryPhysicalAccess(models.Model):
 
 	class Meta:
 		ordering = ['-end_time']
+
+
+class TemporaryPhysicalAccessRequest(models.Model):
+
+	class Status(object):
+		PENDING = 0
+		APPROVED = 1
+		DENIED = 2
+		EXPIRED = 3
+		Choices = (
+			(PENDING, "Pending"),
+			(APPROVED, "Approved"),
+			(DENIED, "Denied"),
+			(EXPIRED, "Expired"),
+		)
+
+	creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the request was created.")
+	creator = models.ForeignKey("User", related_name='access_requests_created', on_delete=models.CASCADE)
+	last_updated = models.DateTimeField(auto_now=True, help_text="The last time this request was modified.")
+	last_updated_by = models.ForeignKey("User", null=True, blank=True, related_name="access_requests_updated", help_text="The last user who modified this request.", on_delete=models.SET_NULL)
+	physical_access_level = models.ForeignKey(PhysicalAccessLevel, on_delete=models.CASCADE)
+	description = models.TextField(null=True, blank=True, help_text="The description of the request.")
+	start_time = models.DateTimeField(help_text="The requested time for the access to start.")
+	end_time = models.DateTimeField(help_text="The requested time for the access to end.")
+	other_users = models.ManyToManyField("User", blank=True, help_text="Select the other users requesting access.")
+	status = models.IntegerField(choices=Status.Choices, default=Status.PENDING)
+	reviewer = models.ForeignKey("User", null=True, blank=True, related_name='access_requests_reviewed', on_delete=models.CASCADE)
+	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
+
+	def creator_and_other_users(self) -> Set:
+		result = {self.creator}
+		result.update(self.other_users.all())
+		return result
+
+	def clean(self):
+		if self.end_time <= self.start_time:
+			raise ValidationError({"end_time": "The end time must be later than the start time"})
+
+	class Meta:
+		ordering = ['-creation_time']
 
 
 class PhysicalAccessException(models.Model):
@@ -1104,7 +1148,7 @@ class Area(MPTTModel):
 	abuse_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users overstay in the area or in children areas (logged in with expired reservation). A comma-separated list can be used.")
 	reservation_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users create or cancel reservations in the area or in children areas. A comma-separated list can be used.")
 
-	# Additional informations
+	# Additional information
 	area_calendar_color = models.CharField(max_length=9, default="#88B7CD", help_text="Color for tool reservations in calendar overviews")
 
 	# Area access
@@ -1959,11 +2003,13 @@ class Notification(models.Model):
 		SAFETY = 'safetyissue'
 		BUDDY_REQUEST = 'buddyrequest'
 		BUDDY_REQUEST_REPLY = 'buddyrequestmessage'
+		TEMPORARY_ACCESS_REQUEST = 'temporaryphysicalaccessrequest'
 		Choices = (
 			(NEWS, 'News creation and updates - notifies all users'),
 			(SAFETY, 'New safety issues - notifies staff only'),
 			(BUDDY_REQUEST, 'New buddy request - notifies all users'),
-			(BUDDY_REQUEST_REPLY, 'New buddy request reply - notifies request creator and users who have replied')
+			(BUDDY_REQUEST_REPLY, 'New buddy request reply - notifies request creator and users who have replied'),
+			(TEMPORARY_ACCESS_REQUEST, 'New access request - notifies other users on request and reviewers')
 		)
 
 
@@ -1977,7 +2023,7 @@ class LandingPageChoice(models.Model):
 	hide_from_mobile_devices = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a mobile device")
 	hide_from_desktop_computers = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a desktop computer")
 	hide_from_users = models.BooleanField(default=False, help_text="Hides this choice from normal users. When checked, only staff, technicians, and super-users can see the choice")
-	notifications = models.CharField(max_length=25, blank=True, null=True, choices=Notification.Types.Choices, help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.")
+	notifications = models.CharField(max_length=100, blank=True, null=True, choices=Notification.Types.Choices, help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.")
 
 	class Meta:
 		ordering = ['display_priority']

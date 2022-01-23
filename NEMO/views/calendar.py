@@ -131,9 +131,9 @@ def calendar(request, item_type=None, item_id=None):
 		'self_login': False,
 		'self_logout': False,
 	}
-	login_logout = get_customization('calendar_login_logout', False)
-	self_login = get_customization('self_log_in', False)
-	self_logout = get_customization('self_log_out', False)
+	login_logout = get_customization('calendar_login_logout', raise_exception=False)
+	self_login = get_customization('self_log_in', raise_exception=False)
+	self_logout = get_customization('self_log_out', raise_exception=False)
 	if login_logout == 'enabled':
 		dictionary['self_login'] = self_login == 'enabled'
 		dictionary['self_logout'] = self_logout == 'enabled'

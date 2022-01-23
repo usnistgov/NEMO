@@ -78,6 +78,7 @@ class EmailCategory(object):
 	ABUSE = 6
 	SAFETY = 7
 	TASKS = 8
+	ACCESS_REQUESTS = 9
 	Choices = (
 		(GENERAL, "General"),
 		(SYSTEM, "System"),
@@ -88,6 +89,7 @@ class EmailCategory(object):
 		(ABUSE, "Abuse"),
 		(SAFETY, "Safety"),
 		(TASKS, "Tasks"),
+		(ACCESS_REQUESTS, "Access Requests"),
 	)
 
 

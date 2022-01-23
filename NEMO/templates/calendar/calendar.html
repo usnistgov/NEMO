@@ -53,7 +53,7 @@
 <input type="hidden" id="impersonate" name="impersonate" value="test">
 
 <script type="text/javascript">
-var logged_in = false;
+let logged_in = false;
 {% if user.in_area %}
 logged_in = "{{ user.area_access_record.area.name }}";
 {% endif %}

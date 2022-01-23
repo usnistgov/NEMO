@@ -14,12 +14,13 @@ from rest_framework import routers
 from NEMO.models import ReservationItemType
 from NEMO.views import (
 	abuse,
+	access_requests,
 	accounts_and_projects,
 	alerts,
 	api,
 	area_access,
 	authentication,
-	buddy_system,
+	buddy_requests,
 	calendar,
 	configuration_agenda,
 	consumables,
@@ -47,6 +48,7 @@ from NEMO.views import (
 	training,
 	tutorials,
 	usage,
+	user_requests,
 	users,
 )
 
@@ -128,12 +130,22 @@ urlpatterns += [
 	url(r'^tool_usage_group_question/(?P<tool_id>\d+)/(?P<group_name>\w+)/$', tool_control.tool_usage_group_question, name='tool_usage_group_question'),
 	url(r'^reset_tool_counter/(?P<counter_id>\d+)/$', tool_control.reset_tool_counter, name='reset_tool_counter'),
 
+	# User requests
+	url(r'^user_requests/$', user_requests.user_requests, name='user_requests'),
+	url(r'^user_requests/(?P<tab>buddy|access)/$', user_requests.user_requests, name='user_requests'),
+
+	# Access requests
+	url(r'^access_requests/$', access_requests.access_requests, name='access_requests'),
+	url(r'^create_access_request/$', access_requests.create_access_request, name='create_access_request'),
+	url(r'^edit_access_request/(?P<request_id>\d+)/$', access_requests.create_access_request, name='edit_access_request'),
+	url(r'^delete_access_request/(?P<request_id>\d+)/$', access_requests.delete_access_request, name='delete_access_request'),
+
 	# Buddy System
-	url(r'^buddy_system/$', buddy_system.buddy_system, name='buddy_system'),
-	url(r'^create_buddy_request/$', buddy_system.create_buddy_request, name='create_buddy_request'),
-	url(r'^edit_buddy_request/(?P<request_id>\d+)/$', buddy_system.create_buddy_request, name='edit_buddy_request'),
-	url(r'^delete_buddy_request/(?P<request_id>\d+)/$', buddy_system.delete_buddy_request, name='delete_buddy_request'),
-	url(r'^buddy_request_reply/(?P<request_id>\d+)/$', buddy_system.buddy_request_reply, name='buddy_request_reply'),
+	url(r'^buddy_requests/$', buddy_requests.buddy_requests, name='buddy_requests'),
+	url(r'^create_buddy_request/$', buddy_requests.create_buddy_request, name='create_buddy_request'),
+	url(r'^edit_buddy_request/(?P<request_id>\d+)/$', buddy_requests.create_buddy_request, name='edit_buddy_request'),
+	url(r'^delete_buddy_request/(?P<request_id>\d+)/$', buddy_requests.delete_buddy_request, name='delete_buddy_request'),
+	url(r'^buddy_request_reply/(?P<request_id>\d+)/$', buddy_requests.buddy_request_reply, name='buddy_request_reply'),
 
 	# Tasks:
 	url(r'^create_task/$', tasks.create, name='create_task'),
@@ -298,6 +310,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		url(r'^email_usage_reminders/$', calendar.email_usage_reminders, name='email_usage_reminders'),
 		url(r'^email_out_of_time_reservation_notification/$', calendar.email_out_of_time_reservation_notification, name='email_out_of_time_reservation_notification'),
 		url(r'^cancel_unused_reservations/$', calendar.cancel_unused_reservations, name='cancel_unused_reservations'),
+		url(r'^email_weekend_access_notification/$', access_requests.email_weekend_access_notification, name='email_weekend_access_notification'),
 
 		# Abuse:
 		url(r'^abuse/$', abuse.abuse, name='abuse'),

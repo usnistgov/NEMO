@@ -1,50 +1,50 @@
 <html lang="en">
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-<!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
-<table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
-	<tr>
-		<td align="center" style="color: white; background: {{ template_color }}; padding: 50px 0;" bgcolor="{{ template_color }}">
-			<h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
-				{{ tool|upper }} {% if task.force_shutdown %}SHUTDOWN{% else %}PROBLEM{% endif %}
-			</h1>
-		</td>
-	</tr>
-	<tr>
-		<td style="padding: 10px;">
-			{% if task.safety_hazard %}
-				<h1>
-					{{ user }} has designated this problem as a safety hazard that must be addressed urgently!
-				</h1>
-			{% endif %}
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+            <tr>
+                <td align="center" style="color: white; background: {{ template_color }}; padding: 50px 0;" bgcolor="{{ template_color }}">
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
+                        {{ tool|upper }} {% if task.force_shutdown %}SHUTDOWN{% else %}PROBLEM{% endif %}
+                    </h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">
+                    {% if task.safety_hazard %}
+                        <p>
+                            {{ user }} has designated this problem as a safety hazard that must be addressed urgently!
+                        </p>
+                    {% endif %}
 
-			<p>
-				You are receiving this message because {{ user }} reported a problem via NEMO. You can contact {{ user }} directly by replying to this email.
-			</p>
+                    <p>
+                        You are receiving this message because {{ user }} reported a problem via NEMO. You can contact {{ user }} directly by replying to this email.
+                    </p>
 
-			{% if task.force_shutdown %}
-				<p>
-					The tool will remain shutdown until the problem is resolved.
-				</p>
-			{% endif %}
+                    {% if task.force_shutdown %}
+                        <p>
+                            The tool will remain shutdown until the problem is resolved.
+                        </p>
+                    {% endif %}
 
-			<p>
-				You can view and update this problem's status by visiting the <a href="{{ tool_control_absolute_url }}">{{ tool|lower }} tool control page</a>.
-			</p>
+                    <p>
+                        You can view and update this problem's status by visiting the <a href="{{ tool_control_absolute_url }}">{{ tool|lower }} tool control page</a>.
+                    </p>
 
-			{% if task.problem_category %}
-				<b>Problem category: {{ task.problem_category }}</b>
-			{% endif %}
+                    {% if task.problem_category %}
+                        <b>Problem category: {{ task.problem_category }}</b>
+                    {% endif %}
 
-			{% if task.problem_description %}
-				<div style="border-left: 5px solid {{ template_color }}; padding-left: 7px; font-style: italic">{{ task.problem_description }}</div>
-			{% endif %}
-		</td>
-	</tr>
-</table>
-<!--[if mso]></td></tr></table><![endif]-->
-</body>
+                    {% if task.problem_description %}
+                        <div style="border-left: 5px solid {{ template_color }}; padding-left: 7px; font-style: italic">{{ task.problem_description }}</div>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+    </body>
 </html>

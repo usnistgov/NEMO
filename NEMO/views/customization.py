@@ -55,46 +55,58 @@ customizable_key_values = {
 	'calendar_all_areas': '',
 	'calendar_all_areastools': '',
 	'calendar_outage_recurrence_limit': '90',
-	'buddy_board_disclaimer': '',
 	'project_selection_template': '{{ project.name }}',
 	'allow_bypass_interlock_on_failure': '',
 	'tool_interlock_failure_message': 'Communication with the interlock failed',
 	'door_interlock_failure_message': 'Communication with the interlock failed',
+	'buddy_requests_title': 'Buddy requests board',
+	'buddy_board_description': '',
+	'access_requests_title': 'Access requests',
+	'access_requests_description': '',
+	'access_requests_minimum_users': '2',
+	'access_requests_display_max': '',
+	'weekend_access_notification_emails': '',
+	'weekend_access_notification_cutoff_hour': '',
+	'weekend_access_notification_cutoff_day': '',
+	'weekend_access_notification_last_sent': '',
 }
 
 customizable_content = [
-	('login_banner', '.html'),
-	('safety_introduction', '.html'),
-	('facility_rules_tutorial', '.html'),
+	('access_request_notification_email', '.html'),
 	('authorization_failed', '.html'),
 	('cancellation_email', '.html'),
+	('counter_threshold_reached_email', '.html'),
+	('facility_rules_tutorial', '.html'),
+	('facility_rules_tutorial_email', '.html'),
 	('feedback_email', '.html'),
 	('generic_email', '.html'),
+	('login_banner', '.html'),
 	('missed_reservation_email', '.html'),
-	('out_of_time_reservation_email', '.html'),
-	('facility_rules_tutorial_email', '.html'),
 	('new_task_email', '.html'),
+	('out_of_time_reservation_email', '.html'),
+	('reorder_supplies_reminder_email', '.html'),
+	('reservation_cancelled_user_email', '.html'),
+	('reservation_created_user_email', '.html'),
 	('reservation_ending_reminder_email', '.html'),
 	('reservation_reminder_email', '.html'),
 	('reservation_warning_email', '.html'),
+	('safety_introduction', '.html'),
 	('safety_issue_email', '.html'),
 	('staff_charge_reminder_email', '.html'),
 	('task_status_notification', '.html'),
 	('unauthorized_tool_access_email', '.html'),
 	('usage_reminder_email', '.html'),
-	('reservation_cancelled_user_email', '.html'),
-	('reservation_created_user_email', '.html'),
-	('reorder_supplies_reminder_email', '.html'),
-	('counter_threshold_reached_email', '.html'),
+	('weekend_access_email', '.html'),
+	('weekend_no_access_email', '.html'),
 	('rates', '.json'),
 	('jumbotron_watermark', '.png'),
 ]
 
 
 def get_customization(name, raise_exception=True):
-	default_value = customizable_key_values[name]
 	if name not in customizable_key_values.keys():
 		raise InvalidCustomizationException(name)
+	default_value = customizable_key_values[name]
 	try:
 		return Customization.objects.get(name=name).value
 	except Customization.DoesNotExist:
@@ -155,7 +167,6 @@ def customize(request, element):
 		set_customization('facility_name', request.POST.get('facility_name', ''))
 		set_customization('site_title', request.POST.get('site_title', ''))
 		set_customization('project_selection_template', request.POST.get('project_selection_template', ''))
-		set_customization('buddy_board_disclaimer', request.POST.get('buddy_board_disclaimer', ''))
 		init_admin_site()
 	elif element == 'interlock_settings':
 		set_customization('allow_bypass_interlock_on_failure', request.POST.get('allow_bypass_interlock_on_failure', ''))
@@ -174,6 +185,16 @@ def customize(request, element):
 		set_customization('calendar_all_areas', request.POST.get('calendar_all_areas', ''))
 		set_customization('calendar_all_areastools', request.POST.get('calendar_all_areastools', ''))
 		set_customization('calendar_outage_recurrence_limit', request.POST.get('calendar_outage_recurrence_limit', '90'))
+	elif element == 'requests_settings':
+		set_customization('buddy_requests_title', request.POST.get('buddy_requests_title', ''))
+		set_customization('buddy_board_description', request.POST.get('buddy_board_description', ''))
+		set_customization('access_requests_title', request.POST.get('access_requests_title', ''))
+		set_customization('access_requests_description', request.POST.get('access_requests_description', ''))
+		set_customization('access_requests_minimum_users', request.POST.get('access_requests_minimum_users', ''))
+		set_customization('access_requests_display_max', request.POST.get('access_requests_display_max', ''))
+		set_customization('weekend_access_notification_emails', request.POST.get('weekend_access_notification_emails', ''))
+		set_customization('weekend_access_notification_cutoff_hour', request.POST.get('weekend_access_notification_cutoff_hour', ''))
+		set_customization('weekend_access_notification_cutoff_day', request.POST.get('weekend_access_notification_cutoff_day', ''))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
 	return redirect('customization')

@@ -7,8 +7,8 @@
 	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
 {% endblock %}
 {% block content %}
-	<form class="form-horizontal" action="{% if form.instance.id %}{% url 'edit_buddy_request' form.instance.id %}{% else %}{% url 'create_buddy_request' %}{% endif %}" method="post">
-		<h1 class="form-group">{% if form.instance.id %}Modify buddy request{% else %}New buddy request{% endif %}</h1>
+    <h1 class="form-group">{% if form.instance.id %}Modify buddy request{% else %}New buddy request{% endif %}</h1>
+	<form class="well" action="{% if form.instance.id %}{% url 'edit_buddy_request' form.instance.id %}{% else %}{% url 'create_buddy_request' %}{% endif %}" method="post">
 		{% if form.non_field_errors %}
 			<div class="alert alert-danger">
 				{{ form.non_field_errors }}
@@ -20,11 +20,11 @@
 			<div class="row">
 				<div class="col-sm-2">
 					<label for="start">Start date</label>{% if form.start.errors %} - <span style="color:red">{{ form.start.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control text-center" name="start" id="start" value="{% if form.start.value %}{{ form.start.value }}{% endif %}">
+					<input type="text" class="form-control text-center" name="start" id="start" value="{{ form.start.value|to_date:'m/d/Y' }}" required>
 				</div>
 				<div class="col-sm-2">
 					<label for="end">End date</label>{% if form.end.errors %} - <span style="color:red">{{ form.end.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control text-center" name="end" id="end" value="{% if form.end.value %}{{ form.end.value }}{% endif %}">
+					<input type="text" class="form-control text-center" name="end" id="end" value="{{ form.end.value|to_date:'m/d/Y' }}" required>
 				</div>
 			</div>
 		</div>
@@ -35,10 +35,10 @@
 		</div>
 		<div class="form-group">
 			<label for="description">Description</label>{% if form.description.errors %} - <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
-			<textarea class="form-control" rows="3" name="description" id="description" maxlength="{{ form.fields.description.max_length }}" placeholder="Describe your request">{{ form.description.value|default_if_none:"" }}</textarea>
+			<textarea class="form-control" rows="3" name="description" id="description" maxlength="{{ form.fields.description.max_length }}" placeholder="Describe your request" required>{{ form.description.value|default_if_none:"" }}</textarea>
 		</div>
-		<div class="form-group">
-			<input type="submit" class="btn btn-success pull-right" onclick="submit_and_disable(this)" value="{% if form.instance.id %}Save changes{% else %}Create buddy request{% endif %}">
+		<div class="text-right">
+			<input type="submit" class="btn btn-success" onclick="submit_and_disable(this)" value="{% if form.instance.id %}Save changes{% else %}Create buddy request{% endif %}">
 		</div>
 	</form>
 	<script>

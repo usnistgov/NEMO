@@ -1,7 +1,9 @@
+import datetime
 from datetime import timedelta
 
 from django import template
 from django.template import Context, Template
+from django.template.defaultfilters import date, time
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.html import escape, format_html
@@ -29,11 +31,24 @@ def to_int(value):
 	return int(value)
 
 
+@register.filter()
+def to_date(value, arg=None):
+	if value in (None, ''):
+		return ''
+	if isinstance(value, (datetime.datetime, datetime.date)):
+		return date(value, arg)
+	if isinstance(value, datetime.time):
+		return time(value, arg)
+	return value
+
+
 @register.filter
-def json_search_base(items_to_search):
+def json_search_base(items_to_search, display = "__str__"):
 	result = "["
 	for item in items_to_search:
-		result += '{{"name":"{0}", "id":{1}}},'.format(escape(str(item)), item.id)
+		attr = getattr(item, display, None)
+		display_value = attr() if callable(attr) else attr
+		result += '{{"name":"{0}", "id":{1}}},'.format(escape(display_value), item.id)
 	result = result.rstrip(",") + "]"
 	return mark_safe(result)
 

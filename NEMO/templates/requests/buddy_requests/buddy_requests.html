@@ -1,0 +1,94 @@
+<div style="margin: 15px 0">
+    <div style="display: table-cell; width: 100%">
+        {% if buddy_board_description %}
+            <div class="well" style="display: table">
+                <span class="requests-description-info glyphicon glyphicon-info-sign primary-highlight"></span>
+                <div class="requests-description">{{ buddy_board_description|linebreaksbr }}</div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="align-right" style="display: table-cell; vertical-align: top"><a class="btn btn-success" href="{% url 'create_buddy_request' %}">New request</a></div>
+</div>
+{% if buddy_requests %}
+    <div class="table-responsive buddy-system-requests">
+        {% regroup buddy_requests by start as requests_by_date %}
+        {% for date in requests_by_date %}
+            <h3>{{ date.grouper|date }}</h3>
+            <ul class="buddy-list-day">
+                {% for br in date.list %}
+                    <li>
+                        <ul class="buddy-list list-unstyled">
+                            {% if br.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
+                            {{ br.user.get_name }} needs a buddy {% if not br.start|date == br.end|date %}between {{ br.start|date }} and {{ br.end|date }}{% endif %} in the {{ br.area.name }}
+                            <li class="buddy-list-item">
+                                <div class="buddy-list-item list-group-item-info">
+                                    <div class="buddy-list-item-description">
+                                        {{ br.description|linebreaksbr }}
+                                    </div>
+                                    {% if br.user == request.user and br.replies.count == 0 %}
+                                        <div class="buddy-list-item-buttons">
+                                            <a href="{% url 'edit_buddy_request' br.id %}" class="btn btn-default btn-sm" style="margin-right: 5px">Edit</a>
+                                            <a href="{% url 'delete_buddy_request' br.id %}" class="btn btn-danger btn-sm">Delete</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </li>
+                            {% for message in br.replies.all %}
+                                <li class="buddy-list-item" id="{{ message.id }}">
+                                    {% if message.id in reply_notifications %}<span class="label label-success">New reply</span>{% endif %}
+                                    <div class="list-group-item buddy-list-item-message">
+                                        {{ message.content|linebreaksbr }}
+                                        <div class="buddy-list-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                            <li class="buddy-list-item" style="display: none">
+                                <div class="buddy-list-item-reply list-group-item-text">
+                                    <form id="buddy_request_reply_{{ br.id }}" action="{% url 'buddy_request_reply' br.id %}" method="post">
+                                        {% csrf_token %}
+                                        <textarea required name="reply_content" style="width: 100%"></textarea>
+                                    </form>
+                                </div>
+                            </li>
+                            <li class="buddy-list-item-reply-buttons list-group-item-text text-right">
+                                <span data-toggle="tooltip" title="{{ br.user_reply_error|default_if_none:'' }}">
+                                    {% if br.user_reply_error %}
+                                            <button class="btn btn-info btn-sm disabled">Reply</button>
+                                    {% else %}
+                                        <button class="btn btn-info btn-sm" onclick="show_or_send_reply(this, 'buddy_request_reply_{{ br.id }}')">Reply</button>
+                                    {% endif %}
+                                </span>
+                            </li>
+                        </ul>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="italic" style="margin-top: 20px">There are no current active buddy requests</div>
+{% endif %}
+<script>
+    function show_or_send_reply(button_element, form_selector)
+    {
+        let form_element = $('#'+form_selector)
+        if (form_element.is(":visible"))
+        {
+            form_element.submit();
+        }
+        else
+        {
+            form_element.parents('li').fadeIn('50');
+            form_element.children('textarea').focus();
+            $(button_element).html("Send");
+        }
+    }
+    $(function ()
+    {
+        {# Scroll to msg id if available #}
+        let msg_id = window.location.hash.substr(1);
+        if (msg_id) document.getElementById(msg_id).scrollIntoView();
+
+        $('[data-toggle="tooltip"]').tooltip();
+    })
+</script>

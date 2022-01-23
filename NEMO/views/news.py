@@ -8,34 +8,34 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import staff_member_required
 from NEMO.models import News
 from NEMO.utilities import format_datetime
-from NEMO.views.notifications import create_news_notification, delete_news_notification, get_notifications
+from NEMO.views.notifications import create_news_notification, delete_notification, get_notifications
 
 
 @login_required
 @require_GET
 def view_recent_news(request):
 	dictionary = {
-		'news': News.objects.filter(archived=False).order_by('-pinned', '-last_updated'),
-		'notifications': get_notifications(request.user, News),
+		"news": News.objects.filter(archived=False).order_by("-pinned", "-last_updated"),
+		"notifications": get_notifications(request.user, News),
 	}
-	return render(request, 'news/recent_news.html', dictionary)
+	return render(request, "news/recent_news.html", dictionary)
 
 
 @login_required
 @require_GET
 def view_archived_news(request, page=1):
 	page = int(page)
-	news = News.objects.filter(archived=True).order_by('-created')
+	news = News.objects.filter(archived=True).order_by("-created")
 	paginator = Paginator(news, 20)
 	if page < 1 or page > paginator.num_pages:
-		return redirect(reverse('view_archived_news'))
+		return redirect(reverse("view_archived_news"))
 	news = paginator.page(page)
 	dictionary = {
-		'news': news,
-		'previous_page_number': news.previous_page_number() if news.has_previous() else None,
-		'next_page_number': news.next_page_number() if news.has_next() else None,
+		"news": news,
+		"previous_page_number": news.previous_page_number() if news.has_previous() else None,
+		"next_page_number": news.next_page_number() if news.has_next() else None,
 	}
-	return render(request, 'news/archived_news.html', dictionary)
+	return render(request, "news/archived_news.html", dictionary)
 
 
 @staff_member_required
@@ -45,16 +45,16 @@ def archive_story(request, story_id):
 		story = News.objects.get(id=story_id)
 		story.archived = True
 		story.save()
-		delete_news_notification(story)
+		delete_notification(News, story.id)
 	except News.DoesNotExist:
 		pass
-	return redirect(reverse('view_recent_news'))
+	return redirect(reverse("view_recent_news"))
 
 
 @staff_member_required
 @require_GET
 def new_news_form(request):
-	return render(request, 'news/new_news_form.html')
+	return render(request, "news/new_news_form.html")
 
 
 @staff_member_required
@@ -62,10 +62,10 @@ def new_news_form(request):
 def news_update_form(request, story_id):
 	dictionary = {}
 	try:
-		dictionary['story'] = News.objects.get(id=story_id)
+		dictionary["story"] = News.objects.get(id=story_id)
 	except News.DoesNotExist:
-		return redirect(reverse('view_recent_news'))
-	return render(request, 'news/news_update_form.html', dictionary)
+		return redirect(reverse("view_recent_news"))
+	return render(request, "news/news_update_form.html", dictionary)
 
 
 @staff_member_required
@@ -77,9 +77,12 @@ def publish(request, story_id=None):
 	if story_id:
 		try:
 			story = News.objects.get(id=story_id)
-			update = request.POST.get('update')
+			update = request.POST.get("update")
 			if update:
-				update = f'\n\nUpdated on {format_datetime(now)} by {request.user.get_full_name()}:\n' + request.POST['update'].strip()
+				update = (
+						f"\n\nUpdated on {format_datetime(now)} by {request.user.get_full_name()}:\n"
+						+ request.POST["update"].strip()
+				)
 				story.all_content += update
 				story.last_updated = now
 				story.last_update_content = update.strip()
@@ -89,11 +92,14 @@ def publish(request, story_id=None):
 				notify = False
 			story.pinned = pinned
 		except News.DoesNotExist:
-			return redirect(reverse('view_recent_news'))
+			return redirect(reverse("view_recent_news"))
 	else:
 		story = News()
-		story.title = request.POST['title']
-		content = f'Originally published on {format_datetime(now)} by {request.user.get_full_name()}:\n' + request.POST['content'].strip()
+		story.title = request.POST["title"]
+		content = (
+				f"Originally published on {format_datetime(now)} by {request.user.get_full_name()}:\n"
+				+ request.POST["content"].strip()
+		)
 		story.original_content = content
 		story.created = now
 		story.all_content = content
@@ -104,4 +110,4 @@ def publish(request, story_id=None):
 	story.save()
 	if notify:
 		create_news_notification(story)
-	return redirect(reverse('view_recent_news'))
+	return redirect(reverse("view_recent_news"))

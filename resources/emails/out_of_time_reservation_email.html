@@ -1,33 +1,31 @@
 <html lang="en">
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-<!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
-<table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
-	<tr>
-		<td align="center" style="color: white; background: #d9534f; padding: 50px 0;" bgcolor="#d9534f">
-			<h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
-				OUT OF TIME IN THE {{ reservation.area }}
-			</h1>
-		</td>
-	</tr>
-	<tr>
-		<td style="padding: 10px;">
-			<h2>
-				{{ reservation.user.first_name }},
-			</h2>
-			<p>Your reservation of the {{ reservation.area }} in the facility ended at {{ reservation.end }}.</p>
-			<p>However, our records show that you are still logged in the {{ reservation.area }}.</p>
-			<p>If you simply forgot to log out, please contact a staff member</p>
-			<br>
-			<p>
-				Please remember that the facility is a shared resource, and overstaying a reservation may inhibit the productivity of other facility users.
-			</p>
-		</td>
-	</tr>
-</table>
-<!--[if mso]></td></tr></table><![endif]-->
-</body>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+            <tr>
+                <td align="center" style="color: white; background: #d9534f; padding: 50px 0;" bgcolor="#d9534f">
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
+                        OUT OF TIME IN THE {{ reservation.area }}
+                    </h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">
+                    <p>Dear {{ reservation.user.first_name }},</p>
+                    <p>Your reservation of the {{ reservation.area }} in the facility ended at {{ reservation.end }}.</p>
+                    <p>However, our records show that you are still logged in the {{ reservation.area }}.</p>
+                    <p>If you simply forgot to log out, please contact a staff member</p>
+                    <br>
+                    <p>
+                        Please remember that the facility is a shared resource, and overstaying a reservation may inhibit the productivity of other facility users.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+    </body>
 </html>
