@@ -276,7 +276,7 @@ def set_task_status(request, task, status_name, user):
 		subject = f'{task.tool} task notification'
 		message = Template(message).render(Context(dictionary))
 		recipients = [
-			task.tool.primary_tool_owner.email if status.notify_primary_tool_owner else None,
+			task.tool.primary_owner.email if status.notify_primary_tool_owner else None,
 			task.tool.notification_email_address if status.notify_tool_notification_email else None,
 			status.custom_notification_email_address
 		]
