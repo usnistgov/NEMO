@@ -101,6 +101,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='staffcharge',
             name='note',
-            field=models.CharField(blank=True, max_length=255, null=True),
+            field=models.TextField(blank=True, null=True),
         ),
     ]
