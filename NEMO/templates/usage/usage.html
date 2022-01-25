@@ -44,7 +44,7 @@
 				{% for s in staff_charges %}
 					<div class="alert alert-info">
 						<span style="font-weight:bold">Work performed by {{ s.staff_member }} {% if project_autocomplete or selected_project %}on behalf of {{ s.customer }}{% else %}on your behalf{% endif %}</span><br>
-						{% if s.note %}Charge note: {{ s.note }}<br>{% endif %}
+						{% if s.note %}Charge note: {{ s.note|linebreaksbr }}<br>{% endif %}
 						{{ s.start }}<br>
 						{{ s.end }}<br>
 						Charged to project {{ s.project }}

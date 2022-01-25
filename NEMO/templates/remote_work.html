@@ -100,7 +100,7 @@
             {% if c.note %}
                 <tr class="staff_charge_row_{{ c.id }} {% if c.validated %}success-highlight{% endif %}">
                     <td style="border: none; padding-top: 0"></td>
-                    <td colspan="5" style="border:none; padding-top: 0">Charge note: {{ c.note }}</td>
+                    <td colspan="5" style="border:none; padding-top: 0">Charge note: {{ c.note|linebreaksbr }}<br></td>
                 </tr>
             {% endif %}
 			{% for area_access_record in c.areaaccessrecord_set.all %}

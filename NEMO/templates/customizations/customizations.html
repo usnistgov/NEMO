@@ -207,7 +207,7 @@
                     <div class="form-group">
 						<label class="control-label col-md-2" for="project_selection_template">Project selection template</label>
 						<div class="col-md-5">
-                            <textarea id="project_selection_template" name="project_selection_template" class="form-control">{{ project_selection_template }}</textarea>
+                            <textarea oninput="auto_size_textarea(this);" id="project_selection_template" name="project_selection_template" class="form-control">{{ project_selection_template }}</textarea>
 						</div>
 						<div class="col-md-5 form-control-static light-grey">
 							The django template used for rendering project selection when enabling tools and making reservations. The context variable <b>project</b> is provided.
@@ -230,7 +230,7 @@
                     <div class="form-group">
 						<label class="control-label col-md-2" for="tool_interlock_failure_message">Tool interlock failure message</label>
 						<div class="col-md-5">
-							<textarea id="tool_interlock_failure_message" name="tool_interlock_failure_message" class="form-control">{{ tool_interlock_failure_message }}</textarea>
+							<textarea oninput="auto_size_textarea(this);" id="tool_interlock_failure_message" name="tool_interlock_failure_message" class="form-control">{{ tool_interlock_failure_message }}</textarea>
 						</div>
 						<div class="col-md-5 form-control-static light-grey">
 							The message to display when a tool interlock command fails.
@@ -239,7 +239,7 @@
                     <div class="form-group">
 						<label class="control-label col-md-2" for="door_interlock_failure_message">Door interlock failure message</label>
 						<div class="col-md-5">
-							<textarea id="door_interlock_failure_message" name="door_interlock_failure_message" class="form-control">{{ door_interlock_failure_message }}</textarea>
+							<textarea oninput="auto_size_textarea(this);" id="door_interlock_failure_message" name="door_interlock_failure_message" class="form-control">{{ door_interlock_failure_message }}</textarea>
 						</div>
 						<div class="col-md-5 form-control-static light-grey">
 							The message to display when a door interlock command fails.
@@ -278,7 +278,7 @@
                     <div class="form-group">
 						<label class="control-label col-md-2" for="buddy_board_description">Buddy board description</label>
 						<div class="col-md-5">
-							<textarea id="buddy_board_description" name="buddy_board_description" class="form-control">{{ buddy_board_description }}</textarea>
+							<textarea oninput="auto_size_textarea();" id="buddy_board_description" name="buddy_board_description" class="form-control">{{ buddy_board_description }}</textarea>
 						</div>
 						<div class="col-md-5 form-control-static light-grey">
 							The description/instructions to display on the buddy board page.
@@ -296,7 +296,7 @@
                     <div class="form-group">
 						<label class="control-label col-md-2" for="access_requests_description">Access requests description</label>
 						<div class="col-md-5">
-							<textarea id="access_requests_description" name="access_requests_description" class="form-control">{{ access_requests_description }}</textarea>
+							<textarea oninput="auto_size_textarea();" id="access_requests_description" name="access_requests_description" class="form-control">{{ access_requests_description }}</textarea>
 						</div>
 						<div class="col-md-5 form-control-static light-grey">
 							The description/instructions to display on the access requests page.
@@ -779,6 +779,11 @@
 	</div>
 
 	<script type="application/javascript">
+        auto_size_textarea(document.getElementById('project_selection_template'));
+        auto_size_textarea(document.getElementById('tool_interlock_failure_message'));
+        auto_size_textarea(document.getElementById('door_interlock_failure_message'));
+        auto_size_textarea(document.getElementById('buddy_board_description'));
+        auto_size_textarea(document.getElementById('access_requests_description'));
 		function check_delete_file_before_submit(name) {
 			let has_file = $('input[name='+name+']')[0].files.length !== 0;
 			if (!has_file) {

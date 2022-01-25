@@ -476,3 +476,10 @@ function submit_and_disable(input_submit)
 		input_submit.disabled = true;
 	}
 }
+
+function auto_size_textarea(textarea)
+{
+	textarea.rows = 1;
+	textarea.style.height = '';
+	textarea.style.height = textarea.scrollHeight + 3 + 'px';
+}

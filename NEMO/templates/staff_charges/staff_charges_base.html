@@ -5,13 +5,15 @@
 	<h1>Staff charges</h1>
 	{% if staff_charge %}
 		<p>You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.</p>
-        <p>
-            <label for="staff_charge_note">Charge note: </label>
-            <span class="input-group" style="display: inline-block">
-                <input maxlength="255" class="form-control input-sm" style="margin-left: 5px;display: inline-block; width: 250px" id="staff_charge_note" value="{{ staff_charge.note|default_if_none:"" }}">
-                <span class="input-group-btn" style="display: inline-block;"><button class="btn btn-sm btn-success" onclick="ajax_post('{% url "edit_staff_charge_note" %}', {'staff_charge_note': $('#staff_charge_note').val()}, undefined, undefined, function(){location.reload()})">{% if staff_charge.note %}Update{% else %}Save{% endif %}</button></span>
-            </span>
-        </p>
+        <div style="display: table-row">
+            <label for="staff_charge_note" style="vertical-align: top;display: table-cell">Charge note: </label>
+            <div style="display: table-cell; padding: 0 10px; width: 75%">
+                <textarea oninput="auto_size_textarea(this)" class="form-control" id="staff_charge_note">{{ staff_charge.note|default_if_none:"" }}</textarea>
+            </div>
+            <div style="display: table-cell; vertical-align: bottom;">
+                <button class="btn btn-sm btn-success" onclick="ajax_post('{% url "edit_staff_charge_note" %}', {'staff_charge_note': $('#staff_charge_note').val()}, undefined, undefined, function(){location.reload()})">{% if staff_charge.note %}Update{% else %}Save{% endif %}</button>
+            </div>
+        </div>
 		<p><br>Here is a summary of the current charges:</p>
 
 		<table class="table">
@@ -36,4 +38,8 @@
 
 	{% block staff_charges_content %}
 	{% endblock %}
+
+    <script>
+        auto_size_textarea(document.getElementById('staff_charge_note'));
+    </script>
 {% endblock %}
