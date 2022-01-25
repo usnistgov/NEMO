@@ -98,4 +98,9 @@ class Migration(migrations.Migration):
                 'ordering': ['-creation_time'],
             },
         ),
+        migrations.AddField(
+            model_name='staffcharge',
+            name='note',
+            field=models.CharField(blank=True, max_length=255, null=True),
+        ),
     ]
