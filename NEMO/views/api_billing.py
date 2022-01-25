@@ -254,6 +254,7 @@ def billable_items_staff_charges(staff_charges: QuerySet) -> List[BillableItem]:
 	staff_charge: StaffCharge
 	for staff_charge in staff_charges:
 		item = BillableItem("staff_charge", staff_charge.project, staff_charge.customer)
+		item.details = staff_charge.note
 		item.name = f"Work performed by {staff_charge.staff_member}"
 		item.start = staff_charge.start
 		item.end = staff_charge.end
