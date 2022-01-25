@@ -88,22 +88,27 @@
 		</thead>
 		<tbody>
 		{% for c in staff_charges %}
-			<tr {% if c.validated %}class="success-highlight"{% endif %} id="staff_charge_row_{{ forloop.counter }}">
+			<tr class="staff_charge_row_{{ c.id }} {% if c.validated %}success-highlight{% endif %}">
 				<td>{{ c.id }}</td>
 				<td>{{ c.staff_member }}</td>
 				<td>{{ c.customer }}</td>
 				<td>{{ c.project }}</td>
 				<td>{{ c.start }}</td>
 				<td>{{ c.end|default_if_none:'' }}</td>
-				<td>{% if not c.validated %}<button class="btn btn-success" onclick="validate_charge('{% url 'validate_staff_charge' c.id %}', this, '#staff_charge_row_{{ forloop.counter }}')">Validate</button>{% endif %}</td>
+				<td {% if c.note and c.areaaccessrecord_set.exists %}rowspan="3" {% elif c.note or c.areaaccessrecord_set.exists %}rowspan="2"{% endif %} style="vertical-align: middle">{% if not c.validated %}<button class="btn btn-success" onclick="validate_charge('{% url 'validate_staff_charge' c.id %}', this, '.staff_charge_row_{{ c.id }}')">Validate</button>{% endif %}</td>
 			</tr>
+            {% if c.note %}
+                <tr class="staff_charge_row_{{ c.id }} {% if c.validated %}success-highlight{% endif %}">
+                    <td style="border: none; padding-top: 0"></td>
+                    <td colspan="5" style="border:none; padding-top: 0">Charge note: {{ c.note }}</td>
+                </tr>
+            {% endif %}
 			{% for area_access_record in c.areaaccessrecord_set.all %}
-				<tr style="font-size: smaller">
+				<tr class="staff_charge_row_{{ c.id }} {% if c.validated %}success-highlight{% endif %}" style="font-size: smaller">
 					<td style="border-top: none"></td>
 					<td colspan="3" style="border-top-style: dotted">{{ area_access_record.area.name }} access</td>
 					<td style="border-top-style: dotted">{{ area_access_record.start }}</td>
 					<td style="border-top-style: dotted">{{ area_access_record.end|default_if_none:'' }}</td>
-					<td style="border-top: none"></td>
 				</tr>
 			{%  endfor %}
 		{% endfor %}

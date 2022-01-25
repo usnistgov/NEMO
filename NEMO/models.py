@@ -1132,6 +1132,7 @@ class StaffCharge(CalendarDisplay):
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
 	start = models.DateTimeField(default=timezone.now)
 	end = models.DateTimeField(null=True, blank=True)
+	note = models.CharField(null=True, blank=True, max_length=255)
 	validated = models.BooleanField(default=False)
 
 	class Meta:

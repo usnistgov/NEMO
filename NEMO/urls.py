@@ -188,6 +188,7 @@ urlpatterns += [
 	url(r'^end_staff_charge/$', staff_charges.end_staff_charge, name='end_staff_charge'),
 	url(r'^begin_staff_area_charge/$', staff_charges.begin_staff_area_charge, name='begin_staff_area_charge'),
 	url(r'^end_staff_area_charge/$', staff_charges.end_staff_area_charge, name='end_staff_area_charge'),
+	url(r'^edit_staff_charge_note/$', staff_charges.edit_staff_charge_note, name='edit_staff_charge_note'),
 
 	# Status dashboard:
 	url(r'^status_dashboard/$', status_dashboard.status_dashboard, name='status_dashboard'),
