@@ -266,7 +266,7 @@ def send_weekend_email_access(access, user_office_email, email_to, contents, beg
 	sun = format_datetime(beginning_of_the_week + timedelta(days=6), "SHORT_DATE_FORMAT", as_current_timezone=False)
 
 	subject = f"{facility_name} -{' NO' if not access else ''} weekend access ({sat}-{sun})"
-	message = Template(contents).render(Context({"weekend_access": not access}))
+	message = Template(contents).render(Context({"weekend_access": access}))
 	send_mail(
 		subject=subject,
 		content=message,
