@@ -164,6 +164,7 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 		ccs = tuple(
 			[e for e in [*access_request.other_users.values_list("email", flat=True), *facility_manager_emails] if e]
 		)
+		ccs += (user_office_email,)
 		status = (
 			"approved"
 			if access_request.status == TemporaryPhysicalAccessRequest.Status.APPROVED
@@ -260,17 +261,20 @@ def process_weekend_access_notification(user_office_email, email_to, access_cont
 def send_weekend_email_access(access, user_office_email, email_to, contents, beginning_of_the_week):
 	facility_name = get_customization("facility_name")
 	manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list("email", flat=True)
-	recipients = tuple([e for e in [*email_to.split(","), *manager_emails] if e])
+	recipients = tuple([e for e in email_to.split(",") if e])
+	ccs = tuple([e for e in manager_emails if e])
+	ccs += (user_office_email,)
 
 	sat = format_datetime(beginning_of_the_week + timedelta(days=5), "SHORT_DATE_FORMAT", as_current_timezone=False)
 	sun = format_datetime(beginning_of_the_week + timedelta(days=6), "SHORT_DATE_FORMAT", as_current_timezone=False)
 
-	subject = f"{facility_name} -{' NO' if not access else ''} weekend access ({sat}-{sun})"
+	subject = f"{'NO w' if not access else 'W'}eekend access for the {facility_name} {sat} - {sun}"
 	message = Template(contents).render(Context({"weekend_access": access}))
 	send_mail(
 		subject=subject,
 		content=message,
 		from_email=user_office_email,
 		to=recipients,
+		cc=ccs,
 		email_category=EmailCategory.ACCESS_REQUESTS,
 	)
