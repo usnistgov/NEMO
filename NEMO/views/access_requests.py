@@ -108,8 +108,11 @@ def create_access_request(request, request_id=None):
 			new_access_request = form.save()
 			create_access_request_notification(new_access_request)
 			if edit:
-				# remove notification for current user
+				# remove notification for current user and other facility managers
 				delete_notification(TemporaryPhysicalAccessRequest, new_access_request.id, [user])
+				if user.is_facility_manager:
+					managers = User.objects.filter(is_active=True, is_facility_manager=True)
+					delete_notification(TemporaryPhysicalAccessRequest, new_access_request.id, managers)
 			send_request_received_email(request, new_access_request, edit)
 			return redirect("user_requests", "access")
 		else:

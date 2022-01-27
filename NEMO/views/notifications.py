@@ -87,12 +87,14 @@ def create_access_request_notification(access_request: TemporaryPhysicalAccessRe
 
 	reviewers: List[User] = User.objects.filter(is_active=True, is_facility_manager=True)
 
-	users_and_reviewers: Set[User] = set(access_request.other_users.all())
-	users_and_reviewers.update(reviewers)
-	for user in users_and_reviewers:
+	users_to_notify: Set[User] = set(access_request.other_users.all())
+	users_to_notify.update(reviewers)
+	if access_request.last_updated_by and access_request.last_updated_by != access_request.creator:
+		users_to_notify.add(access_request.creator)
+	for user in users_to_notify:
 		Notification.objects.update_or_create(
 			user=user,
-			expiration=expiration,
 			content_type=ContentType.objects.get_for_model(access_request),
 			object_id=access_request.id,
+			defaults={"expiration": expiration}
 		)

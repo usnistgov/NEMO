@@ -1191,6 +1191,7 @@ class NewsAdmin(admin.ModelAdmin):
 @register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
 	list_display = ("id", "user", "expiration", "content_type", "object_id")
+	list_filter = (("content_type", admin.RelatedOnlyFieldListFilter),)
 
 
 @register(BadgeReader)
