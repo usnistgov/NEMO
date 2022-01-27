@@ -37,7 +37,7 @@ def access_requests(request):
 	physical_access_requests = TemporaryPhysicalAccessRequest.objects.filter(deleted=False)
 	physical_access_requests = physical_access_requests.order_by("-end_time")
 	if not user.is_facility_manager and not user.is_staff:
-		physical_access_requests = physical_access_requests.filter(Q(creator=user) | Q(other_users__in=[user]))
+		physical_access_requests = physical_access_requests.filter(Q(creator=user) | Q(other_users__in=[user])).distinct()
 	dictionary = {
 		"pending_access_requests": physical_access_requests.filter(status=status.PENDING).order_by("start_time"),
 		"approved_access_requests": physical_access_requests.filter(status=status.APPROVED)[:max_requests],
