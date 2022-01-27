@@ -37,7 +37,9 @@ def access_requests(request):
 	physical_access_requests = TemporaryPhysicalAccessRequest.objects.filter(deleted=False)
 	physical_access_requests = physical_access_requests.order_by("-end_time")
 	if not user.is_facility_manager and not user.is_staff:
-		physical_access_requests = physical_access_requests.filter(Q(creator=user) | Q(other_users__in=[user])).distinct()
+		# For some reason doing an "or" filtering with manytomany field returns duplicates, and using distinct() returns nothing...
+		other_user_physical_access_requests = physical_access_requests.filter(other_users__in=[user]).distinct()
+		physical_access_requests = physical_access_requests.filter(Q(creator=user) | Q(id__in=other_user_physical_access_requests))
 	dictionary = {
 		"pending_access_requests": physical_access_requests.filter(status=status.PENDING).order_by("start_time"),
 		"approved_access_requests": physical_access_requests.filter(status=status.APPROVED)[:max_requests],
