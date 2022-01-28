@@ -8,7 +8,9 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'login'
 
 DATETIME_FORMAT = "l, F jS, Y @ g:i A"
-DATE_FORMAT = "m/d/Y"
+SHORT_DATETIME_FORMAT = "m/d/Y @ g:i A"
+DATE_FORMAT = "l, F jS, Y"
+SHORT_DATE_FORMAT = "m/d/Y"
 TIME_FORMAT = "g:i A"
 DATETIME_INPUT_FORMATS = ['%m/%d/%Y %I:%M %p']
 DATE_INPUT_FORMATS = ['%m/%d/%Y']

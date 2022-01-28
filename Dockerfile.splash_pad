@@ -15,7 +15,7 @@ COPY resources/images/* /nemo/media/
 COPY resources/emails/* /nemo/media/
 COPY resources/splash_pad_rates.json /nemo/media/rates.json
 COPY resources/splash_pad_settings.py /nemo/
-COPY NEMO/fixtures/splash_pad.json /nemo/
+COPY resources/fixtures/splash_pad.json /nemo/
 
 ENV DJANGO_SETTINGS_MODULE "splash_pad_settings"
 ENV PYTHONPATH "/nemo/"
