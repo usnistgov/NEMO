@@ -398,7 +398,7 @@ class BuddyRequestForm(ModelForm):
 		cleaned_data = super().clean()
 		start = cleaned_data.get("start")
 		end = cleaned_data.get("end")
-		if end <= start:
+		if end < start:
 			self.add_error("end", "The end must be later than the start")
 		return cleaned_data
 
