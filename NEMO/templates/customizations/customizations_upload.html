@@ -5,11 +5,7 @@
         <div class="form-group">
             <input type="file" name="{{ element_name }}" class="customization-input-file" onchange="this.style.color = 'inherit';$('#{{ element_name }}_span').hide()">
             {% if element %}
-                {% if extension == "html" %}
-                    <a id="{{ element_name }}_span" href="data:text/html,{{ element|urlencode }}" download="{{ element_name }}.html" target="_blank">{{ element_name }}.html</a>
-                {% else %}
-                    <span id="{{ element_name }}_span">{{ element_name }}.{{ extension }}</span>
-                {% endif %}
+                <a id="{{ element_name }}_span" href="{% get_media_prefix %}{{ element_name }}.{{ extension }}" download="{{ element_name }}.{{ extension }}" target="_blank">{{ element_name }}.{{ extension }}</a>
             {% endif %}
         </div>
         <div class="form-group">
