@@ -56,7 +56,12 @@ def create_safety_notification(safety_issue):
 	users = User.objects.filter(is_staff=True, is_active=True)
 	expiration = timezone.now() + timedelta(days=30)  # Unread safety issue notifications always expire after 30 days
 	for u in users:
-		Notification.objects.create(user=u, expiration=expiration, content_object=safety_issue)
+		Notification.objects.update_or_create(
+			user=u,
+			content_type=ContentType.objects.get_for_model(safety_issue),
+			object_id=safety_issue.id,
+			defaults={"expiration": expiration},
+		)
 
 
 def create_buddy_request_notification(buddy_request: BuddyRequest):
@@ -66,7 +71,12 @@ def create_buddy_request_notification(buddy_request: BuddyRequest):
 	expiration = end_of_the_day(datetime(request_end.year, request_end.month, request_end.day))
 	for u in users:
 		if u.get_preferences().display_new_buddy_request_notification:
-			Notification.objects.create(user=u, expiration=expiration, content_object=buddy_request)
+			Notification.objects.update_or_create(
+				user=u,
+				content_type=ContentType.objects.get_for_model(buddy_request),
+				object_id=buddy_request.id,
+				defaults={"expiration": expiration},
+			)
 
 
 def create_buddy_reply_notification(reply: BuddyRequestMessage):
@@ -78,7 +88,12 @@ def create_buddy_reply_notification(reply: BuddyRequestMessage):
 		if user != reply.author and (
 				user == creator or user.get_preferences().display_new_buddy_request_reply_notification
 		):
-			Notification.objects.create(user=user, expiration=expiration, content_object=reply)
+			Notification.objects.update_or_create(
+				user=user,
+				content_type=ContentType.objects.get_for_model(reply),
+				object_id=reply.id,
+				defaults={"expiration": expiration},
+			)
 
 
 def create_access_request_notification(access_request: TemporaryPhysicalAccessRequest):
@@ -96,5 +111,5 @@ def create_access_request_notification(access_request: TemporaryPhysicalAccessRe
 			user=user,
 			content_type=ContentType.objects.get_for_model(access_request),
 			object_id=access_request.id,
-			defaults={"expiration": expiration}
+			defaults={"expiration": expiration},
 		)
