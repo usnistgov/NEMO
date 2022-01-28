@@ -262,6 +262,7 @@ class StaffChargeViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"start": ["gte", "gt", "lte", "lt"],
 		"end": ["gte", "gt", "lte", "lt", "isnull"],
 		"validated": ["exact"],
+		"note": ["contains"],
 	}
 
 	def get_filename(self):
