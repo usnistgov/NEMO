@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 setup(
 	name='NEMO',
 	version='3.14.0.dev',
-	python_requires='>=3.6',
+	python_requires='>=3.7',
 	packages=find_packages(exclude=['NEMO.tests','NEMO.tests.*']),
 	include_package_data=True,
 	url='https://github.com/usnistgov/NEMO',
