@@ -2,7 +2,6 @@
     <thead>
         <tr>
             <th>Created</th>
-            {% if user.is_facility_manager %}<th class="text-center">Creator</th>{% endif %}
             <th class="text-center">Access</th>
             <th class="text-center">Requested start</th>
             <th class="text-center">Requested end</th>
@@ -22,13 +21,13 @@
         {% for a_request in access_request_list %}
             <tr>
                 <td style="vertical-align: middle">{% if a_request.id in access_request_notifications %}<span class="label label-success">New</span> {% endif %}{{ a_request.creation_time|date:'SHORT_DATETIME_FORMAT' }}</td>
-                {% if user.is_facility_manager %}<td class="text-center" style="vertical-align: middle">{{ a_request.creator }}</td>{% endif %}
                 <td class="text-center" style="vertical-align: middle">{{ a_request.physical_access_level.display_value_for_select }}</td>
                 <td class="text-center" style="vertical-align: middle">{{ a_request.start_time|date:'SHORT_DATETIME_FORMAT' }}</td>
                 <td class="text-center" style="vertical-align: middle">{{ a_request.end_time|date:'SHORT_DATETIME_FORMAT' }}</td>
                 <td style="vertical-align: middle">
                     <ul style="padding-inline-start: 25px; margin-bottom: 0">
-                        {% for other_user in a_request.creator_and_other_users %}
+                        <li><b>{{ a_request.creator }}</b></li>
+                        {% for other_user in a_request.other_users.all %}
                             <li>{{ other_user }}</li>
                         {% endfor %}
                     </ul>
