@@ -78,7 +78,7 @@
                     <input name="approve_request" type="button" class="btn btn-success" title="Approve request" value="Approve" onclick="if (confirm('Are you sure you want to approve this request?')) {submit_and_disable(this)}"/>
                     <input name="deny_request" type="button" class="btn btn-danger" title="Deny request" value="Deny" onclick="if (confirm('Are you sure you want to deny this request?')) {submit_and_disable(this)}"/>
                 {% else %}
-                    <input type="submit" class="btn btn-primary" onclick="submit_and_disable(this)" value="{% if form.instance.id %}Save changes{% else %}Create access request{% endif %}"/>
+                    <input type="submit" class="btn btn-success" onclick="submit_and_disable(this)" value="{% if form.instance.id %}Save changes{% else %}Create access request{% endif %}"/>
                 {% endif %}
             {% endif %}
 		</div>
