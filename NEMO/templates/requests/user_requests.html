@@ -3,7 +3,7 @@
 {% block content %}
     <div>
         <ul class="nav nav-pills nav-pills-spacer" id="tabs">
-            {% if access_user_request_allowed_exist %}
+            {% if access_user_request_allowed_exist and facility_managers_exist %}
                 <li class="{% if tab == 'access' %}active{% endif %}">
                     <a href="#access-requests" onclick="window.location = '{% url "user_requests" "access" %}'">{{ access_requests_title }}
                         {% if temporary_access_notification_count %}
@@ -24,7 +24,7 @@
         </ul>
     </div>
     <div class="tab-content">
-        {% if access_user_request_allowed_exist %}
+        {% if access_user_request_allowed_exist and facility_managers_exist %}
             <div class="tab-pane {% if tab == 'access' %}active{% endif %}" id="access-requests">
                 {# This will be loaded asynchronously #}
             </div>

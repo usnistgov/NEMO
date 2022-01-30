@@ -1,4 +1,4 @@
-from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool
+from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.views.customization import get_customization
 from NEMO.views.notifications import get_notification_counts
 
@@ -57,6 +57,10 @@ def base_context(request):
 		temporary_access_notification_count = notification_counts.get(Notification.Types.TEMPORARY_ACCESS_REQUEST, 0)
 	except:
 		temporary_access_notification_count = 0
+	try:
+		facility_managers_exist = User.objects.filter(is_active=True, is_facility_manager=True).exists()
+	except:
+		facility_managers_exist = False
 	return {
 		"facility_name": facility_name,
 		"site_title": site_title,
@@ -68,5 +72,6 @@ def base_context(request):
 		"notification_counts": notification_counts,
 		"buddy_notification_count": buddy_notification_count,
 		"temporary_access_notification_count": temporary_access_notification_count,
+		"facility_managers_exist": facility_managers_exist,
 		"no_header": request.session.get("no_header", False),
 	}

@@ -21,7 +21,7 @@
                         <li><a href="{% url 'status_dashboard_tab' 'tools' %}">Status dashboard</a></li>
                     {% endif %}
                 {% endif %}
-				{% if buddy_system_areas_exist or access_user_request_allowed_exist %}
+				{% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist %}
 					<li><a href="{% url 'user_requests' %}">
 						Requests
 						{% if buddy_notification_count or temporary_access_notification_count %}

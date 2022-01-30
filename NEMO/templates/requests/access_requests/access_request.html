@@ -87,6 +87,7 @@
         let timepicker_properties =
 		{
 			format: 'MM/DD/YYYY h:mm A',
+            showClose: true
 		};
 
         function add_other_user(jquery_event, search_selection, dataset_name)
@@ -126,7 +127,6 @@
 		    end_time_jq.datetimepicker(timepicker_properties);
             let end_date_picker = end_time_jq.data("DateTimePicker");
             start_time_jq.on("dp.change", function (e) { end_date_picker.minDate(e.date); });
-            end_time_jq.on("dp.change", function (e) { end_date_picker.hide(); });
 		}
 		window.addEventListener('load', on_load, true);
 	</script>
