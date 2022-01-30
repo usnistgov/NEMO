@@ -1,0 +1,20 @@
+{% extends popup_view|yesno:"base/popup.html,base.html" %}
+
+{% block title %}{{ event.area }} access details{% endblock %}
+{% block content %}
+    {% if not popup_view %}
+        <h1>{{ event.area }} access details</h1>
+    {% endif %}
+    {% if event.staff_charge %}
+        This {{ event.area }} charge was incurred by {{ event.staff_charge.staff_member }} while performing work on the customer's behalf.<p>
+    {% endif %}
+    Customer: {{ event.customer }}<br>
+    Project: {{ event.project.name }}<br>
+    Start: {{ event.start }}<br>
+    {% if event.end %}
+        End: {{ event.end }}<br>
+    {% else %}
+        {{ event.area }} time is currently being charged for this project.<br>
+    {% endif %}
+    Identifier: {{ event.id }}
+{% endblock %}

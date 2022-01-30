@@ -6,7 +6,7 @@ from enum import Enum
 from html import escape
 from json import loads
 from logging import getLogger
-from typing import Union, List
+from typing import List, Set, Union
 
 from django.conf import settings
 from django.contrib import auth
@@ -21,12 +21,20 @@ from django.dispatch import receiver
 from django.template import loader
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from NEMO import fields
-from NEMO.utilities import send_mail, get_task_image_filename, get_tool_image_filename, EmailCategory, \
-	get_tool_document_filename, bootstrap_primary_color
+from NEMO.utilities import (
+	EmailCategory,
+	bootstrap_primary_color,
+	format_datetime,
+	get_task_image_filename,
+	get_tool_document_filename,
+	get_tool_image_filename,
+	send_mail,
+)
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -123,6 +131,187 @@ class UserType(models.Model):
 		ordering = ['name']
 
 
+class PhysicalAccessLevel(models.Model):
+	class Schedule(object):
+		ALWAYS = 0
+		WEEKDAYS = 1
+		WEEKENDS = 2
+		Choices = (
+			(ALWAYS, "Anytime"),
+			(WEEKDAYS, "Weekdays"),
+			(WEEKENDS, "Weekends"),
+		)
+
+	name = models.CharField(max_length=100)
+	area = TreeForeignKey("Area", on_delete=models.CASCADE)
+	schedule = models.IntegerField(choices=Schedule.Choices)
+	weekdays_start_time = models.TimeField(default=datetime.time(hour=7), null=True, blank=True, help_text="The weekday access start time")
+	weekdays_end_time = models.TimeField(default=datetime.time(hour=0), null=True, blank=True, help_text="The weekday access end time")
+	allow_staff_access = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow access to Staff users without explicitly granting them access")
+	allow_user_request = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow users to request this access temporarily in \"Access requests\"")
+
+	def get_schedule_display_with_times(self):
+		if self.schedule == self.Schedule.ALWAYS or self.schedule == self.Schedule.WEEKENDS:
+			return self.get_schedule_display()
+		else:
+			return self.get_schedule_display() + f" from {format_datetime(self.weekdays_start_time, 'TIME_FORMAT', as_current_timezone=False)} to {format_datetime(self.weekdays_end_time, 'TIME_FORMAT', as_current_timezone=False)}"
+	get_schedule_display_with_times.short_description = 'Schedule'
+
+	def accessible_at(self, time):
+		return self.accessible(time)
+
+	def accessible(self, time: datetime = None):
+		if time is not None:
+			accessible_time = timezone.localtime(time)
+		else:
+			accessible_time = timezone.localtime(timezone.now())
+		# First deal with exceptions
+		if self.ongoing_exception(accessible_time):
+			return False
+		# Then look at the actual allowed schedule
+		saturday = 6
+		sunday = 7
+		if self.schedule == self.Schedule.ALWAYS:
+			return True
+		elif self.schedule == self.Schedule.WEEKDAYS:
+			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
+				return False
+			current_time = accessible_time.time()
+			if self.weekdays_start_time <= self.weekdays_end_time:
+				""" Range is something like 6am-6pm """
+				if self.weekdays_start_time <= current_time <= self.weekdays_end_time:
+					return True
+			else:
+				""" Range is something like 6pm-6am """
+				if self.weekdays_start_time <= current_time or current_time <= self.weekdays_end_time:
+					return True
+		elif self.schedule == self.Schedule.WEEKENDS:
+			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
+				return True
+		return False
+
+	def ongoing_exception(self, time: datetime = None):
+		if time is not None:
+			accessible_time = timezone.localtime(time)
+		else:
+			accessible_time = timezone.localtime(timezone.now())
+		return self.physicalaccessexception_set.filter(start_time__lte=accessible_time, end_time__gt=accessible_time).first()
+
+	def display_value_for_select(self):
+		return f"{str(self.area.name)} ({self.get_schedule_display_with_times()})"
+
+	def __str__(self):
+		return str(self.name)
+
+	class Meta:
+		ordering = ['name']
+
+
+class TemporaryPhysicalAccess(models.Model):
+	user = models.ForeignKey("User", on_delete=models.CASCADE)
+	physical_access_level = models.ForeignKey(PhysicalAccessLevel, on_delete=models.CASCADE)
+	start_time = models.DateTimeField(help_text="The start of the temporary access")
+	end_time = models.DateTimeField(help_text="The end of the temporary access")
+
+	def get_schedule_display_with_times(self):
+		start = date_format(self.start_time.astimezone(timezone.get_current_timezone()), 'SHORT_DATETIME_FORMAT')
+		end = date_format(self.end_time.astimezone(timezone.get_current_timezone()), 'SHORT_DATETIME_FORMAT')
+		return f"Temporary {self.physical_access_level.get_schedule_display_with_times()} from {start} to {end}"
+	get_schedule_display_with_times.short_description = 'Schedule'
+
+	def accessible_at(self, time):
+		return self.accessible(time)
+
+	def accessible(self, time: datetime = None):
+		if time is not None:
+			accessible_time = timezone.localtime(time)
+		else:
+			accessible_time = timezone.localtime(timezone.now())
+		return self.physical_access_level.accessible(accessible_time) and self.start_time <= accessible_time <= self.end_time
+
+	def ongoing_exception(self, time: datetime = None):
+		return self.physical_access_level.ongoing_exception(time)
+
+	def display(self):
+		return f"Temporary physical access of the '{self.physical_access_level.name}' for {self.user.get_full_name()} from {date_format(self.start_time, 'DATETIME_FORMAT')} to {date_format(self.end_time, 'DATETIME_FORMAT')}"
+
+	class Meta:
+		ordering = ['-end_time']
+
+
+class TemporaryPhysicalAccessRequest(models.Model):
+
+	class Status(object):
+		PENDING = 0
+		APPROVED = 1
+		DENIED = 2
+		EXPIRED = 3
+		Choices = (
+			(PENDING, "Pending"),
+			(APPROVED, "Approved"),
+			(DENIED, "Denied"),
+			(EXPIRED, "Expired"),
+		)
+
+	creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the request was created.")
+	creator = models.ForeignKey("User", related_name='access_requests_created', on_delete=models.CASCADE)
+	last_updated = models.DateTimeField(auto_now=True, help_text="The last time this request was modified.")
+	last_updated_by = models.ForeignKey("User", null=True, blank=True, related_name="access_requests_updated", help_text="The last user who modified this request.", on_delete=models.SET_NULL)
+	physical_access_level = models.ForeignKey(PhysicalAccessLevel, on_delete=models.CASCADE)
+	description = models.TextField(null=True, blank=True, help_text="The description of the request.")
+	start_time = models.DateTimeField(help_text="The requested time for the access to start.")
+	end_time = models.DateTimeField(help_text="The requested time for the access to end.")
+	other_users = models.ManyToManyField("User", blank=True, help_text="Select the other users requesting access.")
+	status = models.IntegerField(choices=Status.Choices, default=Status.PENDING)
+	reviewer = models.ForeignKey("User", null=True, blank=True, related_name='access_requests_reviewed', on_delete=models.CASCADE)
+	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
+
+	def creator_and_other_users(self) -> Set:
+		result = {self.creator}
+		result.update(self.other_users.all())
+		return result
+
+	def clean(self):
+		if self.end_time <= self.start_time:
+			raise ValidationError({"end_time": "The end time must be later than the start time"})
+
+	class Meta:
+		ordering = ['-creation_time']
+
+
+class PhysicalAccessException(models.Model):
+	name = models.CharField(max_length=100, help_text="The name of this exception that will be displayed as the policy problem")
+	start_time = models.DateTimeField(help_text="The start of the exception, after which users will be denied access.")
+	end_time = models.DateTimeField(help_text="The end of the exception, after which users will be allowed access again")
+	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True)
+
+	class Meta:
+		ordering = ['-start_time']
+
+	def __str__(self):
+		return str(self.name)
+
+
+class PhysicalAccessType(object):
+	DENY = False
+	ALLOW = True
+	Choices = (
+		(False, 'Deny'),
+		(True, 'Allow'),
+	)
+
+
+class PhysicalAccessLog(models.Model):
+	user = models.ForeignKey("User", on_delete=models.CASCADE)
+	door = models.ForeignKey("Door", on_delete=models.CASCADE)
+	time = models.DateTimeField()
+	result = models.BooleanField(choices=PhysicalAccessType.Choices, default=None)
+	details = models.TextField(null=True, blank=True, help_text="Any details that should accompany the log entry. For example, the reason physical access was denied.")
+
+	class Meta:
+		ordering = ['-time']
+
+
 class User(models.Model):
 	# Personal information:
 	username = models.CharField(max_length=100, unique=True)
@@ -139,10 +328,11 @@ class User(models.Model):
 
 	# Permissions
 	is_active = models.BooleanField('active', default=True, help_text='Designates whether this user can log in. Unselect this instead of deleting accounts.')
-	is_staff = models.BooleanField('staff status', default=False, help_text='Designates whether the user can log into this admin site.')
+	is_staff = models.BooleanField('staff', default=False, help_text='Designates whether the user can log into this admin site.')
 	is_service_personnel = models.BooleanField('service personnel', default=False, help_text='Designates this user as service personnel. Service personnel can operate qualified tools without a reservation even when they are shutdown or during an outage and can access authorized areas without a reservation.')
-	is_technician = models.BooleanField('technician status', default=False, help_text='Specifies how to bill staff time for this user. When checked, customers are billed at technician rates.')
-	is_superuser = models.BooleanField('superuser status', default=False, help_text='Designates that this user has all permissions without explicitly assigning them.')
+	is_technician = models.BooleanField('technician', default=False, help_text='Specifies how to bill staff time for this user. When checked, customers are billed at technician rates.')
+	is_facility_manager = models.BooleanField('facility manager', default=False, help_text='Designates this user as facility manager. Facility managers receive updates on all reported problems in the facility and can also review access requests.')
+	is_superuser = models.BooleanField('administrator', default=False, help_text='Designates that this user has all permissions without explicitly assigning them.')
 	training_required = models.BooleanField(default=True, help_text='When selected, the user is blocked from all reservation and tool usage capabilities.')
 	groups = models.ManyToManyField(Group, blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of his/her group.')
 	user_permissions = models.ManyToManyField(Permission, blank=True, help_text='Specific permissions for this user.')
@@ -169,7 +359,7 @@ class User(models.Model):
 		object is passed, it checks if the user has all required perms for this object.
 		"""
 
-		# Active superusers have all permissions.
+		# Active administrators have all permissions.
 		if self.is_active and self.is_superuser:
 			return True
 
@@ -195,7 +385,7 @@ class User(models.Model):
 		Returns True if the user has any permissions in the given app label.
 		Uses pretty much the same logic as has_perm, above.
 		"""
-		# Active superusers have all permissions.
+		# Active administrators have all permissions.
 		if self.is_active and self.is_superuser:
 			return True
 
@@ -252,12 +442,12 @@ class User(models.Model):
 		else:
 			return PhysicalAccessLevel.objects.filter(Q(id__in=self.physical_access_levels.all()) | Q(allow_staff_access=True)).distinct()
 
-	def accessible_access_levels_for_area(self, area):
+	def accessible_access_levels_for_area(self, area) -> List[Union[PhysicalAccessLevel, TemporaryPhysicalAccess]]:
 		"""
 		Return access levels for the area or parent areas.
 		This means when checking access for area1, having access to its parent area grants access to area1
 		"""
-		return self.accessible_access_levels().filter(area__in=area.get_ancestors(include_self=True))
+		return list(self.accessible_access_levels().filter(area__in=area.get_ancestors(include_self=True))) + list(self.temporaryphysicalaccess_set.filter(end_time__gt=timezone.now(), physical_access_level__area__in=area.get_ancestors(include_self=True)))
 
 	def accessible_areas(self):
 		""" Returns accessible leaf node areas for this user, including descendants """
@@ -942,6 +1132,7 @@ class StaffCharge(CalendarDisplay):
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
 	start = models.DateTimeField(default=timezone.now)
 	end = models.DateTimeField(null=True, blank=True)
+	note = models.TextField(null=True, blank=True)
 	validated = models.BooleanField(default=False)
 
 	class Meta:
@@ -958,7 +1149,7 @@ class Area(MPTTModel):
 	abuse_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users overstay in the area or in children areas (logged in with expired reservation). A comma-separated list can be used.")
 	reservation_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users create or cancel reservations in the area or in children areas. A comma-separated list can be used.")
 
-	# Additional informations
+	# Additional information
 	area_calendar_color = models.CharField(max_length=9, default="#88B7CD", help_text="Color for tool reservations in calendar overviews")
 
 	# Area access
@@ -1716,111 +1907,6 @@ class Door(models.Model):
 	get_absolute_url.short_description = 'URL'
 
 
-class PhysicalAccessLevel(models.Model):
-	name = models.CharField(max_length=100)
-	area = TreeForeignKey(Area, on_delete=models.CASCADE)
-
-	class Schedule(object):
-		ALWAYS = 0
-		WEEKDAYS = 1
-		WEEKENDS = 2
-		Choices = (
-			(ALWAYS, "Always"),
-			(WEEKDAYS, "Weekdays"),
-			(WEEKENDS, "Weekends"),
-		)
-	schedule = models.IntegerField(choices=Schedule.Choices)
-	weekdays_start_time = models.TimeField(default=datetime.time(hour=7), null=True, blank=True, help_text="The weekday access start time")
-	weekdays_end_time = models.TimeField(default=datetime.time(hour=0), null=True, blank=True, help_text="The weekday access end time")
-	allow_staff_access = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow access to Staff users without explicitly granting them access")
-
-	def get_schedule_display_with_times(self):
-		if self.schedule == self.Schedule.ALWAYS or self.schedule == self.Schedule.WEEKENDS:
-			return self.get_schedule_display()
-		else:
-			return self.get_schedule_display() + f" from {self.weekdays_start_time.strftime('%I:%M %p')} to {self.weekdays_end_time.strftime('%I:%M %p')}"
-	get_schedule_display_with_times.short_description = 'Schedule'
-
-	def accessible_at(self, time):
-		return self.accessible(time)
-
-	def accessible(self, time: datetime = None):
-		if time is not None:
-			accessible_time = timezone.localtime(time)
-		else:
-			accessible_time = timezone.localtime(timezone.now())
-		# First deal with exceptions
-		if self.ongoing_exception(accessible_time):
-			return False
-		# Then look at the actual allowed schedule
-		saturday = 6
-		sunday = 7
-		if self.schedule == self.Schedule.ALWAYS:
-			return True
-		elif self.schedule == self.Schedule.WEEKDAYS:
-			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
-				return False
-			current_time = accessible_time.time()
-			if self.weekdays_start_time <= self.weekdays_end_time:
-				""" Range is something like 6am-6pm """
-				if self.weekdays_start_time <= current_time <= self.weekdays_end_time:
-					return True
-			else:
-				""" Range is something like 6pm-6am """
-				if self.weekdays_start_time <= current_time or current_time <= self.weekdays_end_time:
-					return True
-		elif self.schedule == self.Schedule.WEEKENDS:
-			if accessible_time.isoweekday() == saturday or accessible_time.isoweekday() == sunday:
-				return True
-		return False
-
-	def ongoing_exception(self, time: datetime = None):
-		if time is not None:
-			accessible_time = timezone.localtime(time)
-		else:
-			accessible_time = timezone.localtime(timezone.now())
-		return self.physicalaccessexception_set.filter(start_time__lte=accessible_time, end_time__gt=accessible_time).first()
-
-	def __str__(self):
-		return str(self.name)
-
-	class Meta:
-		ordering = ['name']
-
-
-class PhysicalAccessException(models.Model):
-	name = models.CharField(max_length=100, help_text="The name of this exception that will be displayed as the policy problem")
-	start_time = models.DateTimeField(help_text="The start of the exception, after which users will be denied access.")
-	end_time = models.DateTimeField(help_text="The end of the exception, after which users will be allowed access again")
-	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True)
-
-	class Meta:
-		ordering = ['-start_time']
-
-	def __str__(self):
-		return str(self.name)
-
-
-class PhysicalAccessType(object):
-	DENY = False
-	ALLOW = True
-	Choices = (
-		(False, 'Deny'),
-		(True, 'Allow'),
-	)
-
-
-class PhysicalAccessLog(models.Model):
-	user = models.ForeignKey(User, on_delete=models.CASCADE)
-	door = models.ForeignKey(Door, on_delete=models.CASCADE)
-	time = models.DateTimeField()
-	result = models.BooleanField(choices=PhysicalAccessType.Choices, default=None)
-	details = models.TextField(null=True, blank=True, help_text="Any details that should accompany the log entry. For example, the reason physical access was denied.")
-
-	class Meta:
-		ordering = ['-time']
-
-
 class SafetyIssue(models.Model):
 	reporter = models.ForeignKey(User, blank=True, null=True, related_name='reported_safety_issues', on_delete=models.SET_NULL)
 	location = models.CharField(max_length=200)
@@ -1918,11 +2004,13 @@ class Notification(models.Model):
 		SAFETY = 'safetyissue'
 		BUDDY_REQUEST = 'buddyrequest'
 		BUDDY_REQUEST_REPLY = 'buddyrequestmessage'
+		TEMPORARY_ACCESS_REQUEST = 'temporaryphysicalaccessrequest'
 		Choices = (
 			(NEWS, 'News creation and updates - notifies all users'),
 			(SAFETY, 'New safety issues - notifies staff only'),
 			(BUDDY_REQUEST, 'New buddy request - notifies all users'),
-			(BUDDY_REQUEST_REPLY, 'New buddy request reply - notifies request creator and users who have replied')
+			(BUDDY_REQUEST_REPLY, 'New buddy request reply - notifies request creator and users who have replied'),
+			(TEMPORARY_ACCESS_REQUEST, 'New access request - notifies other users on request and reviewers')
 		)
 
 
@@ -1936,7 +2024,7 @@ class LandingPageChoice(models.Model):
 	hide_from_mobile_devices = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a mobile device")
 	hide_from_desktop_computers = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a desktop computer")
 	hide_from_users = models.BooleanField(default=False, help_text="Hides this choice from normal users. When checked, only staff, technicians, and super-users can see the choice")
-	notifications = models.CharField(max_length=25, blank=True, null=True, choices=Notification.Types.Choices, help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.")
+	notifications = models.CharField(max_length=100, blank=True, null=True, choices=Notification.Types.Choices, help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.")
 
 	class Meta:
 		ordering = ['display_priority']

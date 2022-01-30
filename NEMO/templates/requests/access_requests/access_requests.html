@@ -1,0 +1,49 @@
+<div style="margin: 15px 0">
+    <div style="display: table-cell; width: 100%">
+        {% if access_requests_description %}
+            <div class="well" style="display: table; margin-right: 15px">
+                <span class="requests-description-info glyphicon glyphicon-info-sign primary-highlight"></span>
+                <div class="requests-description">{{ access_requests_description|linebreaksbr }}</div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="align-right" style="display: table-cell; vertical-align: top"><a class="btn btn-success" href="{% url 'create_access_request' %}">New request</a></div>
+</div>
+{% if pending_access_requests or approved_access_requests or denied_access_requests or expired_access_requests %}
+    <div>
+        {% if pending_access_requests %}
+            <h3><a onclick="toggle_details(this)" data-toggle="collapse" data-target="#pending_access_requests" class="pointer">
+                <span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>Pending ({{ pending_access_requests|length }})
+            </a></h3>
+            <div id="pending_access_requests" class="collapse in">
+                {% include 'requests/access_requests/access_requests_table.html' with request_status='pending' access_request_list=pending_access_requests %}
+            </div>
+        {% endif %}
+        {% if approved_access_requests %}
+            <h3><a onclick="toggle_details(this)" data-toggle="collapse" data-target="#approved_access_requests" class="pointer">
+                <span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>Approved
+            </a></h3>
+            <div id="approved_access_requests" class="collapse in">
+                {% include 'requests/access_requests/access_requests_table.html' with request_status='approved' access_request_list=approved_access_requests %}
+            </div>
+        {% endif %}
+        {% if denied_access_requests %}
+            <h3><a onclick="toggle_details(this)" data-toggle="collapse" data-target="#denied_access_requests" class="pointer">
+                <span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>Denied
+            </a></h3>
+            <div id="denied_access_requests" class="collapse in">
+                {% include 'requests/access_requests/access_requests_table.html' with request_status='denied' access_request_list=denied_access_requests %}
+            </div>
+        {% endif %}
+        {% if expired_access_requests %}
+            <h3><a onclick="toggle_details(this)" data-toggle="collapse" data-target="#expired_access_requests" class="pointer">
+                <span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>Expired
+            </a></h3>
+            <div id="expired_access_requests" class="collapse in">
+                {% include 'requests/access_requests/access_requests_table.html' with request_status='expired' access_request_list=expired_access_requests %}
+            </div>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="italic" style="margin-top: 20px">You do not have any current active access requests</div>
+{% endif %}

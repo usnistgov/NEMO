@@ -5,7 +5,7 @@ from django.core import validators
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 from django.db import models
-from django.db.models import Field
+from django.db.models import Field, TextField
 from django.db.models.lookups import BuiltinLookup
 from django.utils.translation import gettext_lazy as _
 
@@ -24,7 +24,11 @@ class IsEmpty(BuiltinLookup):
 		if condition:
 			return "%s IS NULL or %s = ''" % (sql, sql), params
 		else:
-			return "%s <> ''" % sql, params
+			if getattr(connection, "vendor", "") == "oracle" and isinstance(self.lhs.field, TextField):
+				# we need to handle textfields for oracle differently as they are set as clobs
+				return "dbms_lob.getlength(%s) != 0" % sql, params
+			else:
+				return "%s <> ''" % sql, params
 
 
 class MultiEmailWidget(forms.TextInput):

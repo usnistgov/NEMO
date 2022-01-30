@@ -37,7 +37,7 @@
 							<tr style="background:transparent">
 								<td>{{ u.tool }}</td>
 								<td><span {% if u.operator.is_staff %}class="success-highlight"{% endif %}>{{ u.operator.first_name }} {{ u.operator.last_name }}{% if u.user != u.operator %} on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}</span></td>
-								<td>{{ u.start|date:"l @ g:i A" }}</td>
+								<td>{{ u.start|date:"l @ " }}{{ u.start|time }}</td>
 							</tr>
 						{% endfor %}
 						</tbody>

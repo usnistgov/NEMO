@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% load static %}
+{% block title %}{% if form.instance.id %}Modify access request{% else %}New access request{% endif %}{% endblock %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+{% endblock %}
+{% block content %}
+    <h1 class="form-group">{% if form.instance.id %}Modify access request{% else %}New access request{% endif %}</h1>
+	<form class="well" action="{% if form.instance.id %}{% url 'edit_access_request' form.instance.id %}{% else %}{% url 'create_access_request' %}{% endif %}" method="post">
+		{% if form.non_field_errors %}
+			<div class="alert alert-danger">
+				{{ form.non_field_errors }}
+			</div>
+		{% endif %}
+		{% csrf_token %}
+		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="request_id">{% endif %}
+		<div class="form-group">
+			<div class="row">
+				<div class="col-md-3 col-sm-6">
+					<label for="start_time">Start</label>
+					<input type="text" class="form-control text-center" name="start_time" id="start_time" value="{{ form.start_time.value|to_date:'m/d/Y g:i A' }}" required>
+                </div>
+				<div class="col-md-3 col-sm-6">
+					<label for="end_time">End</label>
+					<input type="text" class="form-control text-center" name="end_time" id="end_time" value="{{ form.end_time.value|to_date:'m/d/Y g:i A' }}" required>
+				</div>
+			</div>
+            {% if form.start_time.errors or form.end_time.errors %}
+                <div class="row">
+                    <div class="col-md-3 col-sm-6">{% if form.start_time.errors %}<span style="color:red">{{ form.start_time.errors|striptags }}</span>{% endif %}</div>
+                    <div class="col-md-3 col-sm-6">{% if form.end_time.errors %}<span style="color:red">{{ form.end_time.errors|striptags }}</span>{% endif %}</div>
+                </div>
+            {% endif %}
+		</div>
+		<div class="form-group">
+            <div class="row">
+                <div class="col-sm-6">
+                    <label for="physical_access_level" class="control-label">Area Access</label>{% if form.physical_access_level.errors %} - <span style="color:red">{{ form.physical_access_level.errors|striptags }}</span>{% endif %}
+                    <select class="form-control" id="physical_access_level" name="physical_access_level" required>
+                    {% if physical_access_levels|length_is:1 %}
+                        <option value="{{ physical_access_levels.0.id }}" selected>{{ physical_access_levels.0.display_value_for_select }}</option>
+                    {% else %}
+                        {% for physical_access_level in physical_access_levels %}
+                            <option value="{{ physical_access_level.id }}" {% if form.physical_access_level.value|to_int == physical_access_level.id %}selected{% endif %}>{{ physical_access_level.display_value_for_select }}</option>
+                        {% endfor %}
+                    {% endif %}
+                    </select>
+                </div>
+            </div>
+		</div>
+		<div class="form-group">
+            <div class="row">
+                <div class="col-sm-6">
+                    <label for="search_other_users" class="control-label">Buddies</label>
+                    <input id="search_other_users" type="text" class="form-control" placeholder="Search for other users to add as your buddies" style="min-width: 250px;">
+                </div>
+                <div class="col-sm-6" id="other_users_label" style="display: none">
+                    <div style="margin-bottom: 5px;">Selected users</div>
+                    <ul id="other_users" class="form-control form-control-static" style="height: 100%">
+                    </ul>
+                </div>
+            </div>
+            {% if form.other_users.errors %}
+                <div class="row">
+                    <div class="col-sm-6"><span style="color:red">{{ form.other_users.errors|striptags }}</span></div>
+                </div>
+            {% endif %}
+		</div>
+		<div class="form-group">
+			<label for="description" class="control-label">Description</label>{% if form.description.errors %} - <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
+			<textarea class="form-control" rows="3" name="description" id="description" maxlength="{{ form.fields.description.max_length }}" placeholder="Provide additional details if needed">{{ form.description.value|default_if_none:"" }}</textarea>
+		</div>
+		<div class="text-right">
+            {% if form.instance.status == form.instance.Status.PENDING %}
+                {% if form.instance.id and user.is_facility_manager %}
+                    <input name="approve_request" type="button" class="btn btn-success" title="Approve request" value="Approve" onclick="if (confirm('Are you sure you want to approve this request?')) {submit_and_disable(this)}"/>
+                    <input name="deny_request" type="button" class="btn btn-danger" title="Deny request" value="Deny" onclick="if (confirm('Are you sure you want to deny this request?')) {submit_and_disable(this)}"/>
+                {% else %}
+                    <input type="submit" class="btn btn-success" onclick="submit_and_disable(this)" value="{% if form.instance.id %}Save changes{% else %}Create access request{% endif %}"/>
+                {% endif %}
+            {% endif %}
+		</div>
+	</form>
+	<script>
+        let timepicker_properties =
+		{
+			format: 'MM/DD/YYYY h:mm A',
+            showClose: true
+		};
+
+        function add_other_user(jquery_event, search_selection, dataset_name)
+		{
+		    $('#other_users_label').show();
+			$(this).typeahead('val', '').focus();
+			if (!$("input[name='other_users'][value='"+search_selection.id+"']").length)
+            {
+                $('#other_users').append('<li style="list-style: none"><input type="hidden" name="other_users" value="' + search_selection.id + '"/>' + search_selection.name + ' <a class="grey hover-black" href="javascript:void" onclick="remove_other_user(this)"><span class="glyphicon glyphicon-remove-circle"></span></a></li>');
+            }
+		}
+		function remove_other_user(other_user_anchor)
+		{
+		    $(other_user_anchor).parent().remove();
+		    if (!$("input[name='other_users']").length)
+            {
+		        $('#other_users_label').hide();
+            }
+		}
+
+        function on_load()
+		{
+			$('#search_other_users').autocomplete('users', add_other_user, {{ other_users|json_search_base:'get_name' }});
+            {% if form.instance.id %}
+                {% for other_user in form.instance.other_users.all %}
+                    add_other_user(false, {'id': '{{ other_user.id }}', 'name': '{{ other_user.get_name }}' });
+                {% endfor %}
+            {% endif %}
+            {% if form.cleaned_data.other_users %}
+                {% for other_user in form.cleaned_data.other_users %}
+                    add_other_user(false, {'id': '{{ other_user.id }}', 'name': '{{ other_user.get_name }}' });
+                {% endfor %}
+            {% endif %}
+            let start_time_jq = $('#start_time');
+            let end_time_jq = $('#end_time');
+		    start_time_jq.datetimepicker(timepicker_properties);
+		    end_time_jq.datetimepicker(timepicker_properties);
+            let end_date_picker = end_time_jq.data("DateTimePicker");
+            start_time_jq.on("dp.change", function (e) { end_date_picker.minDate(e.date); });
+		}
+		window.addEventListener('load', on_load, true);
+	</script>
+{% endblock %}

@@ -22,6 +22,7 @@ from NEMO.models import (
 	TaskImages,
 	TaskStatus,
 	UsageEvent,
+	User,
 )
 from NEMO.utilities import (
 	EmailCategory,
@@ -107,10 +108,8 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 		}
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
 		message = Template(message).render(Context(dictionary))
-		managers = []
-		if hasattr(settings, 'LAB_MANAGERS'):
-			managers = settings.LAB_MANAGERS
-		recipients = tuple([r for r in [task.tool.primary_owner.email, *task.tool.backup_owners.all().values_list('email', flat=True), task.tool.notification_email_address, *managers] if r])
+		facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
+		recipients = tuple([r for r in [task.tool.primary_owner.email, *task.tool.backup_owners.all().values_list('email', flat=True), task.tool.notification_email_address, *facility_managers] if r])
 		send_mail(subject=subject, content=message, from_email=request.user.email, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
 
 	# Send an email to any user (excluding staff) with a future reservation on the tool:
@@ -157,7 +156,8 @@ def cancel(request, task_id):
 
 def send_task_updated_email(task, url, task_images: List[TaskImages] = None):
 	try:
-		if not hasattr(settings, 'LAB_MANAGERS'):
+		facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
+		if not facility_managers:
 			return
 		attachments = None
 		if task_images:
@@ -188,7 +188,7 @@ Task resolution description:<br/>
 <br/><br/>
 Visit {url} to view the tool control page for the task.<br/>
 """
-		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=settings.SERVER_EMAIL, to=settings.LAB_MANAGERS, attachments=attachments, email_category=EmailCategory.TASKS)
+		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=settings.SERVER_EMAIL, to=facility_managers, attachments=attachments, email_category=EmailCategory.TASKS)
 	except Exception as error:
 		site_title = get_customization('site_title')
 		error_message = f"{site_title} was unable to send the task updated email. The error message that was received is: " + str(error)
@@ -258,7 +258,7 @@ def set_task_status(request, task, status_name, user):
 	status = TaskStatus.objects.get(name=status_name)
 	TaskHistory.objects.create(task=task, status=status_name, user=user)
 
-	status_message = f'On {format_datetime(timezone.now())}, {user.get_full_name()} set the status of this task to "{status_name}".'
+	status_message = f'On {format_datetime()}, {user.get_full_name()} set the status of this task to "{status_name}".'
 	task.progress_description = status_message if task.progress_description is None else task.progress_description + '\n\n' + status_message
 	task.save()
 
@@ -276,7 +276,7 @@ def set_task_status(request, task, status_name, user):
 		subject = f'{task.tool} task notification'
 		message = Template(message).render(Context(dictionary))
 		recipients = [
-			task.tool.primary_tool_owner.email if status.notify_primary_tool_owner else None,
+			task.tool.primary_owner.email if status.notify_primary_tool_owner else None,
 			task.tool.notification_email_address if status.notify_tool_notification_email else None,
 			status.custom_notification_email_address
 		]

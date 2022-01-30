@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load mptt_tags %}
+{% load custom_tags_and_filters %}
 {% block title %}Log in to an area{% endblock %}
 {% block content %}
 	<h1>Log in to an access controlled area</h1>
@@ -23,7 +24,7 @@
 					<p>Charge area access to which project?</p>
 					{% for p in projects %}
 						<div class="radio">
-							<label><input type="radio" name="project" value="{{ p.id }}" required>{{ p }}</label>
+							<label><input type="radio" name="project" value="{{ p.id }}" required>{% project_selection_display p %}</label>
 						</div>
 					{% endfor %}
 				{% endif %}

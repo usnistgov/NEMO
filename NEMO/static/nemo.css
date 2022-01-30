@@ -345,22 +345,6 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 	border-top: 1px solid #ddd
 }
 
-.customization-content
-{
-	margin-top: 10px;
-	white-space: pre-wrap;
-	font-family: monospace;
-	font-size: 12px;
-}
-
-.customization-content-email
-{
-	border-width: 1px;
-	border-style: solid;
-	width: max-content;
-	margin-top: 10px;
-}
-
 .customization-input-file
 {
 	color: transparent;
@@ -617,26 +601,24 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	color: #b0dbff;
 }
 
-.buddy-system-disclaimer-container
+.requests-description-container
 {
 	display: table-row;
 }
 
-.buddy-system-disclaimer, .buddy-system-disclaimer-info
+.requests-description, .requests-description-info
 {
 	display: table-cell;
-	padding-top: 10px;
 }
 
-.buddy-system-disclaimer
+.requests-description
 {
 	font-size: large;
 	font-style: italic;
 }
 
-.buddy-system-disclaimer-info
+.requests-description-info
 {
-	padding-left: 10px;
 	padding-right: 10px;
 }
 
@@ -768,4 +750,37 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	font-size: 10px;
 	padding-left: 5px;
 	vertical-align: middle;
+}
+
+/* Badge display on top right corner */
+.badge.badge-tab-top
+{
+	z-index: 5;
+	position: absolute;
+	top: -0.5em;
+	right: -0.5em;
+}
+
+.active > a > .badge.badge-tab-top
+{
+	color: #fff !important;
+	background-color: red !important;
+}
+
+.nav-pills.nav-pills-spacer > li + li
+{
+	margin-left: 8px;
+}
+
+.nav-pills > li
+{
+	background-color: #eee;
+	text-decoration: none;
+	border-radius: 4px;
+}
+
+/* Table striped every 2 */
+.table-double-stripped tbody tr:nth-child(4n+1), .table-double-stripped tbody tr:nth-child(4n+2)
+{
+	background-color: #f9f9f9;
 }

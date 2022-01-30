@@ -8,6 +8,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models import Q
 from django.db.models.fields.files import FieldFile
+from django.template.defaultfilters import urlencode
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -67,6 +68,8 @@ from NEMO.models import (
 	TaskHistory,
 	TaskImages,
 	TaskStatus,
+	TemporaryPhysicalAccess,
+	TemporaryPhysicalAccessRequest,
 	Tool,
 	ToolDocuments,
 	ToolUsageCounter,
@@ -322,6 +325,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 		"requires_reservation",
 		"maximum_capacity",
 		"reservation_warning",
+		"buddy_system_allowed",
 		"id",
 	)
 	fieldsets = (
@@ -864,6 +868,7 @@ class UserAdmin(admin.ModelAdmin):
 				"fields": (
 					"is_active",
 					"is_staff",
+					"is_facility_manager",
 					"is_technician",
 					"is_service_personnel",
 					"is_superuser",
@@ -899,6 +904,7 @@ class UserAdmin(admin.ModelAdmin):
 		"is_staff",
 		"is_technician",
 		"is_service_personnel",
+		"is_facility_manager",
 		"is_superuser",
 		"date_joined",
 		"last_login",
@@ -907,6 +913,7 @@ class UserAdmin(admin.ModelAdmin):
 		"is_active",
 		"domain",
 		"is_staff",
+		"is_facility_manager",
 		"is_technician",
 		"is_service_personnel",
 		"is_superuser",
@@ -1036,8 +1043,8 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 @register(PhysicalAccessLevel)
 class PhysicalAccessLevelAdmin(admin.ModelAdmin):
 	form = PhysicalAccessLevelForm
-	list_display = ("name", "area", "get_schedule_display_with_times", "allow_staff_access")
-	list_filter = (("area", TreeRelatedFieldListFilter),)
+	list_display = ("name", "area", "get_schedule_display_with_times", "allow_staff_access", "allow_user_request")
+	list_filter = (("area", TreeRelatedFieldListFilter), "allow_staff_access", "allow_user_request")
 
 	def save_model(self, request, obj, form, change):
 		"""
@@ -1072,6 +1079,68 @@ class PhysicalAccessExceptionAdmin(admin.ModelAdmin):
 	list_display = ("name", "start_time", "end_time")
 	filter_horizontal = ("physical_access_levels",)
 	list_filter = ("physical_access_levels__area",)
+
+
+class TemporaryPhysicalAccessAdminForm(forms.ModelForm):
+	class Meta:
+		model = TemporaryPhysicalAccess
+		fields = "__all__"
+
+	class Media:
+		js = ("admin/time_options_override.js",)
+
+	def clean(self):
+		if any(self.errors):
+			return
+		cleaned_data = super().clean()
+		start_time = cleaned_data.get("start_time")
+		end_time = cleaned_data.get("end_time")
+		if end_time <= start_time:
+			self.add_error("end_time", "The end time must be later than the start time")
+
+
+@register(TemporaryPhysicalAccess)
+class TemporaryPhysicalAccessAdmin(admin.ModelAdmin):
+	list_display = ("id", "user", "start_time", "end_time", "get_area_name", "get_schedule_display_with_times")
+	list_filter = ("physical_access_level", "physical_access_level__area", "end_time", "start_time")
+	form = TemporaryPhysicalAccessAdminForm
+
+	def get_area_name(self, tpa: TemporaryPhysicalAccess) -> str:
+		return tpa.physical_access_level.area.name
+
+	get_area_name.admin_order_field = 'physical_access_level__area'
+	get_area_name.short_description = 'Area'
+
+	def get_schedule_display_with_times(self, tpa: TemporaryPhysicalAccess) -> str:
+		return tpa.physical_access_level.get_schedule_display_with_times()
+
+	get_schedule_display_with_times.short_description = 'Schedule'
+
+
+class TemporaryPhysicalAccessRequestFormAdmin(forms.ModelForm):
+	class Meta:
+		model = TemporaryPhysicalAccessRequest
+		fields = "__all__"
+
+
+@register(TemporaryPhysicalAccessRequest)
+class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
+	form = TemporaryPhysicalAccessRequestFormAdmin
+	list_display = ("creator", "other_users_display", "creation_time", "start_time", "end_time", "physical_access_level", "status_display", "reviewer", "deleted")
+	list_filter = ("status", "deleted")
+	filter_horizontal = ("other_users",)
+
+	def other_users_display(self, access_request: TemporaryPhysicalAccessRequest):
+		return ", ".join([str(u) for u in access_request.other_users.all()])
+
+	other_users_display.admin_order_field = "other_users"
+	other_users_display.short_description = "Other users"
+
+	def status_display(self, access_request: TemporaryPhysicalAccessRequest):
+		return access_request.get_status_display()
+
+	status_display.admin_order_field = "status"
+	status_display.short_description = "Status"
 
 
 @register(ContactInformationCategory)
@@ -1122,6 +1191,7 @@ class NewsAdmin(admin.ModelAdmin):
 @register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
 	list_display = ("id", "user", "expiration", "content_type", "object_id")
+	list_filter = (("content_type", admin.RelatedOnlyFieldListFilter),)
 
 
 @register(BadgeReader)
@@ -1212,7 +1282,10 @@ class EmailLogAdmin(admin.ModelAdmin):
 	date_hierarchy = "when"
 
 	def content_preview(self, obj):
-		return mark_safe(obj.content)
+		if obj.content:
+			return mark_safe(f'<div style="position: relative; display: block; overflow: hidden; padding-bottom: 75%"><iframe style="position: absolute; width:100%; height:100%; border:none" src="data:text/html,{urlencode(obj.content)}"></iframe></div>')
+		else:
+			return ""
 
 	def has_delete_permission(self, request, obj=None):
 		return False

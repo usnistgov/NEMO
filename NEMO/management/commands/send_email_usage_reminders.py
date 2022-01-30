@@ -10,7 +10,7 @@ class Command(BaseCommand):
 	)
 
 	def add_arguments(self, parser):
-		parser.add_argument('exclude_project_ids', nargs='*', type=int, help='list of project ids to exclude')
+		parser.add_argument("exclude_project_ids", nargs="*", type=int, help="list of project ids to exclude")
 
 	def handle(self, *args, **options):
-		send_email_usage_reminders(options.get('exclude_project_ids'))
+		send_email_usage_reminders(options.get("exclude_project_ids"))

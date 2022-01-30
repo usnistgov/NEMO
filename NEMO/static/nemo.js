@@ -457,13 +457,29 @@ function navigate_to_login_on_session_expiration(logout_url, event, xhr, status,
 }
 
 // This function as its name indicate will submit a form and disable the button
-// Use it on a input submit onclick attribute: onclick="submit_and_disable(this)"
+// Use it on an input submit onclick attribute: onclick="submit_and_disable(this)"
 // Note: Depending on how validation is handled, this might not work if the form is invalid
 function submit_and_disable(input_submit)
 {
 	if (input_submit.form.checkValidity())
 	{
+		// Add input name & value since js submit skips it
+		if (input_submit.name)
+		{
+			$(input_submit.form).append($('<input>', {
+				type: 'hidden',
+				name: input_submit.name,
+				value: input_submit.value
+			}));
+		}
 		input_submit.form.submit();
 		input_submit.disabled = true;
 	}
+}
+
+function auto_size_textarea(textarea)
+{
+	textarea.rows = 1;
+	textarea.style.height = '';
+	textarea.style.height = textarea.scrollHeight + 3 + 'px';
 }

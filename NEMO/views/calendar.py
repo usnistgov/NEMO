@@ -13,7 +13,7 @@ from dateutil import rrule
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
 from django.utils import timezone
@@ -131,9 +131,9 @@ def calendar(request, item_type=None, item_id=None):
 		'self_login': False,
 		'self_logout': False,
 	}
-	login_logout = get_customization('calendar_login_logout', False)
-	self_login = get_customization('self_log_in', False)
-	self_logout = get_customization('self_log_out', False)
+	login_logout = get_customization('calendar_login_logout', raise_exception=False)
+	self_login = get_customization('self_log_in', raise_exception=False)
+	self_logout = get_customization('self_log_out', raise_exception=False)
 	if login_logout == 'enabled':
 		dictionary['self_login'] = self_login == 'enabled'
 		dictionary['self_logout'] = self_logout == 'enabled'
@@ -357,7 +357,11 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 
 	# If there was a policy problem with the reservation then return the error...
 	if policy_problems:
-		return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': overridable and request.user.is_staff, 'reservation_action': 'create'})
+		return render(request, 'calendar/policy_dialog.html', {
+			'policy_problems': policy_problems,
+			'overridable': overridable and request.user.is_staff,
+			'reservation_action': 'create'
+		})
 
 	# All policy checks have passed.
 
@@ -371,7 +375,10 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 			try:
 				new_reservation.project = Project.objects.get(id=request.POST['project_id'])
 			except:
-				return render(request, 'calendar/project_choice.html', {'active_projects': active_projects})
+				return render(request, 'calendar/project_choice.html', {
+					'active_projects': active_projects,
+					'missed_reservation_threshold': new_reservation.reservation_item.missed_reservation_threshold
+				})
 
 		# Check if we are allowed to bill to project
 		try:
@@ -732,9 +739,26 @@ def change_reservation_project(request, reservation_id):
 	""" Change reservation project for a user. """
 	reservation = get_object_or_404(Reservation, id=reservation_id)
 	project = get_object_or_404(Project, id=request.POST['project_id'])
-	if (request.user.is_staff or request.user == reservation.user) and reservation.has_not_ended() and reservation.has_not_started() and  project in reservation.user.active_projects():
+	try:
+		check_billing_to_project(project, reservation.user, reservation.reservation_item)
+	except ProjectChargeException as e:
+		return HttpResponseBadRequest(e.msg)
+
+	if (request.user.is_staff or request.user == reservation.user) and \
+		reservation.has_not_ended() and reservation.has_not_started() and \
+		project in reservation.user.active_projects():
 		reservation.project = project
 		reservation.save()
+	else:
+		# project for reservation was not eligible to be changed
+		if not (request.user.is_staff or request.user == reservation.user):
+			return HttpResponseForbidden(f"{request.user} is not authorized to change the project for this reservation")
+		if not reservation.has_not_ended():
+			return HttpResponseBadRequest("Project cannot be changed; reservation has already ended")
+		if not reservation.has_not_started():
+			return HttpResponseBadRequest("Project cannot be changed; reservation has already started")
+		if project not in reservation.user.active_projects():
+			return HttpResponseForbidden(f"{project} is not one of {reservation.user}'s active projects")
 	return HttpResponse()
 
 
@@ -871,38 +895,6 @@ def send_email_usage_reminders(projects_to_exclude=None):
 			staff_charge.staff_member.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
 
 	return HttpResponse()
-
-
-@login_required
-@require_GET
-def reservation_details(request, reservation_id):
-	reservation = get_object_or_404(Reservation, id=reservation_id)
-	if reservation.cancelled:
-		error_message = 'This reservation was cancelled by {0} at {1}.'.format(reservation.cancelled_by, format_datetime(reservation.cancellation_time))
-		return HttpResponseNotFound(error_message)
-	reservation_project_can_be_changed = (request.user.is_staff or request.user == reservation.user) and reservation.has_not_ended and reservation.has_not_started and reservation.user.active_project_count() > 1
-	return render(request, 'calendar/reservation_details.html', {'reservation': reservation, 'reservation_project_can_be_changed': reservation_project_can_be_changed})
-
-
-@login_required
-@require_GET
-def outage_details(request, outage_id):
-	outage = get_object_or_404(ScheduledOutage, id=outage_id)
-	return render(request, 'calendar/outage_details.html', {'outage': outage})
-
-
-@login_required
-@require_GET
-def usage_details(request, event_id):
-	event = get_object_or_404(UsageEvent, id=event_id)
-	return render(request, 'calendar/usage_details.html', {'event': event})
-
-
-@login_required
-@require_GET
-def area_access_details(request, event_id):
-	event = get_object_or_404(AreaAccessRecord, id=event_id)
-	return render(request, 'calendar/area_access_details.html', {'event': event})
 
 
 @login_required

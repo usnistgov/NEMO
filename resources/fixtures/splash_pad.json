@@ -486,7 +486,8 @@
       "schedule": 0,
       "weekdays_start_time": null,
       "weekdays_end_time": null,
-      "allow_staff_access": true
+      "allow_staff_access": true,
+      "allow_user_request": true
     }
   },
   {
@@ -584,6 +585,26 @@
       "user": 2,
       "expiration": "2099-02-24T04:59:59.999Z",
       "content_type": ["NEMO", "buddyrequest"],
+      "object_id": 1
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 3,
+    "fields": {
+      "user": 2,
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "content_type": ["NEMO", "temporaryphysicalaccessrequest"],
+      "object_id": 1
+    }
+  },
+   {
+    "model": "NEMO.notification",
+    "pk": 4,
+    "fields": {
+      "user": 1,
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "content_type": ["NEMO", "temporaryphysicalaccessrequest"],
       "object_id": 1
     }
   },
@@ -1068,6 +1089,22 @@
     }
   },
   {
+    "model": "NEMO.temporaryphysicalaccessrequest",
+    "pk": 1,
+    "fields": {
+      "creation_time": "2021-02-23T17:28:47.930Z",
+      "last_updated": "2021-02-23T17:28:47.930Z",
+      "start_time": "2021-02-23T17:28:47.930Z",
+      "end_time": "2099-02-23T17:28:47.930Z",
+      "description": "I am looking for somebody to come in on a weekend.\r\nDates are flexible.\r\nLet me know",
+      "physical_access_level": 1,
+      "creator": 3,
+      "other_users": [2],
+      "status": 0,
+      "deleted": false
+    }
+  },
+  {
     "model": "NEMO.user",
     "pk": 1,
     "fields": {
@@ -1081,6 +1118,7 @@
       "access_expiration": null,
       "is_active": true,
       "is_staff": true,
+      "is_facility_manager": true,
       "is_service_personnel": false,
       "is_technician": false,
       "is_superuser": true,

@@ -53,7 +53,7 @@
 <input type="hidden" id="impersonate" name="impersonate" value="test">
 
 <script type="text/javascript">
-var logged_in = false;
+let logged_in = false;
 {% if user.in_area %}
 logged_in = "{{ user.area_access_record.area.name }}";
 {% endif %}
@@ -311,7 +311,7 @@ function move(event, delta, revertFunc, jsEvent, ui, view)
 function details(event, jsEvent, view)
 {
 	let failure_dialog = ajax_failure_callback("Unable to display details");
-	ajax_get(event.details_url, undefined, ajax_success_callback, [failure_dialog, refresh_calendar_and_sidebar]);
+	ajax_get(event.details_url+'?popup_view=true', undefined, ajax_success_callback, [failure_dialog, refresh_calendar_and_sidebar]);
 }
 
 function cancel_reservation(url, reservation_id, reason)

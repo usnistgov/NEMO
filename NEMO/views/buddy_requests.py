@@ -4,47 +4,46 @@ from typing import Optional
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
-from django.views.decorators.http import require_http_methods, require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.exceptions import (
 	InactiveUserError,
 	NoActiveProjectsForUserError,
-	PhysicalAccessExpiredUserError,
 	NoPhysicalAccessUserError,
+	PhysicalAccessExpiredUserError,
 )
 from NEMO.forms import BuddyRequestForm
-from NEMO.models import BuddyRequest, Area, User, BuddyRequestMessage
+from NEMO.models import Area, BuddyRequest, BuddyRequestMessage, User
 from NEMO.views.customization import get_customization
 from NEMO.views.notifications import (
-	create_buddy_request_notification,
-	delete_buddy_request_notification,
-	get_notifications,
 	create_buddy_reply_notification,
+	create_buddy_request_notification,
+	delete_notification,
+	get_notifications,
 )
 from NEMO.views.policy import check_policy_to_enter_any_area
 
 
 @login_required
 @require_GET
-def buddy_system(request):
+def buddy_requests(request):
 	mark_requests_expired()
 	buddy_requests = BuddyRequest.objects.filter(expired=False, deleted=False).order_by(
 		"start", "end", "-creation_time"
 	)
-	# extend buddy request to add whether or not the current user can reply
+	# extend buddy request to add whether the current user can reply
 	for buddy_request in buddy_requests:
 		buddy_request.user_reply_error = check_user_reply_error(buddy_request, request.user)
 	dictionary = {
 		"buddy_requests": buddy_requests,
-		"areas": Area.objects.filter(buddy_system_allowed=True).count(),
-		"buddy_board_disclaimer": get_customization("buddy_board_disclaimer"),
+		"buddy_board_description": get_customization("buddy_board_description"),
 		"request_notifications": get_notifications(request.user, BuddyRequest),
 		"reply_notifications": get_notifications(request.user, BuddyRequestMessage),
 	}
-	return render(request, "buddy_system/buddy_system.html", dictionary)
+	return render(request, "requests/buddy_requests/buddy_requests.html", dictionary)
 
 
 @login_required
@@ -71,15 +70,15 @@ def create_buddy_request(request, request_id=None):
 			form.instance.user = request.user
 			created_buddy_request = form.save()
 			create_buddy_request_notification(created_buddy_request)
-			return redirect("buddy_system")
+			return redirect("user_requests", "buddy")
 		else:
 			dictionary["form"] = form
-			return render(request, "buddy_system/buddy_request.html", dictionary)
+			return render(request, "requests/buddy_requests/buddy_request.html", dictionary)
 	else:
 		form = BuddyRequestForm(instance=buddy_request)
 		form.user = request.user
 		dictionary["form"] = form
-		return render(request, "buddy_system/buddy_request.html", dictionary)
+		return render(request, "requests/buddy_requests/buddy_request.html", dictionary)
 
 
 @login_required
@@ -94,8 +93,8 @@ def delete_buddy_request(request, request_id):
 
 	buddy_request.deleted = True
 	buddy_request.save(update_fields=["deleted"])
-	delete_buddy_request_notification(buddy_request)
-	return redirect("buddy_system")
+	delete_notification(BuddyRequest, buddy_request.id)
+	return redirect("user_requests", "buddy")
 
 
 @login_required
@@ -115,8 +114,10 @@ def buddy_request_reply(request, request_id):
 		reply.author = user
 		reply.save()
 		create_buddy_reply_notification(reply)
-		email_interested_parties(reply, request.build_absolute_uri(f"{reverse('buddy_system')}?#{reply.id}"))
-	return redirect("buddy_system")
+		email_interested_parties(
+			reply, request.build_absolute_uri(f"{reverse('user_requests', kwargs={'tab': 'buddy'})}?#{reply.id}")
+		)
+	return redirect("user_requests", "buddy")
 
 
 def email_interested_parties(reply: BuddyRequestMessage, reply_url):

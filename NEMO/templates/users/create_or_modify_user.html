@@ -107,7 +107,7 @@
 				<input id="access_expiration" name="access_expiration" type="text" autocomplete="off" class="form-control" value="{{ form.access_expiration.value|default_if_none:'' }}">
 			</div>
 			<div class="control-label col-sm-2" style="text-align:left">
-				<a href="javascript:void(0)" onclick="$('#access_expiration').val('{{ one_year_from_now|date }}')">One year from now</a>
+				<a href="javascript:void(0)" onclick="$('#access_expiration').val('{{ one_year_from_now|date:'m/d/Y' }}')">One year from now</a>
 			</div>
 			{% if form.access_expiration.errors %}
 				<div class="col-sm-6 form-control-static danger-highlight">

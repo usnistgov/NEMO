@@ -1,4 +1,4 @@
-from NEMO.models import Tool, Area, PhysicalAccessLevel, Notification
+from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.views.customization import get_customization
 from NEMO.views.notifications import get_notification_counts
 
@@ -41,12 +41,26 @@ def base_context(request):
 	except:
 		buddy_system_areas_exist = False
 	try:
+		access_user_request_allowed_exist = PhysicalAccessLevel.objects.filter(allow_user_request=True).exists()
+	except:
+		access_user_request_allowed_exist = False
+	try:
 		notification_counts = get_notification_counts(request.user)
+	except:
+		notification_counts = {}
+	try:
 		buddy_notification_count = notification_counts.get(Notification.Types.BUDDY_REQUEST, 0)
 		buddy_notification_count += notification_counts.get(Notification.Types.BUDDY_REQUEST_REPLY, 0)
 	except:
-		notification_counts = {}
 		buddy_notification_count = 0
+	try:
+		temporary_access_notification_count = notification_counts.get(Notification.Types.TEMPORARY_ACCESS_REQUEST, 0)
+	except:
+		temporary_access_notification_count = 0
+	try:
+		facility_managers_exist = User.objects.filter(is_active=True, is_facility_manager=True).exists()
+	except:
+		facility_managers_exist = False
 	return {
 		"facility_name": facility_name,
 		"site_title": site_title,
@@ -54,7 +68,10 @@ def base_context(request):
 		"tools_exist": tools_exist,
 		"areas_exist": areas_exist,
 		"buddy_system_areas_exist": buddy_system_areas_exist,
+		"access_user_request_allowed_exist": access_user_request_allowed_exist,
 		"notification_counts": notification_counts,
 		"buddy_notification_count": buddy_notification_count,
+		"temporary_access_notification_count": temporary_access_notification_count,
+		"facility_managers_exist": facility_managers_exist,
 		"no_header": request.session.get("no_header", False),
 	}

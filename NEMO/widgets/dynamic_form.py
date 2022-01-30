@@ -416,20 +416,10 @@ class DynamicForm:
 			raise Exception(f"Question names need to be unique. Duplicates were found: {duplicate_names}")
 		# Check that consumable exists and is linked to a number question
 		for question in self.questions:
-			if question.consumable:
-				if not isinstance(question, PostUsageNumberFieldQuestion):
-					raise Exception("Consumable withdrawals can only be used in questions of type number")
-				else:
-					try:
-						Consumable.objects.get(name=question.consumable)
-					except Consumable.DoesNotExist:
-						raise Exception(
-							f"Consumable with name '{question.consumable}' could not be found. Make sure the names match."
-						)
+			validate_consumable_for_question(question)
 			if isinstance(question, PostUsageGroupQuestion):
 				for sub_question in question.sub_questions:
-					if sub_question.consumable:
-						raise Exception("Consumable withdrawals cannot be used in group questions")
+					validate_consumable_for_question(sub_question)
 
 	def extract(self, request) -> str:
 		results = {}
@@ -477,32 +467,11 @@ class DynamicForm:
 			dynamic_form_logger.debug(error)
 			return
 		for question in self.questions:
-			if question.consumable:
-				try:
-					consumable = Consumable.objects.get(name=question.consumable)
-					quantity = 0
-					if isinstance(question, PostUsageNumberFieldQuestion):
-						if (
-								question.name in run_data_json
-								and "user_input" in run_data_json[question.name]
-								and run_data_json[question.name]["user_input"]
-						):
-							quantity = int(run_data_json[question.name]["user_input"])
-					if quantity > 0:
-						make_withdrawal(
-							consumable_id=consumable.id,
-							customer_id=customer.id,
-							merchant=merchant,
-							quantity=quantity,
-							project_id=project.id,
-							request=request,
-						)
-				except Exception as e:
-					dynamic_form_logger.warning(
-						f"Could not withdraw consumable: '{question.consumable}' with quantity: '{run_data_json[question.name]}' for customer: '{customer}' by merchant: '{merchant}' for project: '{project}'",
-						e,
-					)
-					pass
+			input_data = run_data_json[question.name] if question.name in run_data_json else None
+			withdraw_consumable_for_question(question, input_data, customer, merchant, project, request)
+			if isinstance(question, PostUsageGroupQuestion):
+				for sub_question in question.sub_questions:
+					withdraw_consumable_for_question(sub_question, input_data, customer, merchant, project, request)
 
 	def update_tool_counters(self, run_data: str, tool_id: int):
 		# This function increments all counters associated with the given tool
@@ -515,29 +484,11 @@ class DynamicForm:
 		for counter in active_counters:
 			additional_value = 0
 			for question in self.questions:
-				if isinstance(question, PostUsageNumberFieldQuestion) or isinstance(
-						question, PostUsageFloatFieldQuestion
-				):
-					if (
-							question.name == counter.tool_usage_question
-							and question.name in run_data_json
-							and "user_input" in run_data_json[question.name]
-							and run_data_json[question.name]["user_input"]
-					):
-						additional_value = float(run_data_json[question.name]["user_input"])
-				elif isinstance(question, PostUsageGroupQuestion):
+				input_data = run_data_json[question.name] if question.name in run_data_json else None
+				additional_value += get_counter_increment_for_question(question, input_data, counter.tool_usage_question)
+				if isinstance(question, PostUsageGroupQuestion):
 					for sub_question in question.sub_questions:
-						if isinstance(sub_question, PostUsageNumberFieldQuestion) or isinstance(
-								sub_question, PostUsageFloatFieldQuestion
-						):
-							if (
-									sub_question.name == counter.tool_usage_question
-									and question.name in run_data_json
-									and "user_input" in run_data_json[question.name]
-							):
-								for user_input in run_data_json[question.name]["user_input"].values():
-									if sub_question.name in user_input and user_input[sub_question.name]:
-										additional_value += float(user_input[sub_question.name])
+						additional_value += get_counter_increment_for_question(sub_question, input_data, counter.tool_usage_question)
 			if additional_value:
 				counter.value += additional_value
 				counter.save()
@@ -551,3 +502,57 @@ def render_group_questions(request, questions, group_question_url, group_item_id
 			if isinstance(question, PostUsageGroupQuestion) and question.group_name == group_name:
 				return question.render_group_question(virtual_inputs, group_question_url, group_item_id)
 	return ""
+
+
+def validate_consumable_for_question(question: PostUsageQuestion):
+	if question.consumable:
+		if not isinstance(question, PostUsageNumberFieldQuestion):
+			raise Exception("Consumable withdrawals can only be used in questions of type number")
+		else:
+			try:
+				Consumable.objects.get(name=question.consumable)
+			except Consumable.DoesNotExist:
+				raise Exception(f"Consumable with name '{question.consumable}' could not be found. Make sure the names match.")
+
+
+def withdraw_consumable_for_question(question, input_data, customer, merchant, project, request):
+	if isinstance(question, PostUsageNumberFieldQuestion):
+		if question.consumable:
+			try:
+				consumable = Consumable.objects.get(name=question.consumable)
+				quantity = 0
+				if input_data and "user_input" in input_data and input_data["user_input"]:
+					if isinstance(input_data["user_input"], dict):
+						for user_input in input_data["user_input"].values():
+							if question.name in user_input and user_input[question.name]:
+								quantity += int(user_input[question.name])
+					else:
+						quantity = int(input_data["user_input"])
+				if quantity > 0:
+					make_withdrawal(
+						consumable_id=consumable.id,
+						customer_id=customer.id,
+						merchant=merchant,
+						quantity=quantity,
+						project_id=project.id,
+						request=request,
+					)
+			except Exception as e:
+				dynamic_form_logger.warning(
+					f"Could not withdraw consumable: '{question.consumable}' with quantity: '{input_data}' for customer: '{customer}' by merchant: '{merchant}' for project: '{project}'",
+					e,
+				)
+				pass
+
+
+def get_counter_increment_for_question(question, input_data, counter_question):
+	additional_value = 0
+	if isinstance(question, PostUsageNumberFieldQuestion) or isinstance(question, PostUsageFloatFieldQuestion):
+		if question.name == counter_question and "user_input" in input_data:
+			if isinstance(input_data, dict):
+				for user_input in input_data["user_input"].values():
+					if question.name in user_input and user_input[question.name]:
+						additional_value += float(user_input[question.name])
+			else:
+				additional_value = float(input_data["user_input"])
+	return additional_value

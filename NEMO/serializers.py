@@ -38,6 +38,7 @@ class UserSerializer(ModelSerializer):
 			"badge_number",
 			"is_active",
 			"is_staff",
+			"is_facility_manager",
 			"is_superuser",
 			"is_technician",
 			"is_service_personnel",
@@ -92,6 +93,7 @@ class ReservationSerializer(FlexFieldsModelSerializer):
 		expandable_fields = {
 			"user": "NEMO.serializers.UserSerializer",
 			"creator": "NEMO.serializers.UserSerializer",
+			"cancelled_by": "NEMO.serializers.UserSerializer",
 			"tool": "NEMO.serializers.ToolSerializer",
 			"area": "NEMO.serializers.AreaSerializer",
 			"project": "NEMO.serializers.ProjectSerializer",

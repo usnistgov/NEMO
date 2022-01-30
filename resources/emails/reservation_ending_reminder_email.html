@@ -1,0 +1,28 @@
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+            <tr>
+                <td align="center" style="color: white; background: #5bc0de; padding: 50px 0;" bgcolor="#5bc0de">
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
+                        RESERVATION ENDING REMINDER
+                    </h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">
+                    <p>Dear {{ reservation.user.first_name }},</p>
+                    <p>
+                        This is a reminder that your <b>{{ reservation.reservation_item }}</b> reservation ends in <b>{{ reservation.end|timeuntil }}</b> at <b>{{ reservation.end|time }}</b>.<br>
+                        Don't forget to log out!
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+    </body>
+</html>

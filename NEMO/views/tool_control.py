@@ -40,6 +40,7 @@ from NEMO.utilities import (
 	EmailCategory,
 	beginning_of_the_day,
 	end_of_the_day,
+	export_format_datetime,
 	extract_times,
 	format_datetime,
 	quiet_int,
@@ -149,6 +150,7 @@ def usage_data_history(request, tool_id):
 	start, end = extract_times(request.POST, start_required=False, end_required=False)
 	last = request.POST.get("data_history_last")
 	user_id = request.POST.get("data_history_user_id")
+	show_project_info = request.POST.get("show_project_info")
 	if not last and not start and not end:
 		# Default to last 25 records
 		last = 25
@@ -170,13 +172,15 @@ def usage_data_history(request, tool_id):
 		usage_events = usage_events[:last]
 	table_result = BasicDisplayTable()
 	table_result.add_header(("user", "User"))
+	if show_project_info:
+		table_result.add_header(("project", "Project"))
 	table_result.add_header(("date", "Date"))
 	for usage_event in usage_events:
 		if usage_event.run_data:
 			usage_data = {}
 			try:
 				user_data = f"{usage_event.user.first_name} {usage_event.user.last_name}"
-				date_data = usage_event.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p")
+				date_data = format_datetime(usage_event.end, "SHORT_DATETIME_FORMAT")
 				run_data: Dict = loads(usage_event.run_data)
 				for question_key, question in run_data.items():
 					if "user_input" in question:
@@ -196,6 +200,8 @@ def usage_data_history(request, tool_id):
 									if group_usage_data:
 										group_usage_data["user"] = user_data
 										group_usage_data["date"] = date_data
+										if show_project_info:
+											group_usage_data["project"] = usage_event.project.name
 										table_result.add_row(group_usage_data)
 						else:
 							table_result.add_header((question_key, question["title"]))
@@ -203,12 +209,14 @@ def usage_data_history(request, tool_id):
 				if usage_data:
 					usage_data["user"] = user_data
 					usage_data["date"] = date_data
+					if show_project_info:
+						usage_data["project"] = usage_event.project.name
 					table_result.add_row(usage_data)
 			except JSONDecodeError:
 				tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
 	if csv_export:
 		response = table_result.to_csv()
-		filename = f"tool_usage_data_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+		filename = f"tool_usage_data_export_{export_format_datetime()}.csv"
 		response["Content-Disposition"] = f'attachment; filename="{filename}"'
 		return response
 	else:
@@ -219,6 +227,7 @@ def usage_data_history(request, tool_id):
 			"data_history_last": str(last),
 			"usage_data_table": table_result,
 			"data_history_user": User.objects.get(id=user_id) if user_id else None,
+			"show_project_info": show_project_info or False,
 			"users": User.objects.filter(is_active=True)
 		}
 		return render(request, "tool_control/usage_data.html", dictionary)
@@ -487,7 +496,7 @@ def export_comments_and_tasks_to_text(comments_and_tasks: List):
 				content += f"\nCancelled On {format_datetime(task.resolution_time)} by {task.resolver}.\n"
 		content += "\n---------------------------------------------------\n\n"
 	response = HttpResponse(content, content_type='text/plain')
-	response['Content-Disposition'] = 'attachment; filename={0}'.format(f"comments_and_tasks_export_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt")
+	response['Content-Disposition'] = 'attachment; filename={0}'.format(f"comments_and_tasks_export_{export_format_datetime()}.txt")
 	return response
 
 
@@ -517,7 +526,8 @@ def reset_tool_counter(request, counter_id):
 	comment.save()
 
 	# Send an email to Lab Managers about the counter being reset.
-	if hasattr(settings, "LAB_MANAGERS"):
+	facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
+	if facility_managers:
 		message = f"""The {counter.name} counter for the {counter.tool.name} was reset to 0 on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.
 	
 Its last value was {counter.last_reset_value}."""
@@ -525,7 +535,7 @@ Its last value was {counter.last_reset_value}."""
 			subject=f"{counter.tool.name} counter reset",
 			content=message,
 			from_email=settings.SERVER_EMAIL,
-			to=settings.LAB_MANAGERS,
+			to=facility_managers,
 			email_category=EmailCategory.SYSTEM,
 		)
 	return redirect("tool_control")
@@ -547,10 +557,8 @@ def interlock_error(action:str, user:User):
 
 def email_managers_required_questions_disable_tool(tool_user:User, staff_member:User, tool:Tool, questions:List[PostUsageQuestion]):
 	abuse_email_address = get_customization('abuse_email_address')
-	managers = []
-	if hasattr(settings, 'LAB_MANAGERS'):
-		managers = settings.LAB_MANAGERS
-	ccs = set(tuple([r for r in [staff_member.email, tool.primary_owner.email, *tool.backup_owners.all().values_list('email', flat=True), *managers] if r]))
+	facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
+	ccs = set(tuple([r for r in [staff_member.email, tool.primary_owner.email, *tool.backup_owners.all().values_list('email', flat=True), *facility_managers] if r]))
 	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
 	message = f"""
 Dear {tool_user.get_name()},<br/>

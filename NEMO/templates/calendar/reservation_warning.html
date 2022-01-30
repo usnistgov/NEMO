@@ -13,12 +13,12 @@
 		<tr style="height: 15px"></tr>
 		<tr>
 			<td class="text-center" style="color:black;">
-				At <b>{{ max_area_time|time:"g:i A" }}</b>, {{ max_area_count }} people (including you) are expected in the {{ area.name }} area.
+				At <b>{{ max_area_time|time }}</b>, {{ max_area_count }} people (including you) are expected in the {{ area.name }} area.
 				{% if area.maximum_capacity %}
 					<br>
 					<b>The maximum capacity is {{ area.maximum_capacity }} people.</b>
 				{% endif %}
-				{% if max_location_count > 1 %}<br><br>In addition, at <b>{{ max_location_time|time:"g:i A" }}</b>, {{ max_location_count }} of those people are expected in the same location ({{ location }}){% endif %}
+				{% if max_location_count > 1 %}<br><br>In addition, at <b>{{ max_location_time|time }}</b>, {{ max_location_count }} of those people are expected in the same location ({{ location }}){% endif %}
 				<br><br>
 				Please consider social distancing when making reservations.<br>
 			</td>

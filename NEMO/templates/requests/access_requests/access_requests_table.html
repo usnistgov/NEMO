@@ -1,0 +1,53 @@
+<table class="table table-condensed table-double-stripped thead-light" style="border: 1px solid #ddd">
+    <thead>
+        <tr>
+            <th>Created</th>
+            <th class="text-center">Access</th>
+            <th class="text-center">Requested start</th>
+            <th class="text-center">Requested end</th>
+            <th class="text-center">Users</th>
+            <th class="text-center">
+                {% if request_status == 'pending' and user.is_facility_manager %}
+                    Action
+                {% elif request_status == 'approved' %}
+                    Approved by
+                {% elif request_status == 'denied' %}
+                    Denied by
+                {% endif %}
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a_request in access_request_list %}
+            <tr>
+                <td style="vertical-align: middle">{% if a_request.id in access_request_notifications %}<span class="label label-success">New</span> {% endif %}{{ a_request.creation_time|date:'SHORT_DATETIME_FORMAT' }}</td>
+                <td class="text-center" style="vertical-align: middle">{{ a_request.physical_access_level.display_value_for_select }}</td>
+                <td class="text-center" style="vertical-align: middle">{{ a_request.start_time|date:'SHORT_DATETIME_FORMAT' }}</td>
+                <td class="text-center" style="vertical-align: middle">{{ a_request.end_time|date:'SHORT_DATETIME_FORMAT' }}</td>
+                <td style="vertical-align: middle">
+                    <ul style="padding-inline-start: 25px; margin-bottom: 0">
+                        <li><b>{{ a_request.creator }}</b></li>
+                        {% for other_user in a_request.other_users.all %}
+                            <li>{{ other_user }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td class="text-center" style="vertical-align: middle">
+                    {% if request_status == 'pending' and user.is_facility_manager %}
+                        <button type="button" class="btn btn-xs btn-default" title="Approve/Deny" onclick="window.location = '{% url 'edit_access_request' a_request.id %}'"><i class="glyphicon glyphicon-ok success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-remove danger-highlight"></i></button>
+                    {% elif request_status == 'pending' and a_request.creator == user %}
+                        <button type="button" class="btn btn-xs btn-default" title="Edit request" onclick="window.location = '{% url 'edit_access_request' a_request.id %}'"><i class="glyphicon glyphicon-pencil"></i></button>
+                        <button type="button" class="btn btn-xs btn-danger" title="Delete request" onclick="if (confirm('Are you sure you want to delete this request?')) {window.location = '{% url 'delete_access_request' a_request.id %}'}"><i class="glyphicon glyphicon-remove"></i></button>
+                    {% elif request_status == 'approved' or request_status == 'denied' %}
+                        {{ a_request.reviewer.get_name }}
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                {% if a_request.description %}
+                    <td colspan="{% if user.is_facility_manager %}7{% else %}6{% endif %}" style="border: none">{% if a_request.description %}<u>Description:</u><br>{{ a_request.description|linebreaksbr }}{% endif %}</td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

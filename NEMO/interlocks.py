@@ -8,10 +8,9 @@ from xml.etree import ElementTree
 import requests
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from NEMO.admin import InterlockCardAdminForm, InterlockAdminForm
+from NEMO.admin import InterlockAdminForm, InterlockCardAdminForm
 from NEMO.exceptions import InterlockError
 from NEMO.models import Interlock as Interlock_model, InterlockCardCategory
 from NEMO.utilities import format_datetime
@@ -45,7 +44,7 @@ class Interlock(ABC):
 	def __issue_command(self, interlock: Interlock_model, command_type: Interlock_model.State):
 		interlocks_enabled = getattr(settings, 'INTERLOCKS_ENABLED', False)
 		if not interlocks_enabled or not interlock.card.enabled:
-			interlock.most_recent_reply = "Interlock interface mocked out because settings.INTERLOCKS_ENABLED = False or interlock card is disabled. Interlock last set on " + format_datetime(timezone.now()) + "."
+			interlock.most_recent_reply = "Interlock interface mocked out because settings.INTERLOCKS_ENABLED = False or interlock card is disabled. Interlock last set on " + format_datetime() + "."
 			interlock.state = command_type
 			interlock.save()
 			return True
@@ -71,9 +70,9 @@ class Interlock(ABC):
 		if interlock.state == interlock.State.UNKNOWN:
 			interlocks_logger.error(f"Interlock {interlock.id} is in an unknown state. {interlock.most_recent_reply}")
 		elif interlock.state == interlock.State.LOCKED:
-			interlocks_logger.debug(f"Interlock {interlock.id} locked successfully at {format_datetime(timezone.now())}")
+			interlocks_logger.debug(f"Interlock {interlock.id} locked successfully at {format_datetime()}")
 		elif interlock.state == interlock.State.UNLOCKED:
-			interlocks_logger.debug(f"Interlock {interlock.id} unlocked successfully at {format_datetime(timezone.now())}")
+			interlocks_logger.debug(f"Interlock {interlock.id} unlocked successfully at {format_datetime()}")
 
 		# If the command type equals the current state then the command worked which will return true:
 		return interlock.state == command_type
@@ -81,7 +80,7 @@ class Interlock(ABC):
 	@staticmethod
 	def __create_reply_message(command_type: Interlock_model.State, actual_state: Interlock_model.State, error_message: str) -> str:
 		# Compose the status message of the last command.
-		reply_message = f"Reply received at {format_datetime(timezone.now())}. "
+		reply_message = f"Reply received at {format_datetime()}. "
 		if command_type == Interlock_model.State.UNLOCKED:
 			reply_message += "Unlock"
 		elif command_type == Interlock_model.State.LOCKED:

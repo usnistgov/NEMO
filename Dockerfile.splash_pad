@@ -1,4 +1,4 @@
-FROM python:3.6.8
+FROM python:3.7
 
 COPY . /nemo/
 RUN pip install /nemo/
@@ -12,9 +12,10 @@ COPY resources/icons/* /nemo/media/
 COPY resources/people/* /nemo/media/
 COPY resources/sounds/* /nemo/media/
 COPY resources/images/* /nemo/media/
+COPY resources/emails/* /nemo/media/
 COPY resources/splash_pad_rates.json /nemo/media/rates.json
 COPY resources/splash_pad_settings.py /nemo/
-COPY NEMO/fixtures/splash_pad.json /nemo/
+COPY resources/fixtures/splash_pad.json /nemo/
 
 ENV DJANGO_SETTINGS_MODULE "splash_pad_settings"
 ENV PYTHONPATH "/nemo/"

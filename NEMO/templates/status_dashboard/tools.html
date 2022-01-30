@@ -45,7 +45,7 @@
 					{% endif %}
 					{{ tool.user }}
 				</td>
-				<td>{{ tool.in_use_since|date:"l @ g:i A" }}</td>
+				<td>{{ tool.in_use_since|date:"l @ "}} {{ tool.in_use_since|time }}</td>
 			{% else %}
 				<td></td>
 				<td></td>

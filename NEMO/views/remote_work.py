@@ -1,12 +1,18 @@
 from django.db.models import F, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
-from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_required
 from NEMO.models import Project, StaffCharge, UsageEvent, User
-from NEMO.utilities import BasicDisplayTable, get_month_timeframe, month_list, parse_start_and_end_date
+from NEMO.utilities import (
+	BasicDisplayTable,
+	export_format_datetime,
+	format_datetime,
+	get_month_timeframe,
+	month_list,
+	parse_start_and_end_date,
+)
 
 
 @staff_member_required
@@ -73,8 +79,8 @@ def remote_work(request):
 					ITEM: usage.tool,
 					STAFF: usage.operator,
 					CUSTOMER: usage.user,
-					START: usage.start.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p"),
-					END: usage.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p") if usage.end else "",
+					START: format_datetime(usage.start, "SHORT_DATETIME_FORMAT"),
+					END: format_datetime(usage.end, "SHORT_DATETIME_FORMAT") if usage.end else "",
 					PROJECT: usage.project,
 				}
 			)
@@ -87,8 +93,8 @@ def remote_work(request):
 						ITEM: access.area,
 						STAFF: staff_charge.staff_member,
 						CUSTOMER: access.customer,
-						START: access.start.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p"),
-						END: access.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p") if access.end else "",
+						START: format_datetime(access.start, "SHORT_DATETIME_FORMAT"),
+						END: format_datetime(access.end, "SHORT_DATETIME_FORMAT") if access.end else "",
 						PROJECT: access.project,
 					}
 				)
@@ -99,15 +105,13 @@ def remote_work(request):
 					ITEM: "Staff Charge",
 					STAFF: staff_charge.staff_member,
 					CUSTOMER: staff_charge.customer,
-					START: staff_charge.start.astimezone(timezone.get_current_timezone()).strftime(
-						"%m/%d/%Y @ %I:%M %p"
-					),
-					END: staff_charge.end.astimezone(timezone.get_current_timezone()).strftime("%m/%d/%Y @ %I:%M %p") if staff_charge.end else "",
+					START: format_datetime(staff_charge.start, "SHORT_DATETIME_FORMAT"),
+					END: format_datetime(staff_charge.end, "SHORT_DATETIME_FORMAT") if staff_charge.end else "",
 					PROJECT: staff_charge.project,
 				}
 			)
 		response = table_result.to_csv()
-		filename = f"remote_work_{start_date.strftime('%m_%d_%Y')}_to_{end_date.strftime('%m_%d_%Y')}.csv"
+		filename = f"remote_work_{export_format_datetime(start_date, time_format=False)}_to_{export_format_datetime(end_date, time_format=False)}.csv"
 		response["Content-Disposition"] = f'attachment; filename="{filename}"'
 		return response
 	dictionary = {

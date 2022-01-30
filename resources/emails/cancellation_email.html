@@ -1,0 +1,28 @@
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+            <tr>
+                <td align="center" style="color: white; background: #5bc0de; padding: 50px 0;" bgcolor="#5bc0de">
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
+                        RESERVATION CANCELLED
+                    </h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">
+                    <p>Dear {{ reservation.user.first_name }},</p>
+                    <p>{{ staff_member }} cancelled your reservation for the {{ reservation.reservation_item }} starting on {{ reservation.start }} and ending on {{ reservation.end }}.</p>
+                    <p>{{ staff_member.first_name }} provided this reason for cancelling the reservation:</p>
+                    <div style="border-left: 5px solid #5bc0de; padding-left: 7px; font-style: italic">{{ reason }}</div>
+                    <p>You can reply to this message to contact {{ staff_member.first_name }} if you believe the reservation should not have been cancelled, or log in to NEMO to schedule a new reservation.</p>
+                </td>
+            </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+    </body>
+</html>

@@ -2,22 +2,11 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.utils import timezone
+from django.utils.formats import date_format
 
 
 def migration_format_datetime(universal_time):
-    local_time = universal_time.astimezone(timezone.get_current_timezone())
-    day = int(local_time.strftime("%d"))
-    if 4 <= day <= 20 or 24 <= day <= 30:
-        suffix = "th"
-    else:
-        suffix = ["st", "nd", "rd"][day % 10 - 1]
-    return (
-        local_time.strftime("%A, %B ")
-        + str(day)
-        + suffix
-        + local_time.strftime(", %Y @ ")
-        + local_time.strftime("%I:%M %p").lstrip("0")
-    )
+    return date_format(timezone.localtime(universal_time), "DATETIME_FORMAT")
 
 
 def create_news_for_version(apps, version, extra_content=None):

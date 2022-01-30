@@ -1,6 +1,5 @@
 from typing import List
 
-from django.utils import timezone
 from drf_renderer_xlsx.mixins import XLSXFileMixin
 from rest_framework import status
 from rest_framework.response import Response
@@ -37,6 +36,7 @@ from NEMO.serializers import (
 	UsageEventSerializer,
 	UserSerializer,
 )
+from NEMO.utilities import export_format_datetime
 from NEMO.views.api_billing import (
 	BillableItem,
 	BillingFilterForm,
@@ -47,8 +47,6 @@ from NEMO.views.api_billing import (
 	get_training_sessions_for_billing,
 	get_usage_events_for_billing,
 )
-
-date_time_format_export = "%m_%d_%Y-%H_%M_%S"
 
 
 class UserViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -65,6 +63,7 @@ class UserViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"badge_number": ["exact"],
 		"is_active": ["exact"],
 		"is_staff": ["exact"],
+		"is_facility_manager": ["exact"],
 		"is_superuser": ["exact"],
 		"is_service_personnel": ["exact"],
 		"is_technician": ["exact"],
@@ -75,7 +74,7 @@ class UserViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"users-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"users-{export_format_datetime()}.xlsx"
 
 
 class ProjectViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -90,7 +89,7 @@ class ProjectViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"projects-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"projects-{export_format_datetime()}.xlsx"
 
 
 class AccountViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -99,7 +98,7 @@ class AccountViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	filterset_fields = {"id": ["exact", "in"], "name": ["exact"], "active": ["exact"]}
 
 	def get_filename(self):
-		return f"accounts-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"accounts-{export_format_datetime()}.xlsx"
 
 
 class ToolViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -117,7 +116,7 @@ class ToolViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"tools-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"tools-{export_format_datetime()}.xlsx"
 
 
 class AreaViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -136,7 +135,7 @@ class AreaViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"areas-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"areas-{export_format_datetime()}.xlsx"
 
 
 class ResourceViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -152,7 +151,7 @@ class ResourceViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"resources-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"resources-{export_format_datetime()}.xlsx"
 
 
 class ReservationViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -173,7 +172,7 @@ class ReservationViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"reservations-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"reservations-{export_format_datetime()}.xlsx"
 
 
 class UsageEventViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -190,7 +189,7 @@ class UsageEventViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"usage_events-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"usage_events-{export_format_datetime()}.xlsx"
 
 
 class AreaAccessRecordViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -207,7 +206,7 @@ class AreaAccessRecordViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"area_access_records-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"area_access_records-{export_format_datetime()}.xlsx"
 
 
 class TaskViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -231,7 +230,7 @@ class TaskViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"tasks-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"tasks-{export_format_datetime()}.xlsx"
 
 
 class ScheduledOutageViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -249,7 +248,7 @@ class ScheduledOutageViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"outages-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"outages-{export_format_datetime()}.xlsx"
 
 
 class StaffChargeViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -263,10 +262,11 @@ class StaffChargeViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"start": ["gte", "gt", "lte", "lt"],
 		"end": ["gte", "gt", "lte", "lt", "isnull"],
 		"validated": ["exact"],
+		"note": ["contains"],
 	}
 
 	def get_filename(self):
-		return f"staff_charges-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"staff_charges-{export_format_datetime()}.xlsx"
 
 
 class TrainingSessionViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
@@ -285,7 +285,7 @@ class TrainingSessionViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	}
 
 	def get_filename(self):
-		return f"training_sessions-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"training_sessions-{export_format_datetime()}.xlsx"
 
 
 class BillingViewSet(XLSXFileMixin, GenericViewSet):
@@ -315,4 +315,4 @@ class BillingViewSet(XLSXFileMixin, GenericViewSet):
 		return data
 
 	def get_filename(self):
-		return f"billing-{timezone.localtime().strftime(date_time_format_export)}.xlsx"
+		return f"billing-{export_format_datetime()}.xlsx"

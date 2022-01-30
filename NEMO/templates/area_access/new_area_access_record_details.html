@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load mptt_tags %}
+{% load custom_tags_and_filters %}
 {% block title %}Add area access record{% endblock %}
 {% block content %}
 	<h1>New area access record</h1>
@@ -25,7 +26,7 @@
 						Which of the customer's projects would you like to bill?
 						<div class="radio">
 							{% for p in customer.active_projects %}
-								<label class="control-label"><input type="radio" name="project" value="{{ p.id }}" required> {{ p }}</label><br>
+								<label class="control-label"><input type="radio" name="project" value="{{ p.id }}" required> {% project_selection_display p %}</label><br>
 							{% endfor %}
 						</div>
 					{% endif %}

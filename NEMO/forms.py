@@ -31,10 +31,12 @@ from NEMO.models import (
 	Task,
 	TaskCategory,
 	TaskImages,
+	TemporaryPhysicalAccessRequest,
 	User,
 	UserPreferences,
 )
-from NEMO.utilities import bootstrap_primary_color, format_datetime
+from NEMO.utilities import bootstrap_primary_color, format_datetime, quiet_int
+from NEMO.views.customization import get_customization
 
 
 class UserForm(ModelForm):
@@ -109,6 +111,7 @@ class TaskForm(ModelForm):
 				raise ValidationError(
 					"This task can't be resolved because it is marked as 'cancelled' or 'resolved' already."
 				)
+		return self.cleaned_data
 
 	def save(self, commit=True):
 		instance = super(TaskForm, self).save(commit=False)
@@ -222,7 +225,7 @@ class SafetyIssueUpdateForm(ModelForm):
 		if progress_type == "updated" and self.cleaned_data["update"]:
 			progress = (
 					"On "
-					+ format_datetime(timezone.now())
+					+ format_datetime()
 					+ " "
 					+ self.user.get_full_name()
 					+ " updated this issue:\n"
@@ -290,6 +293,7 @@ class ConsumableWithdrawForm(ModelForm):
 					customer, project
 				)
 			)
+		return self.cleaned_data
 
 
 class ReservationAbuseForm(Form):
@@ -387,6 +391,32 @@ class BuddyRequestForm(ModelForm):
 	class Meta:
 		model = BuddyRequest
 		fields = "__all__"
+
+	def clean(self):
+		if any(self.errors):
+			return
+		cleaned_data = super().clean()
+		start = cleaned_data.get("start")
+		end = cleaned_data.get("end")
+		if end < start:
+			self.add_error("end", "The end must be later than the start")
+		return cleaned_data
+
+
+class TemporaryPhysicalAccessRequestForm(ModelForm):
+	class Meta:
+		model = TemporaryPhysicalAccessRequest
+		fields = ["start_time", "end_time", "physical_access_level", "other_users", "description"]
+
+	def clean(self):
+		if any(self.errors):
+			return
+		cleaned_data = super().clean()
+		other_users = len(cleaned_data.get("other_users")) if "other_users" in cleaned_data else 0
+		minimum_total_users = quiet_int(get_customization("access_requests_minimum_users", 2))
+		if other_users < minimum_total_users -1:
+			self.add_error("other_users", f"You need at least {minimum_total_users-1} other {'buddy' if minimum_total_users == 2 else 'buddies'} for this request")
+		return cleaned_data
 
 
 def nice_errors(form, non_field_msg="General form errors"):

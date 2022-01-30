@@ -1,4 +1,5 @@
-from django.http import HttpResponseBadRequest
+from django.contrib import messages
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -122,3 +123,15 @@ def end_staff_area_charge(request):
 	area_access.end = timezone.now()
 	area_access.save()
 	return redirect(reverse('staff_charges'))
+
+
+@staff_member_required
+@require_POST
+def edit_staff_charge_note(request):
+	charge: StaffCharge = request.user.get_staff_charge()
+	if charge:
+		message = f"The charge note was {'updated' if charge.note else 'saved'}"
+		charge.note = request.POST.get("staff_charge_note")
+		charge.save(update_fields=["note"])
+		messages.success(request, message)
+	return HttpResponse()
