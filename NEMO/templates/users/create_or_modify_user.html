@@ -104,7 +104,7 @@
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="access_expiration">Access expiration</label>
 			<div class="col-sm-2">
-				<input id="access_expiration" name="access_expiration" type="text" autocomplete="off" class="form-control" value="{{ form.access_expiration.value|default_if_none:'' }}">
+				<input id="access_expiration" name="access_expiration" type="text" autocomplete="off" class="form-control" value="{{ form.access_expiration.value|to_date:'m/d/Y' }}">
 			</div>
 			<div class="control-label col-sm-2" style="text-align:left">
 				<a href="javascript:void(0)" onclick="$('#access_expiration').val('{{ one_year_from_now|date:'m/d/Y' }}')">One year from now</a>

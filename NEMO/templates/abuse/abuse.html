@@ -3,6 +3,7 @@
 {% block title %}Reservation abuse{% endblock %}
 {% block extrahead %}
 	{% load static %}
+    {% load custom_tags_and_filters %}
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
 	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
 {% endblock %}
@@ -55,11 +56,11 @@
 		<div class="form-group">
 			<label for="start" class="col-sm-3 control-label">Starting</label>
 			<div class="col-sm-3">
-				<input id="start" type="text" name="start" class="form-control" value="{{ form.start.value }}">
+				<input id="start" type="text" name="start" class="form-control" value="{{ form.start.value|to_date:"m/d/Y" }}">
 			</div>
 			<label for="end" class="col-sm-1 control-label">Ending</label>
 			<div class="col-sm-3">
-				<input id="end" type="text" name="end" class="form-control" value="{{ form.end.value }}">
+				<input id="end" type="text" name="end" class="form-control" value="{{ form.end.value|to_date:"m/d/Y" }}">
 			</div>
 		</div>
 		<div class="form-group">
