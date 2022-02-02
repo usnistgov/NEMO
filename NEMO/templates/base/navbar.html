@@ -87,7 +87,7 @@
 				<li class="hidden-sm"><p class="navbar-text">Welcome, {{ user.first_name }}</p></li>
 				<li class="navbar-preferences"><a href="{%  url 'user_preferences' %}"><img src="{% static 'icons/preferences.png' %}" alt="preferences"/></a></li>
 				{% if logout_allowed %}
-					<li><a href="{% url 'logout' %}">Logout</a></li>
+					<li><a href="{% url 'logout' %}" style="padding-left: 0;padding-right: 0;margin-left: 15px; margin-right: 15px">Logout</a></li>
 				{% endif %}
 			</ul>
 		</div>

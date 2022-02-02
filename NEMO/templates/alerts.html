@@ -43,11 +43,11 @@
 			<div class="row">
 				<div class="col-sm-6">
 					<label for="debut_time">Debut time</label>{% if form.debut_time.errors %} - <span style="color:red">{{ form.debut_time.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control" name="debut_time" id="debut_time" value="{% if form.debut_time.value %}{% if form.debut_time.value|class_name == "datetime" %}{{ form.debut_time.value|date:"m/d/Y g:i A" }}{% else %}{{ form.debut_time.value }}{% endif %}{% else %}{% now "m/d/Y g:i A" %}{% endif %}">
+					<input type="text" class="form-control" name="debut_time" id="debut_time" value="{% if form.debut_time.value %}{{ form.debut_time.value|to_date:"m/d/Y g:i A" }}{% else %}{% now "m/d/Y g:i A" %}{% endif %}">
 				</div>
 				<div class="col-sm-6">
 					<label for="expiration_time">Expiration time</label>{% if form.expiration_time.errors %} - <span style="color:red">{{ form.expiration_time.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control" name="expiration_time" id="expiration_time" value="{% if form.expiration_time.value|class_name == "datetime" %}{{ form.expiration_time.value|date:"m/d/Y g:i A" }}{% else %}{{ form.expiration_time.value }}{% endif %}">
+					<input type="text" class="form-control" name="expiration_time" id="expiration_time" value="{{ form.expiration_time.value|to_date:"m/d/Y g:i A" }}">
 				</div>
 			</div>
 		</div>

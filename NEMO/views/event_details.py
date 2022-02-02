@@ -49,5 +49,5 @@ def usage_details(request, event_id):
 def area_access_details(request, event_id):
 	event = get_object_or_404(AreaAccessRecord, id=event_id)
 	return render(
-		request, "calendar/area_access_details.html", {"event": event, "popup_view": request.GET.get("popup_view")}
+		request, "event_details/area_access_details.html", {"event": event, "popup_view": request.GET.get("popup_view")}
 	)

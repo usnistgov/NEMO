@@ -281,7 +281,7 @@ def set_task_status(request, task, status_name, user):
 			status.custom_notification_email_address
 		]
 		if status.notify_backup_tool_owners:
-			recipients += task.tool.backup_tool_owners.values_list('email')
+			recipients.extend(task.tool.backup_owners.values_list('email', flat=True))
 		recipients = filter(None, recipients)
 		send_mail(subject=subject, content=message, from_email=user.email, to=recipients, email_category=EmailCategory.TASKS)
 
