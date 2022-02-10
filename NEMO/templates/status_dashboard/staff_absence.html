@@ -117,7 +117,7 @@
         {% else %}
             clear_staff_member_selection();
         {% endif %}
-    {% elif form.instance.id and form.instance.staff_member %}
+    {% elif form.instance.staff_member %}
         select_staff_member(false, {'id': '{{ form.instance.staff_member.id }}', 'name': '{{ form.instance.staff_member }}'});
     {% endif %}
 
