@@ -62,6 +62,9 @@ from NEMO.models import (
 	SafetyIssue,
 	ScheduledOutage,
 	ScheduledOutageCategory,
+	StaffAbsence,
+	StaffAbsenceType,
+	StaffAvailability,
 	StaffCharge,
 	Task,
 	TaskCategory,
@@ -1271,6 +1274,29 @@ class BuddyRequestMessageAdmin(admin.ModelAdmin):
 		return format_html('<a href="%s">%s</a>' % (link, obj.buddy_request))
 
 	link_to_buddy_request.short_description = "BUDDY REQUEST"
+
+
+@register(StaffAbsenceType)
+class StaffAbsenceTypeAdmin(admin.ModelAdmin):
+	list_display = ("name", "description")
+
+
+@register(StaffAvailability)
+class StaffAvailabilityAdmin(admin.ModelAdmin):
+	list_display = ("staff_member", "category", "start_time", "end_time", *StaffAvailability.DAYS)
+	list_filter = ("category", *StaffAvailability.DAYS)
+
+	def formfield_for_foreignkey(self, db_field, request, **kwargs):
+		""" We only want active users here """
+		if db_field.name == "staff_member":
+			kwargs["queryset"] = User.objects.filter(is_active=True)
+		return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@register(StaffAbsence)
+class StaffAbsenceAdmin(admin.ModelAdmin):
+	list_display = ("creation_time", "staff_member", "absence_type", "full_day", "start_date", "end_date")
+	list_filter = ("staff_member", "absence_type", "start_date", "end_date", "creation_time")
 
 
 @register(EmailLog)

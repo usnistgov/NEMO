@@ -1,0 +1,74 @@
+{% load custom_tags_and_filters %}
+<div class="row">
+    <div class="col-sm-6">
+        Staff availability is highlighted in <span style="display: inline-block; padding: 3px" class="alert-success">green</span><br>
+        Staff partial availability is highlighted in <span style="display: inline-block; padding: 3px" class="alert-warning">orange</span><br>
+        Staff absence is highlighted in <span style="display: inline-block; padding: 3px" class="alert-danger">red</span>
+    </div>
+    <div class="col-sm-6">
+        {% if user.is_facility_manager %}
+            <a class="btn btn-info pull-right" href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ page_timestamp }}&csv=true" role="button" target="_blank">Export</a>
+        {% endif %}
+    </div>
+</div>
+<table class="table table-responsive table-bordered" style="margin-top: 25px">
+    <thead>
+        <tr class="no-border">
+            <th></th>
+            <th class="button-column-minimum"></th>
+            <th class="button-column-minimum" style="vertical-align: middle;">
+                <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ prev }}">
+                    <i class="glyphicon glyphicon-chevron-left chevron" style="padding: 0"></i>
+                </a>
+            </th>
+            {% for day in days %}
+                <th class="text-center">
+                    {{ day|date:staff_date_format }}
+                </th>
+            {% endfor %}
+            <th class="button-column-minimum" style="vertical-align: middle;">
+                <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ next }}">
+                    <i class="glyphicon glyphicon-chevron-right chevron" style="padding: 0"></i>
+                </a>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+    {% regroup staffs by category as category_staff %}
+		{% for category in category_staff %}
+            <tr><th colspan="{{ days_length|add:4 }}">{{ category.grouper|default_if_none:'Other' }}</th></tr>
+            {% for staff in category.list %}
+                <tr>
+                    <td style="vertical-align: middle; border-right: none">{{ staff.staff_member.get_contact_info_html|safe }}</td>
+                    <td style="vertical-align: middle; border-left: none">{% if user.is_facility_manager %}<span class="glyphicon glyphicon-plus-sign success-highlight" onclick="ajax_get('{% url "create_staff_absence" %}?staff_id={{ staff.id }}&timestamp={{ page_timestamp }}', undefined, ajax_success_callback)" title="Add staff absence"></span>{% endif %}</td>
+                    {% for day in days %}
+                        {% with staff_available=staff.weekly_availability|get_item:day.weekday staff_absent=staff_absences|get_item:staff.staff_member.id|get_item:day.weekday %}
+                            <td style="vertical-align: middle;" {% if forloop.last or forloop.first %}colspan="2"{% endif %} class="text-center {% if staff_absent %}{% if staff_absent.full_day %}alert-danger{% else %}alert-warning{% endif %}{% elif staff_available %}alert-success{% elif not user.is_staff %}alert-danger{% endif %}" {% if staff_absent and not staff_absent.full_day and not user.is_facility_manager %}data-title="{{ staff_absent.description }}" {% elif staff_available %}title="{{ staff.daily_hours }}"{% endif %} data-container="body" data-toggle="tooltip">
+                                {% if user.is_facility_manager %}
+                                    {% if staff_absent %}
+                                        <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span style="cursor: pointer" onclick="ajax_get('{% url "edit_staff_absence" staff_absent.id %}?timestamp={{ page_timestamp }}', undefined, ajax_success_callback)">{{ staff_absent.absence_type.name }}</span></div>
+                                    {% endif %}
+                                {% else %}
+                                    {% if staff_absent %}
+{#                                        Out#}
+                                    {% elif staff_available %}
+{#                                        In#}
+                                    {% else %}
+{#                                        Out#}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        {% endwith %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    $(".contact-info-tooltip").on('click', function () {
+      	$(this).tooltip({trigger: 'manual', html: 'true', title: $(this).data('title')}).tooltip('toggle');
+    });
+    $("[data-toggle='tooltip']").tooltip();
+</script>

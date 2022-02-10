@@ -205,11 +205,14 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	background-color: transparent !important;
 }
 
-.table.table-align-middle > tbody > tr > td {
+.table.table-align-middle > tbody > tr > td
+{
      vertical-align: middle;
 }
 
-table > tbody > tr.no-border > td, table > tbody > tr.no-border > th {
+table > tbody > tr.no-border > td, table > tbody > tr.no-border > th,
+table > thead > tr.no-border > td, table > thead > tr.no-border > th
+{
 	border: none;
 }
 
@@ -248,12 +251,20 @@ table > tbody > tr.no-border > td, table > tbody > tr.no-border > th {
 	position: relative;
 }
 
-.extra-side-padding {
+.extra-side-padding
+{
 	padding-left: 5px;
 	padding-right: 5px;
 }
 
-.small-input {
+.no-side-padding
+{
+    padding-right: 0;
+    padding-left: 0;
+}
+
+.small-input
+{
 	max-width: 125px;
 }
 
@@ -265,7 +276,8 @@ appear as a pointer (rather than text selector) when mousing over event text. */
 }
 
 /* Adds more space between event and side so users can more easily click to create new events */
-div.fc-ltr .fc-time-grid .fc-event-container {
+div.fc-ltr .fc-time-grid .fc-event-container
+{
     margin-right: 10%;
 }
 
@@ -335,6 +347,12 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 {
 	/* 100 viewport - header (height+border+margin) - footer (height+border+margin) */
 	min-height: calc(100vh - 71px - 61px);
+}
+
+.customization-section-title
+{
+	margin-bottom: 20px;
+	margin-top: 5px;
 }
 
 .customization-separation

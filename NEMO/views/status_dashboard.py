@@ -1,14 +1,31 @@
-from typing import List, Optional
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Union
 
+from dateutil.rrule import DAILY, rrule
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, QuerySet, Count, Prefetch
-from django.shortcuts import render
+from django.db.models import F, Prefetch, Q, QuerySet
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_http_methods
 
-from NEMO.decorators import disable_session_expiry_refresh
-from NEMO.model_tree import get_area_model_tree, TreeItem, ModelTreeHelper
-from NEMO.models import AreaAccessRecord, Resource, ScheduledOutage, Task, Tool, UsageEvent, User, Area
+from NEMO.decorators import disable_session_expiry_refresh, facility_manager_required
+from NEMO.forms import StaffAbsenceForm
+from NEMO.model_tree import ModelTreeHelper, TreeItem, get_area_model_tree
+from NEMO.models import (
+	Area,
+	AreaAccessRecord,
+	Resource,
+	ScheduledOutage,
+	StaffAbsence,
+	StaffAvailability,
+	Task,
+	Tool,
+	UsageEvent,
+	User,
+)
+from NEMO.utilities import BasicDisplayTable, beginning_of_the_day, export_format_datetime, format_datetime, quiet_int
 from NEMO.views.customization import get_customization
 
 
@@ -21,26 +38,142 @@ def status_dashboard(request, tab=None):
 	"""
 	interest = request.GET.get('interest')
 	if interest is None:
-		area_items, no_occupants = process_area_access_record_with_parents(request.user)
+		csv_export = bool(request.GET.get("csv", False))
+		if tab == 'staff' and csv_export:
+			return get_staff_status(request, csv_export)
 		dictionary = {
-			'tab': tab if tab else "occupancy",
-			'tool_summary': create_tool_summary(),
-			'area_items': area_items,
-			'no_occupants': no_occupants,
+			"tab": tab if tab else "occupancy",
+			"show_staff_status": show_staff_status(request),
+			**get_tools_dictionary(),
+			**get_occupancy_dictionary(request),
+			**get_staff_status(request)
 		}
 		return render(request, 'status_dashboard/status_dashboard.html', dictionary)
 	elif interest == "tools":
-		dictionary = {
-			'tool_summary': create_tool_summary(),
-		}
-		return render(request, 'status_dashboard/tools.html', dictionary)
+		return render(request, 'status_dashboard/tools.html', get_tools_dictionary())
 	elif interest == "occupancy":
-		area_items, no_occupants = process_area_access_record_with_parents(request.user)
-		dictionary = {
-			'area_items': area_items,
-			'no_occupants': no_occupants,
-		}
-		return render(request, 'status_dashboard/occupancy.html', dictionary)
+		return render(request, 'status_dashboard/occupancy.html', get_occupancy_dictionary(request))
+
+
+def get_tools_dictionary():
+	return {'tool_summary': create_tool_summary()}
+
+
+def get_occupancy_dictionary(request):
+	area_items, no_occupants = process_area_access_record_with_parents(request.user)
+	return {
+		'area_items': area_items,
+		'no_occupants': no_occupants,
+	}
+
+
+def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
+	# Timestamp allows us to know which week to show. Defaults to current week
+	timestamp = quiet_int(request.GET.get("timestamp", datetime.now().timestamp()), datetime.now().timestamp())
+	today = beginning_of_the_day(datetime.fromtimestamp(timestamp))
+	weekdays_only = get_customization("dashboard_staff_status_weekdays_only")
+	first_day = today.isoweekday() if not weekdays_only and get_customization("dashboard_staff_status_first_day_of_week") == "0" else today.weekday()
+	week_start = today - timedelta(days=first_day)
+	week_end = week_start + timedelta(weeks=1) - timedelta(days=1)
+	# If we are only showing weekdays, we have to subtract 2 days from the end of the week
+	if weekdays_only:
+		week_end = week_end - timedelta(days=2)
+	staffs = StaffAvailability.objects.all()
+	staffs.query.add_ordering(F('category').asc(nulls_last=True))
+	staffs.query.add_ordering(F('staff_member__first_name').asc())
+	days = rrule(DAILY, dtstart=week_start, until=week_end)
+	staff_date_format = get_customization("dashboard_staff_status_date_format")
+	if csv_export:
+		return export_staff_status(request, staffs, days, week_start, week_end, staff_date_format)
+	return {
+		"staff_date_format": staff_date_format,
+		"staff_absences": staff_absences_dict(staffs, days, week_start, week_end),
+		"staffs": staffs,
+		"days": days,
+		"days_length": 5 if weekdays_only else 7,
+		"page_timestamp": timestamp,
+		"prev": int((week_start - timedelta(days=2)).timestamp()), # Beginning of the week -2 days will put us in the previous week
+		"next": int((week_end + timedelta(days=4)).timestamp()) # End of the week +4 days will put us in the next week (even if weekdays only)
+	}
+
+
+@facility_manager_required
+@require_http_methods(["GET", "POST"])
+def create_staff_absence(request, absence_id=None):
+	try:
+		absence = StaffAbsence.objects.get(pk=absence_id)
+	except (StaffAbsence.DoesNotExist, ValueError):
+		absence = StaffAbsence()
+		# Set the staff if we were given its id
+		try:
+			staff_id = request.GET.get("staff_id", None)
+			if staff_id:
+				absence.staff_member = StaffAvailability.objects.get(pk=staff_id)
+		except (StaffAvailability.DoesNotExist, ValueError):
+			pass
+	form = StaffAbsenceForm(request.POST or None, instance=absence)
+	timestamp = request.GET.get("timestamp", "")
+	if request.POST and form.is_valid():
+		form.save()
+		return HttpResponse()
+	dictionary = {
+		"form": form,
+		"staff_members": StaffAvailability.objects.all(),
+		"page_timestamp": timestamp
+	}
+	return render(request, 'status_dashboard/staff_absence.html', dictionary)
+
+
+@facility_manager_required
+@require_GET
+def delete_staff_absence(request, absence_id):
+	absence = get_object_or_404(StaffAbsence, id=absence_id)
+	absence.delete()
+	timestamp = request.GET.get("timestamp", "")
+	url = reverse("status_dashboard_tab", args=["staff"])
+	return redirect(f"{url}?timestamp={timestamp}")
+
+
+def staff_absences_dict(staffs, days, week_start, week_end):
+	dictionary = {staff.staff_member.id: {} for staff in staffs}
+	staff_absences = StaffAbsence.objects.filter(start_date__lte=week_end, end_date__gte=week_start).order_by("creation_time")
+	for staff_absence in staff_absences:
+		for day in days:
+			if staff_absence.start_date <= day.date() <= staff_absence.end_date:
+				dictionary[staff_absence.staff_member.staff_member.id][day.weekday()] = staff_absence
+	return dictionary
+
+
+@facility_manager_required
+def export_staff_status(request, staffs, days, week_start, week_end, staff_date_format) -> HttpResponse:
+	table_result = BasicDisplayTable()
+	table_result.add_header(("staff", ""))
+	# Add headers for each day
+	for day in days:
+		table_result.add_header((day.weekday(), format_datetime(day, staff_date_format, as_current_timezone=False)))
+	staff_absences = staff_absences_dict(staffs, days, week_start, week_end)
+	category = ""
+	for staff in staffs:
+		if staff.category != category:
+			category = staff.category or "Other"
+		# Add a whole row for the category
+		table_result.add_row({"staff": category})
+		# Add a row for each staff member
+		staff_row = {"staff": staff.staff_member.get_name(), **staff.weekly_availability("In", "Out")}
+		for staff_id, absence_dict in staff_absences.items():
+			if staff.id == staff_id:
+				for day_index, absence in absence_dict.items():
+					staff_row[day_index] = absence.absence_type.name + f" {absence.description or ''}"
+		table_result.add_row(staff_row)
+	response = table_result.to_csv()
+	filename = f"staff_status_{export_format_datetime(week_start, time_format=False)}_to_{export_format_datetime(week_end, time_format=False)}.csv"
+	response["Content-Disposition"] = f'attachment; filename="{filename}"'
+	return response
+
+
+def show_staff_status(request):
+	dashboard_staff_status_staff_only = get_customization("dashboard_staff_status_staff_only")
+	return StaffAvailability.objects.exists() and (not dashboard_staff_status_staff_only or request.user.is_staff)
 
 
 def process_area_access_record_with_parents(user: User):

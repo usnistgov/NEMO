@@ -28,6 +28,7 @@ from NEMO.models import (
 	ReservationItemType,
 	SafetyIssue,
 	ScheduledOutage,
+	StaffAbsence,
 	Task,
 	TaskCategory,
 	TaskImages,
@@ -417,6 +418,12 @@ class TemporaryPhysicalAccessRequestForm(ModelForm):
 		if other_users < minimum_total_users -1:
 			self.add_error("other_users", f"You need at least {minimum_total_users-1} other {'buddy' if minimum_total_users == 2 else 'buddies'} for this request")
 		return cleaned_data
+
+
+class StaffAbsenceForm(ModelForm):
+	class Meta:
+		model = StaffAbsence
+		fields = "__all__"
 
 
 def nice_errors(form, non_field_msg="General form errors"):

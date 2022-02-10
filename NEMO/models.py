@@ -214,8 +214,8 @@ class TemporaryPhysicalAccess(models.Model):
 	end_time = models.DateTimeField(help_text="The end of the temporary access")
 
 	def get_schedule_display_with_times(self):
-		start = date_format(self.start_time.astimezone(timezone.get_current_timezone()), 'SHORT_DATETIME_FORMAT')
-		end = date_format(self.end_time.astimezone(timezone.get_current_timezone()), 'SHORT_DATETIME_FORMAT')
+		start = format_datetime(self.start_time, 'SHORT_DATETIME_FORMAT')
+		end = format_datetime(self.end_time, 'SHORT_DATETIME_FORMAT')
 		return f"Temporary {self.physical_access_level.get_schedule_display_with_times()} from {start} to {end}"
 	get_schedule_display_with_times.short_description = 'Schedule'
 
@@ -506,7 +506,8 @@ class User(models.Model):
 			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
 		else:
 			email_url = reverse('get_email_form_for_user', kwargs={'user_id':self.id})
-			return f'<a href="{email_url}" title="Email {self.first_name}"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
+			content = escape(f'<h4 style="margin-top:0; text-align: center">{self.get_name()}</h4>Email: <a href="{email_url}" target="_blank">{self.email}</a><br>')
+			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
 
 
 	@classmethod
@@ -2209,6 +2210,72 @@ class BuddyRequestMessage(models.Model):
 
 	class Meta:
 		ordering = ['creation_date']
+
+
+class StaffAbsenceType(models.Model):
+	name = models.CharField(max_length=255, help_text="The name of this absence type.")
+	description = models.CharField(max_length=255, help_text="The description for this absence type.")
+
+	def __str__(self):
+		description = f" ({self.description})" if self.description else ''
+		return f"{self.name}{description}"
+
+	class Meta:
+		ordering = ["name"]
+
+
+class StaffAvailability(models.Model):
+	DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+	staff_member = models.ForeignKey("User", help_text="The staff member to display on the staff status page.", on_delete=models.CASCADE)
+	category = models.CharField(null=True, blank=True, max_length=100, help_text="The category for this staff member.")
+	start_time = models.TimeField(null=True, blank=True, help_text="The usual start time for this staff member.")
+	end_time = models.TimeField(null=True, blank=True, help_text="The usual end time for this staff member.")
+	monday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Mondays.")
+	tuesday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Tuesdays.")
+	wednesday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Wednesdays.")
+	thursday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Thursdays.")
+	friday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Fridays.")
+	saturday = models.BooleanField(default=False, help_text="Check this box if the staff member usually works on Saturdays.")
+	sunday = models.BooleanField(default=False, help_text="Check this box if the staff member usually works on Sundays.")
+
+	def weekly_availability(self, available=True, absent=False) -> dict:
+		return {index: available if getattr(self, day) else absent for index, day in enumerate(self.DAYS)}
+
+	def daily_hours(self) -> str:
+		start = format_datetime(self.start_time, "TIME_FORMAT", as_current_timezone=False) if self.start_time else ''
+		end = format_datetime(self.end_time, "TIME_FORMAT", as_current_timezone=False) if self.end_time else ''
+		return f"{'Available from ' + start + ' ' if start else ''}{'until ' + end if end else ''}"
+
+	def __str__(self):
+		return str(self.staff_member)
+
+	class Meta:
+		verbose_name_plural = "Staff availability"
+		ordering = ["staff_member__first_name"]
+
+
+class StaffAbsence(models.Model):
+	creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the absence was created.")
+	staff_member = models.ForeignKey(StaffAvailability, help_text="The staff member who will be absent.", on_delete=models.CASCADE)
+	absence_type = models.ForeignKey(StaffAbsenceType, help_text="The absence type. This will only be visible to facility managers.", on_delete=models.CASCADE)
+	start_date = models.DateField(help_text="The start date of the absence.")
+	end_date = models.DateField(help_text="The end date of the absence.")
+	full_day = models.BooleanField(default=True, help_text="Uncheck this box when the absence is only for part of the day.")
+	description = models.TextField(null=True, blank=True, help_text="The absence description.")
+
+	def details_for_manager(self):
+		formatted_start = format_datetime(self.start_date, 'DATE_FORMAT', as_current_timezone=False)
+		formatted_end = format_datetime(self.end_date, 'DATE_FORMAT', as_current_timezone=False)
+		dates = f" from {formatted_start} to {formatted_end}" if self.start_date != self.end_date else ''
+		description = f" ({self.description})" if self.description else ''
+		return f"{self.absence_type.description}{dates}{description}"
+
+	def clean(self):
+		if self.end_date < self.start_date:
+			raise ValidationError({"end_date": "The end date must be on or after the start date"})
+
+	class Meta:
+		ordering = ["-creation_time"]
 
 
 class EmailLog(models.Model):

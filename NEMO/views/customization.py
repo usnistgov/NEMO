@@ -43,6 +43,10 @@ customizable_key_values = {
 	'self_log_out': '',
 	'calendar_login_logout': '',
 	'dashboard_display_not_qualified_areas': '',
+	'dashboard_staff_status_first_day_of_week': '1',
+	'dashboard_staff_status_staff_only': '',
+	'dashboard_staff_status_weekdays_only': '',
+	'dashboard_staff_status_date_format': 'D m/d',
 	'calendar_view': 'agendaWeek',
 	'calendar_first_day_of_week': '1',
 	'calendar_day_column_format': 'dddd MM/DD/YYYY',
@@ -163,15 +167,10 @@ def customize(request, element):
 		set_customization('self_log_in', request.POST.get('self_log_in', ''))
 		set_customization('self_log_out', request.POST.get('self_log_out', ''))
 		set_customization('calendar_login_logout', request.POST.get('calendar_login_logout', ''))
-		set_customization('dashboard_display_not_qualified_areas', request.POST.get('dashboard_display_not_qualified_areas', ''))
 		set_customization('facility_name', request.POST.get('facility_name', ''))
 		set_customization('site_title', request.POST.get('site_title', ''))
 		set_customization('project_selection_template', request.POST.get('project_selection_template', ''))
 		init_admin_site()
-	elif element == 'interlock_settings':
-		set_customization('allow_bypass_interlock_on_failure', request.POST.get('allow_bypass_interlock_on_failure', ''))
-		set_customization('tool_interlock_failure_message', request.POST.get('tool_interlock_failure_message', ''))
-		set_customization('door_interlock_failure_message', request.POST.get('door_interlock_failure_message', ''))
 	elif element == 'calendar_settings':
 		set_customization('calendar_view', request.POST.get('calendar_view', ''))
 		set_customization('calendar_first_day_of_week', request.POST.get('calendar_first_day_of_week', ''))
@@ -180,11 +179,20 @@ def customize(request, element):
 		set_customization('calendar_day_column_format', request.POST.get('calendar_day_column_format', ''))
 		set_customization('calendar_week_column_format', request.POST.get('calendar_week_column_format', ''))
 		set_customization('calendar_month_column_format', request.POST.get('calendar_month_column_format', ''))
-		set_customization('calendar_display_not_qualified_areas', request.POST.get('calendar_display_not_qualified_areas', ''))
 		set_customization('calendar_all_tools', request.POST.get('calendar_all_tools', ''))
 		set_customization('calendar_all_areas', request.POST.get('calendar_all_areas', ''))
 		set_customization('calendar_all_areastools', request.POST.get('calendar_all_areastools', ''))
 		set_customization('calendar_outage_recurrence_limit', request.POST.get('calendar_outage_recurrence_limit', '90'))
+	elif element == 'dashboard_settings':
+		set_customization('dashboard_display_not_qualified_areas', request.POST.get('dashboard_display_not_qualified_areas', ''))
+		set_customization('dashboard_staff_status_first_day_of_week', request.POST.get('dashboard_staff_status_first_day_of_week', ''))
+		set_customization('dashboard_staff_status_staff_only', request.POST.get('dashboard_staff_status_staff_only', ''))
+		set_customization('dashboard_staff_status_weekdays_only', request.POST.get('dashboard_staff_status_weekdays_only', ''))
+		set_customization('dashboard_staff_status_date_format', request.POST.get('dashboard_staff_status_date_format', ''))
+	elif element == 'interlock_settings':
+		set_customization('allow_bypass_interlock_on_failure', request.POST.get('allow_bypass_interlock_on_failure', ''))
+		set_customization('tool_interlock_failure_message', request.POST.get('tool_interlock_failure_message', ''))
+		set_customization('door_interlock_failure_message', request.POST.get('door_interlock_failure_message', ''))
 	elif element == 'requests_settings':
 		set_customization('buddy_requests_title', request.POST.get('buddy_requests_title', ''))
 		set_customization('buddy_board_description', request.POST.get('buddy_board_description', ''))
