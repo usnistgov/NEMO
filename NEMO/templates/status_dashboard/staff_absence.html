@@ -23,7 +23,7 @@
         <label class="col-sm-3 control-label" for="absence_type">Absence type</label>
         <div class="col-sm-9">
             <select class="form-control" name="absence_type" id="absence_type">
-                <option value="" disabled></option>
+                <option value="" disabled selected></option>
                 {% for x, y in form.fields.absence_type.choices %}
                     {% if x %}
                         <option value="{{ x }}"{% if form.absence_type.value|to_int == x %} selected{% endif %}>{{ y }}</option>
