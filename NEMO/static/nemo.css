@@ -257,12 +257,6 @@ table > thead > tr.no-border > td, table > thead > tr.no-border > th
 	padding-right: 5px;
 }
 
-.no-side-padding
-{
-    padding-right: 0;
-    padding-left: 0;
-}
-
 .small-input
 {
 	max-width: 125px;
