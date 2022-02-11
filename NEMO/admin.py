@@ -33,6 +33,7 @@ from NEMO.models import (
 	BadgeReader,
 	BuddyRequest,
 	BuddyRequestMessage,
+	Closure,
 	Comment,
 	Configuration,
 	ConfigurationHistory,
@@ -51,7 +52,6 @@ from NEMO.models import (
 	MembershipHistory,
 	News,
 	Notification,
-	PhysicalAccessException,
 	PhysicalAccessLevel,
 	PhysicalAccessLog,
 	Project,
@@ -185,6 +185,7 @@ class ToolAdminForm(forms.ModelForm):
 					self.add_error("_policy_off_start_time", "Start time must be specified")
 				if not policy_off_end_time:
 					self.add_error("_policy_off_end_time", "End time must be specified")
+		return cleaned_data
 
 
 class ToolDocumentsInline(admin.TabularInline):
@@ -587,6 +588,7 @@ class ReservationQuestionsForm(forms.ModelForm):
 			except Exception:
 				error_info = sys.exc_info()
 				self.add_error("questions", error_info[0].__name__ + ": " + str(error_info[1]))
+		return cleaned_data
 
 
 @register(ReservationQuestions)
@@ -663,11 +665,12 @@ class InterlockCardAdminForm(forms.ModelForm):
 	def clean(self):
 		if any(self.errors):
 			return
-		super(InterlockCardAdminForm, self).clean()
-		category = self.cleaned_data["category"]
+		cleaned_data = super().clean()
+		category = cleaned_data["category"]
 		from NEMO import interlocks
 
 		interlocks.get(category, False).clean_interlock_card(self)
+		return cleaned_data
 
 
 @register(InterlockCard)
@@ -684,11 +687,12 @@ class InterlockAdminForm(forms.ModelForm):
 	def clean(self):
 		if any(self.errors):
 			return
-		super(InterlockAdminForm, self).clean()
+		cleaned_data = super().clean()
 		from NEMO import interlocks
 
 		category = self.cleaned_data["card"].category
 		interlocks.get(category, False).clean_interlock(self)
+		return cleaned_data
 
 
 @register(Interlock)
@@ -847,6 +851,7 @@ class UserAdminForm(forms.ModelForm):
 					"is_service_personnel": "A user cannot be both staff and service personnel. Please choose one or the other.",
 				}
 			)
+		return cleaned_data
 
 
 @register(User)
@@ -1074,6 +1079,7 @@ class PhysicalAccessExceptionAdminForm(forms.ModelForm):
 		end_time = cleaned_data.get("end_time")
 		if end_time <= start_time:
 			self.add_error("end_time", "The end time must be later than the start time")
+		return cleaned_data
 
 
 @register(PhysicalAccessException)
@@ -1100,6 +1106,7 @@ class TemporaryPhysicalAccessAdminForm(forms.ModelForm):
 		end_time = cleaned_data.get("end_time")
 		if end_time <= start_time:
 			self.add_error("end_time", "The end time must be later than the start time")
+		return cleaned_data
 
 
 @register(TemporaryPhysicalAccess)
