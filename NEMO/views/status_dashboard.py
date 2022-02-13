@@ -28,6 +28,7 @@ from NEMO.models import (
 )
 from NEMO.utilities import (
 	BasicDisplayTable,
+	as_timezone,
 	beginning_of_the_day,
 	export_format_datetime,
 	format_datetime,
@@ -146,6 +147,7 @@ def staff_absences_dict(staffs, days, week_start, week_end):
 	absences = StaffAbsence.objects.filter(start_date__lte=week_end, end_date__gte=week_start).order_by("creation_time")
 	for staff_absence in absences:
 		for day in days:
+			# comparing dates here so no timezone issues (dates don't have timezones)
 			if staff_absence.start_date <= day.date() <= staff_absence.end_date:
 				dictionary[staff_absence.staff_member.staff_member.id][day.weekday()] = staff_absence
 	return dictionary
@@ -156,7 +158,7 @@ def closures_dict(days, week_start, week_end):
 	closure_times = ClosureTime.objects.filter(start_time__lte=week_end, end_time__gte=week_start)
 	for closure_time in closure_times:
 		for day in days:
-			if closure_time.start_time.date() <= day.date() <= closure_time.end_time.date():
+			if as_timezone(closure_time.start_time).date() <= day.date() <= as_timezone(closure_time.end_time).date():
 				dictionary[day.weekday()] = closure_time
 	return dictionary
 

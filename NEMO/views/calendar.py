@@ -41,6 +41,7 @@ from NEMO.models import (
 )
 from NEMO.utilities import (
 	EmailCategory,
+	as_timezone,
 	bootstrap_primary_color,
 	create_email_attachment,
 	distinct_qs_value_list,
@@ -1220,7 +1221,7 @@ def do_create_closure_alerts():
 		create_alert_for_closure_time(closure_time)
 	for closure in Closure.objects.filter(notify_managers_last_occurrence=True):
 		closure_time_ending = ClosureTime.objects.filter(closure=closure).latest("end_time")
-		if closure_time_ending.end_time.date() == timezone.now().date():
+		if as_timezone(closure_time_ending.end_time).date() == timezone.now().date():
 			email_last_closure_occurrence(closure_time_ending)
 	return HttpResponse()
 

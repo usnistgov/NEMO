@@ -233,7 +233,7 @@ def format_daterange(start_time, end_time, dt_format="DATETIME_FORMAT", d_format
 	if isinstance(start_time, time):
 		return f"{date_separator}{format_datetime(start_time, t_format)}{time_separator}{format_datetime(end_time, t_format)}".strip()
 	elif isinstance(start_time, datetime):
-		if start_time.date() != end_time.date():
+		if as_timezone(start_time).date() != as_timezone(end_time).date():
 			return f"{date_separator}{format_datetime(start_time, dt_format)}{time_separator}{format_datetime(end_time, dt_format)}".strip()
 		else:
 			return f"{format_datetime(start_time, d_format)}{date_separator}{format_datetime(start_time, t_format)}{time_separator}{format_datetime(end_time, t_format)}".strip()
@@ -243,8 +243,7 @@ def format_daterange(start_time, end_time, dt_format="DATETIME_FORMAT", d_format
 
 def format_datetime(universal_time=None, df=None, as_current_timezone=True, use_l10n=None) -> str:
 	this_time = universal_time if universal_time else timezone.now() if as_current_timezone else datetime.now()
-	naive = type(this_time) == date or is_naive(this_time)
-	local_time = timezone.localtime(this_time) if as_current_timezone and not naive else this_time
+	local_time = as_timezone(this_time) if as_current_timezone else this_time
 	if isinstance(universal_time, time):
 		return time_format(local_time, df or "TIME_FORMAT", use_l10n)
 	elif isinstance(universal_time, datetime):
@@ -263,6 +262,11 @@ def export_format_datetime(date_time=None, d_format=True, t_format=True, undersc
 	separator = "-" if underscore else "_"
 	datetime_format = export_date_format if d_format and not t_format else export_time_format if not d_format and t_format else export_date_format + separator + export_time_format
 	return format_datetime(this_time, datetime_format, as_current_timezone)
+
+
+def as_timezone(dt):
+	naive = type(dt) == date or is_naive(dt)
+	return timezone.localtime(dt) if not naive else dt
 
 
 def localize(dt, tz=None):
