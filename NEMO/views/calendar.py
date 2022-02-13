@@ -1,5 +1,4 @@
 import io
-from collections import Iterable
 from copy import deepcopy
 from datetime import datetime, timedelta
 from http import HTTPStatus
@@ -23,8 +22,11 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.models import (
+	Alert,
 	Area,
 	AreaAccessRecord,
+	Closure,
+	ClosureTime,
 	Configuration,
 	Project,
 	Reservation,
@@ -41,6 +43,7 @@ from NEMO.utilities import (
 	EmailCategory,
 	bootstrap_primary_color,
 	create_email_attachment,
+	distinct_qs_value_list,
 	extract_dates,
 	extract_times,
 	format_datetime,
@@ -543,7 +546,7 @@ def create_outage(request):
 		elif submitted_frequency == 'DAILY_WEEKENDS':
 			by_week_day = (rrule.SA, rrule.SU)
 		frequency = recurrence_frequencies.get(submitted_frequency, rrule.DAILY)
-		rules: Iterable[datetime] = rrule.rrule(dtstart=start, freq=frequency, interval=int(request.POST.get('recurrence_interval',1)), until=date_until, byweekday=by_week_day)
+		rules = rrule.rrule(dtstart=start, freq=frequency, interval=int(request.POST.get('recurrence_interval',1)), until=date_until, byweekday=by_week_day)
 		for rule in list(rules):
 			recurring_outage = ScheduledOutage()
 			recurring_outage.creator = outage.creator
@@ -1202,3 +1205,69 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 
 	attachment = create_email_attachment(ics, maintype='text', subtype='calendar', method=method_name)
 	return attachment
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def create_closure_alerts(request):
+	return do_create_closure_alerts()
+
+
+def do_create_closure_alerts():
+	future_times = ClosureTime.objects.filter(closure__alert_days_before__isnull=False, end_time__gt=timezone.now())
+	for closure_time in future_times:
+		create_alert_for_closure_time(closure_time)
+	for closure in Closure.objects.filter(notify_managers_last_occurrence=True):
+		closure_time_ending = ClosureTime.objects.filter(closure=closure).latest("end_time")
+		if closure_time_ending.end_time.date() == timezone.now().date():
+			email_last_closure_occurrence(closure_time_ending)
+	return HttpResponse()
+
+
+def create_alert_for_closure_time(closure_time: ClosureTime):
+	# Create alerts a week before their debut time (closure start - days before) at the latest
+	now = timezone.now()
+	next_week = now + timedelta(weeks=1)
+	closure = closure_time.closure
+	alert_start = closure_time.start_time - timedelta(days=closure.alert_days_before)
+	time_ready = alert_start <= next_week
+	if time_ready:
+		# Check if there is already an alert with the same title ending at the closure end time
+		alert_already_exist = Alert.objects.filter(title=closure.name, expiration_time=closure_time.end_time).exists()
+		if not alert_already_exist:
+			areas = Area.objects.filter(id__in=distinct_qs_value_list(closure.physical_access_levels.all(), "area"))
+			dictionary = {
+				"closure_time": closure_time,
+				"name": closure.name,
+				"staff_absent": closure.staff_absent,
+				"start": closure_time.start_time,
+				"end": closure_time.end_time,
+				"areas": areas,
+			}
+			contents = Template(closure.alert_template).render(Context(dictionary)) if closure.alert_template else None
+			Alert.objects.create(
+				title=closure.name,
+				contents=contents,
+				category="Closure",
+				debut_time=alert_start,
+				expiration_time=closure_time.end_time,
+			)
+
+
+def email_last_closure_occurrence(closure_time):
+	facility_manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list(
+		"email", flat=True
+	)
+	message = f"""
+Dear facility manager,<br>
+This email is to inform you that today was the last occurrence for the {closure_time.closure.name} facility closure.
+<br><br>Go to NEMO -> Detailed administration -> Closures to add more times if needed.
+"""
+	send_mail(
+		subject=f"Last {closure_time.closure.name} occurrence",
+		content=message,
+		from_email=settings.SERVER_EMAIL,
+		to=facility_manager_emails,
+		email_category=EmailCategory.SYSTEM,
+	)

@@ -111,7 +111,7 @@ def remote_work(request):
 				}
 			)
 		response = table_result.to_csv()
-		filename = f"remote_work_{export_format_datetime(start_date, time_format=False)}_to_{export_format_datetime(end_date, time_format=False)}.csv"
+		filename = f"remote_work_{export_format_datetime(start_date, t_format=False)}_to_{export_format_datetime(end_date, t_format=False)}.csv"
 		response["Content-Disposition"] = f'attachment; filename="{filename}"'
 		return response
 	dictionary = {

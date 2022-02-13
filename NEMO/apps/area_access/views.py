@@ -107,11 +107,11 @@ def login_to_area(request, door_id):
 	try:
 		check_policy_to_enter_this_area(area=door.area, user=user)
 	except NoAccessiblePhysicalAccessUserError as error:
-		if error.access_exception:
+		if error.closure_time:
 			log.details = (
-				f"The user was blocked from entering this area because of an exception: {error.access_exception.name}."
+				f"The user was blocked from entering this area because of a closure: {error.closure_time.closure.name}."
 			)
-			message = f"You do not have access to this area of the {facility_name} due to the following exception: {error.access_exception}. The exception ends on {localize(error.access_exception.end_time.astimezone(timezone.get_current_timezone()))}"
+			message = f"You do not have access to this area of the {facility_name} due to the following closure: {error.closure_time.closure.name}. The closure ends on {localize(error.closure_time.end_time.astimezone(timezone.get_current_timezone()))}"
 		else:
 			log.details = (
 				"This user is not assigned to a physical access level that allows access to this door at this time."

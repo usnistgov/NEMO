@@ -21,7 +21,7 @@ from django.dispatch import receiver
 from django.template import loader
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
+from django.utils.safestring import mark_safe
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
@@ -29,6 +29,7 @@ from NEMO import fields
 from NEMO.utilities import (
 	EmailCategory,
 	bootstrap_primary_color,
+	format_daterange,
 	format_datetime,
 	get_task_image_filename,
 	get_tool_document_filename,
@@ -154,7 +155,7 @@ class PhysicalAccessLevel(models.Model):
 		if self.schedule == self.Schedule.ALWAYS or self.schedule == self.Schedule.WEEKENDS:
 			return self.get_schedule_display()
 		else:
-			return self.get_schedule_display() + f" from {format_datetime(self.weekdays_start_time, 'TIME_FORMAT', as_current_timezone=False)} to {format_datetime(self.weekdays_end_time, 'TIME_FORMAT', as_current_timezone=False)}"
+			return self.get_schedule_display() + " " + format_daterange(self.weekdays_start_time, self.weekdays_end_time)
 	get_schedule_display_with_times.short_description = 'Schedule'
 
 	def accessible_at(self, time):
@@ -166,7 +167,7 @@ class PhysicalAccessLevel(models.Model):
 		else:
 			accessible_time = timezone.localtime(timezone.now())
 		# First deal with exceptions
-		if self.ongoing_exception(accessible_time):
+		if self.ongoing_closure_time(accessible_time):
 			return False
 		# Then look at the actual allowed schedule
 		saturday = 6
@@ -190,12 +191,12 @@ class PhysicalAccessLevel(models.Model):
 				return True
 		return False
 
-	def ongoing_exception(self, time: datetime = None):
+	def ongoing_closure_time(self, time: datetime = None):
 		if time is not None:
 			accessible_time = timezone.localtime(time)
 		else:
 			accessible_time = timezone.localtime(timezone.now())
-		return self.physicalaccessexception_set.filter(start_time__lte=accessible_time, end_time__gt=accessible_time).first()
+		return ClosureTime.objects.filter(closure__physical_access_levels__in=[self], start_time__lte=accessible_time, end_time__gt=accessible_time).first()
 
 	def display_value_for_select(self):
 		return f"{str(self.area.name)} ({self.get_schedule_display_with_times()})"
@@ -214,9 +215,7 @@ class TemporaryPhysicalAccess(models.Model):
 	end_time = models.DateTimeField(help_text="The end of the temporary access")
 
 	def get_schedule_display_with_times(self):
-		start = format_datetime(self.start_time, 'SHORT_DATETIME_FORMAT')
-		end = format_datetime(self.end_time, 'SHORT_DATETIME_FORMAT')
-		return f"Temporary {self.physical_access_level.get_schedule_display_with_times()} from {start} to {end}"
+		return f"Temporary {self.physical_access_level.get_schedule_display_with_times()} {format_daterange(self.start_time, self.end_time, dt_format='SHORT_DATETIME_FORMAT')}"
 	get_schedule_display_with_times.short_description = 'Schedule'
 
 	def accessible_at(self, time):
@@ -229,11 +228,11 @@ class TemporaryPhysicalAccess(models.Model):
 			accessible_time = timezone.localtime(timezone.now())
 		return self.physical_access_level.accessible(accessible_time) and self.start_time <= accessible_time <= self.end_time
 
-	def ongoing_exception(self, time: datetime = None):
-		return self.physical_access_level.ongoing_exception(time)
+	def ongoing_closure_time(self, time: datetime = None):
+		return self.physical_access_level.ongoing_closure_time(time)
 
 	def display(self):
-		return f"Temporary physical access of the '{self.physical_access_level.name}' for {self.user.get_full_name()} from {date_format(self.start_time, 'DATETIME_FORMAT')} to {date_format(self.end_time, 'DATETIME_FORMAT')}"
+		return f"Temporary physical access of the '{self.physical_access_level.name}' for {self.user.get_full_name()} {format_daterange(self.start_time, self.end_time)}"
 
 	class Meta:
 		ordering = ['-end_time']
@@ -272,24 +271,46 @@ class TemporaryPhysicalAccessRequest(models.Model):
 		return result
 
 	def clean(self):
-		if self.end_time <= self.start_time:
+		if self.start_time and self.end_time and self.end_time <= self.start_time:
 			raise ValidationError({"end_time": "The end time must be later than the start time"})
 
 	class Meta:
 		ordering = ['-creation_time']
 
 
-class PhysicalAccessException(models.Model):
-	name = models.CharField(max_length=100, help_text="The name of this exception that will be displayed as the policy problem")
-	start_time = models.DateTimeField(help_text="The start of the exception, after which users will be denied access.")
-	end_time = models.DateTimeField(help_text="The end of the exception, after which users will be allowed access again")
-	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True)
+class Closure(models.Model):
+	name = models.CharField(max_length=255, help_text="The name of this closure, that will be displayed as the policy problem and alert (if applicable).")
+	alert_days_before = models.PositiveIntegerField(null=True, blank=True, help_text="Enter the number of days before the closure when an alert should automatically be created. Leave blank for no alert.")
+	alert_template = models.TextField(null=True, blank=True, help_text=mark_safe("The template to create the alert with. The following variables are provided (when applicable): <b>name</b>, <b>start_time</b>, <b>end_time</b>, <b>areas</b>."))
+	notify_managers_last_occurrence = models.BooleanField(default=False, help_text="Check this box to notify facility managers on the last occurrence of this closure.")
+	staff_absent = models.BooleanField(default=False, help_text="Check this box and all staff members will be marked absent during this closure in staff status.")
+	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True, help_text="Select access levels this closure applies to.")
 
-	class Meta:
-		ordering = ['-start_time']
+	def clean(self):
+		if self.alert_days_before is not None and not self.alert_template:
+			raise  ValidationError({"alert_template": "Please provide an alert message"})
 
 	def __str__(self):
 		return str(self.name)
+
+	class Meta:
+		ordering = ['name']
+
+
+class ClosureTime(models.Model):
+	closure = models.ForeignKey(Closure, on_delete=models.CASCADE)
+	start_time = models.DateTimeField(help_text="The start date and time of the closure")
+	end_time = models.DateTimeField(help_text="The end date and time of the closure")
+
+	def clean(self):
+		if self.start_time and self.end_time and self.end_time <= self.start_time:
+			raise ValidationError({"end_time": "The end time must be later than the start time"})
+
+	def __str__(self):
+		return format_daterange(self.start_time, self.end_time)
+
+	class Meta:
+		ordering = ["-start_time"]
 
 
 class PhysicalAccessType(object):
@@ -995,6 +1016,7 @@ class Tool(models.Model):
 
 	def tool_documents(self):
 		return ToolDocuments.objects.filter(tool=self).order_by()
+
 
 class ToolDocuments(models.Model):
 	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
@@ -2242,8 +2264,8 @@ class StaffAvailability(models.Model):
 		return {index: available if getattr(self, day) else absent for index, day in enumerate(self.DAYS)}
 
 	def daily_hours(self) -> str:
-		start = format_datetime(self.start_time, "TIME_FORMAT", as_current_timezone=False) if self.start_time else ''
-		end = format_datetime(self.end_time, "TIME_FORMAT", as_current_timezone=False) if self.end_time else ''
+		start = format_datetime(self.start_time) if self.start_time else ''
+		end = format_datetime(self.end_time) if self.end_time else ''
 		return f"{'Available from ' + start + ' ' if start else ''}{'until ' + end if end else ''}"
 
 	def __str__(self):
@@ -2264,14 +2286,12 @@ class StaffAbsence(models.Model):
 	description = models.TextField(null=True, blank=True, help_text="The absence description.")
 
 	def details_for_manager(self):
-		formatted_start = format_datetime(self.start_date, 'DATE_FORMAT', as_current_timezone=False)
-		formatted_end = format_datetime(self.end_date, 'DATE_FORMAT', as_current_timezone=False)
-		dates = f" from {formatted_start} to {formatted_end}" if self.start_date != self.end_date else ''
+		dates = f" {format_daterange(self.start_date, self.end_date)}" if self.start_date != self.end_date else ''
 		description = f" ({self.description})" if self.description else ''
 		return f"{self.absence_type.description}{dates}{description}"
 
 	def clean(self):
-		if self.end_date < self.start_date:
+		if self.end_date and self.start_date and self.end_date < self.start_date:
 			raise ValidationError({"end_date": "The end date must be on or after the start date"})
 
 	class Meta:

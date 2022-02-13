@@ -35,7 +35,7 @@ def to_int(value):
 def to_date(value, arg=None):
 	if value in (None, ''):
 		return ''
-	if isinstance(value, (datetime.datetime, datetime.date)):
+	if isinstance(value, datetime.date):
 		return date(value, arg)
 	if isinstance(value, datetime.time):
 		return time(value, arg)

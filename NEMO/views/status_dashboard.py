@@ -16,6 +16,7 @@ from NEMO.model_tree import ModelTreeHelper, TreeItem, get_area_model_tree
 from NEMO.models import (
 	Area,
 	AreaAccessRecord,
+	ClosureTime,
 	Resource,
 	ScheduledOutage,
 	StaffAbsence,
@@ -25,7 +26,13 @@ from NEMO.models import (
 	UsageEvent,
 	User,
 )
-from NEMO.utilities import BasicDisplayTable, beginning_of_the_day, export_format_datetime, format_datetime, quiet_int
+from NEMO.utilities import (
+	BasicDisplayTable,
+	beginning_of_the_day,
+	export_format_datetime,
+	format_datetime,
+	quiet_int,
+)
 from NEMO.views.customization import get_customization
 
 
@@ -36,35 +43,32 @@ def status_dashboard(request, tab=None):
 	"""
 	Present a web page to allow users to view the status and usage of all tools.
 	"""
-	interest = request.GET.get('interest')
+	interest = request.GET.get("interest")
 	if interest is None:
 		csv_export = bool(request.GET.get("csv", False))
-		if tab == 'staff' and csv_export:
+		if tab == "staff" and csv_export:
 			return get_staff_status(request, csv_export)
 		dictionary = {
 			"tab": tab if tab else "occupancy",
 			"show_staff_status": show_staff_status(request),
 			**get_tools_dictionary(),
 			**get_occupancy_dictionary(request),
-			**get_staff_status(request)
+			**get_staff_status(request),
 		}
-		return render(request, 'status_dashboard/status_dashboard.html', dictionary)
+		return render(request, "status_dashboard/status_dashboard.html", dictionary)
 	elif interest == "tools":
-		return render(request, 'status_dashboard/tools.html', get_tools_dictionary())
+		return render(request, "status_dashboard/tools.html", get_tools_dictionary())
 	elif interest == "occupancy":
-		return render(request, 'status_dashboard/occupancy.html', get_occupancy_dictionary(request))
+		return render(request, "status_dashboard/occupancy.html", get_occupancy_dictionary(request))
 
 
 def get_tools_dictionary():
-	return {'tool_summary': create_tool_summary()}
+	return {"tool_summary": create_tool_summary()}
 
 
 def get_occupancy_dictionary(request):
 	area_items, no_occupants = process_area_access_record_with_parents(request.user)
-	return {
-		'area_items': area_items,
-		'no_occupants': no_occupants,
-	}
+	return {"area_items": area_items, "no_occupants": no_occupants}
 
 
 def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
@@ -72,15 +76,19 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	timestamp = quiet_int(request.GET.get("timestamp", datetime.now().timestamp()), datetime.now().timestamp())
 	today = beginning_of_the_day(datetime.fromtimestamp(timestamp))
 	weekdays_only = get_customization("dashboard_staff_status_weekdays_only")
-	first_day = today.isoweekday() if not weekdays_only and get_customization("dashboard_staff_status_first_day_of_week") == "0" else today.weekday()
+	first_day = (
+		today.isoweekday()
+		if not weekdays_only and get_customization("dashboard_staff_status_first_day_of_week") == "0"
+		else today.weekday()
+	)
 	week_start = today - timedelta(days=first_day)
 	week_end = week_start + timedelta(weeks=1) - timedelta(days=1)
 	# If we are only showing weekdays, we have to subtract 2 days from the end of the week
 	if weekdays_only:
 		week_end = week_end - timedelta(days=2)
 	staffs = StaffAvailability.objects.all()
-	staffs.query.add_ordering(F('category').asc(nulls_last=True))
-	staffs.query.add_ordering(F('staff_member__first_name').asc())
+	staffs.query.add_ordering(F("category").asc(nulls_last=True))
+	staffs.query.add_ordering(F("staff_member__first_name").asc())
 	days = rrule(DAILY, dtstart=week_start, until=week_end)
 	staff_date_format = get_customization("dashboard_staff_status_date_format")
 	if csv_export:
@@ -88,12 +96,15 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	return {
 		"staff_date_format": staff_date_format,
 		"staff_absences": staff_absences_dict(staffs, days, week_start, week_end),
+		"closure_times": closures_dict(days, week_start, week_end),
 		"staffs": staffs,
 		"days": days,
 		"days_length": 5 if weekdays_only else 7,
 		"page_timestamp": timestamp,
-		"prev": int((week_start - timedelta(days=2)).timestamp()), # Beginning of the week -2 days will put us in the previous week
-		"next": int((week_end + timedelta(days=4)).timestamp()) # End of the week +4 days will put us in the next week (even if weekdays only)
+		# Beginning of the week -2 days will put us in the previous week
+		"prev": int((week_start - timedelta(days=2)).timestamp()),
+		# End of the week +4 days will put us in the next week (even if weekdays only)
+		"next": int((week_end + timedelta(days=4)).timestamp()),
 	}
 
 
@@ -116,12 +127,8 @@ def create_staff_absence(request, absence_id=None):
 	if request.POST and form.is_valid():
 		form.save()
 		return HttpResponse()
-	dictionary = {
-		"form": form,
-		"staff_members": StaffAvailability.objects.all(),
-		"page_timestamp": timestamp
-	}
-	return render(request, 'status_dashboard/staff_absence.html', dictionary)
+	dictionary = {"form": form, "staff_members": StaffAvailability.objects.all(), "page_timestamp": timestamp}
+	return render(request, "status_dashboard/staff_absence.html", dictionary)
 
 
 @facility_manager_required
@@ -136,11 +143,21 @@ def delete_staff_absence(request, absence_id):
 
 def staff_absences_dict(staffs, days, week_start, week_end):
 	dictionary = {staff.staff_member.id: {} for staff in staffs}
-	staff_absences = StaffAbsence.objects.filter(start_date__lte=week_end, end_date__gte=week_start).order_by("creation_time")
-	for staff_absence in staff_absences:
+	absences = StaffAbsence.objects.filter(start_date__lte=week_end, end_date__gte=week_start).order_by("creation_time")
+	for staff_absence in absences:
 		for day in days:
 			if staff_absence.start_date <= day.date() <= staff_absence.end_date:
 				dictionary[staff_absence.staff_member.staff_member.id][day.weekday()] = staff_absence
+	return dictionary
+
+
+def closures_dict(days, week_start, week_end):
+	dictionary = {}
+	closure_times = ClosureTime.objects.filter(start_time__lte=week_end, end_time__gte=week_start)
+	for closure_time in closure_times:
+		for day in days:
+			if closure_time.start_time.date() <= day.date() <= closure_time.end_time.date():
+				dictionary[day.weekday()] = closure_time
 	return dictionary
 
 
@@ -152,6 +169,7 @@ def export_staff_status(request, staffs, days, week_start, week_end, staff_date_
 	for day in days:
 		table_result.add_header((day.weekday(), format_datetime(day, staff_date_format, as_current_timezone=False)))
 	staff_absences = staff_absences_dict(staffs, days, week_start, week_end)
+	closure_times = closures_dict(days, week_start, week_end)
 	category = ""
 	for staff in staffs:
 		if staff.category != category:
@@ -164,9 +182,11 @@ def export_staff_status(request, staffs, days, week_start, week_end, staff_date_
 			if staff.id == staff_id:
 				for day_index, absence in absence_dict.items():
 					staff_row[day_index] = absence.absence_type.name + f" {absence.description or ''}"
+		for day_index, closure_time in closure_times.items():
+			staff_row[day_index] = closure_time.closure.name
 		table_result.add_row(staff_row)
 	response = table_result.to_csv()
-	filename = f"staff_status_{export_format_datetime(week_start, time_format=False)}_to_{export_format_datetime(week_end, time_format=False)}.csv"
+	filename = f"staff_status_{export_format_datetime(week_start, t_format=False)}_to_{export_format_datetime(week_end, t_format=False)}.csv"
 	response["Content-Disposition"] = f'attachment; filename="{filename}"'
 	return response
 
@@ -177,20 +197,24 @@ def show_staff_status(request):
 
 
 def process_area_access_record_with_parents(user: User):
-	show_not_qualified_areas = get_customization('dashboard_display_not_qualified_areas')
+	show_not_qualified_areas = get_customization("dashboard_display_not_qualified_areas")
 	records = AreaAccessRecord.objects.filter(end=None, staff_charge=None)
-	if not user.is_staff and show_not_qualified_areas != 'enabled':
+	if not user.is_staff and show_not_qualified_areas != "enabled":
 		records = records.filter(area__in=user.accessible_areas())
-	records = records.prefetch_related('customer', 'project', 'area')
+	records = records.prefetch_related("customer", "project", "area")
 	no_occupants = not records.exists()
 	area_items = None
 	area_model_tree = get_area_model_tree()
 	if not no_occupants:
-		areas_and_parents = area_model_tree.get_ancestor_areas(area_model_tree.get_areas([record.area.id for record in records]), include_self=True)
+		areas_and_parents = area_model_tree.get_ancestor_areas(
+			area_model_tree.get_areas([record.area.id for record in records]), include_self=True
+		)
 		# Sort to have area without children before others
-		areas_and_parents.sort(key=lambda x: f'{x.tree_category}zz' if x.is_leaf else f'{x.tree_category}/aa')
-		area_summary = create_area_summary(area_model_tree=area_model_tree, add_resources=False, add_outages=False, add_occupants=True)
-		area_summary_dict = {area['id']: area for area in area_summary}
+		areas_and_parents.sort(key=lambda x: f"{x.tree_category}zz" if x.is_leaf else f"{x.tree_category}/aa")
+		area_summary = create_area_summary(
+			area_tree=area_model_tree, add_resources=False, add_outages=False, add_occupants=True
+		)
+		area_summary_dict = {area["id"]: area for area in area_summary}
 		for area_item in areas_and_parents:
 			area_item.item = area_summary_dict[area_item.id]
 		area_items = area_tree_helper(areas_and_parents, records)
@@ -203,7 +227,7 @@ def area_tree_helper(filtered_area: List[TreeItem], records: QuerySet, areas: Op
 		# Get the root areas
 		areas = [area for area in filtered_area if area.is_root]
 	else:
-		yield 'in'
+		yield "in"
 
 	for area in areas:
 		yield area
@@ -215,65 +239,81 @@ def area_tree_helper(filtered_area: List[TreeItem], records: QuerySet, areas: Op
 		else:
 			area.occupants = records.filter(area__id=area.id)
 			area.leaf = True
-	yield 'out'
+	yield "out"
 
 
 def create_tool_summary():
-	tools = Tool.objects.filter(visible=True).prefetch_related(Prefetch('_requires_area_access', queryset=Area.objects.all().only('name')))
-	tasks = Task.objects.filter(cancelled=False, resolved=False, tool__visible=True).prefetch_related('tool')
-	unavailable_resources = Resource.objects.filter(available=False).prefetch_related('fully_dependent_tools', 'partially_dependent_tools')
+	tools = Tool.objects.filter(visible=True).prefetch_related(
+		Prefetch("_requires_area_access", queryset=Area.objects.all().only("name"))
+	)
+	tasks = Task.objects.filter(cancelled=False, resolved=False, tool__visible=True).prefetch_related("tool")
+	unavailable_resources = Resource.objects.filter(available=False).prefetch_related(
+		"fully_dependent_tools", "partially_dependent_tools"
+	)
 	# also check for visibility on the parent if there is one (alternate tool are hidden)
-	usage_events = UsageEvent.objects.filter(Q(end=None, tool__visible=True)|Q(end=None, tool__parent_tool__visible=True)).prefetch_related('operator', 'user', 'tool')
-	scheduled_outages = ScheduledOutage.objects.filter(start__lte=timezone.now(), end__gt=timezone.now(), area__isnull=True)
+	usage_events = UsageEvent.objects.filter(
+		Q(end=None, tool__visible=True) | Q(end=None, tool__parent_tool__visible=True)
+	).prefetch_related("operator", "user", "tool")
+	scheduled_outages = ScheduledOutage.objects.filter(
+		start__lte=timezone.now(), end__gt=timezone.now(), area__isnull=True
+	)
 	tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages)
 	tool_summary = list(tool_summary.values())
-	tool_summary.sort(key=lambda x: x['name'])
+	tool_summary.sort(key=lambda x: x["name"])
 	return tool_summary
 
 
-def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=True, add_occupants=True, add_outages=True):
-	if area_model_tree is None:
-		area_model_tree = get_area_model_tree()
-	area_items = area_model_tree.items.values()
+def create_area_summary(area_tree: ModelTreeHelper = None, add_resources=True, add_occupants=True, add_outages=True):
+	if area_tree is None:
+		area_tree = get_area_model_tree()
+	area_items = area_tree.items.values()
 	result = {}
 	for area in area_items:
 		result[area.id] = {
-			'name': area.name,
-			'id': area.id,
-			'maximum_capacity': area.maximum_capacity,
-			'warning_capacity': area.item.warning_capacity(),
-			'danger_capacity': area.item.danger_capacity(),
-			'count_staff_in_occupancy': area.count_staff_in_occupancy,
-			'count_service_personnel_in_occupancy': area.count_service_personnel_in_occupancy,
-			'occupancy_count': 0,
-			'occupancy': 0,
-			'occupancy_staff': 0,
-			'occupancy_service_personnel': 0,
-			'occupants': '',
-			'required_resource_is_unavailable': False,
-			'scheduled_outage': False,
+			"name": area.name,
+			"id": area.id,
+			"maximum_capacity": area.maximum_capacity,
+			"warning_capacity": area.item.warning_capacity(),
+			"danger_capacity": area.item.danger_capacity(),
+			"count_staff_in_occupancy": area.count_staff_in_occupancy,
+			"count_service_personnel_in_occupancy": area.count_service_personnel_in_occupancy,
+			"occupancy_count": 0,
+			"occupancy": 0,
+			"occupancy_staff": 0,
+			"occupancy_service_personnel": 0,
+			"occupants": "",
+			"required_resource_is_unavailable": False,
+			"scheduled_outage": False,
 		}
 
 	if add_resources:
-		unavailable_resources = Resource.objects.filter(available=False).prefetch_related(Prefetch('dependent_areas', queryset=Area.objects.only('id')))
+		unavailable_resources = Resource.objects.filter(available=False).prefetch_related(
+			Prefetch("dependent_areas", queryset=Area.objects.only("id"))
+		)
 		for resource in unavailable_resources:
 			for area in resource.dependent_areas.all():
 				if area.id in result:
-					result[area.id]['required_resource_is_unavailable'] = True
+					result[area.id]["required_resource_is_unavailable"] = True
 	if add_outages:
-		scheduled_outages = ScheduledOutage.objects.filter(start__lte=timezone.now(), end__gt=timezone.now(), tool__isnull=True).only('area_id', 'resource_id')
+		scheduled_outages = ScheduledOutage.objects.filter(
+			start__lte=timezone.now(), end__gt=timezone.now(), tool__isnull=True
+		).only("area_id", "resource_id")
 		for outage in scheduled_outages:
 			if outage.area_id:
-				result[outage.area_id]['scheduled_outage'] = True
+				result[outage.area_id]["scheduled_outage"] = True
 			elif outage.resource_id:
-				for t in outage.resource.dependent_areas.values_list('id', flat=True):
-					result[t]['scheduled_outage'] = True
+				for t in outage.resource.dependent_areas.values_list("id", flat=True):
+					result[t]["scheduled_outage"] = True
 
 	if add_occupants:
-		occupants: List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related(Prefetch('customer', queryset=User.objects.all().only('first_name', 'last_name', 'username', 'is_staff')))
+		occupants: List[AreaAccessRecord] = AreaAccessRecord.objects.filter(
+			end=None, staff_charge=None
+		).prefetch_related(
+			Prefetch("customer", queryset=User.objects.all().only("first_name", "last_name", "username", "is_staff"))
+		)
 		for occupant in occupants:
 			# Get ids for area and all the parents (so we can add occupants info on parents)
-			area_ids = area_model_tree.get_area(occupant.area_id).ancestor_ids(include_self=True)
+			area_ids = area_tree.get_area(occupant.area_id).ancestor_ids(include_self=True)
 			if occupant.customer.is_staff:
 				customer_display = f'<span class="success-highlight">{str(occupant.customer)}</span>'
 			elif occupant.customer.is_service_personnel:
@@ -284,61 +324,70 @@ def create_area_summary(area_model_tree: ModelTreeHelper=None, add_resources=Tru
 				customer_display = str(occupant.customer)
 			for area_id in area_ids:
 				if area_id in result:
-					result[area_id]['occupancy'] += 1
+					result[area_id]["occupancy"] += 1
 					if occupant.customer.is_staff:
-						result[area_id]['occupancy_staff'] += 1
+						result[area_id]["occupancy_staff"] += 1
 					if occupant.customer.is_service_personnel:
-						result[area_id]['occupancy_service_personnel'] += 1
-					if (not occupant.customer.is_staff or result[area_id]['count_staff_in_occupancy']) and (not occupant.customer.is_service_personnel or result[area_id]['count_service_personnel_in_occupancy']):
-						result[area_id]['occupancy_count'] += 1
-					result[area_id]['occupants'] += customer_display if not result[area_id]['occupants'] else f'<br>{customer_display}'
+						result[area_id]["occupancy_service_personnel"] += 1
+					if (not occupant.customer.is_staff or result[area_id]["count_staff_in_occupancy"]) and (
+							not occupant.customer.is_service_personnel
+							or result[area_id]["count_service_personnel_in_occupancy"]
+					):
+						result[area_id]["occupancy_count"] += 1
+					result[area_id]["occupants"] += (
+						customer_display if not result[area_id]["occupants"] else f"<br>{customer_display}"
+					)
 	area_summary = list(result.values())
-	area_summary.sort(key=lambda x: x['name'])
+	area_summary.sort(key=lambda x: x["name"])
 	return area_summary
 
 
 def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):
 	result = {}
-	tools_with_delayed_logoff_in_effect = [x.tool.tool_or_parent_id() for x in UsageEvent.objects.filter(end__gt=timezone.now())]
-	parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
+	tools_with_delayed_logoff_in_effect = [
+		x.tool.tool_or_parent_id() for x in UsageEvent.objects.filter(end__gt=timezone.now())
+	]
+	parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list("parent_tool_id", flat=True)
 	for tool in tools:
 		result[tool.tool_or_parent_id()] = {
-			'name': tool.name_or_child_in_use_name(parent_ids=parent_ids),
-			'id': tool.id,
-			'user': '',
-			'operator': '',
-			'in_use': False,
-			'in_use_since': '',
-			'delayed_logoff_in_progress': tool.tool_or_parent_id() in tools_with_delayed_logoff_in_effect,
-			'problematic': False,
-			'operational': tool.operational,
-			'required_resource_is_unavailable': False,
-			'nonrequired_resource_is_unavailable': False,
-			'scheduled_outage': False,
-			'scheduled_partial_outage': False,
-			'area_name': tool.requires_area_access.name if tool.requires_area_access else None,
-			'area_requires_reservation': tool.requires_area_access.requires_reservation if tool.requires_area_access else False,
+			"name": tool.name_or_child_in_use_name(parent_ids=parent_ids),
+			"id": tool.id,
+			"user": "",
+			"operator": "",
+			"in_use": False,
+			"in_use_since": "",
+			"delayed_logoff_in_progress": tool.tool_or_parent_id() in tools_with_delayed_logoff_in_effect,
+			"problematic": False,
+			"operational": tool.operational,
+			"required_resource_is_unavailable": False,
+			"nonrequired_resource_is_unavailable": False,
+			"scheduled_outage": False,
+			"scheduled_partial_outage": False,
+			"area_name": tool.requires_area_access.name if tool.requires_area_access else None,
+			"area_requires_reservation": tool.requires_area_access.requires_reservation
+			if tool.requires_area_access
+			else False,
 		}
 	for task in tasks:
-		result[task.tool.id]['problematic'] = True
+		result[task.tool.id]["problematic"] = True
 	for event in usage_events:
-		result[event.tool.tool_or_parent_id()]['operator'] = str(event.operator)
-		result[event.tool.tool_or_parent_id()]['user'] = str(event.operator)
+		result[event.tool.tool_or_parent_id()]["operator"] = str(event.operator)
+		result[event.tool.tool_or_parent_id()]["user"] = str(event.operator)
 		if event.user != event.operator:
-			result[event.tool.tool_or_parent_id()]['user'] += " on behalf of " + str(event.user)
-		result[event.tool.tool_or_parent_id()]['in_use'] = True
-		result[event.tool.tool_or_parent_id()]['in_use_since'] = event.start
+			result[event.tool.tool_or_parent_id()]["user"] += " on behalf of " + str(event.user)
+		result[event.tool.tool_or_parent_id()]["in_use"] = True
+		result[event.tool.tool_or_parent_id()]["in_use_since"] = event.start
 	for resource in unavailable_resources:
 		for tool in resource.fully_dependent_tools.filter(visible=True):
-			result[tool.id]['required_resource_is_unavailable'] = True
+			result[tool.id]["required_resource_is_unavailable"] = True
 		for tool in resource.partially_dependent_tools.filter(visible=True):
-			result[tool.id]['nonrequired_resource_is_unavailable'] = True
+			result[tool.id]["nonrequired_resource_is_unavailable"] = True
 	for outage in scheduled_outages:
 		if outage.tool_id and outage.tool.visible:
-			result[outage.tool.id]['scheduled_outage'] = True
+			result[outage.tool.id]["scheduled_outage"] = True
 		elif outage.resource_id:
 			for t in outage.resource.fully_dependent_tools.filter(visible=True):
-				result[t.id]['scheduled_outage'] = True
+				result[t.id]["scheduled_outage"] = True
 			for t in outage.resource.partially_dependent_tools.filter(visible=True):
-				result[t.id]['scheduled_partial_outage'] = True
+				result[t.id]["scheduled_partial_outage"] = True
 	return result
