@@ -1242,8 +1242,8 @@ def create_alert_for_closure_time(closure_time: ClosureTime):
 				"closure_time": closure_time,
 				"name": closure.name,
 				"staff_absent": closure.staff_absent,
-				"start": closure_time.start_time,
-				"end": closure_time.end_time,
+				"start_time": closure_time.start_time,
+				"end_time": closure_time.end_time,
 				"areas": areas,
 			}
 			contents = Template(closure.alert_template).render(Context(dictionary)) if closure.alert_template else None
