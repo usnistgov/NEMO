@@ -50,7 +50,8 @@
         {% endif %}
     </div>
     <div class="form-group">
-        <div class="col-sm-9 col-sm-offset-3">
+        <label class="col-sm-3 control-label">All day</label>
+        <div class="col-sm-9">
             <div class="checkbox">
                 <label><input id="full_day" name="full_day" type="checkbox" {% if form.full_day.value %}checked{% endif %}> {{ form.full_day.help_text }}</label>
             </div>
