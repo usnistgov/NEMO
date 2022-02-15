@@ -27,7 +27,7 @@ setup(
 		'cryptography==36.0.1',
 		'Django==2.2.27',
 		'django-filter==21.1',
-		'drf-renderer-xlsx==0.4.4',
+		'drf-renderer-xlsx==0.4.5',
 		'djangorestframework==3.13.1',
 		'drf-flex-fields==0.9.7',
 		'ldap3==2.9.1',
