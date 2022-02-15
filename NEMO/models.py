@@ -2264,9 +2264,11 @@ class StaffAvailability(models.Model):
 		return {index: available if getattr(self, day) else absent for index, day in enumerate(self.DAYS)}
 
 	def daily_hours(self) -> str:
+		if not self.start_time and not self.end_time:
+			return ''
 		start = format_datetime(self.start_time) if self.start_time else ''
 		end = format_datetime(self.end_time) if self.end_time else ''
-		return f"{'Available from ' + start + ' ' if start else ''}{'until ' + end if end else ''}"
+		return f"Working hours: {format_daterange(self.start_time, self.end_time) if start and end else 'from ' + start if start else 'until '+end}"
 
 	def __str__(self):
 		return str(self.staff_member)
