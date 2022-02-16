@@ -67,6 +67,7 @@
 
 <script>
     $(".contact-info-tooltip").on('click', function () {
+        $(".tooltip").tooltip("hide");
       	$(this).tooltip({trigger: 'manual', html: 'true', title: $(this).data('title')}).tooltip('toggle');
     });
     $("[data-toggle='tooltip']").tooltip();
