@@ -20,6 +20,7 @@ from django.db.models import Q, QuerySet
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.template import loader
+from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -2305,11 +2306,11 @@ class StaffAbsence(models.Model):
 	start_date = models.DateField(help_text="The start date of the absence.")
 	end_date = models.DateField(help_text="The end date of the absence.")
 	full_day = models.BooleanField(default=True, help_text="Uncheck this box when the absence is only for part of the day.")
-	description = models.TextField(null=True, blank=True, help_text="The absence description.")
+	description = models.TextField(null=True, blank=True, help_text="The absence description. This will be visible to anyone when the absence is not all day.")
 
 	def details_for_manager(self):
 		dates = f" {format_daterange(self.start_date, self.end_date)}" if self.start_date != self.end_date else ''
-		description = f" ({self.description})" if self.description else ''
+		description = f"<br>{linebreaksbr(self.description)}" if self.description else ''
 		return f"{self.absence_type.description}{dates}{description}"
 
 	def clean(self):

@@ -60,7 +60,7 @@
                                         <div data-toggle="tooltip" title="{{ closure_time.closure.name }} {{ closure_time }}">Closed</div>
                                     {% elif staff_absent %}
                                         {% if not staff_absent.full_day and not user.is_facility_manager %}
-                                            <div data-toggle="tooltip" title="{{ staff_absent.description }}">&nbsp;</div>
+                                            <div data-toggle="tooltip" title="{{ staff_absent.description|linebreaksbr }}">&nbsp;</div>
                                         {% elif user.is_facility_manager %}
                                             <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span style="cursor: pointer" onclick="ajax_get('{% url "edit_staff_absence" staff_absent.id %}?timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)">{{ staff_absent.absence_type.name }}</span></div>
                                         {% endif %}
@@ -82,5 +82,5 @@
         $(".tooltip").remove();
       	$(this).tooltip({trigger: 'manual', html: 'true', title: $(this).data('title')}).tooltip('toggle');
     });
-    $("[data-toggle='tooltip']").tooltip();
+    $("[data-toggle='tooltip']").tooltip({html: 'true'});
 </script>

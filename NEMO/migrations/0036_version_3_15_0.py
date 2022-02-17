@@ -67,7 +67,7 @@ class Migration(migrations.Migration):
                 ('start_date', models.DateField(help_text='The start date of the absence.')),
                 ('end_date', models.DateField(help_text='The end date of the absence.')),
                 ('full_day', models.BooleanField(default=True, help_text='Uncheck this box when the absence is only for part of the day.')),
-                ('description', models.TextField(blank=True, help_text='The absence description.', null=True)),
+                ('description', models.TextField(blank=True, help_text='The absence description. This will be visible to anyone when the absence is not all day.', null=True)),
                 ('absence_type', models.ForeignKey(help_text='The absence type. This will only be visible to facility managers.', on_delete=django.db.models.deletion.CASCADE, to='NEMO.StaffAbsenceType')),
                 ('staff_member', models.ForeignKey(help_text='The staff member who will be absent.', on_delete=django.db.models.deletion.CASCADE, to='NEMO.StaffAvailability')),
             ],
