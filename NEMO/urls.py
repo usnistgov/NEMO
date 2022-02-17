@@ -194,11 +194,6 @@ urlpatterns += [
 	url(r'^status_dashboard/$', status_dashboard.status_dashboard, name='status_dashboard'),
 	url(r'^status_dashboard/(?P<tab>tools|occupancy|staff)/$', status_dashboard.status_dashboard, name='status_dashboard_tab'),
 
-	# Staff absence
-	url(r'^create_staff_absence/$', status_dashboard.create_staff_absence, name='create_staff_absence'),
-	url(r'^edit_staff_absence/(?P<absence_id>\d+)/$', status_dashboard.create_staff_absence, name='edit_staff_absence'),
-	url(r'^delete_staff_absence/(?P<absence_id>\d+)/$', status_dashboard.delete_staff_absence, name='delete_staff_absence'),
-
 	# Jumbotron:
 	url(r'^jumbotron/$', jumbotron.jumbotron, name='jumbotron'),
 	url(r'^jumbotron_content/$', jumbotron.jumbotron_content, name='jumbotron_content'),
@@ -356,6 +351,11 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		# Project Usage:
 		url(r'^project_usage/$', usage.project_usage, name='project_usage'),
 		url(r'^project_billing/$', usage.project_billing, name='project_billing'),
+
+		# Staff absence
+		url(r'^create_staff_absence/$', status_dashboard.create_staff_absence, name='create_staff_absence'),
+		url(r'^edit_staff_absence/(?P<absence_id>\d+)/$', status_dashboard.create_staff_absence, name='edit_staff_absence'),
+		url(r'^delete_staff_absence/(?P<absence_id>\d+)/$', status_dashboard.delete_staff_absence, name='delete_staff_absence'),
 
 		# Billing:
 		url(r'^billing/$', usage.billing, name='billing'),

@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Union
 
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, rrule
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Prefetch, Q, QuerySet
 from django.http import HttpResponse
@@ -204,6 +205,8 @@ def export_staff_status(request, staffs, days, start, end, staff_date_format) ->
 
 
 def show_staff_status(request):
+	if not settings.ALLOW_CONDITIONAL_URLS:
+		return False
 	dashboard_staff_status_staff_only = get_customization("dashboard_staff_status_staff_only")
 	return StaffAvailability.objects.exists() and (not dashboard_staff_status_staff_only or request.user.is_staff)
 

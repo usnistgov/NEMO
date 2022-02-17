@@ -38,9 +38,11 @@
 			{% include 'status_dashboard/tools.html' %}
 		</div>
 	</div>
-    <div class="tab-pane {% if show_staff_status and tab == 'staff' %}active{% endif %}" id="staff">
-		{% include 'status_dashboard/staff.html' %}
-	</div>
+    {% if show_staff_status %}
+        <div class="tab-pane {% if tab == 'staff' %}active{% endif %}" id="staff">
+            {% include 'status_dashboard/staff.html' %}
+        </div>
+    {% endif %}
 </div>
 
 <script>
