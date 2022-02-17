@@ -1001,6 +1001,15 @@ class Tool(models.Model):
 	def current_ordered_configurations(self):
 		return self.parent_tool.configuration_set.all().order_by('display_priority') if self.is_child_tool() else self.configuration_set.all().order_by('display_priority')
 
+	def determine_insufficient_notice(self, start):
+		""" Determines if a reservation is created that does not give
+		the staff sufficient advance notice to configure a tool. """
+		for config in self.configuration_set.all():
+			advance_notice = start - timezone.now()
+			if advance_notice < timedelta(hours=config.advance_notice_limit):
+				return True
+		return False
+
 	def get_current_usage_event(self):
 		""" Gets the usage event for the current user of this tool. """
 		try:
@@ -1444,6 +1453,26 @@ class Reservation(CalendarDisplay):
 
 	def question_data_json(self):
 		return loads(self.question_data) if self.question_data else None
+
+	def copy(self, start_delta: timedelta = None, end_delta: timedelta = None):
+		new_reservation = Reservation()
+		new_reservation.title = self.title
+		new_reservation.creator = self.creator
+		new_reservation.additional_information = self.additional_information
+		new_reservation.start = self.start + start_delta if start_delta else self.start
+		new_reservation.end = self.end + end_delta if end_delta else self.end
+		new_reservation.self_configuration = self.self_configuration
+		new_reservation.reservation_item = self.reservation_item
+		new_reservation.short_notice = False
+		if new_reservation.self_configuration:
+			# Reservation can't be short notice since the user is configuring the tool themselves.
+			new_reservation.short_notice = False
+		elif new_reservation.tool:
+			new_reservation.short_notice = new_reservation.tool.determine_insufficient_notice(new_reservation.start)
+		new_reservation.project = self.project
+		new_reservation.user = self.user
+		new_reservation.question_data = self.question_data
+		return new_reservation
 
 	class Meta:
 		ordering = ['-start']

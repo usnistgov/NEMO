@@ -356,7 +356,7 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 	setattr(new_reservation, item_type.value, item)
 	new_reservation.start = start
 	new_reservation.end = end
-	new_reservation.short_notice = determine_insufficient_notice(item, start) if item_type == ReservationItemType.TOOL else False
+	new_reservation.short_notice = item.determine_insufficient_notice(start) if item_type == ReservationItemType.TOOL else False
 	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 
 	# If there was a policy problem with the reservation then return the error...
@@ -625,28 +625,11 @@ def modify_reservation(request, start_delta, end_delta):
 		pass
 	# Record the current time so that the timestamp of the cancelled reservation and the new reservation match exactly.
 	now = timezone.now()
-	# Create a new reservation for the user.
-	new_reservation = Reservation()
-	new_reservation.title = reservation_to_cancel.title
-	new_reservation.creator = request.user
-	new_reservation.additional_information = reservation_to_cancel.additional_information
-	# A change in start time will only be provided if the reservation is being moved.
-	new_reservation.start = reservation_to_cancel.start
-	new_reservation.self_configuration = reservation_to_cancel.self_configuration
-	new_reservation.short_notice = False
-	if start_delta:
-		new_reservation.start += start_delta
-	if new_reservation.self_configuration:
-		# Reservation can't be short notice since the user is configuring the tool themselves.
-		new_reservation.short_notice = False
-	elif new_reservation.tool:
-		new_reservation.short_notice = determine_insufficient_notice(reservation_to_cancel.tool, new_reservation.start)
-	# A change in end time will always be provided for reservation move and resize operations.
-	new_reservation.end = reservation_to_cancel.end + end_delta
-	new_reservation.reservation_item = reservation_to_cancel.reservation_item
-	new_reservation.project = reservation_to_cancel.project
-	new_reservation.user = reservation_to_cancel.user
+	# Create a new reservation for the user by copying the original one.
+	new_reservation = reservation_to_cancel.copy(start_delta, end_delta)
+	# Set new creator/time
 	new_reservation.creation_time = now
+	new_reservation.creator = request.user
 
 	response = check_policy_to_cancel_reservation(request.user, reservation_to_cancel, new_reservation)
 	# Do not move the reservation if the user was not authorized to cancel it.
@@ -685,16 +668,6 @@ def modify_outage(request, start_delta, end_delta):
 		# All policy checks passed, so save the reservation.
 		outage.save()
 	return HttpResponse()
-
-
-def determine_insufficient_notice(tool, start):
-	""" Determines if a reservation is created that does not give
-	the staff sufficient advance notice to configure a tool. """
-	for config in tool.configuration_set.all():
-		advance_notice = start - timezone.now()
-		if advance_notice < timedelta(hours=config.advance_notice_limit):
-			return True
-	return False
 
 
 @login_required

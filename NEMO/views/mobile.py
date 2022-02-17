@@ -13,7 +13,6 @@ from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsE
 from NEMO.models import Area, Project, Reservation, ReservationItemType, ScheduledOutage, Tool, User
 from NEMO.utilities import beginning_of_the_day, end_of_the_day, extract_date, localize
 from NEMO.views.calendar import (
-	determine_insufficient_notice,
 	extract_configuration,
 	extract_reservation_questions,
 	render_reservation_questions,
@@ -107,7 +106,7 @@ def make_reservation(request):
 	reservation.start = start
 	reservation.end = end
 	if item_type == ReservationItemType.TOOL:
-		reservation.short_notice = determine_insufficient_notice(item, start)
+		reservation.short_notice = item.determine_insufficient_notice(start)
 	else:
 		reservation.short_notice = False
 	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=reservation, user_creating_reservation=request.user, explicit_policy_override=False)
