@@ -1,5 +1,4 @@
 import io
-from copy import deepcopy
 from datetime import datetime, timedelta
 from http import HTTPStatus
 from json import dumps, loads
@@ -626,7 +625,9 @@ def modify_reservation(request, start_delta, end_delta):
 	# Record the current time so that the timestamp of the cancelled reservation and the new reservation match exactly.
 	now = timezone.now()
 	# Create a new reservation for the user by copying the original one.
-	new_reservation = reservation_to_cancel.copy(start_delta, end_delta)
+	new_start = reservation_to_cancel.start + start_delta if start_delta else None
+	new_end = reservation_to_cancel.end + end_delta if end_delta else None
+	new_reservation = reservation_to_cancel.copy(new_start, new_end)
 	# Set new creator/time
 	new_reservation.creation_time = now
 	new_reservation.creator = request.user
@@ -1032,15 +1033,12 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 	try:
 		if new_end is None:
 			new_end = timezone.now()
-		current_reservation = Reservation.objects.filter(start__lt=timezone.now(), end__gt=timezone.now(),
-														 cancelled=False, missed=False, shortened=False, user=user)
-		current_reservation = current_reservation.get(**{ReservationItemType.from_item(item).value: item})
+		current_reservation_qs = Reservation.objects.filter(start__lt=timezone.now(), end__gt=timezone.now(),
+															cancelled=False, missed=False, shortened=False, user=user)
+		current_reservation = current_reservation_qs.get(**{ReservationItemType.from_item(item).value: item})
 		# Staff are exempt from mandatory reservation shortening.
 		if user.is_staff is False:
-			new_reservation = deepcopy(current_reservation)
-			new_reservation.id = None
-			new_reservation.pk = None
-			new_reservation.end = new_end
+			new_reservation = current_reservation.copy(new_end=new_end)
 			new_reservation.save()
 			current_reservation.shortened = True
 			current_reservation.descendant = new_reservation

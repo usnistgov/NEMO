@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+from copy import deepcopy
 from datetime import timedelta
 from enum import Enum
 from html import escape
@@ -1454,24 +1455,14 @@ class Reservation(CalendarDisplay):
 	def question_data_json(self):
 		return loads(self.question_data) if self.question_data else None
 
-	def copy(self, start_delta: timedelta = None, end_delta: timedelta = None):
-		new_reservation = Reservation()
-		new_reservation.title = self.title
-		new_reservation.creator = self.creator
-		new_reservation.additional_information = self.additional_information
-		new_reservation.start = self.start + start_delta if start_delta else self.start
-		new_reservation.end = self.end + end_delta if end_delta else self.end
-		new_reservation.self_configuration = self.self_configuration
-		new_reservation.reservation_item = self.reservation_item
-		new_reservation.short_notice = False
-		if new_reservation.self_configuration:
-			# Reservation can't be short notice since the user is configuring the tool themselves.
-			new_reservation.short_notice = False
-		elif new_reservation.tool:
+	def copy(self, new_start: datetime = None, new_end: timedelta = None):
+		new_reservation = deepcopy(self)
+		new_reservation.id = None
+		new_reservation.pk = None
+		new_reservation.start = new_start if new_start else self.start
+		new_reservation.end = new_end if new_end else self.end
+		if new_reservation.tool:
 			new_reservation.short_notice = new_reservation.tool.determine_insufficient_notice(new_reservation.start)
-		new_reservation.project = self.project
-		new_reservation.user = self.user
-		new_reservation.question_data = self.question_data
 		return new_reservation
 
 	class Meta:
