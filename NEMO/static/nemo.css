@@ -803,4 +803,5 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	position: -webkit-sticky;
 	left: 0;
 	background-color: #fff;
+	z-index: 1;
 }
