@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Union
 
+from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, rrule
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Prefetch, Q, QuerySet
@@ -73,39 +74,44 @@ def get_occupancy_dictionary(request):
 
 
 def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
-	# Timestamp allows us to know which week to show. Defaults to current week
+	# Timestamp allows us to know which week/month to show. Defaults to current week
+	# Everything here is dealing with date/times without timezones to avoid issues with DST etc
+	view = request.GET.get("view", "week")
 	timestamp = quiet_int(request.GET.get("timestamp", datetime.now().timestamp()), datetime.now().timestamp())
-	today = beginning_of_the_day(datetime.fromtimestamp(timestamp))
+	today = beginning_of_the_day(datetime.fromtimestamp(timestamp), in_local_timezone=False)
 	weekdays_only = get_customization("dashboard_staff_status_weekdays_only")
 	first_day = (
 		today.isoweekday()
 		if not weekdays_only and get_customization("dashboard_staff_status_first_day_of_week") == "0"
 		else today.weekday()
 	)
-	week_start = today - timedelta(days=first_day)
-	week_end = week_start + timedelta(weeks=1) - timedelta(days=1)
-	# If we are only showing weekdays, we have to subtract 2 days from the end of the week
-	if weekdays_only:
-		week_end = week_end - timedelta(days=2)
+	start = today.replace(day=1) if view == "month" else today - timedelta(days=first_day)
+	end_delta = relativedelta(months=1) if view == "month" else timedelta(weeks=1)
+	end = start + end_delta - timedelta(days=1)
+	# If we are only showing weekdays, we have to subtract 2 days from the end of the week. Only applies to week view
+	if view == "week" and weekdays_only:
+		end = end - timedelta(days=2)
+	# Reset timestamp to be right in the middle of the period
+	timestamp = int((start + timedelta(days=(end - start).days/2)).timestamp())
 	staffs = StaffAvailability.objects.all()
 	staffs.query.add_ordering(F("category").asc(nulls_last=True))
 	staffs.query.add_ordering(F("staff_member__first_name").asc())
-	days = rrule(DAILY, dtstart=week_start, until=week_end)
+	days = rrule(DAILY, dtstart=start, until=end)
 	staff_date_format = get_customization("dashboard_staff_status_date_format")
 	if csv_export:
-		return export_staff_status(request, staffs, days, week_start, week_end, staff_date_format)
+		return export_staff_status(request, staffs, days, start, end, staff_date_format)
 	return {
 		"staff_date_format": staff_date_format,
-		"staff_absences": staff_absences_dict(staffs, days, week_start, week_end),
-		"closure_times": closures_dict(days, week_start, week_end),
+		"staff_absences": staff_absences_dict(staffs, days, start, end),
+		"closure_times": closures_dict(days, start, end),
 		"staffs": staffs,
 		"days": days,
-		"days_length": 5 if weekdays_only else 7,
+		"days_length": (end - start).days + 1,
 		"page_timestamp": timestamp,
-		# Beginning of the week -2 days will put us in the previous week
-		"prev": int((week_start - timedelta(days=2)).timestamp()),
-		# End of the week +4 days will put us in the next week (even if weekdays only)
-		"next": int((week_end + timedelta(days=4)).timestamp()),
+		"page_view": view,
+		# Using end delta here (=/- 1 week or 1 month) to set previous and next
+		"prev": int((start - end_delta).timestamp()),
+		"next": int((end + end_delta).timestamp()),
 	}
 
 
@@ -125,10 +131,11 @@ def create_staff_absence(request, absence_id=None):
 			pass
 	form = StaffAbsenceForm(request.POST or None, instance=absence)
 	timestamp = request.GET.get("timestamp", "")
+	view = request.GET.get("view", "")
 	if request.POST and form.is_valid():
 		form.save()
 		return HttpResponse()
-	dictionary = {"form": form, "staff_members": StaffAvailability.objects.all(), "page_timestamp": timestamp}
+	dictionary = {"form": form, "staff_members": StaffAvailability.objects.all(), "page_timestamp": timestamp, "page_view": view}
 	return render(request, "status_dashboard/staff_absence.html", dictionary)
 
 
@@ -138,57 +145,60 @@ def delete_staff_absence(request, absence_id):
 	absence = get_object_or_404(StaffAbsence, id=absence_id)
 	absence.delete()
 	timestamp = request.GET.get("timestamp", "")
+	view = request.GET.get("view", "")
 	url = reverse("status_dashboard_tab", args=["staff"])
-	return redirect(f"{url}?timestamp={timestamp}")
+	return redirect(f"{url}?timestamp={timestamp}&view={view}")
 
 
-def staff_absences_dict(staffs, days, week_start, week_end):
-	dictionary = {staff.staff_member.id: {} for staff in staffs}
-	absences = StaffAbsence.objects.filter(start_date__lte=week_end, end_date__gte=week_start).order_by("creation_time")
+def staff_absences_dict(staffs, days, start, end):
+	dictionary = {staff.id: {} for staff in staffs}
+	absences = StaffAbsence.objects.filter(start_date__lte=end, end_date__gte=start).order_by("creation_time")
 	for staff_absence in absences:
 		for day in days:
 			# comparing dates here so no timezone issues (dates don't have timezones)
 			if staff_absence.start_date <= day.date() <= staff_absence.end_date:
-				dictionary[staff_absence.staff_member.staff_member.id][day.weekday()] = staff_absence
+				dictionary[staff_absence.staff_member.id][day.day] = staff_absence
 	return dictionary
 
 
-def closures_dict(days, week_start, week_end):
+def closures_dict(days, start, end):
 	dictionary = {}
-	closure_times = ClosureTime.objects.filter(start_time__lte=week_end, end_time__gte=week_start)
+	closure_times = ClosureTime.objects.filter(start_time__lte=end, end_time__gte=start)
 	for closure_time in closure_times:
 		for day in days:
 			if as_timezone(closure_time.start_time).date() <= day.date() <= as_timezone(closure_time.end_time).date():
-				dictionary[day.weekday()] = closure_time
+				dictionary[day.day] = closure_time
 	return dictionary
 
 
 @facility_manager_required
-def export_staff_status(request, staffs, days, week_start, week_end, staff_date_format) -> HttpResponse:
+def export_staff_status(request, staffs, days, start, end, staff_date_format) -> HttpResponse:
 	table_result = BasicDisplayTable()
 	table_result.add_header(("staff", ""))
 	# Add headers for each day
 	for day in days:
-		table_result.add_header((day.weekday(), format_datetime(day, staff_date_format, as_current_timezone=False)))
-	staff_absences = staff_absences_dict(staffs, days, week_start, week_end)
-	closure_times = closures_dict(days, week_start, week_end)
+		table_result.add_header((day.day, format_datetime(day, staff_date_format, as_current_timezone=False)))
+	staff_absences = staff_absences_dict(staffs, days, start, end)
+	closure_times = closures_dict(days, start, end)
 	category = ""
 	for staff in staffs:
 		if staff.category != category:
 			category = staff.category or "Other"
-		# Add a whole row for the category
-		table_result.add_row({"staff": category})
+			# Add a whole row for the category
+			table_result.add_row({"staff": category})
 		# Add a row for each staff member
-		staff_row = {"staff": staff.staff_member.get_name(), **staff.weekly_availability("In", "Out")}
+		staff_row = {"staff": staff.staff_member.get_name()}
+		for day in days:
+			staff_row[day.day] = staff.weekly_availability("In", "Out").get(day.weekday())
 		for staff_id, absence_dict in staff_absences.items():
 			if staff.id == staff_id:
 				for day_index, absence in absence_dict.items():
 					staff_row[day_index] = absence.absence_type.name + f" {absence.description or ''}"
 		for day_index, closure_time in closure_times.items():
-			staff_row[day_index] = closure_time.closure.name
+			staff_row[day_index] = f"Closed: {closure_time.closure.name}"
 		table_result.add_row(staff_row)
 	response = table_result.to_csv()
-	filename = f"staff_status_{export_format_datetime(week_start, t_format=False)}_to_{export_format_datetime(week_end, t_format=False)}.csv"
+	filename = f"staff_status_{export_format_datetime(start, t_format=False)}_to_{export_format_datetime(end, t_format=False)}.csv"
 	response["Content-Disposition"] = f'attachment; filename="{filename}"'
 	return response
 

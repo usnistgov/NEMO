@@ -6,64 +6,76 @@
         Staff absence is highlighted in <span style="display: inline-block; padding: 3px" class="alert-danger">red</span>
     </div>
     <div style="display: table-cell; vertical-align: bottom; width: 100%">
-        {% if user.is_facility_manager %}
-            <a class="btn btn-info pull-right" href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ page_timestamp }}&csv=true" role="button" target="_blank">Export</a>
-        {% endif %}
+        <div style="display: inline-flex">
+            <div class="btn-group" role="group" style="display: inline-flex">
+              <button type="button" class="btn btn-default {% if not page_view or page_view == 'week' %}active{% endif %}" onclick="window.location = '?timestamp={{ page_timestamp }}&view=week'" {% if not page_view or page_view == 'week' %}aria-pressed="true"{% endif %}>Week</button>
+              <button type="button" class="btn btn-default {% if page_view == 'month' %}active{% endif %}" onclick="window.location = '?timestamp={{ page_timestamp }}&view=month'" {% if page_view == 'month' %}aria-pressed="true"{% endif %}>Month</button>
+            </div>
+            {% if user.is_facility_manager %}
+                <a style="margin-left: 10px" class="btn btn-info" href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ page_timestamp }}&view={{ page_view }}&csv=true" role="button" target="_blank">Export</a>
+            {% endif %}
+        </div>
     </div>
 </div>
-<table class="table table-responsive table-bordered" style="margin-top: 25px">
-    <thead>
-        <tr class="no-border">
-            <th></th>
-            <th class="button-column-minimum"></th>
-            <th class="button-column-minimum" style="vertical-align: middle;">
-                <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ prev }}">
-                    <i class="glyphicon glyphicon-chevron-left chevron" style="padding: 0"></i>
-                </a>
-            </th>
-            {% for day in days %}
-                {% now 'Y-m-d' as today %}
-                <th class="text-center {% if day|date:'Y-m-d' == today %}alert-info{% endif %}">
-                    <span {% if day|date:'Y-m-d' == today %}data-toggle='tooltip' data-title="Today's date"{% endif %}>{{ day|date:staff_date_format }}</span>
+<div style="overflow-x: auto; margin-top: 25px; margin-bottom: 20px; border: 1px solid #ddd;">
+    <table class="table table-responsive" style="margin: 0;border-collapse: collapse">
+        <thead>
+            <tr class="no-border">
+                <th class="sticky"></th>
+                <th class="button-column-minimum" style="vertical-align: middle;">
+                    <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ prev }}&view={{ page_view }}">
+                        <i class="glyphicon glyphicon-chevron-left chevron" style="padding: 0"></i>
+                    </a>
                 </th>
-            {% endfor %}
-            <th class="button-column-minimum" style="vertical-align: middle;">
-                <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ next }}">
-                    <i class="glyphicon glyphicon-chevron-right chevron" style="padding: 0"></i>
-                </a>
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-    {% regroup staffs by category as category_staff %}
-		{% for category in category_staff %}
-            <tr><th colspan="{{ days_length|add:4 }}">{{ category.grouper|default_if_none:'Other' }}</th></tr>
-            {% for staff in category.list %}
+                {% for day in days %}
+                    {% now 'Y-m-d' as today %}
+                    <th class="text-center {% if day|date:'Y-m-d' == today %}alert-info{% endif %}">
+                        <span {% if day|date:'Y-m-d' == today %}data-toggle='tooltip' data-title="Today's date"{% endif %}>{{ day|date:staff_date_format }}</span>
+                    </th>
+                {% endfor %}
+                <th class="button-column-minimum" style="vertical-align: middle;">
+                    <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ next }}&view={{ page_view }}">
+                        <i class="glyphicon glyphicon-chevron-right chevron" style="padding: 0"></i>
+                    </a>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+        {% regroup staffs by category as category_staff %}
+            {% for category in category_staff %}
                 <tr>
-                    <td style="vertical-align: middle; border-right: none">{{ staff.staff_member.get_contact_info_html|safe }}</td>
-                    <td style="vertical-align: middle; border-left: none">{% if user.is_facility_manager %}<span class="glyphicon glyphicon-plus-sign success-highlight" onclick="ajax_get('{% url "create_staff_absence" %}?staff_id={{ staff.id }}&timestamp={{ page_timestamp }}', undefined, ajax_success_callback)" title="Add staff absence"></span>{% endif %}</td>
-                    {% for day in days %}
-                        {% with staff_available=staff.weekly_availability|get_item:day.weekday staff_absent=staff_absences|get_item:staff.staff_member.id|get_item:day.weekday closure_time=closure_times|get_item:day.weekday %}
-                            <td style="vertical-align: middle;" {% if forloop.last or forloop.first %}colspan="2"{% endif %} class="text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
-                                {% if closure_time %}
-                                    <div data-toggle="tooltip" title="{{ closure_time.closure.name }} {{ closure_time }}">Closed</div>
-                                {% elif staff_absent %}
-                                    {% if not staff_absent.full_day and not user.is_facility_manager %}
-                                        <div data-toggle="tooltip" title="{{ staff_absent.description }}">&nbsp;</div>
-                                    {% elif user.is_facility_manager %}
-                                        <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span style="cursor: pointer" onclick="ajax_get('{% url "edit_staff_absence" staff_absent.id %}?timestamp={{ page_timestamp }}', undefined, ajax_success_callback)">{{ staff_absent.absence_type.name }}</span></div>
-                                    {% endif %}
-                                {% elif staff_available %}
-                                    <div data-toggle="tooltip" title="{{ staff.daily_hours }}">&nbsp;</div>
-                                {% endif %}
-                            </td>
-                        {% endwith %}
-                    {% endfor %}
+                    <th colspan="4" class="sticky">{{ category.grouper|default_if_none:'Other' }}</th>
+                    <th colspan="{{ days_length }}"></th>
                 </tr>
+                {% for staff in category.list %}
+                    <tr>
+                        <td style="vertical-align: middle;" class="sticky">
+                            <div class="text-nowrap" style="width:100%; display: table-cell; vertical-align: middle; padding-right: 8px">{{ staff.staff_member.get_contact_info_html|safe }}</div>
+                            <div style="width:100%; display: table-cell; vertical-align: middle; text-align: right">{% if user.is_facility_manager %}<span class="glyphicon glyphicon-plus-sign success-highlight" onclick="ajax_get('{% url "create_staff_absence" %}?staff_id={{ staff.id }}&timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)" title="Add staff absence"></span>{% endif %}</div>
+                        </td>
+                        {% for day in days %}
+                            {% with staff_available=staff.weekly_availability|get_item:day.weekday staff_absent=staff_absences|get_item:staff.id|get_item:day.day closure_time=closure_times|get_item:day.day %}
+                                <td style="vertical-align: middle;border-left: 1px solid #ddd" {% if forloop.last or forloop.first %}colspan="2"{% endif %} class="text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
+                                    {% if closure_time %}
+                                        <div data-toggle="tooltip" title="{{ closure_time.closure.name }} {{ closure_time }}">Closed</div>
+                                    {% elif staff_absent %}
+                                        {% if not staff_absent.full_day and not user.is_facility_manager %}
+                                            <div data-toggle="tooltip" title="{{ staff_absent.description }}">&nbsp;</div>
+                                        {% elif user.is_facility_manager %}
+                                            <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span style="cursor: pointer" onclick="ajax_get('{% url "edit_staff_absence" staff_absent.id %}?timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)">{{ staff_absent.absence_type.name }}</span></div>
+                                        {% endif %}
+                                    {% elif staff_available %}
+                                        <div data-toggle="tooltip" title="{{ staff.daily_hours }}">&nbsp;</div>
+                                    {% endif %}
+                                </td>
+                            {% endwith %}
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
             {% endfor %}
-        {% endfor %}
-    </tbody>
-</table>
+        </tbody>
+    </table>
+</div>
 
 <script>
     $(".contact-info-tooltip").on('click', function () {

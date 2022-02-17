@@ -796,3 +796,11 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 {
 	background-color: #f9f9f9;
 }
+
+.sticky
+{
+	position: sticky;
+	position: -webkit-sticky;
+	left: 0;
+	background-color: #fff;
+}
