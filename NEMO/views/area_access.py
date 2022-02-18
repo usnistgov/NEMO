@@ -129,8 +129,8 @@ def new_area_access_record(request):
 			dictionary['error_message'] = e.msg
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except NoAccessiblePhysicalAccessUserError as error:
-			if error.access_exception:
-				dictionary['error_message'] = '{} does not have access to the {} at this time due to the following exception: {}.'.format(user, area.name, error.access_exception.name)
+			if error.closure_time:
+				dictionary['error_message'] = '{} does not have access to the {} at this time due to the following closure: {}.'.format(user, area.name, error.closure_time.closure.name)
 			else:
 				dictionary['error_message'] = '{} does not have a physical access level that allows access to the {} at this time.'.format(user, area.name)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
@@ -301,8 +301,8 @@ def self_log_in(request, load_areas=True):
 			dictionary['area_error_message'] = e.msg
 			return render(request, 'area_access/self_login.html', dictionary)
 		except NoAccessiblePhysicalAccessUserError as error:
-			if error.access_exception:
-				dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time due to the following exception: {error.access_exception.name}. The exception ends on {localize(error.access_exception.end_time.astimezone(timezone.get_current_timezone()))}"
+			if error.closure_time:
+				dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time due to the following closure: {error.closure_time.closure.name}. The closure ends on {localize(error.closure_time.end_time.astimezone(timezone.get_current_timezone()))}"
 			else:
 				dictionary['area_error_message'] = f"You do not have access to the {error.area.name} at this time. Please visit the User Office if you believe this is an error."
 			return render(request, 'area_access/self_login.html', dictionary)

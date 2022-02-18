@@ -8,6 +8,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_required
 from NEMO.models import MembershipHistory, Tool, User
+from NEMO.views.users import get_identity_service
 
 
 @staff_member_required
@@ -51,7 +52,7 @@ def modify_qualifications(request):
 				entry.child_content_object = user
 				entry.action = entry.Action.ADDED
 				entry.save()
-			if settings.IDENTITY_SERVICE['available']:
+			if get_identity_service().get("available", False):
 				for t in tools:
 					tool = Tool.objects.get(id=t)
 					if tool.grant_badge_reader_access_upon_qualification:

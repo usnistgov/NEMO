@@ -1,7 +1,7 @@
 import csv
 import os
 from calendar import monthrange
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from email import encoders
 from email.mime.base import MIMEBase
 from io import BytesIO
@@ -18,8 +18,8 @@ from django.core.mail import EmailMessage
 from django.db.models import QuerySet
 from django.http import HttpResponse
 from django.utils import timezone
-from django.utils.formats import date_format
-from django.utils.timezone import localtime
+from django.utils.formats import date_format, time_format
+from django.utils.timezone import is_naive, localtime
 
 
 class BasicDisplayTable(object):
@@ -228,23 +228,45 @@ def extract_dates(parameters):
 	return start, end
 
 
-def format_datetime(universal_time=None, datetime_format="DATETIME_FORMAT", as_current_timezone=True, use_l10n=None) -> str:
-	time = universal_time if universal_time else timezone.now() if as_current_timezone else datetime.now()
-	local_time = timezone.localtime(time) if as_current_timezone else time
-	return date_format(local_time, datetime_format, use_l10n)
+def format_daterange(start_time, end_time, dt_format="DATETIME_FORMAT", d_format="DATE_FORMAT", t_format="TIME_FORMAT", date_separator=" from ", time_separator=" to ") -> str:
+	# This method returns a formatted date range, using the date only once if it is on the same day
+	if isinstance(start_time, time):
+		return f"{date_separator}{format_datetime(start_time, t_format)}{time_separator}{format_datetime(end_time, t_format)}".strip()
+	elif isinstance(start_time, datetime):
+		if as_timezone(start_time).date() != as_timezone(end_time).date():
+			return f"{date_separator}{format_datetime(start_time, dt_format)}{time_separator}{format_datetime(end_time, dt_format)}".strip()
+		else:
+			return f"{format_datetime(start_time, d_format)}{date_separator}{format_datetime(start_time, t_format)}{time_separator}{format_datetime(end_time, t_format)}".strip()
+	else:
+		return f"{date_separator}{format_datetime(start_time, d_format)}{time_separator}{format_datetime(end_time, d_format)}".strip()
 
 
-def export_format_datetime(date_time=None, date_format=True, time_format=True, underscore=True, as_current_timezone=True) -> str:
+def format_datetime(universal_time=None, df=None, as_current_timezone=True, use_l10n=None) -> str:
+	this_time = universal_time if universal_time else timezone.now() if as_current_timezone else datetime.now()
+	local_time = as_timezone(this_time) if as_current_timezone else this_time
+	if isinstance(universal_time, time):
+		return time_format(local_time, df or "TIME_FORMAT", use_l10n)
+	elif isinstance(universal_time, datetime):
+		return date_format(local_time, df or "DATETIME_FORMAT", use_l10n)
+	return date_format(local_time, df or "DATE_FORMAT", use_l10n)
+
+
+def export_format_datetime(date_time=None, d_format=True, t_format=True, underscore=True, as_current_timezone=True) -> str:
 	""" This function returns a formatted date/time for export files. Default returns date + time format, with underscores """
-	time = date_time if date_time else timezone.now() if as_current_timezone else datetime.now()
+	this_time = date_time if date_time else timezone.now() if as_current_timezone else datetime.now()
 	export_date_format = getattr(settings, 'EXPORT_DATE_FORMAT', 'm_d_Y').replace("-", "_")
 	export_time_format = getattr(settings, 'EXPORT_TIME_FORMAT', 'h_i_s').replace("-", "_")
 	if not underscore:
 		export_date_format = export_date_format.replace("_", "-")
 		export_time_format = export_time_format.replace("_", "-")
 	separator = "-" if underscore else "_"
-	datetime_format = export_date_format if date_format and not time_format else export_time_format if not date_format and time_format else export_date_format + separator + export_time_format
-	return format_datetime(time, datetime_format, as_current_timezone)
+	datetime_format = export_date_format if d_format and not t_format else export_time_format if not d_format and t_format else export_date_format + separator + export_time_format
+	return format_datetime(this_time, datetime_format, as_current_timezone)
+
+
+def as_timezone(dt):
+	naive = type(dt) == date or is_naive(dt)
+	return timezone.localtime(dt) if not naive else dt
 
 
 def localize(dt, tz=None):
@@ -332,7 +354,7 @@ def get_task_image_filename(task_images, filename):
 	task: Task = task_images.task
 	tool_name = slugify(task.tool)
 	now = datetime.now()
-	date = export_format_datetime(now, time_format=False, as_current_timezone=False)
+	date = export_format_datetime(now, t_format=False, as_current_timezone=False)
 	year = now.strftime("%Y")
 	number = "{:02d}".format(
 		TaskImages.objects.filter(task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day).count()	+ 1

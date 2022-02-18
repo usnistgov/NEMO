@@ -9,13 +9,12 @@
 {% block content %}
     <h1 class="form-group">{% if form.instance.id %}Modify access request{% else %}New access request{% endif %}</h1>
 	<form class="well" action="{% if form.instance.id %}{% url 'edit_access_request' form.instance.id %}{% else %}{% url 'create_access_request' %}{% endif %}" method="post">
+		{% csrf_token %}
 		{% if form.non_field_errors %}
 			<div class="alert alert-danger">
 				{{ form.non_field_errors }}
 			</div>
 		{% endif %}
-		{% csrf_token %}
-		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="request_id">{% endif %}
 		<div class="form-group">
 			<div class="row">
 				<div class="col-md-3 col-sm-6">
@@ -87,7 +86,8 @@
         let timepicker_properties =
 		{
 			format: 'MM/DD/YYYY h:mm A',
-            showClose: true
+            showClose: true,
+            useCurrent: false
 		};
 
         function add_other_user(jquery_event, search_selection, dataset_name)
@@ -111,22 +111,18 @@
         function on_load()
 		{
 			$('#search_other_users').autocomplete('users', add_other_user, {{ other_users|json_search_base:'get_name' }});
-            {% if form.instance.id %}
+            {% if form.cleaned_data %}
+                {% if form.cleaned_data.other_users %}
+                    {% for other_user in form.cleaned_data.other_users %}
+                        add_other_user(false, {'id': '{{ other_user.id }}', 'name': '{{ other_user.get_name }}' });
+                    {% endfor %}
+                {% endif %}
+            {% elif form.instance.id and form.instance.other_users %}
                 {% for other_user in form.instance.other_users.all %}
                     add_other_user(false, {'id': '{{ other_user.id }}', 'name': '{{ other_user.get_name }}' });
                 {% endfor %}
             {% endif %}
-            {% if form.cleaned_data.other_users %}
-                {% for other_user in form.cleaned_data.other_users %}
-                    add_other_user(false, {'id': '{{ other_user.id }}', 'name': '{{ other_user.get_name }}' });
-                {% endfor %}
-            {% endif %}
-            let start_time_jq = $('#start_time');
-            let end_time_jq = $('#end_time');
-		    start_time_jq.datetimepicker(timepicker_properties);
-		    end_time_jq.datetimepicker(timepicker_properties);
-            let end_date_picker = end_time_jq.data("DateTimePicker");
-            start_time_jq.on("dp.change", function (e) { end_date_picker.minDate(e.date); });
+            set_start_end_datetime_pickers($('#start_time'), $('#end_time'), timepicker_properties);
 		}
 		window.addEventListener('load', on_load, true);
 	</script>

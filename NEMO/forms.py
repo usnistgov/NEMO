@@ -28,6 +28,7 @@ from NEMO.models import (
 	ReservationItemType,
 	SafetyIssue,
 	ScheduledOutage,
+	StaffAbsence,
 	Task,
 	TaskCategory,
 	TaskImages,
@@ -101,17 +102,17 @@ class TaskForm(ModelForm):
 	def clean(self):
 		if any(self.errors):
 			return
-		super(TaskForm, self).clean()
-		action = self.cleaned_data["action"]
+		cleaned_data = super().clean()
+		action = cleaned_data["action"]
 		if action == "create":
-			if not self.cleaned_data["description"]:
+			if not cleaned_data["description"]:
 				raise ValidationError("You must describe the problem.")
 		if action == "resolve":
 			if self.instance.cancelled or self.instance.resolved:
 				raise ValidationError(
 					"This task can't be resolved because it is marked as 'cancelled' or 'resolved' already."
 				)
-		return self.cleaned_data
+		return cleaned_data
 
 	def save(self, commit=True):
 		instance = super(TaskForm, self).save(commit=False)
@@ -276,24 +277,24 @@ class ConsumableWithdrawForm(ModelForm):
 	def clean(self):
 		if any(self.errors):
 			return
-		super(ConsumableWithdrawForm, self).clean()
-		quantity = self.cleaned_data["quantity"]
-		consumable = self.cleaned_data["consumable"]
+		cleaned_data = super().clean()
+		quantity = cleaned_data["quantity"]
+		consumable = cleaned_data["consumable"]
 		if quantity > consumable.quantity:
 			raise ValidationError(
 				'There are not enough "' + consumable.name + '". (The current quantity in stock is '
 				+ str(consumable.quantity)
 				+ "). Please order more as soon as possible."
 			)
-		customer = self.cleaned_data["customer"]
-		project = self.cleaned_data["project"]
+		customer = cleaned_data["customer"]
+		project = cleaned_data["project"]
 		if project not in customer.active_projects():
 			raise ValidationError(
 				"{} is not a member of the project {}. Users can only bill to projects they belong to.".format(
 					customer, project
 				)
 			)
-		return self.cleaned_data
+		return cleaned_data
 
 
 class ReservationAbuseForm(Form):
@@ -417,6 +418,12 @@ class TemporaryPhysicalAccessRequestForm(ModelForm):
 		if other_users < minimum_total_users -1:
 			self.add_error("other_users", f"You need at least {minimum_total_users-1} other {'buddy' if minimum_total_users == 2 else 'buddies'} for this request")
 		return cleaned_data
+
+
+class StaffAbsenceForm(ModelForm):
+	class Meta:
+		model = StaffAbsence
+		fields = "__all__"
 
 
 def nice_errors(form, non_field_msg="General form errors"):

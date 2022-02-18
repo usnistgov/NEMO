@@ -5,7 +5,7 @@
 	<div class="row" style="font-size:1.7em; margin-bottom:20px">
 		<div class="col-xs-2"><a href="{% url 'view_calendar' item_type item.id %}{{ previous_day|date:"Y-m-d" }}/"><span class="glyphicon glyphicon-chevron-left"></span></a></div>
 		<div class="col-xs-8" style="text-align:center">
-			{{ tool }}<br>
+			{{ item }}<br>
 			{{ current_day|date:"l" }}<br>
 			{{ current_day|date:"F jS" }}
 		</div>

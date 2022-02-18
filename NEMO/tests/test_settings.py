@@ -122,7 +122,7 @@ LOGGING = {
 		'file': {
 			'level': 'DEBUG',
 			'class': 'logging.FileHandler',
-			'filename': './nemo_log.log',
+			'filename': './test_nemo.log',
 			'formatter': 'verbose',
 		},
 		'console': {

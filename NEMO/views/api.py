@@ -73,7 +73,7 @@ class UserViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"access_expiration": ["month", "year", "gte", "gt", "lte", "lt", "isnull"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"users-{export_format_datetime()}.xlsx"
 
 
@@ -88,7 +88,7 @@ class ProjectViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"account_id": ["exact", "in"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"projects-{export_format_datetime()}.xlsx"
 
 
@@ -97,7 +97,7 @@ class AccountViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	serializer_class = AccountSerializer
 	filterset_fields = {"id": ["exact", "in"], "name": ["exact"], "active": ["exact"]}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"accounts-{export_format_datetime()}.xlsx"
 
 
@@ -115,7 +115,7 @@ class ToolViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"_post_usage_questions": ["isempty"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"tools-{export_format_datetime()}.xlsx"
 
 
@@ -134,7 +134,7 @@ class AreaViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"count_service_personnel_in_occupancy": ["exact"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"areas-{export_format_datetime()}.xlsx"
 
 
@@ -150,7 +150,7 @@ class ResourceViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"dependent_areas": ["in"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"resources-{export_format_datetime()}.xlsx"
 
 
@@ -171,7 +171,7 @@ class ReservationViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"question_data": ["isempty"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"reservations-{export_format_datetime()}.xlsx"
 
 
@@ -188,7 +188,7 @@ class UsageEventViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"tool_id": ["exact", "in"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"usage_events-{export_format_datetime()}.xlsx"
 
 
@@ -205,7 +205,7 @@ class AreaAccessRecordViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"staff_charge_id": ["exact", "isnull", "in"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"area_access_records-{export_format_datetime()}.xlsx"
 
 
@@ -229,7 +229,7 @@ class TaskViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"resolution_category": ["exact", "in"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"tasks-{export_format_datetime()}.xlsx"
 
 
@@ -247,7 +247,7 @@ class ScheduledOutageViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"resource_id": ["exact", "in", "isnull"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"outages-{export_format_datetime()}.xlsx"
 
 
@@ -265,7 +265,7 @@ class StaffChargeViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"note": ["contains"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"staff_charges-{export_format_datetime()}.xlsx"
 
 
@@ -284,7 +284,7 @@ class TrainingSessionViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"qualified": ["exact"],
 	}
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"training_sessions-{export_format_datetime()}.xlsx"
 
 
@@ -314,5 +314,5 @@ class BillingViewSet(XLSXFileMixin, GenericViewSet):
 		data.sort(key=lambda x: x.start, reverse=True)
 		return data
 
-	def get_filename(self):
+	def get_filename(self, *args, **kwargs):
 		return f"billing-{export_format_datetime()}.xlsx"

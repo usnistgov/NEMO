@@ -192,7 +192,7 @@ urlpatterns += [
 
 	# Status dashboard:
 	url(r'^status_dashboard/$', status_dashboard.status_dashboard, name='status_dashboard'),
-	url(r'^status_dashboard/(?P<tab>tools|occupancy)/$', status_dashboard.status_dashboard, name='status_dashboard_tab'),
+	url(r'^status_dashboard/(?P<tab>tools|occupancy|staff)/$', status_dashboard.status_dashboard, name='status_dashboard_tab'),
 
 	# Jumbotron:
 	url(r'^jumbotron/$', jumbotron.jumbotron, name='jumbotron'),
@@ -306,11 +306,12 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		url(r'^new_area_access_record/$', area_access.new_area_access_record, name='new_area_access_record'),
 
 		# Reminders and periodic events
-		url(r'^email_reservation_reminders/$', calendar.email_reservation_reminders, name='email_reservation_reminders'),
-		url(r'^email_reservation_ending_reminders/$', calendar.email_reservation_ending_reminders, name='email_reservation_ending_reminders'),
-		url(r'^email_usage_reminders/$', calendar.email_usage_reminders, name='email_usage_reminders'),
-		url(r'^email_out_of_time_reservation_notification/$', calendar.email_out_of_time_reservation_notification, name='email_out_of_time_reservation_notification'),
 		url(r'^cancel_unused_reservations/$', calendar.cancel_unused_reservations, name='cancel_unused_reservations'),
+		url(r'^create_closure_alerts/$', calendar.create_closure_alerts, name='create_closure_alerts'),
+		url(r'^email_out_of_time_reservation_notification/$', calendar.email_out_of_time_reservation_notification, name='email_out_of_time_reservation_notification'),
+		url(r'^email_reservation_ending_reminders/$', calendar.email_reservation_ending_reminders, name='email_reservation_ending_reminders'),
+		url(r'^email_reservation_reminders/$', calendar.email_reservation_reminders, name='email_reservation_reminders'),
+		url(r'^email_usage_reminders/$', calendar.email_usage_reminders, name='email_usage_reminders'),
 		url(r'^email_weekend_access_notification/$', access_requests.email_weekend_access_notification, name='email_weekend_access_notification'),
 
 		# Abuse:
@@ -350,6 +351,11 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		# Project Usage:
 		url(r'^project_usage/$', usage.project_usage, name='project_usage'),
 		url(r'^project_billing/$', usage.project_billing, name='project_billing'),
+
+		# Staff absence
+		url(r'^create_staff_absence/$', status_dashboard.create_staff_absence, name='create_staff_absence'),
+		url(r'^edit_staff_absence/(?P<absence_id>\d+)/$', status_dashboard.create_staff_absence, name='edit_staff_absence'),
+		url(r'^delete_staff_absence/(?P<absence_id>\d+)/$', status_dashboard.delete_staff_absence, name='delete_staff_absence'),
 
 		# Billing:
 		url(r'^billing/$', usage.billing, name='billing'),

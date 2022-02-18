@@ -33,6 +33,8 @@ from NEMO.models import (
 	BadgeReader,
 	BuddyRequest,
 	BuddyRequestMessage,
+	Closure,
+	ClosureTime,
 	Comment,
 	Configuration,
 	ConfigurationHistory,
@@ -51,7 +53,6 @@ from NEMO.models import (
 	MembershipHistory,
 	News,
 	Notification,
-	PhysicalAccessException,
 	PhysicalAccessLevel,
 	PhysicalAccessLog,
 	Project,
@@ -62,6 +63,9 @@ from NEMO.models import (
 	SafetyIssue,
 	ScheduledOutage,
 	ScheduledOutageCategory,
+	StaffAbsence,
+	StaffAbsenceType,
+	StaffAvailability,
 	StaffCharge,
 	Task,
 	TaskCategory,
@@ -82,6 +86,7 @@ from NEMO.models import (
 	record_local_many_to_many_changes,
 	record_remote_many_to_many_changes_and_save,
 )
+from NEMO.utilities import format_daterange
 from NEMO.widgets.dynamic_form import (
 	DynamicForm,
 	PostUsageFloatFieldQuestion,
@@ -182,6 +187,7 @@ class ToolAdminForm(forms.ModelForm):
 					self.add_error("_policy_off_start_time", "Start time must be specified")
 				if not policy_off_end_time:
 					self.add_error("_policy_off_end_time", "End time must be specified")
+		return cleaned_data
 
 
 class ToolDocumentsInline(admin.TabularInline):
@@ -584,6 +590,7 @@ class ReservationQuestionsForm(forms.ModelForm):
 			except Exception:
 				error_info = sys.exc_info()
 				self.add_error("questions", error_info[0].__name__ + ": " + str(error_info[1]))
+		return cleaned_data
 
 
 @register(ReservationQuestions)
@@ -660,11 +667,12 @@ class InterlockCardAdminForm(forms.ModelForm):
 	def clean(self):
 		if any(self.errors):
 			return
-		super(InterlockCardAdminForm, self).clean()
-		category = self.cleaned_data["category"]
+		cleaned_data = super().clean()
+		category = cleaned_data["category"]
 		from NEMO import interlocks
 
 		interlocks.get(category, False).clean_interlock_card(self)
+		return cleaned_data
 
 
 @register(InterlockCard)
@@ -681,11 +689,12 @@ class InterlockAdminForm(forms.ModelForm):
 	def clean(self):
 		if any(self.errors):
 			return
-		super(InterlockAdminForm, self).clean()
+		cleaned_data = super().clean()
 		from NEMO import interlocks
 
 		category = self.cleaned_data["card"].category
 		interlocks.get(category, False).clean_interlock(self)
+		return cleaned_data
 
 
 @register(Interlock)
@@ -844,6 +853,7 @@ class UserAdminForm(forms.ModelForm):
 					"is_service_personnel": "A user cannot be both staff and service personnel. Please choose one or the other.",
 				}
 			)
+		return cleaned_data
 
 
 @register(User)
@@ -996,6 +1006,7 @@ class AlertAdmin(admin.ModelAdmin):
 		"expired",
 		"deleted",
 	)
+	list_filter = ("category", "dismissible", "expired", "deleted")
 	form = AlertAdminForm
 
 
@@ -1013,31 +1024,32 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 		widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
 	)
 
-	physical_access_exceptions = forms.ModelMultipleChoiceField(
-		queryset=PhysicalAccessException.objects.all(),
+	closures = forms.ModelMultipleChoiceField(
+		queryset=Closure.objects.all(),
 		required=False,
-		widget=FilteredSelectMultiple(verbose_name="Physical Access Exceptions", is_stacked=False),
+		widget=FilteredSelectMultiple(verbose_name="Closures", is_stacked=False),
 	)
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		if self.instance.pk:
 			self.fields["authorized_users"].initial = self.instance.user_set.all()
-			self.fields["physical_access_exceptions"].initial = self.instance.physicalaccessexception_set.all()
+			self.fields["closures"].initial = self.instance.closure_set.all()
 
 	def clean(self):
-		schedule = self.cleaned_data.get("schedule")
+		cleaned_data = super().clean()
+		schedule = cleaned_data.get("schedule")
 		if schedule == PhysicalAccessLevel.Schedule.WEEKDAYS:
-			start_date = self.cleaned_data.get("weekdays_start_time")
-			end_date = self.cleaned_data.get("weekdays_end_time")
+			start_date = cleaned_data.get("weekdays_start_time")
+			end_date = cleaned_data.get("weekdays_end_time")
 			if not start_date:
 				self.add_error("weekdays_start_time", "Start time is required for weekdays.")
 			if not end_date:
 				self.add_error("weekdays_end_time", "End time is required for weekdays.")
 		else:
-			self.cleaned_data["weekdays_start_time"] = None
-			self.cleaned_data["weekdays_end_time"] = None
-		return self.cleaned_data
+			cleaned_data["weekdays_start_time"] = None
+			cleaned_data["weekdays_end_time"] = None
+		return cleaned_data
 
 
 @register(PhysicalAccessLevel)
@@ -1051,34 +1063,36 @@ class PhysicalAccessLevelAdmin(admin.ModelAdmin):
 		Explicitly record any membership changes.
 		"""
 		record_remote_many_to_many_changes_and_save(request, obj, form, change, "authorized_users", super().save_model)
-		if "physical_access_exceptions" in form.changed_data:
-			obj.physicalaccessexception_set.set(form.cleaned_data["physical_access_exceptions"])
+		if "closures" in form.changed_data:
+			obj.closure_set.set(form.cleaned_data["closures"])
 
 
-class PhysicalAccessExceptionAdminForm(forms.ModelForm):
+class ClosureTimeInline(admin.TabularInline):
+	model = ClosureTime
+	min_num = 1
+
+
+class ClosureAdminForm(forms.ModelForm):
 	class Meta:
-		model = PhysicalAccessException
+		model = Closure
 		fields = "__all__"
 
 	class Media:
 		js = ("admin/time_options_override.js",)
 
-	def clean(self):
-		if any(self.errors):
-			return
-		cleaned_data = super().clean()
-		start_time = cleaned_data.get("start_time")
-		end_time = cleaned_data.get("end_time")
-		if end_time <= start_time:
-			self.add_error("end_time", "The end time must be later than the start time")
 
-
-@register(PhysicalAccessException)
-class PhysicalAccessExceptionAdmin(admin.ModelAdmin):
-	form = PhysicalAccessExceptionAdminForm
-	list_display = ("name", "start_time", "end_time")
+@register(Closure)
+class ClosureAdmin(admin.ModelAdmin):
+	inlines = [ClosureTimeInline]
+	form = ClosureAdminForm
+	list_display = ("name", "alert_days_before", "get_times_display", "staff_absent", "notify_managers_last_occurrence")
 	filter_horizontal = ("physical_access_levels",)
-	list_filter = ("physical_access_levels__area",)
+	list_filter = ("physical_access_levels__area", "staff_absent", "notify_managers_last_occurrence")
+
+	def get_times_display(self, closure: Closure) -> str:
+		return mark_safe("<br>".join([format_daterange(ct.start_time, ct.end_time, dt_format="SHORT_DATETIME_FORMAT", d_format="SHORT_DATE_FORMAT", date_separator=" ", time_separator=" - ") for ct in ClosureTime.objects.filter(closure=closure)]))
+
+	get_times_display.short_description = 'Times'
 
 
 class TemporaryPhysicalAccessAdminForm(forms.ModelForm):
@@ -1097,6 +1111,7 @@ class TemporaryPhysicalAccessAdminForm(forms.ModelForm):
 		end_time = cleaned_data.get("end_time")
 		if end_time <= start_time:
 			self.add_error("end_time", "The end time must be later than the start time")
+		return cleaned_data
 
 
 @register(TemporaryPhysicalAccess)
@@ -1126,15 +1141,15 @@ class TemporaryPhysicalAccessRequestFormAdmin(forms.ModelForm):
 @register(TemporaryPhysicalAccessRequest)
 class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
 	form = TemporaryPhysicalAccessRequestFormAdmin
-	list_display = ("creator", "other_users_display", "creation_time", "start_time", "end_time", "physical_access_level", "status_display", "reviewer", "deleted")
+	list_display = ("creator", "creation_time", "other_users_display", "start_time", "end_time", "physical_access_level", "status_display", "reviewer", "deleted")
 	list_filter = ("status", "deleted")
 	filter_horizontal = ("other_users",)
 
 	def other_users_display(self, access_request: TemporaryPhysicalAccessRequest):
-		return ", ".join([str(u) for u in access_request.other_users.all()])
+		return mark_safe("<br>".join([u.username for u in access_request.other_users.all()]))
 
 	other_users_display.admin_order_field = "other_users"
-	other_users_display.short_description = "Other users"
+	other_users_display.short_description = "Buddies"
 
 	def status_display(self, access_request: TemporaryPhysicalAccessRequest):
 		return access_request.get_status_display()
@@ -1271,6 +1286,29 @@ class BuddyRequestMessageAdmin(admin.ModelAdmin):
 		return format_html('<a href="%s">%s</a>' % (link, obj.buddy_request))
 
 	link_to_buddy_request.short_description = "BUDDY REQUEST"
+
+
+@register(StaffAbsenceType)
+class StaffAbsenceTypeAdmin(admin.ModelAdmin):
+	list_display = ("name", "description")
+
+
+@register(StaffAvailability)
+class StaffAvailabilityAdmin(admin.ModelAdmin):
+	list_display = ("staff_member", "category", "start_time", "end_time", *StaffAvailability.DAYS)
+	list_filter = ("category", *StaffAvailability.DAYS)
+
+	def formfield_for_foreignkey(self, db_field, request, **kwargs):
+		""" We only want active users here """
+		if db_field.name == "staff_member":
+			kwargs["queryset"] = User.objects.filter(is_active=True)
+		return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@register(StaffAbsence)
+class StaffAbsenceAdmin(admin.ModelAdmin):
+	list_display = ("creation_time", "staff_member", "absence_type", "full_day", "start_date", "end_date")
+	list_filter = ("staff_member", "absence_type", "start_date", "end_date", "creation_time")
 
 
 @register(EmailLog)

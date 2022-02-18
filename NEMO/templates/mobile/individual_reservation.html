@@ -1,8 +1,8 @@
 <div class="alert {% if personal_schedule %}alert-success{% else %}alert-info{% endif %}" role="alert">
 	<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}"></span>
 	<span style="cursor:pointer" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}"><strong>{% if personal_schedule %}{{ reservation.title|default:reservation.reservation_item }}{% else %}{{ reservation.title|default:reservation.user }}{% endif %}</strong></span><br>
-	Starting {{ reservation.start|time }}<br>
-	Ending {{ reservation.end|time }}<br>
+	Starting {{ reservation.start }}<br>
+	Ending {{ reservation.end }}<br>
 	<div id="extended_reservation_information_{{ reservation.id }}" class="collapse">
         {% for question_name, data in reservation.question_data_json.items %}
             {{ question_name }}: {{ data.user_input }}<br>

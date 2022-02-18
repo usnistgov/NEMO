@@ -15,7 +15,6 @@
 			</div>
 		{% endif %}
 		{% csrf_token %}
-		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="request_id">{% endif %}
 		<div class="form-group">
 			<div class="row">
 				<div class="col-sm-2">
@@ -44,10 +43,9 @@
 	<script>
 		let timepicker_properties =
 		{
-			format: 'MM/DD/YYYY'
+			format: 'MM/DD/YYYY',
+            useCurrent: false
 		};
-		$('#start').datetimepicker(timepicker_properties);
-		$('#end').datetimepicker(timepicker_properties);
 
 		function select_area(jquery_event, search_selection, dataset_name)
 		{
@@ -62,13 +60,19 @@
 		function on_load()
 		{
 			$('#area_search').autocomplete('area', select_area, {{ areas|json_search_base }});
-			{% if form.instance.area %}
-				let selected_area = {'id': '{{ form.instance.area.id }}', 'name': '{{ form.instance.area.name }}'};
-				select_area(false, selected_area);
+            {% if form.cleaned_data %}
+                {% if form.cleaned_data.area %}
+                    select_area(false, {'id': '{{ form.cleaned_data.area.id }}', 'name': '{{ form.cleaned_data.area.name }}'});
+                {% else %}
+                    clear_area_selection();
+                {% endif %}
+            {% elif form.instance.id and form.instance.area %}
+				select_area(false, {'id': '{{ form.instance.area.id }}', 'name': '{{ form.instance.area.name }}'});
 			{% elif areas|length_is:1 %}
 				let auto_select_area = {'id': '{{ areas.0.id }}', 'name': '{{ areas.0.name }}'};
 				select_area(false, auto_select_area);
 			{% endif %}
+            set_start_end_datetime_pickers($('#start'), $('#end'), timepicker_properties);
 		}
 
 		$(on_load);

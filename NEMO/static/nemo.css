@@ -205,11 +205,14 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	background-color: transparent !important;
 }
 
-.table.table-align-middle > tbody > tr > td {
+.table.table-align-middle > tbody > tr > td
+{
      vertical-align: middle;
 }
 
-table > tbody > tr.no-border > td, table > tbody > tr.no-border > th {
+table > tbody > tr.no-border > td, table > tbody > tr.no-border > th,
+table > thead > tr.no-border > td, table > thead > tr.no-border > th
+{
 	border: none;
 }
 
@@ -248,12 +251,14 @@ table > tbody > tr.no-border > td, table > tbody > tr.no-border > th {
 	position: relative;
 }
 
-.extra-side-padding {
+.extra-side-padding
+{
 	padding-left: 5px;
 	padding-right: 5px;
 }
 
-.small-input {
+.small-input
+{
 	max-width: 125px;
 }
 
@@ -265,7 +270,8 @@ appear as a pointer (rather than text selector) when mousing over event text. */
 }
 
 /* Adds more space between event and side so users can more easily click to create new events */
-div.fc-ltr .fc-time-grid .fc-event-container {
+div.fc-ltr .fc-time-grid .fc-event-container
+{
     margin-right: 10%;
 }
 
@@ -335,6 +341,12 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 {
 	/* 100 viewport - header (height+border+margin) - footer (height+border+margin) */
 	min-height: calc(100vh - 71px - 61px);
+}
+
+.customization-section-title
+{
+	margin-bottom: 20px;
+	margin-top: 5px;
 }
 
 .customization-separation
@@ -589,14 +601,16 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	margin-bottom: 0;
 }
 
-.contact-info-tooltip + .tooltip > .tooltip-inner
+.contact-info-tooltip-container + .tooltip > .tooltip-inner,
+.contact-info-tooltip-container > .tooltip > .tooltip-inner
 {
 	max-width: initial;
 	text-align: left;
 	padding: 10px 16px;
 }
 
-.contact-info-tooltip + .tooltip > .tooltip-inner a
+.contact-info-tooltip-container + .tooltip > .tooltip-inner a,
+.contact-info-tooltip-container > .tooltip > .tooltip-inner a
 {
 	color: #b0dbff;
 }
@@ -783,4 +797,13 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 .table-double-stripped tbody tr:nth-child(4n+1), .table-double-stripped tbody tr:nth-child(4n+2)
 {
 	background-color: #f9f9f9;
+}
+
+.sticky
+{
+	position: sticky;
+	position: -webkit-sticky;
+	left: 0;
+	background-color: #fff;
+	z-index: 1;
 }

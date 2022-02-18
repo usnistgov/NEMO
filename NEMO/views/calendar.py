@@ -1,6 +1,4 @@
 import io
-from collections import Iterable
-from copy import deepcopy
 from datetime import datetime, timedelta
 from http import HTTPStatus
 from json import dumps, loads
@@ -23,8 +21,11 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.models import (
+	Alert,
 	Area,
 	AreaAccessRecord,
+	Closure,
+	ClosureTime,
 	Configuration,
 	Project,
 	Reservation,
@@ -39,8 +40,10 @@ from NEMO.models import (
 )
 from NEMO.utilities import (
 	EmailCategory,
+	as_timezone,
 	bootstrap_primary_color,
 	create_email_attachment,
+	distinct_qs_value_list,
 	extract_dates,
 	extract_times,
 	format_datetime,
@@ -352,7 +355,7 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 	setattr(new_reservation, item_type.value, item)
 	new_reservation.start = start
 	new_reservation.end = end
-	new_reservation.short_notice = determine_insufficient_notice(item, start) if item_type == ReservationItemType.TOOL else False
+	new_reservation.short_notice = item.determine_insufficient_notice(start) if item_type == ReservationItemType.TOOL else False
 	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 
 	# If there was a policy problem with the reservation then return the error...
@@ -543,7 +546,7 @@ def create_outage(request):
 		elif submitted_frequency == 'DAILY_WEEKENDS':
 			by_week_day = (rrule.SA, rrule.SU)
 		frequency = recurrence_frequencies.get(submitted_frequency, rrule.DAILY)
-		rules: Iterable[datetime] = rrule.rrule(dtstart=start, freq=frequency, interval=int(request.POST.get('recurrence_interval',1)), until=date_until, byweekday=by_week_day)
+		rules = rrule.rrule(dtstart=start, freq=frequency, interval=int(request.POST.get('recurrence_interval',1)), until=date_until, byweekday=by_week_day)
 		for rule in list(rules):
 			recurring_outage = ScheduledOutage()
 			recurring_outage.creator = outage.creator
@@ -621,28 +624,13 @@ def modify_reservation(request, start_delta, end_delta):
 		pass
 	# Record the current time so that the timestamp of the cancelled reservation and the new reservation match exactly.
 	now = timezone.now()
-	# Create a new reservation for the user.
-	new_reservation = Reservation()
-	new_reservation.title = reservation_to_cancel.title
-	new_reservation.creator = request.user
-	new_reservation.additional_information = reservation_to_cancel.additional_information
-	# A change in start time will only be provided if the reservation is being moved.
-	new_reservation.start = reservation_to_cancel.start
-	new_reservation.self_configuration = reservation_to_cancel.self_configuration
-	new_reservation.short_notice = False
-	if start_delta:
-		new_reservation.start += start_delta
-	if new_reservation.self_configuration:
-		# Reservation can't be short notice since the user is configuring the tool themselves.
-		new_reservation.short_notice = False
-	elif new_reservation.tool:
-		new_reservation.short_notice = determine_insufficient_notice(reservation_to_cancel.tool, new_reservation.start)
-	# A change in end time will always be provided for reservation move and resize operations.
-	new_reservation.end = reservation_to_cancel.end + end_delta
-	new_reservation.reservation_item = reservation_to_cancel.reservation_item
-	new_reservation.project = reservation_to_cancel.project
-	new_reservation.user = reservation_to_cancel.user
+	# Create a new reservation for the user by copying the original one.
+	new_start = reservation_to_cancel.start + start_delta if start_delta else None
+	new_end = reservation_to_cancel.end + end_delta if end_delta else None
+	new_reservation = reservation_to_cancel.copy(new_start, new_end)
+	# Set new creator/time
 	new_reservation.creation_time = now
+	new_reservation.creator = request.user
 
 	response = check_policy_to_cancel_reservation(request.user, reservation_to_cancel, new_reservation)
 	# Do not move the reservation if the user was not authorized to cancel it.
@@ -681,16 +669,6 @@ def modify_outage(request, start_delta, end_delta):
 		# All policy checks passed, so save the reservation.
 		outage.save()
 	return HttpResponse()
-
-
-def determine_insufficient_notice(tool, start):
-	""" Determines if a reservation is created that does not give
-	the staff sufficient advance notice to configure a tool. """
-	for config in tool.configuration_set.all():
-		advance_notice = start - timezone.now()
-		if advance_notice < timedelta(hours=config.advance_notice_limit):
-			return True
-	return False
 
 
 @login_required
@@ -1055,15 +1033,12 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 	try:
 		if new_end is None:
 			new_end = timezone.now()
-		current_reservation = Reservation.objects.filter(start__lt=timezone.now(), end__gt=timezone.now(),
-														 cancelled=False, missed=False, shortened=False, user=user)
-		current_reservation = current_reservation.get(**{ReservationItemType.from_item(item).value: item})
+		current_reservation_qs = Reservation.objects.filter(start__lt=timezone.now(), end__gt=timezone.now(),
+															cancelled=False, missed=False, shortened=False, user=user)
+		current_reservation = current_reservation_qs.get(**{ReservationItemType.from_item(item).value: item})
 		# Staff are exempt from mandatory reservation shortening.
 		if user.is_staff is False:
-			new_reservation = deepcopy(current_reservation)
-			new_reservation.id = None
-			new_reservation.pk = None
-			new_reservation.end = new_end
+			new_reservation = current_reservation.copy(new_end=new_end)
 			new_reservation.save()
 			current_reservation.shortened = True
 			current_reservation.descendant = new_reservation
@@ -1202,3 +1177,69 @@ def create_ics_for_reservation(reservation: Reservation, cancelled=False):
 
 	attachment = create_email_attachment(ics, maintype='text', subtype='calendar', method=method_name)
 	return attachment
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def create_closure_alerts(request):
+	return do_create_closure_alerts()
+
+
+def do_create_closure_alerts():
+	future_times = ClosureTime.objects.filter(closure__alert_days_before__isnull=False, end_time__gt=timezone.now())
+	for closure_time in future_times:
+		create_alert_for_closure_time(closure_time)
+	for closure in Closure.objects.filter(notify_managers_last_occurrence=True):
+		closure_time_ending = ClosureTime.objects.filter(closure=closure).latest("end_time")
+		if as_timezone(closure_time_ending.end_time).date() == timezone.now().date():
+			email_last_closure_occurrence(closure_time_ending)
+	return HttpResponse()
+
+
+def create_alert_for_closure_time(closure_time: ClosureTime):
+	# Create alerts a week before their debut time (closure start - days before) at the latest
+	now = timezone.now()
+	next_week = now + timedelta(weeks=1)
+	closure = closure_time.closure
+	alert_start = closure_time.start_time - timedelta(days=closure.alert_days_before)
+	time_ready = alert_start <= next_week
+	if time_ready:
+		# Check if there is already an alert with the same title ending at the closure end time
+		alert_already_exist = Alert.objects.filter(title=closure.name, expiration_time=closure_time.end_time).exists()
+		if not alert_already_exist:
+			areas = Area.objects.filter(id__in=distinct_qs_value_list(closure.physical_access_levels.all(), "area"))
+			dictionary = {
+				"closure_time": closure_time,
+				"name": closure.name,
+				"staff_absent": closure.staff_absent,
+				"start_time": closure_time.start_time,
+				"end_time": closure_time.end_time,
+				"areas": areas,
+			}
+			contents = Template(closure.alert_template).render(Context(dictionary)) if closure.alert_template else None
+			Alert.objects.create(
+				title=closure.name,
+				contents=contents,
+				category="Closure",
+				debut_time=alert_start,
+				expiration_time=closure_time.end_time,
+			)
+
+
+def email_last_closure_occurrence(closure_time):
+	facility_manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list(
+		"email", flat=True
+	)
+	message = f"""
+Dear facility manager,<br>
+This email is to inform you that today was the last occurrence for the {closure_time.closure.name} facility closure.
+<br><br>Go to NEMO -> Detailed administration -> Closures to add more times if needed.
+"""
+	send_mail(
+		subject=f"Last {closure_time.closure.name} occurrence",
+		content=message,
+		from_email=settings.SERVER_EMAIL,
+		to=facility_manager_emails,
+		email_category=EmailCategory.SYSTEM,
+	)

@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+from copy import deepcopy
 from datetime import timedelta
 from enum import Enum
 from html import escape
@@ -19,9 +20,10 @@ from django.db.models import Q, QuerySet
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.template import loader
+from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
+from django.utils.safestring import mark_safe
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
@@ -29,6 +31,7 @@ from NEMO import fields
 from NEMO.utilities import (
 	EmailCategory,
 	bootstrap_primary_color,
+	format_daterange,
 	format_datetime,
 	get_task_image_filename,
 	get_tool_document_filename,
@@ -154,7 +157,7 @@ class PhysicalAccessLevel(models.Model):
 		if self.schedule == self.Schedule.ALWAYS or self.schedule == self.Schedule.WEEKENDS:
 			return self.get_schedule_display()
 		else:
-			return self.get_schedule_display() + f" from {format_datetime(self.weekdays_start_time, 'TIME_FORMAT', as_current_timezone=False)} to {format_datetime(self.weekdays_end_time, 'TIME_FORMAT', as_current_timezone=False)}"
+			return self.get_schedule_display() + " " + format_daterange(self.weekdays_start_time, self.weekdays_end_time)
 	get_schedule_display_with_times.short_description = 'Schedule'
 
 	def accessible_at(self, time):
@@ -166,7 +169,7 @@ class PhysicalAccessLevel(models.Model):
 		else:
 			accessible_time = timezone.localtime(timezone.now())
 		# First deal with exceptions
-		if self.ongoing_exception(accessible_time):
+		if self.ongoing_closure_time(accessible_time):
 			return False
 		# Then look at the actual allowed schedule
 		saturday = 6
@@ -190,12 +193,12 @@ class PhysicalAccessLevel(models.Model):
 				return True
 		return False
 
-	def ongoing_exception(self, time: datetime = None):
+	def ongoing_closure_time(self, time: datetime = None):
 		if time is not None:
 			accessible_time = timezone.localtime(time)
 		else:
 			accessible_time = timezone.localtime(timezone.now())
-		return self.physicalaccessexception_set.filter(start_time__lte=accessible_time, end_time__gt=accessible_time).first()
+		return ClosureTime.objects.filter(closure__physical_access_levels__in=[self], start_time__lte=accessible_time, end_time__gt=accessible_time).first()
 
 	def display_value_for_select(self):
 		return f"{str(self.area.name)} ({self.get_schedule_display_with_times()})"
@@ -214,9 +217,7 @@ class TemporaryPhysicalAccess(models.Model):
 	end_time = models.DateTimeField(help_text="The end of the temporary access")
 
 	def get_schedule_display_with_times(self):
-		start = date_format(self.start_time.astimezone(timezone.get_current_timezone()), 'SHORT_DATETIME_FORMAT')
-		end = date_format(self.end_time.astimezone(timezone.get_current_timezone()), 'SHORT_DATETIME_FORMAT')
-		return f"Temporary {self.physical_access_level.get_schedule_display_with_times()} from {start} to {end}"
+		return f"Temporary {self.physical_access_level.get_schedule_display_with_times()} {format_daterange(self.start_time, self.end_time, dt_format='SHORT_DATETIME_FORMAT')}"
 	get_schedule_display_with_times.short_description = 'Schedule'
 
 	def accessible_at(self, time):
@@ -229,11 +230,11 @@ class TemporaryPhysicalAccess(models.Model):
 			accessible_time = timezone.localtime(timezone.now())
 		return self.physical_access_level.accessible(accessible_time) and self.start_time <= accessible_time <= self.end_time
 
-	def ongoing_exception(self, time: datetime = None):
-		return self.physical_access_level.ongoing_exception(time)
+	def ongoing_closure_time(self, time: datetime = None):
+		return self.physical_access_level.ongoing_closure_time(time)
 
 	def display(self):
-		return f"Temporary physical access of the '{self.physical_access_level.name}' for {self.user.get_full_name()} from {date_format(self.start_time, 'DATETIME_FORMAT')} to {date_format(self.end_time, 'DATETIME_FORMAT')}"
+		return f"Temporary physical access of the '{self.physical_access_level.name}' for {self.user.get_full_name()} {format_daterange(self.start_time, self.end_time)}"
 
 	class Meta:
 		ordering = ['-end_time']
@@ -272,24 +273,46 @@ class TemporaryPhysicalAccessRequest(models.Model):
 		return result
 
 	def clean(self):
-		if self.end_time <= self.start_time:
+		if self.start_time and self.end_time and self.end_time <= self.start_time:
 			raise ValidationError({"end_time": "The end time must be later than the start time"})
 
 	class Meta:
 		ordering = ['-creation_time']
 
 
-class PhysicalAccessException(models.Model):
-	name = models.CharField(max_length=100, help_text="The name of this exception that will be displayed as the policy problem")
-	start_time = models.DateTimeField(help_text="The start of the exception, after which users will be denied access.")
-	end_time = models.DateTimeField(help_text="The end of the exception, after which users will be allowed access again")
-	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True)
+class Closure(models.Model):
+	name = models.CharField(max_length=255, help_text="The name of this closure, that will be displayed as the policy problem and alert (if applicable).")
+	alert_days_before = models.PositiveIntegerField(null=True, blank=True, help_text="Enter the number of days before the closure when an alert should automatically be created. Leave blank for no alert.")
+	alert_template = models.TextField(null=True, blank=True, help_text=mark_safe("The template to create the alert with. The following variables are provided (when applicable): <b>name</b>, <b>start_time</b>, <b>end_time</b>, <b>areas</b>."))
+	notify_managers_last_occurrence = models.BooleanField(default=True, help_text="Check this box to notify facility managers on the last occurrence of this closure.")
+	staff_absent = models.BooleanField(default=True, help_text="Check this box and all staff members will be marked absent during this closure in staff status.")
+	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True, help_text="Select access levels this closure applies to.")
 
-	class Meta:
-		ordering = ['-start_time']
+	def clean(self):
+		if self.alert_days_before is not None and not self.alert_template:
+			raise  ValidationError({"alert_template": "Please provide an alert message"})
 
 	def __str__(self):
 		return str(self.name)
+
+	class Meta:
+		ordering = ['name']
+
+
+class ClosureTime(models.Model):
+	closure = models.ForeignKey(Closure, on_delete=models.CASCADE)
+	start_time = models.DateTimeField(help_text="The start date and time of the closure")
+	end_time = models.DateTimeField(help_text="The end date and time of the closure")
+
+	def clean(self):
+		if self.start_time and self.end_time and self.end_time <= self.start_time:
+			raise ValidationError({"end_time": "The end time must be later than the start time"})
+
+	def __str__(self):
+		return format_daterange(self.start_time, self.end_time)
+
+	class Meta:
+		ordering = ["-start_time"]
 
 
 class PhysicalAccessType(object):
@@ -503,10 +526,11 @@ class User(models.Model):
 	def get_contact_info_html(self):
 		if hasattr(self, 'contactinformation'):
 			content = escape(loader.render_to_string('contact/contact_person.html', {'person':self.contactinformation, 'email_form': True}))
-			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
+			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip contact-info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
 		else:
 			email_url = reverse('get_email_form_for_user', kwargs={'user_id':self.id})
-			return f'<a href="{email_url}" title="Email {self.first_name}"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
+			content = escape(f'<h4 style="margin-top:0; text-align: center">{self.get_name()}</h4>Email: <a href="{email_url}" target="_blank">{self.email}</a><br>')
+			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip contact-info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
 
 
 	@classmethod
@@ -979,6 +1003,15 @@ class Tool(models.Model):
 	def current_ordered_configurations(self):
 		return self.parent_tool.configuration_set.all().order_by('display_priority') if self.is_child_tool() else self.configuration_set.all().order_by('display_priority')
 
+	def determine_insufficient_notice(self, start):
+		""" Determines if a reservation is created that does not give
+		the staff sufficient advance notice to configure a tool. """
+		for config in self.configuration_set.all():
+			advance_notice = start - timezone.now()
+			if advance_notice < timedelta(hours=config.advance_notice_limit):
+				return True
+		return False
+
 	def get_current_usage_event(self):
 		""" Gets the usage event for the current user of this tool. """
 		try:
@@ -994,6 +1027,7 @@ class Tool(models.Model):
 
 	def tool_documents(self):
 		return ToolDocuments.objects.filter(tool=self).order_by()
+
 
 class ToolDocuments(models.Model):
 	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
@@ -1421,6 +1455,16 @@ class Reservation(CalendarDisplay):
 
 	def question_data_json(self):
 		return loads(self.question_data) if self.question_data else None
+
+	def copy(self, new_start: datetime = None, new_end: timedelta = None):
+		new_reservation = deepcopy(self)
+		new_reservation.id = None
+		new_reservation.pk = None
+		new_reservation.start = new_start if new_start else self.start
+		new_reservation.end = new_end if new_end else self.end
+		if new_reservation.tool:
+			new_reservation.short_notice = new_reservation.tool.determine_insufficient_notice(new_reservation.start)
+		return new_reservation
 
 	class Meta:
 		ordering = ['-start']
@@ -2209,6 +2253,72 @@ class BuddyRequestMessage(models.Model):
 
 	class Meta:
 		ordering = ['creation_date']
+
+
+class StaffAbsenceType(models.Model):
+	name = models.CharField(max_length=255, help_text="The name of this absence type.")
+	description = models.CharField(max_length=255, help_text="The description for this absence type.")
+
+	def __str__(self):
+		description = f" ({self.description})" if self.description else ''
+		return f"{self.name}{description}"
+
+	class Meta:
+		ordering = ["name"]
+
+
+class StaffAvailability(models.Model):
+	DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+	staff_member = models.ForeignKey("User", help_text="The staff member to display on the staff status page.", on_delete=models.CASCADE)
+	category = models.CharField(null=True, blank=True, max_length=100, help_text="The category for this staff member.")
+	start_time = models.TimeField(null=True, blank=True, help_text="The usual start time for this staff member.")
+	end_time = models.TimeField(null=True, blank=True, help_text="The usual end time for this staff member.")
+	monday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Mondays.")
+	tuesday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Tuesdays.")
+	wednesday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Wednesdays.")
+	thursday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Thursdays.")
+	friday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Fridays.")
+	saturday = models.BooleanField(default=False, help_text="Check this box if the staff member usually works on Saturdays.")
+	sunday = models.BooleanField(default=False, help_text="Check this box if the staff member usually works on Sundays.")
+
+	def weekly_availability(self, available=True, absent=False) -> dict:
+		return {index: available if getattr(self, day) else absent for index, day in enumerate(self.DAYS)}
+
+	def daily_hours(self) -> str:
+		if not self.start_time and not self.end_time:
+			return ''
+		start = format_datetime(self.start_time) if self.start_time else ''
+		end = format_datetime(self.end_time) if self.end_time else ''
+		return f"Working hours: {format_daterange(self.start_time, self.end_time) if start and end else 'from ' + start if start else 'until '+end}"
+
+	def __str__(self):
+		return str(self.staff_member)
+
+	class Meta:
+		verbose_name_plural = "Staff availability"
+		ordering = ["staff_member__first_name"]
+
+
+class StaffAbsence(models.Model):
+	creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the absence was created.")
+	staff_member = models.ForeignKey(StaffAvailability, help_text="The staff member who will be absent.", on_delete=models.CASCADE)
+	absence_type = models.ForeignKey(StaffAbsenceType, help_text="The absence type. This will only be visible to facility managers.", on_delete=models.CASCADE)
+	start_date = models.DateField(help_text="The start date of the absence.")
+	end_date = models.DateField(help_text="The end date of the absence.")
+	full_day = models.BooleanField(default=True, help_text="Uncheck this box when the absence is only for part of the day.")
+	description = models.TextField(null=True, blank=True, help_text="The absence description. This will be visible to anyone when the absence is not all day.")
+
+	def details_for_manager(self):
+		dates = f" {format_daterange(self.start_date, self.end_date)}" if self.start_date != self.end_date else ''
+		description = f"<br>{linebreaksbr(self.description)}" if self.description else ''
+		return f"{self.absence_type.description}{dates}{description}"
+
+	def clean(self):
+		if self.end_date and self.start_date and self.end_date < self.start_date:
+			raise ValidationError({"end_date": "The end date must be on or after the start date"})
+
+	class Meta:
+		ordering = ["-creation_time"]
 
 
 class EmailLog(models.Model):

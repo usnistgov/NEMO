@@ -7,9 +7,8 @@
         {% if reservation.title %}){% endif %}
     </strong>
     <br>
-    {{ reservation.start|date }}<br>
-    Starting {{ reservation.start|time }}<br>
-    Ending {{ reservation.end|time }}<br>
+    Starting {{ reservation.start }}<br>
+    Ending {{ reservation.end }}<br>
     <div>
         {% for question_name, data in reservation.question_data_json.items %}
             {{ question_name }}: {{ data.user_input }}<br>

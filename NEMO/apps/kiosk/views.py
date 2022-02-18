@@ -14,7 +14,6 @@ from NEMO.models import BadgeReader, Project, Reservation, ReservationItemType, 
 from NEMO.utilities import localize, quiet_int
 from NEMO.views.calendar import (
 	cancel_the_reservation,
-	determine_insufficient_notice,
 	extract_configuration,
 	extract_reservation_questions,
 	render_reservation_questions,
@@ -162,7 +161,7 @@ def reserve_tool(request):
 	reservation.reservation_item = tool
 	reservation.start = start
 	reservation.end = end
-	reservation.short_notice = determine_insufficient_notice(tool, start)
+	reservation.short_notice = tool.determine_insufficient_notice(start)
 	policy_problems, overridable = check_policy_to_save_reservation(
 		cancelled_reservation=None,
 		new_reservation=reservation,

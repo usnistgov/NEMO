@@ -643,6 +643,7 @@
 
 <script>
 	$(".contact-info-tooltip").on('click', function () {
+        $(".tooltip").remove();
       	$(this).tooltip({trigger: 'manual', html: 'true', title: $(this).data('title')}).tooltip('toggle');
     });
 	$("#tabs").find("a").click(switch_tab);

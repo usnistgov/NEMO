@@ -483,3 +483,14 @@ function auto_size_textarea(textarea)
 	textarea.style.height = '';
 	textarea.style.height = textarea.scrollHeight + 3 + 'px';
 }
+
+function set_start_end_datetime_pickers(start_jq, end_jq, properties, end_before_start)
+{
+	start_jq.datetimepicker(properties);
+	end_jq.datetimepicker(properties);
+	if (end_before_start == null || end_before_start)
+	{
+		let end_date_picker = end_jq.data("DateTimePicker");
+		start_jq.on("dp.change", function (e) { end_date_picker.minDate(e.date); });
+	}
+}
