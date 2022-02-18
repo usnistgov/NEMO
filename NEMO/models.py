@@ -284,8 +284,8 @@ class Closure(models.Model):
 	name = models.CharField(max_length=255, help_text="The name of this closure, that will be displayed as the policy problem and alert (if applicable).")
 	alert_days_before = models.PositiveIntegerField(null=True, blank=True, help_text="Enter the number of days before the closure when an alert should automatically be created. Leave blank for no alert.")
 	alert_template = models.TextField(null=True, blank=True, help_text=mark_safe("The template to create the alert with. The following variables are provided (when applicable): <b>name</b>, <b>start_time</b>, <b>end_time</b>, <b>areas</b>."))
-	notify_managers_last_occurrence = models.BooleanField(default=False, help_text="Check this box to notify facility managers on the last occurrence of this closure.")
-	staff_absent = models.BooleanField(default=False, help_text="Check this box and all staff members will be marked absent during this closure in staff status.")
+	notify_managers_last_occurrence = models.BooleanField(default=True, help_text="Check this box to notify facility managers on the last occurrence of this closure.")
+	staff_absent = models.BooleanField(default=True, help_text="Check this box and all staff members will be marked absent during this closure in staff status.")
 	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True, help_text="Select access levels this closure applies to.")
 
 	def clean(self):

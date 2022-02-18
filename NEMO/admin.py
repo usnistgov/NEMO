@@ -1085,7 +1085,7 @@ class ClosureAdminForm(forms.ModelForm):
 class ClosureAdmin(admin.ModelAdmin):
 	inlines = [ClosureTimeInline]
 	form = ClosureAdminForm
-	list_display = ("name", "alert_days_before", "staff_absent", "get_times_display", "notify_managers_last_occurrence")
+	list_display = ("name", "alert_days_before", "get_times_display", "staff_absent", "notify_managers_last_occurrence")
 	filter_horizontal = ("physical_access_levels",)
 	list_filter = ("physical_access_levels__area", "staff_absent", "notify_managers_last_occurrence")
 

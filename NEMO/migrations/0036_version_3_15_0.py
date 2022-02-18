@@ -119,7 +119,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='closure',
             name='staff_absent',
-            field=models.BooleanField(default=False, help_text='Check this box and all staff members will be marked absent during this closure in staff status.'),
+            field=models.BooleanField(default=True, help_text='Check this box and all staff members will be marked absent during this closure in staff status.'),
         ),
         migrations.AlterField(
             model_name='closure',
@@ -134,6 +134,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='closure',
             name='notify_managers_last_occurrence',
-            field=models.BooleanField(default=False, help_text='Check this box to notify facility managers on the last occurrence of this closure.'),
+            field=models.BooleanField(default=True, help_text='Check this box to notify facility managers on the last occurrence of this closure.'),
         ),
     ]
