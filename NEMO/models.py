@@ -526,11 +526,11 @@ class User(models.Model):
 	def get_contact_info_html(self):
 		if hasattr(self, 'contactinformation'):
 			content = escape(loader.render_to_string('contact/contact_person.html', {'person':self.contactinformation, 'email_form': True}))
-			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
+			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip contact-info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
 		else:
 			email_url = reverse('get_email_form_for_user', kwargs={'user_id':self.id})
 			content = escape(f'<h4 style="margin-top:0; text-align: center">{self.get_name()}</h4>Email: <a href="{email_url}" target="_blank">{self.email}</a><br>')
-			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
+			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip contact-info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
 
 
 	@classmethod

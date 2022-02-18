@@ -17,7 +17,7 @@
         </div>
     </div>
 </div>
-<div style="overflow-x: auto; margin-top: 25px; margin-bottom: 20px; border: 1px solid #ddd;">
+<div id="contact-info-tooltip-container" class="contact-info-tooltip-container" style="overflow-x: auto; margin-top: 25px; margin-bottom: 20px; border: 1px solid #ddd;">
     <table class="table table-responsive" style="margin: 0;border-collapse: collapse">
         <thead>
             <tr class="no-border">
@@ -80,7 +80,7 @@
 <script>
     $(".contact-info-tooltip").on('click', function () {
         $(".tooltip").remove();
-      	$(this).tooltip({trigger: 'manual', html: 'true', title: $(this).data('title')}).tooltip('toggle');
+      	$(this).tooltip({trigger: 'manual', html: 'true', container: '#contact-info-tooltip-container'}).tooltip('toggle');
     });
     $("[data-toggle='tooltip']").tooltip({html: 'true'});
 </script>
