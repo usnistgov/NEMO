@@ -543,6 +543,7 @@ class ReservationAdmin(admin.ModelAdmin):
 		"duration",
 		"cancelled",
 		"missed",
+		"shortened",
 	)
 	readonly_fields = ("descendant",)
 	list_filter = ("cancelled", "missed", "tool", "area")
