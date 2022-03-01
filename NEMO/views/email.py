@@ -110,6 +110,8 @@ def compose_email(request):
 		'selection': selection,
 		'no_type': no_type,
 		'users': users,
+		'user_emails': ','.join([user.email for user in users]),
+		'active_user_emails': ','.join([user.email for user in users if user.is_active]),
 	}
 	if generic_email_sample:
 		generic_email_context = {

@@ -69,6 +69,7 @@
 					</div>
 					<button type="button" class="btn btn-default" onclick="update_preview()">Preview</button>
 					<input type="submit" class="btn btn-success" value="Send">
+                    {% if user_emails %}<a id="email_client_link" class="hidden" href="" target="_blank"></a><button type="button" class="btn btn-primary pull-right" onclick="email_using_client('{{ user.email }}', '{{ user_emails }}', '{{ active_user_emails }}')">Use default email client</button>{% endif %}
 					<div style="height:50px"></div>
 					<h3>Your email will look like this...</h3>
 					<table style="width:100%; border-width: 1px;border-style: solid;">
@@ -83,13 +84,61 @@
 		A generic email format has not been customized for your organization yet. You'll need to create one before you can send email broadcasts from within {{ site_title }}. Please visit the <a href="{% url 'customization' %}">customizations page</a> to upload a template.
 	{% endif %}
 	<script type="application/javascript">
-		function update_preview() {
-			ajax_post('{% url 'email_preview' %}', $('#email_form').serialize(), refresh_preview)
+		function update_preview()
+        {
+			ajax_post('{% url 'email_preview' %}', $('#email_form').serialize(), refresh_preview);
         }
-        function refresh_preview(response, status, xml_http_request) {
+        function refresh_preview(response, status, xml_http_request)
+        {
 			if(response) {
-			    $('#email_preview').html(response)
+			    $('#email_preview').html(response);
 			}
+        }
+        function email_using_client(user_email, user_emails, active_user_emails)
+        {
+            let only_active = $('input[name=only_active_users]')[0].checked;
+            let copy_me = $('input[name=copy_me]')[0].checked;
+            let subject = $('input[name=subject]').val();
+            let title = $('input[name=title]').val();
+            let greeting = $('input[name=greeting]').val();
+            let message = $('textarea[name=contents]').val();
+            let mailto = 'mailto:?bcc=';
+            if (copy_me)
+            {
+                mailto = mailto + user_email + ',';
+            }
+            if (only_active)
+            {
+                mailto = mailto + active_user_emails;
+            }
+            else
+            {
+                mailto = mailto + user_emails;
+            }
+            if (subject)
+            {
+                mailto = mailto + '&subject=' + subject;
+            }
+            let email_body = '';
+            if (title)
+            {
+                email_body = email_body + title + '\n\n';
+            }
+            if (greeting)
+            {
+                email_body = email_body + greeting + '\n';
+            }
+            if (message)
+            {
+                email_body = email_body + message;
+            }
+            if (email_body)
+            {
+                mailto = mailto + '&body=' + encodeURIComponent(email_body);
+            }
+            let mailto_link = $('#email_client_link')[0];
+            mailto_link.href = mailto;
+            mailto_link.click();
         }
 	</script>
 {% endblock %}
