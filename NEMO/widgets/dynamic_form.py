@@ -549,7 +549,7 @@ def get_counter_increment_for_question(question, input_data, counter_question):
 	additional_value = 0
 	if isinstance(question, PostUsageNumberFieldQuestion) or isinstance(question, PostUsageFloatFieldQuestion):
 		if question.name == counter_question and "user_input" in input_data:
-			if isinstance(input_data, dict):
+			if isinstance(input_data["user_input"], dict):
 				for user_input in input_data["user_input"].values():
 					if question.name in user_input and user_input[question.name]:
 						additional_value += float(user_input[question.name])
