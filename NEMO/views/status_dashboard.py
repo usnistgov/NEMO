@@ -77,9 +77,24 @@ def get_occupancy_dictionary(request):
 def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	# Timestamp allows us to know which week/month to show. Defaults to current week
 	# Everything here is dealing with date/times without timezones to avoid issues with DST etc
+	user: User = request.user
+	check_past_status = get_customization("dashboard_staff_status_check_past_status")
+	check_future_status = get_customization("dashboard_staff_status_check_future_status")
+	user_can_check_past_status = not check_past_status or check_past_status == "staffs" and user.is_staff or check_past_status == "managers" and user.is_facility_manager
+	user_can_check_future_status = not check_future_status or check_future_status == "staffs" and user.is_staff or check_future_status == "managers" and user.is_facility_manager
 	view = request.GET.get("view", "week")
-	timestamp = quiet_int(request.GET.get("timestamp", datetime.now().timestamp()), datetime.now().timestamp())
-	today = beginning_of_the_day(datetime.fromtimestamp(timestamp), in_local_timezone=False)
+	now_timestamp = datetime.now().timestamp()
+	timestamp = quiet_int(request.GET.get("timestamp", now_timestamp), now_timestamp)
+	requested_datetime = datetime.fromtimestamp(timestamp)
+	if requested_datetime.date() < datetime.today().date():
+		if not user_can_check_past_status:
+			# User is looking at past status and is not supposed to
+			requested_datetime = datetime.now()
+	elif requested_datetime.date() >= (datetime.today() + timedelta(days=1)).date():
+		if not user_can_check_future_status:
+			# User is looking at future status and is not supposed to
+			requested_datetime = datetime.now()
+	today = beginning_of_the_day(requested_datetime, in_local_timezone=False)
 	weekdays_only = get_customization("dashboard_staff_status_weekdays_only")
 	first_day = (
 		today.isoweekday()
@@ -111,8 +126,8 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 		"page_timestamp": timestamp,
 		"page_view": view,
 		# Using end delta here (=/- 1 week or 1 month) to set previous and next
-		"prev": int((start - end_delta).timestamp()),
-		"next": int((end + end_delta).timestamp()),
+		"prev": int((start - end_delta).timestamp()) if user_can_check_past_status else None,
+		"next": int((end + end_delta).timestamp()) if user_can_check_future_status else None,
 	}
 
 

@@ -22,30 +22,34 @@
         <thead>
             <tr class="no-border">
                 <th class="sticky"></th>
-                <th class="button-column-minimum" style="vertical-align: middle;">
-                    <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ prev }}&view={{ page_view }}">
-                        <i class="glyphicon glyphicon-chevron-left chevron" style="padding: 0"></i>
-                    </a>
-                </th>
+                {% if prev %}
+                    <th class="button-column-minimum" style="vertical-align: middle;">
+                        <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ prev }}&view={{ page_view }}">
+                            <i class="glyphicon glyphicon-chevron-left chevron" style="padding: 0"></i>
+                        </a>
+                    </th>
+                {% endif %}
                 {% for day in days %}
                     {% now 'Y-m-d' as today %}
                     <th class="text-center {% if day|date:'Y-m-d' == today %}alert-info{% endif %}">
                         <span {% if day|date:'Y-m-d' == today %}data-toggle='tooltip' data-title="Today's date"{% endif %}>{{ day|date:staff_date_format }}</span>
                     </th>
                 {% endfor %}
-                <th class="button-column-minimum" style="vertical-align: middle;">
-                    <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ next }}&view={{ page_view }}">
-                        <i class="glyphicon glyphicon-chevron-right chevron" style="padding: 0"></i>
-                    </a>
-                </th>
+                {% if next %}
+                    <th class="button-column-minimum" style="vertical-align: middle;">
+                        <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ next }}&view={{ page_view }}">
+                            <i class="glyphicon glyphicon-chevron-right chevron" style="padding: 0"></i>
+                        </a>
+                    </th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
         {% regroup staffs by category as category_staff %}
             {% for category in category_staff %}
                 <tr>
-                    <th colspan="4" class="sticky">{{ category.grouper|default_if_none:'Other' }}</th>
-                    <th colspan="{{ days_length }}"></th>
+                    <th colspan="{% if prev %}4{% else %}3{% endif %}" class="sticky">{{ category.grouper|default_if_none:'Other' }}</th>
+                    <th colspan="{% if next %}{{ days_length }}{% else %}{{ days_length|add:'-1' }}{% endif %}"></th>
                 </tr>
                 {% for staff in category.list %}
                     <tr>
@@ -55,7 +59,7 @@
                         </td>
                         {% for day in days %}
                             {% with staff_available=staff.weekly_availability|get_item:day.weekday staff_absent=staff_absences|get_item:staff.id|get_item:day.day closure_time=closure_times|get_item:day.day %}
-                                <td style="vertical-align: middle;border-left: 1px solid #ddd" {% if forloop.last or forloop.first %}colspan="2"{% endif %} class="text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
+                                <td style="vertical-align: middle;border-left: 1px solid #ddd" {% if forloop.first and prev or forloop.last and next %}colspan="2"{% endif %} class="text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
                                     {% if closure_time %}
                                         <div data-toggle="tooltip" title="{{ closure_time.closure.name }} {{ closure_time }}">Closed</div>
                                     {% elif staff_absent %}
