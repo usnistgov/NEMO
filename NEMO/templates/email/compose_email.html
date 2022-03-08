@@ -12,10 +12,10 @@
 					<h3>Recipients</h3>
 					Active users are listed below in black. Inactive users are <span style="color:lightgrey">gray</span>.
 					<div class="checkbox">
-						<label><input type="checkbox" name="only_active_users" checked> Only send this email to active users</label>
+						<label><input type="checkbox" name="only_active_users" onclick="updated_email_link()" checked> Only send this email to active users</label>
 					</div>
 					<div class="checkbox">
-						<label><input type="checkbox" name="copy_me" checked> Send a copy of this email to myself</label>
+						<label><input type="checkbox" name="copy_me" onclick="updated_email_link()" checked> Send a copy of this email to myself</label>
 					</div>
 					{% for u in users %}
 						<span {% if not u.is_active %}style="color:lightgrey"{% endif %}>{{ u }} - {{ u.email }}</span><br>
@@ -26,10 +26,10 @@
 					<input type="hidden" name="audience" value="{{ audience }}">
 					<input type="hidden" name="no_type" value="{{ no_type }}">
                     {% for selection_value in selection %}
-					    <input type="hidden" name="selection" value="{{ selection_value }}">
+					    <input type="hidden" name="selection" value="{{ selection_value }}" oninput="updated_email_link()">
                     {% endfor %}
 					<div class="form-group">
-						<input type="text" name="subject" class="form-control" placeholder="Subject line" autofocus required>
+						<input type="text" name="subject" class="form-control" placeholder="Subject line" oninput="updated_email_link()" autofocus required>
 					</div>
 					<div class="form-group">
 						Title background color:
@@ -59,13 +59,13 @@
 						</div>
 					</div>
 					<div class="form-group">
-						<input type="text" name="title" class="form-control" style="text-transform:uppercase" placeholder="Title (always uppercase)">
+						<input type="text" name="title" class="form-control" style="text-transform:uppercase" placeholder="Title (always uppercase)" oninput="updated_email_link()">
 					</div>
 					<div class="form-group">
-						<input type="text" name="greeting" class="form-control" placeholder="Greeting">
+						<input type="text" name="greeting" class="form-control" placeholder="Greeting" oninput="updated_email_link()">
 					</div>
 					<div class="form-group">
-						<textarea class="form-control" name="contents" rows="6" placeholder="What would you like to say?" required></textarea>
+						<textarea class="form-control" name="contents" rows="6" placeholder="What would you like to say?" oninput="updated_email_link()" required></textarea>
 					</div>
 					<button type="button" class="btn btn-default" onclick="update_preview()">Preview</button>
 					<input type="submit" class="btn btn-success" value="Send">
@@ -75,7 +75,7 @@
                                 <button class="btn btn-primary" disabled>Use default email client</button>
                             </div>
                         {% else %}
-                            <a id="email_client_link" class="hidden" href="" target="_blank"></a><button type="button" class="btn btn-primary pull-right" onclick="email_using_client('{{ user.email }}', '{{ user_emails }}', '{{ active_user_emails }}')">Use default email client</button>
+                            <a id="email_client_link" href="" target="_blank"><button type="button" class="btn btn-primary pull-right">Use default email client</button></a>
                         {% endif %}
                     {% endif %}
 					<div style="height:50px"></div>
@@ -92,7 +92,15 @@
 		A generic email format has not been customized for your organization yet. You'll need to create one before you can send email broadcasts from within {{ site_title }}. Please visit the <a href="{% url 'customization' %}">customizations page</a> to upload a template.
 	{% endif %}
 	<script type="application/javascript">
-        $('#default_client_email_wrapper').tooltip();
+        window.addEventListener('load', function()
+        {
+            $('#default_client_email_wrapper').tooltip();
+            updated_email_link();
+        });
+        function updated_email_link()
+        {
+            email_using_client('{{ user.email }}', '{{ user_emails }}', '{{ active_user_emails }}')
+        }
 		function update_preview()
         {
 			ajax_post('{% url 'email_preview' %}', $('#email_form').serialize(), refresh_preview);
@@ -147,7 +155,6 @@
             }
             let mailto_link = $('#email_client_link')[0];
             mailto_link.href = mailto;
-            mailto_link.click();
         }
 	</script>
 {% endblock %}
