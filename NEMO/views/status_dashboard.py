@@ -78,6 +78,7 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	# Timestamp allows us to know which week/month to show. Defaults to current week
 	# Everything here is dealing with date/times without timezones to avoid issues with DST etc
 	user: User = request.user
+	# Check and set ability for users/staffs to look into the past or future
 	check_past_status = get_customization("dashboard_staff_status_check_past_status")
 	check_future_status = get_customization("dashboard_staff_status_check_future_status")
 	user_can_check_past_status = (
@@ -94,7 +95,15 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 			or check_future_status == "managers"
 			and user.is_facility_manager
 	)
+	# Check and set ability for users/staffs to look at the week/month view
+	user_view_options = get_customization("dashboard_staff_status_user_view")
+	staff_view_options = get_customization("dashboard_staff_status_staff_view")
+	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ''
 	view = request.GET.get("view", "week")
+	# If user_view is set to day only, then force day view
+	# If user_view is set to day/week, then force week only if requested view is month
+	if user_view == "day" or user_view == "week" and view == "month":
+		view = user_view
 	now_timestamp = datetime.now().timestamp()
 	timestamp = quiet_int(request.GET.get("timestamp", now_timestamp), now_timestamp)
 	if datetime.fromtimestamp(timestamp).date() < datetime.today().date():
@@ -149,6 +158,7 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 		"days_length": (end - start).days + 1,
 		"page_timestamp": timestamp if request.GET.get("timestamp") else "",
 		"page_view": view,
+		"user_view": user_view,
 		# Using end delta here (=/- 1 week or 1 month) to set previous and next
 		"prev": int((start - end_delta).timestamp()) if user_can_check_past_status else None,
 		"next": int((end + end_delta).timestamp()) if user_can_check_future_status else None,
