@@ -70,7 +70,7 @@
 					<button type="button" class="btn btn-default" onclick="update_preview()">Preview</button>
 					<input type="submit" class="btn btn-success" value="Send">
                     {% if user_emails %}
-                        {% if active_user_emails|length > 5000 %}
+                        {% if active_user_emails|length > 2000 %}
                             <div class="pull-right" style="display: inline-block" id="default_client_email_wrapper" data-title="There are too many email addresses to use the default email client">
                                 <button class="btn btn-primary" disabled>Use default email client</button>
                             </div>
