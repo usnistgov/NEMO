@@ -9,7 +9,10 @@
 			<form action="{% url 'send_broadcast_email' %}" id="email_form" method="post">
 				{% csrf_token %}
 				<div class="col-sm-6">
-					<h3>Recipients</h3>
+                    <div class="row">
+                        <div class="col-sm-6 h3">Recipients</div>
+                        <div class="col-sm-6 h3">{% if user_emails %}<button class="btn btn-info btn-sm" type="button" onclick="export_user_emails();">Export user list</button>{% endif %}</div>
+                    </div>
 					Active users are listed below in black. Inactive users are <span style="color:lightgrey">gray</span>.
 					<div class="checkbox">
 						<label><input type="checkbox" name="only_active_users" onclick="updated_email_link()" checked> Only send this email to active users</label>
@@ -71,7 +74,7 @@
 					<input type="submit" class="btn btn-success" value="Send">
                     {% if user_emails %}
                         {% if active_user_emails|length > 2000 %}
-                            <div class="pull-right" style="display: inline-block" id="default_client_email_wrapper" data-title="There are too many email addresses to use the default email client">
+                            <div class="pull-right" style="display: inline-block" id="default_client_email_wrapper" data-title="There are too many email addresses to use the default email client. Use the export function instead.">
                                 <button class="btn btn-primary" disabled>Use default email client</button>
                             </div>
                         {% else %}
@@ -97,6 +100,18 @@
             $('#default_client_email_wrapper').tooltip();
             updated_email_link();
         });
+        function export_user_emails()
+        {
+            let export_url = "{% url 'export_email_addresses' %}?"
+            let active_users_only = $('input[name=only_active_users]').is(':checked') ? 'on' : '';
+            export_url += "&active=" + active_users_only
+            export_url += "&audience=" + "{{ audience }}"
+            export_url += "&no_type=" + "{{ no_type|yesno:'on,' }}"
+            {% for selection_item in selection %}
+                export_url += "&selection=" + "{{ selection_item }}"
+            {% endfor %}
+            window.open(export_url);
+        }
         function updated_email_link()
         {
             email_using_client('{{ user.email }}', '{{ user_emails }}', '{{ active_user_emails }}')
@@ -122,7 +137,7 @@
             let mailto = 'mailto:?bcc=';
             if (copy_me)
             {
-                mailto = mailto + user_email + ',';
+                mailto = mailto + user_email + ';';
             }
             if (only_active)
             {

@@ -1,3 +1,4 @@
+import csv
 from logging import getLogger
 from smtplib import SMTPException
 from typing import List
@@ -15,7 +16,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import staff_member_required
 from NEMO.forms import EmailBroadcastForm
 from NEMO.models import Account, Area, Project, Tool, User, UserType
-from NEMO.utilities import EmailCategory, send_mail
+from NEMO.utilities import EmailCategory, export_format_datetime, send_mail
 from NEMO.views.customization import get_customization, get_media_file_contents
 
 logger = getLogger(__name__)
@@ -110,8 +111,8 @@ def compose_email(request):
 		'selection': selection,
 		'no_type': no_type,
 		'users': users,
-		'user_emails': ','.join([user.email for user in users]),
-		'active_user_emails': ','.join([user.email for user in users if user.is_active]),
+		'user_emails': ';'.join([user.email for user in users]),
+		'active_user_emails': ';'.join([user.email for user in users if user.is_active]),
 	}
 	if generic_email_sample:
 		generic_email_context = {
@@ -122,6 +123,29 @@ def compose_email(request):
 		}
 		dictionary['generic_email_sample'] = Template(generic_email_sample).render(Context(generic_email_context))
 	return render(request, 'email/compose_email.html', dictionary)
+
+
+@staff_member_required
+@require_GET
+def export_email_addresses(request):
+	try:
+		audience = request.GET['audience']
+		selection = request.GET.getlist('selection')
+		no_type = request.GET.get("no_type") == "on"
+		only_active_users = request.GET.get("active") == "on"
+		users = get_users_for_email(audience, selection, no_type)
+		response = HttpResponse(content_type="text/csv")
+		writer = csv.writer(response)
+		writer.writerow(["First", "Last", "Username", "Email"])
+		if only_active_users:
+			users = [user for user in users if user.is_active]
+		for user in users:
+			writer.writerow([user.first_name, user.last_name, user.username, user.email])
+		response["Content-Disposition"] = f'attachment; filename="email_addresses_{export_format_datetime()}.csv"'
+		return response
+	except:
+		dictionary = {'error': 'You specified an invalid audience parameter'}
+		return render(request, 'email/email_broadcast.html', dictionary)
 
 
 @staff_member_required
