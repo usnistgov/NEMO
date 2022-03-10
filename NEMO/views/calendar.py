@@ -484,6 +484,8 @@ def parse_configuration_entry(key, value):
 		return None
 	config_id, slot, display_priority = [int(s) for s in key.split('_') if s.isdigit()]
 	configuration = Configuration.objects.get(pk=config_id)
+	if not configuration.enabled:
+		return None
 	available_setting = configuration.get_available_setting(value)
 	if len(configuration.current_settings_as_list()) == 1:
 		return display_priority, configuration.name + " needs to be set to " + available_setting + "."

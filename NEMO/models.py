@@ -966,8 +966,11 @@ class Tool(models.Model):
 		""" Returns true if a tool or resource outage is currently in effect for this tool. Otherwise, returns false. """
 		return ScheduledOutage.objects.filter(Q(tool=self.tool_or_parent_id()) | Q(resource__fully_dependent_tools__in=[self.tool_or_parent_id()]), start__lte=timezone.now(), end__gt=timezone.now()).exists()
 
+	def enabled_configurations(self):
+		return self.configuration_set.filter(enabled=True)
+
 	def is_configurable(self):
-		return self.parent_tool.configuration_set.exists() if self.is_child_tool() else self.configuration_set.exists()
+		return self.parent_tool.enabled_configurations().exists() if self.is_child_tool() else self.enabled_configurations().exists()
 	is_configurable.admin_order_field = 'configuration'
 	is_configurable.boolean = True
 	is_configurable.short_description = 'Configurable'
@@ -991,22 +994,25 @@ class Tool(models.Model):
 			results['sufficient_notice'] = (start - timedelta(hours=notice_limit) >= timezone.now())
 		return results
 
-	def configuration_widget(self, user, render_as_form=None):
+	def configuration_widget(self, user, render_as_form=None, filter_for_agenda=False):
+		configurations = self.current_ordered_configurations()
+		if filter_for_agenda:
+			configurations = configurations.exclude(exclude_from_configuration_agenda=True)
 		config_input = {
-			'configurations': self.current_ordered_configurations(),
+			'configurations': configurations,
 			'user': user,
 			'render_as_form': render_as_form,
 		}
-		configurations = ConfigurationEditor()
-		return configurations.render(None, config_input)
+		configurations_editor = ConfigurationEditor()
+		return configurations_editor.render(None, config_input)
 
 	def current_ordered_configurations(self):
-		return self.parent_tool.configuration_set.all().order_by('display_priority') if self.is_child_tool() else self.configuration_set.all().order_by('display_priority')
+		return self.parent_tool.enabled_configurations().all().order_by('display_priority') if self.is_child_tool() else self.enabled_configurations().all().order_by('display_priority')
 
 	def determine_insufficient_notice(self, start):
 		""" Determines if a reservation is created that does not give
 		the staff sufficient advance notice to configure a tool. """
-		for config in self.configuration_set.all():
+		for config in self.enabled_configurations().all():
 			advance_notice = start - timezone.now()
 			if advance_notice < timedelta(hours=config.advance_notice_limit):
 				return True
@@ -1083,8 +1089,8 @@ def auto_delete_file_on_tool_document_change(sender, instance: ToolDocuments, **
 
 
 class Configuration(models.Model):
-	tool = models.ForeignKey(Tool, help_text="The tool that this configuration option applies to.", on_delete=models.CASCADE)
 	name = models.CharField(max_length=200, help_text="The name of this overall configuration. This text is displayed as a label on the tool control page.")
+	tool = models.ForeignKey(Tool, help_text="The tool that this configuration option applies to.", on_delete=models.CASCADE)
 	configurable_item_name = models.CharField(blank=True, null=True, max_length=200, help_text="The name of the tool part being configured. This text is displayed as a label on the tool control page. Leave this field blank if there is only one configuration slot.")
 	advance_notice_limit = models.PositiveIntegerField(help_text="Configuration changes must be made this many hours in advance.")
 	display_priority = models.PositiveIntegerField(help_text="The order in which this configuration will be displayed beside others when making a reservation and controlling a tool. Can be any positive integer including 0. Lower values are displayed first.")
@@ -1095,6 +1101,7 @@ class Configuration(models.Model):
 	qualified_users_are_maintainers = models.BooleanField(default=False, help_text="Any user that is qualified to use the tool that this configuration applies to may also change this configuration. Checking this box implicitly adds qualified users to the maintainers list.")
 	exclude_from_configuration_agenda = models.BooleanField(default=False, help_text="Reservations containing this configuration will be excluded from the Configuration Agenda page.")
 	absence_string = models.CharField(max_length=100, blank=True, null=True, help_text="The text that appears to indicate absence of a choice.")
+	enabled = models.BooleanField(default=True, help_text="Only active configurations will show up for the selected tool")
 
 	def get_current_setting(self, slot):
 		if slot < 0:

@@ -427,6 +427,7 @@ class ConfigurationAdmin(admin.ModelAdmin):
 		"id",
 		"tool",
 		"name",
+		"enabled",
 		"qualified_users_are_maintainers",
 		"display_priority",
 		"exclude_from_configuration_agenda",
