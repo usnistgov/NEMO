@@ -98,6 +98,7 @@ class UserPreferences(models.Model):
 	display_new_buddy_request_notification = models.BooleanField('new_buddy_request_notification', default=True, help_text='Whether or not to notify the user of new buddy requests (via unread badges)')
 	display_new_buddy_request_reply_notification = models.BooleanField('new_buddy_request_reply_notification', default=True, help_text='Whether or not to notify the user of replies on buddy request he commented on (via unread badges)')
 	email_new_buddy_request_reply = models.BooleanField('email_new_buddy_request_reply', default=True, help_text='Whether or not to email the user of replies on buddy request he commented on')
+	staff_status_view = models.CharField('staff_status_view', max_length=100, default='day', choices=[('day', 'Day'), ('week', 'Week'), ('month', 'Month')], help_text='Preferred view for staff status page')
 
 	class Meta:
 		verbose_name = 'User preferences'
@@ -1007,7 +1008,7 @@ class Tool(models.Model):
 		return configurations_editor.render(None, config_input)
 
 	def current_ordered_configurations(self):
-		return self.parent_tool.enabled_configurations().all().order_by('display_priority') if self.is_child_tool() else self.enabled_configurations().all().order_by('display_priority')
+		return self.parent_tool.enabled_configurations().all().order_by('display_order') if self.is_child_tool() else self.enabled_configurations().all().order_by('display_order')
 
 	def determine_insufficient_notice(self, start):
 		""" Determines if a reservation is created that does not give
@@ -1093,7 +1094,7 @@ class Configuration(models.Model):
 	tool = models.ForeignKey(Tool, help_text="The tool that this configuration option applies to.", on_delete=models.CASCADE)
 	configurable_item_name = models.CharField(blank=True, null=True, max_length=200, help_text="The name of the tool part being configured. This text is displayed as a label on the tool control page. Leave this field blank if there is only one configuration slot.")
 	advance_notice_limit = models.PositiveIntegerField(help_text="Configuration changes must be made this many hours in advance.")
-	display_priority = models.PositiveIntegerField(help_text="The order in which this configuration will be displayed beside others when making a reservation and controlling a tool. Can be any positive integer including 0. Lower values are displayed first.")
+	display_order = models.PositiveIntegerField(help_text="The order in which this configuration will be displayed beside others when making a reservation and controlling a tool. Can be any positive integer including 0. Lower values are displayed first.")
 	prompt = models.TextField(blank=True, null=True, help_text="The textual description the user will see when making a configuration choice.")
 	current_settings = models.TextField(blank=True, null=True, help_text="The current configuration settings for a tool. Multiple values are separated by commas.")
 	available_settings = models.TextField(blank=True, null=True, help_text="The available choices to select for this configuration option. Multiple values are separated by commas.")
@@ -1463,12 +1464,14 @@ class Reservation(CalendarDisplay):
 	def question_data_json(self):
 		return loads(self.question_data) if self.question_data else None
 
-	def copy(self, new_start: datetime = None, new_end: timedelta = None):
+	def copy(self, new_start: datetime = None, new_end: datetime = None):
 		new_reservation = deepcopy(self)
 		new_reservation.id = None
 		new_reservation.pk = None
-		new_reservation.start = new_start if new_start else self.start
-		new_reservation.end = new_end if new_end else self.end
+		if new_start:
+			new_reservation.start = new_start
+		if new_end:
+			new_reservation.end = new_end
 		if new_reservation.tool:
 			new_reservation.short_notice = new_reservation.tool.determine_insufficient_notice(new_reservation.start)
 		return new_reservation
@@ -2069,7 +2072,7 @@ class LandingPageChoice(models.Model):
 	image = models.ImageField(help_text='An image that symbolizes the choice. It is automatically resized to 128x128 pixels when displayed, so set the image to this size before uploading to optimize bandwidth usage and landing page load time')
 	name = models.CharField(max_length=40, help_text='The textual name that will be displayed underneath the image')
 	url = models.CharField(max_length=200, verbose_name='URL', help_text='The URL that the choice leads to when clicked. Relative paths such as /calendar/ are used when linking within the site. Use fully qualified URL paths such as https://www.google.com/ to link to external sites.')
-	display_priority = models.IntegerField(help_text="The order in which choices are displayed on the landing page, from left to right, top to bottom. Lower values are displayed first.")
+	display_order = models.IntegerField(help_text="The order in which choices are displayed on the landing page, from left to right, top to bottom. Lower values are displayed first.")
 	open_in_new_tab = models.BooleanField(default=False, help_text="Open the URL in a new browser tab when it's clicked")
 	secure_referral = models.BooleanField(default=True, help_text="Improves security by blocking HTTP referer [sic] information from the targeted page. Enabling this prevents the target page from manipulating the calling page's DOM with JavaScript. This should always be used for external links. It is safe to uncheck this when linking within the site. Leave this box checked if you don't know what this means")
 	hide_from_mobile_devices = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a mobile device")
@@ -2078,7 +2081,7 @@ class LandingPageChoice(models.Model):
 	notifications = models.CharField(max_length=100, blank=True, null=True, choices=Notification.Types.Choices, help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.")
 
 	class Meta:
-		ordering = ['display_priority']
+		ordering = ['display_order']
 
 	def __str__(self):
 		return str(self.name)
@@ -2274,10 +2277,22 @@ class StaffAbsenceType(models.Model):
 		ordering = ["name"]
 
 
+class StaffAvailabilityCategory(models.Model):
+	name = models.CharField(max_length=200)
+	display_order = models.IntegerField(help_text="Staff availability categories are sorted according to display order. The lowest value category is displayed first in the 'Staff status' page.")
+
+	class Meta:
+		verbose_name_plural = 'Staff availability categories'
+		ordering = ['display_order', 'name']
+
+	def __str__(self):
+		return str(self.name)
+
+
 class StaffAvailability(models.Model):
 	DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 	staff_member = models.ForeignKey("User", help_text="The staff member to display on the staff status page.", on_delete=models.CASCADE)
-	category = models.CharField(null=True, blank=True, max_length=100, help_text="The category for this staff member.")
+	category = models.ForeignKey(StaffAvailabilityCategory, null=True, blank=True, help_text="The category for this staff member.", on_delete=models.CASCADE)
 	start_time = models.TimeField(null=True, blank=True, help_text="The usual start time for this staff member.")
 	end_time = models.TimeField(null=True, blank=True, help_text="The usual end time for this staff member.")
 	monday = models.BooleanField(default=True, help_text="Check this box if the staff member usually works on Mondays.")

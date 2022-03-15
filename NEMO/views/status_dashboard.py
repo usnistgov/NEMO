@@ -99,7 +99,8 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	user_view_options = get_customization("dashboard_staff_status_user_view")
 	staff_view_options = get_customization("dashboard_staff_status_staff_view")
 	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ''
-	view = request.GET.get("view", "week")
+	# Take the default view from user preferences
+	view = request.GET.get("view", user.get_preferences().staff_status_view)
 	# If user_view is set to day only, then force day view
 	# If user_view is set to day/week, then force week only if requested view is month
 	if user_view == "day" or user_view == "week" and view == "month":
@@ -143,7 +144,7 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	# Reset timestamp to be right in the middle of the period
 	timestamp = int((start + timedelta(days=(end - start).days / 2)).timestamp())
 	staffs = StaffAvailability.objects.all()
-	staffs.query.add_ordering(F("category").asc(nulls_last=True))
+	staffs.query.add_ordering(F("category__display_order").asc(nulls_last=True))
 	staffs.query.add_ordering(F("staff_member__first_name").asc())
 	days = rrule(DAILY, dtstart=start, until=end)
 	staff_date_format = get_customization("dashboard_staff_status_date_format")

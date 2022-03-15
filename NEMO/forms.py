@@ -385,6 +385,7 @@ class UserPreferencesForm(ModelForm):
 			"display_new_buddy_request_notification",
 			"display_new_buddy_request_reply_notification",
 			"email_new_buddy_request_reply",
+			"staff_status_view",
 		]
 
 
