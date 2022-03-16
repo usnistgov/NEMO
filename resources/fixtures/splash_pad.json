@@ -1413,11 +1413,27 @@
     }
   },
   {
+    "model": "NEMO.staffavailabilitycategory",
+    "pk": 1,
+    "fields": {
+      "name": "Staff",
+      "display_order": 0
+    }
+  },
+  {
+    "model": "NEMO.staffavailabilitycategory",
+    "pk": 2,
+    "fields": {
+      "name": "Night shift",
+      "display_order": 1
+    }
+  },
+  {
     "model": "NEMO.staffavailability",
     "pk": 1,
     "fields": {
       "staff_member": 1,
-      "category": "Staff",
+      "category": 1,
       "start_time": "08:00:00",
       "end_time": "17:00:00",
       "monday": true,
@@ -1434,7 +1450,7 @@
     "pk": 2,
     "fields": {
       "staff_member": 2,
-      "category": "Night shift",
+      "category": 2,
       "start_time": "20:00:00",
       "end_time": "04:00:00",
       "monday": true,
