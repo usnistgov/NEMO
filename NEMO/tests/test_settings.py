@@ -146,5 +146,10 @@ LOGGING = {
 			'handlers': ['file', 'console'],
 			'propagate': True,
 		},
+		'NEMO.middleware': {
+			'level': 'INFO',
+			'handlers': ['file', 'console'],
+			'propagate': True,
+		},
 	}
 }
