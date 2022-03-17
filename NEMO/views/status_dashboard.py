@@ -77,25 +77,74 @@ def get_occupancy_dictionary(request):
 def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	# Timestamp allows us to know which week/month to show. Defaults to current week
 	# Everything here is dealing with date/times without timezones to avoid issues with DST etc
-	view = request.GET.get("view", "week")
-	timestamp = quiet_int(request.GET.get("timestamp", datetime.now().timestamp()), datetime.now().timestamp())
-	today = beginning_of_the_day(datetime.fromtimestamp(timestamp), in_local_timezone=False)
+	user: User = request.user
+	# Check and set ability for users/staffs to look into the past or future
+	check_past_status = get_customization("dashboard_staff_status_check_past_status")
+	check_future_status = get_customization("dashboard_staff_status_check_future_status")
+	user_can_check_past_status = (
+			not check_past_status
+			or check_past_status == "staffs"
+			and user.is_staff
+			or check_past_status == "managers"
+			and user.is_facility_manager
+	)
+	user_can_check_future_status = (
+			not check_future_status
+			or check_future_status == "staffs"
+			and user.is_staff
+			or check_future_status == "managers"
+			and user.is_facility_manager
+	)
+	# Check and set ability for users/staffs to look at the week/month view
+	user_view_options = get_customization("dashboard_staff_status_user_view")
+	staff_view_options = get_customization("dashboard_staff_status_staff_view")
+	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ''
+	# Take the default view from user preferences
+	view = request.GET.get("view", user.get_preferences().staff_status_view)
+	# If user_view is set to day only, then force day view
+	# If user_view is set to day/week, then force week only if requested view is month
+	if user_view == "day" or user_view == "week" and view == "month":
+		view = user_view
+	now_timestamp = datetime.now().timestamp()
+	timestamp = quiet_int(request.GET.get("timestamp", now_timestamp), now_timestamp)
+	if datetime.fromtimestamp(timestamp).date() < datetime.today().date():
+		if not user_can_check_past_status:
+			# User is looking at past status and is not supposed to
+			timestamp = now_timestamp
+	elif datetime.fromtimestamp(timestamp).date() >= (datetime.today() + timedelta(days=1)).date():
+		if not user_can_check_future_status:
+			# User is looking at future status and is not supposed to
+			timestamp = now_timestamp
+	requested_datetime = datetime.fromtimestamp(timestamp)
+	requested_day = beginning_of_the_day(requested_datetime, in_local_timezone=False)
 	weekdays_only = get_customization("dashboard_staff_status_weekdays_only")
 	first_day = (
-		today.isoweekday()
+		requested_day.isoweekday()
 		if not weekdays_only and get_customization("dashboard_staff_status_first_day_of_week") == "0"
-		else today.weekday()
+		else requested_day.weekday()
 	)
-	start = today.replace(day=1) if view == "month" else today - timedelta(days=first_day)
-	end_delta = relativedelta(months=1) if view == "month" else timedelta(weeks=1)
+	# Set start date
+	if view == "day":
+		start = requested_day
+	elif view == "month":
+		start = requested_day.replace(day=1)
+	else:
+		start = requested_day - timedelta(days=first_day)
+	# Set end relative to start
+	if view == "day":
+		end_delta = timedelta(days=1)
+	elif view == "month":
+		end_delta = relativedelta(months=1)
+	else:
+		end_delta = timedelta(weeks=1)
 	end = start + end_delta - timedelta(days=1)
 	# If we are only showing weekdays, we have to subtract 2 days from the end of the week. Only applies to week view
 	if view == "week" and weekdays_only:
 		end = end - timedelta(days=2)
 	# Reset timestamp to be right in the middle of the period
-	timestamp = int((start + timedelta(days=(end - start).days/2)).timestamp())
+	timestamp = int((start + timedelta(days=(end - start).days / 2)).timestamp())
 	staffs = StaffAvailability.objects.all()
-	staffs.query.add_ordering(F("category").asc(nulls_last=True))
+	staffs.query.add_ordering(F("category__display_order").asc(nulls_last=True))
 	staffs.query.add_ordering(F("staff_member__first_name").asc())
 	days = rrule(DAILY, dtstart=start, until=end)
 	staff_date_format = get_customization("dashboard_staff_status_date_format")
@@ -108,11 +157,12 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 		"staffs": staffs,
 		"days": days,
 		"days_length": (end - start).days + 1,
-		"page_timestamp": timestamp,
+		"page_timestamp": timestamp if request.GET.get("timestamp") else "",
 		"page_view": view,
+		"user_view": user_view,
 		# Using end delta here (=/- 1 week or 1 month) to set previous and next
-		"prev": int((start - end_delta).timestamp()),
-		"next": int((end + end_delta).timestamp()),
+		"prev": int((start - end_delta).timestamp()) if user_can_check_past_status else None,
+		"next": int((end + end_delta).timestamp()) if user_can_check_future_status else None,
 	}
 
 
@@ -136,7 +186,12 @@ def create_staff_absence(request, absence_id=None):
 	if request.POST and form.is_valid():
 		form.save()
 		return HttpResponse()
-	dictionary = {"form": form, "staff_members": StaffAvailability.objects.all(), "page_timestamp": timestamp, "page_view": view}
+	dictionary = {
+		"form": form,
+		"staff_members": StaffAvailability.objects.all(),
+		"page_timestamp": timestamp,
+		"page_view": view,
+	}
 	return render(request, "status_dashboard/staff_absence.html", dictionary)
 
 

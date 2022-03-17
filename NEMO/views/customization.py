@@ -47,6 +47,10 @@ customizable_key_values = {
 	'dashboard_staff_status_staff_only': '',
 	'dashboard_staff_status_weekdays_only': '',
 	'dashboard_staff_status_date_format': 'D m/d',
+	'dashboard_staff_status_check_past_status': '',
+	'dashboard_staff_status_check_future_status': '',
+	'dashboard_staff_status_user_view': '',
+	'dashboard_staff_status_staff_view': '',
 	'calendar_view': 'agendaWeek',
 	'calendar_first_day_of_week': '1',
 	'calendar_day_column_format': 'dddd MM/DD/YYYY',
@@ -189,6 +193,10 @@ def customize(request, element):
 		set_customization('dashboard_staff_status_staff_only', request.POST.get('dashboard_staff_status_staff_only', ''))
 		set_customization('dashboard_staff_status_weekdays_only', request.POST.get('dashboard_staff_status_weekdays_only', ''))
 		set_customization('dashboard_staff_status_date_format', request.POST.get('dashboard_staff_status_date_format', ''))
+		set_customization('dashboard_staff_status_check_past_status', request.POST.get('dashboard_staff_status_check_past_status', ''))
+		set_customization('dashboard_staff_status_check_future_status', request.POST.get('dashboard_staff_status_check_future_status', ''))
+		set_customization('dashboard_staff_status_user_view', request.POST.get('dashboard_staff_status_user_view', ''))
+		set_customization('dashboard_staff_status_staff_view', request.POST.get('dashboard_staff_status_staff_view', ''))
 	elif element == 'interlock_settings':
 		set_customization('allow_bypass_interlock_on_failure', request.POST.get('allow_bypass_interlock_on_failure', ''))
 		set_customization('tool_interlock_failure_message', request.POST.get('tool_interlock_failure_message', ''))

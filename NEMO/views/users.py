@@ -30,6 +30,7 @@ from NEMO.models import (
 )
 from NEMO.views.customization import get_customization
 from NEMO.views.pagination import SortedPaginator
+from NEMO.views.status_dashboard import show_staff_status
 
 users_logger = getLogger(__name__)
 
@@ -344,6 +345,9 @@ def unlock_account(request, user_id):
 @require_http_methods(['GET', 'POST'])
 def user_preferences(request):
 	user: User = User.objects.get(pk=request.user.id)
+	user_view_options = get_customization("dashboard_staff_status_user_view")
+	staff_view_options = get_customization("dashboard_staff_status_staff_view")
+	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ''
 	if request.method == 'POST':
 		form = UserPreferencesForm(data=request.POST, instance=user.preferences)
 		if form.is_valid():
@@ -351,6 +355,8 @@ def user_preferences(request):
 			messages.success(request, "Your preferences have been saved")
 	dictionary = {
 		'user_preferences': user.get_preferences(),
+		'user_view': user_view,
+		'show_staff_status': show_staff_status(request),
 	}
 	return render(request, 'users/preferences.html', dictionary)
 

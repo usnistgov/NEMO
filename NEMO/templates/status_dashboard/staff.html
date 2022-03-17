@@ -5,47 +5,56 @@
         Staff partial availability is highlighted in <span style="display: inline-block; padding: 3px" class="alert-warning">orange</span><br>
         Staff absence is highlighted in <span style="display: inline-block; padding: 3px" class="alert-danger">red</span>
     </div>
-    <div style="display: table-cell; vertical-align: bottom; width: 100%">
-        <div style="display: inline-flex">
-            <div class="btn-group" role="group" style="display: inline-flex">
-              <button type="button" class="btn btn-default {% if not page_view or page_view == 'week' %}active{% endif %}" onclick="window.location = '?timestamp={{ page_timestamp }}&view=week'" {% if not page_view or page_view == 'week' %}aria-pressed="true"{% endif %}>Week</button>
-              <button type="button" class="btn btn-default {% if page_view == 'month' %}active{% endif %}" onclick="window.location = '?timestamp={{ page_timestamp }}&view=month'" {% if page_view == 'month' %}aria-pressed="true"{% endif %}>Month</button>
+    {% if user_view != 'day' %}
+        <div style="display: table-cell; vertical-align: bottom; width: 100%">
+            <div style="display: inline-flex">
+                <div class="btn-group" role="group" style="display: inline-flex">
+                    <button type="button" class="btn btn-default {% if page_view == 'day' %}active{% endif %}" onclick="window.location = '?timestamp={{ page_timestamp }}&view=day'" {% if page_view == 'day' %}aria-pressed="true"{% endif %}>Day</button>
+                    <button type="button" class="btn btn-default {% if not page_view or page_view == 'week' %}active{% endif %}" onclick="window.location = '?timestamp={{ page_timestamp }}&view=week'" {% if not page_view or page_view == 'week' %}aria-pressed="true"{% endif %}>Week</button>
+                    {% if not user_view %}
+                        <button type="button" class="btn btn-default {% if page_view == 'month' %}active{% endif %}" onclick="window.location = '?timestamp={{ page_timestamp }}&view=month'" {% if page_view == 'month' %}aria-pressed="true"{% endif %}>Month</button>
+                    {% endif %}
+                </div>
+                {% if user.is_facility_manager %}
+                    <a style="margin-left: 10px" class="btn btn-info" href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ page_timestamp }}&view={{ page_view }}&csv=true" role="button" target="_blank">Export</a>
+                {% endif %}
             </div>
-            {% if user.is_facility_manager %}
-                <a style="margin-left: 10px" class="btn btn-info" href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ page_timestamp }}&view={{ page_view }}&csv=true" role="button" target="_blank">Export</a>
-            {% endif %}
         </div>
-    </div>
+    {% endif %}
 </div>
 <div id="contact-info-tooltip-container" class="contact-info-tooltip-container" style="overflow-x: auto; margin-top: 25px; margin-bottom: 20px; border: 1px solid #ddd;">
     <table class="table table-responsive" style="margin: 0;border-collapse: collapse">
         <thead>
             <tr class="no-border">
-                <th class="sticky"></th>
-                <th class="button-column-minimum" style="vertical-align: middle;">
-                    <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ prev }}&view={{ page_view }}">
-                        <i class="glyphicon glyphicon-chevron-left chevron" style="padding: 0"></i>
-                    </a>
-                </th>
+                <th class="sticky" {% if days_length == 1 %}style="width:33%"{% endif %}></th>
+                {% if prev %}
+                    <th class="button-column-minimum" style="vertical-align: middle;">
+                        <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ prev }}&view={{ page_view }}">
+                            <i class="glyphicon glyphicon-chevron-left chevron" style="padding: 0"></i>
+                        </a>
+                    </th>
+                {% endif %}
                 {% for day in days %}
                     {% now 'Y-m-d' as today %}
                     <th class="text-center {% if day|date:'Y-m-d' == today %}alert-info{% endif %}">
                         <span {% if day|date:'Y-m-d' == today %}data-toggle='tooltip' data-title="Today's date"{% endif %}>{{ day|date:staff_date_format }}</span>
                     </th>
                 {% endfor %}
-                <th class="button-column-minimum" style="vertical-align: middle;">
-                    <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ next }}&view={{ page_view }}">
-                        <i class="glyphicon glyphicon-chevron-right chevron" style="padding: 0"></i>
-                    </a>
-                </th>
+                {% if next %}
+                    <th class="button-column-minimum" style="vertical-align: middle;">
+                        <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ next }}&view={{ page_view }}">
+                            <i class="glyphicon glyphicon-chevron-right chevron" style="padding: 0"></i>
+                        </a>
+                    </th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
         {% regroup staffs by category as category_staff %}
             {% for category in category_staff %}
                 <tr>
-                    <th colspan="4" class="sticky">{{ category.grouper|default_if_none:'Other' }}</th>
-                    <th colspan="{{ days_length }}"></th>
+                    <th colspan="{% if prev %}3{% else %}2{% endif %}" class="sticky">{{ category.grouper|default_if_none:'Other' }}</th>
+                    {% if next or days_length != 1 %}<th colspan="{% if next %}{{ days_length|add:'1' }}{% else %}{{ days_length }}{% endif %}"></th>{% endif %}
                 </tr>
                 {% for staff in category.list %}
                     <tr>
@@ -55,7 +64,7 @@
                         </td>
                         {% for day in days %}
                             {% with staff_available=staff.weekly_availability|get_item:day.weekday staff_absent=staff_absences|get_item:staff.id|get_item:day.day closure_time=closure_times|get_item:day.day %}
-                                <td style="vertical-align: middle;border-left: 1px solid #ddd" {% if forloop.last or forloop.first %}colspan="2"{% endif %} class="text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
+                                <td style="vertical-align: middle;border-left: 1px solid #ddd" {% if prev and next and days_length == 1 %}colspan="3" {% elif forloop.first and prev or forloop.last and next %}colspan="2"{% endif %} class="text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
                                     {% if closure_time %}
                                         <div data-toggle="tooltip" title="{{ closure_time.closure.name }} {{ closure_time }}">Closed</div>
                                     {% elif staff_absent %}

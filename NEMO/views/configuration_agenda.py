@@ -4,14 +4,14 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import staff_member_required
-from NEMO.models import Reservation, Tool
-from NEMO.utilities import localize, naive_local_current_datetime
+from NEMO.models import Configuration, Reservation, Tool
+from NEMO.utilities import distinct_qs_value_list, localize, naive_local_current_datetime
 
 
 @staff_member_required
 @require_GET
 def configuration_agenda(request, time_period='today'):
-	tools = Tool.objects.exclude(configuration__isnull=True).exclude(configuration__exclude_from_configuration_agenda=True).values_list('id', flat=True)
+	tool_ids = distinct_qs_value_list(Configuration.objects.filter(enabled=True, exclude_from_configuration_agenda=False), "tool_id")
 	start = None
 	end = None
 	if time_period == 'today':
@@ -25,11 +25,11 @@ def configuration_agenda(request, time_period='today'):
 			end = start + timedelta(days=1)
 	start = localize(start)
 	end = localize(end)
-	reservations = Reservation.objects.filter(start__gt=start, start__lt=end, tool__id__in=tools, self_configuration=False, cancelled=False, missed=False, shortened=False).exclude(additional_information='').order_by('start')
+	reservations = Reservation.objects.filter(start__gt=start, start__lt=end, tool__id__in=tool_ids, self_configuration=False, cancelled=False, missed=False, shortened=False).exclude(additional_information='').order_by('start')
 	tools = Tool.objects.filter(id__in=reservations.values_list('tool', flat=True))
 	configuration_widgets = {}
 	for tool in tools:
-		configuration_widgets[tool.id] = tool.configuration_widget(request.user)
+		configuration_widgets[tool.id] = tool.configuration_widget(request.user, filter_for_agenda=True)
 	dictionary = {
 		'time_period': time_period,
 		'tools': tools,

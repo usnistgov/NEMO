@@ -3,12 +3,12 @@
 {% block title %}Preferences{% endblock %}
 {% block content %}
 	<h1>User Preferences</h1>
-		<form action="{% url 'user_preferences' %}" method="post">
+		<form class="form-horizontal" action="{% url 'user_preferences' %}" method="post">
 			{% csrf_token %}
 			<div class="panel panel-default">
 				<div class="panel-body">
 					<h3 id="email_addresses">Reservations</h3>
-					<div class="form-group">
+					<div class="form-group col-sm-12">
 						<div class="checkbox">
 							<label><input name="attach_created_reservation" type="checkbox" {% if user_preferences.attach_created_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when creating reservation</label>
 						</div>
@@ -21,7 +21,7 @@
 			<div class="panel panel-default">
 				<div class="panel-body">
 					<h3 id="email_addresses">Buddy System</h3>
-					<div class="form-group">
+					<div class="form-group col-sm-12">
 						<div class="checkbox">
 							<label><input name="display_new_buddy_request_notification" type="checkbox" {% if user_preferences.display_new_buddy_request_notification %}checked{% endif %}>Check this box to see notification badges for new buddy requests</label>
 						</div>
@@ -34,6 +34,38 @@
 					</div>
 				</div>
 			</div>
+            {% if show_staff_status and user_view != 'day' %}
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <h3 id="email_addresses">Staff status</h3>
+                        <div class="form-group">
+                            <label class="col-sm-2 form-control-static" for="staff_status_view">Default view</label>
+                            <div class="col-sm-10">
+                                <label class="radio-inline">
+                                  <input type="radio" name="staff_status_view" id="staff_status_view" value="day" {% if user_preferences.staff_status_view == 'day' %}checked{% endif %}> Day
+                                </label>
+                                <label class="radio-inline">
+                                  <input type="radio" name="staff_status_view" value="week" {% if user_preferences.staff_status_view == 'week' %}checked{% endif %}> Week
+                                </label>
+                                {% if not user_view %}
+                                    <label class="radio-inline">
+                                      <input type="radio" name="staff_status_view" value="month" {% if user_preferences.staff_status_view == 'month' %}checked{% endif %}> Month
+                                    </label>
+                                {% endif %}
+{#                                <div style="display: inline-flex">#}
+{#                                    <div class="btn-group" role="group" style="display: inline-flex">#}
+{#                                        <input id="staff_status_view" type="button" name="staff_status_view" class="btn btn-default {% if user_preferences.staff_status_view == 'day' %}active{% endif %}" {% if user_preferences.staff_status_view == 'day' %}aria-pressed="true"{% endif %} value="Day"/>#}
+{#                                        <input type="button" name="staff_status_view" class="btn btn-default {% if not user_preferences.staff_status_view or user_preferences.staff_status_view == 'week' %}active{% endif %}" {% if not user_preferences.staff_status_view or user_preferences.staff_status_view == 'week' %}aria-pressed="true"{% endif %} value="Week"/>#}
+{#                                        {% if not user_view %}#}
+{#                                            <input type="button" name="staff_status_view" class="btn btn-default {% if user_preferences.staff_status_view == 'month' %}active{% endif %}" {% if user_preferences.staff_status_view == 'month' %}aria-pressed="true"{% endif %} value="Month"/>#}
+{#                                        {% endif %}#}
+{#                                    </div>#}
+{#                                </div>#}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
 			<input type="submit" value="Update" class="btn btn-info">
 		</form>
 

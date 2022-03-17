@@ -480,15 +480,17 @@ def extract_configuration(request):
 
 
 def parse_configuration_entry(key, value):
-	if value == "" or not match("^configuration_[0-9]+__slot_[0-9]+__display_priority_[0-9]+$", key):
+	if value == "" or not match("^configuration_[0-9]+__slot_[0-9]+__display_order_[0-9]+$", key):
 		return None
-	config_id, slot, display_priority = [int(s) for s in key.split('_') if s.isdigit()]
+	config_id, slot, display_order = [int(s) for s in key.split('_') if s.isdigit()]
 	configuration = Configuration.objects.get(pk=config_id)
+	if not configuration.enabled:
+		return None
 	available_setting = configuration.get_available_setting(value)
 	if len(configuration.current_settings_as_list()) == 1:
-		return display_priority, configuration.name + " needs to be set to " + available_setting + "."
+		return display_order, configuration.name + " needs to be set to " + available_setting + "."
 	else:
-		return display_priority, configuration.configurable_item_name + " #" + str(slot + 1) + " needs to be set to " + available_setting + "."
+		return display_order, configuration.configurable_item_name + " #" + str(slot + 1) + " needs to be set to " + available_setting + "."
 
 
 @staff_member_required

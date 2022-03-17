@@ -10,11 +10,12 @@ from NEMO.views.calendar import do_create_closure_alerts
 
 
 class ClosuresTestCase(TestCase):
-
 	def setUp(self):
 		# We need user office email and at least one facility manager for the email to be sent
 		Customization.objects.create(name="user_office_email_address", value="test@test.com")
-		User.objects.create(first_name="Testy", last_name="McTester", email="testy@tester.com", is_active=True, is_facility_manager=True)
+		User.objects.create(
+			first_name="Testy", last_name="McTester", email="testy@tester.com", is_active=True, is_facility_manager=True
+		)
 
 	def testAlertNoTemplate(self):
 		# Try creating an alert with days_before set but no alert template (should fail)
@@ -149,7 +150,9 @@ class ClosuresTestCase(TestCase):
 
 	def testLastClosureEmailSent(self):
 		# first closure time ends earlier, last one ends today. email should be sent
-		closure = Closure.objects.create(name="Closure", alert_days_before=1, alert_template="test")
+		closure = Closure.objects.create(
+			name="Closure", alert_days_before=1, alert_template="test", notify_managers_last_occurrence=False
+		)
 		start_time = timezone.now() - timedelta(weeks=2)
 		end_time = timezone.now() - timedelta(weeks=1)
 		ClosureTime.objects.create(closure=closure, start_time=start_time, end_time=end_time)

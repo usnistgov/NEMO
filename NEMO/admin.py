@@ -66,6 +66,7 @@ from NEMO.models import (
 	StaffAbsence,
 	StaffAbsenceType,
 	StaffAvailability,
+	StaffAvailabilityCategory,
 	StaffCharge,
 	Task,
 	TaskCategory,
@@ -427,8 +428,9 @@ class ConfigurationAdmin(admin.ModelAdmin):
 		"id",
 		"tool",
 		"name",
+		"enabled",
 		"qualified_users_are_maintainers",
-		"display_priority",
+		"display_order",
 		"exclude_from_configuration_agenda",
 	)
 	filter_horizontal = ("maintainers",)
@@ -543,6 +545,7 @@ class ReservationAdmin(admin.ModelAdmin):
 		"duration",
 		"cancelled",
 		"missed",
+		"shortened",
 	)
 	readonly_fields = ("descendant",)
 	list_filter = ("cancelled", "missed", "tool", "area")
@@ -1171,7 +1174,7 @@ class ContactInformationAdmin(admin.ModelAdmin):
 @register(LandingPageChoice)
 class LandingPageChoiceAdmin(admin.ModelAdmin):
 	list_display = (
-		"display_priority",
+		"display_order",
 		"name",
 		"url",
 		"open_in_new_tab",
@@ -1291,6 +1294,12 @@ class BuddyRequestMessageAdmin(admin.ModelAdmin):
 @register(StaffAbsenceType)
 class StaffAbsenceTypeAdmin(admin.ModelAdmin):
 	list_display = ("name", "description")
+
+
+
+@register(StaffAvailabilityCategory)
+class StaffAvailabilityCategoryAdmin(admin.ModelAdmin):
+	list_display = ("name", "display_order")
 
 
 @register(StaffAvailability)

@@ -7,8 +7,8 @@
 	{% for config in configurations %}
 		{% if config.prompt %}<p>{{ config.prompt }}</p>{% endif %}
 		{% if config.current_settings_as_list|length == 1 %}
-			<label for="configuration_{{ config.id }}__slot_0__display_priority_{{ config.display_priority }}">{{ config.name }}:</label>
-			<select class="form-control" name="configuration_{{ config.id }}__slot_0__display_priority_{{ config.display_priority }}" id="configuration_{{ config.id }}__slot_0__display_priority_{{ config.display_priority }}">
+			<label for="configuration_{{ config.id }}__slot_0__display_order_{{ config.display_order }}">{{ config.name }}:</label>
+			<select class="form-control" name="configuration_{{ config.id }}__slot_0__display_order_{{ config.display_order }}" id="configuration_{{ config.id }}__slot_0__display_order_{{ config.display_order }}">
 				{% if config.absence_string %}
 					<option value="">{{ config.absence_string }}</option>
 				{% endif %}
@@ -19,8 +19,8 @@
 		{% else %}
 			{{ config.name }}:<br>
 			{% for slot in config.range_of_configurable_items %}
-				<label for="configuration_{{ config.id }}__slot_{{ slot }}__display_priority_{{ config.display_priority }}">{{ config.configurable_item_name }}:</label>
-				<select class="form-control" name="configuration_{{ config.id }}__slot_{{ slot }}__display_priority_{{ config.display_priority }}" id="configuration_{{ config.id }}__slot_{{ slot }}__display_priority_{{ config.display_priority }}">
+				<label for="configuration_{{ config.id }}__slot_{{ slot }}__display_order_{{ config.display_order }}">{{ config.configurable_item_name }}:</label>
+				<select class="form-control" name="configuration_{{ config.id }}__slot_{{ slot }}__display_order_{{ config.display_order }}" id="configuration_{{ config.id }}__slot_{{ slot }}__display_order_{{ config.display_order }}">
 					{% if config.absence_string %}
 						<option value="">{{ config.absence_string }}</option>
 					{% endif %}
