@@ -4,6 +4,7 @@ from json import loads
 from django import forms
 from django.contrib import admin
 from django.contrib.admin import register
+from django.contrib.admin.decorators import display
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models import Q
@@ -703,9 +704,13 @@ class InterlockAdminForm(forms.ModelForm):
 @register(Interlock)
 class InterlockAdmin(admin.ModelAdmin):
 	form = InterlockAdminForm
-	list_display = ("id", "card", "channel", "state", "tool", "door")
+	list_display = ("id", "get_card_enabled", "card", "channel", "state", "tool", "door")
 	actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage]
 	readonly_fields = ["state", "most_recent_reply"]
+
+	@display(boolean=True, ordering='card__enabled', description='Card Enabled')
+	def get_card_enabled(self, obj):
+		return obj.card.enabled
 
 
 @register(InterlockCardCategory)
