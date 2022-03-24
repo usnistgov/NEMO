@@ -278,6 +278,8 @@ class ProXrInterlock(Interlock):
 class WebRelayHttpInterlock(Interlock):
 	WEB_RELAY_OFF = 0
 	WEB_RELAY_ON = 1
+	state_xml = "stateFull.xml"
+	state_parameter_template = "relay{}State"
 
 	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
 		username = interlock_card_form.cleaned_data['username']
@@ -292,16 +294,16 @@ class WebRelayHttpInterlock(Interlock):
 		state = Interlock_model.State.UNKNOWN
 		try:
 			if command_type == Interlock_model.State.LOCKED:
-				state = WebRelayHttpInterlock.setRelayState(interlock, WebRelayHttpInterlock.WEB_RELAY_OFF)
+				state = self.setRelayState(interlock, self.WEB_RELAY_OFF)
 			elif command_type == Interlock_model.State.UNLOCKED:
-				state = WebRelayHttpInterlock.setRelayState(interlock, WebRelayHttpInterlock.WEB_RELAY_ON)
+				state = self.setRelayState(interlock, self.WEB_RELAY_ON)
 		except Exception as error:
 			raise InterlockError(interlock=interlock, msg="General exception: " + str(error))
 		return state
 
-	@staticmethod
-	def setRelayState(interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
-		url = f"{interlock.card.server}:{interlock.card.port}/stateFull.xml?relay{interlock.channel}State={state}"
+	@classmethod
+	def setRelayState(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
+		url = f"{interlock.card.server}:{interlock.card.port}/{cls.state_xml}?{cls.state_parameter_template.format(interlock.channel)}={state}"
 		if not url.startswith('http') and not url.startswith('https'):
 			url = 'http://' + url
 		auth = None
@@ -310,7 +312,7 @@ class WebRelayHttpInterlock(Interlock):
 		response = requests.get(url, auth=auth)
 		response.raise_for_status()
 		responseXML = ElementTree.fromstring(response.content)
-		state = int(responseXML.find(f"relay{interlock.channel}state").text)
+		state = int(responseXML.find(cls.state_parameter_template.format(interlock.channel)).text)
 		if state == WebRelayHttpInterlock.WEB_RELAY_OFF:
 			return Interlock_model.State.LOCKED
 		elif state == WebRelayHttpInterlock.WEB_RELAY_ON:
@@ -331,8 +333,14 @@ def get(category: InterlockCardCategory, raise_exception=True):
 		return interlock_impl
 
 
+class WebRelayXSeriesInterlock(WebRelayHttpInterlock):
+	state_xml = "state.xml"
+	state_parameter_template = "relay{}"
+
+
 interlocks: Dict[str, Interlock] = {
 	'stanford': StanfordInterlock(),
 	'web_relay_http': WebRelayHttpInterlock(),
+	'web_relay_x_series': WebRelayXSeriesInterlock(),
 	'proxr': ProXrInterlock(),
 }
