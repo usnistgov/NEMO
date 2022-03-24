@@ -8,7 +8,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models import Q
 from django.db.models.fields.files import FieldFile
-from django.template.defaultfilters import urlencode
+from django.template.defaultfilters import linebreaksbr, urlencode
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -681,7 +681,7 @@ class InterlockCardAdminForm(forms.ModelForm):
 @register(InterlockCard)
 class InterlockCardAdmin(admin.ModelAdmin):
 	form = InterlockCardAdminForm
-	list_display = ("name", "server", "port", "number", "category", "even_port", "odd_port")
+	list_display = ("name", "enabled", "server", "port", "number", "category", "even_port", "odd_port")
 
 
 class InterlockAdminForm(forms.ModelForm):
