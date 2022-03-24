@@ -25,7 +25,7 @@ setup(
 	],
 	install_requires=[
 		'cryptography==36.0.1',
-		'Django==2.2.27',
+		'Django==3.2.12',
 		'django-filter==21.1',
 		'drf-renderer-xlsx==0.4.5',
 		'djangorestframework==3.13.1',
