@@ -3,7 +3,8 @@ from unittest import mock
 from django.conf import settings
 from django.test import TestCase
 
-from NEMO.models import User, Tool, InterlockCard, Interlock, InterlockCardCategory
+from NEMO.interlocks import WebRelayHttpInterlock
+from NEMO.models import Interlock, InterlockCard, InterlockCardCategory, Tool, User
 
 server1 = 'server1.nist.gov'
 server2 = 'https://server2.nist.gov'
@@ -18,7 +19,7 @@ wrong_response_interlock: Interlock = None
 wrong_state_interlock: Interlock = None
 disabled_interlock: Interlock = None
 
-def web_relay_response(relayNumber, state):
+def web_relay_response(relayNumber, state) -> str:
 	return f"<datavalues>" \
 		   f"  <relay{relayNumber}state>{state}</relay{relayNumber}state>" \
 		   f"</datavalues>"
@@ -32,7 +33,7 @@ def mocked_requests_get(*args, **kwargs):
 
 		def __init__(self, content, status_code, reason=None):
 			super().__init__()
-			self.content = content
+			self.content = content.encode()
 			self.status_code = status_code
 			self.url = args[0]
 			self.reason = reason
@@ -41,18 +42,18 @@ def mocked_requests_get(*args, **kwargs):
 			return self.content
 
 	# interlock 3 on server 2 is bad
-	if args[0] == f'{bad_interlock.card.server}:{bad_interlock.card.port}/stateFull.xml?relay3State=1':
+	if args[0] in [f'{bad_interlock.card.server}:{bad_interlock.card.port}/{xml_name}?relay3=1' for xml_name in WebRelayHttpInterlock.state_xml_names]:
 		return MockResponse('', 500, UNLOCK_ERROR)
-	elif args[0] == f'{bad_interlock.card.server}:{bad_interlock.card.port}/stateFull.xml?relay3State=0':
+	elif args[0] in [f'{bad_interlock.card.server}:{bad_interlock.card.port}/{xml_name}?relay3=0' for xml_name in WebRelayHttpInterlock.state_xml_names]:
 		return MockResponse('', 500, LOCK_ERROR)
 	# interlock 2 on server 2 sends wrong response
-	elif args[0] == f'{wrong_response_interlock.card.server}:{wrong_response_interlock.card.port}/stateFull.xml?relay2State=0' or args[0] == f'{wrong_response_interlock.card.server}:{wrong_response_interlock.card.port}/stateFull.xml?relay2State=1':
+	elif args[0] in [f'{wrong_response_interlock.card.server}:{wrong_response_interlock.card.port}/{xml_name}?relay2=0' for xml_name in WebRelayHttpInterlock.state_xml_names] or args[0] in [f'{wrong_response_interlock.card.server}:{wrong_response_interlock.card.port}/{xml_name}?relay2=1' for xml_name in WebRelayHttpInterlock.state_xml_names]:
 		return MockResponse('bad response', 200)
 	# interlock 5 on server 2 sends wrong state response
-	elif args[0] == f'{wrong_state_interlock.card.server}:{wrong_state_interlock.card.port}/stateFull.xml?relay2State=0' or args[0] == f'{wrong_state_interlock.card.server}:{wrong_state_interlock.card.port}/stateFull.xml?relay5State=1':
+	elif args[0] in [f'{wrong_state_interlock.card.server}:{wrong_state_interlock.card.port}/stateFull.xml?relay5=0' for xml_name in WebRelayHttpInterlock.state_xml_names] or args[0] in [f'{wrong_state_interlock.card.server}:{wrong_state_interlock.card.port}/stateFull.xml?relay5=1' for xml_name in WebRelayHttpInterlock.state_xml_names]:
 		return MockResponse(web_relay_response(5, 10), 200)
 	elif 'stateFull.xml' in args[0]:
-		# grab the relay number and the state from the request, and return it to pretent it was successful
+		# grab the relay number and the state from the request, and return it to pretend it was successful
 		url_state = args[0][-8:]
 		relay_number, relay_state = [int(i) for i in url_state if i.isdigit()]
 		return MockResponse(web_relay_response(relay_number, relay_state), 200)

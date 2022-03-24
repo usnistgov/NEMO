@@ -14,11 +14,6 @@ class Migration(migrations.Migration):
     def new_version_news(apps, schema_editor):
         create_news_for_version(apps, "4.0.0", "")
 
-    def add_web_relay_x_series(apps, schema_editor):
-        InterlockCardCategory = apps.get_model("NEMO", "InterlockCardCategory")
-        InterlockCardCategory.objects.create(name="WebRelayXSeries", key="web_relay_x_series")
-
     operations = [
         migrations.RunPython(new_version_news),
-        migrations.RunPython(add_web_relay_x_series),
     ]

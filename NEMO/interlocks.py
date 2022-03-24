@@ -2,7 +2,7 @@ import socket
 import struct
 from abc import ABC, abstractmethod
 from logging import getLogger
-from typing import Dict
+from typing import Dict, Optional
 from xml.etree import ElementTree
 
 import requests
@@ -278,8 +278,9 @@ class ProXrInterlock(Interlock):
 class WebRelayHttpInterlock(Interlock):
 	WEB_RELAY_OFF = 0
 	WEB_RELAY_ON = 1
-	state_xml = "stateFull.xml"
-	state_parameter_template = "relay{}State"
+	state_xml_names = ["stateFull.xml", "state.xml"]
+	state_parameter_template = "relay{}"
+	state_response_suffixes = ["", "state"]
 
 	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
 		username = interlock_card_form.cleaned_data['username']
@@ -303,22 +304,49 @@ class WebRelayHttpInterlock(Interlock):
 
 	@classmethod
 	def setRelayState(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
-		url = f"{interlock.card.server}:{interlock.card.port}/{cls.state_xml}?{cls.state_parameter_template.format(interlock.channel)}={state}"
-		if not url.startswith('http') and not url.startswith('https'):
-			url = 'http://' + url
-		auth = None
+		response, auth, response_error = None, None, None
 		if interlock.card.username and interlock.card.password:
 			auth = (interlock.card.username, interlock.card.password)
-		response = requests.get(url, auth=auth)
-		response.raise_for_status()
+		for state_xml_name in cls.state_xml_names:
+			url = f"{interlock.card.server}:{interlock.card.port}/{state_xml_name}?{cls.state_parameter_template.format(interlock.channel)}={state}"
+			if not url.startswith('http') and not url.startswith('https'):
+				url = 'http://' + url
+			response = requests.get(url, auth=auth)
+			response_error = cls.check_response_error(response)
+			if not response_error:
+				break
+		# At this point we have tried all combination so raise an error
+		if response_error:
+			raise Exception(f"Communication error: {response_error}")
+		# No errors, continue and read relay state
 		responseXML = ElementTree.fromstring(response.content)
-		state = int(responseXML.find(cls.state_parameter_template.format(interlock.channel)).text)
-		if state == WebRelayHttpInterlock.WEB_RELAY_OFF:
+		state = None
+		# Try with a few different lookups here since depending on the relay model, it could be relayX or relayXstate
+		for state_suffix in cls.state_response_suffixes:
+			element = responseXML.find(cls.state_parameter_template.format(interlock.channel)+state_suffix)
+			# Explicitly check for None since 0 is a valid state to return
+			if element is not None:
+				state = int(element.text)
+				break
+		if state == cls.WEB_RELAY_OFF:
 			return Interlock_model.State.LOCKED
-		elif state == WebRelayHttpInterlock.WEB_RELAY_ON:
+		elif state == cls.WEB_RELAY_ON:
 			return Interlock_model.State.UNLOCKED
 		else:
 			raise Exception(f"Unexpected state received from interlock: {state}")
+
+	@staticmethod
+	def check_response_error(response) -> Optional[str]:
+		try:
+			# If we get a bad status code, there is obviously an error
+			response.raise_for_status()
+			# Otherwise, check in the content in case the error is in there
+			if "404 Error" in response.text:
+				raise Exception("File not found")
+			elif "401 Error" in response.text:
+				raise Exception("Authentication failed")
+		except Exception as e:
+			return str(e)
 
 
 def get(category: InterlockCardCategory, raise_exception=True):
@@ -333,14 +361,8 @@ def get(category: InterlockCardCategory, raise_exception=True):
 		return interlock_impl
 
 
-class WebRelayXSeriesInterlock(WebRelayHttpInterlock):
-	state_xml = "state.xml"
-	state_parameter_template = "relay{}"
-
-
 interlocks: Dict[str, Interlock] = {
 	'stanford': StanfordInterlock(),
 	'web_relay_http': WebRelayHttpInterlock(),
-	'web_relay_x_series': WebRelayXSeriesInterlock(),
 	'proxr': ProXrInterlock(),
 }
