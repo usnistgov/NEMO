@@ -2,6 +2,7 @@ import socket
 import struct
 from abc import ABC, abstractmethod
 from logging import getLogger
+from time import sleep
 from typing import Dict, Optional
 from xml.etree import ElementTree
 
@@ -9,6 +10,7 @@ import requests
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from pymodbus.client.sync import ModbusTcpClient
 
 from NEMO.admin import InterlockAdminForm, InterlockCardAdminForm
 from NEMO.exceptions import InterlockError
@@ -42,7 +44,7 @@ class Interlock(ABC):
 		return self.__issue_command(interlock, Interlock_model.State.UNLOCKED)
 
 	def __issue_command(self, interlock: Interlock_model, command_type: Interlock_model.State):
-		interlocks_enabled = getattr(settings, 'INTERLOCKS_ENABLED', False)
+		interlocks_enabled = getattr(settings, "INTERLOCKS_ENABLED", False)
 		if not interlocks_enabled or not interlock.card.enabled:
 			interlock.most_recent_reply = "Interlock interface mocked out because settings.INTERLOCKS_ENABLED = False or interlock card is disabled. Interlock last set on " + format_datetime() + "."
 			interlock.state = command_type
@@ -50,7 +52,7 @@ class Interlock(ABC):
 			return True
 
 		state = Interlock_model.State.UNKNOWN
-		error_message = ''
+		error_message = ""
 		# try to send the command to the interlock
 		try:
 			state = self._send_command(interlock, command_type)
@@ -78,7 +80,9 @@ class Interlock(ABC):
 		return interlock.state == command_type
 
 	@staticmethod
-	def __create_reply_message(command_type: Interlock_model.State, actual_state: Interlock_model.State, error_message: str) -> str:
+	def __create_reply_message(
+			command_type: Interlock_model.State, actual_state: Interlock_model.State, error_message: str
+	) -> str:
 		# Compose the status message of the last command.
 		reply_message = f"Reply received at {format_datetime()}. "
 		if command_type == Interlock_model.State.UNLOCKED:
@@ -100,31 +104,30 @@ class Interlock(ABC):
 
 
 class NoOpInterlock(Interlock):
-
 	def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
 		pass
 
-class StanfordInterlock(Interlock):
 
+class StanfordInterlock(Interlock):
 	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
-		even_port = interlock_card_form.cleaned_data['even_port']
-		odd_port = interlock_card_form.cleaned_data['odd_port']
-		number = interlock_card_form.cleaned_data['number']
+		even_port = interlock_card_form.cleaned_data["even_port"]
+		odd_port = interlock_card_form.cleaned_data["odd_port"]
+		number = interlock_card_form.cleaned_data["number"]
 		error = {}
 		if not even_port and even_port != 0:
-			error['even_port'] = _('This field is required.')
+			error["even_port"] = _("This field is required.")
 		if not odd_port and odd_port != 0:
-			error['odd_port'] = _('This field is required.')
+			error["odd_port"] = _("This field is required.")
 		if not number and number != 0:
-			error['number'] = _('This field is required.')
+			error["number"] = _("This field is required.")
 		if error:
 			raise ValidationError(error)
 
 	def clean_interlock(self, interlock_form: InterlockAdminForm):
-		channel = interlock_form.cleaned_data['channel']
+		channel = interlock_form.cleaned_data["channel"]
 		error = {}
 		if not channel:
-			error['channel'] = _('This field is required.')
+			error["channel"] = _("This field is required.")
 		if error:
 			raise ValidationError(error)
 
@@ -137,9 +140,9 @@ class StanfordInterlock(Interlock):
 		# '18s' means that the message ends with a 18 character string.
 		# More information on Python structs can be found at:
 		# http://docs.python.org/library/struct.html
-		command_schema = struct.Struct('!20siiiiiiiiibbbbb18s')
+		command_schema = struct.Struct("!20siiiiiiiiibbbbb18s")
 		command_message = command_schema.pack(
-			b'EQCNTL_BEGIN_COMMAND',
+			b"EQCNTL_BEGIN_COMMAND",
 			1,  # Instruction count
 			interlock.card.number,
 			interlock.card.even_port,
@@ -154,7 +157,7 @@ class StanfordInterlock(Interlock):
 			0,  # ADC done
 			0,  # Busy
 			0,  # Instruction return value
-			b'EQCNTL_END_COMMAND'
+			b"EQCNTL_END_COMMAND",
 		)
 
 		# Create a TCP socket to send the interlock command.
@@ -165,7 +168,7 @@ class StanfordInterlock(Interlock):
 			sock.connect(server_address)
 			sock.send(command_message)
 			# The reply schema is the same as the command schema except there are no start and end strings.
-			reply_schema = struct.Struct('!iiiiiiiiibbbbb')
+			reply_schema = struct.Struct("!iiiiiiiiibbbbb")
 			reply = sock.recv(reply_schema.size)
 			reply = reply_schema.unpack(reply)
 
@@ -216,16 +219,17 @@ class ProXrInterlock(Interlock):
 	Support for ProXR relay controllers.
 	See https://ncd.io/proxr-quick-start-guide/ for more about ProXR.
 	"""
+
 	# proxr relay status
 	PXR_RELAY_OFF = 0
 	PXR_RELAY_ON = 1
 
 	def clean_interlock(self, interlock_form: InterlockAdminForm):
 		"""Validates NEMO interlock configuration."""
-		channel = interlock_form.cleaned_data['channel']
+		channel = interlock_form.cleaned_data["channel"]
 		error = {}
 		if channel not in range(1, 9):
-			error['channel'] = _('Relay must be 1-8.')
+			error["channel"] = _("Relay must be 1-8.")
 		if error:
 			raise ValidationError(error)
 
@@ -283,11 +287,11 @@ class WebRelayHttpInterlock(Interlock):
 	state_response_suffixes = ["", "state"]
 
 	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
-		username = interlock_card_form.cleaned_data['username']
-		password = interlock_card_form.cleaned_data['password']
+		username = interlock_card_form.cleaned_data["username"]
+		password = interlock_card_form.cleaned_data["password"]
 		error = {}
 		if username and not password:
-			error['password'] = _('password is required when using a username.')
+			error["password"] = _("password is required when using a username.")
 		if error:
 			raise ValidationError(error)
 
@@ -309,8 +313,8 @@ class WebRelayHttpInterlock(Interlock):
 			auth = (interlock.card.username, interlock.card.password)
 		for state_xml_name in cls.state_xml_names:
 			url = f"{interlock.card.server}:{interlock.card.port}/{state_xml_name}?{cls.state_parameter_template.format(interlock.channel)}={state}"
-			if not url.startswith('http') and not url.startswith('https'):
-				url = 'http://' + url
+			if not url.startswith("http") and not url.startswith("https"):
+				url = "http://" + url
 			response = requests.get(url, auth=auth)
 			response_error = cls.check_response_error(response)
 			if not response_error:
@@ -323,7 +327,7 @@ class WebRelayHttpInterlock(Interlock):
 		state = None
 		# Try with a few different lookups here since depending on the relay model, it could be relayX or relayXstate
 		for state_suffix in cls.state_response_suffixes:
-			element = responseXML.find(cls.state_parameter_template.format(interlock.channel)+state_suffix)
+			element = responseXML.find(cls.state_parameter_template.format(interlock.channel) + state_suffix)
 			# Explicitly check for None since 0 is a valid state to return
 			if element is not None:
 				state = int(element.text)
@@ -349,12 +353,60 @@ class WebRelayHttpInterlock(Interlock):
 			return str(e)
 
 
+class ModbusTcpInterlock(Interlock):
+	MODBUS_OFF = 0
+	MODBUS_ON = 1
+
+	def clean_interlock(self, interlock_form: InterlockAdminForm):
+		channel = interlock_form.cleaned_data["channel"]
+		error = {}
+		if not channel:
+			error["channel"] = _("This field is required.")
+		if channel == 0:
+			error["channel"] = _("Relay number starts at 1")
+		if error:
+			raise ValidationError(error)
+
+	def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
+		state = Interlock_model.State.UNKNOWN
+		try:
+			if command_type == Interlock_model.State.LOCKED:
+				state = self.setRelayState(interlock, self.MODBUS_OFF)
+			elif command_type == Interlock_model.State.UNLOCKED:
+				state = self.setRelayState(interlock, self.MODBUS_ON)
+		except Exception as error:
+			raise Exception("General exception: " + str(error))
+		return state
+
+	@classmethod
+	def setRelayState(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
+		# Modbus address is zero-based
+		channel = interlock.channel -1
+		client = ModbusTcpClient(interlock.card.server, port=interlock.card.port)
+		client.connect()
+		write_reply = client.write_coil(channel, state, unit=1)
+		if write_reply.isError():
+			raise Exception(str(write_reply))
+		sleep(0.3)
+		read_reply = client.read_coils(channel, 1, unit=1)
+		if read_reply.isError():
+			raise Exception(str(read_reply))
+		state = read_reply.bits[0]
+		client.close()
+		if state == cls.MODBUS_OFF:
+			return Interlock_model.State.LOCKED
+		elif state == cls.MODBUS_ON:
+			return Interlock_model.State.UNLOCKED
+
+
 def get(category: InterlockCardCategory, raise_exception=True):
 	"""	Returns the corresponding interlock implementation, and raises an exception if not found. """
 	interlock_impl = interlocks.get(category.key, False)
 	if not interlock_impl:
 		if raise_exception:
-			raise Exception(f"There is no interlock implementation for category: {category.name}. Please add one in interlocks.py")
+			raise Exception(
+				f"There is no interlock implementation for category: {category.name}. Please add one in interlocks.py"
+			)
 		else:
 			return NoOpInterlock()
 	else:
@@ -362,7 +414,8 @@ def get(category: InterlockCardCategory, raise_exception=True):
 
 
 interlocks: Dict[str, Interlock] = {
-	'stanford': StanfordInterlock(),
-	'web_relay_http': WebRelayHttpInterlock(),
-	'proxr': ProXrInterlock(),
+	"stanford": StanfordInterlock(),
+	"web_relay_http": WebRelayHttpInterlock(),
+	"modbus_tcp": ModbusTcpInterlock(),
+	"proxr": ProXrInterlock(),
 }
