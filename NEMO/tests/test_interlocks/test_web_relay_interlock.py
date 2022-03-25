@@ -58,7 +58,7 @@ def mocked_requests_get(*args, **kwargs):
 		relay_number, relay_state = [int(i) for i in url_state if i.isdigit()]
 		return MockResponse(web_relay_response(relay_number, relay_state), 200)
 
-	return MockResponse(None, 404)
+	return MockResponse('', 404)
 
 
 class WebRelayInterlockTestCase(TestCase):
