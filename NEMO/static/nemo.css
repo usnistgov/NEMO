@@ -827,23 +827,6 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 
 .staff-status-availability
 {
-	vertical-align: middle;
+	vertical-align: middle !important;
 	border-left: 1px solid #ddd;
-	position: relative;
-}
-
-.staff-status-container
-{
-	position: absolute;
-	top: 0;
-	left: 0;
-	height: 100%;
-	width: 100%;
-}
-
-.staff-status-text
-{
-	position: relative;
-    top: 50%;
-    transform: translateY(-50%);
 }

@@ -69,15 +69,17 @@
                             {% with staff_available=staff.weekly_availability|get_item:day.weekday staff_absent=staff_absences|get_item:staff.id|get_item:day.day closure_time=closure_times|get_item:day.day %}
                                 <td {% if prev and next and days_length == 1 %}colspan="3" {% elif forloop.first and prev or forloop.last and next %}colspan="2"{% endif %} class="staff-status-availability text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
                                     {% if closure_time %}
-                                        <div class="staff-status-container" data-toggle="tooltip" title="{{ closure_time.closure.name }} {{ closure_time }}"><div class="staff-status-text">Closed</div></div>
+                                        {% with custom_data_template="<div class='tooltip' role='tooltip'><div class='arrow'></div><div class='tooltip-inner' style='text-align:left; max-width: 300px'></div></div>" %}
+                                            <div data-toggle="tooltip" data-template="{{ custom_data_template }}" title="{% if closure_time.closure.alert_template %}{{ closure_time.alert_contents|linebreaksbr }}{% else %}{{ closure_time.closure.name }} {{ closure_time }}{% endif %}"><div>Closed</div></div>
+                                        {% endwith %}
                                     {% elif staff_absent %}
                                         {% if not staff_absent.full_day and not user.is_facility_manager %}
-                                            <div class="staff-status-container" data-toggle="tooltip" title="{{ staff_absent.description|linebreaksbr }}"></div>
+                                            <div data-toggle="tooltip" title="{{ staff_absent.description|linebreaksbr }}">&nbsp;</div>
                                         {% elif user.is_facility_manager %}
-                                            <div class="staff-status-container" data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><div class="staff-status-text" style="cursor: pointer" onclick="ajax_get('{% url "edit_staff_absence" staff_absent.id %}?timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)">{{ staff_absent.absence_type.name }}</div></div>
+                                            <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span style="cursor: pointer" onclick="ajax_get('{% url "edit_staff_absence" staff_absent.id %}?timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)">{{ staff_absent.absence_type.name }}</span></div>
                                         {% endif %}
                                     {% elif staff_available %}
-                                        <div class="staff-status-container" data-toggle="tooltip" title="{{ staff.daily_hours }}"></div>
+                                        <div data-toggle="tooltip" title="{{ staff.daily_hours }}">&nbsp;</div>
                                     {% endif %}
                                 </td>
                             {% endwith %}
@@ -88,7 +90,6 @@
         </tbody>
     </table>
 </div>
-
 <script>
     $(".contact-info-tooltip").on('click', function () {
         $(".tooltip").remove();

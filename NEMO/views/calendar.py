@@ -43,7 +43,6 @@ from NEMO.utilities import (
 	as_timezone,
 	bootstrap_primary_color,
 	create_email_attachment,
-	distinct_qs_value_list,
 	extract_dates,
 	extract_times,
 	format_datetime,
@@ -1210,19 +1209,9 @@ def create_alert_for_closure_time(closure_time: ClosureTime):
 		# Check if there is already an alert with the same title ending at the closure end time
 		alert_already_exist = Alert.objects.filter(title=closure.name, expiration_time=closure_time.end_time).exists()
 		if not alert_already_exist:
-			areas = Area.objects.filter(id__in=distinct_qs_value_list(closure.physical_access_levels.all(), "area"))
-			dictionary = {
-				"closure_time": closure_time,
-				"name": closure.name,
-				"staff_absent": closure.staff_absent,
-				"start_time": closure_time.start_time,
-				"end_time": closure_time.end_time,
-				"areas": areas,
-			}
-			contents = Template(closure.alert_template).render(Context(dictionary)) if closure.alert_template else None
 			Alert.objects.create(
 				title=closure.name,
-				contents=contents,
+				contents=closure_time.alert_contents(),
 				category="Closure",
 				debut_time=alert_start,
 				expiration_time=closure_time.end_time,
