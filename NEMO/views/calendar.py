@@ -572,7 +572,7 @@ def resize_reservation(request):
 		delta = timedelta(minutes=int(request.POST['delta']))
 	except:
 		return HttpResponseBadRequest('Invalid delta')
-	return modify_reservation(request, None, delta)
+	return modify_reservation(request, request.user, None, delta)
 
 
 @staff_member_required
@@ -594,7 +594,7 @@ def move_reservation(request):
 		delta = timedelta(minutes=int(request.POST['delta']))
 	except:
 		return HttpResponseBadRequest('Invalid delta')
-	return modify_reservation(request, delta, delta)
+	return modify_reservation(request, request.user, delta, delta)
 
 
 @staff_member_required
@@ -608,7 +608,8 @@ def move_outage(request):
 	return modify_outage(request, delta, delta)
 
 
-def modify_reservation(request, start_delta, end_delta):
+@synchronized("current_user")
+def modify_reservation(request, current_user, start_delta, end_delta):
 	"""
 	Cancel the user's old reservation and create a new one. Reservations are cancelled and recreated so that
 	reservation abuse can be tracked if necessary. This function should be called by other views and should
@@ -631,9 +632,9 @@ def modify_reservation(request, start_delta, end_delta):
 	new_reservation = reservation_to_cancel.copy(new_start, new_end)
 	# Set new creator/time
 	new_reservation.creation_time = now
-	new_reservation.creator = request.user
+	new_reservation.creator = current_user
 
-	response = check_policy_to_cancel_reservation(request.user, reservation_to_cancel, new_reservation)
+	response = check_policy_to_cancel_reservation(current_user, reservation_to_cancel, new_reservation)
 	# Do not move the reservation if the user was not authorized to cancel it.
 	if response.status_code != HTTPStatus.OK:
 		return response
@@ -641,7 +642,7 @@ def modify_reservation(request, start_delta, end_delta):
 	# Cancel the user's original reservation.
 	reservation_to_cancel.cancelled = True
 	reservation_to_cancel.cancellation_time = now
-	reservation_to_cancel.cancelled_by = request.user
+	reservation_to_cancel.cancelled_by = current_user
 
 	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=reservation_to_cancel, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 	if policy_problems:
