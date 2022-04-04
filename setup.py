@@ -24,7 +24,7 @@ setup(
 		'Programming Language :: Python :: 3.6',
 	],
 	install_requires=[
-		'cryptography==36.0.1',
+		'cryptography==36.0.2',
 		'Django==3.2.12',
 		'django-filter==21.1',
 		'djangorestframework==3.13.1',
@@ -33,7 +33,7 @@ setup(
 		'ldap3==2.9.1',
 		'python-dateutil==2.8.2',
 		'requests==2.27.1',
-		'Pillow==9.0.1',
+		'Pillow==9.1.0',
 		'django-mptt==0.13.4',
 		'pymodbus==2.5.3',
 	],
