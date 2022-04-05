@@ -362,8 +362,6 @@ class ModbusTcpInterlock(Interlock):
 		error = {}
 		if not channel:
 			error["channel"] = _("This field is required.")
-		if channel == 0:
-			error["channel"] = _("Relay number starts at 1")
 		if error:
 			raise ValidationError(error)
 
@@ -380,15 +378,14 @@ class ModbusTcpInterlock(Interlock):
 
 	@classmethod
 	def setRelayState(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
-		# Modbus address is zero-based
-		channel = interlock.channel -1
+		coil = interlock.channel
 		client = ModbusTcpClient(interlock.card.server, port=interlock.card.port)
 		client.connect()
-		write_reply = client.write_coil(channel, state, unit=1)
+		write_reply = client.write_coil(coil, state, unit=1)
 		if write_reply.isError():
 			raise Exception(str(write_reply))
 		sleep(0.3)
-		read_reply = client.read_coils(channel, 1, unit=1)
+		read_reply = client.read_coils(coil, 1, unit=1)
 		if read_reply.isError():
 			raise Exception(str(read_reply))
 		state = read_reply.bits[0]
