@@ -28,7 +28,7 @@ setup(
 		'Django==3.2.12',
 		'django-filter==21.1',
 		'djangorestframework==3.13.1',
-		'drf-flex-fields==0.9.7',
+		'drf-flex-fields==0.9.8',
 		'drf-excel==2.1.0',
 		'ldap3==2.9.1',
 		'python-dateutil==2.8.2',
