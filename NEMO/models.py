@@ -1623,7 +1623,7 @@ class Interlock(models.Model):
 		)
 
 	card = models.ForeignKey(InterlockCard, on_delete=models.CASCADE)
-	channel = models.PositiveIntegerField(blank=True, null=True, verbose_name="Channel/Relay")
+	channel = models.PositiveIntegerField(blank=True, null=True, verbose_name="Channel/Relay/Coil")
 	state = models.IntegerField(choices=State.Choices, default=State.UNKNOWN)
 	most_recent_reply = models.TextField(default="None")
 
