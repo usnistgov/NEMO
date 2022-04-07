@@ -1,9 +1,9 @@
 from datetime import timedelta
 
-from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
+from NEMO.admin import ClosureAdminForm
 from NEMO.models import Alert, Closure, ClosureTime, Customization, EmailLog, User
 from NEMO.utilities import EmailCategory
 from NEMO.views.calendar import do_create_closure_alerts
@@ -19,9 +19,9 @@ class ClosuresTestCase(TestCase):
 
 	def testAlertNoTemplate(self):
 		# Try creating an alert with days_before set but no alert template (should fail)
-		with self.assertRaises(ValidationError) as cm:
-			Closure(name="Closure fail", alert_days_before=0).full_clean()
-		self.assertIn("alert_template", cm.exception.error_dict)
+		closure_admin = ClosureAdminForm({"name": "Closure fail", "alert_days_before": 1})
+		self.assertFalse(closure_admin.is_valid())
+		self.assertIn("alert_template", closure_admin.errors)
 
 	def testClosureNoAlerts(self):
 		# Create closure with no alert days before
