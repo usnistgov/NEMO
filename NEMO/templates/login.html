@@ -70,6 +70,7 @@
 				{{ login_banner|safe }}
 			</div>
 		{% endif %}
+        {% include 'base/footer.html' %}
 	</div>
 
 	<script>
@@ -81,4 +82,13 @@
 	</script>
 
 </body>
+<style>
+.page-footer
+{
+	margin-top: 20px;
+  	border-top: 1px solid #eee;
+	line-height: 40px;
+	text-align: center;
+}
+</style>
 </html>
