@@ -1156,7 +1156,7 @@ class ClosureAdmin(admin.ModelAdmin):
 	def alert_preview(self, obj: Closure):
 		if obj.alert_template and obj.closuretime_set.exists():
 			try:
-				alert_style = "width: 33.3%; color: #a94442; background-color: #f2dede; border-color: #dca7a7;padding: 15px; margin-bottom: 10px; border: 1px solid transparent; border-radius: 4px;"
+				alert_style = "width: 350px; color: #a94442; background-color: #f2dede; border-color: #dca7a7;padding: 15px; margin-bottom: 10px; border: 1px solid transparent; border-radius: 4px;"
 				display_title = f'<span style="font-weight:bold">{obj.name}</span><br>' if obj.name else ''
 				return iframe_content(f'<div style="{alert_style}">{display_title}{linebreaksbr(obj.closuretime_set.first().alert_contents())}</div>', extra_style="padding-bottom: 20%")
 			except Exception:
