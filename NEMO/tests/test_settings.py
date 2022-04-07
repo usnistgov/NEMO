@@ -1,4 +1,5 @@
 DEBUG = True
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 FIXTURE_DIRS = ['/nemo/']
 AUTH_USER_MODEL = 'NEMO.User'
 WSGI_APPLICATION = 'NEMO.wsgi.application'
@@ -143,6 +144,11 @@ LOGGING = {
 		},
 		'NEMO': {
 			'level': 'DEBUG',
+			'handlers': ['file', 'console'],
+			'propagate': True,
+		},
+		'NEMO.middleware': {
+			'level': 'INFO',
 			'handlers': ['file', 'console'],
 			'propagate': True,
 		},

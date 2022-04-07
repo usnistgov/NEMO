@@ -3,7 +3,10 @@
     <div style="display: table-cell;width: 100%">
         Staff availability is highlighted in <span style="display: inline-block; padding: 3px" class="alert-success">green</span><br>
         Staff partial availability is highlighted in <span style="display: inline-block; padding: 3px" class="alert-warning">orange</span><br>
-        Staff absence is highlighted in <span style="display: inline-block; padding: 3px" class="alert-danger">red</span>
+        Staff absence is highlighted in <span style="display: inline-block; padding: 3px" class="alert-danger">red</span><br><br>
+
+        Extra information (if available) can be found by hovering over a time block<br>
+        Clicking on a staff member will display their contact information
     </div>
     {% if user_view != 'day' %}
         <div style="display: table-cell; vertical-align: bottom; width: 100%">
@@ -59,14 +62,16 @@
                 {% for staff in category.list %}
                     <tr>
                         <td style="vertical-align: middle;" class="sticky">
-                            <div class="text-nowrap" style="width:100%; display: table-cell; vertical-align: middle; padding-right: 8px">{{ staff.staff_member.get_contact_info_html|safe }}</div>
-                            <div style="width:100%; display: table-cell; vertical-align: middle; text-align: right">{% if user.is_facility_manager %}<span class="glyphicon glyphicon-plus-sign success-highlight" onclick="ajax_get('{% url "create_staff_absence" %}?staff_id={{ staff.id }}&timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)" title="Add staff absence"></span>{% endif %}</div>
+                            <div class="text-nowrap staff-status-contact">{{ staff.staff_member.get_contact_info_html|safe }}</div>
+                            <div class="staff-status-add">{% if user.is_facility_manager %}<span class="glyphicon glyphicon-plus-sign success-highlight" onclick="ajax_get('{% url "create_staff_absence" %}?staff_id={{ staff.id }}&timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)" title="Add staff absence"></span>{% endif %}</div>
                         </td>
                         {% for day in days %}
                             {% with staff_available=staff.weekly_availability|get_item:day.weekday staff_absent=staff_absences|get_item:staff.id|get_item:day.day closure_time=closure_times|get_item:day.day %}
-                                <td style="vertical-align: middle;border-left: 1px solid #ddd" {% if prev and next and days_length == 1 %}colspan="3" {% elif forloop.first and prev or forloop.last and next %}colspan="2"{% endif %} class="text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
+                                <td {% if prev and next and days_length == 1 %}colspan="3" {% elif forloop.first and prev or forloop.last and next %}colspan="2"{% endif %} class="staff-status-availability text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
                                     {% if closure_time %}
-                                        <div data-toggle="tooltip" title="{{ closure_time.closure.name }} {{ closure_time }}">Closed</div>
+                                        {% with custom_data_template="<div class='tooltip' role='tooltip'><div class='arrow'></div><div class='tooltip-inner' style='text-align:left; max-width: 300px'></div></div>" %}
+                                            <div data-toggle="tooltip" data-template="{{ custom_data_template }}" title="{% if closure_time.closure.alert_template %}{{ closure_time.alert_contents|linebreaksbr }}{% else %}{{ closure_time.closure.name }} {{ closure_time }}{% endif %}"><div>Closed</div></div>
+                                        {% endwith %}
                                     {% elif staff_absent %}
                                         {% if not staff_absent.full_day and not user.is_facility_manager %}
                                             <div data-toggle="tooltip" title="{{ staff_absent.description|linebreaksbr }}">&nbsp;</div>
@@ -85,7 +90,6 @@
         </tbody>
     </table>
 </div>
-
 <script>
     $(".contact-info-tooltip").on('click', function () {
         $(".tooltip").remove();

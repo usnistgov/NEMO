@@ -1,14 +1,17 @@
+import datetime
 import sys
 from json import loads
 
 from django import forms
 from django.contrib import admin
 from django.contrib.admin import register
+from django.contrib.admin.decorators import display
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
 from django.db.models import Q
 from django.db.models.fields.files import FieldFile
-from django.template.defaultfilters import urlencode
+from django.forms import BaseInlineFormSet
+from django.template.defaultfilters import linebreaksbr, urlencode
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -93,6 +96,16 @@ from NEMO.widgets.dynamic_form import (
 	PostUsageFloatFieldQuestion,
 	PostUsageNumberFieldQuestion,
 )
+
+
+# Formset to require at least one inline form
+class AtLeastOneRequiredInlineFormSet(BaseInlineFormSet):
+	def clean(self):
+		super().clean()
+		if any(self.errors):
+			return
+		if not any(cleaned_data and not cleaned_data.get("DELETE", False) for cleaned_data in self.cleaned_data):
+			raise forms.ValidationError("A minimum of one item is required.")
 
 
 class ToolAdminForm(forms.ModelForm):
@@ -681,7 +694,7 @@ class InterlockCardAdminForm(forms.ModelForm):
 @register(InterlockCard)
 class InterlockCardAdmin(admin.ModelAdmin):
 	form = InterlockCardAdminForm
-	list_display = ("name", "server", "port", "number", "category", "even_port", "odd_port")
+	list_display = ("name", "enabled", "server", "port", "number", "category", "even_port", "odd_port")
 
 
 class InterlockAdminForm(forms.ModelForm):
@@ -703,9 +716,13 @@ class InterlockAdminForm(forms.ModelForm):
 @register(Interlock)
 class InterlockAdmin(admin.ModelAdmin):
 	form = InterlockAdminForm
-	list_display = ("id", "card", "channel", "state", "tool", "door")
+	list_display = ("id", "get_card_enabled", "card", "channel", "state", "tool", "door")
 	actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage]
 	readonly_fields = ["state", "most_recent_reply"]
+
+	@display(boolean=True, ordering='card__enabled', description='Card Enabled')
+	def get_card_enabled(self, obj):
+		return obj.card.enabled
 
 
 @register(InterlockCardCategory)
@@ -1072,10 +1089,37 @@ class PhysicalAccessLevelAdmin(admin.ModelAdmin):
 
 class ClosureTimeInline(admin.TabularInline):
 	model = ClosureTime
+	formset = AtLeastOneRequiredInlineFormSet
 	min_num = 1
+	extra = 1
 
 
 class ClosureAdminForm(forms.ModelForm):
+	def clean(self):
+		if any(self.errors):
+			return
+		cleaned_data = super().clean()
+		alert_template = cleaned_data.get("alert_template")
+		alert_days_before = cleaned_data.get("alert_days_before")
+		if alert_days_before is not None and not alert_template:
+			self.add_error("alert_template", "Please provide an alert message")
+		if alert_template:
+			if alert_days_before is None:
+				self.add_error("alert_days_before", "Please select when the alert should be displayed")
+			try:
+				validate_closure = Closure()
+				validate_closure.name = cleaned_data.get("name")
+				validate_closure.alert_template = alert_template
+				validate_closure.staff_absent = cleaned_data.get("staff_absent")
+				access_levels = cleaned_data.get("physical_access_levels")
+				closure_time = ClosureTime()
+				closure_time.closure = validate_closure
+				closure_time.start_time = datetime.datetime.now()
+				closure_time.end_time = datetime.datetime.now()
+				closure_time.alert_contents(access_levels=access_levels)
+			except Exception as template_exception:
+				self.add_error("alert_template", str(template_exception))
+
 	class Meta:
 		model = Closure
 		fields = "__all__"
@@ -1091,6 +1135,33 @@ class ClosureAdmin(admin.ModelAdmin):
 	list_display = ("name", "alert_days_before", "get_times_display", "staff_absent", "notify_managers_last_occurrence")
 	filter_horizontal = ("physical_access_levels",)
 	list_filter = ("physical_access_levels__area", "staff_absent", "notify_managers_last_occurrence")
+	readonly_fields = ("alert_preview",)
+	fieldsets = (
+		(
+			None,
+			{
+				"fields": (
+					"name",
+					"alert_days_before",
+					"alert_template",
+					"alert_preview",
+					"notify_managers_last_occurrence",
+					"staff_absent",
+					"physical_access_levels"
+				)
+			},
+		),
+	)
+
+	def alert_preview(self, obj: Closure):
+		if obj.alert_template and obj.closuretime_set.exists():
+			try:
+				alert_style = "width: 350px; color: #a94442; background-color: #f2dede; border-color: #dca7a7;padding: 15px; margin-bottom: 10px; border: 1px solid transparent; border-radius: 4px;"
+				display_title = f'<span style="font-weight:bold">{obj.name}</span><br>' if obj.name else ''
+				return iframe_content(f'<div style="{alert_style}">{display_title}{linebreaksbr(obj.closuretime_set.first().alert_contents())}</div>', extra_style="padding-bottom: 20%")
+			except Exception:
+				pass
+		return ""
 
 	def get_times_display(self, closure: Closure) -> str:
 		return mark_safe("<br>".join([format_daterange(ct.start_time, ct.end_time, dt_format="SHORT_DATETIME_FORMAT", d_format="SHORT_DATE_FORMAT", date_separator=" ", time_separator=" - ") for ct in ClosureTime.objects.filter(closure=closure)]))
@@ -1330,7 +1401,7 @@ class EmailLogAdmin(admin.ModelAdmin):
 
 	def content_preview(self, obj):
 		if obj.content:
-			return mark_safe(f'<div style="position: relative; display: block; overflow: hidden; padding-bottom: 75%"><iframe style="position: absolute; width:100%; height:100%; border:none" src="data:text/html,{urlencode(obj.content)}"></iframe></div>')
+			return iframe_content(obj.content)
 		else:
 			return ""
 
@@ -1342,6 +1413,10 @@ class EmailLogAdmin(admin.ModelAdmin):
 
 	def has_change_permission(self, request, obj=None):
 		return False
+
+
+def iframe_content(content, extra_style = "padding-bottom: 75%") -> str:
+	return mark_safe(f'<div style="position: relative; display: block; overflow: hidden; {extra_style}"><iframe style="position: absolute; width:100%; height:100%; border:none" src="data:text/html,{urlencode(content)}"></iframe></div>')
 
 
 admin.site.register(AccountType)

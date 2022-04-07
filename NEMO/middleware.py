@@ -1,10 +1,10 @@
 import re
 from logging import getLogger
 
-from django.http import HttpResponseForbidden
-from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.conf import settings
-from django.urls import reverse, NoReverseMatch
+from django.contrib.auth.middleware import RemoteUserMiddleware
+from django.http import HttpResponseForbidden
+from django.urls import NoReverseMatch, reverse
 from django.utils.deprecation import MiddlewareMixin
 
 from NEMO.exceptions import InactiveUserError
@@ -72,7 +72,7 @@ class SessionTimeout:
 		# If the request is normal (instead of AJAX) and the user's session has expired
 		# then the @login_required decorator will redirect them to the login page.
 		if not request.user.is_authenticated:
-			return HttpResponseForbidden() if request.is_ajax() else None
+			return HttpResponseForbidden() if is_ajax(request) else None
 
 		# If the view is regularly polled by the webpage to update information then expiry refresh should be disabled.
 		refresh_disabled = getattr(view_function, "disable_session_expiry_refresh", False)
@@ -100,3 +100,7 @@ class ImpersonateMiddleware(MiddlewareMixin):
 	def process_request(self, request):
 		if request.user.is_superuser and 'impersonate_id' in request.session:
 			request.user = User.objects.get(pk=request.session['impersonate_id'])
+
+
+def is_ajax(request):
+	return request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'

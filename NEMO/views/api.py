@@ -1,6 +1,6 @@
 from typing import List
 
-from drf_renderer_xlsx.mixins import XLSXFileMixin
+from drf_excel.mixins import XLSXFileMixin
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet

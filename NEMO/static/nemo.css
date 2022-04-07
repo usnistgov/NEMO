@@ -807,3 +807,26 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	background-color: #fff;
 	z-index: 1;
 }
+
+/* Staff status styles */
+.staff-status-contact, .staff-status-add
+{
+	width: 100%;
+	display: table-cell;
+}
+
+.staff-status-contact
+{
+	padding-right: 8px;
+}
+
+.staff-status-add
+{
+	text-align: right;
+}
+
+.staff-status-availability
+{
+	vertical-align: middle !important;
+	border-left: 1px solid #ddd;
+}

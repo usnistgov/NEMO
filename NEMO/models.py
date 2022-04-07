@@ -19,7 +19,7 @@ from django.db import models
 from django.db.models import Q, QuerySet
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
-from django.template import loader
+from django.template import Context, Template, loader
 from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
@@ -31,6 +31,7 @@ from NEMO import fields
 from NEMO.utilities import (
 	EmailCategory,
 	bootstrap_primary_color,
+	distinct_qs_value_list,
 	format_daterange,
 	format_datetime,
 	get_task_image_filename,
@@ -289,10 +290,6 @@ class Closure(models.Model):
 	staff_absent = models.BooleanField(default=True, help_text="Check this box and all staff members will be marked absent during this closure in staff status.")
 	physical_access_levels = models.ManyToManyField('PhysicalAccessLevel', blank=True, help_text="Select access levels this closure applies to.")
 
-	def clean(self):
-		if self.alert_days_before is not None and not self.alert_template:
-			raise  ValidationError({"alert_template": "Please provide an alert message"})
-
 	def __str__(self):
 		return str(self.name)
 
@@ -304,6 +301,21 @@ class ClosureTime(models.Model):
 	closure = models.ForeignKey(Closure, on_delete=models.CASCADE)
 	start_time = models.DateTimeField(help_text="The start date and time of the closure")
 	end_time = models.DateTimeField(help_text="The end date and time of the closure")
+
+	def alert_contents(self, access_levels=Q()):
+		if access_levels == Q():
+			access_levels = self.closure.physical_access_levels.all()
+		areas = Area.objects.filter(id__in=distinct_qs_value_list(access_levels, "area"))
+		dictionary = {
+			"closure_time": self,
+			"name": self.closure.name,
+			"staff_absent": self.closure.staff_absent,
+			"start_time": self.start_time,
+			"end_time": self.end_time,
+			"areas": areas,
+		}
+		contents = Template(self.closure.alert_template).render(Context(dictionary)) if self.closure.alert_template else None
+		return contents
 
 	def clean(self):
 		if self.start_time and self.end_time and self.end_time <= self.start_time:
@@ -1611,7 +1623,7 @@ class Interlock(models.Model):
 		)
 
 	card = models.ForeignKey(InterlockCard, on_delete=models.CASCADE)
-	channel = models.PositiveIntegerField(blank=True, null=True, verbose_name="Channel/Relay")
+	channel = models.PositiveIntegerField(blank=True, null=True, verbose_name="Channel/Relay/Coil")
 	state = models.IntegerField(choices=State.Choices, default=State.UNKNOWN)
 	most_recent_reply = models.TextField(default="None")
 
