@@ -219,7 +219,7 @@ def staff_absences_dict(staffs, days, start, end):
 
 def closures_dict(days, start, end):
 	dictionary = {}
-	closure_times = ClosureTime.objects.filter(start_time__lte=end, end_time__gte=start)
+	closure_times = ClosureTime.objects.filter(start_time__lte=end, end_time__gte=start, closure__staff_absent=True)
 	for closure_time in closure_times:
 		for day in days:
 			if as_timezone(closure_time.start_time).date() <= day.date() <= as_timezone(closure_time.end_time).date():
