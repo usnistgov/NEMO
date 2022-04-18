@@ -244,9 +244,9 @@ def format_daterange(start_time, end_time, dt_format="DATETIME_FORMAT", d_format
 def format_datetime(universal_time=None, df=None, as_current_timezone=True, use_l10n=None) -> str:
 	this_time = universal_time if universal_time else timezone.now() if as_current_timezone else datetime.now()
 	local_time = as_timezone(this_time) if as_current_timezone else this_time
-	if isinstance(universal_time, time):
+	if isinstance(local_time, time):
 		return time_format(local_time, df or "TIME_FORMAT", use_l10n)
-	elif isinstance(universal_time, datetime):
+	elif isinstance(local_time, datetime):
 		return date_format(local_time, df or "DATETIME_FORMAT", use_l10n)
 	return date_format(local_time, df or "DATE_FORMAT", use_l10n)
 

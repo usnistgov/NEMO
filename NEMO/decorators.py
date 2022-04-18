@@ -21,7 +21,7 @@ def disable_session_expiry_refresh(f):
 	return f
 
 
-# Use this decorator on a function to make a call to said function asynchronous
+# Use this decorator on a function to make a call to that function asynchronously
 # The function will be run in a separate thread, and the current execution will continue
 def postpone(function):
 	def decorator(*arguments, **named_arguments):
