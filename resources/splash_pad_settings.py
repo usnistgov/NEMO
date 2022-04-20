@@ -1,5 +1,6 @@
 DEBUG = True
 FIXTURE_DIRS = ['/nemo/']
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 AUTH_USER_MODEL = 'NEMO.User'
 WSGI_APPLICATION = 'NEMO.wsgi.application'
 ROOT_URLCONF = 'NEMO.urls'
