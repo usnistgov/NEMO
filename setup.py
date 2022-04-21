@@ -21,7 +21,7 @@ setup(
 		'License :: Public Domain',
 		'Natural Language :: English',
 		'Operating System :: OS Independent',
-		'Programming Language :: Python :: 3.6',
+		'Programming Language :: Python :: 3.7',
 	],
 	install_requires=[
 		'cryptography==36.0.2',
