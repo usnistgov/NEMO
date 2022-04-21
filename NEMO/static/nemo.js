@@ -2,15 +2,16 @@ String.prototype.capitalize = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
 }
 
-// This function allows to make regular interval calls to a function only when the tab/window is visible.
+// This function allows making regular interval calls to a function only when the tab/window is visible.
 // It also gets called when the tab/window becomes visible (changing tabs, minimizing window etc.)
+// It returns the interval handle
 function set_interval_when_visible(doc, function_to_repeat, time)
 {
 	doc.addEventListener("visibilitychange", function()
 	{
 		function_to_repeat();
 	});
-	setInterval(function()
+	return setInterval(function()
 	{
 		if (!doc.hidden) function_to_repeat();
 	}, time)
