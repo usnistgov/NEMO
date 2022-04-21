@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load static %}
+{% block extrahead %}
+    {# Chart.js #}
+    <script type="text/javascript" src="{% static "sensors/chart.js" %}"></script>
+    <script type="text/javascript" src="{% static "sensors/chartjs-adapter-moment.js" %}"></script>
+{% endblock %}
+{% block title %}Sensors{% endblock %}
+{% block content %}
+    <h1>{{ sensor.name }}</h1>
+    <div id="sensor_data">
+        <div class="pull-right form-inline">
+            <label class="control-label" for="chart-step">Step:</label>
+            <input class="form-control" id="chart-step" type="number" value="{{ chart_step }}" min="1" max="1440"/>
+            <label class="control-label" for="refresh-rate">Refresh rate:</label>
+            <select class="form-control" id="refresh-rate" onclick="interval_change()" onchange="interval_change()">
+                <option value="">no refresh</option>
+                <option value="1000">every second</option>
+                <option value="5000">every 5 seconds</option>
+                <option value="30000">every 30 seconds</option>
+                <option value="60000">every minute</option>
+                <option value="300000">every 5 minutes</option>
+            </select>
+        </div>
+        <div class="container">
+            <canvas id="sensor-chart" data-url="{% url 'sensor_chart_data' sensor.id %}"></canvas>
+            <table id="sensor-table" class="table table-bordered table-hover table-striped" style="margin-top: 20px">
+                <tbody>
+                    <tr class="info" style="pointer-events: none;">
+                        <th>Time</th>
+                        <th>Value</th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="no-sensor-data" style="display: none">
+        <h3>There is no data for this sensor for the selected period</h3>
+    </div>
+
+    <script>
+        let sensorChart = $("#sensor-chart");
+        let sensorChartObject = null;
+        let intervalHandle = null;
+
+        function filter_every_x_point(data)
+        {
+            let chartStep = $("#chart-step").val() || 1;
+            return data.filter((element, index) => {return index % chartStep === 0;});
+        }
+
+        function update_chart(data)
+        {
+            let ctx = sensorChart[0].getContext("2d");
+            if (sensorChartObject) sensorChartObject.destroy();
+            sensorChartObject = new Chart(ctx,
+                {
+                type: 'line',
+                data:
+                {
+                    labels: filter_every_x_point(data.labels),
+                    datasets: [
+                    {
+                        label: '{{ sensor.name }}',
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgb(75, 192, 192)',
+                        data: filter_every_x_point(data.data)
+                    }]
+                },
+                options:
+                {
+                    scales:
+                    {
+                        x:
+                        {
+                            type: 'time'
+                        }
+                    },
+                    responsive: true,
+                    legend:
+                    {
+                        position: 'top'
+                    },
+                    title:
+                    {
+                        display: true,
+                        text: '{{ sensor.name }} Chart'
+                    },
+                    animation:
+                    {
+                        duration: 0
+                    },
+                    datasets:
+                    {
+                        line:
+                        {
+                            borderWidth: 1,
+                            pointRadius: 2
+                        }
+                    }
+                }
+            });
+        }
+
+        function update_table(data)
+        {
+            let sensorTable_filter = $("#sensor-table tr");
+            sensorTable_filter.not(':first').not(':last').remove();
+            let content_rows = '';
+            for(let i = data.labels.length-1; i >= 0 ; i--)
+            {
+                content_rows += '<tr><td>' + data.labels[i] + '</td><td>' + data.data[i] + '</td></tr>';
+            }
+            sensorTable_filter.first().after(content_rows);
+        }
+        function update_page()
+        {
+            $.ajax(
+            {
+                url: sensorChart.data("url"),
+                success: function (data)
+                {
+                    if (data)
+                    {
+                        $('#sensor-data').show();
+                        $('#no-sensor-data').hide();
+                        update_chart(data);
+                        update_table(data);
+                    }
+                    else
+                    {
+                        $('#sensor-data').hide();
+                        $('#no-sensor-data').show();
+                    }
+                }
+            });
+        }
+        function interval_change()
+        {
+            if (intervalHandle) clearInterval(intervalHandle);
+            let refresh_rate = $('#refresh-rate').val();
+            if (refresh_rate) intervalHandle = set_interval_when_visible(document, update_page, refresh_rate);
+        }
+
+        update_page();
+        interval_change();
+    </script>
+
+{% endblock %}

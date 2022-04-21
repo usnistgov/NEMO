@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Sensors{% endblock %}
+{% block content %}
+    <h1>Sensors</h1>
+    {% if sensors %}
+        <table class="table table-bordered table-hover" style="margin-top: 20px">
+            <tbody>
+                <tr class="info" style="pointer-events: none;">
+                    <th>Sensor</th>
+                    <th>Value</th>
+                    <th>Last read</th>
+                </tr>
+                {% regroup sensors by sensor_category as category_list %}
+                {% for category in category_list %}
+                    {% if category.grouper %}
+                        <tr class="warning" style="pointer-events: none;">
+                            <th colspan="3">{{ category.grouper }}</th>
+                        </tr>
+                    {% endif %}
+                    {% for sensor in category.list %}
+                        <tr>
+                            <td><a href="{% url 'sensor_details' sensor.id %}">{{ sensor.name }}</a></td>
+                            <td>{{ sensor.last_data_point.display_value }}</td>
+                            <td>{{ sensor.last_data_point.created_date }}</td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+	{% else %}
+		<h3>No sensors exist yet. You can <a href="{% url 'admin:sensors_sensor_changelist' %}">create some in the Sensor section of 'Detailed Administration'</a>.</h3>
+	{% endif %}
+{% endblock %}
