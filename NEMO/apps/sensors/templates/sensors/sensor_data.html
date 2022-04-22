@@ -8,40 +8,83 @@
 {% block title %}Sensors{% endblock %}
 {% block content %}
     <h1>{{ sensor.name }}</h1>
-    <div id="sensor_data">
-        <div class="pull-right form-inline">
-            <label class="control-label" for="chart-step">Step:</label>
-            <input class="form-control" id="chart-step" type="number" value="{{ chart_step }}" min="1" max="1440"/>
-            <label class="control-label" for="refresh-rate">Refresh rate:</label>
-            <select class="form-control" id="refresh-rate" onclick="interval_change()" onchange="interval_change()">
-                <option value="">no refresh</option>
-                <option value="1000">every second</option>
-                <option value="5000">every 5 seconds</option>
-                <option value="30000">every 30 seconds</option>
-                <option value="60000">every minute</option>
-                <option value="300000">every 5 minutes</option>
-            </select>
-        </div>
+    <div id="sensor-data">
         <div class="container">
-            <canvas id="sensor-chart" data-url="{% url 'sensor_chart_data' sensor.id %}"></canvas>
-            <table id="sensor-table" class="table table-bordered table-hover table-striped" style="margin-top: 20px">
-                <tbody>
-                    <tr class="info" style="pointer-events: none;">
-                        <th>Time</th>
-                        <th>Value</th>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="pull-right form-inline">
+                <label class="control-label" for="refresh-rate">Refresh rate:</label>
+                <select class="form-control" id="refresh-rate" onclick="interval_change()" onchange="interval_change()">
+                    <option value="">no refresh</option>
+                    <option value="1000">every second</option>
+                    <option value="5000">every 5 seconds</option>
+                    <option value="30000">every 30 seconds</option>
+                    <option value="60000">every minute</option>
+                    <option value="300000">every 5 minutes</option>
+                </select>
+            </div>
+        </div>
+        <ul class="nav nav-pills nav-pills-spacer" id="tabs">
+            <li class="{% if tab == 'chart' %}active{% endif %}">
+                <a href="#chart-tab">Chart</a>
+            </li>
+            <li class="{% if tab == 'data' %}active{% endif %}">
+                <a href="#data-tab">Data</a>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane {% if tab == 'chart' %}active{% endif %}" id="chart-tab">
+                <div class="pull-right form-inline">
+                    <label class="control-label" for="chart-step">Display every</label>
+                    <input class="form-control" id="chart-step" type="number" value="{{ chart_step }}" min="1" max="1440"/>
+                    <label class="control-label"> data point</label>
+                </div>
+                <div class="container">
+                    <canvas id="sensor-chart" data-url="{% url 'sensor_chart_data' sensor.id %}"></canvas>
+                </div>
+            </div>
+            <div class="tab-pane {% if tab == 'data' %}active{% endif %}" id="data-tab">
+                <div class="container">
+                    <div class="pull-right">
+                        <input type="button" class="btn btn-info" value="Export" onclick="update_page();window.open('{% url 'export_sensor_data' sensor.id %}')">
+                    </div>
+                </div>
+                <div class="container">
+                    <table id="sensor-table" class="table table-bordered table-hover table-striped" style="margin-top: 20px">
+                        <tbody>
+                            <tr class="info" style="pointer-events: none;">
+                                <th>Time</th>
+                                <th>Value</th>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
     <div id="no-sensor-data" style="display: none">
-        <h3>There is no data for this sensor for the selected period</h3>
+        <h4 style="margin-top: 30px"><i>There is no data to display. Try selecting a different date range</i></h4>
     </div>
 
     <script>
+        let tab_jq = $("#tabs a");
+		tab_jq.click(switch_tab);
+		tab_jq.click(update_url);
+
         let sensorChart = $("#sensor-chart");
         let sensorChartObject = null;
         let intervalHandle = null;
+
+        function update_url()
+        {
+            {# Set permanent url so we can refresh specific tab #}
+            let title = "Sensor chart";
+            let new_url = "{% url 'sensor_details' sensor.id 'chart' %}";
+            if ($("#data-tab").hasClass("active"))
+            {
+                title = "Sensor data";
+                new_url = "{% url 'sensor_details' sensor.id 'data' %}";
+            }
+            history.pushState('', title, new_url);
+        }
 
         function filter_every_x_point(data)
         {
@@ -120,7 +163,7 @@
                 url: sensorChart.data("url"),
                 success: function (data)
                 {
-                    if (data)
+                    if (data && data.data && data.data.length)
                     {
                         $('#sensor-data').show();
                         $('#no-sensor-data').hide();
