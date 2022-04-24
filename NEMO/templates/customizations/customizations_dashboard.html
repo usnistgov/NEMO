@@ -1,0 +1,94 @@
+<div class="panel-body">
+    <h3 class="customization-section-title">Status dashboard settings</h3>
+    <form method="POST" action="{% url 'customize' 'dashboard_settings' 'status_dashboard' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group" style="margin-bottom: 0; border-top: dotted 1px #ddd">
+            <div class="col-md-5">
+                <h5>Area occupancy</h5>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">Qualified areas</label>
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="dashboard_display_not_qualified_areas" {% if dashboard_display_not_qualified_areas %}checked{% endif %} value="enabled">Show areas the user doesn't have access to</label><br/>
+                </div>
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0; border-top: dotted 1px #ddd">
+            <div class="col-md-5">
+                <h5>Staff status</h5>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">Display</label>
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="dashboard_staff_status_staff_only" {% if dashboard_staff_status_staff_only %}checked{% endif %} value="enabled">Only show staff status to staff members</label><br/>
+                    <label><input type="checkbox" name="dashboard_staff_status_weekdays_only" {% if dashboard_staff_status_weekdays_only %}checked{% endif %} value="enabled">Only show weekdays (no weekend) - only applies to week view</label><br/>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">First day of the week</label>
+            <div class="col-md-10">
+                <div class="radio">
+                    <label><input type="radio" id="dashboard_staff_status_first_day_of_week" name="dashboard_staff_status_first_day_of_week" {% if not dashboard_staff_status_first_day_of_week or dashboard_staff_status_first_day_of_week == '1' %}checked{% endif %} value="1"> Monday</label>
+                    <label><input type="radio" id="dashboard_staff_status_first_day_of_week" name="dashboard_staff_status_first_day_of_week" {% if dashboard_staff_status_first_day_of_week == '0' %}checked{% endif %} value="0"> Sunday</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="dashboard_staff_status_date_format">Date format</label>
+            <div class="col-md-3">
+                <input type="text" id="dashboard_staff_status_date_format" name="dashboard_staff_status_date_format" class="form-control" value="{{ dashboard_staff_status_date_format }}">
+            </div>
+            <div class="col-md-7 form-control-static light-grey">
+                The date format to use in the status dashboard staff tab. See <a href="https://docs.djangoproject.com/en/2.2/ref/templates/builtins/#date" target="_blank">Django date formats</a> for details.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">Check past availability</label>
+            <div class="col-md-10">
+                <div class="radio">
+                    <label><input type="radio" id="dashboard_staff_status_check_past_status" name="dashboard_staff_status_check_past_status" {% if not dashboard_staff_status_check_past_status %}checked{% endif %} value=""> Everyone</label>
+                    <label><input type="radio" id="dashboard_staff_status_check_past_status" name="dashboard_staff_status_check_past_status" {% if dashboard_staff_status_check_past_status == 'staffs' %}checked{% endif %} value="staffs"> Staff only</label>
+                    <label><input type="radio" id="dashboard_staff_status_check_past_status" name="dashboard_staff_status_check_past_status" {% if dashboard_staff_status_check_past_status == 'managers' %}checked{% endif %} value="managers"> Managers only</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">Check future availability</label>
+            <div class="col-md-10">
+                <div class="radio">
+                    <label><input type="radio" id="dashboard_staff_status_check_future_status" name="dashboard_staff_status_check_future_status" {% if not dashboard_staff_status_check_future_status %}checked{% endif %} value=""> Everyone</label>
+                    <label><input type="radio" id="dashboard_staff_status_check_future_status" name="dashboard_staff_status_check_future_status" {% if dashboard_staff_status_check_future_status == 'staffs' %}checked{% endif %} value="staffs"> Staff only</label>
+                    <label><input type="radio" id="dashboard_staff_status_check_future_status" name="dashboard_staff_status_check_future_status" {% if dashboard_staff_status_check_future_status == 'managers' %}checked{% endif %} value="managers"> Managers only</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">User view options</label>
+            <div class="col-md-10">
+                <div class="radio">
+                    <label><input type="radio" id="dashboard_staff_status_user_view" name="dashboard_staff_status_user_view" {% if not dashboard_staff_status_user_view %}checked{% endif %} value=""> Day/Week/Month</label>
+                    <label><input type="radio" id="dashboard_staff_status_user_view" name="dashboard_staff_status_user_view" {% if dashboard_staff_status_user_view == 'week' %}checked{% endif %} value="week"> Day/Week</label>
+                    <label><input type="radio" id="dashboard_staff_status_user_view" name="dashboard_staff_status_user_view" {% if dashboard_staff_status_user_view == 'day' %}checked{% endif %} value="day"> Day</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">Staff view options</label>
+            <div class="col-md-10">
+                <div class="radio">
+                    <label><input type="radio" id="dashboard_staff_status_staff_view" name="dashboard_staff_status_staff_view" {% if not dashboard_staff_status_staff_view %}checked{% endif %} value=""> Day/Week/Month</label>
+                    <label><input type="radio" id="dashboard_staff_status_staff_view" name="dashboard_staff_status_staff_view" {% if dashboard_staff_status_staff_view == 'week' %}checked{% endif %} value="week"> Day/Week</label>
+                    <label><input type="radio" id="dashboard_staff_status_staff_view" name="dashboard_staff_status_staff_view" {% if dashboard_staff_status_staff_view == 'day' %}checked{% endif %} value="day"> Day</label>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-offset-2">
+            <input type="submit" value="Save settings" class="btn btn-success">
+        </div>
+    </form>
+</div>

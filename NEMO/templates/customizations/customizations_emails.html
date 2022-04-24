@@ -1,0 +1,45 @@
+<div class="panel-body">
+    <h3 class="customization-section-title">Email addresses</h3>
+    <form method="POST" action="{% url 'customize' 'email_addresses' 'emails' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="control-label col-md-2" for="feedback_email_address">Feedback</label>
+            <div class="col-md-3">
+                <input type="email" id="feedback_email_address" name="feedback_email_address" class="form-control" value="{{ feedback_email_address }}" placeholder="feedback@example.org">
+            </div>
+            <div class="col-md-7 form-control-static light-grey">
+                User feedback from the <a href="{% url 'feedback' %}">Feedback page</a> is sent to this email address.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="safety_email_address">Safety</label>
+            <div class="col-md-3">
+                <input type="email" id="safety_email_address" name="safety_email_address" class="form-control" value="{{ safety_email_address }}" placeholder="safety@example.org">
+            </div>
+            <div class="col-md-7 form-control-static light-grey">
+                <a href="{% url 'safety' %}">Safety suggestions and observations</a> are sent to this email address.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="abuse_email_address">Abuse</label>
+            <div class="col-md-3">
+                <input type="email" id="abuse_email_address" name="abuse_email_address" class="form-control" value="{{ abuse_email_address }}" placeholder="abuse@example.org">
+            </div>
+            <div class="col-md-7 form-control-static light-grey">
+                Alerts about user activities that could constitute 'abuse' are sent to this email address. Examples include missed reservations and unauthorized tool access.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="user_office_email_address">User office</label>
+            <div class="col-md-3">
+                <input type="email" id="user_office_email_address" name="user_office_email_address" class="form-control" value="{{ user_office_email_address }}" placeholder="information@example.org">
+            </div>
+            <div class="col-md-7 form-control-static light-grey">
+                The main point of contact for users to obtain {{ facility_name }} information. Automated emails sent from {{ site_title }} are typically 'from' this address.
+            </div>
+        </div>
+        <div class="col-md-offset-2">
+            <input type="submit" value="Save settings" class="btn btn-success">
+        </div>
+    </form>
+</div>

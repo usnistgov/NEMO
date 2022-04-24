@@ -143,15 +143,16 @@ def set_customization(name, value):
 
 @administrator_required
 @require_GET
-def customization(request):
+def customization(request, tab: str = 'application'):
 	dictionary = {name: get_media_file_contents(name + extension) for name, extension in customizable_content}
 	dictionary.update({name: get_customization(name) for name in customizable_key_values.keys()})
+	dictionary.update({"tab": tab, "customizations_config": customizations_configuration()})
 	return render(request, 'customizations/customizations.html', dictionary)
 
 
 @administrator_required
 @require_POST
-def customize(request, element):
+def customize(request, element, tab: str ='application'):
 	item = None
 	for name, extension in customizable_content:
 		if name == element:
@@ -213,4 +214,17 @@ def customize(request, element):
 		set_customization('weekend_access_notification_cutoff_day', request.POST.get('weekend_access_notification_cutoff_day', ''))
 	else:
 		return HttpResponseBadRequest('Invalid customization')
-	return redirect('customization')
+	return redirect('customization', tab)
+
+
+def customizations_configuration():
+	return {
+		"application": "Application",
+		"emails": "Email addresses",
+		"calendar": "Calendar",
+		"dashboard": "Status dashboard",
+		"interlock": "Interlock",
+		"requests": "User requests",
+		"templates": "Email & file templates",
+		"rates": "Tool rates",
+	}
