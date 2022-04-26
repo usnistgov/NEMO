@@ -9,8 +9,8 @@
 {% block content %}
     <h1>{{ sensor.name }}</h1>
     <div id="sensor-data">
-        <div class="container">
-            <div class="pull-right form-inline">
+        <div class="text-right">
+            <div class="form-inline">
                 <label class="control-label" for="refresh-rate">Refresh rate:</label>
                 <select class="form-control" id="refresh-rate" onclick="interval_change()" onchange="interval_change()">
                     <option value="">no refresh</option>
@@ -22,7 +22,7 @@
                 </select>
             </div>
         </div>
-        <ul class="nav nav-pills nav-pills-spacer" id="tabs">
+        <ul class="nav nav-tabs" id="tabs">
             <li class="{% if tab == 'chart' %}active{% endif %}">
                 <a href="#chart-tab">Chart</a>
             </li>
@@ -32,22 +32,24 @@
         </ul>
         <div class="tab-content">
             <div class="tab-pane {% if tab == 'chart' %}active{% endif %}" id="chart-tab">
-                <div class="pull-right form-inline">
-                    <label class="control-label" for="chart-step">Display every</label>
-                    <input class="form-control" id="chart-step" type="number" value="{{ chart_step }}" min="1" max="1440"/>
-                    <label class="control-label"> data point</label>
+                <div class="text-right" style="margin-top: 15px">
+                    <div class="form-inline">
+                        <label class="control-label" for="chart-step">Display every</label>
+                        <input class="form-control" id="chart-step" type="number" value="{{ chart_step }}" min="1" max="1440"/>
+                        <label class="control-label"> data point</label>
+                    </div>
                 </div>
-                <div class="container">
+                <div>
                     <canvas id="sensor-chart" data-url="{% url 'sensor_chart_data' sensor.id %}"></canvas>
                 </div>
             </div>
             <div class="tab-pane {% if tab == 'data' %}active{% endif %}" id="data-tab">
-                <div class="container">
-                    <div class="pull-right">
+                <div class="text-right" style="margin-top: 15px">
+                    <div>
                         <input type="button" class="btn btn-info" value="Export" onclick="update_page();window.open('{% url 'export_sensor_data' sensor.id %}')">
                     </div>
                 </div>
-                <div class="container">
+                <div>
                     <table id="sensor-table" class="table table-bordered table-hover table-striped" style="margin-top: 20px">
                         <tbody>
                             <tr class="info" style="pointer-events: none;">

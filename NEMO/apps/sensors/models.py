@@ -6,7 +6,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.safestring import mark_safe
 
-from NEMO.apps.sensors.evaluators import evaluate_expression
 from NEMO.models import InterlockCard
 
 models_logger = getLogger(__name__)
@@ -69,13 +68,13 @@ class Sensor(models.Model):
 		null=True,
 		blank=True,
 		help_text=mark_safe(
-			"Enter a formula to compute for this sensor values. The list of registers read is available as variable <b>registers</b>"
+			"Enter a formula to compute for this sensor values. The list of registers read is available as variable <b>registers</b>. Specific functions can be used based on the sensor type. See documentation for details."
 		),
 	)
 	read_frequency = models.PositiveIntegerField(
 		default=5,
-		validators=[MaxValueValidator(1440), MinValueValidator(1)],
-		help_text="Enter the read frequency in minutes. Every 2 hours = 120, etc. Max value is 1440 min (24hrs).",
+		validators=[MaxValueValidator(1440), MinValueValidator(0)],
+		help_text="Enter the read frequency in minutes. Every 2 hours = 120, etc. Max value is 1440 min (24hrs). Use 0 to disable sensor data read.",
 	)
 
 	@property
@@ -85,28 +84,18 @@ class Sensor(models.Model):
 	def read_data(self, raise_exception=False):
 		from NEMO.apps.sensors import sensors
 
-		sensors.get(self.card.category, raise_exception).read_values(self, raise_exception)
+		return sensors.get(self.card.category, raise_exception).read_values(self, raise_exception)
 
 	def last_data_point(self):
 		return SensorData.objects.filter(sensor=self).latest("created_date")
 
-	def evaluate(self, registers, raise_exception=True):
-		try:
-			if self.formula:
-				return evaluate_expression(self.formula, registers=registers)
-			else:
-				return next(iter(registers or []), None)
-		except Exception as e:
-			models_logger.warning(e)
-			if raise_exception:
-				raise
-
 	def clean(self):
+		from NEMO.apps.sensors import sensors
+
 		if not self.sensor_card and not self.interlock_card:
 			raise ValidationError({"sensor_card": "Please select either a sensor or interlock card"})
 		if self.sensor_card or self.interlock_card:
-			from NEMO.apps.sensors import sensors
-
+			# Throw an error if no sensor implementation is present
 			try:
 				sensors.get(self.card.category, raise_exception=True)
 			except Exception as e:
@@ -127,7 +116,7 @@ class Sensor(models.Model):
 			else:
 				registers = [random.randint(0, 1000)]
 			try:
-				evaluate_expression(self.formula, registers=registers)
+				sensors.get(self.card.category, raise_exception=True).evaluate_expression(self.formula, registers)
 			except Exception as e:
 				raise ValidationError({"formula": str(e)})
 
@@ -138,7 +127,7 @@ class Sensor(models.Model):
 class SensorData(models.Model):
 	sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
 	created_date = models.DateTimeField(auto_now_add=True)
-	value = models.BigIntegerField()
+	value = models.FloatField()
 
 	def display_value(self):
 		return f"{self.sensor.data_prefix + ' ' if self.sensor.data_prefix else ''}{self.value}{' ' + self.sensor.data_suffix if self.sensor.data_suffix else ''}"

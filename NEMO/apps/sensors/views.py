@@ -48,11 +48,13 @@ def export_sensor_data(request, sensor_id):
 	table_result.add_header(("value", "Value"))
 	table_result.add_header(("display_value", "Display value"))
 	for data_point in sensor_data:
-		table_result.add_row({
-			"date": format_datetime(data_point.created_date, "SHORT_DATETIME_FORMAT"),
-			"value": data_point.value,
-			"display_value": data_point.display_value()
-		})
+		table_result.add_row(
+			{
+				"date": format_datetime(data_point.created_date, "SHORT_DATETIME_FORMAT"),
+				"value": data_point.value,
+				"display_value": data_point.display_value(),
+			}
+		)
 	response = table_result.to_csv()
 	sensor_name = slugify(sensor.name).replace("-", "_")
 	filename = f"{sensor_name}_data_{export_format_datetime(start)}_to_{export_format_datetime(end)}.csv"
@@ -93,7 +95,7 @@ def manage_sensor_data(request):
 def do_manage_sensor_data(asynchronous=True):
 	minute_of_the_day = floor((timezone.now() - beginning_of_the_day(timezone.now())).total_seconds() / 60)
 	# Read data for each sensor at the minute interval set
-	for sensor in Sensor.objects.all():
+	for sensor in Sensor.objects.exclude(read_frequency=0):
 		if minute_of_the_day % sensor.read_frequency == 0:
 			postpone(sensor.read_data)() if asynchronous else sensor.read_data()
 	return HttpResponse()

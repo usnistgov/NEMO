@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from pymodbus.client.sync import ModbusTcpClient
 
 from NEMO.apps.sensors.admin import SensorAdminForm, SensorCardAdminForm
+from NEMO.apps.sensors.evaluators import evaluate_expression, evaluate_modbus_expression
 from NEMO.apps.sensors.models import Sensor as Sensor_model, SensorCardCategory, SensorData
 
 sensors_logger = getLogger(__name__)
@@ -30,22 +31,36 @@ class Sensor(ABC):
 
 	def read_values(self, sensor: Sensor_model, raise_exception=False):
 		if not sensor.card.enabled:
-			sensors_logger.warning(f"{sensor.name} sensor interface mocked out because sensor card is disabled.")
-			return True
+			warning_message = f"{sensor.name} sensor interface mocked out because sensor card is disabled."
+			sensors_logger.warning(warning_message)
+			return warning_message
 
-		error_message = ""
-		data_value = None
 		try:
 			registers = self.do_read_values(sensor)
-			data_value = sensor.evaluate(registers=registers)
+			data_value = self.evaluate_sensor(sensor, registers=registers)
 		except Exception as error:
 			sensors_logger.error(error)
-			error_message = str(error)
+			if raise_exception:
+				raise
+			else:
+				return error
+
+		if data_value:
+			return SensorData.objects.create(sensor=sensor, value=data_value)
+
+	def evaluate_sensor(self, sensor, registers, raise_exception=True):
+		try:
+			if sensor.formula:
+				return self.evaluate_expression(sensor.formula, registers)
+			else:
+				return next(iter(registers or []), None)
+		except Exception as e:
+			sensors_logger.warning(e)
 			if raise_exception:
 				raise
 
-		if not error_message and data_value:
-			SensorData.objects.create(sensor=sensor, value=data_value)
+	def evaluate_expression(self, formula, registers):
+		return evaluate_expression(formula, registers=registers)
 
 	@abstractmethod
 	def do_read_values(self, sensor: Sensor_model) -> List:
@@ -72,6 +87,10 @@ class ModbusTcpSensor(Sensor):
 		if read_response.isError():
 			raise Exception(str(read_response))
 		return read_response.registers
+
+	def evaluate_expression(self, formula, registers):
+		# Here we are using an expanded evaluator which includes modbus specific functions
+		return evaluate_modbus_expression(formula, registers=registers)
 
 
 class NoOpSensor(Sensor):

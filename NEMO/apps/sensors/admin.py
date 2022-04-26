@@ -1,18 +1,57 @@
+from copy import deepcopy
+
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin import register
 from django.contrib.admin.decorators import display
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 
 from NEMO.apps.sensors.models import Sensor, SensorCard, SensorCardCategory, SensorCategory, SensorData
+
+
+def duplicate_sensor_configuration(model_admin, request, queryset):
+	for sensor in queryset:
+		original_name = sensor.name
+		new_name = "Copy of " + sensor.name
+		try:
+			existing_sensor = Sensor.objects.filter(name=new_name)
+			if existing_sensor.exists():
+				messages.error(
+					request,
+					mark_safe(
+						f'There is already a copy of {original_name} as <a href="{reverse("admin:sensors_sensor_change", args=[existing_sensor.first().id])}">{new_name}</a>. Change the copy\'s name and try again'
+					),
+				)
+				continue
+			else:
+				new_sensor = deepcopy(sensor)
+				new_sensor.name = new_name
+				new_sensor.id = None
+				new_sensor.pk = None
+				new_sensor.save()
+				messages.success(
+					request,
+					mark_safe(
+						f'A duplicate of {original_name} has been made as <a href="{reverse("admin:sensors_sensor_change", args=[new_sensor.id])}">{new_sensor.name}</a>'
+					),
+				)
+		except Exception as error:
+			messages.error(
+				request, f"{original_name} could not be duplicated because of the following error: {str(error)}"
+			)
 
 
 def read_selected_sensors(model_admin, request, queryset):
 	for sensor in queryset:
 		try:
-			sensor.read_data(raise_exception=True)
-			messages.success(request, f"Read command has been sent to {sensor}")
+			response = sensor.read_data(raise_exception=True)
+			if isinstance(response, SensorData):
+				messages.success(request, f"{sensor} data read: {response.value}")
+			elif isinstance(response, str):
+				messages.warning(request, response)
 		except Exception as error:
-			messages.error(request, f"Command could not be sent to {sensor} due to the following error: {str(error)}")
+			messages.error(request, f"{sensor} data could not be read due to the following error: {str(error)}")
 
 
 class SensorCardAdminForm(forms.ModelForm):
@@ -80,8 +119,9 @@ class SensorAdmin(admin.ModelAdmin):
 		"number_of_values",
 		"read_frequency",
 		"get_last_read",
+		"get_last_read_at",
 	)
-	actions = [read_selected_sensors]
+	actions = [duplicate_sensor_configuration, read_selected_sensors]
 
 	@display(boolean=True, ordering="sensor_card__enabled", description="Card Enabled")
 	def get_card_enabled(self, obj: Sensor):
@@ -91,6 +131,11 @@ class SensorAdmin(admin.ModelAdmin):
 	def get_last_read(self, obj: Sensor):
 		last_data_point = obj.last_data_point()
 		return last_data_point.value if last_data_point else ""
+
+	@display(description="Last read at")
+	def get_last_read_at(self, obj: Sensor):
+		last_data_point = obj.last_data_point()
+		return last_data_point.created_date if last_data_point else ""
 
 
 @register(SensorCardCategory)
