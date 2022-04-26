@@ -12,11 +12,9 @@
                 </tr>
                 {% regroup sensors by sensor_category as category_list %}
                 {% for category in category_list %}
-                    {% if category.grouper %}
-                        <tr class="warning" style="pointer-events: none;">
-                            <th colspan="3">{{ category.grouper }}</th>
-                        </tr>
-                    {% endif %}
+                    <tr class="warning" style="pointer-events: none;">
+                        <th colspan="3">{{ category.grouper|default_if_none:'Other' }}</th>
+                    </tr>
                     {% for sensor in category.list %}
                         <tr>
                             <td><a href="{% url 'sensor_details' sensor.id %}">{{ sensor.name }}</a></td>
