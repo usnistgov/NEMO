@@ -6,37 +6,20 @@
 		<p>You can customize portions of {{ site_title }} to suit your organization's needs.</p>
 
         <ul class="nav nav-tabs" id="tabs">
-            {% for key, name in customizations_config.items %}
-                <li class="{% if tab == key %}active{% endif %}">
-                    <a id="{{ key }}-tab-link" href="#{{ key }}-tab">{{ name }}</a>
+            {% for customization_instance in customization.instances %}
+                <li class="{% if customization_instance.key == customization.key %}active{% endif %}">
+                    <a id="{{ customization_instance.key }}-tab-link" href="{% url 'customization' customization_instance.key %}">{{ customization_instance.title }}</a>
                 </li>
             {% endfor %}
         </ul>
         <div class="tab-content panel panel-default panel-tab-content">
-            {% for key, name in customizations_config.items %}
-                <div class="tab-pane {% if tab == key %}active{% endif %}" id="{{ key }}-tab">
-                    {% include 'customizations/customizations_'|add:key|add:'.html' %}
-                </div>
-            {% endfor %}
+            <div class="tab-pane active" id="{{ customization.key }}-tab">
+                {% include customization.template %}
+            </div>
         </div>
 	</div>
 
 	<script type="application/javascript">
-        let tab_jq = $("#tabs a");
-		tab_jq.click(switch_tab);
-		tab_jq.click(update_url);
-
-        function update_url()
-        {
-            {# Set permanent url so we can refresh specific tab #}
-            {% for key, name in customizations_config.items %}
-                if ($("#{{ key }}-tab").hasClass("active"))
-                {
-                    history.pushState('', "{{ name }} Settings", "{% url 'customization' key %}");
-                }
-            {% endfor %}
-        }
-
 		function check_delete_file_before_submit(name) {
 			let has_file = $('input[name='+name+']')[0].files.length !== 0;
 			if (!has_file) {

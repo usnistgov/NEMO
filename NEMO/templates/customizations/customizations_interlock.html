@@ -1,13 +1,13 @@
 <div class="panel-body">
     <h3 class="customization-section-title">Interlock settings</h3>
-    <form method="POST" action="{% url 'customize' 'interlock_settings' 'interlock' %}" class="form-horizontal">
+    <form method="POST" action="{% url 'customize' 'interlock' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
             <label class="control-label col-md-2" for="tool_interlock_failure_message">Tool failure message</label>
             <div class="col-md-5">
                 <textarea oninput="auto_size_textarea(this);" id="tool_interlock_failure_message" name="tool_interlock_failure_message" class="form-control">{{ tool_interlock_failure_message }}</textarea>
             </div>
-            <div class="col-md-5 form-control-static light-grey">
+            <div class="col-md-5 help-block light-grey">
                 The message to display when a tool interlock command fails.
             </div>
         </div>
@@ -16,7 +16,7 @@
             <div class="col-md-5">
                 <textarea oninput="auto_size_textarea(this);" id="door_interlock_failure_message" name="door_interlock_failure_message" class="form-control">{{ door_interlock_failure_message }}</textarea>
             </div>
-            <div class="col-md-5 form-control-static light-grey">
+            <div class="col-md-5 help-block light-grey">
                 The message to display when a door interlock command fails.
             </div>
         </div>

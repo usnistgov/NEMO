@@ -1,7 +1,7 @@
 <div class="panel-body">
     <h3 class="customization-section-title" id="login_banner_id">Login banner</h3>
     <p>The login banner is an informational message displayed underneath the username and password text boxes on the login page. You can customize this to convey rules for {{ site_title }} users at your organization.</p>
-    {% include 'customizations/customizations_upload.html' with element=login_banner name='login banner' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=login_banner name='login banner' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 <div class="panel-body">
@@ -10,13 +10,13 @@
         This message is displayed after authentication when either no matching username could be found in the database or if that user has been deactivated.
         <br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the message.
     </p>
-    {% include 'customizations/customizations_upload.html' with element=authorization_failed name='authorization failed' button_name='Upload failed login page' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=authorization_failed name='authorization failed' button_name='Upload failed login page' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 <div class="panel-body">
     <h3 class="customization-section-title" id="safety_introduction_id">Introduction for &quot;<a href="{% url 'safety' %}" target="_blank">Safety suggestions and observations</a>&quot; page</h3>
     <p>What would you like everyone to know about safety policy and procedures? This introduction will be presented at the top of the safety page. You can use HTML to modify the look of the text.</p>
-    {% include 'customizations/customizations_upload.html' with element=safety_introduction name='safety introduction' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=safety_introduction name='safety introduction' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 <div class="panel-body">
@@ -33,7 +33,7 @@
     <p>
         Upon completion, the user's "training required" attribute is set to false, and they are able to make reservations and control tools.
     </p>
-    {% include 'customizations/customizations_upload.html' with element=facility_rules_tutorial name='facility rules tutorial' hide_content=True tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=facility_rules_tutorial name='facility rules tutorial' hide_content=True key='templates' %}
     <div class="customization-separation"></div>
 </div>
 <div class="panel-body">
@@ -41,7 +41,8 @@
     <p>This image is displayed as background for the Jumbotron. It is set as a full background screen, so your image needs to take that into account.
         <br>The image you upload should be a valid image file (recommended size is 1500x1000).
     </p>
-    {% include 'customizations/customizations_upload.html' with element=jumbotron_watermark name='jumbotron watermark' extension='png' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=jumbotron_watermark name='jumbotron watermark' extension='png' key='templates' %}
+    <div class="customization-separation"></div>
 </div>
 <div class="panel-body">
     <h3 class="customization-section-title" id="access_request_notification_email_id">Access request notification email</h3>
@@ -53,7 +54,7 @@
         <li><b>status</b> - the status of the request: received, updated, approved or denied</li>
         <li><b>access_requests_url</b> - the URL to the access requests page</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=access_request_notification_email name='access request notification email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=access_request_notification_email name='access request notification email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -65,7 +66,7 @@
         <li><b>staff_member</b> - the user object of the staff member who cancelled the reservation</li>
         <li><b>reason</b> - the reason the staff member provided for cancelling the reservation</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=cancellation_email name='cancellation email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=cancellation_email name='cancellation email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -78,7 +79,7 @@
     <ul>
         <li><b>counter</b> - the counter which value reached the warning threshold</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=counter_threshold_reached_email name='counter threshold reached email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=counter_threshold_reached_email name='counter threshold reached email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -92,7 +93,7 @@
         <li><b>contents</b> - the user's feedback</li>
         <li><b>user</b> - the user object of the user who submitted the feedback</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=feedback_email name='feedback email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=feedback_email name='feedback email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -105,7 +106,7 @@
         <li><b>contents</b> - the body of the email</li>
         <li><b>template_color</b> - the color to emphasize</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=generic_email name='generic email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=generic_email name='generic email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -119,7 +120,7 @@
     <ul>
         <li><b>reservation</b> - the reservation that the user missed</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=missed_reservation_email name='missed reservation email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=missed_reservation_email name='missed reservation email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -134,7 +135,7 @@
         <li><b>user</b> - the user's model instance</li>
         <li><b>making_reservations_rule_summary</b> - a free-response answer provided by the user. Normally, this is provided by the user to summarize their understanding of the {{ facility_name }} rules and proceedures.</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=facility_rules_tutorial_email name='facility rules tutorial email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=facility_rules_tutorial_email name='facility rules tutorial email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -151,7 +152,7 @@
         <li><b>tool_control_absolute_url</b> - the URL of the tool control page for the tool</li>
         <li><b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=new_task_email name='new task email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=new_task_email name='new task email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -164,7 +165,7 @@
     <ul>
         <li><b>reservation</b> - the reservation that the user is out of time on</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=out_of_time_reservation_email name='out of time reservation email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=out_of_time_reservation_email name='out of time reservation email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -177,7 +178,7 @@
     <ul>
         <li><b>item</b> - the item which quantity fell below the reminder threshold</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=reorder_supplies_reminder_email name='reorder supplies reminder email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=reorder_supplies_reminder_email name='reorder supplies reminder email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -190,7 +191,7 @@
     <ul>
         <li><b>reservation</b> - the user's reservation ending</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=reservation_ending_reminder_email name='reservation ending reminder email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=reservation_ending_reminder_email name='reservation ending reminder email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -204,7 +205,7 @@
     <ul>
         <li><b>reservation</b> - the user's upcoming reservation</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=reservation_reminder_email name='reservation reminder email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=reservation_reminder_email name='reservation reminder email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -220,7 +221,7 @@
         <li><b>fatal_error</b> - boolean value that, when true, indicates that it will be impossible for the user to use the tool/access the area during their reservation (due to maintenance, outages or a missing required dependency)</li>
         <li><b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=reservation_warning_email name='reservation warning email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=reservation_warning_email name='reservation warning email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -234,7 +235,7 @@
         <li><b>issue</b> - the issue information</li>
         <li><b>issue_absolute_url</b> - the URL for the detailed view of the issue</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=safety_issue_email name='safety issue email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=safety_issue_email name='safety issue email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -247,7 +248,7 @@
     <ul>
         <li><b>staff_charge</b> - the staff charge that is in progress</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=staff_charge_reminder_email name='staff charge reminder email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=staff_charge_reminder_email name='staff charge reminder email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -265,7 +266,7 @@
         <li><b>notification_message</b> - the notification message that is configured (via the admin site) for the status</li>
         <li><b>tool_control_absolute_url</b> - the URL of the tool control page for the task</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=task_status_notification name='task status notification' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=task_status_notification name='task status notification' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -286,7 +287,7 @@
         <li><b>tool</b> - the tool that the user was denied access to</li>
         <li><b>type</b> - the type of abuse ('area' or 'reservation')</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=unauthorized_tool_access_email name='unauthorized tool access email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=unauthorized_tool_access_email name='unauthorized tool access email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -299,7 +300,7 @@
     <ul>
         <li><b>user</b> - the user who is using a tool or logged in to an area</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=usage_reminder_email name='usage reminder email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=usage_reminder_email name='usage reminder email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -313,7 +314,7 @@
     <ul>
         <li><b>reservation</b> - the user's reservation that was created</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=reservation_created_user_email name='reservation created user email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=reservation_created_user_email name='reservation created user email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -327,7 +328,7 @@
     <ul>
         <li><b>reservation</b> - the user's reservation that was cancelled</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=reservation_cancelled_user_email name='reservation cancelled user email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=reservation_cancelled_user_email name='reservation cancelled user email' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 
@@ -352,5 +353,5 @@
     <ul>
         <li><b>weekend_access</b> - true/false, whether there are approved weekend access requests for the current week.</li>
     </ul>
-    {% include 'customizations/customizations_upload.html' with element=weekend_access_email name='weekend access email' tab_key='templates' %}
+    {% include 'customizations/customizations_upload.html' with element=weekend_access_email name='weekend access email' key='templates' %}
 </div>

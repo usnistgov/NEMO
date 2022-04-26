@@ -58,6 +58,21 @@ def synchronized(method_argument=""):
 	return inner
 
 
+# Use this decorator annotation to register your own customizations which will be shown in the customization page
+# The key should be unique and if possible one word, the title will be shown on the customization tab
+def customization(key, title, order=999):
+	from NEMO.views.customization import CustomizationBase
+
+	def customization_wrapper(customization_class):
+		if not issubclass(customization_class, CustomizationBase):
+			raise ValueError("Wrapped class must subclass CustomizationBase.")
+		customization_instance = customization_class(key, title, order)
+		CustomizationBase.add_instance(customization_instance)
+		return customization_instance
+
+	return customization_wrapper
+
+
 def staff_member_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
 	"""
 	Decorator for views that checks that the user is logged in and is a staff member.

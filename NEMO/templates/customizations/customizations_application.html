@@ -1,6 +1,6 @@
 <div class="panel-body">
     <h3 class="customization-section-title">Application settings</h3>
-    <form method="POST" action="{% url 'customize' 'application_settings' 'application' %}" class="form-horizontal">
+    <form method="POST" action="{% url 'customize' 'application' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
             <label class="control-label col-md-2">Area login/logout</label>
@@ -17,7 +17,7 @@
             <div class="col-md-5">
                 <input type="text" id="facility_name" name="facility_name" class="form-control" value="{{ facility_name }}">
             </div>
-            <div class="col-md-5 form-control-static light-grey">
+            <div class="col-md-5 help-block light-grey">
                 The name of the facility to use in all templates.
             </div>
         </div>
@@ -26,17 +26,21 @@
             <div class="col-md-5">
                 <input type="text" id="site_title" name="site_title" class="form-control" value="{{ site_title }}">
             </div>
-            <div class="col-md-5 form-control-static light-grey">
+            <div class="col-md-5 help-block light-grey">
                 The name of the site to use in all templates/headers.
             </div>
         </div>
-        <div class="form-group">
+        <div class="form-group {% if errors.project_selection_template %}has-error{% endif %}">
             <label class="control-label col-md-2" for="project_selection_template">Project selection template</label>
             <div class="col-md-5">
-                <textarea oninput="auto_size_textarea(this);" id="project_selection_template" name="project_selection_template" class="form-control">{{ project_selection_template }}</textarea>
+                <textarea oninput="auto_size_textarea(this);" id="project_selection_template" name="project_selection_template" class="form-control">{% if errors.project_selection_template %}{{ errors.project_selection_template.value }}{% else %}{{ project_selection_template }}{% endif %}</textarea>
             </div>
-            <div class="col-md-5 form-control-static light-grey">
-                The django template used for rendering project selection when enabling tools and making reservations. The context variable <b>project</b> is provided.
+            <div class="col-md-5 help-block light-grey">
+                {% if errors.project_selection_template %}
+                    {{ errors.project_selection_template.error }}
+                {% else %}
+                    The django template used for rendering project selection when enabling tools and making reservations. The context variable <b>project</b> is provided.
+                {% endif %}
             </div>
         </div>
         <div class="col-md-offset-2">

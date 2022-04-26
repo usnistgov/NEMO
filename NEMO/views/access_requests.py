@@ -21,7 +21,7 @@ from NEMO.utilities import (
 	quiet_int,
 	send_mail,
 )
-from NEMO.views.customization import get_customization, get_media_file_contents, set_customization
+from NEMO.views.customization import CustomizationBase, get_customization, get_media_file_contents
 from NEMO.views.notifications import create_access_request_notification, delete_notification, get_notifications
 
 access_request_logger = getLogger(__name__)
@@ -247,7 +247,7 @@ def process_weekend_access_notification(user_office_email, email_to, access_cont
 	approved_weekend_access_requests = approved_weekend_access_requests.exclude(end_time__lte=beginning_of_the_weekend)
 
 	cutoff_time_passed = cutoff_datetime and timezone.now() >= cutoff_datetime
-	last_sent = get_customization("weekend_access_notification_last_sent")
+	last_sent = CustomizationBase.get("weekend_access_notification_last_sent")
 	last_sent_datetime = parse_datetime(last_sent) if last_sent else None
 	if (
 			(not last_sent_datetime or last_sent_datetime < beginning_of_the_week)
@@ -256,7 +256,7 @@ def process_weekend_access_notification(user_office_email, email_to, access_cont
 			and not cutoff_time_passed
 	):
 		send_weekend_email_access(True, user_office_email, email_to, access_contents, beginning_of_the_week)
-		set_customization("weekend_access_notification_last_sent", str(timezone.now()))
+		CustomizationBase.set("weekend_access_notification_last_sent", str(timezone.now()))
 	if access_contents and cutoff_datetime and not approved_weekend_access_requests.exists():
 		is_cutoff = today.weekday() == int(cutoff_day) and cutoff_datetime.hour == timezone.localtime().hour
 		if is_cutoff:

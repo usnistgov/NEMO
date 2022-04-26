@@ -1,0 +1,19 @@
+<div class="panel-body">
+    <h3 class="customization-section-title">Sensor data settings</h3>
+    <form method="POST" action="{% url 'customize' 'sensors' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="control-label col-md-2">Default daterange</label>
+            <div class="col-md-10">
+                <div class="radio">
+                    <label><input type="radio" name="sensor_default_daterange" {% if not sensor_default_daterange %}checked{% endif %} value=""> Last 24hrs</label>
+                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_72hrs' %}checked{% endif %} value="last_72hrs"> Last 72hrs</label>
+                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_week' %}checked{% endif %} value="last_week"> Last week</label>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-offset-2">
+            <input type="submit" value="Save settings" class="btn btn-success">
+        </div>
+    </form>
+</div>

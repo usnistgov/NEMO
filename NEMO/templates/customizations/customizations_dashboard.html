@@ -1,6 +1,6 @@
 <div class="panel-body">
     <h3 class="customization-section-title">Status dashboard settings</h3>
-    <form method="POST" action="{% url 'customize' 'dashboard_settings' 'status_dashboard' %}" class="form-horizontal">
+    <form method="POST" action="{% url 'customize' 'dashboard' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group" style="margin-bottom: 0; border-top: dotted 1px #ddd">
             <div class="col-md-5">
@@ -43,7 +43,7 @@
             <div class="col-md-3">
                 <input type="text" id="dashboard_staff_status_date_format" name="dashboard_staff_status_date_format" class="form-control" value="{{ dashboard_staff_status_date_format }}">
             </div>
-            <div class="col-md-7 form-control-static light-grey">
+            <div class="col-md-7 help-block light-grey">
                 The date format to use in the status dashboard staff tab. See <a href="https://docs.djangoproject.com/en/2.2/ref/templates/builtins/#date" target="_blank">Django date formats</a> for details.
             </div>
         </div>

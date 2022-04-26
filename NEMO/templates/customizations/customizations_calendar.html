@@ -1,6 +1,6 @@
 <div class="panel-body">
     <h3 class="customization-section-title">Calendar settings</h3>
-    <form method="POST" action="{% url 'customize' 'calendar_settings' 'calendar' %}" class="form-horizontal">
+    <form method="POST" action="{% url 'customize' 'calendar' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
             <label class="control-label col-md-2" >Default view</label>
@@ -26,7 +26,7 @@
             <div class="col-md-3">
                 <input type="text" id="calendar_start_of_the_day" name="calendar_start_of_the_day" class="form-control" value="{{ calendar_start_of_the_day }}" placeholder="07:00:00">
             </div>
-            <div class="col-md-7 form-control-static light-grey">
+            <div class="col-md-7 help-block light-grey">
                 The time the day starts in the calendar view (24h format).
             </div>
         </div>
@@ -38,7 +38,7 @@
                     <span class="input-group-addon">days</span>
                 </div>
             </div>
-            <div class="col-md-7 form-control-static light-grey">
+            <div class="col-md-7 help-block light-grey">
                 The maximum number of days a recurring scheduled outage can be set in advance.
             </div>
         </div>
@@ -52,7 +52,7 @@
             <div class="col-md-3">
                 <input type="text" id="calendar_day_column_format" name="calendar_day_column_format" class="form-control" value="{{ calendar_day_column_format }}"  placeholder="dddd MM/DD/YYYY">
             </div>
-            <div class="col-md-7 form-control-static light-grey">
+            <div class="col-md-7 help-block light-grey">
                 The column date format for the day view.
             </div>
         </div>
@@ -61,7 +61,7 @@
             <div class="col-md-3">
                 <input type="text" id="calendar_week_column_format" name="calendar_week_column_format" class="form-control" value="{{ calendar_week_column_format }}"  placeholder="ddd M/DD">
             </div>
-            <div class="col-md-7 form-control-static light-grey">
+            <div class="col-md-7 help-block light-grey">
                 The column date format for the week view.
             </div>
         </div>
@@ -70,7 +70,7 @@
             <div class="col-md-3">
                 <input type="text" id="calendar_month_column_format" name="calendar_month_column_format" class="form-control" value="{{ calendar_month_column_format }}"  placeholder="ddd">
             </div>
-            <div class="col-md-7 form-control-static light-grey">
+            <div class="col-md-7 help-block light-grey">
                 The column date format for the month view.
             </div>
         </div>

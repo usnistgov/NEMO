@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET
 
+from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.apps.sensors.models import Sensor, SensorData
 from NEMO.decorators import postpone, staff_member_required
 from NEMO.utilities import (
@@ -78,10 +79,16 @@ def sensor_chart_data(request, sensor_id):
 def get_sensor_data(request, sensor) -> (QuerySet, datetime, datetime):
 	start, end = extract_times(request.POST, start_required=False, end_required=False)
 	sensor_data = SensorData.objects.filter(sensor=sensor)
-	if not start:
-		start = timezone.now() - timedelta(days=1)
-	if not end:
-		end = timezone.now()
+	sensor_default_daterange = SensorCustomization.get("sensor_default_daterange")
+	if not start and not end:
+		now = timezone.now()
+		if sensor_default_daterange == "last_week":
+			start = now - timedelta(weeks=1)
+		elif sensor_default_daterange == "last_72hrs":
+			start = now - timedelta(days=3)
+		else:
+			start = now - timedelta(days=1)
+		end = now
 	return sensor_data.filter(created_date__gte=start, created_date__lte=end), start, end
 
 
