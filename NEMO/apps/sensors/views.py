@@ -10,7 +10,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_GET
 
 from NEMO.apps.sensors.customizations import SensorCustomization
-from NEMO.apps.sensors.models import Sensor, SensorData
+from NEMO.apps.sensors.models import Sensor, SensorCategory, SensorData
 from NEMO.decorators import postpone, staff_member_required
 from NEMO.utilities import (
 	BasicDisplayTable,
@@ -23,10 +23,17 @@ from NEMO.utilities import (
 
 @staff_member_required
 @require_GET
-def sensors(request):
-	sensor_list = Sensor.objects.filter(id__in=SensorData.objects.values_list("sensor", flat=True))
-	sensor_list = sensor_list.order_by("sensor_category__name", "name")
-	return render(request, "sensors/sensors.html", {"sensors": sensor_list})
+def sensors(request, category_id=None):
+	selected_category = None
+	if category_id:
+		selected_category = get_object_or_404(SensorCategory, pk=category_id)
+	categories = SensorCategory.objects.filter(parent=category_id)
+	sensor_list = Sensor.objects.filter(visible=True, sensor_category_id=category_id).order_by("name")
+	return render(
+		request,
+		"sensors/sensors.html",
+		{"selected_category": selected_category, "categories": categories, "sensors": sensor_list},
+	)
 
 
 @staff_member_required

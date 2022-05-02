@@ -100,9 +100,47 @@ class SensorAdminForm(forms.ModelForm):
 		return cleaned_data
 
 
+class SensorCategoryAdminForm(forms.ModelForm):
+	class Meta:
+		model = SensorCategory
+		fields = "__all__"
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		if self.instance.pk:
+			children_ids = [child.id for child in self.instance.all_children()]
+			self.fields["parent"].queryset = SensorCategory.objects.exclude(id__in=[self.instance.pk, *children_ids])
+
+
 @register(SensorCategory)
 class SensorCategoryAdmin(admin.ModelAdmin):
-	list_display = ("name",)
+	form = SensorCategoryAdminForm
+	list_display = ("name", "get_parent", "get_children")
+
+	@display(ordering="children", description="Children")
+	def get_children(self, category: SensorCategory) -> str:
+		return mark_safe(
+			", ".join(
+				[
+					f'<a href="{reverse("admin:sensors_sensorcategory_change", args=[child.id])}">{child.name}</a>'
+					for child in category.children.all()
+				]
+			)
+		)
+
+	@display(ordering="parent", description="Parent")
+	def get_parent(self, category: SensorCategory) -> str:
+		if not category.parent:
+			return ""
+		return mark_safe(
+			f'<a href="{reverse("admin:sensors_sensorcategory_change", args=[category.parent.id])}">{category.parent.name}</a>'
+		)
+
+	def formfield_for_foreignkey(self, db_field, request, **kwargs):
+		""" Filter list of potential parents """
+		if db_field.name == "parent":
+			kwargs["queryset"] = SensorCategory.objects.filter()
+		return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @register(Sensor)
@@ -111,6 +149,7 @@ class SensorAdmin(admin.ModelAdmin):
 	list_display = (
 		"id",
 		"name",
+		"visible",
 		"card",
 		"get_card_enabled",
 		"sensor_category",
@@ -147,7 +186,7 @@ class SensorCardCategoryAdmin(admin.ModelAdmin):
 class SensorDataAdmin(admin.ModelAdmin):
 	list_display = ("created_date", "sensor", "value", "get_display_value")
 	date_hierarchy = "created_date"
-	list_filter = ("sensor",)
+	list_filter = ("sensor", "sensor__sensor_category")
 
 	@display(ordering="sensor__data_prefix", description="Display value")
 	def get_display_value(self, obj: SensorData):

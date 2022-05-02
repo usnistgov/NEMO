@@ -23,8 +23,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=200)),
-                ('data_prefix', models.CharField(blank=True, max_length=100, null=True)),
-                ('data_suffix', models.CharField(blank=True, max_length=100, null=True)),
+                ('data_prefix', models.CharField(blank=True, max_length=100, null=True, help_text="Prefix for sensor data values")),
+                ('data_suffix', models.CharField(blank=True, max_length=100, null=True, help_text="Suffix for sensor data values")),
                 ('unit_id', models.PositiveIntegerField(blank=True, null=True)),
                 ('read_address', models.PositiveIntegerField(blank=True, null=True)),
                 ('number_of_values', models.PositiveIntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1)])),

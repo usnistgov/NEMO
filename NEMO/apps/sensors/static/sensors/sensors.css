@@ -1,0 +1,37 @@
+.breadcrumb-sensors-dashboard
+{
+    border-bottom: 2px solid #dcdcdc;
+    background-color: initial;
+    border-radius: 0;
+    margin-bottom: 0;
+    font-size: x-large;
+    padding: 8px 15px;
+}
+
+.well-sensors-dashboard
+{
+    margin-top: 25px;
+    border-radius: 15px;
+    padding: 0;
+}
+
+.list-inline-sensors-dashboard
+{
+    margin-bottom: 0;
+}
+
+.dashboard-sensor-group-item, .dashboard-category-group-item
+{
+    margin: 20px;
+    padding: 30px;
+    border: 1px solid;
+    border-radius: 15px;
+    cursor: pointer;
+    width: 200px;
+    vertical-align: top;
+}
+
+.dashboard-no-group-items
+{
+    padding: 30px;
+}

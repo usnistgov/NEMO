@@ -4,66 +4,83 @@
     {# Chart.js #}
     <script type="text/javascript" src="{% static "sensors/chart.js" %}"></script>
     <script type="text/javascript" src="{% static "sensors/chartjs-adapter-moment.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "sensors/sensors.css" %}"/>
 {% endblock %}
 {% block title %}Sensors{% endblock %}
 {% block content %}
-    <h1>{{ sensor.name }}</h1>
-    <div id="sensor-data">
-        <div class="text-right">
-            <div class="form-inline">
-                <label class="control-label" for="refresh-rate">Refresh rate:</label>
-                <select class="form-control" id="refresh-rate" onclick="interval_change()" onchange="interval_change()">
-                    <option value="">no refresh</option>
-                    <option value="1000">every second</option>
-                    <option value="5000">every 5 seconds</option>
-                    <option value="30000">every 30 seconds</option>
-                    <option value="60000">every minute</option>
-                    <option value="300000">every 5 minutes</option>
-                </select>
+    <div class="well well-sensors-dashboard">
+        <ol class="breadcrumb breadcrumb-sensors-dashboard">
+            <li class="active"><a href="{% url 'sensors' %}">Dashboard</a></li>
+            {% if sensor.sensor_category %}
+                {% for ancestor in sensor.sensor_category.ancestors %}
+                    <li><a href="{% url 'sensors' ancestor.id %}">{{ ancestor.name }}</a></li>
+                {% endfor %}
+                <li><a href="{% url 'sensors' sensor.sensor_category.id %}">{{ sensor.sensor_category.name }}</a></li>
+            {% endif %}
+            <li class="active">{{ sensor.name }}</li>
+        </ol>
+        <div id="sensor-data" class="panel-body">
+            <div class="text-right">
+                <div class="form-inline">
+                    <label class="control-label" for="refresh-rate">Refresh rate:</label>
+                    <select class="form-control" id="refresh-rate" onclick="interval_change()" onchange="interval_change()">
+                        <option value="">no refresh</option>
+                        <option value="1000">every second</option>
+                        <option value="5000">every 5 seconds</option>
+                        <option value="30000">every 30 seconds</option>
+                        <option value="60000">every minute</option>
+                        <option value="300000">every 5 minutes</option>
+                    </select>
+                </div>
+                <div class="visible-xs" style="margin-bottom: 15px"></div>
             </div>
-        </div>
-        <ul class="nav nav-tabs" id="tabs">
-            <li class="{% if tab == 'chart' %}active{% endif %}">
-                <a href="#chart-tab">Chart</a>
-            </li>
-            <li class="{% if tab == 'data' %}active{% endif %}">
-                <a href="#data-tab">Data</a>
-            </li>
-        </ul>
-        <div class="tab-content">
-            <div class="tab-pane {% if tab == 'chart' %}active{% endif %}" id="chart-tab">
-                <div class="text-right" style="margin-top: 15px">
-                    <div class="form-inline">
-                        <label class="control-label" for="chart-step">Display every</label>
-                        <input class="form-control" id="chart-step" type="number" value="{{ chart_step }}" min="1" max="1440"/>
-                        <label class="control-label"> data point</label>
+            <ul class="nav nav-tabs" id="tabs">
+                <li class="{% if tab == 'chart' %}active{% endif %}">
+                    <a href="#chart-tab">Chart</a>
+                </li>
+                <li class="{% if tab == 'data' %}active{% endif %}">
+                    <a href="#data-tab">Data</a>
+                </li>
+            </ul>
+            <div class="tab-content panel panel-default panel-tab-content" style="margin-bottom: 0">
+                <div class="tab-pane {% if tab == 'chart' %}active{% endif %}" id="chart-tab">
+                    <div class="panel-body">
+                        <div class="text-right">
+                            <div class="form-inline">
+                                <label class="control-label" for="chart-step">Display every</label>
+                                <input class="form-control input-sm" id="chart-step" type="number" value="{{ chart_step }}" min="1" max="1440"/>
+                                <label class="control-label"> data point</label>
+                            </div>
+                        </div>
+                        <div>
+                            <canvas id="sensor-chart" data-url="{% url 'sensor_chart_data' sensor.id %}"></canvas>
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <canvas id="sensor-chart" data-url="{% url 'sensor_chart_data' sensor.id %}"></canvas>
-                </div>
-            </div>
-            <div class="tab-pane {% if tab == 'data' %}active{% endif %}" id="data-tab">
-                <div class="text-right" style="margin-top: 15px">
-                    <div>
-                        <input type="button" class="btn btn-info" value="Export" onclick="update_page();window.open('{% url 'export_sensor_data' sensor.id %}')">
+                <div class="tab-pane {% if tab == 'data' %}active{% endif %}" id="data-tab">
+                    <div class="panel-body">
+                        <div class="text-right">
+                            <div>
+                                <input type="button" class="btn btn-info" value="Export" onclick="update_page();window.open('{% url 'export_sensor_data' sensor.id %}')">
+                            </div>
+                        </div>
+                        <div>
+                            <table id="sensor-table" class="table table-bordered table-hover table-striped" style="margin-top: 20px">
+                                <tbody>
+                                    <tr class="info" style="pointer-events: none;">
+                                        <th>Time</th>
+                                        <th>{{ sensor.data_label|default_if_none:'Value' }}</th>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <table id="sensor-table" class="table table-bordered table-hover table-striped" style="margin-top: 20px">
-                        <tbody>
-                            <tr class="info" style="pointer-events: none;">
-                                <th>Time</th>
-                                <th>Value</th>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>
-    </div>
-    <div id="no-sensor-data" style="display: none">
-        <h4 style="margin-top: 30px"><i>There is no data to display. Try selecting a different date range</i></h4>
+        <div id="no-sensor-data" class="panel-body" style="display: none">
+            <i>There is no data to display. Try selecting a different date range</i>
+        </div>
     </div>
 
     <script>
@@ -119,6 +136,14 @@
                         x:
                         {
                             type: 'time'
+                        },
+                        y:
+                        {
+                            title:
+                            {
+                                display: {% if sensor.data_label %}true{% else %}false{% endif %},
+                                text: '{{ sensor.data_label }}'
+                            }
                         }
                     },
                     responsive: true,

@@ -1,5 +1,6 @@
 import random
 from logging import getLogger
+from typing import List
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -45,22 +46,46 @@ class SensorCard(models.Model):
 
 class SensorCategory(models.Model):
 	name = models.CharField(max_length=200, help_text="The name for this sensor category")
+	parent = models.ForeignKey(
+		"SensorCategory", related_name="children", null=True, blank=True, on_delete=models.SET_NULL
+	)
+
+	def is_leaf(self):
+		return not self.children.exists()
+
+	def all_children(self) -> List:
+		if not self.children.exists():
+			return []
+		all_children = []
+		for child in self.children.all():
+			all_children.extend([child, *child.all_children()])
+		return all_children
+
+	def ancestors(self, include_self: bool = False) -> List:
+		if not self.parent:
+			return []
+		ancestors = [*self.parent.ancestors(False), self.parent]
+		if include_self:
+			ancestors.append(self)
+		return ancestors
+
+	def __str__(self):
+		return str(self.name)
 
 	class Meta:
 		verbose_name_plural = "Sensor categories"
 		ordering = ["name"]
 
-	def __str__(self):
-		return str(self.name)
-
 
 class Sensor(models.Model):
 	name = models.CharField(max_length=200)
+	visible = models.BooleanField(default=True, help_text="Specifies whether this sensor is visible in the sensor dashboard")
 	sensor_card = models.ForeignKey(SensorCard, blank=True, null=True, on_delete=models.CASCADE)
 	interlock_card = models.ForeignKey(InterlockCard, blank=True, null=True, on_delete=models.CASCADE)
 	sensor_category = models.ForeignKey(SensorCategory, blank=True, null=True, on_delete=models.SET_NULL)
-	data_prefix = models.CharField(blank=True, null=True, max_length=100)
-	data_suffix = models.CharField(blank=True, null=True, max_length=100)
+	data_label = models.CharField(blank=True, null=True, max_length=200, help_text="Label for graph and table data")
+	data_prefix = models.CharField(blank=True, null=True, max_length=100, help_text="Prefix for sensor data values")
+	data_suffix = models.CharField(blank=True, null=True, max_length=100, help_text="Suffix for sensor data values")
 	unit_id = models.PositiveIntegerField(null=True, blank=True)
 	read_address = models.PositiveIntegerField(null=True, blank=True)
 	number_of_values = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
