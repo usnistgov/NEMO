@@ -30,6 +30,8 @@ class Migration(migrations.Migration):
                 ('number_of_values', models.PositiveIntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1)])),
                 ('formula', models.TextField(blank=True, help_text='Enter a formula to compute for this sensor values. The list of registers read is available as variable <b>registers</b>. Specific functions can be used based on the sensor type. See documentation for details.', null=True)),
                 ('read_frequency', models.PositiveIntegerField(default=5, help_text='Enter the read frequency in minutes. Every 2 hours = 120, etc. Max value is 1440 min (24hrs). Use 0 to disable sensor data read.', validators=[django.core.validators.MaxValueValidator(1440), django.core.validators.MinValueValidator(0)])),
+                ('visible', models.BooleanField(default=True, help_text='Specifies whether this sensor is visible in the sensor dashboard')),
+                ('data_label', models.CharField(blank=True, help_text='Label for graph and table data', max_length=200, null=True)),
             ],
         ),
         migrations.CreateModel(
@@ -101,6 +103,11 @@ class Migration(migrations.Migration):
             model_name='sensor',
             name='sensor_card',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='sensors.sensorcard'),
+        ),
+        migrations.AddField(
+            model_name='sensorcategory',
+            name='parent',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='children', to='sensors.sensorcategory'),
         ),
         migrations.RunPython(add_modbus_tcp_sensor_category),
     ]
