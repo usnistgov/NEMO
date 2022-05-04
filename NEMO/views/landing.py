@@ -31,7 +31,7 @@ def landing(request):
 		landing_page_choices = landing_page_choices.exclude(hide_from_mobile_devices=True)
 	if not user.is_staff and not user.is_facility_manager and not user.is_superuser and not user.is_technician:
 		landing_page_choices = landing_page_choices.exclude(hide_from_users=True)
-	if user.is_staff or user.is_technician:
+	if not user.is_facility_manager and not user.is_superuser and (user.is_staff or user.is_technician):
 		landing_page_choices = landing_page_choices.exclude(hide_from_staff=True)
 
 	if not settings.ALLOW_CONDITIONAL_URLS:
