@@ -275,6 +275,11 @@ div.fc-ltr .fc-time-grid .fc-event-container
     margin-right: 10%;
 }
 
+/* Add extra space on the right of the calendar header where the buttons are */
+.fc-toolbar .fc-right {
+	margin-right: 15px;
+}
+
 /* Twitter typeahead styles */
 .twitter-typeahead
 {
@@ -835,4 +840,11 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 {
 	vertical-align: middle !important;
 	border-left: 1px solid #ddd;
+}
+
+.btn-input-white
+{
+	background: #fff;
+	-webkit-box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
+	box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
 }

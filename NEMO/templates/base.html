@@ -23,26 +23,28 @@
 	<script type="text/javascript">
 		if(self === top)
 		{
-			var antiClickjack = document.getElementById("antiClickjack");
+			let antiClickjack = document.getElementById("antiClickjack");
 			antiClickjack.parentNode.removeChild(antiClickjack);
 		}
 		else
 			top.location = self.location;
 	</script>
 
-	{# Moment #}
-	<script type="text/javascript" src="{% static "moment.js" %}"></script>
+    {% block head %}
+        {# Moment #}
+        <script type="text/javascript" src="{% static "moment.min.js" %}"></script>
 
-	{# jQuery #}
-	<script type="text/javascript" src="{% static "jquery.js" %}"></script>
+        {# jQuery #}
+	    <script type="text/javascript" src="{% static "jquery.min.js" %}"></script>
 
-	{# Bootstrap #}
-	<script type="text/javascript" src="{% static "bootstrap/js/bootstrap.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.css" %}"/>
-	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.css" %}"/>
+        {# Bootstrap #}
+        <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
+        <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}"/>
+        <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.min.css" %}"/>
 
-	{# Typeahead #}
-	<script type="text/javascript" src="{% static "typeahead.jquery.js" %}"></script>
+        {# Typeahead #}
+        <script type="text/javascript" src="{% static "typeahead.jquery.min.js" %}"></script>
+    {% endblock %}
 
 	{# NEMO #}
 	<script type="text/javascript" src="{% static "nemo.js" %}"></script>
