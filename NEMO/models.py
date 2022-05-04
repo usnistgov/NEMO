@@ -2090,7 +2090,7 @@ class LandingPageChoice(models.Model):
 	hide_from_mobile_devices = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a mobile device")
 	hide_from_desktop_computers = models.BooleanField(default=False, help_text="Hides this choice when the landing page is viewed from a desktop computer")
 	hide_from_users = models.BooleanField(default=False, help_text="Hides this choice from normal users. When checked, only staff, technicians, facility managers and super-users can see the choice")
-	hide_from_staff = models.BooleanField(default=False, help_text="Hides this choice from normal users, staff and technicians. When checked, only facility managers and super-users can see the choice")
+	hide_from_staff = models.BooleanField(default=False, help_text="Hides this choice from staff and technicians. When checked, only normal users, facility managers and super-users can see the choice")
 	notifications = models.CharField(max_length=100, blank=True, null=True, choices=Notification.Types.Choices, help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.")
 
 	class Meta:
