@@ -38,15 +38,14 @@ class Sensor(ABC):
 		try:
 			registers = self.do_read_values(sensor)
 			data_value = self.evaluate_sensor(sensor, registers=registers)
+			if data_value:
+				return SensorData.objects.create(sensor=sensor, value=data_value)
 		except Exception as error:
 			sensors_logger.error(error)
 			if raise_exception:
 				raise
 			else:
 				return error
-
-		if data_value:
-			return SensorData.objects.create(sensor=sensor, value=data_value)
 
 	def evaluate_sensor(self, sensor, registers, raise_exception=True):
 		try:
