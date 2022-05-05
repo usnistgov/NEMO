@@ -33,8 +33,8 @@ def to_int(value):
 
 @register.filter()
 def to_date(value, arg=None):
-	if value in (None, ''):
-		return ''
+	if value in (None, ""):
+		return ""
 	if isinstance(value, datetime.date):
 		return date(value, arg)
 	if isinstance(value, datetime.time):
@@ -43,7 +43,7 @@ def to_date(value, arg=None):
 
 
 @register.filter
-def json_search_base(items_to_search, display = "__str__"):
+def json_search_base(items_to_search, display="__str__"):
 	result = "["
 	for item in items_to_search:
 		attr = getattr(item, display, None)
@@ -85,15 +85,15 @@ def navigation_url(url_name, description):
 def res_question_tbody(dictionary):
 	input_dict = dictionary[list(dictionary.keys())[0]]
 	headers = list(input_dict.keys())
-	header_cells = ''.join([format_html('<th>{}</th>', h) for h in headers])
-	head_html = format_html('<thead><tr><th>#</th>{}</tr></thead>', mark_safe(header_cells))
+	header_cells = "".join([format_html("<th>{}</th>", h) for h in headers])
+	head_html = format_html("<thead><tr><th>#</th>{}</tr></thead>", mark_safe(header_cells))
 
 	rows = []
 	for i, (index, d) in enumerate(dictionary.items()):
-		data_cells_html = ''.join([format_html("<td>{}</td>", d[h]) for h in headers])
-		row_html = format_html('<tr><th>{}</th>{}</tr>', i + 1, mark_safe(data_cells_html))
+		data_cells_html = "".join([format_html("<td>{}</td>", d[h]) for h in headers])
+		row_html = format_html("<tr><th>{}</th>{}</tr>", i + 1, mark_safe(data_cells_html))
 		rows.append(row_html)
-	body_html = format_html('<tbody>{}</tbody>', mark_safe(''.join(rows)))
+	body_html = format_html("<tbody>{}</tbody>", mark_safe("".join(rows)))
 	return head_html + body_html
 
 
@@ -104,10 +104,10 @@ def get_item(dictionary, key):
 
 @register.simple_tag
 def project_selection_display(project):
-	project_selection_template = get_customization('project_selection_template')
+	project_selection_template = get_customization("project_selection_template")
 	contents = "{{ project.name }}"
 	try:
-		contents = Template(project_selection_template).render(Context({'project': project}))
+		contents = Template(project_selection_template).render(Context({"project": project}))
 	except:
 		pass
 	return format_html(contents)
@@ -116,7 +116,7 @@ def project_selection_display(project):
 dist_version: str = "0"
 
 
-@register.simple_tag()
+@register.simple_tag
 def app_version() -> str:
 	global dist_version
 	if dist_version != "0":

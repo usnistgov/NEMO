@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.views.customization import get_customization
 from NEMO.views.notifications import get_notification_counts
@@ -73,5 +75,7 @@ def base_context(request):
 		"buddy_notification_count": buddy_notification_count,
 		"temporary_access_notification_count": temporary_access_notification_count,
 		"facility_managers_exist": facility_managers_exist,
+		"date_picker_js_format": getattr(settings, "DATE_PICKER_JS_FORMAT", "MM/DD/YYYY"),
+		"datetime_picker_js_format": getattr(settings, "DATETIME_PICKER_JS_FORMAT", "MM/DD/YYYY h:mm A"),
 		"no_header": request.session.get("no_header", False),
 	}
