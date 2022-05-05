@@ -194,40 +194,6 @@ def extract_times(parameters, input_timezone=None, start_required=True, end_requ
 	return new_start, new_end
 
 
-def extract_date(date):
-	return localize(datetime.strptime(date, "%Y-%m-%d"))
-
-
-def extract_dates(parameters):
-	"""
-	Extract the "start" and "end" parameters from an HTTP request while performing a few logic validation checks.
-	"""
-	try:
-		start = parameters["start"]
-	except:
-		raise Exception("The request parameters did not contain a start time.")
-
-	try:
-		end = parameters["end"]
-	except:
-		raise Exception("The request parameters did not contain an end time.")
-
-	try:
-		start = extract_date(start)
-	except:
-		raise Exception("The request parameters did not have a valid start time.")
-
-	try:
-		end = extract_date(end)
-	except:
-		raise Exception("The request parameters did not have a valid end time.")
-
-	if end < start:
-		raise Exception("The request parameters have an end time that precedes the start time.")
-
-	return start, end
-
-
 def format_daterange(start_time, end_time, dt_format="DATETIME_FORMAT", d_format="DATE_FORMAT", t_format="TIME_FORMAT", date_separator=" from ", time_separator=" to ") -> str:
 	# This method returns a formatted date range, using the date only once if it is on the same day
 	if isinstance(start_time, time):
@@ -283,8 +249,8 @@ def naive_local_current_datetime():
 
 def beginning_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	""" Returns the BEGINNING of today's day (12:00:00.000000 AM of the current day) in LOCAL time. """
-	midnight = t.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-	return localize(midnight) if in_local_timezone else midnight
+	zero = t.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+	return localize(zero) if in_local_timezone else zero
 
 
 def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:

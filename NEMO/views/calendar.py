@@ -43,7 +43,6 @@ from NEMO.utilities import (
 	as_timezone,
 	bootstrap_primary_color,
 	create_email_attachment,
-	extract_dates,
 	extract_times,
 	format_datetime,
 	localize,
@@ -150,7 +149,7 @@ def calendar(request, item_type=None, item_id=None):
 def event_feed(request):
 	""" Get all reservations for a specific time-window. Optionally: filter by tool, area or user name. """
 	try:
-		start, end = extract_dates(request.GET)
+		start, end = extract_calendar_dates(request.GET)
 	except Exception as e:
 		return HttpResponseBadRequest('Invalid start or end time. ' + str(e))
 
@@ -173,6 +172,37 @@ def event_feed(request):
 		return specific_user_feed(request, user, start, end)
 	else:
 		return HttpResponseBadRequest('Invalid event type or operation not authorized.')
+
+
+def extract_calendar_dates(parameters):
+	"""
+	Extract the "start" and "end" parameters for FullCalendar's specific date format while performing a few logic validation checks.
+	"""
+	full_calendar_date_format = "%Y-%m-%d"
+	try:
+		start = parameters["start"]
+	except:
+		raise Exception("The request parameters did not contain a start time.")
+
+	try:
+		end = parameters["end"]
+	except:
+		raise Exception("The request parameters did not contain an end time.")
+
+	try:
+		start = localize(datetime.strptime(start, full_calendar_date_format))
+	except:
+		raise Exception("The request parameters did not have a valid start time.")
+
+	try:
+		end = localize(datetime.strptime(end, full_calendar_date_format))
+	except:
+		raise Exception("The request parameters did not have a valid end time.")
+
+	if end < start:
+		raise Exception("The request parameters have an end time that precedes the start time.")
+
+	return start, end
 
 
 def reservation_event_feed(request, start, end):
