@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from math import floor
 
+import pytz
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import QuerySet
 from django.http import HttpResponse, JsonResponse
@@ -41,9 +42,18 @@ def sensors(request, category_id=None):
 def sensor_details(request, sensor_id, tab: str = None):
 	sensor = get_object_or_404(Sensor, pk=sensor_id)
 	chart_step = int(request.GET.get("chart_step", 1))
-	return render(
-		request, "sensors/sensor_data.html", {"tab": tab or "chart", "sensor": sensor, "chart_step": chart_step}
-	)
+	default_refresh_rate = int(SensorCustomization.get("sensor_default_refresh_rate"))
+	refresh_rate = int(request.GET.get("refresh_rate", default_refresh_rate))
+	sensor_data, start, end = get_sensor_data(request, sensor)
+	dictionary = {
+		"tab": tab or "chart",
+		"sensor": sensor,
+		"start": start,
+		"end": end,
+		"refresh_rate": refresh_rate,
+		"chart_step": chart_step,
+	}
+	return render(request, "sensors/sensor_data.html", dictionary)
 
 
 @staff_member_required
@@ -84,17 +94,18 @@ def sensor_chart_data(request, sensor_id):
 
 
 def get_sensor_data(request, sensor) -> (QuerySet, datetime, datetime):
-	start, end = extract_times(request.POST, start_required=False, end_required=False)
+	start, end = extract_times(request.GET, input_timezone=pytz.UTC, start_required=False, end_required=False)
 	sensor_data = SensorData.objects.filter(sensor=sensor)
+	now = timezone.now().replace(second=0)
 	sensor_default_daterange = SensorCustomization.get("sensor_default_daterange")
-	if not start and not end:
-		now = timezone.now()
+	if not start:
 		if sensor_default_daterange == "last_week":
 			start = now - timedelta(weeks=1)
 		elif sensor_default_daterange == "last_72hrs":
 			start = now - timedelta(days=3)
 		else:
 			start = now - timedelta(days=1)
+	if not end:
 		end = now
 	return sensor_data.filter(created_date__gte=start, created_date__lte=end), start, end
 
