@@ -12,7 +12,7 @@ from django.views.decorators.http import require_GET
 
 from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.apps.sensors.models import Sensor, SensorCategory, SensorData
-from NEMO.decorators import postpone, staff_member_required
+from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required
 from NEMO.utilities import (
 	BasicDisplayTable,
 	beginning_of_the_day,
@@ -82,6 +82,7 @@ def export_sensor_data(request, sensor_id):
 
 @staff_member_required
 @require_GET
+@disable_session_expiry_refresh
 def sensor_chart_data(request, sensor_id):
 	sensor = get_object_or_404(Sensor, pk=sensor_id)
 	labels = []
