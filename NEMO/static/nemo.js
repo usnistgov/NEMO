@@ -23,12 +23,15 @@ function set_interval_when_visible(doc, function_to_repeat, time)
 		doc.removeEventListener("visibilitychange", function_handlers[function_name][0]);
 		clearInterval(function_handlers[function_name][1]);
 	}
-	doc.addEventListener("visibilitychange", call_function_when_visible);
-	let intervalHandle = setInterval(call_function_when_visible, time);
-	if (function_name)
+	if (time)
 	{
-		// Save new event and handler
-		function_handlers[function_name] = [call_function_when_visible, intervalHandle];
+		doc.addEventListener("visibilitychange", call_function_when_visible);
+		let intervalHandle = setInterval(call_function_when_visible, time);
+		if (function_name)
+		{
+			// Save new event and handler
+			function_handlers[function_name] = [call_function_when_visible, intervalHandle];
+		}
 	}
 }
 
