@@ -105,9 +105,7 @@ def get_sensor_data(request, sensor) -> (QuerySet, datetime, datetime):
 			start = now - timedelta(days=3)
 		else:
 			start = now - timedelta(days=1)
-	if not end:
-		end = now
-	return sensor_data.filter(created_date__gte=start, created_date__lte=end), start, end
+	return sensor_data.filter(created_date__gte=start, created_date__lte=(end or now)), start, end
 
 
 @login_required

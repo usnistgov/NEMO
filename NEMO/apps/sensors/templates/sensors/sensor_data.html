@@ -2,11 +2,15 @@
 {% load static %}
 {% block extrahead %}
     {# Chart.js #}
-    <script type="text/javascript" src="{% static "sensors/chart.js" %}"></script>
+    <script type="text/javascript" src="{% static "sensors/chart.min.js" %}"></script>
     <script type="text/javascript" src="{% static "sensors/chartjs-adapter-moment.js" %}"></script>
+    {# Daterange picker #}
+    <script type="text/javascript" src="{% static "sensors/daterangepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "sensors/daterangepicker.css" %}"/>
+    {# Sensors #}
     <link rel="stylesheet" type="text/css" href="{% static "sensors/sensors.css" %}"/>
 {% endblock %}
-{% block title %}Sensors{% endblock %}
+{% block title %}{{ sensor.name }} data{% endblock %}
 {% block content %}
     <div class="well well-sensors-dashboard">
         <ol class="breadcrumb breadcrumb-sensors-dashboard">
@@ -19,20 +23,35 @@
             {% endif %}
             <li class="active">{{ sensor.name }}</li>
         </ol>
-        <div id="sensor-data" class="panel-body">
-            <div class="text-right">
+        <div class="panel-body">
+            <div style="margin-bottom: 15px">
                 <div class="form-inline">
+                    <label class="control-label" for="start">Date range:</label>
+                    <div class="input-group" style="margin-right: 10px">
+                        <input class="form-control text-center" type="text" onchange="refresh_page()" id="start" name="start">
+                        <div id="picker-container" class="invisible" style="float: left;position: relative;height: 0;width: 100%"></div>
+                        <span class="daterange-calendar input-group-btn">
+                            <button type="button" class="btn btn-default btn-input-white" onclick="open_daterange_picker()"><i class="glyphicon glyphicon-calendar"></i></button>
+                        </span>
+                    </div>
+                    <label class="control-label" for="end" style="margin-right: 10px;">to</label>
+                    <div class="input-group" style="margin-right: 5px;">
+                        <input class="form-control text-center" type="text" onchange="refresh_page()" id="end" name="end">
+                        <span class="daterange-calendar input-group-btn">
+                            <button type="button" class="btn btn-default btn-input-white" onclick="open_daterange_picker()"><i class="glyphicon glyphicon-calendar"></i></button>
+                        </span>
+                    </div>
+                    <div class="visible-sm visible-xs" style="margin-bottom: 15px;"></div>
                     <label class="control-label" for="refresh-rate">Refresh rate:</label>
-                    <select class="form-control" id="refresh-rate" onclick="interval_change()" onchange="interval_change()">
-                        <option value="">no refresh</option>
-                        <option value="1000">every second</option>
-                        <option value="5000">every 5 seconds</option>
-                        <option value="30000">every 30 seconds</option>
-                        <option value="60000">every minute</option>
-                        <option value="300000">every 5 minutes</option>
+                    <select class="form-control" id="refresh-rate" onchange="update_refresh_rate();refresh_page();">
+                        <option value="" {% if not refresh_rate %}selected{% endif %}>no refresh</option>
+                        <option value="1000" {% if refresh_rate == 1000 %}selected{% endif %}>every second</option>
+                        <option value="5000" {% if refresh_rate == 5000 %}selected{% endif %}>every 5 seconds</option>
+                        <option value="30000" {% if refresh_rate == 30000 %}selected{% endif %}>every 30 seconds</option>
+                        <option value="60000" {% if refresh_rate == 60000 %}selected{% endif %}>every minute</option>
+                        <option value="300000" {% if refresh_rate == 300000 %}selected{% endif %}>every 5 minutes</option>
                     </select>
                 </div>
-                <div class="visible-xs" style="margin-bottom: 15px"></div>
             </div>
             <ul class="nav nav-tabs" id="tabs">
                 <li class="{% if tab == 'chart' %}active{% endif %}">
@@ -42,18 +61,21 @@
                     <a href="#data-tab">Data</a>
                 </li>
             </ul>
-            <div class="tab-content panel panel-default panel-tab-content" style="margin-bottom: 0">
+            <div id="no-sensor-data" class="panel-body" style="display: none;">
+                <i>There is no data to display. Try selecting a different date range</i>
+            </div>
+            <div id="sensor-data" class="tab-content panel panel-default panel-tab-content" style="margin-bottom: 0;">
                 <div class="tab-pane {% if tab == 'chart' %}active{% endif %}" id="chart-tab">
                     <div class="panel-body">
                         <div class="text-right">
                             <div class="form-inline">
                                 <label class="control-label" for="chart-step">Display every</label>
-                                <input class="form-control input-sm" id="chart-step" type="number" value="{{ chart_step }}" min="1" max="1440"/>
+                                <input class="form-control input-sm" id="chart-step" type="number" value="{{ chart_step }}" onchange="refresh_page()" min="1" max="1440"/>
                                 <label class="control-label"> data point</label>
                             </div>
                         </div>
                         <div>
-                            <canvas id="sensor-chart" data-url="{% url 'sensor_chart_data' sensor.id %}"></canvas>
+                            <canvas id="sensor-chart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -61,11 +83,11 @@
                     <div class="panel-body">
                         <div class="text-right">
                             <div>
-                                <input type="button" class="btn btn-info" value="Export" onclick="update_page();window.open('{% url 'export_sensor_data' sensor.id %}')">
+                                <input type="button" class="btn btn-info" value="Export" onclick="refresh_page();window.open('{% url 'export_sensor_data' sensor.id %}')">
                             </div>
                         </div>
                         <div>
-                            <table id="sensor-table" class="table table-bordered table-hover table-striped" style="margin-top: 20px">
+                            <table id="sensor-table" class="table table-bordered table-hover table-striped" style="margin-top: 20px;">
                                 <tbody>
                                     <tr class="info" style="pointer-events: none;">
                                         <th>Time</th>
@@ -78,31 +100,70 @@
                 </div>
             </div>
         </div>
-        <div id="no-sensor-data" class="panel-body" style="display: none">
-            <i>There is no data to display. Try selecting a different date range</i>
-        </div>
     </div>
 
     <script>
+        {# Set a special date for 'now' so we can refresh real time data #}
+        const now_moment_date = moment();
+
         let tab_jq = $("#tabs a");
 		tab_jq.click(switch_tab);
-		tab_jq.click(update_url);
+		tab_jq.click(refresh_page);
 
-        let sensorChart = $("#sensor-chart");
-        let sensorChartObject = null;
-        let intervalHandle = null;
-
-        function update_url()
+        {# Update dates in input fields and refresh the page. If there is no end we will use 'now' #}
+        function set_dates(start, end)
         {
-            {# Set permanent url so we can refresh specific tab #}
-            let title = "Sensor chart";
-            let new_url = "{% url 'sensor_details' sensor.id 'chart' %}";
-            if ($("#data-tab").hasClass("active"))
+            $('#start').val(start.format('{{ datetime_picker_js_format }}'));
+            if (!end.isSame(now_moment_date))
             {
-                title = "Sensor data";
-                new_url = "{% url 'sensor_details' sensor.id 'data' %}";
+                $('#end').val(end.format('{{ datetime_picker_js_format }}'));
             }
-            history.pushState('', title, new_url);
+            else
+            {
+                $('#end').val('now');
+            }
+            refresh_page();
+        }
+
+        let daterange_picker = $('#picker-container').daterangepicker(
+        {
+            alwaysShowCalendars: true,
+            showDropdowns: true,
+            timePicker: true,
+            timePickerIncrement: 1,
+            autoUpdateInput: false,
+            ranges:
+            {
+               'Last 24 hrs': [moment().subtract(1, 'days'), now_moment_date],
+               'Last 72 hrs': [moment().subtract(3, 'days'), now_moment_date],
+               'Last 7 Days': [moment().subtract(6, 'days'), now_moment_date],
+               'Last 30 Days': [moment().subtract(29, 'days'), now_moment_date],
+               'Today': [moment().startOf('day'), moment().endOf('day')],
+               'Yesterday': [moment().subtract(1, 'days').startOf('day'), moment().subtract(1, 'days').endOf('day')],
+               'This Week': [moment().startOf('week'), moment().endOf('week')],
+               'Last Week': [moment().subtract(7, 'days').startOf('week'), moment().subtract(7, 'days').endOf('week')],
+               'This Month': [moment().startOf('month'), moment().endOf('month')],
+               'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+               'This Year': [moment().startOf('year'), moment().endOf('year')],
+               'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().endOf('year')],
+            }
+        }, set_dates);
+
+        function get_start_end_dates()
+        {
+            const start = moment($("#start").val(), '{{ datetime_picker_js_format }}').unix();
+            const end_input = $("#end").val();
+            const end = end_input && end_input !== 'now' ? moment(end_input, '{{ datetime_picker_js_format }}').unix() : '';
+            return [start, end];
+        }
+
+        function get_base_url(url)
+        {
+            const refreshRate = $('#refresh-rate').val() || 0;
+            const chartStep = $("#chart-step").val() || 1;
+            const dates = get_start_end_dates();
+            const base_url = url ? url : $("#data-tab").hasClass("active") ? "{% url 'sensor_details' sensor.id 'data' %}" : "{% url 'sensor_details' sensor.id 'chart' %}";
+            return base_url + "?start=" + dates[0] + "&end=" + dates[1] + "&chart_step=" + chartStep + "&refresh_rate=" + refreshRate;
         }
 
         function filter_every_x_point(data)
@@ -111,6 +172,8 @@
             return data.filter((element, index) => {return index % chartStep === 0;});
         }
 
+        const sensorChart = $("#sensor-chart");
+        let sensorChartObject = null;
         function update_chart(data)
         {
             let ctx = sensorChart[0].getContext("2d");
@@ -183,11 +246,16 @@
             }
             sensorTable_filter.first().after(content_rows);
         }
-        function update_page()
+
+        {# Set new URL in history and refresh chart and table #}
+        function refresh_page()
         {
+            let data_url = get_base_url("{% url 'sensor_chart_data' sensor.id %}");
+            let history_url = get_base_url();
+            history.pushState('', "{{ sensor.name }} data", history_url);
             $.ajax(
             {
-                url: sensorChart.data("url"),
+                url: data_url,
                 success: function (data)
                 {
                     if (data && data.data && data.data.length)
@@ -205,15 +273,23 @@
                 }
             });
         }
-        function interval_change()
+
+        {# Update dates in daterangepicker from the input, then open it #}
+        function open_daterange_picker()
         {
-            if (intervalHandle) clearInterval(intervalHandle);
-            let refresh_rate = $('#refresh-rate').val();
-            if (refresh_rate) intervalHandle = set_interval_when_visible(document, update_page, refresh_rate);
+            const dates = get_start_end_dates();
+            daterange_picker.data('daterangepicker').setStartDate(moment.unix(dates[0]));
+            daterange_picker.data('daterangepicker').setEndDate(dates[1] ? moment.unix(dates[1]) : now_moment_date);
+            daterange_picker.data('daterangepicker').show();
         }
 
-        update_page();
-        interval_change();
+        function update_refresh_rate()
+        {
+            set_interval_when_visible(document, refresh_page, $('#refresh-rate').val());
+        }
+
+        set_dates(moment.unix({{ start|date:"U" }}), {% if end %}{{ end|date:"U" }}{% else %}now_moment_date{% endif %});
+        update_refresh_rate();
     </script>
 
 {% endblock %}
