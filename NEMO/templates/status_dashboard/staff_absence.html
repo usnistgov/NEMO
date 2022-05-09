@@ -38,11 +38,11 @@
     <div class="form-group">
         <label class="col-sm-3 control-label" for="start_date">Start</label>
         <div class="col-sm-4">
-            <input type="text" class="form-control text-center" name="start_date" id="start_date" value="{{ form.start_date.value|to_date:'m/d/Y' }}" required>
+            <input type="text" class="form-control text-center" name="start_date" id="start_date" value="{{ form.start_date.value|input_date_format }}" required>
         </div>
         <label class="col-sm-1 control-label" for="end_date">End</label>
         <div class="col-sm-4">
-            <input type="text" class="form-control text-center" name="end_date" id="end_date" value="{{ form.end_date.value|to_date:'m/d/Y' }}" required>
+            <input type="text" class="form-control text-center" name="end_date" id="end_date" value="{{ form.end_date.value|input_date_format }}" required>
         </div>
         {% if form.start_date.errors or form.end_date.errors %}
             <div class="col-sm-4 col-sm-offset-3">{% if form.start_date.errors %}<span style="color:red">{{ form.start_date.errors|striptags }}</span>{% endif %}</div>
@@ -125,7 +125,7 @@
 
     let timepicker_properties =
     {
-        format: 'MM/DD/YYYY',
+        format: '{{ date_input_js_format }}',
         useCurrent: false,
         {# Setting view date according to the current week view. Javascript Date takes ms so we need to multiply by 1000 #}
         viewDate: new Date({% widthratio page_timestamp 1 1000 %})
