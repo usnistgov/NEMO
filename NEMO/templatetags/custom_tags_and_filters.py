@@ -46,6 +46,8 @@ def to_date(value, arg=None):
 # Function to format input date using python strftime and the date/time input formats from settings
 @register.filter
 def input_date_format(value, arg=None):
+	if value in (None, ""):
+		return ""
 	return localize_input(value, arg)
 
 
