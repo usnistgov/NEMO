@@ -113,10 +113,10 @@
         {# Update dates in input fields and refresh the page. If there is no end we will use 'now' #}
         function set_dates(start, end)
         {
-            $('#start').val(start.format('{{ datetime_picker_js_format }}'));
+            $('#start').val(start.format('{{ datetime_input_js_format }}'));
             if (!end.isSame(now_moment_date))
             {
-                $('#end').val(end.format('{{ datetime_picker_js_format }}'));
+                $('#end').val(end.format('{{ datetime_input_js_format }}'));
             }
             else
             {
@@ -151,9 +151,9 @@
 
         function get_start_end_dates()
         {
-            const start = moment($("#start").val(), '{{ datetime_picker_js_format }}').unix();
+            const start = moment($("#start").val(), '{{ datetime_input_js_format }}').unix();
             const end_input = $("#end").val();
-            const end = end_input && end_input !== 'now' ? moment(end_input, '{{ datetime_picker_js_format }}').unix() : '';
+            const end = end_input && end_input !== 'now' ? moment(end_input, '{{ datetime_input_js_format }}').unix() : '';
             return [start, end];
         }
 

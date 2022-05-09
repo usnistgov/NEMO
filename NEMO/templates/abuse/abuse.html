@@ -56,11 +56,11 @@
 		<div class="form-group">
 			<label for="start" class="col-sm-3 control-label">Starting</label>
 			<div class="col-sm-3">
-				<input id="start" type="text" name="start" class="form-control" value="{{ form.start.value|to_date:"m/d/Y" }}">
+				<input id="start" type="text" name="start" class="form-control" value="{{ form.start.value|input_date_format }}">
 			</div>
 			<label for="end" class="col-sm-1 control-label">Ending</label>
 			<div class="col-sm-3">
-				<input id="end" type="text" name="end" class="form-control" value="{{ form.end.value|to_date:"m/d/Y" }}">
+				<input id="end" type="text" name="end" class="form-control" value="{{ form.end.value|input_date_format }}">
 			</div>
 		</div>
 		<div class="form-group">
@@ -88,7 +88,7 @@
 	{% endif %}
 
 	<script>
-		let timepicker_properties = {format: 'MM/DD/YYYY'};
+		let timepicker_properties = {format: '{{ date_input_js_format }}'};
 		$('#start').datetimepicker(timepicker_properties);
 		$('#end').datetimepicker(timepicker_properties);
 	</script>

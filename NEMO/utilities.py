@@ -21,6 +21,41 @@ from django.utils import timezone
 from django.utils.formats import date_format, time_format
 from django.utils.timezone import is_naive, localtime
 
+# List of python to js formats
+py_to_js_date_formats = {
+	"%A": "dddd",
+	"%a": "ddd",
+	"%B": "MMMM",
+	"%b": "MMM",
+	"%c": "ddd MMM DD HH:mm:ss YYYY",
+	"%d": "DD",
+	"%f": "SSS",
+	"%H": "HH",
+	"%I": "hh",
+	"%j": "DDDD",
+	"%M": "mm",
+	"%m": "MM",
+	"%p": "A",
+	"%S": "ss",
+	"%U": "ww",
+	"%W": "ww",
+	"%w": "d",
+	"%X": "HH:mm:ss",
+	"%x": "MM/DD/YYYY",
+	"%Y": "YYYY",
+	"%y": "YY",
+	"%Z": "z",
+	"%z": "ZZ",
+	"%%": "%",
+}
+
+
+# Convert a python format string to javascript format string
+def convert_py_format_to_js(string_format: str) -> str:
+	for py, js in py_to_js_date_formats.items():
+		string_format = js.join(string_format.split(py))
+	return string_format
+
 
 class BasicDisplayTable(object):
 	""" Utility table to make adding headers and rows easier, and export to csv """
@@ -220,13 +255,19 @@ def format_datetime(universal_time=None, df=None, as_current_timezone=True, use_
 def export_format_datetime(date_time=None, d_format=True, t_format=True, underscore=True, as_current_timezone=True) -> str:
 	""" This function returns a formatted date/time for export files. Default returns date + time format, with underscores """
 	this_time = date_time if date_time else timezone.now() if as_current_timezone else datetime.now()
-	export_date_format = getattr(settings, 'EXPORT_DATE_FORMAT', 'm_d_Y').replace("-", "_")
-	export_time_format = getattr(settings, 'EXPORT_TIME_FORMAT', 'h_i_s').replace("-", "_")
+	export_date_format = getattr(settings, "EXPORT_DATE_FORMAT", "m_d_Y").replace("-", "_")
+	export_time_format = getattr(settings, "EXPORT_TIME_FORMAT", "h_i_s").replace("-", "_")
 	if not underscore:
 		export_date_format = export_date_format.replace("_", "-")
 		export_time_format = export_time_format.replace("_", "-")
 	separator = "-" if underscore else "_"
-	datetime_format = export_date_format if d_format and not t_format else export_time_format if not d_format and t_format else export_date_format + separator + export_time_format
+	datetime_format = (
+		export_date_format
+		if d_format and not t_format
+		else export_time_format
+		if not d_format and t_format
+		else export_date_format + separator + export_time_format
+	)
 	return format_datetime(this_time, datetime_format, as_current_timezone)
 
 
@@ -263,7 +304,7 @@ def remove_duplicates(iterable: Union[List, Set, Tuple]) -> Optional[List]:
 	if not iterable:
 		return None
 	if isinstance(iterable, str):
-		raise TypeError('argument must be a list, set or tuple')
+		raise TypeError("argument must be a list, set or tuple")
 	return list(set(iterable))
 
 
@@ -273,8 +314,16 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 		clean_bcc = remove_duplicates(bcc)
 		clean_cc = remove_duplicates(cc)
 	except TypeError:
-		raise TypeError('to, cc and bcc arguments must be a list, set or tuple')
-	mail = EmailMessage(subject=subject, body=content, from_email=from_email, to=clean_to, bcc=clean_bcc, cc=clean_cc, attachments=attachments)
+		raise TypeError("to, cc and bcc arguments must be a list, set or tuple")
+	mail = EmailMessage(
+		subject=subject,
+		body=content,
+		from_email=from_email,
+		to=clean_to,
+		bcc=clean_bcc,
+		cc=clean_cc,
+		attachments=attachments,
+	)
 	mail.content_subtype = "html"
 	msg_sent = 0
 	if mail.recipients():
@@ -293,7 +342,13 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 def create_email_log(email: EmailMessage, email_category: EmailCategory):
 	from NEMO.models import EmailLog
 
-	email_record: EmailLog = EmailLog.objects.create(category=email_category, sender=email.from_email, to=", ".join(email.recipients()), subject=email.subject, content=email.body)
+	email_record: EmailLog = EmailLog.objects.create(
+		category=email_category,
+		sender=email.from_email,
+		to=", ".join(email.recipients()),
+		subject=email.subject,
+		content=email.body,
+	)
 	if email.attachments:
 		email_attachments = []
 		for attachment in email.attachments:

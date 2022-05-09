@@ -6,6 +6,7 @@ from django.template import Context, Template
 from django.template.defaultfilters import date, time
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
+from django.utils.formats import localize_input
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from pkg_resources import DistributionNotFound, get_distribution
@@ -26,12 +27,12 @@ def is_soon(time):
 	return time <= timezone.now() + timedelta(minutes=10)
 
 
-@register.filter()
+@register.filter
 def to_int(value):
 	return int(value)
 
 
-@register.filter()
+@register.filter
 def to_date(value, arg=None):
 	if value in (None, ""):
 		return ""
@@ -40,6 +41,12 @@ def to_date(value, arg=None):
 	if isinstance(value, datetime.time):
 		return time(value, arg)
 	return value
+
+
+# Function to format input date using python strftime and the date/time input formats from settings
+@register.filter
+def input_date_format(value, arg=None):
+	return localize_input(value, arg)
 
 
 @register.filter

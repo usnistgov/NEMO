@@ -1,8 +1,13 @@
-from django.conf import settings
+from django.utils.formats import get_format
 
 from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
+from NEMO.utilities import convert_py_format_to_js
 from NEMO.views.customization import get_customization
 from NEMO.views.notifications import get_notification_counts
+
+time_input_js_format = convert_py_format_to_js(get_format('TIME_INPUT_FORMATS')[0])
+date_input_js_format = convert_py_format_to_js(get_format('DATE_INPUT_FORMATS')[0])
+datetime_input_js_format = convert_py_format_to_js(get_format('DATETIME_INPUT_FORMATS')[0])
 
 
 def show_logout_button(request):
@@ -75,7 +80,8 @@ def base_context(request):
 		"buddy_notification_count": buddy_notification_count,
 		"temporary_access_notification_count": temporary_access_notification_count,
 		"facility_managers_exist": facility_managers_exist,
-		"date_picker_js_format": getattr(settings, "DATE_PICKER_JS_FORMAT", "MM/DD/YYYY"),
-		"datetime_picker_js_format": getattr(settings, "DATETIME_PICKER_JS_FORMAT", "MM/DD/YYYY h:mm A"),
+		"time_input_js_format": time_input_js_format,
+		"date_input_js_format": date_input_js_format,
+		"datetime_input_js_format": datetime_input_js_format,
 		"no_header": request.session.get("no_header", False),
 	}
