@@ -19,11 +19,11 @@
 			<div class="row">
 				<div class="col-md-3 col-sm-6">
 					<label for="start_time">Start</label>
-					<input type="text" class="form-control text-center" name="start_time" id="start_time" value="{{ form.start_time.value|to_date:'m/d/Y g:i A' }}" required>
+					<input type="text" class="form-control text-center" name="start_time" id="start_time" value="{{ form.start_time.value|input_date_format }}" required>
                 </div>
 				<div class="col-md-3 col-sm-6">
 					<label for="end_time">End</label>
-					<input type="text" class="form-control text-center" name="end_time" id="end_time" value="{{ form.end_time.value|to_date:'m/d/Y g:i A' }}" required>
+					<input type="text" class="form-control text-center" name="end_time" id="end_time" value="{{ form.end_time.value|input_date_format }}" required>
 				</div>
 			</div>
             {% if form.start_time.errors or form.end_time.errors %}
@@ -85,7 +85,7 @@
 	<script>
         let timepicker_properties =
 		{
-			format: 'MM/DD/YYYY h:mm A',
+			format: '{{ datetime_input_js_format }}',
             showClose: true,
             useCurrent: false
 		};
