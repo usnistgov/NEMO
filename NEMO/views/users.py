@@ -62,7 +62,7 @@ def create_or_modify_user(request, user_id):
 		'tools': Tool.objects.filter(visible=True),
 		'area_access_dict': dict_area,
 		'area_access_levels': area_access_levels,
-		'one_year_from_now': timezone.now() + timedelta(days=365),
+		'one_year_from_now': timezone.localdate() + timedelta(days=365),
 		'identity_service_available': identity_service.get('available', False),
 		'identity_service_domains': identity_service.get('domains', []),
 	}
