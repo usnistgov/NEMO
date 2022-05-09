@@ -40,7 +40,7 @@
         <div class="form-group">
             <label for="start_date" class="control-label col-sm-2">Start date</label>
             <div class="col-sm-4">
-				<input type="text" id="start_date" name="start_date" class="form-control" placeholder="Choose a date" value="{{ form.start_date.value|to_date:"m/d/Y" }}">
+				<input type="text" id="start_date" name="start_date" class="form-control" placeholder="Choose a date" value="{{ form.start_date.value|input_date_format }}">
             </div>
             <div class="col-sm-6 form-control-static danger-highlight">
 				{{ form.start_date.errors|striptags }}
@@ -69,7 +69,7 @@
     <script>
     window.addEventListener("load", function ()
     {
-        $('#start_date').datetimepicker({format: 'MM/DD/YYYY'});
+        $('#start_date').datetimepicker({format: '{{ date_input_js_format }}'});
     });
     </script>
 {% endblock %}
