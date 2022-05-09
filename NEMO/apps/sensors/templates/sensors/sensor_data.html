@@ -288,7 +288,7 @@
             set_interval_when_visible(document, refresh_page, $('#refresh-rate').val());
         }
 
-        set_dates(moment.unix({{ start|date:"U" }}), {% if end %}{{ end|date:"U" }}{% else %}now_moment_date{% endif %});
+        set_dates(moment.unix({{ start|date:"U" }}), {% if end %}moment.unix({{ end|date:"U" }}){% else %}now_moment_date{% endif %});
         update_refresh_rate();
     </script>
 
