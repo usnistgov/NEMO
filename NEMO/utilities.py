@@ -189,7 +189,7 @@ def get_month_timeframe(date=None):
 	return first_of_the_month, last_of_the_month
 
 
-def extract_times(parameters, input_timezone=None, start_required=True, end_required=True) -> Tuple[datetime, datetime]:
+def extract_times(parameters, input_timezone=None, start_required=True, end_required=True, beginning_and_end=False) -> Tuple[datetime, datetime]:
 	"""
 	Extract the "start" and "end" parameters from an HTTP request while performing a few logic validation checks.
 	The function assumes the UNIX timestamp is in the local timezone. Use input_timezone to specify the timezone.
@@ -211,6 +211,8 @@ def extract_times(parameters, input_timezone=None, start_required=True, end_requ
 		new_start = float(start)
 		new_start = datetime.utcfromtimestamp(new_start)
 		new_start = localize(new_start, input_timezone)
+		if beginning_and_end:
+			new_start = beginning_of_the_day(new_start)
 	except:
 		if start or start_required:
 			raise Exception("The request parameters did not have a valid start time.")
@@ -219,6 +221,8 @@ def extract_times(parameters, input_timezone=None, start_required=True, end_requ
 		new_end = float(end)
 		new_end = datetime.utcfromtimestamp(new_end)
 		new_end = localize(new_end, input_timezone)
+		if beginning_and_end:
+			new_end = end_of_the_day(new_end)
 	except:
 		if end or end_required:
 			raise Exception("The request parameters did not have a valid end time.")
