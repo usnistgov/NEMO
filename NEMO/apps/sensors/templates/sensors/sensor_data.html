@@ -151,9 +151,9 @@
 
         function get_start_end_dates()
         {
-            const start = moment($("#start").val(), '{{ datetime_input_js_format }}').unix();
+            const start = moment.utc($("#start").val(), '{{ datetime_input_js_format }}').unix();
             const end_input = $("#end").val();
-            const end = end_input && end_input !== 'now' ? moment(end_input, '{{ datetime_input_js_format }}').unix() : '';
+            const end = end_input && end_input !== 'now' ? moment.utc(end_input, '{{ datetime_input_js_format }}').unix() : '';
             return [start, end];
         }
 
@@ -278,8 +278,8 @@
         function open_daterange_picker()
         {
             const dates = get_start_end_dates();
-            daterange_picker.data('daterangepicker').setStartDate(moment.unix(dates[0]));
-            daterange_picker.data('daterangepicker').setEndDate(dates[1] ? moment.unix(dates[1]) : now_moment_date);
+            daterange_picker.data('daterangepicker').setStartDate(moment.unix(dates[0]).utc());
+            daterange_picker.data('daterangepicker').setEndDate(dates[1] ? moment.unix(dates[1]).utc() : now_moment_date);
             daterange_picker.data('daterangepicker').show();
         }
 
