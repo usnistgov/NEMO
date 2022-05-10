@@ -13,13 +13,13 @@
                             <label for="data_history_start_date">From</label>
                         </div>
                         <div class="datetimepicker-container form-group extra-side-padding">
-                            <input type="text" id="data_history_start_date" name="data_history_start_date" class="form-control text-center small-input" placeholder="Start date" value="{{ data_history_start|date:"m/d/Y" }}">
+                            <input type="text" id="data_history_start_date" name="data_history_start_date" class="form-control text-center small-input" placeholder="Start date" value="{{ data_history_start|input_date_format }}">
                         </div>
                         <div class="form-group extra-side-padding">
                             <label for="data_history_end_date">to</label>
                         </div>
                         <div class="datetimepicker-container form-group extra-side-padding">
-                            <input type="text" id="data_history_end_date" name="data_history_end_date" class="form-control text-center small-input" placeholder="End date" value="{{ data_history_end|date:"m/d/Y" }}">
+                            <input type="text" id="data_history_end_date" name="data_history_end_date" class="form-control text-center small-input" placeholder="End date" value="{{ data_history_end|input_date_format }}">
                         </div>
                         <div class="form-group extra-side-padding">
                             <label for="data_history_last">or last</label>
@@ -103,6 +103,6 @@
         $('#data_history_user_id').val(search_selection.id);
     }
     $('#user_search').autocomplete('users', select_user, {{ users|json_search_base }});
-    $('#data_history_start_date').datetimepicker({format: 'MM/DD/YYYY'}).on('dp.change', function (e) { $('#data_history_last').val('') });
-    $('#data_history_end_date').datetimepicker({format: 'MM/DD/YYYY'}).on('dp.change', function (e) { $('#data_history_last').val('') });
+    $('#data_history_start_date').datetimepicker({format: '{{ date_input_js_format }}'}).on('dp.change', function (e) { $('#data_history_last').val('') });
+    $('#data_history_end_date').datetimepicker({format: '{{ date_input_js_format }}'}).on('dp.change', function (e) { $('#data_history_last').val('') });
 </script>

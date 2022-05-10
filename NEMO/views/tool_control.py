@@ -38,8 +38,6 @@ from NEMO.models import (
 from NEMO.utilities import (
 	BasicDisplayTable,
 	EmailCategory,
-	beginning_of_the_day,
-	end_of_the_day,
 	export_format_datetime,
 	extract_times,
 	format_datetime,
@@ -147,7 +145,7 @@ def get_tool_full_config_history(tool: Tool):
 def usage_data_history(request, tool_id):
 	""" This method return a dictionary of headers and rows containing run_data information for Usage Events """
 	csv_export = bool(request.POST.get("csv", False))
-	start, end = extract_times(request.POST, start_required=False, end_required=False)
+	start, end = extract_times(request.POST, beginning_and_end=True, start_required=False, end_required=False)
 	last = request.POST.get("data_history_last")
 	user_id = request.POST.get("data_history_user_id")
 	show_project_info = request.POST.get("show_project_info")
@@ -156,9 +154,9 @@ def usage_data_history(request, tool_id):
 		last = 25
 	usage_events = UsageEvent.objects.filter(tool_id=tool_id, end__isnull=False).order_by("-end")
 	if start:
-		usage_events = usage_events.filter(end__gte=beginning_of_the_day(start))
+		usage_events = usage_events.filter(end__gte=start)
 	if end:
-		usage_events = usage_events.filter(end__lte=end_of_the_day(end))
+		usage_events = usage_events.filter(end__lte=end)
 	if user_id:
 		try:
 			usage_events = usage_events.filter(user_id=int(user_id))
@@ -222,8 +220,8 @@ def usage_data_history(request, tool_id):
 	else:
 		dictionary = {
 			"tool_id": tool_id,
-			"data_history_start": start,
-			"data_history_end": end,
+			"data_history_start": start.date() if start else None,
+			"data_history_end": end.date() if end else None,
 			"data_history_last": str(last),
 			"usage_data_table": table_result,
 			"data_history_user": User.objects.get(id=user_id) if user_id else None,
@@ -429,7 +427,7 @@ def disable_tool(request, tool_id):
 @login_required
 @require_GET
 def past_comments_and_tasks(request):
-	start, end = extract_times(request.GET, start_required=False, end_required=False)
+	start, end = extract_times(request.GET, beginning_and_end=True, start_required=False, end_required=False)
 	search = request.GET.get("search")
 	if not start and not end and not search:
 		return HttpResponseBadRequest("Please enter a search keyword, start date or end date.")
