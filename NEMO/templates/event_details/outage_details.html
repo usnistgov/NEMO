@@ -17,11 +17,11 @@
         Details:<br>
         {{ outage.details|linebreaksbr }}
     {% endif %}
-{% endblock %}
 
-{# Allow the user to cancel the outage if they have that priviledge. only in popup view #}
-{% if user.is_staff and popup_view %}
-	<div class="modal-footer">
-		<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_outage('{% url 'cancel_outage' outage.id %}', 'Outage {{ outage.id }}') })">Cancel this outage</button>
-	</div>
-{% endif %}
+    {# Allow the user to cancel the outage if they have that priviledge. only in popup view #}
+    {% if user.is_staff and popup_view %}
+        <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_outage('{% url 'cancel_outage' outage.id %}', 'Outage {{ outage.id }}') })">Cancel this outage</button>
+        </div>
+    {% endif %}
+{% endblock %}
