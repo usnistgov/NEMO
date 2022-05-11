@@ -1,13 +1,7 @@
-from django.utils.formats import get_format
-
 from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
-from NEMO.utilities import convert_py_format_to_js
+from NEMO.utilities import date_input_js_format, datetime_input_js_format, time_input_js_format
 from NEMO.views.customization import get_customization
 from NEMO.views.notifications import get_notification_counts
-
-time_input_js_format = convert_py_format_to_js(get_format('TIME_INPUT_FORMATS')[0])
-date_input_js_format = convert_py_format_to_js(get_format('DATE_INPUT_FORMATS')[0])
-datetime_input_js_format = convert_py_format_to_js(get_format('DATETIME_INPUT_FORMATS')[0])
 
 
 def show_logout_button(request):

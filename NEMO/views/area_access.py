@@ -27,7 +27,7 @@ from NEMO.exceptions import (
 	UnavailableResourcesUserError,
 )
 from NEMO.models import Area, AreaAccessRecord, Project, User
-from NEMO.utilities import parse_start_and_end_date, quiet_int
+from NEMO.utilities import date_input_format, extract_optional_beginning_and_end_dates, quiet_int
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import get_customization
 from NEMO.views.policy import check_billing_to_project, check_policy_to_enter_any_area, check_policy_to_enter_this_area
@@ -62,19 +62,23 @@ class ParseSelfLoginErrorMessage(HTMLParser):
 def area_access(request):
 	""" Presents a page that displays audit records for all areas. """
 	now = timezone.now().astimezone()
-	today = now.strftime('%m/%d/%Y')
-	yesterday = (now - timedelta(days=1)).strftime('%m/%d/%Y')
+	today = now.strftime(date_input_format)
+	yesterday = (now - timedelta(days=1)).strftime(date_input_format)
 	area_id = ''
 	dictionary = {
 		'today': reverse('area_access') + '?' + urlencode({'start': today, 'end': today}),
 		'yesterday': reverse('area_access') + '?' + urlencode({'start': yesterday, 'end': yesterday}),
 	}
 	try:
-		start, end = parse_start_and_end_date(request.GET['start'], request.GET['end'])
+		start, end = extract_optional_beginning_and_end_dates(request.GET, date_only=True)
 		area_id = request.GET.get('area')
 		dictionary['start'] = start
 		dictionary['end'] = end
-		area_access_records = AreaAccessRecord.objects.filter(start__gte=start, start__lt=end, staff_charge=None)
+		area_access_records = AreaAccessRecord.objects.filter(staff_charge=None)
+		if start:
+			area_access_records = area_access_records.filter(start__gte=start)
+		if end:
+			area_access_records = area_access_records.filter(start__lt=end)
 		if area_id:
 			area_id = int(area_id)
 			filter_areas = Area.objects.get(pk=area_id).get_descendants(include_self=True)

@@ -96,7 +96,7 @@ def sensor_chart_data(request, sensor_id):
 def get_sensor_data(request, sensor) -> (QuerySet, datetime, datetime):
 	start, end = extract_times(request.GET, start_required=False, end_required=False)
 	sensor_data = SensorData.objects.filter(sensor=sensor)
-	now = timezone.now().replace(second=0)
+	now = timezone.now().replace(second=0, microsecond=0).astimezone()
 	sensor_default_daterange = SensorCustomization.get("sensor_default_daterange")
 	if not start:
 		if sensor_default_daterange == "last_week":

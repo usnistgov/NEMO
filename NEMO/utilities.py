@@ -1,14 +1,13 @@
 import csv
 import os
 from calendar import monthrange
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time
 from email import encoders
 from email.mime.base import MIMEBase
 from io import BytesIO
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 from PIL import Image
-from dateutil import parser
 from dateutil.parser import parse
 from dateutil.rrule import MONTHLY, rrule
 from django.conf import settings
@@ -18,7 +17,7 @@ from django.core.mail import EmailMessage
 from django.db.models import QuerySet
 from django.http import HttpResponse
 from django.utils import timezone
-from django.utils.formats import date_format, time_format
+from django.utils.formats import date_format, get_format, time_format
 from django.utils.timezone import is_naive, localtime
 
 # List of python to js formats
@@ -55,6 +54,14 @@ def convert_py_format_to_js(string_format: str) -> str:
 	for py, js in py_to_js_date_formats.items():
 		string_format = js.join(string_format.split(py))
 	return string_format
+
+
+time_input_format = get_format("TIME_INPUT_FORMATS")[0]
+date_input_format = get_format("DATE_INPUT_FORMATS")[0]
+datetime_input_format = get_format("DATETIME_INPUT_FORMATS")[0]
+time_input_js_format = convert_py_format_to_js(time_input_format)
+date_input_js_format = convert_py_format_to_js(date_input_format)
+datetime_input_js_format = convert_py_format_to_js(datetime_input_format)
 
 
 class BasicDisplayTable(object):
@@ -128,13 +135,6 @@ class EmailCategory(object):
 	)
 
 
-def parse_start_and_end_date(start, end):
-	start = timezone.make_aware(parser.parse(start), timezone.get_current_timezone())
-	end = timezone.make_aware(parser.parse(end), timezone.get_current_timezone())
-	end += timedelta(days=1, seconds=-1)  # Set the end date to be midnight by adding a day.
-	return start, end
-
-
 def quiet_int(value_to_convert, default_upon_failure=0):
 	"""
 	Attempt to convert the given value to an integer. If there is any problem
@@ -189,10 +189,28 @@ def get_month_timeframe(date=None):
 	return first_of_the_month, last_of_the_month
 
 
-def extract_times(parameters, input_timezone=None, start_required=True, end_required=True, beginning_and_end=False) -> Tuple[datetime, datetime]:
+def extract_optional_beginning_and_end_dates(parameters, date_only=False, time_only=False):
+	"""
+	Extract the "start" and "end" parameters from an HTTP request
+	The dates/times are expected in the input formats set in settings.py and assumed in the server's timezone
+	"""
+	new_parameters = {}
+	start = parameters.get("start")
+	end = parameters.get("end")
+	selected_format = date_input_format if date_only else time_input_format if time_only else datetime_input_format
+	new_parameters["start"] = datetime.strptime(start, selected_format).timestamp() if start else None
+	new_parameters["end"] = datetime.strptime(end, selected_format).timestamp() if end else None
+	return extract_optional_beginning_and_end_times(new_parameters)
+
+
+def extract_optional_beginning_and_end_times(parameters):
+	return extract_times(parameters, start_required=False, end_required=False, beginning_and_end=True)
+
+
+def extract_times(parameters, start_required=True, end_required=True, beginning_and_end=False) -> Tuple[datetime, datetime]:
 	"""
 	Extract the "start" and "end" parameters from an HTTP request while performing a few logic validation checks.
-	The function assumes the UNIX timestamp is in the local timezone. Use input_timezone to specify the timezone.
+	The function assumes the UNIX timestamp is in the server's timezone.
 	"""
 	start, end, new_start, new_end = None, None, None, None
 	try:
@@ -210,7 +228,7 @@ def extract_times(parameters, input_timezone=None, start_required=True, end_requ
 	try:
 		new_start = float(start)
 		new_start = datetime.utcfromtimestamp(new_start)
-		new_start = localize(new_start, input_timezone)
+		new_start = localize(new_start)
 		if beginning_and_end:
 			new_start = beginning_of_the_day(new_start)
 	except:
@@ -220,7 +238,7 @@ def extract_times(parameters, input_timezone=None, start_required=True, end_requ
 	try:
 		new_end = float(end)
 		new_end = datetime.utcfromtimestamp(new_end)
-		new_end = localize(new_end, input_timezone)
+		new_end = localize(new_end)
 		if beginning_and_end:
 			new_end = end_of_the_day(new_end)
 	except:

@@ -8,18 +8,18 @@ from NEMO.models import Project, StaffCharge, UsageEvent, User
 from NEMO.utilities import (
 	BasicDisplayTable,
 	export_format_datetime,
+	extract_optional_beginning_and_end_dates,
 	format_datetime,
 	get_month_timeframe,
 	month_list,
-	parse_start_and_end_date,
 )
 
 
 @staff_member_required
 @require_GET
 def remote_work(request):
-	if request.GET.get("start_date") and request.GET.get("end_date"):
-		start_date, end_date = parse_start_and_end_date(request.GET.get("start_date"), request.GET.get("end_date"))
+	if request.GET.get("start") or request.GET.get("end"):
+		start_date, end_date = extract_optional_beginning_and_end_dates(request.GET, date_only=True)
 	else:
 		start_date, end_date = get_month_timeframe()
 
@@ -37,10 +37,14 @@ def remote_work(request):
 		project = get_object_or_404(Project, id=project)
 	else:
 		project = None
-	usage_events = UsageEvent.objects.filter(
-		operator__is_staff=True, start__gte=start_date, start__lte=end_date
-	).exclude(operator=F("user"))
-	staff_charges = StaffCharge.objects.filter(start__gte=start_date, start__lte=end_date)
+	usage_events = UsageEvent.objects.filter(operator__is_staff=True).exclude(operator=F("user"))
+	staff_charges = StaffCharge.objects.filter()
+	if start_date:
+		usage_events = usage_events.filter(start__gte=start_date)
+		staff_charges = staff_charges.filter(start__gte=start_date)
+	if end_date:
+		usage_events = usage_events.filter(start__lte=end_date)
+		staff_charges = staff_charges.filter(start__lte=end_date)
 	if operator:
 		usage_events = usage_events.exclude(~Q(operator_id=operator.id))
 		staff_charges = staff_charges.exclude(~Q(staff_member_id=operator.id))

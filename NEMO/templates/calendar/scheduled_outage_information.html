@@ -1,7 +1,8 @@
+{% load static %}
+{% load custom_tags_and_filters %}
 {% block extrahead %}
-	{% load static %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datepicker3.css" %}"/>
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
 {% endblock %}
 
 <div class="modal-header">
@@ -73,5 +74,5 @@
 <script>
 	autofocus('#title');
 	$('#title').on('input', function() { if(this.value) $('#schedule_outage').prop('disabled', false); else $('#schedule_outage').prop('disabled', true); });
-	$('#recurrence_until').datepicker({format: 'mm/dd/yyyy', endDate: moment('{{ recurrence_date_start|date:"m/d/Y" }}').add({{ calendar_outage_recurrence_limit }}, 'days').toDate(), startDate:'{{ recurrence_date_start|date:"m/d/Y" }}', autoclose: true});
+	$('#recurrence_until').datetimepicker({format: '{{ date_input_js_format }}', useCurrent: false, maxDate: moment('{{ recurrence_date_start|input_date_format }}', '{{ date_input_js_format }}').add({{ calendar_outage_recurrence_limit }}, 'days').toDate(), minDate: moment('{{ recurrence_date_start|input_date_format }}', '{{ date_input_js_format }}')});
 </script>

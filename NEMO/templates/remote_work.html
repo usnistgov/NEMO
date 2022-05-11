@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_tags_and_filters %}
 {% block title %}Remote work{% endblock %}
 {% block extrahead %}
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
@@ -56,13 +57,13 @@
 				<label for="start_date" class="text-center" style="width: 100%">or between</label>
 			</div>
 			<div class="col-md-2">
-				<input type="text" id="start_date" name="start_date" class="form-control text-center" placeholder="Choose a date" value="{{ start_date|date:"m/d/Y" }}">
+				<input type="text" id="start_date" name="start" class="form-control text-center" placeholder="Choose a date" value="{{ start_date.date|input_date_format }}">
 			</div>
 			<div class="control-label col-md-1">
 				<label for="end_date" class="text-center" style="width: 100%">and</label>
 			</div>
 			<div class="col-md-2">
-				<input type="text" id="end_date" name="end_date" class="form-control text-center" placeholder="Choose a date" value="{{ end_date|date:"m/d/Y" }}">
+				<input type="text" id="end_date" name="end" class="form-control text-center" placeholder="Choose a date" value="{{ end_date.date|input_date_format }}">
 			</div>
 		</div>
 		<div class="form-group" style="margin-top: 25px">
@@ -111,6 +112,12 @@
 					<td style="border-top-style: dotted">{{ area_access_record.end|default_if_none:'' }}</td>
 				</tr>
 			{%  endfor %}
+        {% empty %}
+            <tr><td colspan="7">
+                {% if start_date or end_date %}
+                    No staff charges exist {% if start_date and end_date %}between {{ start_date }} and {{ end_date }}{% elif start_date %}after {{ start_date }}{% else %}before {{ end_date }}{% endif %}.
+                {% endif %}
+            </td></tr>
 		{% endfor %}
 		</tbody>
 	</table>
@@ -141,11 +148,19 @@
 				<td>{{ u.tool }}</td>
 				<td>{% if not u.validated %}<button class="btn btn-success" onclick="validate_charge('{% url 'validate_usage_event' u.id %}', this, '#usage_event_row_{{ forloop.counter }}')">Validate</button>{% endif %}</td>
 			</tr>
+        {% empty %}
+            <tr><td colspan="8">
+                {% if start_date or end_date %}
+                    No tool usage exist {% if start_date and end_date %}between {{ start_date }} and {{ end_date }}{% elif start_date %}after {{ start_date }}{% else %}before {{ end_date }}{% endif %}.
+                {% endif %}
+            </td></tr>
 		{% endfor %}
 		</tbody>
 	</table>
 
 	<script>
+        const js_date_format = "{{ date_input_js_format }}";
+
 		function validate_charge(url, button, row)
 		{
 			$(button).hide();
@@ -156,14 +171,14 @@
 
 		let start_date_jq = $('#start_date');
 		let end_date_jq = $('#end_date');
-		start_date_jq.datetimepicker({format: 'MM/DD/YYYY'});
-		end_date_jq.datetimepicker({format: 'MM/DD/YYYY'});
+		start_date_jq.datetimepicker({format: js_date_format});
+		end_date_jq.datetimepicker({format: js_date_format});
 
 		function set_dates_from_month(month_input)
 		{
 			let month = moment(month_input, "MMMM, YYYY");
-			let firstOfMonth = month.startOf('month').format('MM/DD/YYYY');
-			let lastOfMonth = month.endOf('month').format('MM/DD/YYYY');
+			let firstOfMonth = month.startOf('month').format(js_date_format);
+			let lastOfMonth = month.endOf('month').format(js_date_format);
 
 			start_date_jq.val(firstOfMonth);
 			end_date_jq.val(lastOfMonth);
@@ -173,16 +188,17 @@
 		{
 			if ('{{ start_date }}' && '{{ end_date }}')
 			{
-				let start = moment('{{ start_date|date:'m/d/Y' }}');
-				let end = moment('{{ end_date|date:'m/d/Y' }}');
-				if (start.month() === end.month() && start.year() === end.year() && start.format('MM/DD/YYYY') === start.startOf('month').format('MM/DD/YYYY') && end.format('MM/DD/YYYY') === end.endOf('month').format('MM/DD/YYYY'))
+				let start = moment('{{ start_date.date|input_date_format }}', js_date_format);
+				let end = moment('{{ end_date.date|input_date_format }}', js_date_format);
+				if (start.month() === end.month() && start.year() === end.year() && start.day() === start.startOf('month').day() && end.day() === end.endOf('month').day())
 				{
 					let month = start.format("MMMM, YYYY");
 					$('#month_list').val(month)
 				}
 			}
 		}
-		$(set_dropdown_selected());
+
+        window.addEventListener("load", set_dropdown_selected)
 	</script>
 
 {% endblock %}

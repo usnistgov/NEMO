@@ -24,10 +24,10 @@ from NEMO.models import (
 from NEMO.utilities import (
 	BasicDisplayTable,
 	export_format_datetime,
+	extract_optional_beginning_and_end_dates,
 	format_datetime,
 	get_month_timeframe,
 	month_list,
-	parse_start_and_end_date,
 )
 from NEMO.views.api_billing import (
 	BillableItem,
@@ -80,8 +80,8 @@ def get_project_applications():
 
 
 def date_parameters_dictionary(request):
-	if request.GET.get('start_date') and request.GET.get('end_date'):
-		start_date, end_date = parse_start_and_end_date(request.GET.get('start_date'), request.GET.get('end_date'))
+	if request.GET.get('start') and request.GET.get('end'):
+		start_date, end_date = extract_optional_beginning_and_end_dates(request.GET, date_only=True)
 	else:
 		start_date, end_date = get_month_timeframe()
 	kind = request.GET.get("type")

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Area access{% endblock %}
 {% block extrahead %}
 	{% load static %}
@@ -19,12 +20,12 @@
 		<div class="form-group">
 			<div class="form-group">
 				<div class="datetimepicker-container">
-					<input type="text" id="start" name="start" class="form-control" autocomplete="off" placeholder="start" value="{{ start|date:"m/d/Y" }}">
+					<input type="text" id="start" name="start" class="form-control" autocomplete="off" placeholder="start" value="{{ start.date|input_date_format }}">
 				</div>
 			</div>
 			<div class="form-group">
 				<div class="datetimepicker-container">
-					<input type="text" id="end" name="end" class="form-control" autocomplete="off" placeholder="end" value="{{ end|date:"m/d/Y" }}">
+					<input type="text" id="end" name="end" class="form-control" autocomplete="off" placeholder="end" value="{{ end.date|input_date_format }}">
 				</div>
 			</div>
 		</div>
@@ -66,7 +67,7 @@
 			</table>
 		{% else %}
 			{% if start or end %}
-				No access records exist between {{ start }} and {{ end }}.
+				No access records exist {% if start and end %}between {{ start }} and {{ end }}{% elif start %}after {{ start }}{% else %}before {{ end }}{% endif %}.
 			{% endif %}
 		{% endif %}
 	</div>
@@ -75,7 +76,7 @@
 		{
 			var timepicker_properties =
 			{
-				format: 'MM/DD/YYYY'
+				format: '{{ date_input_js_format }}'
 			};
 			$('#start').datetimepicker(timepicker_properties);
 			$('#end').datetimepicker(timepicker_properties);

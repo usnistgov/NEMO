@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load custom_tags_and_filters %}
 {% block extrahead %}
     {# Chart.js #}
     <script type="text/javascript" src="{% static "sensors/chart.min.js" %}"></script>
@@ -288,7 +289,7 @@
             set_interval_when_visible(document, refresh_page, $('#refresh-rate').val());
         }
 
-        set_dates(moment.unix({{ start|date:"U" }}), {% if end %}moment.unix({{ end|date:"U" }}){% else %}now_moment_date{% endif %});
+        set_dates(moment('{{ start|input_date_format }}', '{{ datetime_input_js_format }}'), {% if end %}moment('{{ end|input_date_format }}', '{{ datetime_input_js_format }}'){% else %}now_moment_date{% endif %});
         update_refresh_rate();
     </script>
 

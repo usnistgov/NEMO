@@ -31,13 +31,13 @@
 				<label for="start_date">or from</label>
 			</div>
 			<div class="col-sm-3 col-md-3 col-lg-2">
-				<input type="text" id="start_date" name="start_date" class="form-control text-center" placeholder="Choose a date" value="{{ start_date|date:"m/d/Y" }}">
+				<input type="text" id="start_date" name="start" class="form-control text-center" placeholder="Choose a date" value="{{ start_date.date|input_date_format }}">
 			</div>
 			<div class="control-label col-sm-1 col-sm-1 col-lg-1" style="text-align: center">
 				<label for="end_date">to</label>
 			</div>
 			<div class="col-sm-3 col-md-3 col-lg-2">
-				<input type="text" id="end_date" name="end_date" class="form-control text-center" placeholder="Choose a date" value="{{ end_date|date:"m/d/Y" }}">
+				<input type="text" id="end_date" name="end" class="form-control text-center" placeholder="Choose a date" value="{{ end_date.date|input_date_format }}">
 			</div>
             {% if pi_projects %}
                 </div>
@@ -69,16 +69,18 @@
 		<input id="id" name="id" type="hidden" value="{{ identifier|default:'' }}"/>
 
 		<script>
+            const js_date_format = "{{ date_input_js_format }}";
+
 			let start_date_jq = $('#start_date');
 			let end_date_jq = $('#end_date');
-			start_date_jq.datetimepicker({format: 'MM/DD/YYYY'});
-			end_date_jq.datetimepicker({format: 'MM/DD/YYYY'});
+			start_date_jq.datetimepicker({format: js_date_format});
+			end_date_jq.datetimepicker({format: js_date_format});
 
 			function set_dates_from_month(month_input)
 			{
 				let month = moment(month_input, "MMMM, YYYY");
-				let firstOfMonth = month.startOf('month').format('MM/DD/YYYY');
-				let lastOfMonth = month.endOf('month').format('MM/DD/YYYY');
+				let firstOfMonth = month.startOf('month').format(js_date_format);
+				let lastOfMonth = month.endOf('month').format(js_date_format);
 
 				start_date_jq.val(firstOfMonth);
 				end_date_jq.val(lastOfMonth);
@@ -88,9 +90,9 @@
 			{
 			    if ('{{ start_date }}' && '{{ end_date }}')
 			    {
-					let start = moment('{{ start_date|date:'m/d/Y' }}');
-					let end = moment('{{ end_date|date:'m/d/Y' }}');
-					if (start.month() === end.month() && start.year() === end.year() && start.format('MM/DD/YYYY') === start.startOf('month').format('MM/DD/YYYY') && end.format('MM/DD/YYYY') === end.endOf('month').format('MM/DD/YYYY'))
+					let start = moment('{{ start_date.date|input_date_format }}', js_date_format);
+					let end = moment('{{ end_date.date|input_date_format }}', js_date_format);
+					if (start.month() === end.month() && start.year() === end.year() && start.day() === start.startOf('month').day() && end.day() === end.endOf('month').day())
 					{
 					    let month = start.format("MMMM, YYYY");
 						$('#month_list').val(month)

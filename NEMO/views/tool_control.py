@@ -39,7 +39,7 @@ from NEMO.utilities import (
 	BasicDisplayTable,
 	EmailCategory,
 	export_format_datetime,
-	extract_times,
+	extract_optional_beginning_and_end_times,
 	format_datetime,
 	quiet_int,
 	send_mail,
@@ -145,7 +145,7 @@ def get_tool_full_config_history(tool: Tool):
 def usage_data_history(request, tool_id):
 	""" This method return a dictionary of headers and rows containing run_data information for Usage Events """
 	csv_export = bool(request.POST.get("csv", False))
-	start, end = extract_times(request.POST, beginning_and_end=True, start_required=False, end_required=False)
+	start, end = extract_optional_beginning_and_end_times(request.POST)
 	last = request.POST.get("data_history_last")
 	user_id = request.POST.get("data_history_user_id")
 	show_project_info = request.POST.get("show_project_info")
@@ -427,7 +427,7 @@ def disable_tool(request, tool_id):
 @login_required
 @require_GET
 def past_comments_and_tasks(request):
-	start, end = extract_times(request.GET, beginning_and_end=True, start_required=False, end_required=False)
+	start, end = extract_optional_beginning_and_end_times(request.GET)
 	search = request.GET.get("search")
 	if not start and not end and not search:
 		return HttpResponseBadRequest("Please enter a search keyword, start date or end date.")

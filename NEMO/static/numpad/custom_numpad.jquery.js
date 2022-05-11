@@ -11,7 +11,7 @@
  *
  * Version: 1.4
  *
- * !!!!! Added readonly as option and boostrap style !!!!!
+ * !!!!! Added readonly as option and bootstrap style !!!!!
  */
 (function($){
 

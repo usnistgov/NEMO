@@ -43,6 +43,7 @@ from NEMO.utilities import (
 	as_timezone,
 	bootstrap_primary_color,
 	create_email_attachment,
+	date_input_format,
 	extract_times,
 	format_datetime,
 	localize,
@@ -569,7 +570,7 @@ def create_outage(request):
 		submitted_date_until = request.POST.get('recurrence_until', None)
 		date_until = end.replace(hour=0, minute=0, second=0)
 		if submitted_date_until:
-			date_until = localize(datetime.strptime(submitted_date_until, '%m/%d/%Y'))
+			date_until = localize(datetime.strptime(submitted_date_until, date_input_format))
 		date_until += timedelta(days=1, seconds=-1) # set at the end of the day
 		by_week_day = None
 		if submitted_frequency == 'DAILY_WEEKDAYS':
