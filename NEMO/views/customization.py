@@ -119,6 +119,7 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_out": "",
 		"calendar_login_logout": "",
 		"project_selection_template": "{{ project.name }}",
+		"training_not_required": "",
 	}
 
 	def validate(self, name, value):

@@ -28,7 +28,7 @@ from NEMO.models import (
 	record_active_state,
 	record_local_many_to_many_changes,
 )
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import ApplicationCustomization, StatusDashboardCustomization
 from NEMO.views.pagination import SortedPaginator
 from NEMO.views.status_dashboard import show_staff_status
 
@@ -72,7 +72,7 @@ def create_or_modify_user(request, user_id):
 		user = None
 
 	timeout = identity_service.get('timeout', 3)
-	site_title = get_customization('site_title')
+	site_title = ApplicationCustomization.get('site_title')
 	if dictionary['identity_service_available']:
 		try:
 			result = requests.get(urljoin(identity_service['url'], '/areas/'), timeout=timeout)
@@ -95,7 +95,9 @@ def create_or_modify_user(request, user_id):
 		dictionary['warning'] = 'The identity service is disabled. You will not be able to modify externally managed physical access levels, reset account passwords, or unlock accounts.'
 
 	if request.method == 'GET':
-		dictionary['form'] = UserForm(instance=user)
+		training_not_required = ApplicationCustomization.get("training_not_required", raise_exception=False)
+		# Only set training required initial value on new users
+		dictionary['form'] = UserForm(instance=user, initial={"training_required": not training_not_required} if not user else None)
 		try:
 			if dictionary['identity_service_available'] and user and user.is_active and user.domain:
 				parameters = {
@@ -345,8 +347,8 @@ def unlock_account(request, user_id):
 @require_http_methods(['GET', 'POST'])
 def user_preferences(request):
 	user: User = User.objects.get(pk=request.user.id)
-	user_view_options = get_customization("dashboard_staff_status_user_view")
-	staff_view_options = get_customization("dashboard_staff_status_staff_view")
+	user_view_options = StatusDashboardCustomization.get("dashboard_staff_status_user_view")
+	staff_view_options = StatusDashboardCustomization.get("dashboard_staff_status_staff_view")
 	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ''
 	if request.method == 'POST':
 		form = UserPreferencesForm(data=request.POST, instance=user.preferences)
