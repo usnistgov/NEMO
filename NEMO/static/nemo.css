@@ -848,3 +848,10 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	-webkit-box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
 	box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
 }
+
+/* Invalid input for post usage/reservation questions and additional event parameters */
+#tool_control input:invalid, #tool_control select:invalid, #tool_control textarea:invalid,
+#additional_event_parameters input:invalid, #additional_event_parameters select:invalid, #additional_event_parameters textarea:invalid
+{
+	border-color: #dc3545!important;
+}

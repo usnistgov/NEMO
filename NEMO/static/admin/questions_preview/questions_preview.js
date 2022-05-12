@@ -25,7 +25,7 @@ window.addEventListener("load", function()
                 }
             }
         }
-        $('.questions_preview').on('change keyup', "input[required][form='questions_preview_form'], textarea[required][form='questions_preview_form'], select[required][form='questions_preview_form']", update_validation_button);
+        $('.questions_preview').on('change keyup', "input[form='questions_preview_form'], textarea[form='questions_preview_form'], select[form='questions_preview_form']", update_validation_button);
         $('body').on('question-group-changed', function()
         {
             update_input_form();
