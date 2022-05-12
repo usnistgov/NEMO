@@ -95,7 +95,7 @@ def create_or_modify_user(request, user_id):
 		dictionary['warning'] = 'The identity service is disabled. You will not be able to modify externally managed physical access levels, reset account passwords, or unlock accounts.'
 
 	if request.method == 'GET':
-		training_not_required = ApplicationCustomization.get("training_not_required", raise_exception=False)
+		training_not_required = ApplicationCustomization.get("default_user_training_not_required", raise_exception=False)
 		# Only set training required initial value on new users
 		dictionary['form'] = UserForm(instance=user, initial={"training_required": not training_not_required} if not user else None)
 		try:

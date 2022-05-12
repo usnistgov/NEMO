@@ -3,11 +3,11 @@
     <form method="POST" action="{% url 'customize' 'application' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
-            <label class="control-label col-md-2" for="training_not_required">New user training</label>
+            <label class="control-label col-md-2" for="default_user_training_not_required">New user training</label>
             <div class="col-md-5">
                 <div class="radio">
-                    <label><input type="radio" id="training_not_required" name="training_not_required" {% if not training_not_required %}checked{% endif %} value=""> Required</label>
-                    <label><input type="radio" name="training_not_required" {% if training_not_required %}checked{% endif %} value="enabled"> Not required</label>
+                    <label><input type="radio" id="default_user_training_not_required" name="default_user_training_not_required" {% if not default_user_training_not_required %}checked{% endif %} value=""> Required</label>
+                    <label><input type="radio" name="default_user_training_not_required" {% if default_user_training_not_required %}checked{% endif %} value="enabled"> Not required</label>
                 </div>
             </div>
             <div class="col-md-5 help-block light-grey">
