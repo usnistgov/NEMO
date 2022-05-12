@@ -21,7 +21,13 @@ from NEMO.utilities import (
 	quiet_int,
 	send_mail,
 )
-from NEMO.views.customization import CustomizationBase, get_customization, get_media_file_contents
+from NEMO.views.customization import (
+	ApplicationCustomization,
+	CustomizationBase,
+	EmailsCustomization,
+	UserRequestsCustomization,
+	get_media_file_contents,
+)
 from NEMO.views.notifications import create_access_request_notification, delete_notification, get_notifications
 
 access_request_logger = getLogger(__name__)
@@ -33,7 +39,7 @@ def access_requests(request):
 	mark_requests_expired()
 	user: User = request.user
 	status = TemporaryPhysicalAccessRequest.Status
-	max_requests = quiet_int(get_customization("access_requests_display_max"), None)
+	max_requests = quiet_int(UserRequestsCustomization.get("access_requests_display_max"), None)
 	physical_access_requests = TemporaryPhysicalAccessRequest.objects.filter(deleted=False)
 	physical_access_requests = physical_access_requests.order_by("-end_time")
 	if not user.is_facility_manager and not user.is_staff:
@@ -45,7 +51,7 @@ def access_requests(request):
 		"approved_access_requests": physical_access_requests.filter(status=status.APPROVED)[:max_requests],
 		"denied_access_requests": physical_access_requests.filter(status=status.DENIED)[:max_requests],
 		"expired_access_requests": physical_access_requests.filter(status=status.EXPIRED)[:max_requests],
-		"access_requests_description": get_customization("access_requests_description"),
+		"access_requests_description": UserRequestsCustomization.get("access_requests_description"),
 		"access_request_notifications": get_notifications(
 			request.user, TemporaryPhysicalAccessRequest, delete=not user.is_facility_manager
 		),
@@ -160,7 +166,7 @@ def mark_requests_expired():
 
 
 def send_request_received_email(request, access_request: TemporaryPhysicalAccessRequest, edit):
-	user_office_email = get_customization("user_office_email_address")
+	user_office_email = EmailsCustomization.get("user_office_email_address")
 	access_request_notification_email = get_media_file_contents("access_request_notification_email.html")
 	if user_office_email and access_request_notification_email:
 		facility_manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list(
@@ -215,8 +221,8 @@ def send_email_weekend_access_notification():
 		If no weekend access requests are made by the given time on the cutoff day (if set), a no access email is sent.
 	"""
 	try:
-		user_office_email = get_customization("user_office_email_address")
-		email_to = get_customization("weekend_access_notification_emails")
+		user_office_email = EmailsCustomization.get("user_office_email_address")
+		email_to = UserRequestsCustomization.get("weekend_access_notification_emails")
 		access_contents = get_media_file_contents("weekend_access_email.html")
 		if user_office_email and email_to and access_contents:
 			process_weekend_access_notification(user_office_email, email_to, access_contents)
@@ -228,8 +234,8 @@ def send_email_weekend_access_notification():
 def process_weekend_access_notification(user_office_email, email_to, access_contents):
 	today = datetime.today()
 	beginning_of_the_week = beginning_of_the_day(today - timedelta(days=today.weekday()))
-	cutoff_day = get_customization("weekend_access_notification_cutoff_day")
-	cutoff_hour = get_customization("weekend_access_notification_cutoff_hour")
+	cutoff_day = UserRequestsCustomization.get("weekend_access_notification_cutoff_day")
+	cutoff_hour = UserRequestsCustomization.get("weekend_access_notification_cutoff_hour")
 	# Set the cutoff in actual datetime format
 	cutoff_datetime = None
 	if cutoff_hour.isdigit() and cutoff_day and cutoff_day.isdigit():
@@ -264,7 +270,7 @@ def process_weekend_access_notification(user_office_email, email_to, access_cont
 
 
 def send_weekend_email_access(access, user_office_email, email_to, contents, beginning_of_the_week):
-	facility_name = get_customization("facility_name")
+	facility_name = ApplicationCustomization.get("facility_name")
 	manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list("email", flat=True)
 	recipients = tuple([e for e in email_to.split(",") if e])
 	ccs = tuple([e for e in manager_emails if e])

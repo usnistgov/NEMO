@@ -17,7 +17,7 @@ from NEMO.decorators import staff_member_required
 from NEMO.forms import EmailBroadcastForm
 from NEMO.models import Account, Area, Project, Tool, User, UserType
 from NEMO.utilities import EmailCategory, export_format_datetime, send_mail
-from NEMO.views.customization import get_customization, get_media_file_contents
+from NEMO.views.customization import ApplicationCustomization, get_media_file_contents
 
 logger = getLogger(__name__)
 
@@ -63,7 +63,7 @@ def send_email(request):
 			email_category=EmailCategory.DIRECT_CONTACT,
 		)
 	except SMTPException as error:
-		site_title = get_customization("site_title")
+		site_title = ApplicationCustomization.get("site_title")
 		error_message = (
 				f"{site_title} was unable to send the email through the email server. The error message that was received is: "
 				+ str(error)
@@ -206,7 +206,7 @@ def send_broadcast_email(request):
 			email_category=EmailCategory.BROADCAST_EMAIL,
 		)
 	except SMTPException as error:
-		site_title = get_customization("site_title")
+		site_title = ApplicationCustomization.get("site_title")
 		error_message = (
 				f"{site_title} was unable to send the email through the email server. The error message that was received is: "
 				+ str(error)

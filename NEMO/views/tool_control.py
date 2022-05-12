@@ -45,7 +45,12 @@ from NEMO.utilities import (
 	send_mail,
 )
 from NEMO.views.calendar import shorten_reservation
-from NEMO.views.customization import get_customization, get_media_file_contents
+from NEMO.views.customization import (
+	ApplicationCustomization,
+	EmailsCustomization,
+	InterlockCustomization,
+	get_media_file_contents,
+)
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageQuestion, render_group_questions
@@ -542,11 +547,11 @@ Its last value was {counter.last_reset_value}."""
 
 
 def interlock_bypass_allowed(user: User):
-	return user.is_staff or get_customization('allow_bypass_interlock_on_failure') == 'enabled'
+	return user.is_staff or InterlockCustomization.get('allow_bypass_interlock_on_failure') == 'enabled'
 
 
 def interlock_error(action:str, user:User):
-	error_message = get_customization('tool_interlock_failure_message')
+	error_message = InterlockCustomization.get('tool_interlock_failure_message')
 	dictionary = {
 		"message": linebreaksbr(error_message),
 		"bypass_allowed": interlock_bypass_allowed(user),
@@ -556,9 +561,9 @@ def interlock_error(action:str, user:User):
 
 
 def email_managers_required_questions_disable_tool(tool_user:User, staff_member:User, tool:Tool, questions:List[PostUsageQuestion]):
-	abuse_email_address = get_customization('abuse_email_address')
+	abuse_email_address = EmailsCustomization.get('abuse_email_address')
 	facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
-	facility_name = get_customization('facility_name')
+	facility_name = ApplicationCustomization.get('facility_name')
 	ccs = set(tuple([r for r in [staff_member.email, tool.primary_owner.email, *tool.backup_owners.all().values_list('email', flat=True), *facility_managers] if r]))
 	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
 	message = f"""
@@ -575,7 +580,7 @@ Regards,<br/>
 
 
 def send_tool_usage_counter_email(counter: ToolUsageCounter):
-	user_office_email = get_customization('user_office_email_address')
+	user_office_email = EmailsCustomization.get('user_office_email_address')
 	message = get_media_file_contents('counter_threshold_reached_email.html')
 	if user_office_email and message:
 		subject = f"Warning threshold reached for {counter.tool.name} {counter.name} counter"

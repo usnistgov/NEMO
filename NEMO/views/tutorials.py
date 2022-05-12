@@ -1,11 +1,11 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from django.template import Template, RequestContext, Context
+from django.template import Context, RequestContext, Template
 from django.views.decorators.http import require_http_methods
 
-from NEMO.models import User, Project
-from NEMO.utilities import send_mail, EmailCategory
-from NEMO.views.customization import get_customization, get_media_file_contents
+from NEMO.models import Project, User
+from NEMO.utilities import EmailCategory, send_mail
+from NEMO.views.customization import ApplicationCustomization, EmailsCustomization, get_media_file_contents
 
 
 @login_required
@@ -21,10 +21,10 @@ def facility_rules(request):
 			tutorial = Template(tutorial).render(RequestContext(request, dictionary))
 		return render(request, "facility_rules.html", {"facility_rules_tutorial": tutorial})
 	elif request.method == "POST":
-		facility_name = get_customization("facility_name")
+		facility_name = ApplicationCustomization.get("facility_name")
 		summary = request.POST.get("making_reservations_summary", "").strip()[:3000]
 		dictionary = {"user": request.user, "making_reservations_rule_summary": summary}
-		abuse_email = get_customization("abuse_email_address")
+		abuse_email = EmailsCustomization.get("abuse_email_address")
 		email_contents = get_media_file_contents("facility_rules_tutorial_email.html")
 		if abuse_email and email_contents:
 			message = Template(email_contents, dictionary).render(Context(dictionary))

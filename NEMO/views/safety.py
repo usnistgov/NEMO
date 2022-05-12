@@ -9,7 +9,7 @@ from NEMO.decorators import staff_member_required
 from NEMO.forms import SafetyIssueCreationForm, SafetyIssueUpdateForm
 from NEMO.models import SafetyIssue
 from NEMO.utilities import EmailCategory, send_mail
-from NEMO.views.customization import get_customization, get_media_file_contents
+from NEMO.views.customization import EmailsCustomization, get_media_file_contents
 from NEMO.views.notifications import create_safety_notification, delete_notification, get_notifications
 
 
@@ -36,7 +36,7 @@ def safety(request):
 
 
 def send_safety_email_notification(request, issue):
-	recipient = get_customization("safety_email_address")
+	recipient = EmailsCustomization.get("safety_email_address")
 	message = get_media_file_contents("safety_issue_email.html")
 	if recipient and message:
 		subject = "Safety issue"

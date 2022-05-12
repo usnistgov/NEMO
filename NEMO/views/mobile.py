@@ -17,7 +17,7 @@ from NEMO.views.calendar import (
 	extract_reservation_questions,
 	render_reservation_questions,
 )
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import CalendarCustomization
 from NEMO.views.policy import check_billing_to_project, check_policy_to_save_reservation
 
 
@@ -36,7 +36,7 @@ def choose_item(request, next_page):
 			return render(request, 'mobile/no_active_projects.html')
 		areas = Area.objects.filter(requires_reservation=True).only('name')
 		# We want to remove areas the user doesn't have access to
-		display_all_areas = get_customization('calendar_display_not_qualified_areas') == 'enabled'
+		display_all_areas = CalendarCustomization.get('calendar_display_not_qualified_areas') == 'enabled'
 		if not display_all_areas and areas and user and not user.is_superuser:
 			areas = [area for area in areas if area in user.accessible_areas()]
 

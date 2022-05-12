@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
 from NEMO.models import PhysicalAccessLevel, User
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import UserRequestsCustomization
 
 
 @login_required
@@ -15,8 +15,8 @@ def user_requests(request, tab: str = None):
 		   and User.objects.filter(is_active=True, is_facility_manager=True).exists()
 		else "buddy"
 	)
-	buddy_requests_title = get_customization("buddy_requests_title")
-	access_requests_title = get_customization("access_requests_title")
+	buddy_requests_title = UserRequestsCustomization.get("buddy_requests_title")
+	access_requests_title = UserRequestsCustomization.get("access_requests_title")
 	dictionary = {
 		"tab": active_tab,
 		"buddy_requests_title": buddy_requests_title,

@@ -13,7 +13,7 @@ from NEMO.exceptions import ProjectChargeException
 from NEMO.forms import ConsumableWithdrawForm
 from NEMO.models import Consumable, ConsumableWithdraw, User
 from NEMO.utilities import EmailCategory, send_mail
-from NEMO.views.customization import get_customization, get_media_file_contents
+from NEMO.views.customization import EmailsCustomization, get_media_file_contents
 from NEMO.views.policy import check_billing_to_project
 
 consumables_logger = getLogger(__name__)
@@ -109,7 +109,7 @@ def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant
 
 
 def send_reorder_supply_reminder_email(consumable: Consumable):
-	user_office_email = get_customization('user_office_email_address')
+	user_office_email = EmailsCustomization.get('user_office_email_address')
 	message = get_media_file_contents('reorder_supplies_reminder_email.html')
 	if user_office_email and message:
 		subject = f"Time to order more {consumable.name}"

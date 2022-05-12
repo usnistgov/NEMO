@@ -11,7 +11,7 @@ from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from pkg_resources import DistributionNotFound, get_distribution
 
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import ApplicationCustomization
 
 register = template.Library()
 
@@ -113,7 +113,7 @@ def get_item(dictionary, key):
 
 @register.simple_tag
 def project_selection_display(project):
-	project_selection_template = get_customization("project_selection_template")
+	project_selection_template = ApplicationCustomization.get("project_selection_template")
 	contents = "{{ project.name }}"
 	try:
 		contents = Template(project_selection_template).render(Context({"project": project}))

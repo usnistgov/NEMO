@@ -2,10 +2,10 @@ from django.apps import AppConfig
 
 
 def init_admin_site():
-	from NEMO.views.customization import get_customization
+	from NEMO.views.customization import ApplicationCustomization
 	from django.contrib import admin
 	# customize the site
-	site_title = get_customization("site_title", raise_exception=False)
+	site_title = ApplicationCustomization.get("site_title", raise_exception=False)
 	admin.site.site_header = site_title
 	admin.site.site_title = site_title
 	admin.site.index_title = "Detailed administration"

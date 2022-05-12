@@ -29,7 +29,7 @@ from NEMO.exceptions import (
 from NEMO.models import Area, AreaAccessRecord, Project, User
 from NEMO.utilities import date_input_format, extract_optional_beginning_and_end_dates, quiet_int
 from NEMO.views.calendar import shorten_reservation
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.policy import check_billing_to_project, check_policy_to_enter_any_area, check_policy_to_enter_this_area
 
 area_access_logger = getLogger(__name__)
@@ -270,7 +270,7 @@ def self_log_in(request, load_areas=True):
 	if request.GET.get('area_id'):
 		dictionary['area_id'] = quiet_int(request.GET['area_id'])
 
-	facility_name = get_customization('facility_name')
+	facility_name = ApplicationCustomization.get('facility_name')
 	try:
 		check_policy_to_enter_any_area(user)
 	except InactiveUserError:
@@ -386,7 +386,7 @@ def log_out_user(user: User):
 
 def able_to_self_log_out_of_area(user):
 	# 'Self log out' must be enabled
-	if not get_customization('self_log_out') == 'enabled':
+	if not ApplicationCustomization.get('self_log_out') == 'enabled':
 		return False
 	# Check if the user is active
 	if not user.is_active:
@@ -400,7 +400,7 @@ def able_to_self_log_out_of_area(user):
 
 def able_to_self_log_in_to_area(user):
 	# 'Self log in' must be enabled
-	if not get_customization('self_log_in') == 'enabled':
+	if not ApplicationCustomization.get('self_log_in') == 'enabled':
 		return False
 	# Check if the user is already in an area. If so, the /change_project/ URL can be used to change their project.
 	if user.in_area():

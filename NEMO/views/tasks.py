@@ -32,7 +32,7 @@ from NEMO.utilities import (
 	resize_image,
 	send_mail,
 )
-from NEMO.views.customization import get_customization, get_media_file_contents
+from NEMO.views.customization import ApplicationCustomization, EmailsCustomization, get_media_file_contents
 from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.tool_control import determine_tool_status
 
@@ -60,7 +60,7 @@ def create(request):
 	task_images = save_task_images(request, task)
 
 	if not settings.ALLOW_CONDITIONAL_URLS and task.force_shutdown:
-		site_title = get_customization('site_title')
+		site_title = ApplicationCustomization.get('site_title')
 		dictionary = {
 			'title': 'Task creation failed',
 			'heading': 'Something went wrong while reporting the problem',
@@ -113,7 +113,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 		send_mail(subject=subject, content=message, from_email=request.user.email, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
 
 	# Send an email to any user (excluding staff) with a future reservation on the tool:
-	user_office_email = get_customization('user_office_email_address')
+	user_office_email = EmailsCustomization.get('user_office_email_address')
 	message = get_media_file_contents('reservation_warning_email.html')
 	if user_office_email and message:
 		upcoming_reservations = Reservation.objects.filter(start__gt=timezone.now(), cancelled=False, tool=task.tool, user__is_staff=False)
@@ -190,7 +190,7 @@ Visit {url} to view the tool control page for the task.<br/>
 """
 		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=settings.SERVER_EMAIL, to=facility_managers, attachments=attachments, email_category=EmailCategory.TASKS)
 	except Exception as error:
-		site_title = get_customization('site_title')
+		site_title = ApplicationCustomization.get('site_title')
 		error_message = f"{site_title} was unable to send the task updated email. The error message that was received is: " + str(error)
 		tasks_logger.exception(error_message)
 

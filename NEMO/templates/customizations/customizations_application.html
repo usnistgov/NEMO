@@ -3,6 +3,18 @@
     <form method="POST" action="{% url 'customize' 'application' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
+            <label class="control-label col-md-2" for="training_not_required">New user training</label>
+            <div class="col-md-5">
+                <div class="radio">
+                    <label><input type="radio" id="training_not_required" name="training_not_required" {% if not training_not_required %}checked{% endif %} value=""> Required</label>
+                    <label><input type="radio" name="training_not_required" {% if training_not_required %}checked{% endif %} value="enabled"> Not required</label>
+                </div>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                Whether the Facility training is required for new users by default.
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-2">Area login/logout</label>
             <div class="col-md-10">
                 <div class="checkbox">
@@ -41,18 +53,6 @@
                 {% else %}
                     The django template used for rendering project selection when enabling tools and making reservations. The context variable <b>project</b> is provided.
                 {% endif %}
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-md-2" for="training_not_required">New user training</label>
-            <div class="col-md-5">
-                <div class="radio">
-                    <label><input type="radio" id="training_not_required" name="training_not_required" {% if not training_not_required %}checked{% endif %} value=""> Required</label>
-                    <label><input type="radio" name="training_not_required" {% if training_not_required %}checked{% endif %} value="enabled"> Not required</label>
-                </div>
-            </div>
-            <div class="col-md-5 help-block light-grey">
-                Whether the Facility training is required for new users by default.
             </div>
         </div>
         <div class="col-md-offset-2">
