@@ -82,7 +82,7 @@
 		let start_time_picker = $('#start').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
 		let end_time_picker = $('#end').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
 		// set initial date
-		if ('{{ date }}')
+		if ('{{ date|default_if_none:'' }}')
 		{
             date_picker.pickadate('picker').set('select', '{{ date }}', {format: 'yyyy-mm-dd'})
         }

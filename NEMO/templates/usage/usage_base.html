@@ -88,7 +88,7 @@
 
 			function set_dropdown_selected()
 			{
-			    if ('{{ start_date }}' && '{{ end_date }}')
+			    if ('{{ start_date|default_if_none:'' }}' && '{{ end_date|default_if_none:'' }}')
 			    {
 					let start = moment('{{ start_date.date|input_date_format }}', js_date_format);
 					let end = moment('{{ end_date.date|input_date_format }}', js_date_format);
