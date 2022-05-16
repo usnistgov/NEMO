@@ -26,4 +26,49 @@ class Migration(migrations.Migration):
             name='hide_from_users',
             field=models.BooleanField(default=False, help_text='Hides this choice from normal users. When checked, only staff, technicians, facility managers and super-users can see the choice'),
         ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_alternate',
+            field=models.EmailField(blank=True, max_length=254, null=True),
+        ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_send_access_request_updates',
+            field=models.BooleanField(default=True, help_text='Send access request updates to my alternate email'),
+        ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_send_buddy_request_replies',
+            field=models.BooleanField(default=True, help_text='Send buddy request replies to my alternate email'),
+        ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_send_reservation_emails',
+            field=models.BooleanField(default=True, help_text='Send reservation emails to my alternate email'),
+        ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_send_reservation_ending_reminders',
+            field=models.BooleanField(default=True, help_text='Send reservation ending reminders to my alternate email'),
+        ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_send_reservation_reminders',
+            field=models.BooleanField(default=True, help_text='Send reservation reminders to my alternate email'),
+        ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_send_task_updates',
+            field=models.BooleanField(default=True, help_text='Send task updates to my alternate email'),
+        ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_send_usage_reminders',
+            field=models.BooleanField(default=True, help_text='Send usage reminders to my alternate email'),
+        ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_send_broadcast_emails',
+            field=models.BooleanField(default=True, help_text='Send broadcast emails to my alternate email'),
+        ),
     ]
