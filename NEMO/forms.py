@@ -386,6 +386,15 @@ class UserPreferencesForm(ModelForm):
 			"display_new_buddy_request_reply_notification",
 			"email_new_buddy_request_reply",
 			"staff_status_view",
+			"email_alternate",
+			"email_send_reservation_emails",
+			"email_send_usage_reminders",
+			"email_send_reservation_reminders",
+			"email_send_reservation_ending_reminders",
+			"email_send_buddy_request_replies",
+			"email_send_access_request_updates",
+			"email_send_task_updates",
+			"email_send_broadcast_emails"
 		]
 
 

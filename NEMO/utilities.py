@@ -5,7 +5,7 @@ from datetime import date, datetime, time
 from email import encoders
 from email.mime.base import MIMEBase
 from io import BytesIO
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 
 from PIL import Image
 from dateutil.parser import parse
@@ -322,9 +322,9 @@ def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	return localize(midnight) if in_local_timezone else midnight
 
 
-def remove_duplicates(iterable: Union[List, Set, Tuple]) -> Optional[List]:
+def remove_duplicates(iterable: Union[List, Set, Tuple]) -> List:
 	if not iterable:
-		return None
+		return []
 	if isinstance(iterable, str):
 		raise TypeError("argument must be a list, set or tuple")
 	return list(set(iterable))
@@ -332,9 +332,9 @@ def remove_duplicates(iterable: Union[List, Set, Tuple]) -> Optional[List]:
 
 def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachments=None, email_category: EmailCategory = EmailCategory.GENERAL, fail_silently=True) -> int:
 	try:
-		clean_to = remove_duplicates(to)
-		clean_bcc = remove_duplicates(bcc)
-		clean_cc = remove_duplicates(cc)
+		clean_to = filter(None, remove_duplicates(to))
+		clean_bcc = filter(None, remove_duplicates(bcc))
+		clean_cc = filter(None, remove_duplicates(cc))
 	except TypeError:
 		raise TypeError("to, cc and bcc arguments must be a list, set or tuple")
 	mail = EmailMessage(

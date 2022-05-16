@@ -108,11 +108,18 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 		}
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
 		message = Template(message).render(Context(dictionary))
-		facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
-		recipients = tuple([r for r in [task.tool.primary_owner.email, *task.tool.backup_owners.all().values_list('email', flat=True), task.tool.notification_email_address, *facility_managers] if r])
+		# Add all recipients, starting with primary owner
+		recipient_users: List[User] = [task.tool.primary_owner]
+		# Add backup owners
+		recipient_users.extend(task.tool.backup_owners.all())
+		# Add facility managers
+		recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
+		recipients = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
+		if task.tool.notification_email_address:
+			recipients.append(task.tool.notification_email_address)
 		send_mail(subject=subject, content=message, from_email=request.user.email, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
 
-	# Send an email to any user (excluding staff) with a future reservation on the tool:
+	# Email any user (excluding staff) with a future reservation on the tool:
 	user_office_email = EmailsCustomization.get('user_office_email_address')
 	message = get_media_file_contents('reservation_warning_email.html')
 	if user_office_email and message:
@@ -124,7 +131,8 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 			else:
 				subject = reservation.tool.name + " reservation warning"
 				rendered_message = Template(message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}))
-			reservation.user.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TASKS)
+			send_to_alternate = reservation.user.get_preferences().email_send_reservation_emails
+			reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TASKS, send_to_alternate=send_to_alternate)
 
 
 @login_required
@@ -156,7 +164,7 @@ def cancel(request, task_id):
 
 def send_task_updated_email(task, url, task_images: List[TaskImages] = None):
 	try:
-		facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
+		facility_managers = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(manager.get_preferences().email_send_task_updates)]
 		if not facility_managers:
 			return
 		attachments = None
@@ -263,7 +271,7 @@ def set_task_status(request, task, status_name, user):
 	task.save()
 
 	message = get_media_file_contents('task_status_notification.html')
-	# Send an email to the appropriate staff that a task status has been updated:
+	# Email the appropriate staff that a task status has been updated:
 	if message:
 		dictionary = {
 			'template_color': bootstrap_primary_color('success'),
@@ -275,14 +283,16 @@ def set_task_status(request, task, status_name, user):
 		}
 		subject = f'{task.tool} task notification'
 		message = Template(message).render(Context(dictionary))
-		recipients = [
-			task.tool.primary_owner.email if status.notify_primary_tool_owner else None,
-			task.tool.notification_email_address if status.notify_tool_notification_email else None,
-			status.custom_notification_email_address
-		]
+		# Add primary owner if applicable
+		recipient_users: List[User] = [task.tool.primary_owner] if status.notify_primary_tool_owner else []
 		if status.notify_backup_tool_owners:
-			recipients.extend(task.tool.backup_owners.values_list('email', flat=True))
-		recipients = filter(None, recipients)
+			# Add backup owners
+			recipient_users.extend(task.tool.backup_owners.all())
+		recipients = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
+		if status.notify_tool_notification_email:
+			# Add tool notification email
+			recipients.append(task.tool.notification_email_address)
+		recipients.append(status.custom_notification_email_address)
 		send_mail(subject=subject, content=message, from_email=user.email, to=recipients, email_category=EmailCategory.TASKS)
 
 

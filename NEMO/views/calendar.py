@@ -814,7 +814,8 @@ def send_email_reservation_reminders():
 			subject = item.name + " reservation warning"
 			rendered_message = Template(reservation_warning_message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}))
 		user_office_email = EmailsCustomization.get('user_office_email_address')
-		reservation.user.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
+		send_to_alternate = reservation.user.get_preferences().email_send_reservation_reminders
+		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
 	return HttpResponse()
 
 
@@ -852,7 +853,8 @@ def send_email_reservation_ending_reminders():
 	for reservation in ending_reservations:
 		subject = reservation.reservation_item.name + " reservation ending soon"
 		rendered_message = Template(reservation_ending_reminder_message).render(Context({'reservation': reservation}))
-		reservation.user.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
+		send_to_alternate = reservation.user.get_preferences().email_send_reservation_ending_reminders
+		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
 	return HttpResponse()
 
 
@@ -875,18 +877,20 @@ def send_email_usage_reminders(projects_to_exclude=None):
 	# Just send one email for all the things!
 	aggregate = {}
 	for access_record in busy_users:
-		key = str(access_record.customer)
+		key = access_record.customer_id
 		aggregate[key] = {
+			'user': access_record.customer,
 			'email': access_record.customer.email,
 			'first_name': access_record.customer.first_name,
 			'resources_in_use': [access_record.area.name],
 		}
 	for usage_event in busy_tools:
-		key = str(usage_event.operator)
+		key = usage_event.operator_id
 		if key in aggregate:
 			aggregate[key]['resources_in_use'].append(usage_event.tool.name)
 		else:
 			aggregate[key] = {
+				'user': usage_event.operator,
 				'email': usage_event.operator.email,
 				'first_name': usage_event.operator.first_name,
 				'resources_in_use': [usage_event.tool.name],
@@ -900,7 +904,9 @@ def send_email_usage_reminders(projects_to_exclude=None):
 		subject = f"{facility_name} usage"
 		for user in aggregate.values():
 			rendered_message = Template(message).render(Context({'user': user}))
-			send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=[user['email']], email_category=EmailCategory.TIMED_SERVICES)
+			user_instance: User = user['user']
+			send_to_alternate = user_instance.get_preferences().email_send_usage_reminders
+			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
 
 	message = get_media_file_contents('staff_charge_reminder_email.html')
 	if message:
@@ -908,7 +914,8 @@ def send_email_usage_reminders(projects_to_exclude=None):
 		for staff_charge in busy_staff:
 			subject = "Active staff charge since " + format_datetime(staff_charge.start)
 			rendered_message = Template(message).render(Context({'staff_charge': staff_charge}))
-			staff_charge.staff_member.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
+			send_to_alternate = staff_charge.staff_member.get_preferences().email_send_usage_reminders
+			staff_charge.staff_member.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
 
 	return HttpResponse()
 
@@ -1117,7 +1124,7 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 					'template_color': bootstrap_primary_color('info')
 				}
 				cancellation_email = Template(email_contents).render(Context(dictionary))
-				recipients = [reservation.user.email]
+				recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_emails)
 				if reservation.area:
 					recipients.extend(reservation.area.reservation_email_list())
 				if reservation.user.get_preferences().attach_cancelled_reservation:
@@ -1140,7 +1147,10 @@ def send_missed_reservation_notification(reservation):
 	if message and user_office_email:
 		subject = "Missed reservation for the " + str(reservation.reservation_item)
 		message = Template(message).render(Context({'reservation': reservation}))
-		send_mail(subject=subject, content=message, from_email=user_office_email, to=[reservation.user.email, abuse_email, user_office_email], email_category=EmailCategory.TIMED_SERVICES)
+		recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_emails)
+		recipients.append(abuse_email)
+		recipients.append(user_office_email)
+		send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, email_category=EmailCategory.TIMED_SERVICES)
 	else:
 		calendar_logger.error("Missed reservation email couldn't be send because missed_reservation_email.html or user_office_email are not defined")
 
@@ -1151,7 +1161,7 @@ def send_out_of_time_reservation_notification(reservation:Reservation):
 	if message and user_office_email:
 		subject = "Out of time in the " + str(reservation.area.name)
 		message = Template(message).render(Context({'reservation': reservation}))
-		recipients = [reservation.user.email]
+		recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_ending_reminders)
 		recipients.extend(reservation.area.abuse_email_list())
 		send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, email_category=EmailCategory.TIMED_SERVICES)
 	else:
@@ -1160,7 +1170,8 @@ def send_out_of_time_reservation_notification(reservation:Reservation):
 
 def send_user_created_reservation_notification(reservation: Reservation):
 	site_title = ApplicationCustomization.get('site_title')
-	recipients = [reservation.user.email] if reservation.user.get_preferences().attach_created_reservation else []
+	user = reservation.user
+	recipients = user.get_emails(user.get_preferences().email_send_reservation_emails) if user.get_preferences().attach_created_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
@@ -1178,7 +1189,8 @@ def send_user_created_reservation_notification(reservation: Reservation):
 
 def send_user_cancelled_reservation_notification(reservation: Reservation):
 	site_title = ApplicationCustomization.get('site_title')
-	recipients = [reservation.user.email] if reservation.user.get_preferences().attach_cancelled_reservation else []
+	user = reservation.user
+	recipients = user.get_emails(user.get_preferences().email_send_reservation_emails) if user.get_preferences().attach_cancelled_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
@@ -1256,9 +1268,7 @@ def create_alert_for_closure_time(closure_time: ClosureTime):
 
 
 def email_last_closure_occurrence(closure_time):
-	facility_manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list(
-		"email", flat=True
-	)
+	facility_manager_emails = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(include_alternate=True)]
 	message = f"""
 Dear facility manager,<br>
 This email is to inform you that today was the last occurrence for the {closure_time.closure.name} facility closure.

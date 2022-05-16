@@ -100,6 +100,15 @@ class UserPreferences(models.Model):
 	display_new_buddy_request_reply_notification = models.BooleanField('new_buddy_request_reply_notification', default=True, help_text='Whether or not to notify the user of replies on buddy request he commented on (via unread badges)')
 	email_new_buddy_request_reply = models.BooleanField('email_new_buddy_request_reply', default=True, help_text='Whether or not to email the user of replies on buddy request he commented on')
 	staff_status_view = models.CharField('staff_status_view', max_length=100, default='day', choices=[('day', 'Day'), ('week', 'Week'), ('month', 'Month')], help_text='Preferred view for staff status page')
+	email_alternate = models.EmailField(null=True, blank=True)
+	email_send_reservation_emails = models.BooleanField(default=True, help_text="Send reservation emails to my alternate email")
+	email_send_usage_reminders = models.BooleanField(default=True, help_text="Send usage reminders to my alternate email")
+	email_send_reservation_reminders = models.BooleanField(default=True, help_text="Send reservation reminders to my alternate email")
+	email_send_reservation_ending_reminders = models.BooleanField(default=True, help_text="Send reservation ending reminders to my alternate email")
+	email_send_buddy_request_replies = models.BooleanField(default=True, help_text="Send buddy request replies to my alternate email")
+	email_send_access_request_updates = models.BooleanField(default=True, help_text="Send access request updates to my alternate email")
+	email_send_task_updates = models.BooleanField(default=True, help_text="Send task updates to my alternate email")
+	email_send_broadcast_emails = models.BooleanField(default=True, help_text="Send broadcast emails to my alternate email")
 
 	class Meta:
 		verbose_name = 'User preferences'
@@ -459,9 +468,15 @@ class User(models.Model):
 	def set_unusable_password(self):
 		pass
 
-	def email_user(self, subject, content, from_email, attachments=None, email_category:EmailCategory = EmailCategory.GENERAL):
+	def get_emails(self, include_alternate=False) -> List[str]:
+		emails = [self.email]
+		if include_alternate and self.get_preferences().email_alternate:
+			emails.append(self.preferences.email_alternate)
+		return emails
+
+	def email_user(self, subject, message, from_email, attachments=None, send_to_alternate=False, email_category:EmailCategory = EmailCategory.GENERAL):
 		""" Sends an email to this user. """
-		send_mail(subject=subject, content=content, from_email=from_email, to=[self.email], attachments=attachments, email_category=email_category)
+		send_mail(subject=subject, content=message, from_email=from_email, to=self.get_emails(send_to_alternate), attachments=attachments, email_category=email_category)
 
 	def get_full_name(self):
 		return self.get_name() + ' (' + self.username + ')'

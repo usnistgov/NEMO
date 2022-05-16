@@ -117,8 +117,8 @@ def compose_email(request):
 		"selection": selection,
 		"no_type": no_type,
 		"users": users,
-		"user_emails": ";".join([user.email for user in users]),
-		"active_user_emails": ";".join([user.email for user in users if user.is_active]),
+		"user_emails": ";".join([email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)]),
+		"active_user_emails": ";".join([email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails) if user.is_active]),
 	}
 	if generic_email_sample:
 		generic_email_context = {
@@ -146,7 +146,9 @@ def export_email_addresses(request):
 		if only_active_users:
 			users = [user for user in users if user.is_active]
 		for user in users:
-			writer.writerow([user.first_name, user.last_name, user.username, user.email])
+			user: User = user
+			for email in user.get_emails(user.get_preferences().email_send_broadcast_emails):
+				writer.writerow([user.first_name, user.last_name, user.username, email])
 		response["Content-Disposition"] = f'attachment; filename="email_addresses_{export_format_datetime()}.csv"'
 		return response
 	except:
@@ -194,14 +196,15 @@ def send_broadcast_email(request):
 		dictionary = {"error": "The audience you specified is empty. You must send the email to at least one person."}
 		return render(request, "email/compose_email.html", dictionary)
 	subject = form.cleaned_data["subject"]
-	users = [x.email for x in users]
+	users = [email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)]
+	sender: User = request.user
 	if form.cleaned_data["copy_me"]:
-		users += [request.user.email]
+		users += sender.get_emails(sender.get_preferences().email_send_broadcast_emails)
 	try:
 		send_mail(
 			subject=subject,
 			content=content,
-			from_email=request.user.email,
+			from_email=sender.email,
 			bcc=set(users),
 			email_category=EmailCategory.BROADCAST_EMAIL,
 		)

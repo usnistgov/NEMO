@@ -355,7 +355,10 @@ def user_preferences(request):
 		if form.is_valid():
 			form.save()
 			messages.success(request, "Your preferences have been saved")
+	else:
+		form = UserPreferencesForm(instance=user.preferences)
 	dictionary = {
+		'form': form,
 		'user_preferences': user.get_preferences(),
 		'user_view': user_view,
 		'show_staff_status': show_staff_status(request),

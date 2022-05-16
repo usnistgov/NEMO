@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from logging import getLogger
+from typing import List
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
@@ -169,13 +170,12 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 	user_office_email = EmailsCustomization.get("user_office_email_address")
 	access_request_notification_email = get_media_file_contents("access_request_notification_email.html")
 	if user_office_email and access_request_notification_email:
-		facility_manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list(
-			"email", flat=True
-		)
-		ccs = tuple(
-			[e for e in [*access_request.other_users.values_list("email", flat=True), *facility_manager_emails] if e]
-		)
-		ccs += (user_office_email,)
+		# cc facility managers
+		cc_users: List[User] = list(User.objects.filter(is_active=True, is_facility_manager=True))
+		# and other users
+		cc_users.extend(access_request.other_users.all())
+		ccs = [email for user in cc_users for email in user.get_emails(user.get_preferences().email_send_access_request_updates)]
+		ccs.append(user_office_email)
 		status = (
 			"approved"
 			if access_request.status == TemporaryPhysicalAccessRequest.Status.APPROVED
@@ -197,11 +197,12 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 				}
 			)
 		)
+		send_to_alternate = access_request.creator.get_preferences().email_send_access_request_updates
 		send_mail(
 			subject=f"Your access request for the {access_request.physical_access_level.area} has been {status}",
 			content=message,
 			from_email=user_office_email,
-			to=[access_request.creator.email],
+			to=access_request.creator.get_emails(include_alternate=send_to_alternate),
 			cc=ccs,
 			email_category=EmailCategory.ACCESS_REQUESTS,
 		)
@@ -271,10 +272,9 @@ def process_weekend_access_notification(user_office_email, email_to, access_cont
 
 def send_weekend_email_access(access, user_office_email, email_to, contents, beginning_of_the_week):
 	facility_name = ApplicationCustomization.get("facility_name")
-	manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list("email", flat=True)
 	recipients = tuple([e for e in email_to.split(",") if e])
-	ccs = tuple([e for e in manager_emails if e])
-	ccs += (user_office_email,)
+	ccs = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(manager.get_preferences().email_send_access_request_updates)]
+	ccs.append(user_office_email)
 
 	sat = format_datetime(beginning_of_the_week + timedelta(days=5), "SHORT_DATE_FORMAT", as_current_timezone=False)
 	sun = format_datetime(beginning_of_the_week + timedelta(days=6), "SHORT_DATE_FORMAT", as_current_timezone=False)

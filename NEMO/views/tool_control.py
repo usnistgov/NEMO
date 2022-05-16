@@ -530,8 +530,8 @@ def reset_tool_counter(request, counter_id):
 	comment.expiration_date = datetime.now() + timedelta(weeks=1)
 	comment.save()
 
-	# Send an email to Lab Managers about the counter being reset.
-	facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
+	# Email Lab Managers about the counter being reset.
+	facility_managers = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(manager.get_preferences().email_send_task_updates)]
 	if facility_managers:
 		message = f"""The {counter.name} counter for the {counter.tool.name} was reset to 0 on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.
 	
@@ -562,9 +562,11 @@ def interlock_error(action:str, user:User):
 
 def email_managers_required_questions_disable_tool(tool_user:User, staff_member:User, tool:Tool, questions:List[PostUsageQuestion]):
 	abuse_email_address = EmailsCustomization.get('abuse_email_address')
-	facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
+	cc_users: List[User] = [staff_member, tool.primary_owner]
+	cc_users.extend(tool.backup_owners.all())
+	cc_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
 	facility_name = ApplicationCustomization.get('facility_name')
-	ccs = set(tuple([r for r in [staff_member.email, tool.primary_owner.email, *tool.backup_owners.all().values_list('email', flat=True), *facility_managers] if r]))
+	ccs = [email for user in cc_users for email in user.get_emails(include_alternate=True)]
 	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
 	message = f"""
 Dear {tool_user.get_name()},<br/>
@@ -576,7 +578,8 @@ Regards,<br/>
 <br/>
 {facility_name} Management<br/>
 """
-	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=[tool_user.email], cc=ccs, email_category=EmailCategory.ABUSE)
+	tos = tool_user.get_emails(include_alternate=True)
+	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=tos, cc=ccs, email_category=EmailCategory.ABUSE)
 
 
 def send_tool_usage_counter_email(counter: ToolUsageCounter):
