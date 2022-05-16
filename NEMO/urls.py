@@ -289,7 +289,7 @@ urlpatterns += [
 	url(r'^news/publish/(?P<story_id>\d+)/$', news.publish, name='publish_news_update'),
 
 	# Media
-	url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}, name='media'),
+	url(r'^media/(?P<path>.*)$', login_required(serve), {'document_root': settings.MEDIA_ROOT}, name='media'),
 
 	# User Preferences
 	url(r'^user_preferences/$', users.user_preferences, name='user_preferences'),
