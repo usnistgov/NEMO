@@ -8,7 +8,7 @@ from pymodbus.client.sync import ModbusTcpClient
 
 from NEMO.apps.sensors.admin import SensorAdminForm, SensorCardAdminForm
 from NEMO.apps.sensors.evaluators import evaluate_expression, evaluate_modbus_expression
-from NEMO.apps.sensors.models import Sensor as Sensor_model, SensorCardCategory, SensorData
+from NEMO.apps.sensors.models import Sensor as Sensor_model, SensorAlert, SensorCardCategory, SensorData
 
 sensors_logger = getLogger(__name__)
 
@@ -35,13 +35,17 @@ class Sensor(ABC):
 			sensors_logger.warning(warning_message)
 			return warning_message
 
+		data = None
 		try:
 			registers = self.do_read_values(sensor)
 			data_value = self.evaluate_sensor(sensor, registers=registers)
 			if data_value:
-				return SensorData.objects.create(sensor=sensor, value=data_value)
+				data = SensorData.objects.create(sensor=sensor, value=data_value)
+				process_alerts(sensor, data)
+				return data
 		except Exception as error:
 			sensors_logger.error(error)
+			process_alerts(sensor, data)
 			if raise_exception:
 				raise
 			else:
@@ -64,6 +68,17 @@ class Sensor(ABC):
 	@abstractmethod
 	def do_read_values(self, sensor: Sensor_model) -> List:
 		pass
+
+
+def process_alerts(sensor: Sensor, sensor_data: SensorData = None):
+	try:
+		sensor_alerts = []
+		for sub_class in SensorAlert.__subclasses__():
+			sensor_alerts.extend(sub_class.objects.filter(enabled=True, sensor=sensor))
+		for alert in sensor_alerts:
+			alert.process(sensor_data)
+	except Exception as e:
+		sensors_logger.error(e)
 
 
 class ModbusTcpSensor(Sensor):

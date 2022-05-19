@@ -4,10 +4,19 @@ from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin import register
 from django.contrib.admin.decorators import display
+from django.contrib.admin.utils import display_for_value
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
-from NEMO.apps.sensors.models import Sensor, SensorCard, SensorCardCategory, SensorCategory, SensorData
+from NEMO.apps.sensors.models import (
+	Sensor,
+	SensorAlertEmail,
+	SensorAlertLog,
+	SensorCard,
+	SensorCardCategory,
+	SensorCategory,
+	SensorData,
+)
 
 
 def duplicate_sensor_configuration(model_admin, request, queryset):
@@ -157,7 +166,7 @@ class SensorAdmin(admin.ModelAdmin):
 		"unit_id",
 		"read_address",
 		"number_of_values",
-		"read_frequency",
+		"get_read_frequency",
 		"get_last_read",
 		"get_last_read_at",
 	)
@@ -177,10 +186,14 @@ class SensorAdmin(admin.ModelAdmin):
 		last_data_point = obj.last_data_point()
 		return last_data_point.created_date if last_data_point else ""
 
+	@display(ordering="read_frequency", description="Read frequency")
+	def get_read_frequency(self, obj: Sensor):
+		return obj.read_frequency if obj.read_frequency != 0 else display_for_value(False, "", boolean=True)
+
 
 @register(SensorCardCategory)
 class SensorCardCategoryAdmin(admin.ModelAdmin):
-	list_display = ("name",)
+	list_display = ("name", "key")
 
 
 @register(SensorData)
@@ -192,3 +205,25 @@ class SensorDataAdmin(admin.ModelAdmin):
 	@display(ordering="sensor__data_prefix", description="Display value")
 	def get_display_value(self, obj: SensorData):
 		return obj.display_value()
+
+
+@register(SensorAlertEmail)
+class SensorAlertEmailAdmin(admin.ModelAdmin):
+	list_display = ("sensor", "trigger_condition", "trigger_no_data", "additional_email", "triggered_on")
+	readonly_fields = ("triggered_on",)
+
+
+@register(SensorAlertLog)
+class SensorAlertLogAdmin(admin.ModelAdmin):
+	list_display = ["id", "time", "sensor", "reset", "value"]
+	list_filter = ["sensor", "value", "reset"]
+	date_hierarchy = "time"
+
+	def has_delete_permission(self, request, obj=None):
+		return False
+
+	def has_add_permission(self, request):
+		return False
+
+	def has_change_permission(self, request, obj=None):
+		return False

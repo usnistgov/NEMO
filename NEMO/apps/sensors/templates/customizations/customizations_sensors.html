@@ -2,6 +2,19 @@
     <h3 class="customization-section-title">Sensor data settings</h3>
     <form method="POST" action="{% url 'customize' 'sensors' %}" class="form-horizontal">
         {% csrf_token %}
+        <div class="form-group {% if errors.sensor_alert_emails %}has-error{% endif %}">
+            <label class="control-label col-md-2" for="sensor_alert_emails">Sensor alert email(s)</label>
+            <div class="col-md-5">
+                <input type="text" id="sensor_alert_emails" name="sensor_alert_emails" class="form-control" value="{% if errors.sensor_alert_emails %}{{ errors.sensor_alert_emails.value }}{% else %}{{ sensor_alert_emails }}{% endif %}" placeholder="sensor_alerts@example.org"/>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                {% if errors.sensor_alert_emails %}
+                    {{ errors.sensor_alert_emails.error }}
+                {% else %}
+                    The email(s) to notify when a sensor alert is raised or reset. A comma-separated list can be used.
+                {% endif %}
+            </div>
+        </div>
         <div class="form-group">
             <label class="control-label col-md-2 col-sm-2" for="sensor_default_daterange">Default daterange</label>
             <div class="col-md-10 col-sm-10">

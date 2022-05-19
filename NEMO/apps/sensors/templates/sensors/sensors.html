@@ -20,14 +20,14 @@
         <ul class="list-inline list-inline-sensors-dashboard text-center">
             {% if categories %}
                 {% for category in categories %}
-                    <li class="dashboard-category-group-item text-center alert-success" onclick="window.location = '{% url 'sensors' category.id %}'">
+                    <li class="dashboard-category-group-item text-center {% if category.alert_triggered %}alert-danger{% else %}alert-success{% endif %}" onclick="window.location = '{% url 'sensors' category.id %}'">
                         {{ category.name }}
                     </li>
                 {% endfor %}
             {% endif %}
             {% if sensors %}
                 {% for sensor in sensors %}
-                    <li class="dashboard-sensor-group-item text-center alert-info" onclick="window.location = '{% url 'sensor_details' sensor.id %}'">
+                    <li class="dashboard-sensor-group-item text-center {% if sensor.alert_triggered %}alert-danger{% else %}alert-success{% endif %}" onclick="window.location = '{% url 'sensor_details' sensor.id %}'">
                         {{ sensor.name }}<br><br>
                         {{ sensor.last_data_point.created_date|date:"SHORT_DATETIME_FORMAT" }}<br>
                         {{ sensor.last_data_point.display_value }}

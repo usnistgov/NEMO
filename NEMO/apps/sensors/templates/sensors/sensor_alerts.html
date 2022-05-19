@@ -1,0 +1,9 @@
+{% if alerts %}
+    <ul style="margin-top: 10px;">
+        {% for alert in alerts %}
+            <li class="{% if alert.reset %}success-highlight{% else %}danger-highlight{% endif %}">{{ alert.description }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <i>There are no alerts to display. Try selecting a different date range</i>
+{% endif %}

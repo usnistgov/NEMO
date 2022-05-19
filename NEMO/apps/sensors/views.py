@@ -10,7 +10,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_GET
 
 from NEMO.apps.sensors.customizations import SensorCustomization
-from NEMO.apps.sensors.models import Sensor, SensorCategory, SensorData
+from NEMO.apps.sensors.models import Sensor, SensorAlertLog, SensorCategory, SensorData
 from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required
 from NEMO.utilities import (
 	BasicDisplayTable,
@@ -91,6 +91,16 @@ def sensor_chart_data(request, sensor_id):
 		labels.append(format_datetime(data_point.created_date, "m/d/Y H:i:s"))
 		data.append(data_point.value)
 	return JsonResponse(data={"labels": labels, "data": data})
+
+
+@staff_member_required
+@require_GET
+@disable_session_expiry_refresh
+def sensor_alert_log(request, sensor_id):
+	sensor = get_object_or_404(Sensor, pk=sensor_id)
+	sensor_data, start, end = get_sensor_data(request, sensor)
+	alert_log_entries = SensorAlertLog.objects.filter(sensor=sensor, time__gte=start, time__lte=end or timezone.now())
+	return render(request, "sensors/sensor_alerts.html", {"alerts": alert_log_entries})
 
 
 def get_sensor_data(request, sensor) -> (QuerySet, datetime, datetime):

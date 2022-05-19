@@ -61,9 +61,14 @@
                 <li class="{% if tab == 'data' %}active{% endif %}">
                     <a href="#data-tab">Data</a>
                 </li>
+                <li class="{% if tab == 'alert' %}active{% endif %}">
+                    <a href="#alert-tab">Alert log</a>
+                </li>
             </ul>
-            <div id="no-sensor-data" class="panel-body" style="display: none;">
-                <i>There is no data to display. Try selecting a different date range</i>
+            <div id="no-sensor-data" class="tab-content panel panel-default panel-tab-content" style="display: none;">
+                <div class="panel-body">
+                    <i>There is no data to display. Try selecting a different date range</i>
+                </div>
             </div>
             <div id="sensor-data" class="tab-content panel panel-default panel-tab-content" style="margin-bottom: 0;">
                 <div class="tab-pane {% if tab == 'chart' %}active{% endif %}" id="chart-tab">
@@ -97,6 +102,10 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+                <div class="tab-pane {% if tab == 'alert' %}active{% endif %}" id="alert-tab">
+                    <div id="alert-div" class="panel-body">
                     </div>
                 </div>
             </div>
@@ -163,7 +172,7 @@
             const refreshRate = $('#refresh-rate').val() || 0;
             const chartStep = $("#chart-step").val() || 1;
             const dates = get_start_end_dates();
-            const base_url = url ? url : $("#data-tab").hasClass("active") ? "{% url 'sensor_details' sensor.id 'data' %}" : "{% url 'sensor_details' sensor.id 'chart' %}";
+            const base_url = url ? url : $("#data-tab").hasClass("active") ? "{% url 'sensor_details' sensor.id 'data' %}" : $("#chart-tab").hasClass("active") ? "{% url 'sensor_details' sensor.id 'chart' %}" : "{% url 'sensor_details' sensor.id 'alert' %}";
             return base_url + "?start=" + dates[0] + "&end=" + dates[1] + "&chart_step=" + chartStep + "&refresh_rate=" + refreshRate;
         }
 
@@ -254,25 +263,34 @@
             let data_url = get_base_url("{% url 'sensor_chart_data' sensor.id %}");
             let history_url = get_base_url();
             history.pushState('', "{{ sensor.name }} data", history_url);
-            $.ajax(
+            if ($("#alert-tab").hasClass("active"))
             {
-                url: data_url,
-                success: function (data)
+                $('#alert-div').load(get_base_url("{% url 'sensor_alert_log' sensor.id %}"));
+                $('#sensor-data').show();
+                $('#no-sensor-data').hide();
+            }
+            else
+            {
+                $.ajax(
                 {
-                    if (data && data.data && data.data.length)
+                    url: data_url,
+                    success: function (data)
                     {
-                        $('#sensor-data').show();
-                        $('#no-sensor-data').hide();
-                        update_chart(data);
-                        update_table(data);
+                        if (data && data.data && data.data.length)
+                        {
+                            $('#sensor-data').show();
+                            $('#no-sensor-data').hide();
+                            update_chart(data);
+                            update_table(data);
+                        }
+                        else
+                        {
+                            $('#sensor-data').hide();
+                            $('#no-sensor-data').show();
+                        }
                     }
-                    else
-                    {
-                        $('#sensor-data').hide();
-                        $('#no-sensor-data').show();
-                    }
-                }
-            });
+                });
+            }
         }
 
         {# Update dates in daterangepicker from the input, then open it #}
