@@ -109,5 +109,35 @@ class Migration(migrations.Migration):
             name='parent',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='children', to='sensors.sensorcategory'),
         ),
+        migrations.CreateModel(
+            name='SensorAlertLog',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('time', models.DateTimeField(auto_now_add=True)),
+                ('value', models.FloatField(blank=True, null=True)),
+                ('reset', models.BooleanField(default=False)),
+                ('condition', models.TextField(blank=True, null=True)),
+                ('no_data', models.BooleanField(default=False)),
+                ('sensor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sensors.sensor')),
+            ],
+            options={
+                'ordering': ['-time'],
+            },
+        ),
+        migrations.CreateModel(
+            name='SensorAlertEmail',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('enabled', models.BooleanField(default=True)),
+                ('trigger_no_data', models.BooleanField(default=False, help_text='Check this box to trigger this alert when no data is available')),
+                ('trigger_condition', models.TextField(blank=True, help_text='The trigger condition for this alert. The sensor value is available as a variable named <b>value</b>. e.g. value == 42 or value > 42.', null=True)),
+                ('triggered_on', models.DateTimeField(blank=True, null=True)),
+                ('additional_email', models.EmailField(blank=True, help_text='Additional email address to contact when this alert is triggered', max_length=254, null=True)),
+                ('sensor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sensors.sensor')),
+            ],
+            options={
+                'abstract': False,
+            },
+        ),
         migrations.RunPython(add_modbus_tcp_sensor_category),
     ]

@@ -71,4 +71,9 @@ class Migration(migrations.Migration):
             name='email_send_broadcast_emails',
             field=models.BooleanField(default=True, help_text='Send broadcast emails to my alternate email'),
         ),
+        migrations.AlterField(
+            model_name='emaillog',
+            name='category',
+            field=models.IntegerField(choices=[(0, 'General'), (1, 'System'), (2, 'Direct Contact'), (3, 'Broadcast Email'), (4, 'Timed Services'), (5, 'Feedback'), (6, 'Abuse'), (7, 'Safety'), (8, 'Tasks'), (9, 'Access Requests'), (10, 'Sensors')], default=0),
+        ),
     ]
