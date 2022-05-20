@@ -14,6 +14,7 @@ from django.utils.safestring import mark_safe
 
 from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.apps.sensors.evaluators import evaluate_boolean_expression
+from NEMO.fields import MultiEmailField
 from NEMO.models import InterlockCard
 from NEMO.utilities import EmailCategory, format_datetime, send_mail
 
@@ -315,8 +316,8 @@ class SensorAlert(models.Model):
 
 
 class SensorAlertEmail(SensorAlert):
-	additional_email = models.EmailField(
-		null=True, blank=True, help_text="Additional email address to contact when this alert is triggered"
+	additional_emails = MultiEmailField(
+		null=True, blank=True, help_text="Additional email address to contact when this alert is triggered. A comma-separated list can be used."
 	)
 
 	def reset_alert(self, alert_time: datetime.datetime, value: float = None):
@@ -332,8 +333,8 @@ class SensorAlertEmail(SensorAlert):
 	def send(self, subject, message):
 		email_to = SensorCustomization.get("sensor_alert_emails")
 		recipients = [e for e in email_to.split(",") if e]
-		if self.additional_email:
-			recipients.append(self.additional_email)
+		if self.additional_emails:
+			recipients.extend(self.additional_emails)
 		if recipients:
 			send_mail(
 				subject=subject,
