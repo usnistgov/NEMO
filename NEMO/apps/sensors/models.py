@@ -166,7 +166,7 @@ class Sensor(models.Model):
 				raise ValidationError({"formula": str(e)})
 
 	def alert_triggered(self) -> bool:
-		for alert_qs in SensorAlert.sensor_alert_filter(enabled=True, sensor=self):
+		for alert_qs in SensorAlert.sensor_alert_filter(sensor=self):
 			if alert_qs.filter(triggered_on__isnull=False).exists():
 				return True
 		return False
