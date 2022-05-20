@@ -4,6 +4,8 @@ import django.core.validators
 import django.db.models.deletion
 from django.db import migrations, models
 
+import NEMO.fields
+
 
 class Migration(migrations.Migration):
 
@@ -132,7 +134,7 @@ class Migration(migrations.Migration):
                 ('trigger_no_data', models.BooleanField(default=False, help_text='Check this box to trigger this alert when no data is available')),
                 ('trigger_condition', models.TextField(blank=True, help_text='The trigger condition for this alert. The sensor value is available as a variable named <b>value</b>. e.g. value == 42 or value > 42.', null=True)),
                 ('triggered_on', models.DateTimeField(blank=True, null=True)),
-                ('additional_email', models.EmailField(blank=True, help_text='Additional email address to contact when this alert is triggered', max_length=254, null=True)),
+                ('additional_emails', NEMO.fields.MultiEmailField(blank=True, help_text='Additional email address to contact when this alert is triggered. A comma-separated list can be used.', max_length=2000, null=True)),
                 ('sensor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sensors.sensor')),
             ],
             options={
