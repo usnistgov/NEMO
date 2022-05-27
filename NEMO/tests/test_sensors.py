@@ -23,10 +23,18 @@ class TestAstEval(TestCase):
 		self.assertEqual(100, res_5)
 		res_6 = evaluate_expression("5*val+val2", val=20, val2=1)
 		self.assertEqual(101, res_6)
-		res_7 = evaluate_expression("5+1*2")
-		self.assertEqual(7, res_7)
-		res_8 = evaluate_expression("5*1+2")
-		self.assertEqual(7, res_8)
+		res_7 = evaluate_expression("sum(my_list)", **variables)
+		self.assertEqual(16, res_7)
+		self.assertEqual(7, evaluate_expression("5+1*2"))
+		self.assertEqual(7, evaluate_expression("5*1+2"))
+		self.assertEqual(5, evaluate_expression("round(5.2)"))
+		self.assertEqual(5.2, evaluate_expression("round(5.21, 1)"))
+		self.assertEqual(6, evaluate_expression("round(5.5)"))
+		self.assertEqual(6, evaluate_expression("ceil(5.2)"))
+		self.assertEqual(5, evaluate_expression("floor(5.7)"))
+		self.assertEqual(5, evaluate_expression("abs(-5)"))
+		self.assertEqual(12, evaluate_expression("trunc(12.123)"))
+		self.assertEqual(2, evaluate_expression("sqrt(4)"))
 
 	def test_modbus_evaluation(self):
 		# Test all modbus functions
@@ -34,7 +42,6 @@ class TestAstEval(TestCase):
 		variables_2 = {"my_list": [100, 500]}
 		variables_4 = {"my_list": [100, 500, 1000, 2000]}
 		for function_name in modbus_functions:
-			evaluate_modbus_expression(f"decode_bits(my_list)", **variables_1)
 			evaluate_modbus_expression(f"decode_string(my_list)", **variables_1)
 			if "8" in function_name:
 				evaluate_modbus_expression(f"{function_name}(my_list)", **variables_1)
@@ -44,6 +51,7 @@ class TestAstEval(TestCase):
 				evaluate_modbus_expression(f"{function_name}(my_list)", **variables_2)
 			elif "64" in function_name:
 				evaluate_modbus_expression(f"{function_name}(my_list)", **variables_4)
+		evaluate_modbus_expression(f"round(decode_8bit_int(my_list))", **variables_1)
 
 	def test_boolean_evaluation(self):
 		self.assertFalse(evaluate_boolean_expression("False"))
@@ -71,3 +79,4 @@ class TestAstEval(TestCase):
 		self.assertFalse(evaluate_boolean_expression("False or True and False"))
 		self.assertFalse(evaluate_boolean_expression("True and True and True and False"))
 		self.assertFalse(evaluate_boolean_expression("value > 56 and value < 76", value=100))
+		self.assertFalse(evaluate_boolean_expression("value > abs(-110)", value=100))

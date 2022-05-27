@@ -1,6 +1,7 @@
 import ast
 import operator
 from _ast import BinOp, BoolOp, Call, Compare, Index, Name, NameConstant, Num, Slice, Subscript, UnaryOp
+from math import ceil, floor, sqrt, trunc
 
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder
@@ -17,10 +18,22 @@ base_operators = {
 	ast.mod: operator.mod,
 }
 
+# supported functions
+base_functions = {
+	"round": round,
+	"floor": floor,
+	"ceil": ceil,
+	"abs": abs,
+	"trunc": trunc,
+	"sqrt": sqrt,
+	"sum": sum,
+}
+
 
 # noinspection PyTypeChecker
 class BasicEvaluatorVisitor(ast.NodeVisitor):
 	operators = base_operators
+	functions = base_functions
 
 	def __init__(self, **kwargs):
 		self._variables = kwargs
@@ -79,6 +92,13 @@ class BasicEvaluatorVisitor(ast.NodeVisitor):
 
 		return slice(lower, upper, step)
 
+	def visit_Call(self, node: Call):
+		if node.func.id in self.functions:
+			new_args = [self.visit(arg) for arg in node.args]
+			return self.functions[node.func.id](*new_args)
+		else:
+			self.generic_visit(node)
+
 	def generic_visit(self, node):
 		if isinstance(node, ast.Call):
 			raise TypeError(f"Unsupported operation: {getattr(node.func,'id')}")
@@ -116,7 +136,9 @@ def get_modbus_function(name):
 class ModbusEvaluatorVisitor(BasicEvaluatorVisitor):
 	# Extension of the basic evaluator with additional modbus specific functions
 	def visit_Call(self, node: Call):
-		if node.func.id in modbus_functions:
+		if node.func.id in self.functions:
+			return super().visit_Call(node)
+		elif node.func.id in modbus_functions:
 			new_args = [self.visit(arg) for arg in node.args]
 			return get_modbus_function(node.func.id)(*new_args)()
 		else:
