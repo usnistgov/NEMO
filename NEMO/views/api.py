@@ -299,10 +299,12 @@ class BillingViewSet(XLSXFileMixin, GenericViewSet):
 		serializer = self.serializer_class(queryset, many=True)
 		return Response(serializer.data)
 
+	def check_permissions(self, request):
+		return request and request.user.has_perm('NEMO.use_billing_api')
+
 	def get_queryset(self):
 		billing_form = BillingFilterForm(self.request.GET)
 		billing_form.full_clean()
-
 		data: List[BillableItem] = []
 		data.extend(get_usage_events_for_billing(billing_form))
 		data.extend(get_area_access_for_billing(billing_form))
