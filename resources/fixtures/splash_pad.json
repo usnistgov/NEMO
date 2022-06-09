@@ -216,7 +216,7 @@
       "email": "captain.nemo@nautilus.com",
       "type": 3,
       "domain": "",
-      "badge_number": null,
+      "badge_number": "1",
       "access_expiration": null,
       "is_active": true,
       "is_staff": true,
@@ -245,10 +245,10 @@
       "email": "pierre.aronnax@nautilus.com",
       "type": 2,
       "domain": "",
-      "badge_number": null,
-      "access_expiration": "2014-09-09",
+      "badge_number": "2",
+      "access_expiration": null,
       "is_active": true,
-      "is_staff": false,
+      "is_staff": true,
       "is_service_personnel": false,
       "is_technician": false,
       "is_facility_manager": false,
@@ -274,7 +274,7 @@
       "email": "ned.land@nautilus.com",
       "type": 1,
       "domain": "",
-      "badge_number": null,
+      "badge_number": "3",
       "access_expiration": "2014-09-09",
       "is_active": true,
       "is_staff": false,
@@ -428,7 +428,7 @@
       "category": null,
       "abuse_email": "",
       "reservation_email": "",
-      "welcome_message": "Welcome to the cleanroom!",
+      "welcome_message": "<h2><center>Welcome to the cleanroom!</center></h2>",
       "requires_reservation": true,
       "logout_grace_period": null,
       "buddy_system_allowed": true,
@@ -622,6 +622,32 @@
     }
   },
   {
+  "model": "NEMO.interlockcard",
+  "pk": 1,
+  "fields": {
+    "name": "Interlock card",
+    "server": "localhost",
+    "port": 123,
+    "number": null,
+    "even_port": null,
+    "odd_port": null,
+    "category": 4,
+    "username": null,
+    "password": null,
+    "enabled": true
+  }
+},
+{
+  "model": "NEMO.interlock",
+  "pk": 1,
+  "fields": {
+    "card": 1,
+    "channel": 3,
+    "state": -1,
+    "most_recent_reply": "None"
+  }
+},
+{
     "model": "NEMO.interlockcardcategory",
     "pk": 1,
     "fields": {
@@ -768,6 +794,15 @@
     }
   },
   {
+  "model": "NEMO.door",
+  "pk": 1,
+  "fields": {
+    "name": "Cleanroom door",
+    "area": 1,
+    "interlock": 1
+  }
+},
+{
     "model": "NEMO.alert",
     "pk": 1,
     "fields": {
