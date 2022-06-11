@@ -300,7 +300,8 @@ class BillingViewSet(XLSXFileMixin, GenericViewSet):
 		return Response(serializer.data)
 
 	def check_permissions(self, request):
-		return request and request.user.has_perm('NEMO.use_billing_api')
+		if not request or not request.user.has_perm('NEMO.use_billing_api'):
+			self.permission_denied(request)
 
 	def get_queryset(self):
 		billing_form = BillingFilterForm(self.request.GET)
