@@ -119,4 +119,5 @@ def get_rate_class():
 	return ret()
 
 
+# ONLY import this LOCALLY to avoid potential issues
 rate_class = get_rate_class()

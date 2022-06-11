@@ -7,7 +7,6 @@ from django.shortcuts import redirect, render
 from django.template import Context, Template
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO import rates
 from NEMO.decorators import staff_member_required
 from NEMO.exceptions import ProjectChargeException
 from NEMO.forms import ConsumableWithdrawForm
@@ -23,6 +22,7 @@ consumables_logger = getLogger(__name__)
 @require_http_methods(['GET', 'POST'])
 def consumables(request):
 	if request.method == "GET":
+		from NEMO import rates
 		rate_dict = rates.rate_class.get_consumable_rates(Consumable.objects.all())
 
 		dictionary = {

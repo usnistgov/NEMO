@@ -15,7 +15,6 @@ from django.utils import formats, timezone
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO import rates
 from NEMO.decorators import staff_member_required, synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors
@@ -82,6 +81,7 @@ def tool_control(request, item_type="tool", tool_id=None):
 @require_GET
 def tool_status(request, tool_id):
 	""" Gets the current status of the tool (that is, whether it is currently in use or not). """
+	from NEMO import rates
 	tool = get_object_or_404(Tool, id=tool_id, visible=True)
 
 	dictionary = {

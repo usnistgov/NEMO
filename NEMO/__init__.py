@@ -1,3 +1,5 @@
+import sys
+
 from django.apps import AppConfig
 
 
@@ -20,6 +22,8 @@ class NEMOConfig(AppConfig):
 	name = "NEMO"
 
 	def ready(self):
+		if 'migrate' or 'makemigrations' in sys.argv:
+			return
 		from django.apps import apps
 		if apps.is_installed("django.contrib.admin"):
 			init_admin_site()
