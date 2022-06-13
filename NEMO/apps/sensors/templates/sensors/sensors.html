@@ -35,7 +35,15 @@
                 {% endfor %}
             {% endif %}
             {% if not sensors and not categories %}
-                <div class="dashboard-no-group-items">no items to display</div>
+                <div class="dashboard-no-group-items">
+                    no items to display.
+                    {% if user.is_superuser %}
+                        <br/><br/>You can add sensors, categories and alerts by navigating to<br>
+                        <a href="{% url 'admin:app_list' 'sensors' %}">
+                            Administration -> Detailed Administration -> Sensors
+                        </a>
+                    {% endif %}
+                </div>
             {% endif %}
         </ul>
     </div>
