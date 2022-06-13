@@ -80,8 +80,6 @@ class Migration(migrations.Migration):
                 ('server', models.CharField(max_length=200)),
                 ('port', models.PositiveIntegerField()),
                 ('number', models.PositiveIntegerField(blank=True, null=True)),
-                ('even_port', models.PositiveIntegerField(blank=True, null=True)),
-                ('odd_port', models.PositiveIntegerField(blank=True, null=True)),
                 ('username', models.CharField(blank=True, max_length=100, null=True)),
                 ('password', models.CharField(blank=True, max_length=100, null=True)),
                 ('enabled', models.BooleanField(default=True)),

@@ -38,8 +38,6 @@ class SensorCard(models.Model):
 	server = models.CharField(max_length=200)
 	port = models.PositiveIntegerField()
 	number = models.PositiveIntegerField(blank=True, null=True)
-	even_port = models.PositiveIntegerField(blank=True, null=True)
-	odd_port = models.PositiveIntegerField(blank=True, null=True)
 	category = models.ForeignKey(SensorCardCategory, on_delete=models.CASCADE)
 	username = models.CharField(max_length=100, blank=True, null=True)
 	password = models.CharField(max_length=100, blank=True, null=True)

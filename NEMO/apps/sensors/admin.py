@@ -84,7 +84,7 @@ class SensorCardAdminForm(forms.ModelForm):
 @register(SensorCard)
 class SensorCardAdmin(admin.ModelAdmin):
 	form = SensorCardAdminForm
-	list_display = ("name", "enabled", "server", "port", "number", "category", "even_port", "odd_port")
+	list_display = ("name", "enabled", "server", "port", "number", "category")
 
 
 class SensorAdminForm(forms.ModelForm):
