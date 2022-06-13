@@ -59,7 +59,9 @@
       "status": 0,
       "reviewer": null,
       "deleted": false,
-      "other_users": [2]
+      "other_users": [
+        2
+      ]
     }
   },
   {
@@ -231,8 +233,16 @@
       "physical_access_levels": [],
       "groups": [],
       "user_permissions": [],
-      "qualifications": [1, 2, 3],
-      "projects": [1, 2, 3]
+      "qualifications": [
+        1,
+        2,
+        3
+      ],
+      "projects": [
+        1,
+        2,
+        3
+      ]
     }
   },
   {
@@ -260,8 +270,16 @@
       "physical_access_levels": [],
       "groups": [],
       "user_permissions": [],
-      "qualifications": [1, 2, 3],
-      "projects": [1, 2, 3]
+      "qualifications": [
+        1,
+        2,
+        3
+      ],
+      "projects": [
+        1,
+        2,
+        3
+      ]
     }
   },
   {
@@ -289,8 +307,16 @@
       "physical_access_levels": [],
       "groups": [],
       "user_permissions": [],
-      "qualifications": [1, 2, 3],
-      "projects": [1, 2, 3]
+      "qualifications": [
+        1,
+        2,
+        3
+      ],
+      "projects": [
+        1,
+        2,
+        3
+      ]
     }
   },
   {
@@ -326,7 +352,11 @@
       "_policy_off_start_time": null,
       "_policy_off_end_time": null,
       "_policy_off_weekend": false,
-      "_backup_owners": [1, 2, 3]
+      "_backup_owners": [
+        1,
+        2,
+        3
+      ]
     }
   },
   {
@@ -336,9 +366,9 @@
       "name": "PECVD",
       "parent_tool": null,
       "visible": true,
-      "_description": null,
-      "_serial": null,
-      "_image": "",
+      "_description": "Plasma-enhanced chemical vapor deposition (PECVD) is a chemical vapor deposition process used to deposit thin films from a gas state (vapor) to a solid state on a substrate. <br>\r\nChemical reactions are involved in the process, which occur after creation of a plasma of the reacting gases. <br><br>\r\n\r\nThe plasma is generally created by radio frequency (RF) (alternating current (AC)) frequency or direct current (DC) discharge between two electrodes, the space between which is filled with the reacting gases.",
+      "_serial": "21gh3123g12j31h",
+      "_image": "tool_images/pecvd.jpeg",
       "_category": "Chemical Vapor Deposition",
       "_operational": true,
       "_primary_owner": 1,
@@ -362,7 +392,11 @@
       "_policy_off_start_time": null,
       "_policy_off_end_time": null,
       "_policy_off_weekend": false,
-      "_backup_owners": [1, 2, 3]
+      "_backup_owners": [
+        1,
+        2,
+        3
+      ]
     }
   },
   {
@@ -372,9 +406,9 @@
       "name": "Dicing saw",
       "parent_tool": null,
       "visible": true,
-      "_description": null,
+      "_description": "The Disco DAD-341 dicing saw is used to cut multi-device substrates into individual chips. The system can accommodate substrates up to 4 mm thick and supports sizes ranging from 200 mm diameter wafers down to small pieces.",
       "_serial": null,
-      "_image": "",
+      "_image": "tool_images/dicing_saw.png",
       "_category": "Packaging",
       "_operational": true,
       "_primary_owner": 1,
@@ -398,7 +432,11 @@
       "_policy_off_start_time": null,
       "_policy_off_end_time": null,
       "_policy_off_weekend": false,
-      "_backup_owners": [1, 2, 3]
+      "_backup_owners": [
+        1,
+        2,
+        3
+      ]
     }
   },
   {
@@ -416,7 +454,11 @@
       "qualified_users_are_maintainers": false,
       "exclude_from_configuration_agenda": false,
       "absence_string": null,
-      "maintainers": [1, 2, 3]
+      "maintainers": [
+        1,
+        2,
+        3
+      ]
     }
   },
   {
@@ -622,32 +664,32 @@
     }
   },
   {
-  "model": "NEMO.interlockcard",
-  "pk": 1,
-  "fields": {
-    "name": "Interlock card",
-    "server": "localhost",
-    "port": 123,
-    "number": null,
-    "even_port": null,
-    "odd_port": null,
-    "category": 4,
-    "username": null,
-    "password": null,
-    "enabled": true
-  }
-},
-{
-  "model": "NEMO.interlock",
-  "pk": 1,
-  "fields": {
-    "card": 1,
-    "channel": 3,
-    "state": -1,
-    "most_recent_reply": "None"
-  }
-},
-{
+    "model": "NEMO.interlockcard",
+    "pk": 1,
+    "fields": {
+      "name": "Interlock card",
+      "server": "localhost",
+      "port": 123,
+      "number": null,
+      "even_port": null,
+      "odd_port": null,
+      "category": 4,
+      "username": null,
+      "password": null,
+      "enabled": true
+    }
+  },
+  {
+    "model": "NEMO.interlock",
+    "pk": 1,
+    "fields": {
+      "card": 1,
+      "channel": 3,
+      "state": -1,
+      "most_recent_reply": "None"
+    }
+  },
+  {
     "model": "NEMO.interlockcardcategory",
     "pk": 1,
     "fields": {
@@ -669,6 +711,14 @@
     "fields": {
       "name": "ProXr",
       "key": "proxr"
+    }
+  },
+  {
+    "model": "NEMO.interlockcardcategory",
+    "pk": 4,
+    "fields": {
+      "name": "ModbusTcp",
+      "key": "modbus_tcp"
     }
   },
   {
@@ -773,7 +823,11 @@
       "category": 1,
       "available": true,
       "restriction_message": "The NanoFab is closed.",
-      "fully_dependent_tools": [1, 2, 3],
+      "fully_dependent_tools": [
+        1,
+        2,
+        3
+      ],
       "partially_dependent_tools": [],
       "dependent_areas": []
     }
@@ -786,7 +840,10 @@
       "category": 2,
       "available": true,
       "restriction_message": "No more oxygen!",
-      "fully_dependent_tools": [2, 3],
+      "fully_dependent_tools": [
+        2,
+        3
+      ],
       "partially_dependent_tools": [
         1
       ],
@@ -794,15 +851,15 @@
     }
   },
   {
-  "model": "NEMO.door",
-  "pk": 1,
-  "fields": {
-    "name": "Cleanroom door",
-    "area": 1,
-    "interlock": 1
-  }
-},
-{
+    "model": "NEMO.door",
+    "pk": 1,
+    "fields": {
+      "name": "Cleanroom door",
+      "area": 1,
+      "interlock": 1
+    }
+  },
+  {
     "model": "NEMO.alert",
     "pk": 1,
     "fields": {
@@ -886,7 +943,10 @@
     "fields": {
       "user": 1,
       "expiration": "2099-02-24T04:59:59.999Z",
-      "content_type": ["NEMO", "buddyrequest"],
+      "content_type": [
+        "NEMO",
+        "buddyrequest"
+      ],
       "object_id": 1
     }
   },
@@ -896,7 +956,10 @@
     "fields": {
       "user": 2,
       "expiration": "2099-02-24T04:59:59.999Z",
-      "content_type": ["NEMO", "buddyrequest"],
+      "content_type": [
+        "NEMO",
+        "buddyrequest"
+      ],
       "object_id": 1
     }
   },
@@ -906,17 +969,23 @@
     "fields": {
       "user": 2,
       "expiration": "2099-02-24T04:59:59.999Z",
-      "content_type": ["NEMO", "temporaryphysicalaccessrequest"],
+      "content_type": [
+        "NEMO",
+        "temporaryphysicalaccessrequest"
+      ],
       "object_id": 1
     }
   },
-   {
+  {
     "model": "NEMO.notification",
     "pk": 4,
     "fields": {
       "user": 1,
       "expiration": "2099-02-24T04:59:59.999Z",
-      "content_type": ["NEMO", "temporaryphysicalaccessrequest"],
+      "content_type": [
+        "NEMO",
+        "temporaryphysicalaccessrequest"
+      ],
       "object_id": 1
     }
   },
@@ -933,6 +1002,7 @@
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
       "hide_from_users": false,
+      "hide_from_staff": false,
       "notifications": null
     }
   },
@@ -949,6 +1019,7 @@
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
       "hide_from_users": false,
+      "hide_from_staff": false,
       "notifications": null
     }
   },
@@ -965,6 +1036,7 @@
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
       "hide_from_users": false,
+      "hide_from_staff": false,
       "notifications": null
     }
   },
@@ -981,6 +1053,7 @@
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
       "hide_from_users": false,
+      "hide_from_staff": false,
       "notifications": "safetyissue"
     }
   },
@@ -997,6 +1070,7 @@
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
       "hide_from_users": false,
+      "hide_from_staff": false,
       "notifications": null
     }
   },
@@ -1013,6 +1087,7 @@
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
       "hide_from_users": false,
+      "hide_from_staff": false,
       "notifications": null
     }
   },
@@ -1045,6 +1120,7 @@
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
       "hide_from_users": false,
+      "hide_from_staff": false,
       "notifications": null
     }
   },
@@ -1061,7 +1137,22 @@
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
       "hide_from_users": false,
+      "hide_from_staff": false,
       "notifications": "news"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "calendar_all_tools",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "sensor_default_daterange",
+    "fields": {
+      "value": "last_year"
     }
   },
   {
@@ -1101,10 +1192,10 @@
       "title": "Chapter 3: I Form My Resolution",
       "pinned": false,
       "created": "2018-09-26T16:22:04.841Z",
-      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nThree seconds before the arrival of J. B. Hobson's letter I no more thought of pursuing the unicorn than of attempting the passage of the North Sea. Three seconds after reading the letter of the honourable Secretary of Marine, I felt that my true vocation, the sole end of my life, was to chase this disturbing monster and purge it from the world.\r\n\r\nBut I had just returned from a fatiguing journey, weary and longing for repose. I aspired to nothing more than again seeing my country, my friends, my little lodging by the Jardin des Plantes, my dear and precious collections\u2014but nothing could keep me back! I forgot all\u2014fatigue, friends and collections\u2014and accepted without hesitation the offer of the American Government.\r\n\r\n\"Besides,\" thought I, \"all roads lead back to Europe; and the unicorn may be amiable enough to hurry me towards the coast of France. This worthy animal may allow itself to be caught in the seas of Europe (for my particular benefit), and I will not bring back less than half a yard of his ivory halberd to the Museum of Natural History.\" But in the meanwhile I must seek this narwhal in the North Pacific Ocean, which, to return to France, was taking the road to the antipodes.",
-      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nThree seconds before the arrival of J. B. Hobson's letter I no more thought of pursuing the unicorn than of attempting the passage of the North Sea. Three seconds after reading the letter of the honourable Secretary of Marine, I felt that my true vocation, the sole end of my life, was to chase this disturbing monster and purge it from the world.\r\n\r\nBut I had just returned from a fatiguing journey, weary and longing for repose. I aspired to nothing more than again seeing my country, my friends, my little lodging by the Jardin des Plantes, my dear and precious collections\u2014but nothing could keep me back! I forgot all\u2014fatigue, friends and collections\u2014and accepted without hesitation the offer of the American Government.\r\n\r\n\"Besides,\" thought I, \"all roads lead back to Europe; and the unicorn may be amiable enough to hurry me towards the coast of France. This worthy animal may allow itself to be caught in the seas of Europe (for my particular benefit), and I will not bring back less than half a yard of his ivory halberd to the Museum of Natural History.\" But in the meanwhile I must seek this narwhal in the North Pacific Ocean, which, to return to France, was taking the road to the antipodes.",
+      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nThree seconds before the arrival of J. B. Hobson's letter I no more thought of pursuing the unicorn than of attempting the passage of the North Sea. Three seconds after reading the letter of the honourable Secretary of Marine, I felt that my true vocation, the sole end of my life, was to chase this disturbing monster and purge it from the world.\r\n\r\nBut I had just returned from a fatiguing journey, weary and longing for repose. I aspired to nothing more than again seeing my country, my friends, my little lodging by the Jardin des Plantes, my dear and precious collections—but nothing could keep me back! I forgot all—fatigue, friends and collections—and accepted without hesitation the offer of the American Government.\r\n\r\n\"Besides,\" thought I, \"all roads lead back to Europe; and the unicorn may be amiable enough to hurry me towards the coast of France. This worthy animal may allow itself to be caught in the seas of Europe (for my particular benefit), and I will not bring back less than half a yard of his ivory halberd to the Museum of Natural History.\" But in the meanwhile I must seek this narwhal in the North Pacific Ocean, which, to return to France, was taking the road to the antipodes.",
+      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nThree seconds before the arrival of J. B. Hobson's letter I no more thought of pursuing the unicorn than of attempting the passage of the North Sea. Three seconds after reading the letter of the honourable Secretary of Marine, I felt that my true vocation, the sole end of my life, was to chase this disturbing monster and purge it from the world.\r\n\r\nBut I had just returned from a fatiguing journey, weary and longing for repose. I aspired to nothing more than again seeing my country, my friends, my little lodging by the Jardin des Plantes, my dear and precious collections—but nothing could keep me back! I forgot all—fatigue, friends and collections—and accepted without hesitation the offer of the American Government.\r\n\r\n\"Besides,\" thought I, \"all roads lead back to Europe; and the unicorn may be amiable enough to hurry me towards the coast of France. This worthy animal may allow itself to be caught in the seas of Europe (for my particular benefit), and I will not bring back less than half a yard of his ivory halberd to the Museum of Natural History.\" But in the meanwhile I must seek this narwhal in the North Pacific Ocean, which, to return to France, was taking the road to the antipodes.",
       "last_updated": "2018-09-26T16:22:04.841Z",
-      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nThree seconds before the arrival of J. B. Hobson's letter I no more thought of pursuing the unicorn than of attempting the passage of the North Sea. Three seconds after reading the letter of the honourable Secretary of Marine, I felt that my true vocation, the sole end of my life, was to chase this disturbing monster and purge it from the world.\r\n\r\nBut I had just returned from a fatiguing journey, weary and longing for repose. I aspired to nothing more than again seeing my country, my friends, my little lodging by the Jardin des Plantes, my dear and precious collections\u2014but nothing could keep me back! I forgot all\u2014fatigue, friends and collections\u2014and accepted without hesitation the offer of the American Government.\r\n\r\n\"Besides,\" thought I, \"all roads lead back to Europe; and the unicorn may be amiable enough to hurry me towards the coast of France. This worthy animal may allow itself to be caught in the seas of Europe (for my particular benefit), and I will not bring back less than half a yard of his ivory halberd to the Museum of Natural History.\" But in the meanwhile I must seek this narwhal in the North Pacific Ocean, which, to return to France, was taking the road to the antipodes.",
+      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nThree seconds before the arrival of J. B. Hobson's letter I no more thought of pursuing the unicorn than of attempting the passage of the North Sea. Three seconds after reading the letter of the honourable Secretary of Marine, I felt that my true vocation, the sole end of my life, was to chase this disturbing monster and purge it from the world.\r\n\r\nBut I had just returned from a fatiguing journey, weary and longing for repose. I aspired to nothing more than again seeing my country, my friends, my little lodging by the Jardin des Plantes, my dear and precious collections—but nothing could keep me back! I forgot all—fatigue, friends and collections—and accepted without hesitation the offer of the American Government.\r\n\r\n\"Besides,\" thought I, \"all roads lead back to Europe; and the unicorn may be amiable enough to hurry me towards the coast of France. This worthy animal may allow itself to be caught in the seas of Europe (for my particular benefit), and I will not bring back less than half a yard of his ivory halberd to the Museum of Natural History.\" But in the meanwhile I must seek this narwhal in the North Pacific Ocean, which, to return to France, was taking the road to the antipodes.",
       "archived": true,
       "update_count": 0
     }
@@ -1116,10 +1207,10 @@
       "title": "Chapter 4: Ned Land",
       "pinned": false,
       "created": "2018-09-26T16:22:32.231Z",
-      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nCaptain Farragut was a good seaman, worthy of the frigate he commanded. His vessel and he were one. He was the soul of it. On the question of the monster there was no doubt in his mind, and he would not allow the existence of the animal to be disputed on board. He believed in it, as certain good women believe in the leviathan\u2014by faith, not by reason. The monster did exist, and he had sworn to rid the seas of it. Either Captain Farragut would kill the narwhal, or the narwhal would kill the captain. There was no third course.",
-      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nCaptain Farragut was a good seaman, worthy of the frigate he commanded. His vessel and he were one. He was the soul of it. On the question of the monster there was no doubt in his mind, and he would not allow the existence of the animal to be disputed on board. He believed in it, as certain good women believe in the leviathan\u2014by faith, not by reason. The monster did exist, and he had sworn to rid the seas of it. Either Captain Farragut would kill the narwhal, or the narwhal would kill the captain. There was no third course.",
+      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nCaptain Farragut was a good seaman, worthy of the frigate he commanded. His vessel and he were one. He was the soul of it. On the question of the monster there was no doubt in his mind, and he would not allow the existence of the animal to be disputed on board. He believed in it, as certain good women believe in the leviathan—by faith, not by reason. The monster did exist, and he had sworn to rid the seas of it. Either Captain Farragut would kill the narwhal, or the narwhal would kill the captain. There was no third course.",
+      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nCaptain Farragut was a good seaman, worthy of the frigate he commanded. His vessel and he were one. He was the soul of it. On the question of the monster there was no doubt in his mind, and he would not allow the existence of the animal to be disputed on board. He believed in it, as certain good women believe in the leviathan—by faith, not by reason. The monster did exist, and he had sworn to rid the seas of it. Either Captain Farragut would kill the narwhal, or the narwhal would kill the captain. There was no third course.",
       "last_updated": "2018-09-26T16:22:32.231Z",
-      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nCaptain Farragut was a good seaman, worthy of the frigate he commanded. His vessel and he were one. He was the soul of it. On the question of the monster there was no doubt in his mind, and he would not allow the existence of the animal to be disputed on board. He believed in it, as certain good women believe in the leviathan\u2014by faith, not by reason. The monster did exist, and he had sworn to rid the seas of it. Either Captain Farragut would kill the narwhal, or the narwhal would kill the captain. There was no third course.",
+      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:22 PM by Captain Nemo (captain):\nCaptain Farragut was a good seaman, worthy of the frigate he commanded. His vessel and he were one. He was the soul of it. On the question of the monster there was no doubt in his mind, and he would not allow the existence of the animal to be disputed on board. He believed in it, as certain good women believe in the leviathan—by faith, not by reason. The monster did exist, and he had sworn to rid the seas of it. Either Captain Farragut would kill the narwhal, or the narwhal would kill the captain. There was no third course.",
       "archived": true,
       "update_count": 0
     }
@@ -1146,10 +1237,10 @@
       "title": "Chapter 6: At Full Steam",
       "pinned": false,
       "created": "2018-09-26T16:23:15.994Z",
-      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:23 PM by Captain Nemo (captain):\nAt this cry the whole ship's crew hurried towards the harpooner\u2014commander, officers, masters, sailors, cabin boys; even the engineers left their engines, and the stokers their furnaces.\r\n\r\nThe order to stop her had been given, and the frigate now simply went on by her own momentum. The darkness was then profound, and, however good the Canadian's eyes were, I asked myself how he had managed to see, and what he had been able to see. My heart beat as if it would break. But Ned Land was not mistaken, and we all perceived the object he pointed to. At two cables' length from the Abraham Lincoln, on the starboard quarter, the sea seemed to be illuminated all over. It was not a mere phosphoric phenomenon. The monster emerged some fathoms from the water, and then threw out that very intense but mysterious light mentioned in the report of several captains. This magnificent irradiation must have been produced by an agent of great SHINING power. The luminous part traced on the sea an immense oval, much elongated, the centre of which condensed a burning heat, whose overpowering brilliancy died out by successive gradations.",
-      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:23 PM by Captain Nemo (captain):\nAt this cry the whole ship's crew hurried towards the harpooner\u2014commander, officers, masters, sailors, cabin boys; even the engineers left their engines, and the stokers their furnaces.\r\n\r\nThe order to stop her had been given, and the frigate now simply went on by her own momentum. The darkness was then profound, and, however good the Canadian's eyes were, I asked myself how he had managed to see, and what he had been able to see. My heart beat as if it would break. But Ned Land was not mistaken, and we all perceived the object he pointed to. At two cables' length from the Abraham Lincoln, on the starboard quarter, the sea seemed to be illuminated all over. It was not a mere phosphoric phenomenon. The monster emerged some fathoms from the water, and then threw out that very intense but mysterious light mentioned in the report of several captains. This magnificent irradiation must have been produced by an agent of great SHINING power. The luminous part traced on the sea an immense oval, much elongated, the centre of which condensed a burning heat, whose overpowering brilliancy died out by successive gradations.",
+      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:23 PM by Captain Nemo (captain):\nAt this cry the whole ship's crew hurried towards the harpooner—commander, officers, masters, sailors, cabin boys; even the engineers left their engines, and the stokers their furnaces.\r\n\r\nThe order to stop her had been given, and the frigate now simply went on by her own momentum. The darkness was then profound, and, however good the Canadian's eyes were, I asked myself how he had managed to see, and what he had been able to see. My heart beat as if it would break. But Ned Land was not mistaken, and we all perceived the object he pointed to. At two cables' length from the Abraham Lincoln, on the starboard quarter, the sea seemed to be illuminated all over. It was not a mere phosphoric phenomenon. The monster emerged some fathoms from the water, and then threw out that very intense but mysterious light mentioned in the report of several captains. This magnificent irradiation must have been produced by an agent of great SHINING power. The luminous part traced on the sea an immense oval, much elongated, the centre of which condensed a burning heat, whose overpowering brilliancy died out by successive gradations.",
+      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:23 PM by Captain Nemo (captain):\nAt this cry the whole ship's crew hurried towards the harpooner—commander, officers, masters, sailors, cabin boys; even the engineers left their engines, and the stokers their furnaces.\r\n\r\nThe order to stop her had been given, and the frigate now simply went on by her own momentum. The darkness was then profound, and, however good the Canadian's eyes were, I asked myself how he had managed to see, and what he had been able to see. My heart beat as if it would break. But Ned Land was not mistaken, and we all perceived the object he pointed to. At two cables' length from the Abraham Lincoln, on the starboard quarter, the sea seemed to be illuminated all over. It was not a mere phosphoric phenomenon. The monster emerged some fathoms from the water, and then threw out that very intense but mysterious light mentioned in the report of several captains. This magnificent irradiation must have been produced by an agent of great SHINING power. The luminous part traced on the sea an immense oval, much elongated, the centre of which condensed a burning heat, whose overpowering brilliancy died out by successive gradations.",
       "last_updated": "2018-09-26T16:23:15.994Z",
-      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:23 PM by Captain Nemo (captain):\nAt this cry the whole ship's crew hurried towards the harpooner\u2014commander, officers, masters, sailors, cabin boys; even the engineers left their engines, and the stokers their furnaces.\r\n\r\nThe order to stop her had been given, and the frigate now simply went on by her own momentum. The darkness was then profound, and, however good the Canadian's eyes were, I asked myself how he had managed to see, and what he had been able to see. My heart beat as if it would break. But Ned Land was not mistaken, and we all perceived the object he pointed to. At two cables' length from the Abraham Lincoln, on the starboard quarter, the sea seemed to be illuminated all over. It was not a mere phosphoric phenomenon. The monster emerged some fathoms from the water, and then threw out that very intense but mysterious light mentioned in the report of several captains. This magnificent irradiation must have been produced by an agent of great SHINING power. The luminous part traced on the sea an immense oval, much elongated, the centre of which condensed a burning heat, whose overpowering brilliancy died out by successive gradations.",
+      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:23 PM by Captain Nemo (captain):\nAt this cry the whole ship's crew hurried towards the harpooner—commander, officers, masters, sailors, cabin boys; even the engineers left their engines, and the stokers their furnaces.\r\n\r\nThe order to stop her had been given, and the frigate now simply went on by her own momentum. The darkness was then profound, and, however good the Canadian's eyes were, I asked myself how he had managed to see, and what he had been able to see. My heart beat as if it would break. But Ned Land was not mistaken, and we all perceived the object he pointed to. At two cables' length from the Abraham Lincoln, on the starboard quarter, the sea seemed to be illuminated all over. It was not a mere phosphoric phenomenon. The monster emerged some fathoms from the water, and then threw out that very intense but mysterious light mentioned in the report of several captains. This magnificent irradiation must have been produced by an agent of great SHINING power. The luminous part traced on the sea an immense oval, much elongated, the centre of which condensed a burning heat, whose overpowering brilliancy died out by successive gradations.",
       "archived": true,
       "update_count": 0
     }
@@ -1191,10 +1282,10 @@
       "title": "Chapter 9: Ned Land's Tempers",
       "pinned": false,
       "created": "2018-09-26T16:25:28.726Z",
-      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:25 PM by Captain Nemo (captain):\nHow long we slept I do not know; but our sleep must have lasted long, for it rested us completely from our fatigues. I woke first. My companions had not moved, and were still stretched in their corner.\r\n\r\nHardly roused from my somewhat hard couch, I felt my brain freed, my mind clear. I then began an attentive examination of our cell. Nothing was changed inside. The prison was still a prison\u2014the prisoners, prisoners. However, the steward, during our sleep, had cleared the table. I breathed with difficulty. The heavy air seemed to oppress my lungs. Although the cell was large, we had evidently consumed a great part of the oxygen that it contained. Indeed, each man consumes, in one hour, the oxygen contained in more than 176 pints of air, and this air, charged (as then) with a nearly equal quantity of carbonic acid, becomes unbreathable.",
-      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:25 PM by Captain Nemo (captain):\nHow long we slept I do not know; but our sleep must have lasted long, for it rested us completely from our fatigues. I woke first. My companions had not moved, and were still stretched in their corner.\r\n\r\nHardly roused from my somewhat hard couch, I felt my brain freed, my mind clear. I then began an attentive examination of our cell. Nothing was changed inside. The prison was still a prison\u2014the prisoners, prisoners. However, the steward, during our sleep, had cleared the table. I breathed with difficulty. The heavy air seemed to oppress my lungs. Although the cell was large, we had evidently consumed a great part of the oxygen that it contained. Indeed, each man consumes, in one hour, the oxygen contained in more than 176 pints of air, and this air, charged (as then) with a nearly equal quantity of carbonic acid, becomes unbreathable.",
+      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:25 PM by Captain Nemo (captain):\nHow long we slept I do not know; but our sleep must have lasted long, for it rested us completely from our fatigues. I woke first. My companions had not moved, and were still stretched in their corner.\r\n\r\nHardly roused from my somewhat hard couch, I felt my brain freed, my mind clear. I then began an attentive examination of our cell. Nothing was changed inside. The prison was still a prison—the prisoners, prisoners. However, the steward, during our sleep, had cleared the table. I breathed with difficulty. The heavy air seemed to oppress my lungs. Although the cell was large, we had evidently consumed a great part of the oxygen that it contained. Indeed, each man consumes, in one hour, the oxygen contained in more than 176 pints of air, and this air, charged (as then) with a nearly equal quantity of carbonic acid, becomes unbreathable.",
+      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:25 PM by Captain Nemo (captain):\nHow long we slept I do not know; but our sleep must have lasted long, for it rested us completely from our fatigues. I woke first. My companions had not moved, and were still stretched in their corner.\r\n\r\nHardly roused from my somewhat hard couch, I felt my brain freed, my mind clear. I then began an attentive examination of our cell. Nothing was changed inside. The prison was still a prison—the prisoners, prisoners. However, the steward, during our sleep, had cleared the table. I breathed with difficulty. The heavy air seemed to oppress my lungs. Although the cell was large, we had evidently consumed a great part of the oxygen that it contained. Indeed, each man consumes, in one hour, the oxygen contained in more than 176 pints of air, and this air, charged (as then) with a nearly equal quantity of carbonic acid, becomes unbreathable.",
       "last_updated": "2018-09-26T16:25:28.726Z",
-      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:25 PM by Captain Nemo (captain):\nHow long we slept I do not know; but our sleep must have lasted long, for it rested us completely from our fatigues. I woke first. My companions had not moved, and were still stretched in their corner.\r\n\r\nHardly roused from my somewhat hard couch, I felt my brain freed, my mind clear. I then began an attentive examination of our cell. Nothing was changed inside. The prison was still a prison\u2014the prisoners, prisoners. However, the steward, during our sleep, had cleared the table. I breathed with difficulty. The heavy air seemed to oppress my lungs. Although the cell was large, we had evidently consumed a great part of the oxygen that it contained. Indeed, each man consumes, in one hour, the oxygen contained in more than 176 pints of air, and this air, charged (as then) with a nearly equal quantity of carbonic acid, becomes unbreathable.",
+      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:25 PM by Captain Nemo (captain):\nHow long we slept I do not know; but our sleep must have lasted long, for it rested us completely from our fatigues. I woke first. My companions had not moved, and were still stretched in their corner.\r\n\r\nHardly roused from my somewhat hard couch, I felt my brain freed, my mind clear. I then began an attentive examination of our cell. Nothing was changed inside. The prison was still a prison—the prisoners, prisoners. However, the steward, during our sleep, had cleared the table. I breathed with difficulty. The heavy air seemed to oppress my lungs. Although the cell was large, we had evidently consumed a great part of the oxygen that it contained. Indeed, each man consumes, in one hour, the oxygen contained in more than 176 pints of air, and this air, charged (as then) with a nearly equal quantity of carbonic acid, becomes unbreathable.",
       "archived": true,
       "update_count": 0
     }
@@ -1296,10 +1387,10 @@
       "title": "Chapter 16: A Submarine Forest",
       "pinned": false,
       "created": "2018-09-26T16:28:33.408Z",
-      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:28 PM by Captain Nemo (captain):\nWe had at last arrived on the borders of this forest, doubtless one of the finest of Captain Nemo's immense domains. He looked upon it as his own, and considered he had the same right over it that the first men had in the first days of the world. And, indeed, who would have disputed with him the possession of this submarine property? What other hardier pioneer would come, hatchet in hand, to cut down the dark copses?\r\n\r\nThis forest was composed of large tree-plants; and the moment we penetrated under its vast arcades, I was struck by the singular position of their branches\u2014a position I had not yet observed.\r\n\r\nNot an herb which carpeted the ground, not a branch which clothed the trees, was either broken or bent, nor did they extend horizontally; all stretched up to the surface of the ocean. Not a filament, not a ribbon, however thin they might be, but kept as straight as a rod of iron. The fuci and llianas grew in rigid perpendicular lines, due to the density of the element which had produced them. Motionless yet, when bent to one side by the hand, they directly resumed their former position. Truly it was the region of perpendicularity!",
-      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:28 PM by Captain Nemo (captain):\nWe had at last arrived on the borders of this forest, doubtless one of the finest of Captain Nemo's immense domains. He looked upon it as his own, and considered he had the same right over it that the first men had in the first days of the world. And, indeed, who would have disputed with him the possession of this submarine property? What other hardier pioneer would come, hatchet in hand, to cut down the dark copses?\r\n\r\nThis forest was composed of large tree-plants; and the moment we penetrated under its vast arcades, I was struck by the singular position of their branches\u2014a position I had not yet observed.\r\n\r\nNot an herb which carpeted the ground, not a branch which clothed the trees, was either broken or bent, nor did they extend horizontally; all stretched up to the surface of the ocean. Not a filament, not a ribbon, however thin they might be, but kept as straight as a rod of iron. The fuci and llianas grew in rigid perpendicular lines, due to the density of the element which had produced them. Motionless yet, when bent to one side by the hand, they directly resumed their former position. Truly it was the region of perpendicularity!",
+      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:28 PM by Captain Nemo (captain):\nWe had at last arrived on the borders of this forest, doubtless one of the finest of Captain Nemo's immense domains. He looked upon it as his own, and considered he had the same right over it that the first men had in the first days of the world. And, indeed, who would have disputed with him the possession of this submarine property? What other hardier pioneer would come, hatchet in hand, to cut down the dark copses?\r\n\r\nThis forest was composed of large tree-plants; and the moment we penetrated under its vast arcades, I was struck by the singular position of their branches—a position I had not yet observed.\r\n\r\nNot an herb which carpeted the ground, not a branch which clothed the trees, was either broken or bent, nor did they extend horizontally; all stretched up to the surface of the ocean. Not a filament, not a ribbon, however thin they might be, but kept as straight as a rod of iron. The fuci and llianas grew in rigid perpendicular lines, due to the density of the element which had produced them. Motionless yet, when bent to one side by the hand, they directly resumed their former position. Truly it was the region of perpendicularity!",
+      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:28 PM by Captain Nemo (captain):\nWe had at last arrived on the borders of this forest, doubtless one of the finest of Captain Nemo's immense domains. He looked upon it as his own, and considered he had the same right over it that the first men had in the first days of the world. And, indeed, who would have disputed with him the possession of this submarine property? What other hardier pioneer would come, hatchet in hand, to cut down the dark copses?\r\n\r\nThis forest was composed of large tree-plants; and the moment we penetrated under its vast arcades, I was struck by the singular position of their branches—a position I had not yet observed.\r\n\r\nNot an herb which carpeted the ground, not a branch which clothed the trees, was either broken or bent, nor did they extend horizontally; all stretched up to the surface of the ocean. Not a filament, not a ribbon, however thin they might be, but kept as straight as a rod of iron. The fuci and llianas grew in rigid perpendicular lines, due to the density of the element which had produced them. Motionless yet, when bent to one side by the hand, they directly resumed their former position. Truly it was the region of perpendicularity!",
       "last_updated": "2018-09-26T16:28:33.408Z",
-      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:28 PM by Captain Nemo (captain):\nWe had at last arrived on the borders of this forest, doubtless one of the finest of Captain Nemo's immense domains. He looked upon it as his own, and considered he had the same right over it that the first men had in the first days of the world. And, indeed, who would have disputed with him the possession of this submarine property? What other hardier pioneer would come, hatchet in hand, to cut down the dark copses?\r\n\r\nThis forest was composed of large tree-plants; and the moment we penetrated under its vast arcades, I was struck by the singular position of their branches\u2014a position I had not yet observed.\r\n\r\nNot an herb which carpeted the ground, not a branch which clothed the trees, was either broken or bent, nor did they extend horizontally; all stretched up to the surface of the ocean. Not a filament, not a ribbon, however thin they might be, but kept as straight as a rod of iron. The fuci and llianas grew in rigid perpendicular lines, due to the density of the element which had produced them. Motionless yet, when bent to one side by the hand, they directly resumed their former position. Truly it was the region of perpendicularity!",
+      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:28 PM by Captain Nemo (captain):\nWe had at last arrived on the borders of this forest, doubtless one of the finest of Captain Nemo's immense domains. He looked upon it as his own, and considered he had the same right over it that the first men had in the first days of the world. And, indeed, who would have disputed with him the possession of this submarine property? What other hardier pioneer would come, hatchet in hand, to cut down the dark copses?\r\n\r\nThis forest was composed of large tree-plants; and the moment we penetrated under its vast arcades, I was struck by the singular position of their branches—a position I had not yet observed.\r\n\r\nNot an herb which carpeted the ground, not a branch which clothed the trees, was either broken or bent, nor did they extend horizontally; all stretched up to the surface of the ocean. Not a filament, not a ribbon, however thin they might be, but kept as straight as a rod of iron. The fuci and llianas grew in rigid perpendicular lines, due to the density of the element which had produced them. Motionless yet, when bent to one side by the hand, they directly resumed their former position. Truly it was the region of perpendicularity!",
       "archived": true,
       "update_count": 0
     }
@@ -1371,10 +1462,10 @@
       "title": "Chapter 21: Captain Nemo's Thunderbolt",
       "pinned": false,
       "created": "2018-09-26T16:30:47.234Z",
-      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:30 PM by Captain Nemo (captain):\nWe looked at the edge of the forest without rising, my hand stopping in the action of putting it to my mouth, Ned Land's completing its office.\r\n\r\n\"Stones do not fall from the sky,\" remarked Conseil, \"or they would merit the name aerolites.\"\r\n\r\nA second stone, carefully aimed, that made a savoury pigeon's leg fall from Conseil's hand, gave still more weight to his observation. We all three arose, shouldered our guns, and were ready to reply to any attack.\r\n\r\n\"Are they apes?\" cried Ned Land.\r\n\r\n\"Very nearly\u2014they are savages.\"\r\n\r\n\"To the boat!\" I said, hurrying to the sea.\r\n\r\nIt was indeed necessary to beat a retreat, for about twenty natives armed with bows and slings appeared on the skirts of a copse that masked the horizon to the right, hardly a hundred steps from us.\r\n\r\nOur boat was moored about sixty feet from us. The savages approached us, not running, but making hostile demonstrations. Stones and arrows fell thickly.",
-      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:30 PM by Captain Nemo (captain):\nWe looked at the edge of the forest without rising, my hand stopping in the action of putting it to my mouth, Ned Land's completing its office.\r\n\r\n\"Stones do not fall from the sky,\" remarked Conseil, \"or they would merit the name aerolites.\"\r\n\r\nA second stone, carefully aimed, that made a savoury pigeon's leg fall from Conseil's hand, gave still more weight to his observation. We all three arose, shouldered our guns, and were ready to reply to any attack.\r\n\r\n\"Are they apes?\" cried Ned Land.\r\n\r\n\"Very nearly\u2014they are savages.\"\r\n\r\n\"To the boat!\" I said, hurrying to the sea.\r\n\r\nIt was indeed necessary to beat a retreat, for about twenty natives armed with bows and slings appeared on the skirts of a copse that masked the horizon to the right, hardly a hundred steps from us.\r\n\r\nOur boat was moored about sixty feet from us. The savages approached us, not running, but making hostile demonstrations. Stones and arrows fell thickly.",
+      "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:30 PM by Captain Nemo (captain):\nWe looked at the edge of the forest without rising, my hand stopping in the action of putting it to my mouth, Ned Land's completing its office.\r\n\r\n\"Stones do not fall from the sky,\" remarked Conseil, \"or they would merit the name aerolites.\"\r\n\r\nA second stone, carefully aimed, that made a savoury pigeon's leg fall from Conseil's hand, gave still more weight to his observation. We all three arose, shouldered our guns, and were ready to reply to any attack.\r\n\r\n\"Are they apes?\" cried Ned Land.\r\n\r\n\"Very nearly—they are savages.\"\r\n\r\n\"To the boat!\" I said, hurrying to the sea.\r\n\r\nIt was indeed necessary to beat a retreat, for about twenty natives armed with bows and slings appeared on the skirts of a copse that masked the horizon to the right, hardly a hundred steps from us.\r\n\r\nOur boat was moored about sixty feet from us. The savages approached us, not running, but making hostile demonstrations. Stones and arrows fell thickly.",
+      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:30 PM by Captain Nemo (captain):\nWe looked at the edge of the forest without rising, my hand stopping in the action of putting it to my mouth, Ned Land's completing its office.\r\n\r\n\"Stones do not fall from the sky,\" remarked Conseil, \"or they would merit the name aerolites.\"\r\n\r\nA second stone, carefully aimed, that made a savoury pigeon's leg fall from Conseil's hand, gave still more weight to his observation. We all three arose, shouldered our guns, and were ready to reply to any attack.\r\n\r\n\"Are they apes?\" cried Ned Land.\r\n\r\n\"Very nearly—they are savages.\"\r\n\r\n\"To the boat!\" I said, hurrying to the sea.\r\n\r\nIt was indeed necessary to beat a retreat, for about twenty natives armed with bows and slings appeared on the skirts of a copse that masked the horizon to the right, hardly a hundred steps from us.\r\n\r\nOur boat was moored about sixty feet from us. The savages approached us, not running, but making hostile demonstrations. Stones and arrows fell thickly.",
       "last_updated": "2018-09-26T16:30:47.234Z",
-      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:30 PM by Captain Nemo (captain):\nWe looked at the edge of the forest without rising, my hand stopping in the action of putting it to my mouth, Ned Land's completing its office.\r\n\r\n\"Stones do not fall from the sky,\" remarked Conseil, \"or they would merit the name aerolites.\"\r\n\r\nA second stone, carefully aimed, that made a savoury pigeon's leg fall from Conseil's hand, gave still more weight to his observation. We all three arose, shouldered our guns, and were ready to reply to any attack.\r\n\r\n\"Are they apes?\" cried Ned Land.\r\n\r\n\"Very nearly\u2014they are savages.\"\r\n\r\n\"To the boat!\" I said, hurrying to the sea.\r\n\r\nIt was indeed necessary to beat a retreat, for about twenty natives armed with bows and slings appeared on the skirts of a copse that masked the horizon to the right, hardly a hundred steps from us.\r\n\r\nOur boat was moored about sixty feet from us. The savages approached us, not running, but making hostile demonstrations. Stones and arrows fell thickly.",
+      "last_update_content": "Originally published on Wednesday, September 26th, 2018 @ 12:30 PM by Captain Nemo (captain):\nWe looked at the edge of the forest without rising, my hand stopping in the action of putting it to my mouth, Ned Land's completing its office.\r\n\r\n\"Stones do not fall from the sky,\" remarked Conseil, \"or they would merit the name aerolites.\"\r\n\r\nA second stone, carefully aimed, that made a savoury pigeon's leg fall from Conseil's hand, gave still more weight to his observation. We all three arose, shouldered our guns, and were ready to reply to any attack.\r\n\r\n\"Are they apes?\" cried Ned Land.\r\n\r\n\"Very nearly—they are savages.\"\r\n\r\n\"To the boat!\" I said, hurrying to the sea.\r\n\r\nIt was indeed necessary to beat a retreat, for about twenty natives armed with bows and slings appeared on the skirts of a copse that masked the horizon to the right, hardly a hundred steps from us.\r\n\r\nOur boat was moored about sixty feet from us. The savages approached us, not running, but making hostile demonstrations. Stones and arrows fell thickly.",
       "archived": true,
       "update_count": 0
     }
@@ -1387,7 +1478,7 @@
       "pinned": false,
       "created": "2018-09-26T16:31:41.851Z",
       "original_content": "Originally published on Wednesday, September 26th, 2018 @ 12:31 PM by Captain Nemo (captain):\nThe following day 10th January, the Nautilus continued her course between two seas, but with such remarkable speed that I could not estimate it at less than thirty-five miles an hour. The rapidity of her screw was such that I could neither follow nor count its revolutions. When I reflected that this marvellous electric agent, after having afforded motion, heat, and light to the Nautilus, still protected her from outward attack, and transformed her into an ark of safety which no profane hand might touch without being thunderstricken, my admiration was unbounded, and from the structure it extended to the engineer who had called it into existence.",
-      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:31 PM by Captain Nemo (captain):\nThe following day 10th January, the Nautilus continued her course between two seas, but with such remarkable speed that I could not estimate it at less than thirty-five miles an hour. The rapidity of her screw was such that I could neither follow nor count its revolutions. When I reflected that this marvellous electric agent, after having afforded motion, heat, and light to the Nautilus, still protected her from outward attack, and transformed her into an ark of safety which no profane hand might touch without being thunderstricken, my admiration was unbounded, and from the structure it extended to the engineer who had called it into existence.\n\nUpdated on Wednesday, September 26th, 2018 @ 12:31 PM by Captain Nemo (captain):\nOur course was directed to the west, and on the 11th of January we doubled Cape Wessel, situation in 135\u00b0 long. and 10\u00b0 S. lat., which forms the east point of the Gulf of Carpentaria. The reefs were still numerous, but more equalised, and marked on the chart with extreme precision. The Nautilus easily avoided the breakers of Money to port and the Victoria reefs to starboard, placed at 130\u00b0 long. and on the 10th parallel, which we strictly followed.\n\nUpdated on Wednesday, September 26th, 2018 @ 12:32 PM by Captain Nemo (captain):\nOn the 13th of January, Captain Nemo arrived in the Sea of Timor, and recognised the island of that name in 122\u00b0 long.\n\nUpdated on Wednesday, September 26th, 2018 @ 12:32 PM by Captain Nemo (captain):\nFrom this point the direction of the Nautilus inclined towards the south-west. Her head was set for the Indian Ocean. Where would the fancy of Captain Nemo carry us next? Would he return to the coast of Asia or would he approach again the shores of Europe? Improbable conjectures both, to a man who fled from inhabited continents. Then would he descend to the south? Was he going to double the Cape of Good Hope, then Cape Horn, and finally go as far as the Antarctic pole? Would he come back at last to the Pacific, where his Nautilus could sail free and independently? Time would show.\n\nUpdated on Wednesday, September 26th, 2018 @ 12:32 PM by Captain Nemo (captain):\nAfter having skirted the sands of Cartier, of Hibernia, Seringapatam, and Scott, last efforts of the solid against the liquid element, on the 14th of January we lost sight of land altogether. The speed of the Nautilus was considerably abated, and with irregular course she sometimes swam in the bosom of the waters, sometimes floated on their surface.",
+      "all_content": "Originally published on Wednesday, September 26th, 2018 @ 12:31 PM by Captain Nemo (captain):\nThe following day 10th January, the Nautilus continued her course between two seas, but with such remarkable speed that I could not estimate it at less than thirty-five miles an hour. The rapidity of her screw was such that I could neither follow nor count its revolutions. When I reflected that this marvellous electric agent, after having afforded motion, heat, and light to the Nautilus, still protected her from outward attack, and transformed her into an ark of safety which no profane hand might touch without being thunderstricken, my admiration was unbounded, and from the structure it extended to the engineer who had called it into existence.\n\nUpdated on Wednesday, September 26th, 2018 @ 12:31 PM by Captain Nemo (captain):\nOur course was directed to the west, and on the 11th of January we doubled Cape Wessel, situation in 135° long. and 10° S. lat., which forms the east point of the Gulf of Carpentaria. The reefs were still numerous, but more equalised, and marked on the chart with extreme precision. The Nautilus easily avoided the breakers of Money to port and the Victoria reefs to starboard, placed at 130° long. and on the 10th parallel, which we strictly followed.\n\nUpdated on Wednesday, September 26th, 2018 @ 12:32 PM by Captain Nemo (captain):\nOn the 13th of January, Captain Nemo arrived in the Sea of Timor, and recognised the island of that name in 122° long.\n\nUpdated on Wednesday, September 26th, 2018 @ 12:32 PM by Captain Nemo (captain):\nFrom this point the direction of the Nautilus inclined towards the south-west. Her head was set for the Indian Ocean. Where would the fancy of Captain Nemo carry us next? Would he return to the coast of Asia or would he approach again the shores of Europe? Improbable conjectures both, to a man who fled from inhabited continents. Then would he descend to the south? Was he going to double the Cape of Good Hope, then Cape Horn, and finally go as far as the Antarctic pole? Would he come back at last to the Pacific, where his Nautilus could sail free and independently? Time would show.\n\nUpdated on Wednesday, September 26th, 2018 @ 12:32 PM by Captain Nemo (captain):\nAfter having skirted the sands of Cartier, of Hibernia, Seringapatam, and Scott, last efforts of the solid against the liquid element, on the 14th of January we lost sight of land altogether. The speed of the Nautilus was considerably abated, and with irregular course she sometimes swam in the bosom of the waters, sometimes floated on their surface.",
       "last_updated": "2018-09-26T16:32:24.329Z",
       "last_update_content": "Updated on Wednesday, September 26th, 2018 @ 12:32 PM by Captain Nemo (captain):\nAfter having skirted the sands of Cartier, of Hibernia, Seringapatam, and Scott, last efforts of the solid against the liquid element, on the 14th of January we lost sight of land altogether. The speed of the Nautilus was considerably abated, and with irregular course she sometimes swam in the bosom of the waters, sometimes floated on their surface.",
       "archived": false,
@@ -1508,6 +1599,282 @@
       "end_date": "2029-03-14",
       "full_day": true,
       "description": "Taking a sabbatical"
+    }
+  },
+  {
+    "model": "sensors.sensorcardcategory",
+    "pk": 1,
+    "fields": {
+      "name": "ModbusTcp",
+      "key": "modbus_tcp"
+    }
+  },
+  {
+    "model": "sensors.sensorcard",
+    "pk": 1,
+    "fields": {
+      "name": "Gas cabinet card",
+      "server": "test",
+      "port": 502,
+      "number": null,
+      "category": 1,
+      "username": null,
+      "password": null,
+      "enabled": true
+    }
+  },
+  {
+    "model": "sensors.sensorcard",
+    "pk": 2,
+    "fields": {
+      "name": "Temp/Humidity card",
+      "server": "localhost",
+      "port": 502,
+      "number": null,
+      "category": 1,
+      "username": null,
+      "password": null,
+      "enabled": true
+    }
+  },
+  {
+    "model": "sensors.sensorcategory",
+    "pk": 1,
+    "fields": {
+      "name": "Cleanroom",
+      "parent": null
+    }
+  },
+  {
+    "model": "sensors.sensorcategory",
+    "pk": 2,
+    "fields": {
+      "name": "External lab",
+      "parent": null
+    }
+  },
+  {
+    "model": "sensors.sensorcategory",
+    "pk": 3,
+    "fields": {
+      "name": "Bay 1",
+      "parent": 1
+    }
+  },
+  {
+    "model": "sensors.sensor",
+    "pk": 1,
+    "fields": {
+      "name": "Bay 1 Temperature",
+      "visible": true,
+      "sensor_card": 2,
+      "interlock_card": null,
+      "sensor_category": 3,
+      "data_label": "Temperature",
+      "data_prefix": null,
+      "data_suffix": "°F",
+      "unit_id": null,
+      "read_address": 24,
+      "number_of_values": 1,
+      "formula": "",
+      "read_frequency": 5
+    }
+  },
+  {
+    "model": "sensors.sensor",
+    "pk": 2,
+    "fields": {
+      "name": "Bay 1 Humidity",
+      "visible": true,
+      "sensor_card": 2,
+      "interlock_card": null,
+      "sensor_category": 3,
+      "data_label": "Humidity",
+      "data_prefix": null,
+      "data_suffix": null,
+      "unit_id": null,
+      "read_address": 26,
+      "number_of_values": 1,
+      "formula": "",
+      "read_frequency": 5
+    }
+  },
+  {
+    "model": "sensors.sensor",
+    "pk": 3,
+    "fields": {
+      "name": "Nitrogen GN2",
+      "visible": true,
+      "sensor_card": 1,
+      "interlock_card": null,
+      "sensor_category": 1,
+      "data_label": null,
+      "data_prefix": null,
+      "data_suffix": null,
+      "unit_id": null,
+      "read_address": 2,
+      "number_of_values": 1,
+      "formula": "",
+      "read_frequency": 5
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 1,
+    "fields": {
+      "sensor": 1,
+      "created_date": "2022-06-13T17:39:17.892Z",
+      "value": 69.2
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 2,
+    "fields": {
+      "sensor": 1,
+      "created_date": "2022-06-13T17:40:17.892Z",
+      "value": 69.4
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 3,
+    "fields": {
+      "sensor": 1,
+      "created_date": "2022-06-13T17:41:17.892Z",
+      "value": 69.5
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 4,
+    "fields": {
+      "sensor": 1,
+      "created_date": "2022-06-13T17:44:17.892Z",
+      "value": 69.7
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 5,
+    "fields": {
+      "sensor": 1,
+      "created_date": "2022-06-13T17:47:17.892Z",
+      "value": 69.9
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 6,
+    "fields": {
+      "sensor": 1,
+      "created_date": "2022-06-13T17:49:17.892Z",
+      "value": 70.1
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 7,
+    "fields": {
+      "sensor": 2,
+      "created_date": "2022-06-13T17:51:36.032Z",
+      "value": 45.5
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 8,
+    "fields": {
+      "sensor": 2,
+      "created_date": "2022-06-13T17:52:36.032Z",
+      "value": 45.6
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 9,
+    "fields": {
+      "sensor": 2,
+      "created_date": "2022-06-13T17:53:36.032Z",
+      "value": 45.9
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 10,
+    "fields": {
+      "sensor": 2,
+      "created_date": "2022-06-13T17:54:36.032Z",
+      "value": 45.8
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 11,
+    "fields": {
+      "sensor": 2,
+      "created_date": "2022-06-13T17:56:36.032Z",
+      "value": 45.5
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 12,
+    "fields": {
+      "sensor": 2,
+      "created_date": "2022-06-13T17:58:36.032Z",
+      "value": 45.3
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 13,
+    "fields": {
+      "sensor": 3,
+      "created_date": "2022-06-13T17:52:05.965Z",
+      "value": 1920.3
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 14,
+    "fields": {
+      "sensor": 3,
+      "created_date": "2022-06-13T17:53:05.965Z",
+      "value": 1923.3
+    }
+  },
+  {
+    "model": "sensors.sensordata",
+    "pk": 15,
+    "fields": {
+      "sensor": 3,
+      "created_date": "2022-06-13T17:54:05.965Z",
+      "value": 1927.3
+    }
+  },
+  {
+    "model": "sensors.sensoralertemail",
+    "pk": 1,
+    "fields": {
+      "enabled": true,
+      "sensor": 1,
+      "trigger_no_data": false,
+      "trigger_condition": "value > 70",
+      "triggered_on": "2022-06-13T17:52:05.965Z",
+      "additional_emails": ""
+    }
+  },
+  {
+    "model": "sensors.sensoralertlog",
+    "pk": 1,
+    "fields": {
+      "value": 70.1,
+      "reset": 0,
+      "no_data": 0,
+      "condition": "value > 70",
+      "sensor_id": 1,
+      "time": "2022-06-13T17:52:05.965Z"
     }
   }
 ]

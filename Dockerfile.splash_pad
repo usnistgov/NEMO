@@ -6,11 +6,13 @@ RUN rm --recursive --force /nemo
 
 RUN mkdir /nemo
 RUN mkdir /nemo/media
+RUN mkdir /nemo/media/tool_images
 WORKDIR /nemo
 
 COPY resources/icons/* /nemo/media/
 COPY resources/people/* /nemo/media/
 COPY resources/sounds/* /nemo/media/
+COPY resources/images/tool_images/* /nemo/media/tool_images/
 COPY resources/images/* /nemo/media/
 COPY resources/emails/* /nemo/media/
 COPY resources/splash_pad_rates.json /nemo/media/rates.json
