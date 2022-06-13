@@ -109,7 +109,11 @@ def get_sensor_data(request, sensor) -> (QuerySet, datetime, datetime):
 	now = timezone.now().replace(second=0, microsecond=0).astimezone()
 	sensor_default_daterange = SensorCustomization.get("sensor_default_daterange")
 	if not start:
-		if sensor_default_daterange == "last_week":
+		if sensor_default_daterange == "last_year":
+			start = now - timedelta(days=365)
+		elif sensor_default_daterange == "last_month":
+			start = now - timedelta(days=30)
+		elif sensor_default_daterange == "last_week":
 			start = now - timedelta(weeks=1)
 		elif sensor_default_daterange == "last_72hrs":
 			start = now - timedelta(days=3)

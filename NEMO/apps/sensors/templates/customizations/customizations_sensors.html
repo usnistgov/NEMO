@@ -22,6 +22,8 @@
                     <label><input type="radio" id="sensor_default_daterange" name="sensor_default_daterange" {% if not sensor_default_daterange %}checked{% endif %} value=""> Last 24 hrs</label>
                     <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_72hrs' %}checked{% endif %} value="last_72hrs"> Last 72 hrs</label>
                     <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_week' %}checked{% endif %} value="last_week"> Last week</label>
+                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_month' %}checked{% endif %} value="last_month"> Last month</label>
+                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_year' %}checked{% endif %} value="last_year"> Last year</label>
                 </div>
             </div>
         </div>
