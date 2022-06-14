@@ -1742,7 +1742,7 @@
     "fields": {
       "sensor": 1,
       "created_date": "2022-06-13T17:41:17.892Z",
-      "value": 69.5
+      "value": 70.2
     }
   },
   {
@@ -1868,6 +1868,30 @@
   {
     "model": "sensors.sensoralertlog",
     "pk": 1,
+    "fields": {
+      "value": 70.2,
+      "reset": 0,
+      "no_data": 0,
+      "condition": "value > 70",
+      "sensor_id": 1,
+      "time": "2022-06-13T17:41:17.892Z"
+    }
+  },
+  {
+    "model": "sensors.sensoralertlog",
+    "pk": 2,
+    "fields": {
+      "value": 69.7,
+      "reset": 1,
+      "no_data": 0,
+      "condition": "value > 70",
+      "sensor_id": 1,
+      "time": "2022-06-13T17:44:17.892Z"
+    }
+  },
+  {
+    "model": "sensors.sensoralertlog",
+    "pk": 3,
     "fields": {
       "value": 70.1,
       "reset": 0,
