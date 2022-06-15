@@ -1,0 +1,47 @@
+<div class="panel-body">
+    <h3 class="customization-section-title">Sensor data settings</h3>
+    <form method="POST" action="{% url 'customize' 'sensors' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group {% if errors.sensor_alert_emails %}has-error{% endif %}">
+            <label class="control-label col-md-2" for="sensor_alert_emails">Sensor alert email(s)</label>
+            <div class="col-md-5">
+                <input type="text" id="sensor_alert_emails" name="sensor_alert_emails" class="form-control" value="{% if errors.sensor_alert_emails %}{{ errors.sensor_alert_emails.value }}{% else %}{{ sensor_alert_emails }}{% endif %}" placeholder="sensor_alerts@example.org"/>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                {% if errors.sensor_alert_emails %}
+                    {{ errors.sensor_alert_emails.error }}
+                {% else %}
+                    The email(s) to notify when a sensor alert is raised or reset. A comma-separated list can be used.
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2 col-sm-2" for="sensor_default_daterange">Default daterange</label>
+            <div class="col-md-10 col-sm-10">
+                <div class="radio">
+                    <label><input type="radio" id="sensor_default_daterange" name="sensor_default_daterange" {% if not sensor_default_daterange %}checked{% endif %} value=""> Last 24 hrs</label>
+                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_72hrs' %}checked{% endif %} value="last_72hrs"> Last 72 hrs</label>
+                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_week' %}checked{% endif %} value="last_week"> Last week</label>
+                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_month' %}checked{% endif %} value="last_month"> Last month</label>
+                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_year' %}checked{% endif %} value="last_year"> Last year</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2 col-sm-2" for="refresh-rate">Default refresh rate:</label>
+            <div class="col-md-3 col-sm-4">
+                <select class="form-control" name="sensor_default_refresh_rate" id="refresh-rate">
+                    <option value="" {% if not sensor_default_refresh_rate %}selected{% endif %}>no refresh</option>
+                    <option value="1000" {% if sensor_default_refresh_rate == "1000" %}selected{% endif %}>every second</option>
+                    <option value="5000" {% if sensor_default_refresh_rate == "5000" %}selected{% endif %}>every 5 seconds</option>
+                    <option value="30000" {% if sensor_default_refresh_rate == "30000" %}selected{% endif %}>every 30 seconds</option>
+                    <option value="60000" {% if sensor_default_refresh_rate == "60000" %}selected{% endif %}>every minute</option>
+                    <option value="300000" {% if sensor_default_refresh_rate == "300000" %}selected{% endif %}>every 5 minutes</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-offset-2">
+            <input type="submit" value="Save settings" class="btn btn-success">
+        </div>
+    </form>
+</div>

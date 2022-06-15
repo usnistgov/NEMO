@@ -36,14 +36,14 @@ from NEMO.models import (
 	User,
 )
 from NEMO.utilities import EmailCategory, distinct_qs_value_list, format_daterange, format_datetime, send_mail
-from NEMO.views.customization import get_customization, get_media_file_contents
+from NEMO.views.customization import ApplicationCustomization, EmailsCustomization, get_media_file_contents
 
 
 def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project: Project, staff_charge: bool):
 	"""
 	Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
 	"""
-	facility_name = get_customization('facility_name')
+	facility_name = ApplicationCustomization.get('facility_name')
 
 	# The tool must be visible (or the parent if it's a child tool) to users.
 	visible = tool.parent_tool.visible if tool.is_child_tool() else tool.visible
@@ -76,7 +76,7 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 	# The tool operator may not activate tools in a particular area unless they are logged in to the area.
 	# Staff are exempt from this rule.
 	if tool.requires_area_access and AreaAccessRecord.objects.filter(area=tool.requires_area_access, customer=operator, staff_charge=None, end=None).count() == 0 and not operator.is_staff:
-		abuse_email_address = get_customization('abuse_email_address')
+		abuse_email_address = EmailsCustomization.get('abuse_email_address')
 		message = get_media_file_contents('unauthorized_tool_access_email.html')
 		if abuse_email_address and message:
 			dictionary = {
@@ -92,7 +92,7 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 	# Staff and service personnel are exempt from this rule.
 	if not operator.is_staff and not operator.is_service_personnel and tool.requires_area_reservation():
 		if not tool.requires_area_access.get_current_reservation_for_user(operator):
-			abuse_email_address = get_customization('abuse_email_address')
+			abuse_email_address = EmailsCustomization.get('abuse_email_address')
 			message = get_media_file_contents('unauthorized_tool_access_email.html')
 			if abuse_email_address and message:
 				dictionary = {
@@ -155,7 +155,7 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 	"""
 	user = new_reservation.user
 
-	facility_name = get_customization('facility_name')
+	facility_name = ApplicationCustomization.get('facility_name')
 
 	# The function will check all policies. Policy problems are placed in the policy_problems list. overridable is True if the policy problems can be overridden by a staff member.
 	policy_problems = []

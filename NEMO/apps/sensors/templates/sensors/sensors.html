@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+{% block extrahead %}
+    <link rel="stylesheet" type="text/css" href="{% static "sensors/sensors.css" %}"/>
+{% endblock %}
+{% block title %}Sensors{% endblock %}
+{% block content %}
+    <div class="well well-sensors-dashboard">
+        <ol class="breadcrumb breadcrumb-sensors-dashboard">
+            {% if not selected_category %}
+                <li class="active">Sensor Dashboard</li>
+            {% else %}
+                <li class="active"><a href="{% url 'sensors' %}">Dashboard</a></li>
+                {% for ancestor in selected_category.ancestors %}
+                    <li><a href="{% url 'sensors' ancestor.id %}">{{ ancestor.name }}</a></li>
+                {% endfor %}
+                <li class="active">{{ selected_category.name }}</li>
+            {% endif %}
+        </ol>
+        <ul class="list-inline list-inline-sensors-dashboard text-center">
+            {% if categories %}
+                {% for category in categories %}
+                    <li class="dashboard-category-group-item text-center {% if category.alert_triggered %}alert-danger{% else %}alert-success{% endif %}" onclick="window.location = '{% url 'sensors' category.id %}'">
+                        {{ category.name }}
+                    </li>
+                {% endfor %}
+            {% endif %}
+            {% if sensors %}
+                {% for sensor in sensors %}
+                    <li class="dashboard-sensor-group-item text-center {% if sensor.alert_triggered %}alert-danger{% else %}alert-success{% endif %}" onclick="window.location = '{% url 'sensor_details' sensor.id %}'">
+                        {{ sensor.name }}<br><br>
+                        {{ sensor.last_data_point.created_date|date:"SHORT_DATETIME_FORMAT" }}<br>
+                        {{ sensor.last_data_point.display_value }}
+                    </li>
+                {% endfor %}
+            {% endif %}
+            {% if not sensors and not categories %}
+                <div class="dashboard-no-group-items">
+                    no items to display.
+                    {% if user.is_superuser and not selected_category %}
+                        <br/><br/>You can add sensors, categories and alerts by navigating to<br>
+                        <a href="{% url 'admin:app_list' 'sensors' %}">
+                            Administration -> Detailed Administration -> Sensors
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </ul>
+    </div>
+{% endblock %}

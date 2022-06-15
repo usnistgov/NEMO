@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_tags_and_filters %}
+{% block extrahead %}
+    {# Chart.js #}
+    <script type="text/javascript" src="{% static "sensors/chart.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "sensors/chartjs-adapter-moment.js" %}"></script>
+    {# Daterange picker #}
+    <script type="text/javascript" src="{% static "sensors/daterangepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "sensors/daterangepicker.css" %}"/>
+    {# Sensors #}
+    <link rel="stylesheet" type="text/css" href="{% static "sensors/sensors.css" %}"/>
+{% endblock %}
+{% block title %}{{ sensor.name }} data{% endblock %}
+{% block content %}
+    <div class="well well-sensors-dashboard">
+        <ol class="breadcrumb breadcrumb-sensors-dashboard">
+            <li class="active"><a href="{% url 'sensors' %}">Dashboard</a></li>
+            {% if sensor.sensor_category %}
+                {% for ancestor in sensor.sensor_category.ancestors %}
+                    <li><a href="{% url 'sensors' ancestor.id %}">{{ ancestor.name }}</a></li>
+                {% endfor %}
+                <li><a href="{% url 'sensors' sensor.sensor_category.id %}">{{ sensor.sensor_category.name }}</a></li>
+            {% endif %}
+            <li class="active">{{ sensor.name }}</li>
+        </ol>
+        <div class="panel-body">
+            <div style="margin-bottom: 15px">
+                <div class="form-inline">
+                    <label class="control-label" for="start">Date range:</label>
+                    <div class="input-group" style="margin-right: 10px">
+                        <input class="form-control text-center" type="text" onchange="refresh_page()" id="start" name="start">
+                        <div id="picker-container" class="invisible" style="float: left;position: relative;height: 0;width: 100%"></div>
+                        <span class="daterange-calendar input-group-btn">
+                            <button type="button" class="btn btn-default btn-input-white" onclick="open_daterange_picker()"><i class="glyphicon glyphicon-calendar"></i></button>
+                        </span>
+                    </div>
+                    <label class="control-label" for="end" style="margin-right: 10px;">to</label>
+                    <div class="input-group" style="margin-right: 5px;">
+                        <input class="form-control text-center" type="text" onchange="refresh_page()" id="end" name="end">
+                        <span class="daterange-calendar input-group-btn">
+                            <button type="button" class="btn btn-default btn-input-white" onclick="open_daterange_picker()"><i class="glyphicon glyphicon-calendar"></i></button>
+                        </span>
+                    </div>
+                    <div class="visible-sm visible-xs" style="margin-bottom: 15px;"></div>
+                    <label class="control-label" for="refresh-rate">Refresh rate:</label>
+                    <select class="form-control" id="refresh-rate" onchange="update_refresh_rate();refresh_page();">
+                        <option value="" {% if not refresh_rate %}selected{% endif %}>no refresh</option>
+                        <option value="1000" {% if refresh_rate == 1000 %}selected{% endif %}>every second</option>
+                        <option value="5000" {% if refresh_rate == 5000 %}selected{% endif %}>every 5 seconds</option>
+                        <option value="30000" {% if refresh_rate == 30000 %}selected{% endif %}>every 30 seconds</option>
+                        <option value="60000" {% if refresh_rate == 60000 %}selected{% endif %}>every minute</option>
+                        <option value="300000" {% if refresh_rate == 300000 %}selected{% endif %}>every 5 minutes</option>
+                    </select>
+                </div>
+            </div>
+            <ul class="nav nav-tabs" id="tabs">
+                <li class="{% if tab == 'chart' %}active{% endif %}">
+                    <a href="#chart-tab">Chart</a>
+                </li>
+                <li class="{% if tab == 'data' %}active{% endif %}">
+                    <a href="#data-tab">Data</a>
+                </li>
+                <li class="{% if tab == 'alert' %}active{% endif %}">
+                    <a href="#alert-tab">Alert log</a>
+                </li>
+            </ul>
+            <div id="no-sensor-data" class="tab-content panel panel-default panel-tab-content" style="display: none;">
+                <div class="panel-body">
+                    <i>There is no data to display. Try selecting a different date range</i>
+                </div>
+            </div>
+            <div id="sensor-data" class="tab-content panel panel-default panel-tab-content" style="margin-bottom: 0;">
+                <div class="tab-pane {% if tab == 'chart' %}active{% endif %}" id="chart-tab">
+                    <div class="panel-body">
+                        <div class="text-right">
+                            <div class="form-inline">
+                                <label class="control-label" for="chart-step">Display every</label>
+                                <input class="form-control input-sm" id="chart-step" type="number" value="{{ chart_step }}" onchange="refresh_page()" min="1" max="1440"/>
+                                <label class="control-label"> data point</label>
+                            </div>
+                        </div>
+                        <div>
+                            <canvas id="sensor-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane {% if tab == 'data' %}active{% endif %}" id="data-tab">
+                    <div class="panel-body">
+                        <div class="text-right">
+                            <div>
+                                <input type="button" class="btn btn-info" value="Export" onclick="refresh_page();window.open('{% url 'export_sensor_data' sensor.id %}')">
+                            </div>
+                        </div>
+                        <div>
+                            <table id="sensor-table" class="table table-bordered table-hover table-striped" style="margin-top: 20px;">
+                                <tbody>
+                                    <tr class="info" style="pointer-events: none;">
+                                        <th>Time</th>
+                                        <th>{{ sensor.data_label|default_if_none:'Value' }}</th>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane {% if tab == 'alert' %}active{% endif %}" id="alert-tab">
+                    <div id="alert-div" class="panel-body">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        {# Set a special date for 'now' so we can refresh real time data #}
+        const now_moment_date = moment();
+
+        let tab_jq = $("#tabs a");
+		tab_jq.click(switch_tab);
+		tab_jq.click(refresh_page);
+
+        {# Update dates in input fields and refresh the page. If there is no end we will use 'now' #}
+        function set_dates(start, end)
+        {
+            $('#start').val(start.format('{{ datetime_input_js_format }}'));
+            if (!end.isSame(now_moment_date))
+            {
+                $('#end').val(end.format('{{ datetime_input_js_format }}'));
+            }
+            else
+            {
+                $('#end').val('now');
+            }
+            refresh_page();
+        }
+
+        let daterange_picker = $('#picker-container').daterangepicker(
+        {
+            alwaysShowCalendars: true,
+            showDropdowns: true,
+            timePicker: true,
+            timePickerIncrement: 1,
+            autoUpdateInput: false,
+            ranges:
+            {
+               'Last 24 hrs': [moment().subtract(1, 'days'), now_moment_date],
+               'Last 72 hrs': [moment().subtract(3, 'days'), now_moment_date],
+               'Last 7 Days': [moment().subtract(6, 'days'), now_moment_date],
+               'Last 30 Days': [moment().subtract(29, 'days'), now_moment_date],
+               'Today': [moment().startOf('day'), moment().endOf('day')],
+               'Yesterday': [moment().subtract(1, 'days').startOf('day'), moment().subtract(1, 'days').endOf('day')],
+               'This Week': [moment().startOf('week'), moment().endOf('week')],
+               'Last Week': [moment().subtract(7, 'days').startOf('week'), moment().subtract(7, 'days').endOf('week')],
+               'This Month': [moment().startOf('month'), moment().endOf('month')],
+               'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+               'This Year': [moment().startOf('year'), moment().endOf('year')],
+               'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().endOf('year')],
+            }
+        }, set_dates);
+
+        function get_start_end_dates()
+        {
+            const start = moment.utc($("#start").val(), '{{ datetime_input_js_format }}').unix();
+            const end_input = $("#end").val();
+            const end = end_input && end_input !== 'now' ? moment.utc(end_input, '{{ datetime_input_js_format }}').unix() : '';
+            return [start, end];
+        }
+
+        function get_base_url(url)
+        {
+            const refreshRate = $('#refresh-rate').val() || 0;
+            const chartStep = $("#chart-step").val() || 1;
+            const dates = get_start_end_dates();
+            const base_url = url ? url : $("#data-tab").hasClass("active") ? "{% url 'sensor_details' sensor.id 'data' %}" : $("#chart-tab").hasClass("active") ? "{% url 'sensor_details' sensor.id 'chart' %}" : "{% url 'sensor_details' sensor.id 'alert' %}";
+            return base_url + "?start=" + dates[0] + "&end=" + dates[1] + "&chart_step=" + chartStep + "&refresh_rate=" + refreshRate;
+        }
+
+        function filter_every_x_point(data)
+        {
+            let chartStep = $("#chart-step").val() || 1;
+            return data.filter((element, index) => {return index % chartStep === 0;});
+        }
+
+        const sensorChart = $("#sensor-chart");
+        let sensorChartObject = null;
+        function update_chart(data)
+        {
+            let ctx = sensorChart[0].getContext("2d");
+            if (sensorChartObject) sensorChartObject.destroy();
+            sensorChartObject = new Chart(ctx,
+                {
+                type: 'line',
+                data:
+                {
+                    labels: filter_every_x_point(data.labels),
+                    datasets: [
+                    {
+                        label: '{{ sensor.name }}',
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgb(75, 192, 192)',
+                        data: filter_every_x_point(data.data)
+                    }]
+                },
+                options:
+                {
+                    scales:
+                    {
+                        x:
+                        {
+                            type: 'time'
+                        },
+                        y:
+                        {
+                            title:
+                            {
+                                display: {% if sensor.data_label %}true{% else %}false{% endif %},
+                                text: '{{ sensor.data_label }}'
+                            }
+                        }
+                    },
+                    responsive: true,
+                    legend:
+                    {
+                        position: 'top'
+                    },
+                    title:
+                    {
+                        display: true,
+                        text: '{{ sensor.name }} Chart'
+                    },
+                    animation:
+                    {
+                        duration: 0
+                    },
+                    datasets:
+                    {
+                        line:
+                        {
+                            borderWidth: 1,
+                            pointRadius: 2
+                        }
+                    }
+                }
+            });
+        }
+
+        function update_table(data)
+        {
+            let sensorTable_filter = $("#sensor-table tr");
+            sensorTable_filter.not(':first').not(':last').remove();
+            let content_rows = '';
+            for(let i = data.labels.length-1; i >= 0 ; i--)
+            {
+                content_rows += '<tr><td>' + data.labels[i] + '</td><td>' + data.data[i] + '</td></tr>';
+            }
+            sensorTable_filter.first().after(content_rows);
+        }
+
+        {# Set new URL in history and refresh chart and table #}
+        function refresh_page()
+        {
+            let data_url = get_base_url("{% url 'sensor_chart_data' sensor.id %}");
+            let history_url = get_base_url();
+            history.pushState('', "{{ sensor.name }} data", history_url);
+            if ($("#alert-tab").hasClass("active"))
+            {
+                $('#alert-div').load(get_base_url("{% url 'sensor_alert_log' sensor.id %}"));
+                $('#sensor-data').show();
+                $('#no-sensor-data').hide();
+            }
+            else
+            {
+                $.ajax(
+                {
+                    url: data_url,
+                    success: function (data)
+                    {
+                        if (data && data.data && data.data.length)
+                        {
+                            $('#sensor-data').show();
+                            $('#no-sensor-data').hide();
+                            update_chart(data);
+                            update_table(data);
+                        }
+                        else
+                        {
+                            $('#sensor-data').hide();
+                            $('#no-sensor-data').show();
+                        }
+                    }
+                });
+            }
+        }
+
+        {# Update dates in daterangepicker from the input, then open it #}
+        function open_daterange_picker()
+        {
+            const dates = get_start_end_dates();
+            daterange_picker.data('daterangepicker').setStartDate(moment.unix(dates[0]).utc());
+            daterange_picker.data('daterangepicker').setEndDate(dates[1] ? moment.unix(dates[1]).utc() : now_moment_date);
+            daterange_picker.data('daterangepicker').show();
+        }
+
+        function update_refresh_rate()
+        {
+            set_interval_when_visible(document, refresh_page, $('#refresh-rate').val());
+        }
+
+        set_dates(moment('{{ start|input_date_format }}', '{{ datetime_input_js_format }}'), {% if end %}moment('{{ end|input_date_format }}', '{{ datetime_input_js_format }}'){% else %}now_moment_date{% endif %});
+        update_refresh_rate();
+    </script>
+
+{% endblock %}

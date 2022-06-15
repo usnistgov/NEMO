@@ -1,9 +1,33 @@
 The NEMO web application is laboratory logistics software that strives to be intuitive and easy to use, making life easier in the lab. NEMO manages tool reservations, control access to tools, and streamline logistics and communication. The code is open source and free so that other labs can benefit.
 
+# Online demo
+An online version of the splash pad is available at [https://nemo.nist.gov/demo](https://nemo.nist.gov/demo).
+
+### User roles
+You will be automatically logged in as superadmin "captain".<br>
+Use the [impersonate](https://nemo.nist.gov/demo/impersonate) feature to switch between user roles:
+* `Captain Nemo`: super admin
+* `Pierre Aronnax`: staff member
+* `Ned Land`: regular user
+
+### Jumbotron
+The jumbotron is available at [https://nemo.nist.gov/demo/jumbotron/](https://nemo.nist.gov/demo/jumbotron/)
+
+### Kiosk/Area access
+You can test the kiosk and area access features by going to the following URLs:
+* [entry door](https://nemo.nist.gov/demo/welcome_screen/1/?occupancy=Cleanroom)
+* [exit door](https://nemo.nist.gov/demo/farewell_screen/1/?occupancy=Cleanroom)
+* [kiosk](https://nemo.nist.gov/demo/kiosk/NanoFab/?occupancy=Cleanroom)
+
+To simulate the badge reader, press `F2` then the badge number (`1` for captain, `2` for professor, `3` for ned) and press `F2` again.
+
+# On premise demo
 You can try NEMO out using the "[splash pad](https://hub.docker.com/r/nanofab/nemo_splash_pad/)" Docker image, which comes preconfigured and loaded with sample data. Install [Docker Community Edition (CE)](https://www.docker.com/community-edition) and run this command:  
 `docker run --detach --name nemo_splash_pad --publish 8000:8000 nanofab/nemo_splash_pad`  
 ... then open a web browser to http://localhost:8000. You can stop and remove the NEMO splash pad with the command:  
 `docker rm --force nemo_splash_pad`
+
+# Documentation
 
 Documentation for NEMO resides in the [GitHub wiki](https://github.com/usnistgov/NEMO/wiki).
 

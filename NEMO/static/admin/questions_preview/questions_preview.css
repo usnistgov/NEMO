@@ -180,3 +180,8 @@ div.questions_preview:empty
     color: whitesmoke;
     background-color: #ac2925;
 }
+
+.questions_preview input:invalid, .questions_preview select:invalid, .questions_preview textarea:invalid
+{
+    border-color: #dc3545!important;
+}

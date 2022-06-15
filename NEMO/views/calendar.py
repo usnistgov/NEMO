@@ -43,7 +43,7 @@ from NEMO.utilities import (
 	as_timezone,
 	bootstrap_primary_color,
 	create_email_attachment,
-	extract_dates,
+	date_input_format,
 	extract_times,
 	format_datetime,
 	localize,
@@ -51,7 +51,12 @@ from NEMO.utilities import (
 	send_mail,
 )
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
-from NEMO.views.customization import get_customization, get_media_file_contents
+from NEMO.views.customization import (
+	ApplicationCustomization,
+	CalendarCustomization,
+	EmailsCustomization,
+	get_media_file_contents,
+)
 from NEMO.views.policy import (
 	check_billing_to_project,
 	check_policy_to_cancel_reservation,
@@ -96,23 +101,23 @@ def calendar(request, item_type=None, item_id=None):
 	areas = Area.objects.filter(requires_reservation=True).only('name')
 
 	# We want to remove areas the user doesn't have access to
-	display_all_areas = get_customization('calendar_display_not_qualified_areas') == 'enabled'
+	display_all_areas = CalendarCustomization.get('calendar_display_not_qualified_areas') == 'enabled'
 	if not display_all_areas and areas and user and not user.is_superuser:
 		areas = [area for area in areas if area in user.accessible_areas()]
 
 	from NEMO.widgets.item_tree import ItemTree
 	rendered_item_tree_html = ItemTree().render(None, {'tools': tools, 'areas':areas, 'user': request.user})
 
-	calendar_view = get_customization('calendar_view')
-	calendar_first_day_of_week = get_customization('calendar_first_day_of_week')
-	calendar_day_column_format = get_customization('calendar_day_column_format')
-	calendar_week_column_format = get_customization('calendar_week_column_format')
-	calendar_month_column_format = get_customization('calendar_month_column_format')
-	calendar_start_of_the_day = get_customization('calendar_start_of_the_day')
-	calendar_now_indicator = get_customization('calendar_now_indicator')
-	calendar_all_tools = get_customization('calendar_all_tools')
-	calendar_all_areas = get_customization('calendar_all_areas')
-	calendar_all_areastools = get_customization('calendar_all_areastools')
+	calendar_view = CalendarCustomization.get('calendar_view')
+	calendar_first_day_of_week = CalendarCustomization.get('calendar_first_day_of_week')
+	calendar_day_column_format = CalendarCustomization.get('calendar_day_column_format')
+	calendar_week_column_format = CalendarCustomization.get('calendar_week_column_format')
+	calendar_month_column_format = CalendarCustomization.get('calendar_month_column_format')
+	calendar_start_of_the_day = CalendarCustomization.get('calendar_start_of_the_day')
+	calendar_now_indicator = CalendarCustomization.get('calendar_now_indicator')
+	calendar_all_tools = CalendarCustomization.get('calendar_all_tools')
+	calendar_all_areas = CalendarCustomization.get('calendar_all_areas')
+	calendar_all_areastools = CalendarCustomization.get('calendar_all_areastools')
 
 	dictionary = {
 		'rendered_item_tree_html': rendered_item_tree_html,
@@ -133,9 +138,9 @@ def calendar(request, item_type=None, item_id=None):
 		'self_login': False,
 		'self_logout': False,
 	}
-	login_logout = get_customization('calendar_login_logout', raise_exception=False)
-	self_login = get_customization('self_log_in', raise_exception=False)
-	self_logout = get_customization('self_log_out', raise_exception=False)
+	login_logout = ApplicationCustomization.get('calendar_login_logout', raise_exception=False)
+	self_login = ApplicationCustomization.get('self_log_in', raise_exception=False)
+	self_logout = ApplicationCustomization.get('self_log_out', raise_exception=False)
 	if login_logout == 'enabled':
 		dictionary['self_login'] = self_login == 'enabled'
 		dictionary['self_logout'] = self_logout == 'enabled'
@@ -150,7 +155,7 @@ def calendar(request, item_type=None, item_id=None):
 def event_feed(request):
 	""" Get all reservations for a specific time-window. Optionally: filter by tool, area or user name. """
 	try:
-		start, end = extract_dates(request.GET)
+		start, end = extract_calendar_dates(request.GET)
 	except Exception as e:
 		return HttpResponseBadRequest('Invalid start or end time. ' + str(e))
 
@@ -162,7 +167,7 @@ def event_feed(request):
 
 	event_type = request.GET.get('event_type')
 
-	facility_name = get_customization('facility_name')
+	facility_name = ApplicationCustomization.get('facility_name')
 	if event_type == 'reservations':
 		return reservation_event_feed(request, start, end)
 	elif event_type == f"{facility_name.lower()} usage":
@@ -173,6 +178,37 @@ def event_feed(request):
 		return specific_user_feed(request, user, start, end)
 	else:
 		return HttpResponseBadRequest('Invalid event type or operation not authorized.')
+
+
+def extract_calendar_dates(parameters):
+	"""
+	Extract the "start" and "end" parameters for FullCalendar's specific date format while performing a few logic validation checks.
+	"""
+	full_calendar_date_format = "%Y-%m-%d"
+	try:
+		start = parameters["start"]
+	except:
+		raise Exception("The request parameters did not contain a start time.")
+
+	try:
+		end = parameters["end"]
+	except:
+		raise Exception("The request parameters did not contain an end time.")
+
+	try:
+		start = localize(datetime.strptime(start, full_calendar_date_format))
+	except:
+		raise Exception("The request parameters did not have a valid start time.")
+
+	try:
+		end = localize(datetime.strptime(end, full_calendar_date_format))
+	except:
+		raise Exception("The request parameters did not have a valid end time.")
+
+	if end < start:
+		raise Exception("The request parameters have an end time that precedes the start time.")
+
+	return start, end
 
 
 def reservation_event_feed(request, start, end):
@@ -518,7 +554,7 @@ def create_outage(request):
 
 	# Make sure there is at least an outage title
 	if not request.POST.get('title'):
-		calendar_outage_recurrence_limit = get_customization("calendar_outage_recurrence_limit")
+		calendar_outage_recurrence_limit = CalendarCustomization.get("calendar_outage_recurrence_limit")
 		dictionary = {
 			'categories': ScheduledOutageCategory.objects.all(),
 			'recurrence_intervals': recurrence_frequency_display,
@@ -539,7 +575,7 @@ def create_outage(request):
 		submitted_date_until = request.POST.get('recurrence_until', None)
 		date_until = end.replace(hour=0, minute=0, second=0)
 		if submitted_date_until:
-			date_until = localize(datetime.strptime(submitted_date_until, '%m/%d/%Y'))
+			date_until = localize(datetime.strptime(submitted_date_until, date_input_format))
 		date_until += timedelta(days=1, seconds=-1) # set at the end of the day
 		by_week_day = None
 		if submitted_frequency == 'DAILY_WEEKDAYS':
@@ -777,8 +813,9 @@ def send_email_reservation_reminders():
 		else:
 			subject = item.name + " reservation warning"
 			rendered_message = Template(reservation_warning_message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}))
-		user_office_email = get_customization('user_office_email_address')
-		reservation.user.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
+		user_office_email = EmailsCustomization.get('user_office_email_address')
+		send_to_alternate = reservation.user.get_preferences().email_send_reservation_reminders
+		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
 	return HttpResponse()
 
 
@@ -792,7 +829,7 @@ def email_reservation_ending_reminders(request):
 def send_email_reservation_ending_reminders():
 	# Exit early if the reservation ending reminder email template has not been customized for the organization yet.
 	reservation_ending_reminder_message = get_media_file_contents('reservation_ending_reminder_email.html')
-	user_office_email = get_customization('user_office_email_address')
+	user_office_email = EmailsCustomization.get('user_office_email_address')
 	if not reservation_ending_reminder_message:
 		calendar_logger.error("Reservation ending reminder email couldn't be send because either reservation_ending_reminder_email.html is not defined")
 		return HttpResponseNotFound('The reservation ending reminder template has not been customized for your organization yet. Please visit the customization page to upload one, then reservation ending reminder email notifications can be sent.')
@@ -816,7 +853,8 @@ def send_email_reservation_ending_reminders():
 	for reservation in ending_reservations:
 		subject = reservation.reservation_item.name + " reservation ending soon"
 		rendered_message = Template(reservation_ending_reminder_message).render(Context({'reservation': reservation}))
-		reservation.user.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
+		send_to_alternate = reservation.user.get_preferences().email_send_reservation_ending_reminders
+		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
 	return HttpResponse()
 
 
@@ -839,32 +877,36 @@ def send_email_usage_reminders(projects_to_exclude=None):
 	# Just send one email for all the things!
 	aggregate = {}
 	for access_record in busy_users:
-		key = str(access_record.customer)
+		key = access_record.customer_id
 		aggregate[key] = {
+			'user': access_record.customer,
 			'email': access_record.customer.email,
 			'first_name': access_record.customer.first_name,
 			'resources_in_use': [access_record.area.name],
 		}
 	for usage_event in busy_tools:
-		key = str(usage_event.operator)
+		key = usage_event.operator_id
 		if key in aggregate:
 			aggregate[key]['resources_in_use'].append(usage_event.tool.name)
 		else:
 			aggregate[key] = {
+				'user': usage_event.operator,
 				'email': usage_event.operator.email,
 				'first_name': usage_event.operator.first_name,
 				'resources_in_use': [usage_event.tool.name],
 			}
 
-	user_office_email = get_customization('user_office_email_address')
+	user_office_email = EmailsCustomization.get('user_office_email_address')
 
 	message = get_media_file_contents('usage_reminder_email.html')
-	facility_name = get_customization('facility_name')
+	facility_name = ApplicationCustomization.get('facility_name')
 	if message:
 		subject = f"{facility_name} usage"
 		for user in aggregate.values():
 			rendered_message = Template(message).render(Context({'user': user}))
-			send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=[user['email']], email_category=EmailCategory.TIMED_SERVICES)
+			user_instance: User = user['user']
+			send_to_alternate = user_instance.get_preferences().email_send_usage_reminders
+			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
 
 	message = get_media_file_contents('staff_charge_reminder_email.html')
 	if message:
@@ -872,7 +914,8 @@ def send_email_usage_reminders(projects_to_exclude=None):
 		for staff_charge in busy_staff:
 			subject = "Active staff charge since " + format_datetime(staff_charge.start)
 			rendered_message = Template(message).render(Context({'staff_charge': staff_charge}))
-			staff_charge.staff_member.email_user(subject=subject, content=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES)
+			send_to_alternate = staff_charge.staff_member.get_preferences().email_send_usage_reminders
+			staff_charge.staff_member.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
 
 	return HttpResponse()
 
@@ -1081,7 +1124,7 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 					'template_color': bootstrap_primary_color('info')
 				}
 				cancellation_email = Template(email_contents).render(Context(dictionary))
-				recipients = [reservation.user.email]
+				recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_emails)
 				if reservation.area:
 					recipients.extend(reservation.area.reservation_email_list())
 				if reservation.user.get_preferences().attach_cancelled_reservation:
@@ -1099,23 +1142,26 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 
 def send_missed_reservation_notification(reservation):
 	message = get_media_file_contents('missed_reservation_email.html')
-	user_office_email = get_customization('user_office_email_address')
-	abuse_email = get_customization('abuse_email_address')
+	user_office_email = EmailsCustomization.get('user_office_email_address')
+	abuse_email = EmailsCustomization.get('abuse_email_address')
 	if message and user_office_email:
 		subject = "Missed reservation for the " + str(reservation.reservation_item)
 		message = Template(message).render(Context({'reservation': reservation}))
-		send_mail(subject=subject, content=message, from_email=user_office_email, to=[reservation.user.email, abuse_email, user_office_email], email_category=EmailCategory.TIMED_SERVICES)
+		recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_emails)
+		recipients.append(abuse_email)
+		recipients.append(user_office_email)
+		send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, email_category=EmailCategory.TIMED_SERVICES)
 	else:
 		calendar_logger.error("Missed reservation email couldn't be send because missed_reservation_email.html or user_office_email are not defined")
 
 
 def send_out_of_time_reservation_notification(reservation:Reservation):
 	message = get_media_file_contents('out_of_time_reservation_email.html')
-	user_office_email = get_customization('user_office_email_address')
+	user_office_email = EmailsCustomization.get('user_office_email_address')
 	if message and user_office_email:
 		subject = "Out of time in the " + str(reservation.area.name)
 		message = Template(message).render(Context({'reservation': reservation}))
-		recipients = [reservation.user.email]
+		recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_ending_reminders)
 		recipients.extend(reservation.area.abuse_email_list())
 		send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, email_category=EmailCategory.TIMED_SERVICES)
 	else:
@@ -1123,15 +1169,16 @@ def send_out_of_time_reservation_notification(reservation:Reservation):
 
 
 def send_user_created_reservation_notification(reservation: Reservation):
-	site_title = get_customization('site_title')
-	recipients = [reservation.user.email] if reservation.user.get_preferences().attach_created_reservation else []
+	site_title = ApplicationCustomization.get('site_title')
+	user = reservation.user
+	recipients = user.get_emails(user.get_preferences().email_send_reservation_emails) if user.get_preferences().attach_created_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
 		subject = f"[{site_title}] Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_created_user_email.html')
 		message = Template(message).render(Context({'reservation': reservation}))
-		user_office_email = get_customization('user_office_email_address')
+		user_office_email = EmailsCustomization.get('user_office_email_address')
 		# We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
 			attachment = create_ics_for_reservation(reservation)
@@ -1141,15 +1188,16 @@ def send_user_created_reservation_notification(reservation: Reservation):
 
 
 def send_user_cancelled_reservation_notification(reservation: Reservation):
-	site_title = get_customization('site_title')
-	recipients = [reservation.user.email] if reservation.user.get_preferences().attach_cancelled_reservation else []
+	site_title = ApplicationCustomization.get('site_title')
+	user = reservation.user
+	recipients = user.get_emails(user.get_preferences().email_send_reservation_emails) if user.get_preferences().attach_cancelled_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
 		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
 		message = Template(message).render(Context({'reservation': reservation}))
-		user_office_email = get_customization('user_office_email_address')
+		user_office_email = EmailsCustomization.get('user_office_email_address')
 		# We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
 			attachment = create_ics_for_reservation(reservation, cancelled=True)
@@ -1159,7 +1207,7 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
 
 
 def create_ics_for_reservation(reservation: Reservation, cancelled=False):
-	site_title = get_customization('site_title')
+	site_title = ApplicationCustomization.get('site_title')
 	reservation_organizer_email = getattr(settings, "RESERVATION_ORGANIZER_EMAIL", "no_reply")
 	reservation_organizer = getattr(settings, "RESERVATION_ORGANIZER", site_title)
 	method_name = 'CANCEL' if cancelled else 'REQUEST'
@@ -1220,9 +1268,7 @@ def create_alert_for_closure_time(closure_time: ClosureTime):
 
 
 def email_last_closure_occurrence(closure_time):
-	facility_manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list(
-		"email", flat=True
-	)
+	facility_manager_emails = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(include_alternate=True)]
 	message = f"""
 Dear facility manager,<br>
 This email is to inform you that today was the last occurrence for the {closure_time.closure.name} facility closure.

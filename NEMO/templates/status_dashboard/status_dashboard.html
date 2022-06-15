@@ -59,7 +59,7 @@
 
     function update_url()
     {
-        {# Set permanend url so we can refresh specific tab #}
+        {# Set permanent url so we can refresh specific tab #}
         let title = "Area occupancy";
         let new_url = "{% url 'status_dashboard_tab' 'occupancy' %}";
         if ($("#tools").hasClass("active"))
@@ -87,15 +87,21 @@
 
 	function force_user_out_of_the_area(url)
 	{
-		let failure_dialog = ajax_failure_callback("Unable to force the user to log out of the area");
-		ajax_post(url, undefined, undefined, failure_dialog, refresh_status_dashboard);
+        if (confirm("Are you sure you want to log this user out of the area?"))
+        {
+		    let failure_dialog = ajax_failure_callback("Unable to force the user to log out of the area");
+		    ajax_post(url, undefined, undefined, failure_dialog, refresh_status_dashboard);
+        }
 	}
 
 	function force_user_off_of_tool(url)
 	{
-		let failure_dialog = ajax_failure_callback("Unable to force user off the tool");
-		let contents = { "state": "disable" };
-		ajax_post(url, contents, undefined, failure_dialog, refresh_status_dashboard);
+        if (confirm("Are you sure you want to log this user off of the tool?"))
+        {
+            let failure_dialog = ajax_failure_callback("Unable to force user off the tool");
+            let contents = {"state": "disable"};
+            ajax_post(url, contents, undefined, failure_dialog, refresh_status_dashboard);
+        }
 	}
 
 	{# This function modifies the contents of a style sheet after the page has been loaded. #}

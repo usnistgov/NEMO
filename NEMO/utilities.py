@@ -1,14 +1,13 @@
 import csv
 import os
 from calendar import monthrange
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time
 from email import encoders
 from email.mime.base import MIMEBase
 from io import BytesIO
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 
 from PIL import Image
-from dateutil import parser
 from dateutil.parser import parse
 from dateutil.rrule import MONTHLY, rrule
 from django.conf import settings
@@ -18,8 +17,51 @@ from django.core.mail import EmailMessage
 from django.db.models import QuerySet
 from django.http import HttpResponse
 from django.utils import timezone
-from django.utils.formats import date_format, time_format
+from django.utils.formats import date_format, get_format, time_format
 from django.utils.timezone import is_naive, localtime
+
+# List of python to js formats
+py_to_js_date_formats = {
+	"%A": "dddd",
+	"%a": "ddd",
+	"%B": "MMMM",
+	"%b": "MMM",
+	"%c": "ddd MMM DD HH:mm:ss YYYY",
+	"%d": "DD",
+	"%f": "SSS",
+	"%H": "HH",
+	"%I": "hh",
+	"%j": "DDDD",
+	"%M": "mm",
+	"%m": "MM",
+	"%p": "A",
+	"%S": "ss",
+	"%U": "ww",
+	"%W": "ww",
+	"%w": "d",
+	"%X": "HH:mm:ss",
+	"%x": "MM/DD/YYYY",
+	"%Y": "YYYY",
+	"%y": "YY",
+	"%Z": "z",
+	"%z": "ZZ",
+	"%%": "%",
+}
+
+
+# Convert a python format string to javascript format string
+def convert_py_format_to_js(string_format: str) -> str:
+	for py, js in py_to_js_date_formats.items():
+		string_format = js.join(string_format.split(py))
+	return string_format
+
+
+time_input_format = get_format("TIME_INPUT_FORMATS")[0]
+date_input_format = get_format("DATE_INPUT_FORMATS")[0]
+datetime_input_format = get_format("DATETIME_INPUT_FORMATS")[0]
+time_input_js_format = convert_py_format_to_js(time_input_format)
+date_input_js_format = convert_py_format_to_js(date_input_format)
+datetime_input_js_format = convert_py_format_to_js(datetime_input_format)
 
 
 class BasicDisplayTable(object):
@@ -79,6 +121,7 @@ class EmailCategory(object):
 	SAFETY = 7
 	TASKS = 8
 	ACCESS_REQUESTS = 9
+	SENSORS = 10
 	Choices = (
 		(GENERAL, "General"),
 		(SYSTEM, "System"),
@@ -90,14 +133,8 @@ class EmailCategory(object):
 		(SAFETY, "Safety"),
 		(TASKS, "Tasks"),
 		(ACCESS_REQUESTS, "Access Requests"),
+		(SENSORS, "Sensors"),
 	)
-
-
-def parse_start_and_end_date(start, end):
-	start = timezone.make_aware(parser.parse(start), timezone.get_current_timezone())
-	end = timezone.make_aware(parser.parse(end), timezone.get_current_timezone())
-	end += timedelta(days=1, seconds=-1)  # Set the end date to be midnight by adding a day.
-	return start, end
 
 
 def quiet_int(value_to_convert, default_upon_failure=0):
@@ -154,10 +191,28 @@ def get_month_timeframe(date=None):
 	return first_of_the_month, last_of_the_month
 
 
-def extract_times(parameters, input_timezone=None, start_required=True, end_required=True) -> Tuple[datetime, datetime]:
+def extract_optional_beginning_and_end_dates(parameters, date_only=False, time_only=False):
+	"""
+	Extract the "start" and "end" parameters from an HTTP request
+	The dates/times are expected in the input formats set in settings.py and assumed in the server's timezone
+	"""
+	new_parameters = {}
+	start = parameters.get("start")
+	end = parameters.get("end")
+	selected_format = date_input_format if date_only else time_input_format if time_only else datetime_input_format
+	new_parameters["start"] = datetime.strptime(start, selected_format).timestamp() if start else None
+	new_parameters["end"] = datetime.strptime(end, selected_format).timestamp() if end else None
+	return extract_optional_beginning_and_end_times(new_parameters)
+
+
+def extract_optional_beginning_and_end_times(parameters):
+	return extract_times(parameters, start_required=False, end_required=False, beginning_and_end=True)
+
+
+def extract_times(parameters, start_required=True, end_required=True, beginning_and_end=False) -> Tuple[datetime, datetime]:
 	"""
 	Extract the "start" and "end" parameters from an HTTP request while performing a few logic validation checks.
-	The function assumes the UNIX timestamp is in the local timezone. Use input_timezone to specify the timezone.
+	The function assumes the UNIX timestamp is in the server's timezone.
 	"""
 	start, end, new_start, new_end = None, None, None, None
 	try:
@@ -175,7 +230,9 @@ def extract_times(parameters, input_timezone=None, start_required=True, end_requ
 	try:
 		new_start = float(start)
 		new_start = datetime.utcfromtimestamp(new_start)
-		new_start = localize(new_start, input_timezone)
+		new_start = localize(new_start)
+		if beginning_and_end:
+			new_start = beginning_of_the_day(new_start)
 	except:
 		if start or start_required:
 			raise Exception("The request parameters did not have a valid start time.")
@@ -183,7 +240,9 @@ def extract_times(parameters, input_timezone=None, start_required=True, end_requ
 	try:
 		new_end = float(end)
 		new_end = datetime.utcfromtimestamp(new_end)
-		new_end = localize(new_end, input_timezone)
+		new_end = localize(new_end)
+		if beginning_and_end:
+			new_end = end_of_the_day(new_end)
 	except:
 		if end or end_required:
 			raise Exception("The request parameters did not have a valid end time.")
@@ -192,40 +251,6 @@ def extract_times(parameters, input_timezone=None, start_required=True, end_requ
 		raise Exception("The request parameters have an end time that precedes the start time.")
 
 	return new_start, new_end
-
-
-def extract_date(date):
-	return localize(datetime.strptime(date, "%Y-%m-%d"))
-
-
-def extract_dates(parameters):
-	"""
-	Extract the "start" and "end" parameters from an HTTP request while performing a few logic validation checks.
-	"""
-	try:
-		start = parameters["start"]
-	except:
-		raise Exception("The request parameters did not contain a start time.")
-
-	try:
-		end = parameters["end"]
-	except:
-		raise Exception("The request parameters did not contain an end time.")
-
-	try:
-		start = extract_date(start)
-	except:
-		raise Exception("The request parameters did not have a valid start time.")
-
-	try:
-		end = extract_date(end)
-	except:
-		raise Exception("The request parameters did not have a valid end time.")
-
-	if end < start:
-		raise Exception("The request parameters have an end time that precedes the start time.")
-
-	return start, end
 
 
 def format_daterange(start_time, end_time, dt_format="DATETIME_FORMAT", d_format="DATE_FORMAT", t_format="TIME_FORMAT", date_separator=" from ", time_separator=" to ") -> str:
@@ -244,9 +269,9 @@ def format_daterange(start_time, end_time, dt_format="DATETIME_FORMAT", d_format
 def format_datetime(universal_time=None, df=None, as_current_timezone=True, use_l10n=None) -> str:
 	this_time = universal_time if universal_time else timezone.now() if as_current_timezone else datetime.now()
 	local_time = as_timezone(this_time) if as_current_timezone else this_time
-	if isinstance(universal_time, time):
+	if isinstance(local_time, time):
 		return time_format(local_time, df or "TIME_FORMAT", use_l10n)
-	elif isinstance(universal_time, datetime):
+	elif isinstance(local_time, datetime):
 		return date_format(local_time, df or "DATETIME_FORMAT", use_l10n)
 	return date_format(local_time, df or "DATE_FORMAT", use_l10n)
 
@@ -254,13 +279,19 @@ def format_datetime(universal_time=None, df=None, as_current_timezone=True, use_
 def export_format_datetime(date_time=None, d_format=True, t_format=True, underscore=True, as_current_timezone=True) -> str:
 	""" This function returns a formatted date/time for export files. Default returns date + time format, with underscores """
 	this_time = date_time if date_time else timezone.now() if as_current_timezone else datetime.now()
-	export_date_format = getattr(settings, 'EXPORT_DATE_FORMAT', 'm_d_Y').replace("-", "_")
-	export_time_format = getattr(settings, 'EXPORT_TIME_FORMAT', 'h_i_s').replace("-", "_")
+	export_date_format = getattr(settings, "EXPORT_DATE_FORMAT", "m_d_Y").replace("-", "_")
+	export_time_format = getattr(settings, "EXPORT_TIME_FORMAT", "h_i_s").replace("-", "_")
 	if not underscore:
 		export_date_format = export_date_format.replace("_", "-")
 		export_time_format = export_time_format.replace("_", "-")
 	separator = "-" if underscore else "_"
-	datetime_format = export_date_format if d_format and not t_format else export_time_format if not d_format and t_format else export_date_format + separator + export_time_format
+	datetime_format = (
+		export_date_format
+		if d_format and not t_format
+		else export_time_format
+		if not d_format and t_format
+		else export_date_format + separator + export_time_format
+	)
 	return format_datetime(this_time, datetime_format, as_current_timezone)
 
 
@@ -283,8 +314,8 @@ def naive_local_current_datetime():
 
 def beginning_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	""" Returns the BEGINNING of today's day (12:00:00.000000 AM of the current day) in LOCAL time. """
-	midnight = t.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-	return localize(midnight) if in_local_timezone else midnight
+	zero = t.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+	return localize(zero) if in_local_timezone else zero
 
 
 def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
@@ -293,22 +324,30 @@ def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
 	return localize(midnight) if in_local_timezone else midnight
 
 
-def remove_duplicates(iterable: Union[List, Set, Tuple]) -> Optional[List]:
+def remove_duplicates(iterable: Union[List, Set, Tuple]) -> List:
 	if not iterable:
-		return None
+		return []
 	if isinstance(iterable, str):
-		raise TypeError('argument must be a list, set or tuple')
+		raise TypeError("argument must be a list, set or tuple")
 	return list(set(iterable))
 
 
 def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachments=None, email_category: EmailCategory = EmailCategory.GENERAL, fail_silently=True) -> int:
 	try:
-		clean_to = remove_duplicates(to)
-		clean_bcc = remove_duplicates(bcc)
-		clean_cc = remove_duplicates(cc)
+		clean_to = filter(None, remove_duplicates(to))
+		clean_bcc = filter(None, remove_duplicates(bcc))
+		clean_cc = filter(None, remove_duplicates(cc))
 	except TypeError:
-		raise TypeError('to, cc and bcc arguments must be a list, set or tuple')
-	mail = EmailMessage(subject=subject, body=content, from_email=from_email, to=clean_to, bcc=clean_bcc, cc=clean_cc, attachments=attachments)
+		raise TypeError("to, cc and bcc arguments must be a list, set or tuple")
+	mail = EmailMessage(
+		subject=subject,
+		body=content,
+		from_email=from_email,
+		to=clean_to,
+		bcc=clean_bcc,
+		cc=clean_cc,
+		attachments=attachments,
+	)
 	mail.content_subtype = "html"
 	msg_sent = 0
 	if mail.recipients():
@@ -327,7 +366,13 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 def create_email_log(email: EmailMessage, email_category: EmailCategory):
 	from NEMO.models import EmailLog
 
-	email_record: EmailLog = EmailLog.objects.create(category=email_category, sender=email.from_email, to=", ".join(email.recipients()), subject=email.subject, content=email.body)
+	email_record: EmailLog = EmailLog.objects.create(
+		category=email_category,
+		sender=email.from_email,
+		to=", ".join(email.recipients()),
+		subject=email.subject,
+		content=email.body,
+	)
 	if email.attachments:
 		email_attachments = []
 		for attachment in email.attachments:

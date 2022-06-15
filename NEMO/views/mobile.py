@@ -11,13 +11,13 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.models import Area, Project, Reservation, ReservationItemType, ScheduledOutage, Tool, User
-from NEMO.utilities import beginning_of_the_day, end_of_the_day, extract_date, localize
+from NEMO.utilities import beginning_of_the_day, end_of_the_day, localize
 from NEMO.views.calendar import (
 	extract_configuration,
 	extract_reservation_questions,
 	render_reservation_questions,
 )
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import CalendarCustomization
 from NEMO.views.policy import check_billing_to_project, check_policy_to_save_reservation
 
 
@@ -36,7 +36,7 @@ def choose_item(request, next_page):
 			return render(request, 'mobile/no_active_projects.html')
 		areas = Area.objects.filter(requires_reservation=True).only('name')
 		# We want to remove areas the user doesn't have access to
-		display_all_areas = get_customization('calendar_display_not_qualified_areas') == 'enabled'
+		display_all_areas = CalendarCustomization.get('calendar_display_not_qualified_areas') == 'enabled'
 		if not display_all_areas and areas and user and not user.is_superuser:
 			areas = [area for area in areas if area in user.accessible_areas()]
 
@@ -148,7 +148,8 @@ def view_calendar(request, item_type, item_id, date=None):
 	item = get_object_or_404(item_type.get_object_class(), id=item_id)
 	if date:
 		try:
-			date = extract_date(date)
+			# Try to extract date using the hardcoded format
+			date = localize(datetime.strptime(date, "%Y-%m-%d"))
 		except:
 			render(request, 'mobile/error.html', {'message': 'Invalid date requested for tool calendar'})
 			return HttpResponseBadRequest()

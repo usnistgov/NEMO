@@ -1,11 +1,13 @@
+import sys
+
 from django.apps import AppConfig
 
 
 def init_admin_site():
-	from NEMO.views.customization import get_customization
+	from NEMO.views.customization import ApplicationCustomization
 	from django.contrib import admin
 	# customize the site
-	site_title = get_customization("site_title", raise_exception=False)
+	site_title = ApplicationCustomization.get("site_title", raise_exception=False)
 	admin.site.site_header = site_title
 	admin.site.site_title = site_title
 	admin.site.index_title = "Detailed administration"
@@ -20,6 +22,8 @@ class NEMOConfig(AppConfig):
 	name = "NEMO"
 
 	def ready(self):
+		if 'migrate' or 'makemigrations' in sys.argv:
+			return
 		from django.apps import apps
 		if apps.is_installed("django.contrib.admin"):
 			init_admin_site()

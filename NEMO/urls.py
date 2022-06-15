@@ -289,7 +289,7 @@ urlpatterns += [
 	url(r'^news/publish/(?P<story_id>\d+)/$', news.publish, name='publish_news_update'),
 
 	# Media
-	url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}, name='media'),
+	url(r'^media/(?P<path>.*)$', login_required(serve), {'document_root': settings.MEDIA_ROOT}, name='media'),
 
 	# User Preferences
 	url(r'^user_preferences/$', users.user_preferences, name='user_preferences'),
@@ -346,8 +346,10 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		url(r'^validate_usage_event/(?P<usage_event_id>\d+)/$', remote_work.validate_usage_event, name='validate_usage_event'),
 
 		# Site customization:
-		url(r'^customization/$', customization.customization, name='customization'),
-		url(r'^customize/(?P<element>.+)/$', customization.customize, name='customize'),
+		path("customization/", customization.customization, name='customization'),
+		path("customization/<str:key>/", customization.customization, name='customization'),
+		path("customize/<str:key>/", customization.customize, name='customize'),
+		path("customize/<str:key>/<str:element>/", customization.customize, name='customize'),
 
 		# Project Usage:
 		url(r'^project_usage/$', usage.project_usage, name='project_usage'),

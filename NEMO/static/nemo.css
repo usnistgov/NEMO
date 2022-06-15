@@ -275,6 +275,11 @@ div.fc-ltr .fc-time-grid .fc-event-container
     margin-right: 10%;
 }
 
+/* Add extra space on the right of the calendar header where the buttons are */
+.fc-toolbar .fc-right {
+	margin-right: 15px;
+}
+
 /* Twitter typeahead styles */
 .twitter-typeahead
 {
@@ -351,7 +356,6 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 
 .customization-separation
 {
-	margin-bottom: 15px;
 	margin-left: -15px;
 	margin-right: -15px;
 	border-top: 1px solid #ddd
@@ -793,6 +797,13 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	border-radius: 4px;
 }
 
+.panel-tab-content
+{
+	border-top: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
 /* Table striped every 2 */
 .table-double-stripped tbody tr:nth-child(4n+1), .table-double-stripped tbody tr:nth-child(4n+2)
 {
@@ -829,4 +840,18 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 {
 	vertical-align: middle !important;
 	border-left: 1px solid #ddd;
+}
+
+.btn-input-white
+{
+	background: #fff;
+	-webkit-box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
+	box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
+}
+
+/* Invalid input for post usage/reservation questions and additional event parameters */
+#tool_control input:invalid, #tool_control select:invalid, #tool_control textarea:invalid,
+#additional_event_parameters input:invalid, #additional_event_parameters select:invalid, #additional_event_parameters textarea:invalid
+{
+	border-color: #dc3545!important;
 }

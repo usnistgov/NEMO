@@ -1,26 +1,26 @@
-from _ssl import PROTOCOL_TLSv1_2, CERT_REQUIRED
+from _ssl import CERT_REQUIRED, PROTOCOL_TLSv1_2
 from base64 import b64decode
 from logging import getLogger
 
 from django.conf import settings
-from django.contrib.auth import authenticate, login, REDIRECT_FIELD_NAME, get_backends
+from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, get_backends, login
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.middleware import RemoteUserMiddleware
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
-from django.shortcuts import render, redirect
-from django.urls import reverse, resolve
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.shortcuts import redirect, render
+from django.urls import resolve, reverse
 from django.utils.decorators import method_decorator
 from django.utils.module_loading import import_string
 from django.views.decorators.debug import sensitive_post_parameters
-from django.views.decorators.http import require_http_methods, require_GET
-from ldap3 import Tls, Server, Connection, SIMPLE, AUTO_BIND_NO_TLS, ANONYMOUS
+from django.views.decorators.http import require_GET, require_http_methods
+from ldap3 import ANONYMOUS, AUTO_BIND_NO_TLS, Connection, SIMPLE, Server, Tls
 from ldap3.core.exceptions import LDAPBindError, LDAPException
 
 from NEMO.exceptions import InactiveUserError
 from NEMO.middleware import (
 	HTTPHeaderAuthenticationMiddleware,
-	RemoteUserAuthenticationMiddleware,
 	ImpersonateMiddleware,
+	RemoteUserAuthenticationMiddleware,
 )
 from NEMO.models import User
 from NEMO.views.customization import get_media_file_contents
@@ -102,7 +102,7 @@ def base_64_decode_basic_auth(remote_user: str):
 
 
 class RemoteUserAuthenticationBackend(ModelBackend):
-	""" The web server performs authentication and passes the user name remotely. (header or env) """
+	""" The web server performs authentication and passes the username remotely. (header or env) """
 
 	def authenticate(self, request, remote_user):
 		if not remote_user:
@@ -117,24 +117,24 @@ class RemoteUserAuthenticationBackend(ModelBackend):
 
 	def clean_username(self, username):
 		"""
-		User names arrive in the form user@DOMAIN.NAME.
+		Usernames arrive in the form user@DOMAIN.NAME.
 		This function chops off Kerberos realm information (i.e. the '@' and everything after).
 		"""
 		return username.partition("@")[0]
 
 
 class NginxKerberosAuthorizationHeaderAuthenticationBackend(RemoteUserAuthenticationBackend):
-	""" The web server performs Kerberos authentication and passes the user name in via the HTTP_AUTHORIZATION header. """
+	""" The web server performs Kerberos authentication and passes the username in via the HTTP_AUTHORIZATION header. """
 
 	def clean_username(self, username):
 		"""
-		User names arrive encoded in base 64, similar to Basic authentication, but with a bogus password set (since .
+		Usernames arrive encoded in base 64, similar to Basic authentication, but with a bogus password set (since .
 		This function chops off Kerberos realm information (i.e. the '@' and everything after).
 		"""
 		if not username:
 			return None
 		credentials = base_64_decode_basic_auth(username)
-		return credentials if credentials is None else credentials[0]
+		return credentials if credentials is None else super().clean_username(credentials[0])
 
 
 class LDAPAuthenticationBackend(ModelBackend):

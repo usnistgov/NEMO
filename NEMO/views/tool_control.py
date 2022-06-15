@@ -15,7 +15,6 @@ from django.utils import formats, timezone
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO import rates
 from NEMO.decorators import staff_member_required, synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors
@@ -38,16 +37,19 @@ from NEMO.models import (
 from NEMO.utilities import (
 	BasicDisplayTable,
 	EmailCategory,
-	beginning_of_the_day,
-	end_of_the_day,
 	export_format_datetime,
-	extract_times,
+	extract_optional_beginning_and_end_times,
 	format_datetime,
 	quiet_int,
 	send_mail,
 )
 from NEMO.views.calendar import shorten_reservation
-from NEMO.views.customization import get_customization, get_media_file_contents
+from NEMO.views.customization import (
+	ApplicationCustomization,
+	EmailsCustomization,
+	InterlockCustomization,
+	get_media_file_contents,
+)
 from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageQuestion, render_group_questions
@@ -79,6 +81,7 @@ def tool_control(request, item_type="tool", tool_id=None):
 @require_GET
 def tool_status(request, tool_id):
 	""" Gets the current status of the tool (that is, whether it is currently in use or not). """
+	from NEMO import rates
 	tool = get_object_or_404(Tool, id=tool_id, visible=True)
 
 	dictionary = {
@@ -147,7 +150,7 @@ def get_tool_full_config_history(tool: Tool):
 def usage_data_history(request, tool_id):
 	""" This method return a dictionary of headers and rows containing run_data information for Usage Events """
 	csv_export = bool(request.POST.get("csv", False))
-	start, end = extract_times(request.POST, start_required=False, end_required=False)
+	start, end = extract_optional_beginning_and_end_times(request.POST)
 	last = request.POST.get("data_history_last")
 	user_id = request.POST.get("data_history_user_id")
 	show_project_info = request.POST.get("show_project_info")
@@ -156,9 +159,9 @@ def usage_data_history(request, tool_id):
 		last = 25
 	usage_events = UsageEvent.objects.filter(tool_id=tool_id, end__isnull=False).order_by("-end")
 	if start:
-		usage_events = usage_events.filter(end__gte=beginning_of_the_day(start))
+		usage_events = usage_events.filter(end__gte=start)
 	if end:
-		usage_events = usage_events.filter(end__lte=end_of_the_day(end))
+		usage_events = usage_events.filter(end__lte=end)
 	if user_id:
 		try:
 			usage_events = usage_events.filter(user_id=int(user_id))
@@ -222,8 +225,8 @@ def usage_data_history(request, tool_id):
 	else:
 		dictionary = {
 			"tool_id": tool_id,
-			"data_history_start": start,
-			"data_history_end": end,
+			"data_history_start": start.date() if start else None,
+			"data_history_end": end.date() if end else None,
 			"data_history_last": str(last),
 			"usage_data_table": table_result,
 			"data_history_user": User.objects.get(id=user_id) if user_id else None,
@@ -429,7 +432,7 @@ def disable_tool(request, tool_id):
 @login_required
 @require_GET
 def past_comments_and_tasks(request):
-	start, end = extract_times(request.GET, start_required=False, end_required=False)
+	start, end = extract_optional_beginning_and_end_times(request.GET)
 	search = request.GET.get("search")
 	if not start and not end and not search:
 		return HttpResponseBadRequest("Please enter a search keyword, start date or end date.")
@@ -527,8 +530,8 @@ def reset_tool_counter(request, counter_id):
 	comment.expiration_date = datetime.now() + timedelta(weeks=1)
 	comment.save()
 
-	# Send an email to Lab Managers about the counter being reset.
-	facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
+	# Email Lab Managers about the counter being reset.
+	facility_managers = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(manager.get_preferences().email_send_task_updates)]
 	if facility_managers:
 		message = f"""The {counter.name} counter for the {counter.tool.name} was reset to 0 on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.
 	
@@ -544,11 +547,11 @@ Its last value was {counter.last_reset_value}."""
 
 
 def interlock_bypass_allowed(user: User):
-	return user.is_staff or get_customization('allow_bypass_interlock_on_failure') == 'enabled'
+	return user.is_staff or InterlockCustomization.get('allow_bypass_interlock_on_failure') == 'enabled'
 
 
 def interlock_error(action:str, user:User):
-	error_message = get_customization('tool_interlock_failure_message')
+	error_message = InterlockCustomization.get('tool_interlock_failure_message')
 	dictionary = {
 		"message": linebreaksbr(error_message),
 		"bypass_allowed": interlock_bypass_allowed(user),
@@ -558,10 +561,12 @@ def interlock_error(action:str, user:User):
 
 
 def email_managers_required_questions_disable_tool(tool_user:User, staff_member:User, tool:Tool, questions:List[PostUsageQuestion]):
-	abuse_email_address = get_customization('abuse_email_address')
-	facility_managers = User.objects.filter(is_active=True, is_facility_manager=True).values_list('email', flat=True)
-	facility_name = get_customization('facility_name')
-	ccs = set(tuple([r for r in [staff_member.email, tool.primary_owner.email, *tool.backup_owners.all().values_list('email', flat=True), *facility_managers] if r]))
+	abuse_email_address = EmailsCustomization.get('abuse_email_address')
+	cc_users: List[User] = [staff_member, tool.primary_owner]
+	cc_users.extend(tool.backup_owners.all())
+	cc_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
+	facility_name = ApplicationCustomization.get('facility_name')
+	ccs = [email for user in cc_users for email in user.get_emails(include_alternate=True)]
 	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
 	message = f"""
 Dear {tool_user.get_name()},<br/>
@@ -573,11 +578,12 @@ Regards,<br/>
 <br/>
 {facility_name} Management<br/>
 """
-	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=[tool_user.email], cc=ccs, email_category=EmailCategory.ABUSE)
+	tos = tool_user.get_emails(include_alternate=True)
+	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=tos, cc=ccs, email_category=EmailCategory.ABUSE)
 
 
 def send_tool_usage_counter_email(counter: ToolUsageCounter):
-	user_office_email = get_customization('user_office_email_address')
+	user_office_email = EmailsCustomization.get('user_office_email_address')
 	message = get_media_file_contents('counter_threshold_reached_email.html')
 	if user_office_email and message:
 		subject = f"Warning threshold reached for {counter.tool.name} {counter.name} counter"

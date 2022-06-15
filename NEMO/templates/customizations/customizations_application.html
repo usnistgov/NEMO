@@ -1,0 +1,70 @@
+<div class="panel-body">
+    <h3 class="customization-section-title">Application settings</h3>
+    <form method="POST" action="{% url 'customize' 'application' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="control-label col-md-2" for="default_user_training_not_required">New user training</label>
+            <div class="col-md-5">
+                <div class="radio">
+                    <label><input type="radio" id="default_user_training_not_required" name="default_user_training_not_required" {% if not default_user_training_not_required %}checked{% endif %} value=""> Required</label>
+                    <label><input type="radio" name="default_user_training_not_required" {% if default_user_training_not_required %}checked{% endif %} value="enabled"> Not required</label>
+                </div>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                Whether the Facility training is required for new users by default.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">Area login/logout</label>
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas from the landing page</label><br/>
+                    <label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas from the landing page</label><br/>
+                    <label><input type="checkbox" name="calendar_login_logout" {% if calendar_login_logout %}checked{% endif %} value="enabled">Show access controlled area login/logout button on calendar view (requires login and/or logout feature enabled above)</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="facility_name">Facility name</label>
+            <div class="col-md-5">
+                <input type="text" id="facility_name" name="facility_name" class="form-control" value="{{ facility_name }}">
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The name of the facility to use in all templates.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="site_title">Site title</label>
+            <div class="col-md-5">
+                <input type="text" id="site_title" name="site_title" class="form-control" value="{{ site_title }}">
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The name of the site to use in all templates/headers.
+            </div>
+        </div>
+        <div class="form-group {% if errors.project_selection_template %}has-error{% endif %}">
+            <label class="control-label col-md-2" for="project_selection_template">Project selection template</label>
+            <div class="col-md-5">
+                <textarea oninput="auto_size_textarea(this);" id="project_selection_template" name="project_selection_template" class="form-control">{% if errors.project_selection_template %}{{ errors.project_selection_template.value }}{% else %}{{ project_selection_template }}{% endif %}</textarea>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                {% if errors.project_selection_template %}
+                    {{ errors.project_selection_template.error }}
+                {% else %}
+                    The django template used for rendering project selection when enabling tools and making reservations. The context variable <b>project</b> is provided.
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-offset-2">
+            <input type="submit" value="Save settings" class="btn btn-success">
+        </div>
+    </form>
+    <script type="text/javascript">
+        $("#application-tab-link").click(function() {setTimeout(on_application_tab_show, 50)});
+        function on_application_tab_show()
+        {
+            auto_size_textarea(document.getElementById('project_selection_template'))
+        }
+        on_application_tab_show();
+    </script>
+</div>

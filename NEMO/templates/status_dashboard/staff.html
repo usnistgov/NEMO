@@ -1,4 +1,5 @@
 {% load custom_tags_and_filters %}
+{% load tz %}
 <div class="row" style="display: table-row;">
     <div style="display: table-cell;width: 100%">
         Staff availability is highlighted in <span style="display: inline-block; padding: 3px" class="alert-success">green</span><br>
@@ -67,7 +68,8 @@
                         </td>
                         {% for day in days %}
                             {% with staff_available=staff.weekly_availability|get_item:day.weekday staff_absent=staff_absences|get_item:staff.id|get_item:day.day closure_time=closure_times|get_item:day.day %}
-                                <td {% if prev and next and days_length == 1 %}colspan="3" {% elif forloop.first and prev or forloop.last and next %}colspan="2"{% endif %} class="staff-status-availability text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
+                                {% with start_closure_time=closure_time.start_time|localtime end_closure_time=closure_time.end_time|localtime %}
+                                <td {% if prev and next and days_length == 1 %}colspan="3" {% elif forloop.first and prev or forloop.last and next %}colspan="2"{% endif %} class="staff-status-availability text-center {% if staff_absent or closure_time %}{% if staff_absent and not staff_absent.full_day %}alert-warning{% elif closure_time %}{% if start_closure_time.date == day.date and start_closure_time.hour > 0 or start_closure_time.date == day.date and start_closure_time.minute > 0 %}alert-warning{% elif end_closure_time.date == day.date and end_closure_time.hour < 23 or end_closure_time.date == day.date and end_closure_time.minute < 59 %}alert-warning{% else %}alert-danger{% endif %}{% else %}alert-danger{% endif %}{% elif staff_available %}alert-success{% elif not user.is_facility_manager %}alert-danger{% endif %}">
                                     {% if closure_time %}
                                         {% with custom_data_template="<div class='tooltip' role='tooltip'><div class='arrow'></div><div class='tooltip-inner' style='text-align:left; max-width: 300px'></div></div>" %}
                                             <div data-toggle="tooltip" data-template="{{ custom_data_template }}" title="{% if closure_time.closure.alert_template %}{{ closure_time.alert_contents|linebreaksbr }}{% else %}{{ closure_time.closure.name }} {{ closure_time }}{% endif %}"><div>Closed</div></div>
@@ -82,6 +84,7 @@
                                         <div data-toggle="tooltip" title="{{ staff.daily_hours }}">&nbsp;</div>
                                     {% endif %}
                                 </td>
+                                {% endwith %}
                             {% endwith %}
                         {% endfor %}
                     </tr>

@@ -17,7 +17,7 @@ from NEMO.exceptions import (
 )
 from NEMO.forms import BuddyRequestForm
 from NEMO.models import Area, BuddyRequest, BuddyRequestMessage, User
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import UserRequestsCustomization
 from NEMO.views.notifications import (
 	create_buddy_reply_notification,
 	create_buddy_request_notification,
@@ -39,7 +39,7 @@ def buddy_requests(request):
 		buddy_request.user_reply_error = check_user_reply_error(buddy_request, request.user)
 	dictionary = {
 		"buddy_requests": buddy_requests,
-		"buddy_board_description": get_customization("buddy_board_description"),
+		"buddy_board_description": UserRequestsCustomization.get("buddy_board_description"),
 		"request_notifications": get_notifications(request.user, BuddyRequest),
 		"reply_notifications": get_notifications(request.user, BuddyRequestMessage),
 	}
@@ -132,7 +132,8 @@ def email_interested_parties(reply: BuddyRequestMessage, reply_url):
 {linebreaksbr(reply.content)}
 <br><br>
 Please visit {reply_url} to reply"""
-			user.email_user(subject=subject, content=message, from_email=settings.SERVER_EMAIL)
+			send_to_alternate = user.get_preferences().email_send_buddy_request_replies
+			user.email_user(subject=subject, message=message, from_email=settings.SERVER_EMAIL, send_to_alternate=send_to_alternate)
 
 
 def check_user_reply_error(buddy_request: BuddyRequest, user: User) -> Optional[str]:

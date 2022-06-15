@@ -1,5 +1,7 @@
 DEBUG = True
 FIXTURE_DIRS = ['/nemo/']
+ALLOWED_HOSTS = ["*"]
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 AUTH_USER_MODEL = 'NEMO.User'
 WSGI_APPLICATION = 'NEMO.wsgi.application'
 ROOT_URLCONF = 'NEMO.urls'
@@ -31,6 +33,7 @@ INSTALLED_APPS = [
 	'NEMO',
 	'NEMO.apps.kiosk',
 	'NEMO.apps.area_access',
+	'NEMO.apps.sensors',
 	'rest_framework',
 	'django_filters',
 	'mptt',
@@ -104,9 +107,3 @@ SECRET_KEY = 'abc123'
 
 ALLOW_CONDITIONAL_URLS = True
 AUTHENTICATION_BACKENDS = ['NEMO.views.authentication.RemoteUserAuthenticationBackend']
-
-IDENTITY_SERVICE = {
-	'available': False,
-	'url': 'https://identity.example.org/',
-	'domains': [],
-}

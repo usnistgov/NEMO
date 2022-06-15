@@ -2,18 +2,37 @@ String.prototype.capitalize = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
 }
 
-// This function allows to make regular interval calls to a function only when the tab/window is visible.
+// This function allows making regular interval calls to a function only when the tab/window is visible.
 // It also gets called when the tab/window becomes visible (changing tabs, minimizing window etc.)
+// This function is safe in the sense that is can be called multiple times with the same function.
+// It will clear any previously set events and replace them with the new ones.
+let function_handlers = {};
 function set_interval_when_visible(doc, function_to_repeat, time)
 {
-	doc.addEventListener("visibilitychange", function()
+	const function_name = function_to_repeat.name;
+	if (!function_name)
 	{
-		function_to_repeat();
-	});
-	setInterval(function()
-	{
+		console.error("You can only call 'set_interval_when_visible' with a named function");
+	}
+	let call_function_when_visible = function () {
 		if (!doc.hidden) function_to_repeat();
-	}, time)
+	}
+	if (function_handlers[function_name])
+	{
+		// Clear the previous event and interval handler
+		doc.removeEventListener("visibilitychange", function_handlers[function_name][0]);
+		clearInterval(function_handlers[function_name][1]);
+	}
+	if (time)
+	{
+		doc.addEventListener("visibilitychange", call_function_when_visible);
+		let intervalHandle = setInterval(call_function_when_visible, time);
+		if (function_name)
+		{
+			// Save new event and handler
+			function_handlers[function_name] = [call_function_when_visible, intervalHandle];
+		}
+	}
 }
 
 // This function allows any page to switch between content tabs in

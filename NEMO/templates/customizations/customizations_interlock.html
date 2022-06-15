@@ -1,0 +1,44 @@
+<div class="panel-body">
+    <h3 class="customization-section-title">Interlock settings</h3>
+    <form method="POST" action="{% url 'customize' 'interlock' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="control-label col-md-2" for="tool_interlock_failure_message">Tool failure message</label>
+            <div class="col-md-5">
+                <textarea oninput="auto_size_textarea(this);" id="tool_interlock_failure_message" name="tool_interlock_failure_message" class="form-control">{{ tool_interlock_failure_message }}</textarea>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The message to display when a tool interlock command fails.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="door_interlock_failure_message">Door failure message</label>
+            <div class="col-md-5">
+                <textarea oninput="auto_size_textarea(this);" id="door_interlock_failure_message" name="door_interlock_failure_message" class="form-control">{{ door_interlock_failure_message }}</textarea>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The message to display when a door interlock command fails.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">Bypass on error</label>
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="allow_bypass_interlock_on_failure" {% if allow_bypass_interlock_on_failure %}checked{% endif %} value="enabled">Check this box to offer users the option to bypass lock/unlock command when there is an interlock error.</label><br/>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-offset-2">
+            <input type="submit" value="Save settings" class="btn btn-success">
+        </div>
+    </form>
+    <script type="text/javascript">
+        $("#interlock-tab-link").click(function() {setTimeout(on_interlock_tab_show, 50)});
+        function on_interlock_tab_show()
+        {
+            auto_size_textarea(document.getElementById('tool_interlock_failure_message'));
+            auto_size_textarea(document.getElementById('door_interlock_failure_message'));
+        }
+        on_interlock_tab_show();
+    </script>
+</div>

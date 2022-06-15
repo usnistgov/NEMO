@@ -23,7 +23,7 @@ from NEMO.exceptions import (
 )
 from NEMO.models import (BadgeReader, Door, PhysicalAccessLog, PhysicalAccessType, Project, UsageEvent, User)
 from NEMO.views.area_access import log_in_user_to_area, log_out_user
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import ApplicationCustomization, InterlockCustomization
 from NEMO.views.policy import check_billing_to_project, check_policy_to_enter_any_area, check_policy_to_enter_this_area
 from NEMO.views.tool_control import interlock_bypass_allowed
 
@@ -73,7 +73,7 @@ def login_to_area(request, door_id):
 	log.time = timezone.now()
 	log.result = PhysicalAccessType.DENY  # Assume the user does not have access
 
-	facility_name = get_customization("facility_name")
+	facility_name = ApplicationCustomization.get("facility_name")
 
 	# Check policy for entering an area
 	try:
@@ -289,7 +289,7 @@ def open_door(request, door_id):
 
 
 def interlock_error(action: str = None, user: User = None, bypass_allowed: bool = None):
-	error_message = get_customization('door_interlock_failure_message')
+	error_message = InterlockCustomization.get('door_interlock_failure_message')
 	bypass_allowed = interlock_bypass_allowed(user) if bypass_allowed is None else bypass_allowed
 	dictionary = {
 		"message": linebreaksbr(error_message),

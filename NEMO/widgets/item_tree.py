@@ -3,9 +3,9 @@ from typing import List
 from django.forms import Widget
 from django.utils.safestring import mark_safe
 
-from NEMO.model_tree import get_area_model_tree, TreeItem
-from NEMO.models import User, Tool, ReservationItemType
-from NEMO.views.customization import get_customization
+from NEMO.model_tree import TreeItem, get_area_model_tree
+from NEMO.models import ReservationItemType, Tool, User
+from NEMO.views.customization import CalendarCustomization
 
 
 class ItemTree(Widget):
@@ -60,7 +60,7 @@ class ItemTree(Widget):
 			area_tree_items = list(area_tree_items)
 			area_tree_items.sort(key=lambda area: area.tree_category)
 
-		display_all_areas = get_customization('calendar_display_not_qualified_areas') == 'enabled'
+		display_all_areas = CalendarCustomization.get('calendar_display_not_qualified_areas') == 'enabled'
 		for area in area_tree_items:
 			category = area.tree_category + '/' if area.tree_category else ''
 			is_qualified = True if not display_all_areas else (user and user.is_staff) or (user and area.item in user_accessible_areas)

@@ -37,7 +37,7 @@ from NEMO.models import (
 	UserPreferences,
 )
 from NEMO.utilities import bootstrap_primary_color, format_datetime, quiet_int
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import UserRequestsCustomization
 
 
 class UserForm(ModelForm):
@@ -386,6 +386,15 @@ class UserPreferencesForm(ModelForm):
 			"display_new_buddy_request_reply_notification",
 			"email_new_buddy_request_reply",
 			"staff_status_view",
+			"email_alternate",
+			"email_send_reservation_emails",
+			"email_send_usage_reminders",
+			"email_send_reservation_reminders",
+			"email_send_reservation_ending_reminders",
+			"email_send_buddy_request_replies",
+			"email_send_access_request_updates",
+			"email_send_task_updates",
+			"email_send_broadcast_emails"
 		]
 
 
@@ -415,7 +424,7 @@ class TemporaryPhysicalAccessRequestForm(ModelForm):
 			return
 		cleaned_data = super().clean()
 		other_users = len(cleaned_data.get("other_users")) if "other_users" in cleaned_data else 0
-		minimum_total_users = quiet_int(get_customization("access_requests_minimum_users", 2))
+		minimum_total_users = quiet_int(UserRequestsCustomization.get("access_requests_minimum_users"), 2)
 		if other_users < minimum_total_users -1:
 			self.add_error("other_users", f"You need at least {minimum_total_users-1} other {'buddy' if minimum_total_users == 2 else 'buddies'} for this request")
 		return cleaned_data

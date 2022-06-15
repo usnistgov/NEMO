@@ -1,0 +1,15 @@
+<div class="panel-body">
+    <h3 class="customization-section-title" id="rate">Tool Rates</h3>
+    <p>
+        You can upload a json file to display tool rates. An example of a valid rates file can be found on <a target="_blank" href="https://github.com/usnistgov/NEMO/raw/master/resources/splash_pad_rates.json">Github</a>.
+        <br><br>It should be a JSON array of elements, and the following key/values are supported for each element:
+    </p>
+    <ul>
+        <li><b>item_id</b> - the id of the tool or supply</li>
+        <li><b>table_id</b> - the type of rate, one of "inventory_rate" (for supplies), "primetime_eq_hourly_rate" (for tool), "training_individual_hourly_rate" (for individual training rate), "training_group_hourly_rate" (for group training rate)</li>
+        <li><b>rate_class</b> - the class, one of "full cost" or "cost shared"</li>
+        <li><b>rate</b> - the rate amount</li>
+        <li>item - the name of the item (optional)</li>
+    </ul>
+    {% include 'customizations/customizations_upload.html' with element=rates name='rates' extension='json' key='rates' %}
+</div>

@@ -1,17 +1,17 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from django.template import Template, Context
+from django.template import Context, Template
 from django.views.decorators.http import require_http_methods
 
-from NEMO.utilities import parse_parameter_string, send_mail, EmailCategory
+from NEMO.utilities import EmailCategory, parse_parameter_string, send_mail
 from NEMO.views.constants import FEEDBACK_MAXIMUM_LENGTH
-from NEMO.views.customization import get_customization, get_media_file_contents
+from NEMO.views.customization import EmailsCustomization, get_media_file_contents
 
 
 @login_required
 @require_http_methods(['GET', 'POST'])
 def feedback(request):
-	recipient = get_customization('feedback_email_address')
+	recipient = EmailsCustomization.get('feedback_email_address')
 	email_contents = get_media_file_contents('feedback_email.html')
 	if not recipient or not email_contents:
 		return render(request, 'feedback.html', {'customization_required': True})

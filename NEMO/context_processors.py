@@ -1,5 +1,6 @@
 from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
-from NEMO.views.customization import get_customization
+from NEMO.utilities import date_input_js_format, datetime_input_js_format, time_input_js_format
+from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.notifications import get_notification_counts
 
 
@@ -21,11 +22,11 @@ def base_context(request):
 	except:
 		request.session["no_header"] = False
 	try:
-		facility_name = get_customization("facility_name")
+		facility_name = ApplicationCustomization.get("facility_name")
 	except:
 		facility_name = "Facility"
 	try:
-		site_title = get_customization("site_title")
+		site_title = ApplicationCustomization.get("site_title")
 	except:
 		site_title = ""
 	try:
@@ -73,5 +74,8 @@ def base_context(request):
 		"buddy_notification_count": buddy_notification_count,
 		"temporary_access_notification_count": temporary_access_notification_count,
 		"facility_managers_exist": facility_managers_exist,
+		"time_input_js_format": time_input_js_format,
+		"date_input_js_format": date_input_js_format,
+		"datetime_input_js_format": datetime_input_js_format,
 		"no_header": request.session.get("no_header", False),
 	}

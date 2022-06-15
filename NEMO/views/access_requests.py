@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from logging import getLogger
+from typing import List
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
@@ -21,7 +22,13 @@ from NEMO.utilities import (
 	quiet_int,
 	send_mail,
 )
-from NEMO.views.customization import get_customization, get_media_file_contents, set_customization
+from NEMO.views.customization import (
+	ApplicationCustomization,
+	CustomizationBase,
+	EmailsCustomization,
+	UserRequestsCustomization,
+	get_media_file_contents,
+)
 from NEMO.views.notifications import create_access_request_notification, delete_notification, get_notifications
 
 access_request_logger = getLogger(__name__)
@@ -33,7 +40,7 @@ def access_requests(request):
 	mark_requests_expired()
 	user: User = request.user
 	status = TemporaryPhysicalAccessRequest.Status
-	max_requests = quiet_int(get_customization("access_requests_display_max"), None)
+	max_requests = quiet_int(UserRequestsCustomization.get("access_requests_display_max"), None)
 	physical_access_requests = TemporaryPhysicalAccessRequest.objects.filter(deleted=False)
 	physical_access_requests = physical_access_requests.order_by("-end_time")
 	if not user.is_facility_manager and not user.is_staff:
@@ -45,7 +52,7 @@ def access_requests(request):
 		"approved_access_requests": physical_access_requests.filter(status=status.APPROVED)[:max_requests],
 		"denied_access_requests": physical_access_requests.filter(status=status.DENIED)[:max_requests],
 		"expired_access_requests": physical_access_requests.filter(status=status.EXPIRED)[:max_requests],
-		"access_requests_description": get_customization("access_requests_description"),
+		"access_requests_description": UserRequestsCustomization.get("access_requests_description"),
 		"access_request_notifications": get_notifications(
 			request.user, TemporaryPhysicalAccessRequest, delete=not user.is_facility_manager
 		),
@@ -160,16 +167,15 @@ def mark_requests_expired():
 
 
 def send_request_received_email(request, access_request: TemporaryPhysicalAccessRequest, edit):
-	user_office_email = get_customization("user_office_email_address")
+	user_office_email = EmailsCustomization.get("user_office_email_address")
 	access_request_notification_email = get_media_file_contents("access_request_notification_email.html")
 	if user_office_email and access_request_notification_email:
-		facility_manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list(
-			"email", flat=True
-		)
-		ccs = tuple(
-			[e for e in [*access_request.other_users.values_list("email", flat=True), *facility_manager_emails] if e]
-		)
-		ccs += (user_office_email,)
+		# cc facility managers
+		cc_users: List[User] = list(User.objects.filter(is_active=True, is_facility_manager=True))
+		# and other users
+		cc_users.extend(access_request.other_users.all())
+		ccs = [email for user in cc_users for email in user.get_emails(user.get_preferences().email_send_access_request_updates)]
+		ccs.append(user_office_email)
 		status = (
 			"approved"
 			if access_request.status == TemporaryPhysicalAccessRequest.Status.APPROVED
@@ -191,11 +197,12 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 				}
 			)
 		)
+		send_to_alternate = access_request.creator.get_preferences().email_send_access_request_updates
 		send_mail(
 			subject=f"Your access request for the {access_request.physical_access_level.area} has been {status}",
 			content=message,
 			from_email=user_office_email,
-			to=[access_request.creator.email],
+			to=access_request.creator.get_emails(include_alternate=send_to_alternate),
 			cc=ccs,
 			email_category=EmailCategory.ACCESS_REQUESTS,
 		)
@@ -215,8 +222,8 @@ def send_email_weekend_access_notification():
 		If no weekend access requests are made by the given time on the cutoff day (if set), a no access email is sent.
 	"""
 	try:
-		user_office_email = get_customization("user_office_email_address")
-		email_to = get_customization("weekend_access_notification_emails")
+		user_office_email = EmailsCustomization.get("user_office_email_address")
+		email_to = UserRequestsCustomization.get("weekend_access_notification_emails")
 		access_contents = get_media_file_contents("weekend_access_email.html")
 		if user_office_email and email_to and access_contents:
 			process_weekend_access_notification(user_office_email, email_to, access_contents)
@@ -228,8 +235,8 @@ def send_email_weekend_access_notification():
 def process_weekend_access_notification(user_office_email, email_to, access_contents):
 	today = datetime.today()
 	beginning_of_the_week = beginning_of_the_day(today - timedelta(days=today.weekday()))
-	cutoff_day = get_customization("weekend_access_notification_cutoff_day")
-	cutoff_hour = get_customization("weekend_access_notification_cutoff_hour")
+	cutoff_day = UserRequestsCustomization.get("weekend_access_notification_cutoff_day")
+	cutoff_hour = UserRequestsCustomization.get("weekend_access_notification_cutoff_hour")
 	# Set the cutoff in actual datetime format
 	cutoff_datetime = None
 	if cutoff_hour.isdigit() and cutoff_day and cutoff_day.isdigit():
@@ -247,7 +254,7 @@ def process_weekend_access_notification(user_office_email, email_to, access_cont
 	approved_weekend_access_requests = approved_weekend_access_requests.exclude(end_time__lte=beginning_of_the_weekend)
 
 	cutoff_time_passed = cutoff_datetime and timezone.now() >= cutoff_datetime
-	last_sent = get_customization("weekend_access_notification_last_sent")
+	last_sent = CustomizationBase.get("weekend_access_notification_last_sent")
 	last_sent_datetime = parse_datetime(last_sent) if last_sent else None
 	if (
 			(not last_sent_datetime or last_sent_datetime < beginning_of_the_week)
@@ -256,7 +263,7 @@ def process_weekend_access_notification(user_office_email, email_to, access_cont
 			and not cutoff_time_passed
 	):
 		send_weekend_email_access(True, user_office_email, email_to, access_contents, beginning_of_the_week)
-		set_customization("weekend_access_notification_last_sent", str(timezone.now()))
+		CustomizationBase.set("weekend_access_notification_last_sent", str(timezone.now()))
 	if access_contents and cutoff_datetime and not approved_weekend_access_requests.exists():
 		is_cutoff = today.weekday() == int(cutoff_day) and cutoff_datetime.hour == timezone.localtime().hour
 		if is_cutoff:
@@ -264,11 +271,10 @@ def process_weekend_access_notification(user_office_email, email_to, access_cont
 
 
 def send_weekend_email_access(access, user_office_email, email_to, contents, beginning_of_the_week):
-	facility_name = get_customization("facility_name")
-	manager_emails = User.objects.filter(is_active=True, is_facility_manager=True).values_list("email", flat=True)
+	facility_name = ApplicationCustomization.get("facility_name")
 	recipients = tuple([e for e in email_to.split(",") if e])
-	ccs = tuple([e for e in manager_emails if e])
-	ccs += (user_office_email,)
+	ccs = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(manager.get_preferences().email_send_access_request_updates)]
+	ccs.append(user_office_email)
 
 	sat = format_datetime(beginning_of_the_week + timedelta(days=5), "SHORT_DATE_FORMAT", as_current_timezone=False)
 	sun = format_datetime(beginning_of_the_week + timedelta(days=6), "SHORT_DATE_FORMAT", as_current_timezone=False)

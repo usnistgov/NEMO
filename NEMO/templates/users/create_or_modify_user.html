@@ -104,10 +104,10 @@
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="access_expiration">Access expiration</label>
 			<div class="col-sm-2">
-				<input id="access_expiration" name="access_expiration" type="text" autocomplete="off" class="form-control" value="{{ form.access_expiration.value|to_date:'m/d/Y' }}">
+				<input id="access_expiration" name="access_expiration" type="text" autocomplete="off" class="form-control" value="{{ form.access_expiration.value|input_date_format }}">
 			</div>
 			<div class="control-label col-sm-2" style="text-align:left">
-				<a href="javascript:void(0)" onclick="$('#access_expiration').val('{{ one_year_from_now|date:'m/d/Y' }}')">One year from now</a>
+				<a href="javascript:void(0)" onclick="$('#access_expiration').val('{{ one_year_from_now|input_date_format }}')">One year from now</a>
 			</div>
 			{% if form.access_expiration.errors %}
 				<div class="col-sm-6 form-control-static danger-highlight">
@@ -335,7 +335,7 @@
 		function on_load()
 		{
 			$('[data-toggle="tooltip"]').tooltip();
-			$("#access_expiration").datetimepicker({format: 'MM/DD/YYYY'});
+			$("#access_expiration").datetimepicker({format: '{{ date_input_js_format }}'});
 			$('#add_a_project').autocomplete('projects', on_search_selection, {% json_search_base_with_extra_fields projects 'application_identifier' %});
 			$('#add_a_tool_qualification').autocomplete('tools', on_search_selection, {{ tools|json_search_base }});
 			{% if form.instance.id %} {# Only look for projects and qualifications if this is an existing user (and not a new user). #}

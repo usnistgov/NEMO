@@ -647,8 +647,8 @@
       	$(this).tooltip({trigger: 'manual', html: 'true', title: $(this).data('title')}).tooltip('toggle');
     });
 	$("#tabs").find("a").click(switch_tab);
-	$('#task_and_comment_start').datetimepicker({format: 'MM/DD/YYYY', 'widgetParent': '#task_and_comment_start_form_group'});
-	$('#task_and_comment_end').datetimepicker({format: 'MM/DD/YYYY', 'widgetParent': '#task_and_comment_end_form_group'});
+	$('#task_and_comment_start').datetimepicker({format: '{{ date_input_js_format }}', 'widgetParent': '#task_and_comment_start_form_group'});
+	$('#task_and_comment_end').datetimepicker({format: '{{ date_input_js_format }}', 'widgetParent': '#task_and_comment_end_form_group'});
 	$('#delayed_logoff_help').popover();
 
 	function update_stop_button()
@@ -668,6 +668,6 @@
     show_alerts();
 	update_stop_button();
 	$('body').on('question-group-changed', update_stop_button);
-	$('body').on('change keyup', '#tool_control input[required], #tool_control select[required], #tool_control textarea[required], #downtime', update_stop_button);
+	$('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_stop_button);
 
 </script>

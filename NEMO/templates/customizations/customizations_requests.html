@@ -1,0 +1,116 @@
+<div class="panel-body">
+    <h3 class="customization-section-title">User requests settings</h3>
+    <form method="POST" action="{% url 'customize' 'requests' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="control-label col-md-2" for="buddy_requests_title">Buddy request tab title</label>
+            <div class="col-md-5">
+                <input type="text" id="buddy_requests_title" name="buddy_requests_title" class="form-control" value="{{ buddy_requests_title }}"/>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The title for the buddy request tab of the user requests page.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="buddy_board_description">Buddy board description</label>
+            <div class="col-md-5">
+                <textarea oninput="auto_size_textarea(this);" id="buddy_board_description" name="buddy_board_description" class="form-control">{{ buddy_board_description }}</textarea>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The description/instructions to display on the buddy board page.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="access_requests_title">Access request tab title</label>
+            <div class="col-md-5">
+                <input type="text" id="access_requests_title" name="access_requests_title" class="form-control" value="{{ access_requests_title }}"/>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The title for the access request tab of the user requests page.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="access_requests_description">Access requests description</label>
+            <div class="col-md-5">
+                <textarea oninput="auto_size_textarea(this);" id="access_requests_description" name="access_requests_description" class="form-control">{{ access_requests_description }}</textarea>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The description/instructions to display on the access requests page.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="access_requests_minimum_users">Access requests minimum users</label>
+            <div class="col-md-5">
+                <div class="input-group">
+                    <input type="number" step="1" min="0" id="access_requests_minimum_users" name="access_requests_minimum_users" class="form-control text-right" value="{{ access_requests_minimum_users }}"/>
+                    <span class="input-group-addon">users</span>
+                </div>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The minimum number of users (creator included) needed for an access request to be valid.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="access_requests_display_max">Access requests display maximum</label>
+            <div class="col-md-5">
+                <div class="input-group">
+                    <input type="number" step="1" min="0" id="access_requests_display_max" name="access_requests_display_max" class="form-control text-right" value="{{ access_requests_display_max }}"/>
+                    <span class="input-group-addon">requests</span>
+                </div>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The maximum number of requests to display in each section (approved, denied, expired). Leave blank for all.
+            </div>
+        </div>
+        <div class="form-group {% if errors.weekend_access_notification_emails %}has-error{% endif %}">
+            <label class="control-label col-md-2" for="weekend_access_notification_emails">Weekend access notification email(s)</label>
+            <div class="col-md-5">
+                <input type="text" id="weekend_access_notification_emails" name="weekend_access_notification_emails" class="form-control" value="{% if errors.weekend_access_notification_emails %}{{ errors.weekend_access_notification_emails.value }}{% else %}{{ weekend_access_notification_emails }}{% endif %}" placeholder="weekend_access@example.org"/>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                {% if errors.weekend_access_notification_emails %}
+                    {{ errors.weekend_access_notification_emails.error }}
+                {% else %}
+                    The email(s) to notify for weekend access. A comma-separated list can be used.
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="weekend_access_notification_cutoff_hour">Weekend access notification cutoff</label>
+            <div class="col-md-2">
+                <select id="weekend_access_notification_cutoff_day" name="weekend_access_notification_cutoff_day" class="form-control">
+                    <option value=""></option>
+                    <option value="1" {% if weekend_access_notification_cutoff_day == '1' %}selected{% endif %}>Tuesday</option>
+                    <option value="2" {% if weekend_access_notification_cutoff_day == '2' %}selected{% endif %}>Wednesday</option>
+                    <option value="3" {% if weekend_access_notification_cutoff_day == '3' %}selected{% endif %}>Thursday</option>
+                    <option value="4" {% if weekend_access_notification_cutoff_day == '4' %}selected{% endif %}>Friday</option>
+                    <option value="5" {% if weekend_access_notification_cutoff_day == '5' %}selected{% endif %}>Saturday</option>
+                </select>
+            </div>
+            <div class="col-md-1 help-block text-center">
+                at
+            </div>
+            <div class="col-md-2">
+                <div class="input-group">
+                    <input type="number" step="1" min="0" max="24" id="weekend_access_notification_cutoff_hour" name="weekend_access_notification_cutoff_hour" class="form-control text-right" value="{{ weekend_access_notification_cutoff_hour }}"/>
+                    <span class="input-group-addon">:00 hrs</span>
+                </div>
+            </div>
+            <div class="col-md-5 help-block light-grey">
+                The cutoff day and hour after which an email is sent if there is no approved weekend access for the week (in 24hrs format). If left blank the "no weekend access" will NOT be sent.
+            </div>
+        </div>
+        <div class="col-md-offset-2">
+            <input type="submit" value="Save settings" class="btn btn-success">
+        </div>
+    </form>
+    <script type="text/javascript">
+        $("#requests-tab-link").click(function() {setTimeout(on_requests_tab_show, 50)});
+        function on_requests_tab_show()
+        {
+            auto_size_textarea(document.getElementById('buddy_board_description'));
+            auto_size_textarea(document.getElementById('access_requests_description'));
+        }
+        on_requests_tab_show();
+    </script>
+</div>

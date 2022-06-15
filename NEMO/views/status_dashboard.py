@@ -36,7 +36,7 @@ from NEMO.utilities import (
 	format_datetime,
 	quiet_int,
 )
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import StatusDashboardCustomization
 
 
 @login_required
@@ -79,8 +79,8 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	# Everything here is dealing with date/times without timezones to avoid issues with DST etc
 	user: User = request.user
 	# Check and set ability for users/staffs to look into the past or future
-	check_past_status = get_customization("dashboard_staff_status_check_past_status")
-	check_future_status = get_customization("dashboard_staff_status_check_future_status")
+	check_past_status = StatusDashboardCustomization.get("dashboard_staff_status_check_past_status")
+	check_future_status = StatusDashboardCustomization.get("dashboard_staff_status_check_future_status")
 	user_can_check_past_status = (
 			not check_past_status
 			or check_past_status == "staffs"
@@ -96,8 +96,8 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 			and user.is_facility_manager
 	)
 	# Check and set ability for users/staffs to look at the week/month view
-	user_view_options = get_customization("dashboard_staff_status_user_view")
-	staff_view_options = get_customization("dashboard_staff_status_staff_view")
+	user_view_options = StatusDashboardCustomization.get("dashboard_staff_status_user_view")
+	staff_view_options = StatusDashboardCustomization.get("dashboard_staff_status_staff_view")
 	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ''
 	# Take the default view from user preferences
 	view = request.GET.get("view", user.get_preferences().staff_status_view)
@@ -117,10 +117,10 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 			timestamp = now_timestamp
 	requested_datetime = datetime.fromtimestamp(timestamp)
 	requested_day = beginning_of_the_day(requested_datetime, in_local_timezone=False)
-	weekdays_only = get_customization("dashboard_staff_status_weekdays_only")
+	weekdays_only = StatusDashboardCustomization.get("dashboard_staff_status_weekdays_only")
 	first_day = (
 		requested_day.isoweekday()
-		if not weekdays_only and get_customization("dashboard_staff_status_first_day_of_week") == "0"
+		if not weekdays_only and StatusDashboardCustomization.get("dashboard_staff_status_first_day_of_week") == "0"
 		else requested_day.weekday()
 	)
 	# Set start date
@@ -147,7 +147,7 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	staffs.query.add_ordering(F("category__display_order").asc(nulls_last=True))
 	staffs.query.add_ordering(F("staff_member__first_name").asc())
 	days = rrule(DAILY, dtstart=start, until=end)
-	staff_date_format = get_customization("dashboard_staff_status_date_format")
+	staff_date_format = StatusDashboardCustomization.get("dashboard_staff_status_date_format")
 	if csv_export:
 		return export_staff_status(request, staffs, days, start, end, staff_date_format)
 	return {
@@ -219,7 +219,7 @@ def staff_absences_dict(staffs, days, start, end):
 
 def closures_dict(days, start, end):
 	dictionary = {}
-	closure_times = ClosureTime.objects.filter(start_time__lte=end, end_time__gte=start)
+	closure_times = ClosureTime.objects.filter(start_time__lte=end, end_time__gte=start, closure__staff_absent=True)
 	for closure_time in closure_times:
 		for day in days:
 			if as_timezone(closure_time.start_time).date() <= day.date() <= as_timezone(closure_time.end_time).date():
@@ -262,12 +262,12 @@ def export_staff_status(request, staffs, days, start, end, staff_date_format) ->
 def show_staff_status(request):
 	if not settings.ALLOW_CONDITIONAL_URLS:
 		return False
-	dashboard_staff_status_staff_only = get_customization("dashboard_staff_status_staff_only")
+	dashboard_staff_status_staff_only = StatusDashboardCustomization.get("dashboard_staff_status_staff_only")
 	return StaffAvailability.objects.exists() and (not dashboard_staff_status_staff_only or request.user.is_staff)
 
 
 def process_area_access_record_with_parents(user: User):
-	show_not_qualified_areas = get_customization("dashboard_display_not_qualified_areas")
+	show_not_qualified_areas = StatusDashboardCustomization.get("dashboard_display_not_qualified_areas")
 	records = AreaAccessRecord.objects.filter(end=None, staff_charge=None)
 	if not user.is_staff and show_not_qualified_areas != "enabled":
 		records = records.filter(area__in=user.accessible_areas())

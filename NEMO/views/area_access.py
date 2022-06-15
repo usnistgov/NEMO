@@ -27,9 +27,9 @@ from NEMO.exceptions import (
 	UnavailableResourcesUserError,
 )
 from NEMO.models import Area, AreaAccessRecord, Project, User
-from NEMO.utilities import parse_start_and_end_date, quiet_int
+from NEMO.utilities import date_input_format, extract_optional_beginning_and_end_dates, quiet_int
 from NEMO.views.calendar import shorten_reservation
-from NEMO.views.customization import get_customization
+from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.policy import check_billing_to_project, check_policy_to_enter_any_area, check_policy_to_enter_this_area
 
 area_access_logger = getLogger(__name__)
@@ -62,19 +62,23 @@ class ParseSelfLoginErrorMessage(HTMLParser):
 def area_access(request):
 	""" Presents a page that displays audit records for all areas. """
 	now = timezone.now().astimezone()
-	today = now.strftime('%m/%d/%Y')
-	yesterday = (now - timedelta(days=1)).strftime('%m/%d/%Y')
+	today = now.strftime(date_input_format)
+	yesterday = (now - timedelta(days=1)).strftime(date_input_format)
 	area_id = ''
 	dictionary = {
 		'today': reverse('area_access') + '?' + urlencode({'start': today, 'end': today}),
 		'yesterday': reverse('area_access') + '?' + urlencode({'start': yesterday, 'end': yesterday}),
 	}
 	try:
-		start, end = parse_start_and_end_date(request.GET['start'], request.GET['end'])
+		start, end = extract_optional_beginning_and_end_dates(request.GET, date_only=True)
 		area_id = request.GET.get('area')
 		dictionary['start'] = start
 		dictionary['end'] = end
-		area_access_records = AreaAccessRecord.objects.filter(start__gte=start, start__lt=end, staff_charge=None)
+		area_access_records = AreaAccessRecord.objects.filter(staff_charge=None)
+		if start:
+			area_access_records = area_access_records.filter(start__gte=start)
+		if end:
+			area_access_records = area_access_records.filter(start__lt=end)
 		if area_id:
 			area_id = int(area_id)
 			filter_areas = Area.objects.get(pk=area_id).get_descendants(include_self=True)
@@ -266,7 +270,7 @@ def self_log_in(request, load_areas=True):
 	if request.GET.get('area_id'):
 		dictionary['area_id'] = quiet_int(request.GET['area_id'])
 
-	facility_name = get_customization('facility_name')
+	facility_name = ApplicationCustomization.get('facility_name')
 	try:
 		check_policy_to_enter_any_area(user)
 	except InactiveUserError:
@@ -382,7 +386,7 @@ def log_out_user(user: User):
 
 def able_to_self_log_out_of_area(user):
 	# 'Self log out' must be enabled
-	if not get_customization('self_log_out') == 'enabled':
+	if not ApplicationCustomization.get('self_log_out') == 'enabled':
 		return False
 	# Check if the user is active
 	if not user.is_active:
@@ -396,7 +400,7 @@ def able_to_self_log_out_of_area(user):
 
 def able_to_self_log_in_to_area(user):
 	# 'Self log in' must be enabled
-	if not get_customization('self_log_in') == 'enabled':
+	if not ApplicationCustomization.get('self_log_in') == 'enabled':
 		return False
 	# Check if the user is already in an area. If so, the /change_project/ URL can be used to change their project.
 	if user.in_area():

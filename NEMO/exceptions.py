@@ -10,8 +10,8 @@ class NEMOException(Exception):
 
 	def __init__(self, msg=None):
 		if msg is None:
-			from NEMO.views.customization import get_customization
-			site_title = get_customization('site_title')
+			from NEMO.views.customization import ApplicationCustomization
+			site_title = ApplicationCustomization.get('site_title')
 			msg = self.default_msg.format(site_title)
 		self.msg = msg
 		super().__init__(msg)

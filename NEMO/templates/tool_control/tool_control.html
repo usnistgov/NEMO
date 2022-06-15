@@ -246,9 +246,8 @@
 		function load_tasks_and_comments(ten_most_recent)
 		{
 			let data = serialize("#history_form");
-			if (data.start)	data.start = moment(data.start, "MM/DD/YYYY").unix();
-			if (data.end) data.end = moment(data.end, "MM/DD/YYYY").add(1, 'day').unix();
-			{# Add one day because by default the time is midnight the day of. We want to include the full duration of the last day. #}
+			if (data.start)	data.start = moment.utc(data.start, "{{ date_input_js_format }}").unix();
+			if (data.end) data.end = moment.utc(data.end, "{{ date_input_js_format }}").unix();
             let tasks_and_comments_url = "{% url 'past_comments_and_tasks' %}?" + $.param(data);
 			if (ten_most_recent)
             {
@@ -283,8 +282,8 @@
 
 		function load_tasks_and_comments_for_last_three_months()
 		{
-			let start = moment().subtract(3, 'months').format("MM/DD/YYYY");
-			let end = moment().format("MM/DD/YYYY");
+			let start = moment().subtract(3, 'months').format("{{ date_input_js_format }}");
+			let end = moment().format("{{ date_input_js_format }}");
 			$("#task_and_comment_start").val(start);
 			$("#task_and_comment_end").val(end);
 			load_tasks_and_comments();
@@ -300,8 +299,8 @@
 			let failure_dialog = ajax_complete_callback("Unable to find usage data", "There was a problem looking up usage data.");
 			let data = serialize("#usage_data_form");
 			data.csrfmiddlewaretoken= "{{ csrf_token }}";
-			if (data.data_history_start_date) data.start = moment(data.data_history_start_date, "MM/DD/YYYY").unix();
-			if (data.data_history_end_date) data.end = moment(data.data_history_end_date, "MM/DD/YYYY").unix();
+			if (data.data_history_start_date) data.start = moment.utc(data.data_history_start_date, "{{ date_input_js_format }}").unix();
+			if (data.data_history_end_date) data.end = moment.utc(data.data_history_end_date, "{{ date_input_js_format }}").unix();
 			$("#usage_data").load("{% url 'usage_data_history' 999 %}".replace('999', tool_id), data, failure_dialog);
 			if (csv_export)
 			{
