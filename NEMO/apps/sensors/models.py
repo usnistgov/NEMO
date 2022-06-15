@@ -37,18 +37,17 @@ class SensorCard(models.Model):
 	name = models.CharField(max_length=200)
 	server = models.CharField(max_length=200)
 	port = models.PositiveIntegerField()
-	number = models.PositiveIntegerField(blank=True, null=True)
 	category = models.ForeignKey(SensorCardCategory, on_delete=models.CASCADE)
 	username = models.CharField(max_length=100, blank=True, null=True)
 	password = models.CharField(max_length=100, blank=True, null=True)
 	enabled = models.BooleanField(blank=False, null=False, default=True)
 
 	class Meta:
-		ordering = ["server", "number"]
+		ordering = ["server"]
 
 	def __str__(self):
 		card_name = self.name + ": " if self.name else ""
-		return card_name + str(self.server) + (", card " + str(self.number) if self.number else "")
+		return card_name + str(self.server)
 
 
 class SensorCategory(models.Model):

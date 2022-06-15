@@ -618,7 +618,7 @@
       "questions": "[\r\n    {\r\n        \"type\": \"textbox\",\r\n        \"name\": \"sample_name\",\r\n        \"max-width\": \"350\",\r\n        \"required\": true,\r\n        \"title_html\": \"<em>Sample Name / PID: </em>\",\n        \"title\": \"Sample Name / PID\",\r\n        \"help\": \"Write in a sample name, or paste a persistent identifier (PID) for your specimen\"\r\n    }\r\n]",
       "tool_reservations": true,
       "area_reservations": false,
-      "only_for_tools": [],
+      "only_for_tools": [2],
       "only_for_areas": [],
       "only_for_projects": []
     }
@@ -1616,7 +1616,6 @@
       "name": "Gas cabinet card",
       "server": "test",
       "port": 502,
-      "number": null,
       "category": 1,
       "username": null,
       "password": null,
@@ -1630,7 +1629,6 @@
       "name": "Temp/Humidity card",
       "server": "localhost",
       "port": 502,
-      "number": null,
       "category": 1,
       "username": null,
       "password": null,

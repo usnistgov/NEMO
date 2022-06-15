@@ -102,7 +102,7 @@ def base_64_decode_basic_auth(remote_user: str):
 
 
 class RemoteUserAuthenticationBackend(ModelBackend):
-	""" The web server performs authentication and passes the user name remotely. (header or env) """
+	""" The web server performs authentication and passes the username remotely. (header or env) """
 
 	def authenticate(self, request, remote_user):
 		if not remote_user:
@@ -117,18 +117,18 @@ class RemoteUserAuthenticationBackend(ModelBackend):
 
 	def clean_username(self, username):
 		"""
-		User names arrive in the form user@DOMAIN.NAME.
+		Usernames arrive in the form user@DOMAIN.NAME.
 		This function chops off Kerberos realm information (i.e. the '@' and everything after).
 		"""
 		return username.partition("@")[0]
 
 
 class NginxKerberosAuthorizationHeaderAuthenticationBackend(RemoteUserAuthenticationBackend):
-	""" The web server performs Kerberos authentication and passes the user name in via the HTTP_AUTHORIZATION header. """
+	""" The web server performs Kerberos authentication and passes the username in via the HTTP_AUTHORIZATION header. """
 
 	def clean_username(self, username):
 		"""
-		User names arrive encoded in base 64, similar to Basic authentication, but with a bogus password set (since .
+		Usernames arrive encoded in base 64, similar to Basic authentication, but with a bogus password set (since .
 		This function chops off Kerberos realm information (i.e. the '@' and everything after).
 		"""
 		if not username:

@@ -79,14 +79,13 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=200)),
                 ('server', models.CharField(max_length=200)),
                 ('port', models.PositiveIntegerField()),
-                ('number', models.PositiveIntegerField(blank=True, null=True)),
                 ('username', models.CharField(blank=True, max_length=100, null=True)),
                 ('password', models.CharField(blank=True, max_length=100, null=True)),
                 ('enabled', models.BooleanField(default=True)),
                 ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sensors.sensorcardcategory')),
             ],
             options={
-                'ordering': ['server', 'number'],
+                'ordering': ['server'],
             },
         ),
         migrations.AddField(
