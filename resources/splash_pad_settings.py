@@ -107,9 +107,3 @@ SECRET_KEY = 'abc123'
 
 ALLOW_CONDITIONAL_URLS = True
 AUTHENTICATION_BACKENDS = ['NEMO.views.authentication.RemoteUserAuthenticationBackend']
-
-IDENTITY_SERVICE = {
-	'available': False,
-	'url': 'https://identity.example.org/',
-	'domains': [],
-}
