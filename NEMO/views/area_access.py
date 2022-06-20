@@ -27,7 +27,13 @@ from NEMO.exceptions import (
 	UnavailableResourcesUserError,
 )
 from NEMO.models import Area, AreaAccessRecord, Project, User
-from NEMO.utilities import date_input_format, extract_optional_beginning_and_end_dates, quiet_int
+from NEMO.utilities import (
+	beginning_of_the_day,
+	date_input_format,
+	end_of_the_day,
+	extract_optional_beginning_and_end_dates,
+	quiet_int,
+)
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.policy import check_billing_to_project, check_policy_to_enter_any_area, check_policy_to_enter_this_area
@@ -70,7 +76,10 @@ def area_access(request):
 		'yesterday': reverse('area_access') + '?' + urlencode({'start': yesterday, 'end': yesterday}),
 	}
 	try:
-		start, end = extract_optional_beginning_and_end_dates(request.GET, date_only=True)
+		if request.GET.get("start") or request.GET.get("end"):
+			start, end = extract_optional_beginning_and_end_dates(request.GET, date_only=True)
+		else:
+			start, end = beginning_of_the_day(now), end_of_the_day(now)
 		area_id = request.GET.get('area')
 		dictionary['start'] = start
 		dictionary['end'] = end
