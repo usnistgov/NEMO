@@ -319,7 +319,7 @@ def customization(request, key: str = "application"):
 @administrator_required
 @require_POST
 def customize(request, key, element=None):
-	customization_instance = CustomizationBase.get_instance(key)
+	customization_instance: CustomizationBase = CustomizationBase.get_instance(key)
 	if not customization_instance:
 		return HttpResponseNotFound(f"Customizations with key: '{key}' not found")
 	errors = customization_instance.save(request, element)
