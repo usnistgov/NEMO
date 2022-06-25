@@ -165,15 +165,16 @@ class LDAPAuthenticationBackend(ModelBackend):
 				use_ssl = server.get("use_ssl", True)
 				bind_as_authentication = server.get("bind_as_authentication", True)
 				domain = server.get("domain")
+				username_format = domain + "\\{}" if domain else server.get("username_format", "{}")
 				t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=server.get("certificate"))
 				s = Server(server["url"], port=port, use_ssl=use_ssl, tls=t)
 				# We are securing the connection to the server with use_ssl, so no need for TLS
 				auto_bind = AUTO_BIND_NO_TLS
-				ldap_bind_user = f"{domain}\\{username}" if domain else username
+				ldap_bind_user = username_format.format(username)
 				if not bind_as_authentication:
 					# binding to LDAP first, then search for user
 					bind_username = server.get("bind_username", None)
-					bind_username = f"{domain}\\{bind_username}" if domain and bind_username else bind_username
+					bind_username = username_format.format(bind_username)
 					bind_password = server.get("bind_password", None)
 					authentication = SIMPLE if bind_username and bind_password else ANONYMOUS
 					c = Connection(
