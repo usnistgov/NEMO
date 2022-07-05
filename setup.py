@@ -25,7 +25,7 @@ setup(
 	],
 	install_requires=[
 		'cryptography==37.0.2',
-		'Django==3.2.13',
+		'Django==3.2.14',
 		'django-filter==21.1',
 		'djangorestframework==3.13.1',
 		'drf-flex-fields==0.9.8',
