@@ -7,12 +7,14 @@ from typing import Dict, List, Union
 from django.conf import settings
 
 from NEMO.models import Consumable, Tool
+from NEMO.views.customization import RatesCustomization
 
 rates_logger = getLogger(__name__)
 
 class Rates(ABC):
 
 	rates = None
+	expand_rates_table = False
 
 	@abstractmethod
 	def load_rates(self):
@@ -46,6 +48,7 @@ class NISTRates(Rates):
 	shared_cost_rate_class = 'cost shared'
 
 	def load_rates(self, force_reload=False):
+		self.expand_rates_table = RatesCustomization.get("rates_expand_table") == 'enabled'
 		if force_reload:
 			self.rates = None
 		if not self.rates:
@@ -75,33 +78,40 @@ class NISTRates(Rates):
 	def get_tool_rate(self, tool: Tool) -> str:
 		full_cost_rate = self._get_rate_by_table_id_and_class(tool, self.tool_rate_class, self.full_cost_rate_class)
 		shared_cost_rate = self._get_rate_by_table_id_and_class(tool, self.tool_rate_class, self.shared_cost_rate_class)
-		if full_cost_rate or shared_cost_rate:
-			result = "Tool rates:"
-			if tool.is_parent_tool():
-				result += "<br> " + tool.name + ":"
-			if full_cost_rate:
-				result += " Full Cost <b>${:0,.2f}</b>".format(full_cost_rate)
-			if shared_cost_rate:
-				result += " Shared Cost <b>${:0,.2f}</b>".format(shared_cost_rate)
-			if tool.is_parent_tool():
-				for child_tool in tool.tool_children_set.all():
-					child_full_cost_rate = self._get_rate_by_table_id_and_class(child_tool, self.tool_rate_class, self.full_cost_rate_class)
-					child_shared_cost_rate = self._get_rate_by_table_id_and_class(child_tool, self.tool_rate_class, self.shared_cost_rate_class)
-					if child_full_cost_rate or child_shared_cost_rate:
-						result += "<br> " + child_tool.name + ":"
-						if child_full_cost_rate:
-							result += " Full Cost <b>${:0,.2f}</b>".format(child_full_cost_rate)
-						if child_shared_cost_rate:
-							result += " Shared Cost <b>${:0,.2f}</b>".format(child_shared_cost_rate)
-			training_rate = self._get_rate_by_table_id_and_class(tool, self.tool_training_rate_class, self.full_cost_rate_class)
-			training_group_rate = self._get_rate_by_table_id_and_class(tool, self.tool_training_group_rate_class, self.full_cost_rate_class)
-			if training_rate or training_group_rate:
-				result += "<br>Training rates:"
-				if training_rate:
-					result += " Individual <b>${:0,.2f}</b>".format(training_rate)
-				if training_group_rate:
-					result += " Group <b>${:0,.2f}</b>".format(training_group_rate)
-			return result
+		if not full_cost_rate and not shared_cost_rate:
+			return ""
+		training_rate = self._get_rate_by_table_id_and_class(tool, self.tool_training_rate_class, self.full_cost_rate_class)
+		training_group_rate = self._get_rate_by_table_id_and_class(tool, self.tool_training_group_rate_class, self.full_cost_rate_class)
+		html_rate = f'<div class="media"><a onclick="toggle_details(this)" class="pointer collapsed" data-toggle="collapse" data-target="#rates_details"><span class="glyphicon glyphicon-list-alt pull-left notification-icon primary-highlight"></span><span class="glyphicon pull-left chevron glyphicon-chevron-{"right" if not self.expand_rates_table else "down"}"></span></a>'
+		html_rate += f'<div class="media-body"><span class="media-heading">Rates</span><div id="rates_details" class="collapse {"in" if self.expand_rates_table else ""}"><table class="table table-bordered table-hover thead-light" style="width: auto !important; min-width: 30%; margin-bottom: 0">'
+
+		table_header = '<tr style="font-size: large">'
+		table_header_2 = '<tr style="font-size: x-small">'
+		table_row = "<tr>"
+		if full_cost_rate:
+			table_header += '<th class="text-center" style="padding:15px">Tool Rate</th>'
+			table_header_2 += '<th class="text-center" style="padding: 1px;">$/Hour</th>'
+			table_row += '<td class="text-center" style="vertical-align: middle">${:0,.2f}</td>'.format(full_cost_rate)
+		if shared_cost_rate:
+			table_header += '<th class="text-center" style="padding:15px">Tool Shared Rate</th>'
+			table_header_2 += '<th class="text-center" style="padding: 1px;">$/Hour</th>'
+			table_row += '<td class="text-center" style="vertical-align: middle">${:0,.2f}</td>'.format(shared_cost_rate)
+		if training_rate:
+			table_header += '<th class="text-center" style="padding:15px">Training (Individual)</th>'
+			table_header_2 += '<th class="text-center" style="padding: 1px;">$/Hour</th>'
+			table_row += '<td class="text-center" style="vertical-align: middle">${:0,.2f}</td>'.format(training_rate)
+		if training_group_rate:
+			table_header += '<th class="text-center" style="padding:15px">Training (Group)</th>'
+			table_header_2 += '<th class="text-center" style="padding: 1px;">$/Hour</th>'
+			table_row += '<td class="text-center" style="vertical-align: middle">${:0,.2f}</td>'.format(training_group_rate)
+		table_header += "</tr>"
+		table_header_2 += "</tr>"
+		table_row += "</tr>"
+		html_rate += table_header
+		html_rate += table_header_2
+		html_rate += table_row
+		html_rate += "</tr></table></div></div></div>"
+		return html_rate
 
 
 	def _get_rate_by_table_id_and_class(self, item: Union[Consumable, Tool], table_id, rate_claz) -> float:

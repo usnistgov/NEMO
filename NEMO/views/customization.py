@@ -245,6 +245,7 @@ class TemplatesCustomization(CustomizationBase):
 
 @customization(key="rates", title="Rates", order=8)
 class RatesCustomization(CustomizationBase):
+	variables = {"rates_expand_table": ""}
 	files = [("rates", ".json")]
 
 	def save(self, request, element=None):
