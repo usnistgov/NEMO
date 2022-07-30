@@ -358,7 +358,8 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 {
 	margin-left: -15px;
 	margin-right: -15px;
-	border-top: 1px solid #ddd
+	border-top: 1px solid #ddd;
+	clear: both;
 }
 
 .customization-input-file
