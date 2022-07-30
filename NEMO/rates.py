@@ -7,7 +7,6 @@ from typing import Dict, List, Union
 from django.conf import settings
 
 from NEMO.models import Consumable, Tool
-from NEMO.views.customization import RatesCustomization
 
 rates_logger = getLogger(__name__)
 
@@ -18,7 +17,8 @@ class Rates(ABC):
 
 	@abstractmethod
 	def load_rates(self):
-		pass
+		from NEMO.views.customization import RatesCustomization
+		self.expand_rates_table = RatesCustomization.get("rates_expand_table", raise_exception=False) == 'enabled'
 
 	def get_consumable_rates(self, consumables: List[Consumable]) -> Dict[str, str]:
 		if self.rates:
@@ -48,7 +48,7 @@ class NISTRates(Rates):
 	shared_cost_rate_class = 'cost shared'
 
 	def load_rates(self, force_reload=False):
-		self.expand_rates_table = RatesCustomization.get("rates_expand_table") == 'enabled'
+		super().load_rates()
 		if force_reload:
 			self.rates = None
 		if not self.rates:
