@@ -89,19 +89,19 @@ class NISTRates(Rates):
 		table_header_2 = '<tr style="font-size: x-small">'
 		table_row = "<tr>"
 		if full_cost_rate:
-			table_header += '<th class="text-center" style="padding:15px">Tool Rate</th>'
+			table_header += '<th class="text-center" style="padding:15px">Standard Rate</th>'
 			table_header_2 += '<th class="text-center" style="padding: 1px;">$/Hour</th>'
 			table_row += '<td class="text-center" style="vertical-align: middle">${:0,.2f}</td>'.format(full_cost_rate)
 		if shared_cost_rate:
-			table_header += '<th class="text-center" style="padding:15px">Tool Shared Rate</th>'
+			table_header += '<th class="text-center" style="padding:15px">Reduced Rate</th>'
 			table_header_2 += '<th class="text-center" style="padding: 1px;">$/Hour</th>'
 			table_row += '<td class="text-center" style="vertical-align: middle">${:0,.2f}</td>'.format(shared_cost_rate)
 		if training_rate:
-			table_header += '<th class="text-center" style="padding:15px">Training (Individual)</th>'
+			table_header += '<th class="text-center" style="padding:15px">Individual Training</th>'
 			table_header_2 += '<th class="text-center" style="padding: 1px;">$/Hour</th>'
 			table_row += '<td class="text-center" style="vertical-align: middle">${:0,.2f}</td>'.format(training_rate)
 		if training_group_rate:
-			table_header += '<th class="text-center" style="padding:15px">Training (Group)</th>'
+			table_header += '<th class="text-center" style="padding:15px">Group Training</th>'
 			table_header_2 += '<th class="text-center" style="padding: 1px;">$/Hour</th>'
 			table_row += '<td class="text-center" style="vertical-align: middle">${:0,.2f}</td>'.format(training_group_rate)
 		table_header += "</tr>"
