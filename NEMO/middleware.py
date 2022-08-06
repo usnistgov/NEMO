@@ -4,6 +4,7 @@ from logging import getLogger
 from django.conf import settings
 from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.http import HttpResponseForbidden
+from django.shortcuts import redirect
 from django.urls import NoReverseMatch, reverse
 from django.utils.deprecation import MiddlewareMixin
 
@@ -39,8 +40,7 @@ class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
 			from NEMO.views.authentication import all_auth_backends_are_pre_auth
 			# Only raise error if all we have are pre_authentication backends and they failed
 			if all_auth_backends_are_pre_auth():
-				from NEMO.views.authentication import authorization_failed
-				return authorization_failed(request)
+				return redirect('authorization_failed')
 
 
 class HTTPHeaderAuthenticationMiddleware(RemoteUserAuthenticationMiddleware):

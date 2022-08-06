@@ -257,7 +257,7 @@ def login_user(request):
 		try:
 			user = authenticate(request, username=username, password=password)
 		except (User.DoesNotExist, InactiveUserError):
-			return authorization_failed(request)
+			return redirect('authorization_failed')
 
 		if user:
 			login(request, user)
