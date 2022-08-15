@@ -34,6 +34,8 @@ from NEMO.utilities import (
 	distinct_qs_value_list,
 	format_daterange,
 	format_datetime,
+	get_chemical_document_filename,
+	get_hazard_logo_filename,
 	get_task_image_filename,
 	get_tool_document_filename,
 	get_tool_image_filename,
@@ -397,6 +399,14 @@ class User(models.Model):
 	USERNAME_FIELD = 'username'
 	REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
 	objects = UserManager()
+
+	def clean(self):
+		if self.username:
+			username_taken = User.objects.filter(username__iexact=self.username)
+			if self.pk:
+				username_taken = username_taken.exclude(pk=self.pk)
+			if username_taken.exists():
+				raise ValidationError({'username':'This username has already been taken'})
 
 	def has_perm(self, perm, obj=None):
 		"""

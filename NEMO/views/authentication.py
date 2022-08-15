@@ -56,7 +56,7 @@ def all_auth_backends_are_pre_auth():
 def check_user_exists_and_active(backend: ModelBackend, username: str) -> User:
 	# The user must exist in the database
 	try:
-		user = User.objects.get(username=username)
+		user = User.objects.get(username__iexact=username)
 	except User.DoesNotExist:
 		auth_logger.warning(
 			f"User {username} attempted to authenticate with {type(backend).__name__}, but that username does not exist in the database. The user was denied access."
