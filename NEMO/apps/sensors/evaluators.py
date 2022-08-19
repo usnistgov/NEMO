@@ -1,6 +1,6 @@
 import ast
 import operator
-from _ast import BinOp, BoolOp, Call, Compare, Index, Name, NameConstant, Num, Slice, Subscript, UnaryOp
+from ast import BinOp, BoolOp, Call, Compare, Index, Name, NameConstant, Num, Slice, Subscript, UnaryOp
 from math import ceil, floor, sqrt, trunc
 
 from pymodbus.constants import Endian
