@@ -34,8 +34,6 @@ from NEMO.utilities import (
 	distinct_qs_value_list,
 	format_daterange,
 	format_datetime,
-	get_chemical_document_filename,
-	get_hazard_logo_filename,
 	get_task_image_filename,
 	get_tool_document_filename,
 	get_tool_image_filename,
