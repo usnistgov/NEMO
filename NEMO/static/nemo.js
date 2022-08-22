@@ -98,24 +98,24 @@ function collapse_all_categories()
 
 function get_qualified_tools_for_user(user_id) {
 	ajax_get("/api/users/"+user_id+"/", {}, (data) => {
-		localStorage.setItem("availableTools", data.qualifications)
+		localStorage.setItem("qualifiedTools", data.qualifications)
 	})
 }
 
-function toggle_available_tools() {
+function toggle_qualified_tools() {
 	// Toggle local storage data value
-	if (localStorage.getItem("showAvailableTools") === "true") {
-		localStorage.setItem("showAvailableTools", "false");
-	} else {  // Item showAvailableTools is 'false' or not set.
-		localStorage.setItem("showAvailableTools", "true");
+	if (localStorage.getItem("showQualifiedTools") === "true") {
+		localStorage.setItem("showQualifiedTools", "false");
+	} else {  // Item showQualifiedTools is 'false' or not set.
+		localStorage.setItem("showQualifiedTools", "true");
 	}
 
-	set_available_tools_button_status(
-		localStorage.getItem("showAvailableTools") === "true"
+	set_qualified_tools_button_status(
+		localStorage.getItem("showQualifiedTools") === "true"
 	)
 
 	update_tool_list_display("toggle");
-	if (localStorage.getItem("showAvailableTools") === "true") {
+	if (localStorage.getItem("showQualifiedTools") === "true") {
 		hide_empty_tool_categories();
 	} else {
 		show_all_tool_categories();
@@ -124,7 +124,7 @@ function toggle_available_tools() {
 
 function update_tool_list_display(item_function) {
 	// Retrieve the list of tools the user is qualified for.
-	let availableToolList = localStorage.getItem("availableTools").split(",");
+	let availableToolList = localStorage.getItem("qualifiedTools").split(",");
 
 	// Go through the list of tools in the sidebar and toggle the ones that the user is
 	// not qualified for.
@@ -160,11 +160,11 @@ function show_all_tool_categories() {
 	})
 }
 
-function set_available_tools_button_status(btn_active) {
+function set_qualified_tools_button_status(btn_active) {
 	if (btn_active) {
-		$("#available_tools_btn").addClass("active")
+		$("#qualified_tools_btn").addClass("active")
 	} else {
-		$("#available_tools_btn").removeClass("active")
+		$("#qualified_tools_btn").removeClass("active")
 	}
 }
 
@@ -243,8 +243,8 @@ function set_selected_item_by_class(item_class)
 
 function save_sidebar_state()
 {
-	let showAvailableTools = localStorage.getItem("showAvailableTools");
-	let availableTools = localStorage.getItem("availableTools");
+	let showQualifiedTools = localStorage.getItem("showQualifiedTools");
+	let qualifiedTools = localStorage.getItem("qualifiedTools");
 
 	localStorage.clear();
 	let categories = $(".item_tree ul.tree");
@@ -259,10 +259,10 @@ function save_sidebar_state()
 		localStorage['Selected item ID'] = selected_item;
 	}
 
-	if(showAvailableTools !== null) {
-		localStorage.setItem("showAvailableTools", showAvailableTools)
+	if(showQualifiedTools !== null) {
+		localStorage.setItem("showQualifiedTools", showQualifiedTools)
 	}
-	localStorage.setItem("availableTools", availableTools)
+	localStorage.setItem("qualifiedTools", qualifiedTools)
 }
 
 function load_sidebar_state()
@@ -291,19 +291,22 @@ function load_sidebar_state()
 		let selected_item = JSON.parse(selected)
 		set_selected_item_by_id(selected_item.id, selected_item.type);
 	}
+}
 
+function load_qualified_tools() {
 	// Set available tool button status
-	let availableToolButtonState = localStorage.getItem("showAvailableTools") === "true";
-	set_available_tools_button_status(availableToolButtonState);
+	let qualifiedToolButtonState = localStorage.getItem("showQualifiedTools") === "true";
+	set_qualified_tools_button_status(qualifiedToolButtonState);
 
 	// Display the list of tools according to the 'showAvailableTools' value
-	update_tool_list_display(availableToolButtonState?"hide":"show");
-	if (availableToolButtonState) {
+	update_tool_list_display(qualifiedToolButtonState?"hide":"show");
+	if (qualifiedToolButtonState) {
 		hide_empty_tool_categories();
 	} else {
 		show_all_tool_categories();
 	}
 }
+
 
 // Use this function to display a Bootstrap modal when an AJAX call is successful and contains content to render.
 // Use this function with ajax_get(), ajax_post() or other similar functions.

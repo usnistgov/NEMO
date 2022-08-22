@@ -22,7 +22,7 @@
 			<div id="expand-collapse" class="btn-group sidebar-item">
 				<button type="button" class="btn btn-default" style="width:33%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon glyphicon-resize-full"></span></button>
 				<button type="button" class="btn btn-default" style="width:33%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon glyphicon-resize-small"></span></button>
-		        <button type="button" class="btn btn-default" id="available_tools_btn" style="width:34%" onclick="toggle_available_tools()" title="Show available tools"><span class="glyphicon glyphicon-lock"></span></button>
+		        <button type="button" class="btn btn-default" id="qualified_tools_btn" style="width:34%" onclick="toggle_qualified_tools()" title="Show qualified tools"><span class="glyphicon glyphicon-lock"></span></button>
 			</div>
 			<input type="text" id="item_search" placeholder="Search for a tool" class="form-control sidebar-item">
 			{{ rendered_item_tree_html }}
@@ -327,6 +327,8 @@
                 {# Save the list of qualified tools in localStorage. #}
                 get_qualified_tools_for_user({{ user.id }});
 				load_sidebar_state();
+                {# Filter qualified tools depending on the status of the button. #}
+                load_qualified_tools();
 				$(".item_tree").show();
 				{# Tool tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
 				{% if selected_tool %}
