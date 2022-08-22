@@ -75,9 +75,9 @@
                                             <div data-toggle="tooltip" data-template="{{ custom_data_template }}" title="{% if closure_time.closure.alert_template %}{{ closure_time.alert_contents|linebreaksbr }}{% else %}{{ closure_time.closure.name }} {{ closure_time }}{% endif %}"><div>Closed</div></div>
                                         {% endwith %}
                                     {% elif staff_absent %}
-                                        {% if not staff_absent.full_day and not user.is_facility_manager %}
+                                        {% if not user.is_facility_manager %}
                                             <div data-toggle="tooltip" title="{{ staff_absent.description|linebreaksbr }}">&nbsp;</div>
-                                        {% elif user.is_facility_manager %}
+                                        {% else %}
                                             <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span style="cursor: pointer" onclick="ajax_get('{% url "edit_staff_absence" staff_absent.id %}?timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)">{{ staff_absent.absence_type.name }}</span></div>
                                         {% endif %}
                                     {% elif staff_available %}

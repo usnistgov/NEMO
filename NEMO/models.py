@@ -34,7 +34,7 @@ from NEMO.utilities import (
 	distinct_qs_value_list,
 	format_daterange,
 	format_datetime,
-	get_task_image_filename,
+	get_chemical_document_filename, get_hazard_logo_filename, get_task_image_filename,
 	get_tool_document_filename,
 	get_tool_image_filename,
 	send_mail,
@@ -2364,12 +2364,14 @@ class StaffAbsence(models.Model):
 	start_date = models.DateField(help_text="The start date of the absence.")
 	end_date = models.DateField(help_text="The end date of the absence.")
 	full_day = models.BooleanField(default=True, help_text="Uncheck this box when the absence is only for part of the day.")
-	description = models.TextField(null=True, blank=True, help_text="The absence description. This will be visible to anyone when the absence is not all day.")
+	description = models.TextField(null=True, blank=True, help_text="The absence description. This will be visible to anyone.")
+	manager_note = models.TextField(null=True, blank=True, help_text="A note only visible to managers.")
 
 	def details_for_manager(self):
-		dates = f" {format_daterange(self.start_date, self.end_date)}" if self.start_date != self.end_date else ''
-		description = f"<br>{linebreaksbr(self.description)}" if self.description else ''
-		return f"{self.absence_type.description}{dates}{description}"
+		dates = f" {format_daterange(self.start_date, self.end_date)}" if self.start_date != self.end_date else ""
+		description = f"<br>{linebreaksbr(self.description)}" if self.description else ""
+		manager_note = f"<br>{linebreaksbr(self.manager_note)}" if self.manager_note else ""
+		return f"{self.absence_type.description}{dates}{description}{manager_note}"
 
 	def clean(self):
 		if self.end_date and self.start_date and self.end_date < self.start_date:

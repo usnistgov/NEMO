@@ -249,7 +249,7 @@ def export_staff_status(request, staffs, days, start, end, staff_date_format) ->
 		for staff_id, absence_dict in staff_absences.items():
 			if staff.id == staff_id:
 				for day_index, absence in absence_dict.items():
-					staff_row[day_index] = absence.absence_type.name + f" {absence.description or ''}"
+					staff_row[day_index] = absence.absence_type.name + f" {absence.description or ''}" + f" {absence.manager_note or ''}"
 		for day_index, closure_time in closure_times.items():
 			staff_row[day_index] = f"Closed: {closure_time.closure.name}"
 		table_result.add_row(staff_row)
