@@ -178,7 +178,11 @@ function save_sidebar_state()
 		let category = categories[c].getAttribute('data-category');
 		localStorage[category] = $(categories[c]).is(':visible');
 	}
-	localStorage['Selected item ID'] = get_selected_item();
+	let selected_item = get_selected_item();
+	if (selected_item)
+	{
+		localStorage['Selected item ID'] = selected_item;
+	}
 }
 
 function load_sidebar_state()
@@ -202,7 +206,7 @@ function load_sidebar_state()
 	if (selected === 'personal_schedule' || selected === 'all_tools' || selected === 'all_areas' || selected === 'all_areastools' )
 	{
 		set_selected_item_by_class(selected);
-	} else if(selected)
+	} else if (selected)
 	{
 		let selected_item = JSON.parse(selected)
 		set_selected_item_by_id(selected_item.id, selected_item.type);
