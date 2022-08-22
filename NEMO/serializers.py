@@ -43,6 +43,7 @@ class UserSerializer(ModelSerializer):
 			"is_technician",
 			"is_service_personnel",
 			"training_required",
+			"qualifications"
 		)
 
 

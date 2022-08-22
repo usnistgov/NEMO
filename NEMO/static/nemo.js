@@ -96,6 +96,78 @@ function collapse_all_categories()
 	save_sidebar_state();
 }
 
+function get_qualified_tools_for_user(user_id) {
+	ajax_get("/api/users/"+user_id+"/", {}, (data) => {
+		localStorage.setItem("availableTools", data.qualifications)
+	})
+}
+
+function toggle_available_tools() {
+	// Toggle local storage data value
+	if (localStorage.getItem("showAvailableTools") === "true") {
+		localStorage.setItem("showAvailableTools", "false");
+	} else {  // Item showAvailableTools is 'false' or not set.
+		localStorage.setItem("showAvailableTools", "true");
+	}
+
+	set_available_tools_button_status(
+		localStorage.getItem("showAvailableTools") === "true"
+	)
+
+	update_tool_list_display("toggle");
+	if (localStorage.getItem("showAvailableTools") === "true") {
+		hide_empty_tool_categories();
+	} else {
+		show_all_tool_categories();
+	}
+}
+
+function update_tool_list_display(item_function) {
+	// Retrieve the list of tools the user is qualified for.
+	let availableToolList = localStorage.getItem("availableTools").split(",");
+
+	// Go through the list of tools in the sidebar and toggle the ones that the user is
+	// not qualified for.
+	$("a[data-item-type='tool']").each((index, item) => {
+		let $item = $(item);
+		if($.inArray($item.attr("data-item-id"), availableToolList) === -1) {
+			$item[item_function]();
+		}
+	})
+}
+
+function hide_empty_tool_categories() {
+	$("li.tool-category").each((catIdx, category) => {
+		let categoryHasItem = false;
+		$(category).find("li>a").each((toolIdx, tool) => {
+			let toolStyle = $(tool).attr("style");
+
+			if(toolStyle===undefined || toolStyle!=="display: none;") {
+				categoryHasItem = true;
+				return;
+			}
+		})
+
+		if (!categoryHasItem) {
+			$(category).hide();
+		}
+	})
+}
+
+function show_all_tool_categories() {
+	$("li.tool-category").each((catIdx, category) => {
+		$(category).show();
+	})
+}
+
+function set_available_tools_button_status(btn_active) {
+	if (btn_active) {
+		$("#available_tools_btn").addClass("active")
+	} else {
+		$("#available_tools_btn").removeClass("active")
+	}
+}
+
 function toggle_item_categories(item_type)
 {
 	let one_visible = $(".item_tree ul.tree."+item_type+"-list li:visible").length >0;
@@ -171,6 +243,9 @@ function set_selected_item_by_class(item_class)
 
 function save_sidebar_state()
 {
+	let showAvailableTools = localStorage.getItem("showAvailableTools");
+	let availableTools = localStorage.getItem("availableTools");
+
 	localStorage.clear();
 	let categories = $(".item_tree ul.tree");
 	for(let c = 0; c < categories.length; c++)
@@ -183,6 +258,11 @@ function save_sidebar_state()
 	{
 		localStorage['Selected item ID'] = selected_item;
 	}
+
+	if(showAvailableTools !== null) {
+		localStorage.setItem("showAvailableTools", showAvailableTools)
+	}
+	localStorage.setItem("availableTools", availableTools)
 }
 
 function load_sidebar_state()
@@ -210,6 +290,18 @@ function load_sidebar_state()
 	{
 		let selected_item = JSON.parse(selected)
 		set_selected_item_by_id(selected_item.id, selected_item.type);
+	}
+
+	// Set available tool button status
+	let availableToolButtonState = localStorage.getItem("showAvailableTools") === "true";
+	set_available_tools_button_status(availableToolButtonState);
+
+	// Display the list of tools according to the 'showAvailableTools' value
+	update_tool_list_display(availableToolButtonState?"hide":"show");
+	if (availableToolButtonState) {
+		hide_empty_tool_categories();
+	} else {
+		show_all_tool_categories();
 	}
 }
 

@@ -24,8 +24,9 @@
 		</ul>
 	</div>
 	<div id="expand-collapse" class="btn-group sidebar-item">
-		<button type="button" class="btn btn-default" style="width:50%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon-resize-full"></span></button>
-		<button type="button" class="btn btn-default" style="width:50%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon-resize-small"></span></button>
+		<button type="button" class="btn btn-default" style="width:33%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon-resize-full"></span></button>
+		<button type="button" class="btn btn-default" style="width:33%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon-resize-small"></span></button>
+		<button type="button" class="btn btn-default" id="available_tools_btn" style="width:34%" onclick="toggle_available_tools()" title="Show available tools"><span class="glyphicon glyphicon-lock"></span></button>
 	</div>
 	<input type="text" id="item_search" placeholder="Search for{% if tools %} a tool{% endif %}{% if tools and areas %} or{% endif %}{% if areas %} an area{% endif %}" class="form-control sidebar-item" autocomplete="off">
 	<input type="text" id="user_search" placeholder="Search for a user" class="form-control sidebar-item" autocomplete="off" style="display:none">
@@ -633,6 +634,8 @@ function on_load()
 	enable_item_tree_toggling();
 	$('#item_search').autocomplete('items', on_item_search_selection, {% json_search_base_with_extra_fields tools|add:areas %}, {% if tools and areas %}false{% else %}true{% endif %});
 	$("#item_search").focus();
+    {# Save the list of qualified tools in localStorage. #}
+    get_qualified_tools_for_user({{ user.id }});
 	load_sidebar_state();
 	$(".item_tree").show(); {# Item tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
 	{% if auto_select_item_id %}
