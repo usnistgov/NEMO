@@ -40,6 +40,7 @@ from NEMO.views import (
 	remote_work,
 	resources,
 	safety,
+	safety_data_sheets,
 	sidebar,
 	staff_charges,
 	status_dashboard,
@@ -359,6 +360,9 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		url(r'^create_staff_absence/$', status_dashboard.create_staff_absence, name='create_staff_absence'),
 		url(r'^edit_staff_absence/(?P<absence_id>\d+)/$', status_dashboard.create_staff_absence, name='edit_staff_absence'),
 		url(r'^delete_staff_absence/(?P<absence_id>\d+)/$', status_dashboard.delete_staff_absence, name='delete_staff_absence'),
+
+		# Chemical Safety Data Sheet
+		url(r'^safety_data_sheets/$', safety_data_sheets.safety_data_sheets, name='safety_data_sheets'),
 
 		# Billing:
 		url(r'^billing/$', usage.billing, name='billing'),

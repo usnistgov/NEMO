@@ -5,6 +5,7 @@ from datetime import date, datetime, time
 from email import encoders
 from email.mime.base import MIMEBase
 from io import BytesIO
+from logging import getLogger
 from typing import Dict, List, Set, Tuple, Union
 
 from PIL import Image
@@ -19,6 +20,8 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.timezone import is_naive, localtime
+
+utilities_logger = getLogger(__name__)
 
 # List of python to js formats
 py_to_js_date_formats = {
@@ -354,10 +357,12 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 		email_record = create_email_log(mail, email_category)
 		try:
 			msg_sent = mail.send()
-		except:
+		except Exception as e:
 			email_record.ok = False
 			if not fail_silently:
 				raise
+			else:
+				utilities_logger.error(e)
 		finally:
 			email_record.save()
 	return msg_sent
@@ -421,6 +426,21 @@ def get_tool_document_filename(tool_documents, filename):
 
 	tool_name = slugify(tool_documents.tool)
 	return f"tool_documents/{tool_name}/{filename}"
+
+
+def get_hazard_logo_filename(category, filename):
+	from django.template.defaultfilters import slugify
+
+	category_name = slugify(category)
+	ext = os.path.splitext(filename)[1]
+	return f"chemical_hazard_logos/{category_name}{ext}"
+
+
+def get_chemical_document_filename(chemical, filename):
+	from django.template.defaultfilters import slugify
+
+	chemical_name = slugify(chemical.name)
+	return f"chemical_documents/{chemical_name}/{filename}"
 
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:

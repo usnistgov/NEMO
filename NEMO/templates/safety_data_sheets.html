@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_tags_and_filters %}
+{% block title %}Users{% endblock %}
+{% block content %}
+    <h1>
+		Safety data sheets
+	</h1>
+	<div class="row" style="margin-bottom: 20px">
+		<div class="col-sm-4">
+			<input id="search" type="text" placeholder="Search for a chemical name or keyword" class="form-control" autofocus>
+		</div>
+	</div>
+
+    {% if chemicals %}
+        <div style="width: 100%">
+        <table class="table table-align-middle table-responsive table-bordered table-condensed table-striped table-hover thead-light" style="table-layout: fixed; margin-top: 40px">
+            <thead>
+                <tr>
+                    <th style="border-left-style: hidden!important; border-top-style: hidden!important;background-color: transparent"></th>
+                    {% for hazard in hazards %}
+                        <th class="text-center" style="width: calc(75%/{{ hazards|length }})"><img style="display:block; width: 100%; height: 100%" alt="{{ hazard.name }} logo" src="{% get_media_prefix %}{{ hazard.logo }}"/></th>
+                    {% endfor %}
+                    <th colspan="2" style="border-right-style: hidden!important; border-top-style: hidden!important;background-color: transparent">
+                </tr>
+                <tr>
+                    <th style="overflow: hidden">Name</th>
+                    {% for hazard in hazards %}
+                        <th class="text-center" style="overflow: hidden; ">{{ hazard.name }}</th>
+                    {% endfor %}
+                    <th style="overflow: hidden">Link</th>
+                    <th style="overflow: hidden">Keywords</th>
+                </tr>
+            </thead>
+            <tbody id="table-to-filter">
+                {% for chemical in chemicals %}
+                    <tr>
+                        <td style="overflow: hidden">{{ chemical.name }}</td>
+                        {% for hazard in hazards %}
+                            {% for chem_hazard in chemical.hazards.all %}
+                                {% if chem_hazard == hazard %}
+                                    <td class="text-center alert-success"><span class="glyphicon glyphicon-ok success-highlight" style="font-size: 1.5em"></span></td>
+                                {% else %}
+                                    <td class="text-center"></td>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                        <td></td>
+                        <td style="overflow: hidden">{{ chemical.keywords }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <div>
+            There are no chemicals to display.
+            {% if user.is_superuser %}
+                <br/><br/>You can add some by navigating to<br>
+                <a href="{% url 'admin:NEMO_chemical_changelist' %}">
+                    Administration -> Detailed Administration -> Chemicals
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+    <script>
+        $("#search").keyup(function ()
+        {
+            let rows = $("#table-to-filter").find("tr").hide();
+            if (this.value.length)
+            {
+                let data = this.value.split(" ");
+                $.each(data, function (i, v)
+                {
+                    rows.filter(":icontains('" + v + "')").show();
+                });
+            }
+            else
+            {
+                rows.show();
+            }
+        });
+    </script>
+{% endblock %}

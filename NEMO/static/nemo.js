@@ -2,6 +2,12 @@ String.prototype.capitalize = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
 }
 
+// Add case-insensitive "icontains" jquery selector
+jQuery.expr[':'].icontains = function(a, i, m)
+{
+  return jQuery(a).text().toUpperCase().indexOf(m[3].toUpperCase()) >= 0;
+};
+
 // This function allows making regular interval calls to a function only when the tab/window is visible.
 // It also gets called when the tab/window becomes visible (changing tabs, minimizing window etc.)
 // This function is safe in the sense that is can be called multiple times with the same function.
