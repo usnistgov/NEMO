@@ -96,13 +96,7 @@ function collapse_all_categories()
 	save_sidebar_state();
 }
 
-function get_qualified_tools_for_user(user_id) {
-	ajax_get("/api/users/"+user_id+"/", {}, (data) => {
-		localStorage.setItem("qualifiedTools", data.qualifications)
-	})
-}
-
-function toggle_qualified_tools() {
+function toggle_qualified_tools(user_qualifications) {
 	// Toggle local storage data value
 	if (localStorage.getItem("showQualifiedTools") === "true") {
 		localStorage.setItem("showQualifiedTools", "false");
@@ -114,7 +108,7 @@ function toggle_qualified_tools() {
 		localStorage.getItem("showQualifiedTools") === "true"
 	)
 
-	update_tool_list_display("toggle");
+	update_tool_list_display("toggle", user_qualifications);
 	if (localStorage.getItem("showQualifiedTools") === "true") {
 		hide_empty_tool_categories();
 	} else {
@@ -122,15 +116,12 @@ function toggle_qualified_tools() {
 	}
 }
 
-function update_tool_list_display(item_function) {
-	// Retrieve the list of tools the user is qualified for.
-	let availableToolList = localStorage.getItem("qualifiedTools").split(",");
-
+function update_tool_list_display(item_function, qualified_tool_list) {
 	// Go through the list of tools in the sidebar and toggle the ones that the user is
 	// not qualified for.
 	$("a[data-item-type='tool']").each((index, item) => {
 		let $item = $(item);
-		if($.inArray($item.attr("data-item-id"), availableToolList) === -1) {
+		if(!qualified_tool_list.includes(parseInt($item.attr("data-item-id")))) {
 			$item[item_function]();
 		}
 	})
@@ -244,7 +235,6 @@ function set_selected_item_by_class(item_class)
 function save_sidebar_state()
 {
 	let showQualifiedTools = localStorage.getItem("showQualifiedTools");
-	let qualifiedTools = localStorage.getItem("qualifiedTools");
 
 	localStorage.clear();
 	let categories = $(".item_tree ul.tree");
@@ -262,7 +252,6 @@ function save_sidebar_state()
 	if(showQualifiedTools !== null) {
 		localStorage.setItem("showQualifiedTools", showQualifiedTools)
 	}
-	localStorage.setItem("qualifiedTools", qualifiedTools)
 }
 
 function load_sidebar_state()
@@ -293,13 +282,13 @@ function load_sidebar_state()
 	}
 }
 
-function load_qualified_tools() {
+function load_qualified_tools(user_qualifications) {
 	// Set available tool button status
 	let qualifiedToolButtonState = localStorage.getItem("showQualifiedTools") === "true";
 	set_qualified_tools_button_status(qualifiedToolButtonState);
 
 	// Display the list of tools according to the 'showAvailableTools' value
-	update_tool_list_display(qualifiedToolButtonState?"hide":"show");
+	update_tool_list_display(qualifiedToolButtonState?"hide":"show", user_qualifications);
 	if (qualifiedToolButtonState) {
 		hide_empty_tool_categories();
 	} else {

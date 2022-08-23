@@ -24,10 +24,10 @@
 		</ul>
 	</div>
 	<div id="expand-collapse" class="btn-group sidebar-item">
-        {% if calendar_qualified_tools %}
+        {% if calendar_qualified_tools and not user.is_staff  %}
             <button type="button" class="btn btn-default" style="width:33%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon-resize-full"></span></button>
             <button type="button" class="btn btn-default" style="width:33%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon-resize-small"></span></button>
-            <button type="button" class="btn btn-default" id="qualified_tools_btn" style="width:34%" onclick="toggle_qualified_tools()" title="Show qualified tools"><span class="glyphicon glyphicon-lock"></span></button>
+            <button type="button" class="btn btn-default" id="qualified_tools_btn" style="width:34%" onclick="toggle_qualified_tools(retrieve_user_qualifications())" title="Only show qualified tools"><span class="glyphicon glyphicon-lock"></span></button>
         {% else %}
             <button type="button" class="btn btn-default" style="width:50%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon-resize-full"></span></button>
             <button type="button" class="btn btn-default" style="width:50%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon-resize-small"></span></button>
@@ -630,6 +630,12 @@ function clear_specific_user()
 	update_event_sources();
 }
 
+function retrieve_user_qualifications() {
+    return {{ user.qualifications.all|json_search_base }}.map(
+        qualification => { return qualification.id; }
+    );
+}
+
 function on_load()
 {
     $("html").css("overflow", "hidden");
@@ -639,14 +645,10 @@ function on_load()
 	enable_item_tree_toggling();
 	$('#item_search').autocomplete('items', on_item_search_selection, {% json_search_base_with_extra_fields tools|add:areas %}, {% if tools and areas %}false{% else %}true{% endif %});
 	$("#item_search").focus();
-    {% if calendar_qualified_tools %}
-        {# Save the list of qualified tools in localStorage. #}
-        get_qualified_tools_for_user({{ user.id }});
-    {% endif %}
 	load_sidebar_state();
-    {% if calendar_qualified_tools %}
+    {% if calendar_qualified_tools and not user.is_staff  %}
         {# Filter qualified tools depending on the status of the button. #}
-        load_qualified_tools();
+        load_qualified_tools(retrieve_user_qualifications());
     {% endif %}
 	$(".item_tree").show(); {# Item tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
 	{% if auto_select_item_id %}
