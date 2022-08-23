@@ -14,7 +14,7 @@
 
     {% if chemicals %}
         <div style="width: 100%">
-        <table class="table table-align-middle table-responsive table-bordered table-condensed table-striped table-hover thead-light" style="table-layout: fixed; margin-top: 40px">
+        <table class="table table-align-middle table-responsive table-bordered table-condensed table-striped table-hover thead-light" style="height: 1px;table-layout: fixed; margin-top: 40px">
             <thead>
                 <tr>
                     <th style="border-left-style: hidden!important; border-top-style: hidden!important;background-color: transparent"></th>
@@ -34,16 +34,16 @@
             </thead>
             <tbody id="table-to-filter">
                 {% for chemical in chemicals %}
-                    <tr>
+                    <tr style="height: 100%">
                         <td style="overflow: hidden">{{ chemical.name }}</td>
                         {% for hazard in hazards %}
+                            <td class="text-center" style="height: 100%; padding: 0">
                             {% for chem_hazard in chemical.hazards.all %}
                                 {% if chem_hazard == hazard %}
-                                    <td class="text-center alert-success"><span class="glyphicon glyphicon-ok success-highlight" style="font-size: 1.5em"></span></td>
-                                {% else %}
-                                    <td class="text-center"></td>
+                                    <div style="height: 100%;width: 100%" class="alert-success"><span class="glyphicon glyphicon-ok success-highlight" style="font-size: 1.5em"></span></div>
                                 {% endif %}
                             {% endfor %}
+                            </td>
                         {% endfor %}
                         <td></td>
                         <td style="overflow: hidden">{{ chemical.keywords }}</td>
