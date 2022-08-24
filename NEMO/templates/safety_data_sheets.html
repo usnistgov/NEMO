@@ -1,56 +1,56 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load custom_tags_and_filters %}
-{% block title %}Users{% endblock %}
+{% block title %}Safety data sheets{% endblock %}
 {% block content %}
-    <h1>
-		Safety data sheets
-	</h1>
-	<div class="row" style="margin-bottom: 20px">
-		<div class="col-sm-4">
-			<input id="search" type="text" placeholder="Search for a chemical name or keyword" class="form-control" autofocus>
-		</div>
-	</div>
-
+    <h1 style="margin-top:0">
+        Safety data sheets
+    </h1>
+    <div class="row" style="margin-bottom: 20px">
+        <div class="col-sm-4">
+            <input id="search" type="text" placeholder="Search for a chemical name or keyword" class="form-control" autofocus>
+        </div>
+        <div class="col-sm-4 checkbox">
+            <label><input type="checkbox" id="search_keywords" onchange="$('td:nth-child({{ hazards|length|add:2 }}),th:nth-child({{ hazards|length|add:2 }})').toggle();$('#search').trigger('keyup');"/>check this box to show and search through keywords</label>
+        </div>
+    </div>
     {% if chemicals %}
-        <div style="width: 100%">
-        <table class="table table-align-middle table-responsive table-bordered table-condensed table-striped table-hover thead-light" style="height: 1px;table-layout: fixed; margin-top: 40px">
-            <thead>
-                <tr>
-                    <th style="border-left-style: hidden!important; border-top-style: hidden!important;background-color: transparent"></th>
-                    {% for hazard in hazards %}
-                        <th class="text-center" style="width: calc(75%/{{ hazards|length }})"><img style="display:block; width: 100%; height: 100%" alt="{{ hazard.name }} logo" src="{% get_media_prefix %}{{ hazard.logo }}"/></th>
-                    {% endfor %}
-                    <th colspan="2" style="border-right-style: hidden!important; border-top-style: hidden!important;background-color: transparent">
-                </tr>
-                <tr>
-                    <th style="overflow: hidden">Name</th>
-                    {% for hazard in hazards %}
-                        <th class="text-center" style="overflow: hidden; ">{{ hazard.name }}</th>
-                    {% endfor %}
-                    <th style="overflow: hidden">Link</th>
-                    <th style="overflow: hidden">Keywords</th>
-                </tr>
-            </thead>
-            <tbody id="table-to-filter">
-                {% for chemical in chemicals %}
-                    <tr style="height: 100%">
-                        <td style="overflow: hidden">{{ chemical.name }}</td>
+        <div class="container" style="bottom: 45px;top: 165px;padding:0; position: absolute; max-height: 100%; overflow-y: auto;overflow-x: hidden; margin-top: 25px;">
+            <table class="table table-align-middle table-responsive table-bordered table-condensed table-striped table-hover thead-light" style="overflow: auto; height: 1px;table-layout: fixed;">
+                <thead class="sticky">
+                    <tr>
+                        <th class="sds-box-shadow-bottom" style="border-left-style: hidden !important; border-top-style: hidden!important;background-color: white"></th>
                         {% for hazard in hazards %}
-                            <td class="text-center" style="height: 100%; padding: 0">
-                            {% for chem_hazard in chemical.hazards.all %}
-                                {% if chem_hazard == hazard %}
-                                    <div style="height: 100%;width: 100%" class="alert-success"><span class="glyphicon glyphicon-ok success-highlight" style="font-size: 1.5em"></span></div>
-                                {% endif %}
-                            {% endfor %}
-                            </td>
+                            <th class="text-center sds-box-shadow-bottom" style="width: calc(75%/{{ hazards|length }})"><img style="display:block; width: 100%; height: 100%" alt="{{ hazard.name }} logo" src="{% get_media_prefix %}{{ hazard.logo }}"/></th>
                         {% endfor %}
-                        <td></td>
-                        <td style="overflow: hidden">{{ chemical.keywords }}</td>
+                        <th class="sds-box-shadow-bottom" style="display: none;border-right-style: hidden!important; border-top-style: hidden!important;background-color: white">
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    <tr>
+                        <th class="text-center sds-box-shadow-top" style="overflow: hidden">Name</th>
+                        {% for hazard in hazards %}
+                            <th class="text-center sds-box-shadow-top" style="overflow: hidden;">{{ hazard.name }}</th>
+                        {% endfor %}
+                        <th class="text-center sds-box-shadow-top" style="display: none;overflow: hidden">Keywords</th>
+                    </tr>
+                </thead>
+                <tbody id="table-to-filter">
+                    {% for chemical in chemicals %}
+                        <tr style="height: 100%">
+                            <td style="overflow: hidden;background-color: white;">{{ chemical.name }}</td>
+                            {% for hazard in hazards %}
+                                <td class="text-center" style="height: 100%; padding: 0;background-color: white;">
+                                {% for chem_hazard in chemical.hazards.all %}
+                                    {% if chem_hazard == hazard %}
+                                        <div style="height: 100%;width: 100%" class="alert-success"><span class="glyphicon glyphicon-ok success-highlight" style="font-size: 1.5em"></span></div>
+                                    {% endif %}
+                                {% endfor %}
+                                </td>
+                            {% endfor %}
+                            <td style="display: none;overflow: hidden;background-color: white;">{{ chemical.keywords }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     {% else %}
         <div>
@@ -64,6 +64,7 @@
         </div>
     {% endif %}
     <script>
+        $("html").css("overflow", "hidden");
         $("#search").keyup(function ()
         {
             let rows = $("#table-to-filter").find("tr").hide();
@@ -72,7 +73,15 @@
                 let data = this.value.split(" ");
                 $.each(data, function (i, v)
                 {
-                    rows.filter(":icontains('" + v + "')").show();
+                    $.each(rows, function(i, row)
+                    {
+                       let $row = $(row);
+                       // Only look in td within the row that don't have display:none, so we don't look in keyworkds unless they are shown
+                       if ($row.find("td").filter(function() { return $(this).css('display') !== 'none'; }).filter(":icontains('" + v + "')").length !== 0)
+                       {
+                           $row.show();
+                       }
+                    });
                 });
             }
             else
