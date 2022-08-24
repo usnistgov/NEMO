@@ -163,6 +163,7 @@ class CalendarCustomization(CustomizationBase):
 		"calendar_all_areas": "",
 		"calendar_all_areastools": "",
 		"calendar_outage_recurrence_limit": "90",
+		"calendar_qualified_tools": ""
 	}
 
 

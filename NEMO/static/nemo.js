@@ -102,6 +102,69 @@ function collapse_all_categories()
 	save_sidebar_state();
 }
 
+function toggle_qualified_tools(user_qualifications) {
+	// Toggle local storage data value
+	if (localStorage.getItem("showQualifiedTools") === "true") {
+		localStorage.setItem("showQualifiedTools", "false");
+	} else {  // Item showQualifiedTools is 'false' or not set.
+		localStorage.setItem("showQualifiedTools", "true");
+	}
+
+	set_qualified_tools_button_status(
+		localStorage.getItem("showQualifiedTools") === "true"
+	)
+
+	update_tool_list_display("toggle", user_qualifications);
+	if (localStorage.getItem("showQualifiedTools") === "true") {
+		hide_empty_tool_categories();
+	} else {
+		show_all_tool_categories();
+	}
+}
+
+function update_tool_list_display(item_function, qualified_tool_list) {
+	// Go through the list of tools in the sidebar and toggle the ones that the user is
+	// not qualified for.
+	$("a[data-item-type='tool']").each((index, item) => {
+		let $item = $(item);
+		if(!qualified_tool_list.includes(parseInt($item.attr("data-item-id")))) {
+			$item[item_function]();
+		}
+	})
+}
+
+function hide_empty_tool_categories() {
+	$("li.tool-category").each((catIdx, category) => {
+		let categoryHasItem = false;
+		$(category).find("li>a").each((toolIdx, tool) => {
+			let toolStyle = $(tool).attr("style");
+
+			if(toolStyle===undefined || toolStyle!=="display: none;") {
+				categoryHasItem = true;
+				return;
+			}
+		})
+
+		if (!categoryHasItem) {
+			$(category).hide();
+		}
+	})
+}
+
+function show_all_tool_categories() {
+	$("li.tool-category").each((catIdx, category) => {
+		$(category).show();
+	})
+}
+
+function set_qualified_tools_button_status(btn_active) {
+	if (btn_active) {
+		$("#qualified_tools_btn").addClass("active")
+	} else {
+		$("#qualified_tools_btn").removeClass("active")
+	}
+}
+
 function toggle_item_categories(item_type)
 {
 	let one_visible = $(".item_tree ul.tree."+item_type+"-list li:visible").length >0;
@@ -177,6 +240,8 @@ function set_selected_item_by_class(item_class)
 
 function save_sidebar_state()
 {
+	let showQualifiedTools = localStorage.getItem("showQualifiedTools");
+
 	localStorage.clear();
 	let categories = $(".item_tree ul.tree");
 	for(let c = 0; c < categories.length; c++)
@@ -188,6 +253,10 @@ function save_sidebar_state()
 	if (selected_item)
 	{
 		localStorage['Selected item ID'] = selected_item;
+	}
+
+	if(showQualifiedTools !== null) {
+		localStorage.setItem("showQualifiedTools", showQualifiedTools)
 	}
 }
 
@@ -218,6 +287,21 @@ function load_sidebar_state()
 		set_selected_item_by_id(selected_item.id, selected_item.type);
 	}
 }
+
+function load_qualified_tools(user_qualifications) {
+	// Set available tool button status
+	let qualifiedToolButtonState = localStorage.getItem("showQualifiedTools") === "true";
+	set_qualified_tools_button_status(qualifiedToolButtonState);
+
+	// Display the list of tools according to the 'showAvailableTools' value
+	update_tool_list_display(qualifiedToolButtonState?"hide":"show", user_qualifications);
+	if (qualifiedToolButtonState) {
+		hide_empty_tool_categories();
+	} else {
+		show_all_tool_categories();
+	}
+}
+
 
 // Use this function to display a Bootstrap modal when an AJAX call is successful and contains content to render.
 // Use this function with ajax_get(), ajax_post() or other similar functions.
