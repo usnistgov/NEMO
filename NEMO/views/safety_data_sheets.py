@@ -1,11 +1,11 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
-from NEMO.decorators import staff_member_required
 from NEMO.models import Chemical, ChemicalHazard
 
 
-@staff_member_required
+@login_required
 @require_GET
 def safety_data_sheets(request):
 	chemicals = Chemical.objects.all()
