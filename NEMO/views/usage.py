@@ -304,7 +304,7 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
 	user_pi_applications = list()
 	# Construct a tree of account, application, project, and member total spending
 	cost_activities_tree = {}
-	user_managed_applications = [project.application_identifier for project in user.managed_projects.all()]
+	user_managed_applications = [project.application_identifier for project in user.managed_projects.all()] if not force_pi else []
 	for activity in cost_activity_data:
 		if (project_id and activity['project_id'] != str(project_id)) or (account_id and activity['account_id'] != str(account_id)):
 			continue
