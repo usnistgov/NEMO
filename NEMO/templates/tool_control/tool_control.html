@@ -322,7 +322,8 @@
 		    $.getScript('{% url 'refresh_sidebar_icons' item_type='tool' %}')
 		}
 
-        function retrieve_user_qualifications() {
+        function retrieve_user_qualifications()
+        {
             return {{ user.qualifications.all|json_search_base }}.map(
                 qualification => { return qualification.id; }
             );

@@ -1,4 +1,5 @@
-String.prototype.capitalize = function() {
+String.prototype.capitalize = function()
+{
     return this.charAt(0).toUpperCase() + this.slice(1);
 }
 
@@ -102,85 +103,105 @@ function collapse_all_categories()
 	save_sidebar_state();
 }
 
-function toggle_qualified_tools(user_qualifications) {
+function toggle_qualified_tools(user_qualifications)
+{
 	// Toggle local storage data value
-	if (localStorage.getItem("showQualifiedTools") === "true") {
+	if (localStorage.getItem("showQualifiedTools") === "true")
+	{
 		localStorage.setItem("showQualifiedTools", "false");
-	} else {  // Item showQualifiedTools is 'false' or not set.
+	}
+	else
+	{  // Item showQualifiedTools is 'false' or not set.
 		localStorage.setItem("showQualifiedTools", "true");
 	}
 
-	set_qualified_tools_button_status(
-		localStorage.getItem("showQualifiedTools") === "true"
-	)
+	set_qualified_tools_button_status(localStorage.getItem("showQualifiedTools") === "true");
 
 	update_tool_list_display("toggle", user_qualifications);
-	if (localStorage.getItem("showQualifiedTools") === "true") {
+	if (localStorage.getItem("showQualifiedTools") === "true")
+	{
 		hide_empty_tool_categories();
-	} else {
+	}
+	else
+	{
 		show_all_tool_categories();
 	}
 }
 
-function update_tool_list_display(item_function, qualified_tool_list) {
+function update_tool_list_display(item_function, qualified_tool_list)
+{
 	// Go through the list of tools in the sidebar and toggle the ones that the user is
 	// not qualified for.
-	$("a[data-item-type='tool']").each((index, item) => {
+	$("a[data-item-type='tool']").each((index, item) =>
+	{
 		let $item = $(item);
-		if(!qualified_tool_list.includes(parseInt($item.attr("data-item-id")))) {
+		if (!qualified_tool_list.includes(parseInt($item.attr("data-item-id"))))
+		{
 			$item[item_function]();
 		}
 	})
 }
 
-function hide_empty_tool_categories() {
-	$("li.tool-category").each((catIdx, category) => {
+function hide_empty_tool_categories()
+{
+	$("li.tool-category").each((catIdx, category) =>
+	{
 		let categoryHasItem = false;
-		$(category).find("li>a").each((toolIdx, tool) => {
+		$(category).find("li>a").each((toolIdx, tool) =>
+		{
 			let toolStyle = $(tool).attr("style");
 
-			if(toolStyle===undefined || toolStyle!=="display: none;") {
+			if (toolStyle === undefined || toolStyle !== "display: none;")
+			{
 				categoryHasItem = true;
 				return;
 			}
-		})
+		});
 
-		if (!categoryHasItem) {
+		if (!categoryHasItem)
+		{
 			$(category).hide();
 		}
 	})
 }
 
-function show_all_tool_categories() {
-	$("li.tool-category").each((catIdx, category) => {
+function show_all_tool_categories()
+{
+	$("li.tool-category").each((catIdx, category) =>
+	{
 		$(category).show();
-	})
+	});
 }
 
-function set_qualified_tools_button_status(btn_active) {
-	if (btn_active) {
-		$("#qualified_tools_btn").addClass("active")
-	} else {
-		$("#qualified_tools_btn").removeClass("active")
+function set_qualified_tools_button_status(btn_active)
+{
+	if (btn_active)
+	{
+		$("#qualified_tools_btn").addClass("active");
+	}
+	else
+	{
+		$("#qualified_tools_btn").removeClass("active");
 	}
 }
 
 function toggle_item_categories(item_type)
 {
-	let one_visible = $(".item_tree ul.tree."+item_type+"-list li:visible").length >0;
+	let one_visible = $(".item_tree ul.tree." + item_type + "-list li:visible").length > 0;
 	if (one_visible)
 	{
-		$(".item_tree ul.tree."+item_type+"-list").hide();
+		$(".item_tree ul.tree." + item_type + "-list").hide();
 	}
 	else
 	{
-		$(".item_tree ul.tree."+item_type+"-list").show();
+		$(".item_tree ul.tree." + item_type + "-list").show();
 	}
 	$("#search").focus();
 	save_sidebar_state();
 }
 
-function get_selected_item() {
+function get_selected_item()
+{
 	let selected_item = $(".selected");
 	// Exactly one thing should be selected at a time, otherwise there's an error.
 	if (!(selected_item && selected_item.length === 1))
@@ -288,16 +309,20 @@ function load_sidebar_state()
 	}
 }
 
-function load_qualified_tools(user_qualifications) {
+function load_qualified_tools(user_qualifications)
+{
 	// Set available tool button status
 	let qualifiedToolButtonState = localStorage.getItem("showQualifiedTools") === "true";
 	set_qualified_tools_button_status(qualifiedToolButtonState);
 
 	// Display the list of tools according to the 'showAvailableTools' value
 	update_tool_list_display(qualifiedToolButtonState?"hide":"show", user_qualifications);
-	if (qualifiedToolButtonState) {
+	if (qualifiedToolButtonState)
+	{
 		hide_empty_tool_categories();
-	} else {
+	}
+	else
+	{
 		show_all_tool_categories();
 	}
 }

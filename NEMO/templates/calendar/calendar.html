@@ -177,7 +177,9 @@ function unselect_and_refresh()
 function submit_event_with_more_information(ajax_post, success_callback)
 {
 	if($('#dialog_cancelled').val() === "true")
-		return;
+    {
+        return;
+    }
 	serialize("#additional_event_parameters", ajax_post.data);
 	jQuery.ajax(ajax_post)
 		.fail(ajax_failure_callback("Oops, something went wrong!"))
@@ -630,7 +632,8 @@ function clear_specific_user()
 	update_event_sources();
 }
 
-function retrieve_user_qualifications() {
+function retrieve_user_qualifications()
+{
     return {{ user.qualifications.all|json_search_base }}.map(
         qualification => { return qualification.id; }
     );
