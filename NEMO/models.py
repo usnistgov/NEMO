@@ -2405,6 +2405,9 @@ class Chemical(models.Model):
 	class Meta:
 		ordering = ["name"]
 
+	def link(self):
+		return self.document.url if self.document else self.url
+
 	def __str__(self):
 		return str(self.name)
 

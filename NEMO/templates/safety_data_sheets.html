@@ -36,7 +36,7 @@
                 <tbody id="table-to-filter">
                     {% for chemical in chemicals %}
                         <tr style="height: 100%">
-                            <td style="overflow: hidden;background-color: white;">{{ chemical.name }}</td>
+                            <td style="overflow: hidden;background-color: white;">{% if chemical.link %}<a target="_blank" href="{{ chemical.link }}">{{ chemical.name }}</a>{% else %}{{ chemical.name }}{% endif %}</td>
                             {% for hazard in hazards %}
                                 <td class="text-center" style="height: 100%; padding: 0;background-color: white;">
                                 {% for chem_hazard in chemical.hazards.all %}
