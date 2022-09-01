@@ -113,7 +113,7 @@ class CustomizationBase(ABC):
 @customization(key="application", title="Application", order=1)
 class ApplicationCustomization(CustomizationBase):
 	variables = {
-		"facility_name": "NanoFab",
+		"facility_name": "Facility",
 		"site_title": "NEMO",
 		"self_log_in": "",
 		"self_log_out": "",
