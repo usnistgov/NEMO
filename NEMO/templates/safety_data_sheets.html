@@ -7,10 +7,10 @@
         Safety data sheets
     </h1>
     <div class="row" style="margin-bottom: 20px">
-        <div class="col-sm-4">
+        <div class="col-sm-5">
             <input id="search" type="text" placeholder="Search for a chemical name or keyword" class="form-control" autofocus>
         </div>
-        <div class="col-sm-4 checkbox">
+        <div class="col-sm-7 checkbox">
             <label><input type="checkbox" id="search_keywords" onchange="$('td:nth-child({{ hazards|length|add:2 }}),th:nth-child({{ hazards|length|add:2 }})').toggle();$('#search').trigger('keyup');"/>check this box to show and search through keywords</label>
         </div>
     </div>
