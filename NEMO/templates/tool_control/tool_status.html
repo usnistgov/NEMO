@@ -224,7 +224,7 @@
 							</a>
 						{% endif %}
 						<div class="media-body">
-							<span class="media-middle">{{ c.content }}</span>
+							<span class="media-middle">{{ c.content|linebreaksbr }}</span>
 							<span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
 							{% if user.id == c.author.id or user.is_staff %}
 								<div id="comment_{{ c.id }}_actions" class="collapse grey">
@@ -258,7 +258,7 @@
 											</a>
 										{% endif %}
 										<div class="media-body">
-											<span class="media-middle">{{ c.content }}</span>
+											<span class="media-middle">{{ c.content|linebreaksbr }}</span>
 											<span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
 											{% if user.id == c.author.id or user.is_staff %}
 												<div id="comment_{{ c.id }}_actions" class="collapse grey">
