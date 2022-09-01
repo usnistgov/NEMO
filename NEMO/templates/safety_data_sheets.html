@@ -3,6 +3,12 @@
 {% load custom_tags_and_filters %}
 {% block title %}Safety data sheets{% endblock %}
 {% block content %}
+    <style>
+    .table-hover tr:hover td
+    {
+      background-color: #f5f5f5 !important;
+    }
+    </style>
     <h1 style="margin-top:0">
         Safety data sheets
     </h1>
@@ -16,7 +22,7 @@
     </div>
     {% if chemicals %}
         <div class="container" style="bottom: 45px;top: 165px;padding:0; position: absolute; max-height: 100%; overflow-y: auto;overflow-x: hidden; margin-top: 25px;">
-            <table class="table table-align-middle table-responsive table-bordered table-condensed table-striped table-hover thead-light" style="overflow: auto; height: 1px;table-layout: fixed;">
+            <table class="table table-align-middle table-responsive table-bordered table-condensed table-hover thead-light" style="overflow: auto; height: 1px;table-layout: fixed;">
                 <thead class="sticky">
                     <tr>
                         <th class="sds-box-shadow-bottom" style="border-left-style: hidden !important; border-top-style: hidden!important;background-color: white"></th>
@@ -38,7 +44,7 @@
                         <tr style="height: 100%">
                             <td style="overflow: hidden;background-color: white;">{% if chemical.link %}<a target="_blank" href="{{ chemical.link }}">{{ chemical.name }}</a>{% else %}{{ chemical.name }}{% endif %}</td>
                             {% for hazard in hazards %}
-                                <td class="text-center" style="height: 100%; padding: 0;background-color: white; position: relative">
+                                <td class="text-center" style="height: 100%; padding: 0; position: relative">
                                 {% for chem_hazard in chemical.hazards.all %}
                                     {% if chem_hazard == hazard %}
                                         <div style="height: 100%;width: 100%" class="alert-success"><span class="glyphicon glyphicon-ok success-highlight" style="font-size: 1.5em;position: absolute; left: 50%; top: 50%; -ms-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);"></span></div>
@@ -46,7 +52,7 @@
                                 {% endfor %}
                                 </td>
                             {% endfor %}
-                            <td style="display: none;overflow: hidden;background-color: white;">{{ chemical.keywords }}</td>
+                            <td style="display: none;overflow: hidden;">{{ chemical.keywords }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
