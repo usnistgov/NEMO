@@ -5,9 +5,17 @@ from django.test import TestCase
 from django.urls import reverse
 
 from NEMO.exceptions import NotAllowedToChargeProjectException
-from NEMO.models import User, ScheduledOutage, Reservation, Account, Project, Area, PhysicalAccessLevel, \
-	AreaAccessRecord
-from NEMO.tests.test_utilities import login_as_user, login_as
+from NEMO.models import (
+	Account,
+	Area,
+	AreaAccessRecord,
+	PhysicalAccessLevel,
+	Project,
+	Reservation,
+	ScheduledOutage,
+	User,
+)
+from NEMO.tests.test_utilities import login_as, login_as_user
 
 
 class AreaReservationTestCase(TestCase):
@@ -51,7 +59,7 @@ class AreaReservationTestCase(TestCase):
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "You do not belong to any active projects. Thus, you may not create any reservations.")
-		self.assertContains(response, "You are blocked from making reservations in the NanoFab. Please complete the NanoFab rules tutorial in order to create new reservations.")
+		self.assertContains(response, "You are blocked from making reservations in the Facility. Please complete the Facility rules tutorial in order to create new reservations.")
 		self.assertContains(response, "You are not authorized to access this area at this time. Creating, moving, and resizing reservations is forbidden.")
 
 		user.training_required = False
@@ -59,7 +67,7 @@ class AreaReservationTestCase(TestCase):
 		login_as(self.client, user)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
-		self.assertNotContains(response, "You are blocked from making reservations in the NanoFab. Please complete the NanoFab rules tutorial in order to create new reservations.")
+		self.assertNotContains(response, "You are blocked from making reservations in the Facility. Please complete the Facility rules tutorial in order to create new reservations.")
 		self.assertContains(response, "You do not belong to any active projects. Thus, you may not create any reservations.")
 		self.assertContains(response, "You are not authorized to access this area at this time. Creating, moving, and resizing reservations is forbidden.")
 
