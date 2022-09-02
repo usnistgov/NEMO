@@ -169,7 +169,7 @@
 			<div class="media">
 				<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"></span>
 				<div class="media-body">
-					<span class="media-middle">{{ c.content }}</span>
+					<span class="media-middle">{{ c.content|linebreaksbr }}</span>
 					<span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
 				</div>
 			</div>
@@ -188,7 +188,7 @@
 							<div class="media">
 								<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"></span>
 								<div class="media-body">
-									<span class="media-middle">{{ c.content }}</span>
+									<span class="media-middle">{{ c.content|linebreaksbr }}</span>
 									<span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
 								</div>
 							</div>

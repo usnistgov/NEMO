@@ -113,7 +113,7 @@ class CustomizationBase(ABC):
 @customization(key="application", title="Application", order=1)
 class ApplicationCustomization(CustomizationBase):
 	variables = {
-		"facility_name": "NanoFab",
+		"facility_name": "Facility",
 		"site_title": "NEMO",
 		"self_log_in": "",
 		"self_log_out": "",
@@ -163,6 +163,7 @@ class CalendarCustomization(CustomizationBase):
 		"calendar_all_areas": "",
 		"calendar_all_areastools": "",
 		"calendar_outage_recurrence_limit": "90",
+		"calendar_qualified_tools": ""
 	}
 
 
@@ -245,6 +246,7 @@ class TemplatesCustomization(CustomizationBase):
 
 @customization(key="rates", title="Rates", order=8)
 class RatesCustomization(CustomizationBase):
+	variables = {"rates_expand_table": ""}
 	files = [("rates", ".json")]
 
 	def save(self, request, element=None):
@@ -319,7 +321,7 @@ def customization(request, key: str = "application"):
 @administrator_required
 @require_POST
 def customize(request, key, element=None):
-	customization_instance = CustomizationBase.get_instance(key)
+	customization_instance: CustomizationBase = CustomizationBase.get_instance(key)
 	if not customization_instance:
 		return HttpResponseNotFound(f"Customizations with key: '{key}' not found")
 	errors = customization_instance.save(request, element)

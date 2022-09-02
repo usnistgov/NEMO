@@ -34,6 +34,8 @@ from NEMO.utilities import (
 	distinct_qs_value_list,
 	format_daterange,
 	format_datetime,
+	get_chemical_document_filename,
+	get_hazard_logo_filename,
 	get_task_image_filename,
 	get_tool_document_filename,
 	get_tool_image_filename,
@@ -397,6 +399,14 @@ class User(models.Model):
 	USERNAME_FIELD = 'username'
 	REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
 	objects = UserManager()
+
+	def clean(self):
+		if self.username:
+			username_taken = User.objects.filter(username__iexact=self.username)
+			if self.pk:
+				username_taken = username_taken.exclude(pk=self.pk)
+			if username_taken.exists():
+				raise ValidationError({'username':'This username has already been taken'})
 
 	def has_perm(self, perm, obj=None):
 		"""
@@ -2356,12 +2366,14 @@ class StaffAbsence(models.Model):
 	start_date = models.DateField(help_text="The start date of the absence.")
 	end_date = models.DateField(help_text="The end date of the absence.")
 	full_day = models.BooleanField(default=True, help_text="Uncheck this box when the absence is only for part of the day.")
-	description = models.TextField(null=True, blank=True, help_text="The absence description. This will be visible to anyone when the absence is not all day.")
+	description = models.TextField(null=True, blank=True, help_text="The absence description. This will be visible to anyone.")
+	manager_note = models.TextField(null=True, blank=True, help_text="A note only visible to managers.")
 
 	def details_for_manager(self):
-		dates = f" {format_daterange(self.start_date, self.end_date)}" if self.start_date != self.end_date else ''
-		description = f"<br>{linebreaksbr(self.description)}" if self.description else ''
-		return f"{self.absence_type.description}{dates}{description}"
+		dates = f" {format_daterange(self.start_date, self.end_date)}" if self.start_date != self.end_date else ""
+		description = f"<br>{linebreaksbr(self.description)}" if self.description else ""
+		manager_note = f"<br>{linebreaksbr(self.manager_note)}" if self.manager_note else ""
+		return f"{self.absence_type.description}{dates}{description}{manager_note}"
 
 	def clean(self):
 		if self.end_date and self.start_date and self.end_date < self.start_date:
@@ -2369,6 +2381,91 @@ class StaffAbsence(models.Model):
 
 	class Meta:
 		ordering = ["-creation_time"]
+
+
+class ChemicalHazard(models.Model):
+	name = models.CharField(max_length=200)
+	display_order = models.IntegerField(help_text="Chemical hazards are sorted according to display order. The lowest value category is displayed first in the 'Safety data sheet' page.")
+	logo = models.ImageField(upload_to=get_hazard_logo_filename, blank=True, help_text="The logo for this hazard")
+
+	class Meta:
+		ordering = ['display_order', 'name']
+
+	def __str__(self):
+		return str(self.name)
+
+
+class Chemical(models.Model):
+	name = models.CharField(max_length=200)
+	hazards = models.ManyToManyField(ChemicalHazard, blank=True, help_text="Select the hazards for this chemical.")
+	document = models.FileField(null=True, blank=True, upload_to=get_chemical_document_filename)
+	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
+	keywords = models.TextField(null=True, blank=True)
+
+	class Meta:
+		ordering = ["name"]
+
+	def link(self):
+		return self.document.url if self.document else self.url
+
+	def __str__(self):
+		return str(self.name)
+
+
+
+# These two auto-delete tool images from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=ChemicalHazard)
+def auto_delete_file_on_tool_delete(sender, instance: ChemicalHazard, **kwargs):
+	"""	Deletes file from filesystem when corresponding `ChemicalHazard` object is deleted.	"""
+	if instance.logo:
+		if os.path.isfile(instance.logo.path):
+			os.remove(instance.logo.path)
+
+
+@receiver(models.signals.pre_save, sender=ChemicalHazard)
+def auto_delete_file_on_tool_change(sender, instance: ChemicalHazard, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `ChemicalHazard` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = ChemicalHazard.objects.get(pk=instance.pk).logo
+	except ChemicalHazard.DoesNotExist:
+		return False
+
+	if old_file:
+		new_file = instance.logo
+		if not old_file == new_file:
+			if os.path.isfile(old_file.path):
+				os.remove(old_file.path)
+
+
+
+# These two auto-delete tool images from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=Chemical)
+def auto_delete_file_on_tool_delete(sender, instance: Chemical, **kwargs):
+	"""	Deletes file from filesystem when corresponding `Chemical` object is deleted.	"""
+	if instance.document:
+		if os.path.isfile(instance.document.path):
+			os.remove(instance.document.path)
+
+
+@receiver(models.signals.pre_save, sender=Chemical)
+def auto_delete_file_on_tool_change(sender, instance: Chemical, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `Chemical` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = Chemical.objects.get(pk=instance.pk).document
+	except Chemical.DoesNotExist:
+		return False
+
+	if old_file:
+		new_file = instance.document
+		if not old_file == new_file:
+			if os.path.isfile(old_file.path):
+				os.remove(old_file.path)
 
 
 class EmailLog(models.Model):

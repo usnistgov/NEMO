@@ -69,7 +69,7 @@
 				<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
 			</a>
 			<div class="media-body">
-				{{ i.content }}<br>
+				{{ i.content|linebreaksbr }}<br>
 				<div id="past_comment_{{ i.id }}_details" class="collapse grey">
 					{{ i.author }} wrote this comment on {{ i.creation_date }}.<br>
 					{% if i.hide_date %}

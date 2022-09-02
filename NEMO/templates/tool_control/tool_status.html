@@ -75,27 +75,27 @@
 					<h2>This tool is <strong>operational</strong> and <strong>idle</strong>.</h2>
 				</div>
 			{% endif %}
+        </div>
 
-			{% if tool_rate %}
-				<div class="tool-rates">
-					{% autoescape off %}
-						{{ tool_rate }}
-					{% endautoescape %}
-				</div>
-			{% endif %}
+        {% if tool_rate %}
+            <div class="tool-rates">
+                {% autoescape off %}
+                    {{ tool_rate }}
+                {% endautoescape %}
+            </div>
+        {% endif %}
 
-			{% if tool.active_counters %}
-				<div class="tool-counters">
-					{% for counter in tool.active_counters %}
-						<div class="tool-counter">
-							<div class="tool-counter-name">{{ counter.name }}: <span style="font-weight: bold; {% if counter.value_color %}color: {{ counter.value_color }}{% endif %}">{{ counter.value|floatformat:-2 }}</span></div>
-							{% if user.is_staff %}<div class="tool-counter-reset"><a class="btn btn-xs btn-warning" href="{% url 'reset_tool_counter' counter.id %}" onclick="return confirm('You are about to reset the {{ counter.name }} counter to 0.\nAre you sure?')">Reset</a></div>{% endif %}
-							<div class="tool-counter-description">{{ counter.description|linebreaksbr }}</div>
-						</div>
-					{% endfor %}
-				</div>
-			{% endif %}
-		</div>
+        {% if tool.active_counters %}
+            <div class="tool-counters">
+                {% for counter in tool.active_counters %}
+                    <div class="tool-counter">
+                        <div class="tool-counter-name">{{ counter.name }}: <span style="font-weight: bold; {% if counter.value_color %}color: {{ counter.value_color }}{% endif %}">{{ counter.value|floatformat:-2 }}</span></div>
+                        {% if user.is_staff %}<div class="tool-counter-reset"><a class="btn btn-xs btn-warning" href="{% url 'reset_tool_counter' counter.id %}" onclick="return confirm('You are about to reset the {{ counter.name }} counter to 0.\nAre you sure?')">Reset</a></div>{% endif %}
+                        <div class="tool-counter-description">{{ counter.description|linebreaksbr }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
 
 		{% if tool.unavailable_required_resources or tool.scheduled_outages %}
 			<div class="danger-status">
@@ -224,7 +224,7 @@
 							</a>
 						{% endif %}
 						<div class="media-body">
-							<span class="media-middle">{{ c.content }}</span>
+							<span class="media-middle">{{ c.content|linebreaksbr }}</span>
 							<span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
 							{% if user.id == c.author.id or user.is_staff %}
 								<div id="comment_{{ c.id }}_actions" class="collapse grey">
@@ -258,7 +258,7 @@
 											</a>
 										{% endif %}
 										<div class="media-body">
-											<span class="media-middle">{{ c.content }}</span>
+											<span class="media-middle">{{ c.content|linebreaksbr }}</span>
 											<span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
 											{% if user.id == c.author.id or user.is_staff %}
 												<div id="comment_{{ c.id }}_actions" class="collapse grey">

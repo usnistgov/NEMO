@@ -56,7 +56,7 @@ def all_auth_backends_are_pre_auth():
 def check_user_exists_and_active(backend: ModelBackend, username: str) -> User:
 	# The user must exist in the database
 	try:
-		user = User.objects.get(username=username)
+		user = User.objects.get(username__iexact=username)
 	except User.DoesNotExist:
 		auth_logger.warning(
 			f"User {username} attempted to authenticate with {type(backend).__name__}, but that username does not exist in the database. The user was denied access."
@@ -165,15 +165,16 @@ class LDAPAuthenticationBackend(ModelBackend):
 				use_ssl = server.get("use_ssl", True)
 				bind_as_authentication = server.get("bind_as_authentication", True)
 				domain = server.get("domain")
+				username_format = domain + "\\{}" if domain else server.get("username_format", "{}")
 				t = Tls(validate=CERT_REQUIRED, version=PROTOCOL_TLSv1_2, ca_certs_file=server.get("certificate"))
 				s = Server(server["url"], port=port, use_ssl=use_ssl, tls=t)
 				# We are securing the connection to the server with use_ssl, so no need for TLS
 				auto_bind = AUTO_BIND_NO_TLS
-				ldap_bind_user = f"{domain}\\{username}" if domain else username
+				ldap_bind_user = username_format.format(username)
 				if not bind_as_authentication:
 					# binding to LDAP first, then search for user
 					bind_username = server.get("bind_username", None)
-					bind_username = f"{domain}\\{bind_username}" if domain and bind_username else bind_username
+					bind_username = username_format.format(bind_username)
 					bind_password = server.get("bind_password", None)
 					authentication = SIMPLE if bind_username and bind_password else ANONYMOUS
 					c = Connection(
@@ -256,7 +257,7 @@ def login_user(request):
 		try:
 			user = authenticate(request, username=username, password=password)
 		except (User.DoesNotExist, InactiveUserError):
-			return authorization_failed(request)
+			return redirect('authorization_failed')
 
 		if user:
 			login(request, user)

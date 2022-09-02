@@ -118,6 +118,7 @@ def calendar(request, item_type=None, item_id=None):
 	calendar_all_tools = CalendarCustomization.get('calendar_all_tools')
 	calendar_all_areas = CalendarCustomization.get('calendar_all_areas')
 	calendar_all_areastools = CalendarCustomization.get('calendar_all_areastools')
+	calendar_qualified_tools = CalendarCustomization.get('calendar_qualified_tools')
 
 	dictionary = {
 		'rendered_item_tree_html': rendered_item_tree_html,
@@ -135,6 +136,7 @@ def calendar(request, item_type=None, item_id=None):
 		'calendar_all_tools': calendar_all_tools,
 		'calendar_all_areas': calendar_all_areas,
 		'calendar_all_areastools': calendar_all_areastools,
+		'calendar_qualified_tools': calendar_qualified_tools,
 		'self_login': False,
 		'self_logout': False,
 	}
@@ -849,7 +851,7 @@ def send_email_reservation_ending_reminders():
 		new_filter = Q(end__gt=earliest_end, end__lt=latest_end)
 		time_filter = time_filter | new_filter
 	ending_reservations = user_area_reservations.filter(time_filter)
-	# Email a reminder to each user with an reservation ending soon.
+	# Email a reminder to each user with a reservation ending soon.
 	for reservation in ending_reservations:
 		subject = reservation.reservation_item.name + " reservation ending soon"
 		rendered_message = Template(reservation_ending_reminder_message).render(Context({'reservation': reservation}))

@@ -6531,6 +6531,23 @@
     }
   },
   {
+    "model": "NEMO.landingpagechoice",
+    "pk": 10,
+    "fields": {
+      "image": "sds.png",
+      "name": "Safety data sheets",
+      "url": "/safety_data_sheets/",
+      "display_order": 10,
+      "open_in_new_tab": false,
+      "secure_referral": false,
+      "hide_from_mobile_devices": false,
+      "hide_from_desktop_computers": false,
+      "hide_from_users": false,
+      "hide_from_staff": false,
+      "notifications": null
+    }
+  },
+  {
     "model": "NEMO.customization",
     "pk": "self_log_in",
     "fields": {
@@ -7009,6 +7026,146 @@
       "end_date": "2029-03-14",
       "full_day": true,
       "description": "Taking a sabbatical"
+    }
+  },
+  {
+    "model": "NEMO.chemicalhazard",
+    "pk": 1,
+    "fields": {
+      "name": "Flammable",
+      "display_order": 1,
+      "logo": "chemical_hazard_logos/flammable.png"
+    }
+  },
+  {
+    "model": "NEMO.chemicalhazard",
+    "pk": 2,
+    "fields": {
+      "name": "Oxidizing",
+      "display_order": 2,
+      "logo": "chemical_hazard_logos/oxidizing.png"
+    }
+  },
+  {
+    "model": "NEMO.chemicalhazard",
+    "pk": 3,
+    "fields": {
+      "name": "Compressed gas",
+      "display_order": 3,
+      "logo": "chemical_hazard_logos/compressed-gas.png"
+    }
+  },
+  {
+    "model": "NEMO.chemicalhazard",
+    "pk": 4,
+    "fields": {
+      "name": "Corrosive",
+      "display_order": 4,
+      "logo": "chemical_hazard_logos/corrosive.png"
+    }
+  },
+  {
+    "model": "NEMO.chemicalhazard",
+    "pk": 5,
+    "fields": {
+      "name": "Toxic",
+      "display_order": 5,
+      "logo": "chemical_hazard_logos/toxic.png"
+    }
+  },
+  {
+    "model": "NEMO.chemicalhazard",
+    "pk": 6,
+    "fields": {
+      "name": "Harmful",
+      "display_order": 6,
+      "logo": "chemical_hazard_logos/harmful.png"
+    }
+  },
+  {
+    "model": "NEMO.chemicalhazard",
+    "pk": 7,
+    "fields": {
+      "name": "Health hazard",
+      "display_order": 7,
+      "logo": "chemical_hazard_logos/health.png"
+    }
+  },
+  {
+    "model": "NEMO.chemicalhazard",
+    "pk": 8,
+    "fields": {
+      "name": "Environmental hazard",
+      "display_order": 8,
+      "logo": "chemical_hazard_logos/environmental.png"
+    }
+  },
+  {
+    "model": "NEMO.chemical",
+    "pk": 1,
+    "fields": {
+      "name": "Carbon tetrafluoride",
+      "document": "",
+      "url": "https://www.oshatrain.org/courses/pdf/sample_sds_us.pdf",
+      "keywords": "Tetrafluoromethane, Perfluoromethane, Freon 14, Halon 14, Arcton 0, CFC 14, PFC 14, R 14",
+      "hazards": [
+        3
+      ]
+    }
+  },
+  {
+    "model": "NEMO.chemical",
+    "pk": 2,
+    "fields": {
+      "name": "Acetylene",
+      "document": "",
+      "url": "https://www.oshatrain.org/courses/pdf/sample_sds_us.pdf",
+      "keywords": "Ethyne",
+      "hazards": [
+        3,
+        5
+      ]
+    }
+  },
+  {
+    "model": "NEMO.chemical",
+    "pk": 3,
+    "fields": {
+      "name": "Boron trifluoride",
+      "document": "",
+      "url": "https://www.oshatrain.org/courses/pdf/sample_sds_us.pdf",
+      "keywords": "Trifluoroborane",
+      "hazards": [
+        3,
+        4
+      ]
+    }
+  },
+  {
+    "model": "NEMO.chemical",
+    "pk": 4,
+    "fields": {
+      "name": "Glycolic acid",
+      "document": "",
+      "url": "https://www.oshatrain.org/courses/pdf/sample_sds_us.pdf",
+      "keywords": "Hydroxyacetic acid, 2-Hydroxyethanoic acid",
+      "hazards": [
+        4,
+        7
+      ]
+    }
+  },
+  {
+    "model": "NEMO.chemical",
+    "pk": 5,
+    "fields": {
+      "name": "Formaldehyde",
+      "document": "",
+      "url": "https://www.oshatrain.org/courses/pdf/sample_sds_us.pdf",
+      "keywords": "Methyl aldehyde, Methylene glycol, Methylene oxide, Formalin, Formol, Carbonyl hydride",
+      "hazards": [
+        6
+      ]
     }
   },
   {

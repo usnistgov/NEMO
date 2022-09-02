@@ -358,7 +358,8 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 {
 	margin-left: -15px;
 	margin-right: -15px;
-	border-top: 1px solid #ddd
+	border-top: 1px solid #ddd;
+	clear: both;
 }
 
 .customization-input-file
@@ -414,7 +415,7 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 	margin-bottom: 30px;
 }
 
-.tool-comments, .tool-problems
+.tool-comments, .tool-problems, .tool-counters, .tool-rates
 {
 	margin-bottom: 30px;
 }
@@ -815,8 +816,9 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	position: sticky;
 	position: -webkit-sticky;
 	left: 0;
+	top:0;
 	background-color: #fff;
-	z-index: 1;
+	z-index: 5;
 }
 
 /* Staff status styles */
@@ -847,6 +849,18 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	background: #fff;
 	-webkit-box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
 	box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
+}
+
+.sds-box-shadow-top
+{
+	border-top: none !important;
+	box-shadow: inset 0 1px 0 #dee2e6;
+}
+
+.sds-box-shadow-bottom
+{
+  	border-bottom: none !important;
+	box-shadow: inset 0 -1px 0 #dee2e6;
 }
 
 /* Invalid input for post usage/reservation questions and additional event parameters */

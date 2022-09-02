@@ -312,7 +312,7 @@ class WebRelayHttpInterlock(Interlock):
 		if interlock.card.username and interlock.card.password:
 			auth = (interlock.card.username, interlock.card.password)
 		for state_xml_name in cls.state_xml_names:
-			url = f"{interlock.card.server}:{interlock.card.port}/{state_xml_name}?{cls.state_parameter_template.format(interlock.channel)}={state}"
+			url = f"{interlock.card.server}:{interlock.card.port}/{state_xml_name}?{cls.state_parameter_template.format(interlock.channel or '')}={state}"
 			if not url.startswith("http") and not url.startswith("https"):
 				url = "http://" + url
 			response = requests.get(url, auth=auth)
@@ -327,7 +327,7 @@ class WebRelayHttpInterlock(Interlock):
 		state = None
 		# Try with a few different lookups here since depending on the relay model, it could be relayX or relayXstate
 		for state_suffix in cls.state_response_suffixes:
-			element = responseXML.find(cls.state_parameter_template.format(interlock.channel) + state_suffix)
+			element = responseXML.find(cls.state_parameter_template.format(interlock.channel or '') + state_suffix)
 			# Explicitly check for None since 0 is a valid state to return
 			if element is not None:
 				state = int(element.text)
@@ -360,7 +360,7 @@ class ModbusTcpInterlock(Interlock):
 	def clean_interlock(self, interlock_form: InterlockAdminForm):
 		channel = interlock_form.cleaned_data["channel"]
 		error = {}
-		if not channel:
+		if channel is None:
 			error["channel"] = _("This field is required.")
 		if error:
 			raise ValidationError(error)

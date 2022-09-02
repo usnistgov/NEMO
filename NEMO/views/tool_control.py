@@ -46,6 +46,7 @@ from NEMO.utilities import (
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import (
 	ApplicationCustomization,
+	CalendarCustomization,
 	EmailsCustomization,
 	InterlockCustomization,
 	get_media_file_contents,
@@ -74,6 +75,7 @@ def tool_control(request, item_type="tool", tool_id=None):
 	# The tool-choice sidebar only needs to be rendered for desktop devices, not mobile devices.
 	if request.device == "desktop":
 		dictionary["rendered_item_tree_html"] = ItemTree().render(None, {"tools": tools, "user": user})
+	dictionary['calendar_qualified_tools'] = CalendarCustomization.get('calendar_qualified_tools')
 	return render(request, "tool_control/tool_control.html", dictionary)
 
 

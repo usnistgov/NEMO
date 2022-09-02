@@ -22,7 +22,7 @@ class NEMOConfig(AppConfig):
 	name = "NEMO"
 
 	def ready(self):
-		if 'migrate' or 'makemigrations' in sys.argv:
+		if 'migrate' in sys.argv or 'makemigrations' in sys.argv:
 			return
 		from django.apps import apps
 		if apps.is_installed("django.contrib.admin"):

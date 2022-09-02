@@ -1,5 +1,11 @@
 {% load custom_tags_and_filters %}
 {% load tz %}
+<style type="text/css">
+.table-hover-first tr:hover td:is(:first-child)
+{
+  background: #ddd !important;
+}
+</style>
 <div class="row" style="display: table-row;">
     <div style="display: table-cell;width: 100%">
         Staff availability is highlighted in <span style="display: inline-block; padding: 3px" class="alert-success">green</span><br>
@@ -27,7 +33,7 @@
     {% endif %}
 </div>
 <div id="contact-info-tooltip-container" class="contact-info-tooltip-container" style="overflow-x: auto; margin-top: 25px; margin-bottom: 20px; border: 1px solid #ddd;">
-    <table class="table table-responsive" style="margin: 0;border-collapse: collapse">
+    <table class="table table-responsive table-hover-first" style="margin: 0;border-collapse: collapse">
         <thead>
             <tr class="no-border">
                 <th class="sticky" {% if days_length == 1 %}style="width:33%"{% endif %}></th>
@@ -75,9 +81,9 @@
                                             <div data-toggle="tooltip" data-template="{{ custom_data_template }}" title="{% if closure_time.closure.alert_template %}{{ closure_time.alert_contents|linebreaksbr }}{% else %}{{ closure_time.closure.name }} {{ closure_time }}{% endif %}"><div>Closed</div></div>
                                         {% endwith %}
                                     {% elif staff_absent %}
-                                        {% if not staff_absent.full_day and not user.is_facility_manager %}
+                                        {% if not user.is_facility_manager %}
                                             <div data-toggle="tooltip" title="{{ staff_absent.description|linebreaksbr }}">&nbsp;</div>
-                                        {% elif user.is_facility_manager %}
+                                        {% else %}
                                             <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span style="cursor: pointer" onclick="ajax_get('{% url "edit_staff_absence" staff_absent.id %}?timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)">{{ staff_absent.absence_type.name }}</span></div>
                                         {% endif %}
                                     {% elif staff_available %}

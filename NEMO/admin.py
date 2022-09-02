@@ -36,6 +36,8 @@ from NEMO.models import (
 	BadgeReader,
 	BuddyRequest,
 	BuddyRequestMessage,
+	Chemical,
+	ChemicalHazard,
 	Closure,
 	ClosureTime,
 	Comment,
@@ -155,7 +157,7 @@ class ToolAdminForm(forms.ModelForm):
 		primary_owner = cleaned_data.get("_primary_owner")
 		image = cleaned_data.get("_image")
 
-		# only resize if an image is present and  has changed
+		# only resize if an image is present and has changed
 		if image and not isinstance(image, FieldFile):
 			from NEMO.utilities import resize_image
 
@@ -1389,6 +1391,50 @@ class StaffAvailabilityAdmin(admin.ModelAdmin):
 class StaffAbsenceAdmin(admin.ModelAdmin):
 	list_display = ("creation_time", "staff_member", "absence_type", "full_day", "start_date", "end_date")
 	list_filter = ("staff_member", "absence_type", "start_date", "end_date", "creation_time")
+
+
+class ChemicalHazardAdminForm(forms.ModelForm):
+	class Meta:
+		model = ChemicalHazard
+		fields = "__all__"
+
+	chemicals = forms.ModelMultipleChoiceField(
+		queryset=Chemical.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(verbose_name="Chemicals", is_stacked=False),
+	)
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		if self.instance.pk:
+			self.fields["chemicals"].initial = self.instance.chemical_set.all()
+
+	def clean(self):
+		cleaned_data = super().clean()
+		logo = cleaned_data.get("logo")
+
+		# only resize if a logo is present and has changed
+		if logo and not isinstance(logo, FieldFile):
+			from NEMO.utilities import resize_image
+
+			# resize image to 250x250 maximum
+			cleaned_data["logo"] = resize_image(logo, 250)
+
+
+@register(ChemicalHazard)
+class ChemicalHazardAdmin(admin.ModelAdmin):
+	form = ChemicalHazardAdminForm
+	list_display = ("name", "display_order")
+
+	def save_model(self, request, obj: ChemicalHazard, form, change):
+		super().save_model(request, obj, form, change)
+		if "chemicals" in form.changed_data:
+			obj.chemical_set.set(form.cleaned_data["chemicals"])
+
+
+@register(Chemical)
+class ChemicalAdmin(admin.ModelAdmin):
+	filter_horizontal = ("hazards",)
 
 
 @register(EmailLog)

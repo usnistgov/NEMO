@@ -34,6 +34,7 @@ from NEMO.utilities import (
 	beginning_of_the_day,
 	export_format_datetime,
 	format_datetime,
+	localize,
 	quiet_int,
 )
 from NEMO.views.customization import StatusDashboardCustomization
@@ -98,7 +99,7 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	# Check and set ability for users/staffs to look at the week/month view
 	user_view_options = StatusDashboardCustomization.get("dashboard_staff_status_user_view")
 	staff_view_options = StatusDashboardCustomization.get("dashboard_staff_status_staff_view")
-	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ''
+	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ""
 	# Take the default view from user preferences
 	view = request.GET.get("view", user.get_preferences().staff_status_view)
 	# If user_view is set to day only, then force day view
@@ -212,14 +213,17 @@ def staff_absences_dict(staffs, days, start, end):
 	for staff_absence in absences:
 		for day in days:
 			# comparing dates here so no timezone issues (dates don't have timezones)
-			if staff_absence.start_date <= day.date() <= staff_absence.end_date:
+			# non-working days should not count as absence
+			staff_works_this_day = staff_absence.staff_member.weekly_availability()[day.weekday()]
+			if staff_works_this_day and staff_absence.start_date <= day.date() <= staff_absence.end_date:
 				dictionary[staff_absence.staff_member.id][day.day] = staff_absence
 	return dictionary
 
 
 def closures_dict(days, start, end):
 	dictionary = {}
-	closure_times = ClosureTime.objects.filter(start_time__lte=end, end_time__gte=start, closure__staff_absent=True)
+	l_start, l_end = localize(start), localize(end)
+	closure_times = ClosureTime.objects.filter(start_time__lte=l_end, end_time__gte=l_start, closure__staff_absent=True)
 	for closure_time in closure_times:
 		for day in days:
 			if as_timezone(closure_time.start_time).date() <= day.date() <= as_timezone(closure_time.end_time).date():
@@ -249,7 +253,9 @@ def export_staff_status(request, staffs, days, start, end, staff_date_format) ->
 		for staff_id, absence_dict in staff_absences.items():
 			if staff.id == staff_id:
 				for day_index, absence in absence_dict.items():
-					staff_row[day_index] = absence.absence_type.name + f" {absence.description or ''}"
+					staff_row[day_index] = (
+						absence.absence_type.name + f" {absence.description or ''}" + f" {absence.manager_note or ''}"
+					)
 		for day_index, closure_time in closure_times.items():
 			staff_row[day_index] = f"Closed: {closure_time.closure.name}"
 		table_result.add_row(staff_row)

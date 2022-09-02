@@ -1,6 +1,5 @@
 import ast
 import operator
-from _ast import BinOp, BoolOp, Call, Compare, Index, Name, NameConstant, Num, Slice, Subscript, UnaryOp
 from math import ceil, floor, sqrt, trunc
 
 from pymodbus.constants import Endian
@@ -38,19 +37,19 @@ class BasicEvaluatorVisitor(ast.NodeVisitor):
 	def __init__(self, **kwargs):
 		self._variables = kwargs
 
-	def visit_Name(self, node: Name):
+	def visit_Name(self, node: ast.Name):
 		if node.id in self._variables:
 			return self._variables[node.id]
 		else:
 			raise AttributeError(f"Variable not found: {node.id}")
 
-	def visit_Num(self, node: Num):
+	def visit_Num(self, node: ast.Num):
 		return node.n
 
-	def visit_NameConstant(self, node: NameConstant):
+	def visit_NameConstant(self, node: ast.NameConstant):
 		return node.value
 
-	def visit_UnaryOp(self, node: UnaryOp):
+	def visit_UnaryOp(self, node: ast.UnaryOp):
 		val = self.visit(node.operand)
 		op = type(node.op)
 		if op in self.operators:
@@ -58,7 +57,7 @@ class BasicEvaluatorVisitor(ast.NodeVisitor):
 		else:
 			raise TypeError(f"Unsupported operation: {op.__name__}")
 
-	def visit_BinOp(self, node: BinOp):
+	def visit_BinOp(self, node: ast.BinOp):
 		lhs = self.visit(node.left)
 		rhs = self.visit(node.right)
 		op = type(node.op)
@@ -67,7 +66,7 @@ class BasicEvaluatorVisitor(ast.NodeVisitor):
 		else:
 			raise TypeError(f"Unsupported operation: {op.__name__}")
 
-	def visit_Subscript(self, node: Subscript):
+	def visit_Subscript(self, node: ast.Subscript):
 		val = self.visit(node.value)
 		index = self.visit(node.slice)
 		try:
@@ -75,11 +74,11 @@ class BasicEvaluatorVisitor(ast.NodeVisitor):
 		except AttributeError:
 			return self.generic_visit(node)
 
-	def visit_Index(self, node: Index, **kwargs):
+	def visit_Index(self, node: ast.Index, **kwargs):
 		"""df.index[4]"""
 		return self.visit(node.value)
 
-	def visit_Slice(self, node: Slice):
+	def visit_Slice(self, node: ast.Slice):
 		lower = node.lower
 		if lower is not None:
 			lower = self.visit(lower)
@@ -92,7 +91,7 @@ class BasicEvaluatorVisitor(ast.NodeVisitor):
 
 		return slice(lower, upper, step)
 
-	def visit_Call(self, node: Call):
+	def visit_Call(self, node: ast.Call):
 		if node.func.id in self.functions:
 			new_args = [self.visit(arg) for arg in node.args]
 			return self.functions[node.func.id](*new_args)
@@ -135,7 +134,7 @@ def get_modbus_function(name):
 # noinspection PyTypeChecker
 class ModbusEvaluatorVisitor(BasicEvaluatorVisitor):
 	# Extension of the basic evaluator with additional modbus specific functions
-	def visit_Call(self, node: Call):
+	def visit_Call(self, node: ast.Call):
 		if node.func.id in self.functions:
 			return super().visit_Call(node)
 		elif node.func.id in modbus_functions:
@@ -164,14 +163,14 @@ class BooleanEvaluatorVisitor(BasicEvaluatorVisitor):
 	def visit_bool(self, node: bool):
 		return node
 
-	def visit_BoolOp(self, node: BoolOp):
+	def visit_BoolOp(self, node: ast.BoolOp):
 		if isinstance(node.op, (ast.And, ast.Or)):
 			values = map(self.visit, node.values)
 			return all(values) if isinstance(node.op, ast.And) else any(values)
 		else:
 			return self.generic_visit(self, node)
 
-	def visit_Compare(self, node: Compare, **kwargs):
+	def visit_Compare(self, node: ast.Compare, **kwargs):
 		# base case: we have something like a CMP b
 		if len(node.comparators) == 1:
 			bin_op = ast.BinOp(op=node.ops[0], left=node.left, right=node.comparators[0])
