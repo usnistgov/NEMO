@@ -2398,7 +2398,7 @@ class ChemicalHazard(models.Model):
 class Chemical(models.Model):
 	name = models.CharField(max_length=200)
 	hazards = models.ManyToManyField(ChemicalHazard, blank=True, help_text="Select the hazards for this chemical.")
-	document = models.FileField(null=True, blank=True, upload_to=get_chemical_document_filename)
+	document = models.FileField(null=True, blank=True, upload_to=get_chemical_document_filename, max_length=500)
 	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
 	keywords = models.TextField(null=True, blank=True)
 
