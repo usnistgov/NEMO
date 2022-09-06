@@ -9750,7 +9750,7 @@ function Calendar_constructor(element, overrides) {
 
 
 	function refetchEvents() { // can be called as an API method
-		destroyEvents(); // so that events are cleared before user starts waiting for AJAX
+		//	destroyEvents(); // <-- Commented out. Previous versions of FullCalendar did not have this line. It causes the calendar to visually "flash" every time events are refreshed.
 		fetchAndRenderEvents();
 	}
 

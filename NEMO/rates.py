@@ -13,12 +13,10 @@ rates_logger = getLogger(__name__)
 class Rates(ABC):
 
 	rates = None
-	expand_rates_table = False
 
 	@abstractmethod
-	def load_rates(self):
-		from NEMO.views.customization import RatesCustomization
-		self.expand_rates_table = RatesCustomization.get("rates_expand_table", raise_exception=False) == 'enabled'
+	def load_rates(self, force_reload=False):
+		pass
 
 	def get_consumable_rates(self, consumables: List[Consumable]) -> Dict[str, str]:
 		if self.rates:
@@ -35,6 +33,11 @@ class Rates(ABC):
 	@abstractmethod
 	def get_tool_rate(self, tool: Tool) -> str:
 		pass
+
+	@staticmethod
+	def get_expand_rates_table() -> bool:
+		from NEMO.views.customization import RatesCustomization
+		return RatesCustomization.get("rates_expand_table", raise_exception=False) == 'enabled'
 
 
 class NISTRates(Rates):
@@ -82,8 +85,8 @@ class NISTRates(Rates):
 			return ""
 		training_rate = self._get_rate_by_table_id_and_class(tool, self.tool_training_rate_class, self.full_cost_rate_class)
 		training_group_rate = self._get_rate_by_table_id_and_class(tool, self.tool_training_group_rate_class, self.full_cost_rate_class)
-		html_rate = f'<div class="media"><a onclick="toggle_details(this)" class="pointer collapsed" data-toggle="collapse" data-target="#rates_details"><span class="glyphicon glyphicon-list-alt pull-left notification-icon primary-highlight"></span><span class="glyphicon pull-left chevron glyphicon-chevron-{"right" if not self.expand_rates_table else "down"}"></span></a>'
-		html_rate += f'<div class="media-body"><span class="media-heading">Rates</span><div id="rates_details" class="collapse {"in" if self.expand_rates_table else ""}"><table class="table table-bordered table-hover thead-light" style="width: auto !important; min-width: 30%; margin-bottom: 0">'
+		html_rate = f'<div class="media"><a onclick="toggle_details(this)" class="pointer collapsed" data-toggle="collapse" data-target="#rates_details"><span class="glyphicon glyphicon-list-alt pull-left notification-icon primary-highlight"></span><span class="glyphicon pull-left chevron glyphicon-chevron-{"down" if self.get_expand_rates_table() else "right"}"></span></a>'
+		html_rate += f'<div class="media-body"><span class="media-heading">Rates</span><div id="rates_details" class="collapse {"in" if self.get_expand_rates_table() else ""}"><table class="table table-bordered table-hover thead-light" style="width: auto !important; min-width: 30%; margin-bottom: 0">'
 
 		table_header = '<tr style="font-size: large">'
 		table_header_2 = '<tr style="font-size: x-small">'
