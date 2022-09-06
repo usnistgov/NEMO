@@ -22,8 +22,8 @@ consumables_logger = getLogger(__name__)
 @require_http_methods(['GET', 'POST'])
 def consumables(request):
 	if request.method == "GET":
-		from NEMO import rates
-		rate_dict = rates.rate_class.get_consumable_rates(Consumable.objects.all())
+		from NEMO.rates import rate_class
+		rate_dict = rate_class.get_consumable_rates(Consumable.objects.all())
 
 		dictionary = {
 			'users': User.objects.filter(is_active=True),

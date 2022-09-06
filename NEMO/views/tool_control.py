@@ -83,12 +83,12 @@ def tool_control(request, item_type="tool", tool_id=None):
 @require_GET
 def tool_status(request, tool_id):
 	""" Gets the current status of the tool (that is, whether it is currently in use or not). """
-	from NEMO import rates
+	from NEMO.rates import rate_class
 	tool = get_object_or_404(Tool, id=tool_id, visible=True)
 
 	dictionary = {
 		"tool": tool,
-		"tool_rate": rates.rate_class.get_tool_rate(tool),
+		"tool_rate": rate_class.get_tool_rate(tool),
 		"task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
 		"rendered_configuration_html": tool.configuration_widget(request.user),
 		"mobile": request.device == "mobile",
