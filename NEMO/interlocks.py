@@ -381,11 +381,12 @@ class ModbusTcpInterlock(Interlock):
 		coil = interlock.channel
 		client = ModbusTcpClient(interlock.card.server, port=interlock.card.port)
 		client.connect()
-		write_reply = client.write_coil(coil, state)
+		kwargs = {"unit": interlock.unit_id} if interlock.unit_id is not None else {}
+		write_reply = client.write_coil(coil, state, **kwargs)
 		if write_reply.isError():
 			raise Exception(str(write_reply))
 		sleep(0.3)
-		read_reply = client.read_coils(coil, 1)
+		read_reply = client.read_coils(coil, 1, **kwargs)
 		if read_reply.isError():
 			raise Exception(str(read_reply))
 		state = read_reply.bits[0]
