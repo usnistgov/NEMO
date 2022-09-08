@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     ]
 
     def new_version_news(apps, schema_editor):
-        create_news_for_version(apps, "3.4.0", "")
+        create_news_for_version(apps, "4.3.0", "")
 
     operations = [
         migrations.RunPython(new_version_news),
