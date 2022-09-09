@@ -9,6 +9,7 @@ from xml.etree import ElementTree
 import requests
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from pymodbus.client.sync import ModbusTcpClient
 
@@ -45,8 +46,10 @@ class Interlock(ABC):
 
 	def __issue_command(self, interlock: Interlock_model, command_type: Interlock_model.State):
 		interlocks_enabled = getattr(settings, "INTERLOCKS_ENABLED", False)
+		now = timezone.now()
 		if not interlocks_enabled or not interlock.card.enabled:
-			interlock.most_recent_reply = "Interlock interface mocked out because settings.INTERLOCKS_ENABLED = False or interlock card is disabled. Interlock last set on " + format_datetime() + "."
+			interlock.most_recent_reply = "Interlock interface mocked out because settings.INTERLOCKS_ENABLED = False or interlock card is disabled. Interlock last set on " + format_datetime(now) + "."
+			interlock.most_recent_reply_time = now
 			interlock.state = command_type
 			interlock.save()
 			return True
@@ -66,6 +69,7 @@ class Interlock(ABC):
 		# save interlock state
 		interlock.state = state
 		interlock.most_recent_reply = Interlock.__create_reply_message(command_type, state, error_message)
+		interlock.most_recent_reply_time = now
 		interlock.save()
 
 		# log some useful information
@@ -84,7 +88,7 @@ class Interlock(ABC):
 			command_type: Interlock_model.State, actual_state: Interlock_model.State, error_message: str
 	) -> str:
 		# Compose the status message of the last command.
-		reply_message = f"Reply received at {format_datetime()}. "
+		reply_message = f"Reply received on {format_datetime()}. "
 		if command_type == Interlock_model.State.UNLOCKED:
 			reply_message += "Unlock"
 		elif command_type == Interlock_model.State.LOCKED:

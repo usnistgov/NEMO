@@ -1652,6 +1652,7 @@ class Interlock(models.Model):
 	unit_id = models.PositiveIntegerField(null=True, blank=True)
 	state = models.IntegerField(choices=State.Choices, default=State.UNKNOWN)
 	most_recent_reply = models.TextField(default="None")
+	most_recent_reply_time = models.DateTimeField(null=True, blank=True)
 
 	def unlock(self):
 		from NEMO import interlocks

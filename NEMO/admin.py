@@ -718,9 +718,9 @@ class InterlockAdminForm(forms.ModelForm):
 @register(Interlock)
 class InterlockAdmin(admin.ModelAdmin):
 	form = InterlockAdminForm
-	list_display = ("id", "get_card_enabled", "card", "channel", "unit_id", "state", "tool", "door")
+	list_display = ("id", "get_card_enabled", "card", "channel", "unit_id", "state", "tool", "door", "most_recent_reply_time")
 	actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage]
-	readonly_fields = ["state", "most_recent_reply"]
+	readonly_fields = ["state", "most_recent_reply", "most_recent_reply_time"]
 
 	@display(boolean=True, ordering='card__enabled', description='Card Enabled')
 	def get_card_enabled(self, obj):

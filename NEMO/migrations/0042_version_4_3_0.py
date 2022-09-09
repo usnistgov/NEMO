@@ -21,5 +21,10 @@ class Migration(migrations.Migration):
             name='unit_id',
             field=models.PositiveIntegerField(blank=True, null=True),
         ),
+        migrations.AddField(
+            model_name='interlock',
+            name='most_recent_reply_time',
+            field=models.DateTimeField(blank=True, null=True),
+        ),
     ]
 
