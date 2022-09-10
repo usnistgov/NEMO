@@ -340,12 +340,12 @@ class EmailBroadcastForm(Form):
 	title = CharField(required=False)
 	greeting = CharField(required=False)
 	contents = CharField(required=False)
-	copy_me = BooleanField(initial=True)
+	copy_me = BooleanField(required=False, initial=True)
 
 	audience = ChoiceField(choices=[("tool", "tool"), ("project", "project"), ("account", "account"), ("area", "area"), ("user", "user")])
 	selection = CharField(required=False)
 	no_type = BooleanField(initial=False, required=False)
-	only_active_users = BooleanField(initial=True)
+	only_active_users = BooleanField(required=False, initial=True)
 
 	def clean_title(self):
 		return self.cleaned_data["title"].upper()
