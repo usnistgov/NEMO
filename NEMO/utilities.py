@@ -342,6 +342,11 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 		clean_cc = filter(None, remove_duplicates(cc))
 	except TypeError:
 		raise TypeError("to, cc and bcc arguments must be a list, set or tuple")
+	user_reply_to = getattr(settings, 'EMAIL_USE_DEFAULT_AND_REPLY_TO', False)
+	reply_to = None
+	if user_reply_to:
+		reply_to = [from_email]
+		from_email = None
 	mail = EmailMessage(
 		subject=subject,
 		body=content,
@@ -350,6 +355,7 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 		bcc=clean_bcc,
 		cc=clean_cc,
 		attachments=attachments,
+		reply_to=reply_to,
 	)
 	mail.content_subtype = "html"
 	msg_sent = 0
