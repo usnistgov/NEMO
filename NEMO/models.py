@@ -368,6 +368,7 @@ class User(models.Model):
 	email = models.EmailField(verbose_name='email address')
 	type = models.ForeignKey(UserType, null=True, blank=True, on_delete=models.SET_NULL)
 	domain = models.CharField(max_length=100, blank=True, help_text="The Active Directory domain that the account resides on")
+	notes = models.TextField(null=True, blank=True)
 
 	# Physical access fields
 	badge_number = models.CharField(null=True, blank=True, unique=True, max_length=50, help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.")

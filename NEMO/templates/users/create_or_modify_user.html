@@ -101,6 +101,12 @@
 				</div>
 			{% endif %}
 		</div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="notes">Notes</label>
+			<div class="col-sm-4">
+				<textarea oninput="auto_size_textarea(this);" id="notes" name="notes" class="form-control">{{ form.notes.value }}</textarea>
+			</div>
+        </div>
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="access_expiration">Access expiration</label>
 			<div class="col-sm-2">
@@ -334,6 +340,7 @@
 		}
 		function on_load()
 		{
+            auto_size_textarea(document.getElementById('notes'));
 			$('[data-toggle="tooltip"]').tooltip();
 			$("#access_expiration").datetimepicker({format: '{{ date_input_js_format }}'});
 			$('#add_a_project').autocomplete('projects', on_search_selection, {% json_search_base_with_extra_fields projects 'application_identifier' %});

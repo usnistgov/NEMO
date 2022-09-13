@@ -31,5 +31,10 @@ class Migration(migrations.Migration):
             name='email_send_access_expiration_emails',
             field=models.BooleanField(default=True, help_text='Send access expiration emails to my alternate email'),
         ),
+        migrations.AddField(
+            model_name='user',
+            name='notes',
+            field=models.TextField(blank=True, null=True),
+        ),
     ]
 

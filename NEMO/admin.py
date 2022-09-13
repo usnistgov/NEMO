@@ -892,7 +892,7 @@ class UserAdmin(admin.ModelAdmin):
 	fieldsets = (
 		(
 			"Personal information",
-			{"fields": ("first_name", "last_name", "username", "email", "badge_number", "type", "domain")},
+			{"fields": ("first_name", "last_name", "username", "email", "badge_number", "type", "domain", "notes")},
 		),
 		(
 			"Permissions",

@@ -50,6 +50,7 @@ class UserForm(ModelForm):
 			"email",
 			"badge_number",
 			"access_expiration",
+			"notes",
 			"type",
 			"domain",
 			"is_active",
