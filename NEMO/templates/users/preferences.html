@@ -96,6 +96,9 @@
 						<div class="checkbox">
 							<label><input name="email_send_broadcast_emails" type="checkbox" {% if user_preferences.email_send_broadcast_emails %}checked{% endif %}>{{ form.email_send_broadcast_emails.help_text }}</label>
 						</div>
+                        <div class="checkbox">
+							<label><input name="email_send_access_expiration_emails" type="checkbox" {% if user_preferences.email_send_access_expiration_emails %}checked{% endif %}>{{ form.email_send_access_expiration_emails.help_text }}</label>
+						</div>
 					</div>
 				</div>
 			</div>

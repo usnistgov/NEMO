@@ -26,5 +26,10 @@ class Migration(migrations.Migration):
             name='most_recent_reply_time',
             field=models.DateTimeField(blank=True, null=True),
         ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_send_access_expiration_emails',
+            field=models.BooleanField(default=True, help_text='Send access expiration emails to my alternate email'),
+        ),
     ]
 

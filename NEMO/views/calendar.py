@@ -1,5 +1,5 @@
 import io
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from json import dumps, loads
 from logging import getLogger
@@ -55,6 +55,7 @@ from NEMO.views.customization import (
 	ApplicationCustomization,
 	CalendarCustomization,
 	EmailsCustomization,
+	UserCustomization,
 	get_media_file_contents,
 )
 from NEMO.views.policy import (
@@ -1283,3 +1284,33 @@ This email is to inform you that today was the last occurrence for the {closure_
 		to=facility_manager_emails,
 		email_category=EmailCategory.SYSTEM,
 	)
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def email_user_access_expiration_reminders(request):
+	return send_email_user_access_expiration_reminders()
+
+
+def send_email_user_access_expiration_reminders():
+	user_office_email = EmailsCustomization.get("user_office_email_address")
+	access_expiration_reminder_days = UserCustomization.get("user_access_expiration_reminder_days")
+	template = get_media_file_contents("user_access_expiration_reminder_email.html")
+	if user_office_email and template and access_expiration_reminder_days:
+		user_expiration_reminder_cc = UserCustomization.get("user_access_expiration_reminder_cc")
+		ccs = [e for e in user_expiration_reminder_cc.split(",") if e]
+		for remaining_days in [int(days) for days in access_expiration_reminder_days.split(",")]:
+			expiration_date = date.today() + timedelta(days=remaining_days)
+			for user in User.objects.filter(is_active=True, access_expiration=expiration_date):
+				subject = f"Your access expires in {remaining_days} days ({format_datetime(user.access_expiration)})"
+				message = Template(template).render(Context({"user": user, "remaining_days": remaining_days}))
+				send_to_alternate = user.get_preferences().email_send_access_expiration_emails
+				user.email_user(
+					subject=subject,
+					message=message,
+					from_email=user_office_email,
+					cc=ccs,
+					send_to_alternate=send_to_alternate
+				)
+	return HttpResponse()

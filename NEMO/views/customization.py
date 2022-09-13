@@ -119,7 +119,6 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_out": "",
 		"calendar_login_logout": "",
 		"project_selection_template": "{{ project.name }}",
-		"default_user_training_not_required": "",
 	}
 
 	def validate(self, name, value):
@@ -133,6 +132,33 @@ class ApplicationCustomization(CustomizationBase):
 		errors = super().save(request, element)
 		init_admin_site()
 		return errors
+
+
+@customization(key="user", title="User", order=2)
+class UserCustomization(CustomizationBase):
+	variables = {
+		"default_user_training_not_required": "",
+		"user_access_expiration_reminder_days": "",
+		"user_access_expiration_reminder_cc": "",
+	}
+
+	def validate(self, name, value):
+		if name == "user_access_expiration_reminder_days" and value:
+			# Check that we have an integer or a list of integers
+			try:
+				for reminder_days in value.split(","):
+					try:
+						int(reminder_days)
+					except ValueError:
+						raise ValidationError(f"{reminder_days} is not a valid integer")
+			except ValidationError:
+				raise
+			except Exception as e:
+				raise ValidationError(str(e))
+		elif name == "user_access_expiration_reminder_cc":
+			recipients = tuple([e for e in value.split(",") if e])
+			for email in recipients:
+				validate_email(email)
 
 
 @customization(key="emails", title="Email addresses", order=2)
@@ -238,6 +264,7 @@ class TemplatesCustomization(CustomizationBase):
 		("task_status_notification", ".html"),
 		("unauthorized_tool_access_email", ".html"),
 		("usage_reminder_email", ".html"),
+		("user_access_expiration_reminder_email", ".html"),
 		("reservation_created_user_email", ".html"),
 		("reservation_cancelled_user_email", ".html"),
 		("weekend_access_email", ".html"),

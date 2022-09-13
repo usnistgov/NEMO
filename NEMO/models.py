@@ -111,6 +111,7 @@ class UserPreferences(models.Model):
 	email_send_access_request_updates = models.BooleanField(default=True, help_text="Send access request updates to my alternate email")
 	email_send_task_updates = models.BooleanField(default=True, help_text="Send task updates to my alternate email")
 	email_send_broadcast_emails = models.BooleanField(default=True, help_text="Send broadcast emails to my alternate email")
+	email_send_access_expiration_emails = models.BooleanField(default=True, help_text="Send access expiration emails to my alternate email")
 
 	class Meta:
 		verbose_name = 'User preferences'
@@ -484,9 +485,9 @@ class User(models.Model):
 			emails.append(self.preferences.email_alternate)
 		return emails
 
-	def email_user(self, subject, message, from_email, attachments=None, send_to_alternate=False, email_category:EmailCategory = EmailCategory.GENERAL):
+	def email_user(self, subject, message, from_email, cc=None, attachments=None, send_to_alternate=False, email_category:EmailCategory = EmailCategory.GENERAL):
 		""" Sends an email to this user. """
-		send_mail(subject=subject, content=message, from_email=from_email, to=self.get_emails(send_to_alternate), attachments=attachments, email_category=email_category)
+		send_mail(subject=subject, content=message, from_email=from_email, to=self.get_emails(send_to_alternate), cc=cc, attachments=attachments, email_category=email_category)
 
 	def get_full_name(self):
 		return self.get_name() + ' (' + self.username + ')'

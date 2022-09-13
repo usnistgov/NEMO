@@ -394,7 +394,8 @@ class UserPreferencesForm(ModelForm):
 			"email_send_buddy_request_replies",
 			"email_send_access_request_updates",
 			"email_send_task_updates",
-			"email_send_broadcast_emails"
+			"email_send_broadcast_emails",
+			"email_send_access_expiration_emails"
 		]
 
 

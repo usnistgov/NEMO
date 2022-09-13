@@ -1,0 +1,48 @@
+<div class="panel-body">
+    <form method="POST" action="{% url 'customize' 'user' %}" class="form-horizontal">
+        <h3 class="customization-section-title">User settings</h3>
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="control-label col-md-2" for="default_user_training_not_required">New user training</label>
+            <div class="col-md-4">
+                <div class="radio">
+                    <label><input type="radio" id="default_user_training_not_required" name="default_user_training_not_required" {% if not default_user_training_not_required %}checked{% endif %} value=""> Required</label>
+                    <label><input type="radio" name="default_user_training_not_required" {% if default_user_training_not_required %}checked{% endif %} value="enabled"> Not required</label>
+                </div>
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Whether the Facility training is required for new users by default.
+            </div>
+        </div>
+		<div class="form-group {% if errors.user_access_expiration_reminder_days %}has-error{% endif %}">
+            <label class="control-label col-md-2" for="user_access_expiration_reminder_days">Access expiration reminder days</label>
+            <div class="col-md-4">
+                <input type="text" id="user_access_expiration_reminder_days" name="user_access_expiration_reminder_days" class="form-control" value="{% if errors.user_access_expiration_reminder_days %}{{ errors.user_access_expiration_reminder_days.value }}{% else %}{{ user_access_expiration_reminder_days }}{% endif %}"/>
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                {% if errors.user_access_expiration_reminder_days %}
+                    {{ errors.user_access_expiration_reminder_days.error }}
+                {% else %}
+                    The numbers of days to send a reminder prior to the user's access expiration. A comma-separated list can be used for multiple reminders.
+                    This setting and the <a href="{% url 'customization' 'templates' %}?#user_access_expiration_reminder_email_id">user access expiration reminder email</a> need to be set to enable this feature.
+                {% endif %}
+            </div>
+        </div>
+		<div class="form-group {% if errors.user_access_expiration_reminder_cc %}has-error{% endif %}">
+            <label class="control-label col-md-2" for="user_access_expiration_reminder_cc">Access expiration reminder CC</label>
+            <div class="col-md-4">
+                <input type="text" id="user_access_expiration_reminder_cc" name="user_access_expiration_reminder_cc" class="form-control" value="{% if errors.user_access_expiration_reminder_cc %}{{ errors.user_access_expiration_reminder_cc.value }}{% else %}{{ user_access_expiration_reminder_cc }}{% endif %}" placeholder="information@example.org"/>
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                {% if errors.user_access_expiration_reminder_cc %}
+                    {{ errors.user_access_expiration_reminder_cc.error }}
+                {% else %}
+                    The email address to copy when a user access expiration reminder is sent. A comma-separated list can be used.
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-offset-2">
+            <input type="submit" value="Save settings" class="btn btn-success">
+        </div>
+    </form>
+</div>
