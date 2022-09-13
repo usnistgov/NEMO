@@ -1,3 +1,6 @@
+from typing import List
+
+from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render
@@ -48,6 +51,12 @@ def history(request, item_type, item_id):
 			message += "no longer"
 		message += " belongs to " + o.parent_content_type.name + " \"" + o.get_parent_content_object() + "\"."
 		action_list.append({'date': o.date, 'authorizer': str(o.authorizer), 'message': message})
+	if apps.is_installed("auditlog"):
+		from auditlog.models import LogEntry
+		logentries: List[LogEntry] = LogEntry.objects.filter(content_type=content_type, object_id=item_id)
+		for log_entry in logentries:
+			action_list.append({'date': log_entry.timestamp, 'authorizer': str(log_entry.actor), 'message': f"User {log_entry.get_action_display()}d: {log_entry.changes_str}"})
+
 	# Sort the list of actions by date:
-	action_list.sort(key=lambda x: x['date'])
+	action_list.sort(key=lambda x: x['date'], reverse=True)
 	return render(request, 'history.html', {'action_list': action_list, 'name': str(item)})
