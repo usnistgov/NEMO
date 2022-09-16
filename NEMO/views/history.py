@@ -34,29 +34,59 @@ def history(request, item_type, item_id):
 			message += "activated."
 		else:
 			message += "deactivated."
-		action_list.append({'date': a.date, 'authorizer': str(a.authorizer), 'message': message})
+		action_list.append({"date": a.date, "authorizer": str(a.authorizer), "message": message})
 	for m in membership:
-		message = capfirst(m.child_content_type.name) + " \"" + m.get_child_content_object() + "\" "
+		message = capfirst(m.child_content_type.name) + ' "' + m.get_child_content_object() + '" '
 		if m.action:
 			message += "added to"
 		else:
 			message += "removed from"
 		message += " this " + content_type.name + "."
-		action_list.append({'date': m.date, 'authorizer': str(m.authorizer), 'message': message})
+		action_list.append({"date": m.date, "authorizer": str(m.authorizer), "message": message})
 	for o in ownership:
 		message = "This " + content_type.name + " "
 		if o.action:
 			message += "now"
 		else:
 			message += "no longer"
-		message += " belongs to " + o.parent_content_type.name + " \"" + o.get_parent_content_object() + "\"."
-		action_list.append({'date': o.date, 'authorizer': str(o.authorizer), 'message': message})
+		message += " belongs to " + o.parent_content_type.name + ' "' + o.get_parent_content_object() + '".'
+		action_list.append({"date": o.date, "authorizer": str(o.authorizer), "message": message})
 	if apps.is_installed("auditlog"):
 		from auditlog.models import LogEntry
+
 		logentries: List[LogEntry] = LogEntry.objects.filter(content_type=content_type, object_id=item_id)
 		for log_entry in logentries:
-			action_list.append({'date': log_entry.timestamp, 'authorizer': str(log_entry.actor), 'message': f"User {log_entry.get_action_display()}d: {log_entry.changes_str}"})
+			action_list.append(
+				{
+					"date": log_entry.timestamp,
+					"authorizer": str(log_entry.actor),
+					"message": audit_log_message(log_entry),
+				}
+			)
 
 	# Sort the list of actions by date:
-	action_list.sort(key=lambda x: x['date'], reverse=True)
-	return render(request, 'history.html', {'action_list': action_list, 'name': str(item)})
+	action_list.sort(key=lambda x: x["date"], reverse=True)
+	return render(request, "history.html", {"action_list": action_list, "name": str(item)})
+
+
+def audit_log_message(logentry, separator: str = "\n"):
+	substrings = []
+
+	for field, values in logentry.changes_dict.items():
+		# Try to get verbose field name from the model
+		try:
+			field = logentry.content_type.model_class()._meta.get_field(field).verbose_name.capitalize()
+		except:
+			pass
+		if isinstance(values, dict) and values["type"] == "m2m":
+			# Only case with dict is m2m change
+			action = "removed" if values["operation"] == "delete" else "added"
+			from_to = "from" if action == "removed" else "to"
+			objects = [f'"{obj}"' for obj in values["objects"]]
+			were_was = "were" if len(objects) > 1 else "was"
+			substring = f"{' & '.join(objects)} {were_was} {action} {from_to} {field}"
+		else:
+			substring = f"{field} was changed: {values[0]} \u2192 {values[1]}"
+		substrings.append(substring)
+
+	return separator.join(substrings)

@@ -14,9 +14,9 @@
 			<tbody>
 			{% for action in action_list %}
 				<tr>
-					<td>{{ action.date }}</td>
+					<td class="text-nowrap">{{ action.date }}</td>
 					<td>{{ action.authorizer }}</td>
-					<td>{{ action.message }}</td>
+					<td>{{ action.message|linebreaksbr }}</td>
 				</tr>
 			{% endfor %}
 			</tbody>
