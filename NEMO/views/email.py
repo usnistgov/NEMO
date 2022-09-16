@@ -10,7 +10,9 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.utils.safestring import mark_safe
+from django.views import View
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_required
@@ -100,60 +102,69 @@ def email_broadcast(request, audience=""):
 	return render(request, "email/email_broadcast.html", dictionary)
 
 
-@staff_member_required
-@require_GET
-def compose_email(request):
-	try:
-		audience = request.GET["audience"]
-		selection = request.GET.getlist("selection")
-		no_type = request.GET.get("no_type") == "on"
-		users = get_users_for_email(audience, selection, no_type)
-	except:
-		dictionary = {"error": "You specified an invalid audience parameter"}
-		return render(request, "email/email_broadcast.html", dictionary)
-	generic_email_sample = get_media_file_contents("generic_email.html")
-	dictionary = {
-		"audience": audience,
-		"selection": selection,
-		"no_type": no_type,
-		"users": users,
-		"user_emails": ";".join([email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)]),
-		"active_user_emails": ";".join([email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails) if user.is_active]),
-	}
-	if generic_email_sample:
-		generic_email_context = {
-			"title": "TITLE",
-			"greeting": "Greeting",
-			"contents": "Contents",
-			"template_color": "#5bc0de",
+class ComposeEmailView(View):
+	@staticmethod
+	def get_users_for_email(audience, selection, no_type):
+		return get_users_for_email(audience, selection, no_type)
+
+	@method_decorator(staff_member_required)
+	def get(self, request):
+		try:
+			audience = request.GET["audience"]
+			selection = request.GET.getlist("selection")
+			no_type = request.GET.get("no_type") == "on"
+			users = self.get_users_for_email(audience, selection, no_type)
+		except:
+			dictionary = {"error": "You specified an invalid audience parameter"}
+			return render(request, "email/email_broadcast.html", dictionary)
+
+		generic_email_sample = get_media_file_contents("generic_email.html")
+		dictionary = {
+			"audience": audience,
+			"selection": selection,
+			"no_type": no_type,
+			"users": users,
+			"user_emails": ";".join([email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)]),
+			"active_user_emails": ";".join([email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails) if user.is_active]),
 		}
-		dictionary["generic_email_sample"] = Template(generic_email_sample).render(Context(generic_email_context))
-	return render(request, "email/compose_email.html", dictionary)
+		if generic_email_sample:
+			generic_email_context = {
+				"title": "TITLE",
+				"greeting": "Greeting",
+				"contents": "Contents",
+				"template_color": "#5bc0de",
+			}
+			dictionary["generic_email_sample"] = Template(generic_email_sample).render(Context(generic_email_context))
+		return render(request, "email/compose_email.html", dictionary)
 
 
-@staff_member_required
-@require_GET
-def export_email_addresses(request):
-	try:
-		audience = request.GET["audience"]
-		selection = request.GET.getlist("selection")
-		no_type = request.GET.get("no_type") == "on"
-		only_active_users = request.GET.get("active") == "on"
-		users = get_users_for_email(audience, selection, no_type)
-		response = HttpResponse(content_type="text/csv")
-		writer = csv.writer(response)
-		writer.writerow(["First", "Last", "Username", "Email"])
-		if only_active_users:
-			users = [user for user in users if user.is_active]
-		for user in users:
-			user: User = user
-			for email in user.get_emails(user.get_preferences().email_send_broadcast_emails):
-				writer.writerow([user.first_name, user.last_name, user.username, email])
-		response["Content-Disposition"] = f'attachment; filename="email_addresses_{export_format_datetime()}.csv"'
-		return response
-	except:
-		dictionary = {"error": "You specified an invalid audience parameter"}
-		return render(request, "email/email_broadcast.html", dictionary)
+class ExportEmailAddressesView(View):
+	@staticmethod
+	def get_users_for_email(audience, selection, no_type):
+		return get_users_for_email(audience, selection, no_type)
+
+	@method_decorator(staff_member_required)
+	def get(self, request):
+		try:
+			audience = request.GET["audience"]
+			selection = request.GET.getlist("selection")
+			no_type = request.GET.get("no_type") == "on"
+			only_active_users = request.GET.get("active") == "on"
+			users = self.get_users_for_email(audience, selection, no_type)
+			response = HttpResponse(content_type="text/csv")
+			writer = csv.writer(response)
+			writer.writerow(["First", "Last", "Username", "Email"])
+			if only_active_users:
+				users = [user for user in users if user.is_active]
+			for user in users:
+				user: User = user
+				for email in user.get_emails(user.get_preferences().email_send_broadcast_emails):
+					writer.writerow([user.first_name, user.last_name, user.username, email])
+			response["Content-Disposition"] = f'attachment; filename="email_addresses_{export_format_datetime()}.csv"'
+			return response
+		except:
+			dictionary = {"error": "You specified an invalid audience parameter"}
+			return render(request, "email/email_broadcast.html", dictionary)
 
 
 @staff_member_required

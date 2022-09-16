@@ -221,8 +221,8 @@ urlpatterns += [
 	url(r'^email_broadcast/$', email.email_broadcast, name='email_broadcast'),
 	url(r'^email_broadcast/(?P<audience>tool|area|account|project|user)/$', email.email_broadcast, name='email_broadcast'),
 	url(r'^email_preview/$', email.email_preview, name='email_preview'),
-	url(r'^compose_email/$', email.compose_email, name='compose_email'),
-	url(r'^email_export_addresses/$', email.export_email_addresses, name='export_email_addresses'),
+	url(r'^compose_email/$', email.ComposeEmailView.as_view(), name='compose_email'),
+	url(r'^email_export_addresses/$', email.ExportEmailAddressesView.as_view(), name='export_email_addresses'),
 	url(r'^send_broadcast_email/$', email.send_broadcast_email, name='send_broadcast_email'),
 
 	# Maintenance:
