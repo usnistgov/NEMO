@@ -9,9 +9,9 @@
 				{% if person.category == category %}
 					<div class="col-md-3">
 						<div class="thumbnail">
-							{% if person.image %}<img src="{{ person.image.url }}" style="margin-top:7px; height:266px; width:200px">{% endif %}
+							{% if person.image %}<img alt="staff contact picture" src="{{ person.image.url }}" style="margin-top:7px; height:266px; width:200px">{% endif %}
 							<div class="caption">
-								{% include 'contact/contact_person.html' %}
+								{% include 'snippets/contact_person.html' %}
 							</div>
 						</div>
 					</div>

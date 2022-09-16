@@ -613,16 +613,16 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	margin-bottom: 0;
 }
 
-.contact-info-tooltip-container + .tooltip > .tooltip-inner,
-.contact-info-tooltip-container > .tooltip > .tooltip-inner
+.info-tooltip-container + .tooltip > .tooltip-inner,
+.info-tooltip-container > .tooltip > .tooltip-inner
 {
 	max-width: initial;
 	text-align: left;
 	padding: 10px 16px;
 }
 
-.contact-info-tooltip-container + .tooltip > .tooltip-inner a,
-.contact-info-tooltip-container > .tooltip > .tooltip-inner a
+.info-tooltip-container + .tooltip > .tooltip-inner a,
+.info-tooltip-container > .tooltip > .tooltip-inner a
 {
 	color: #b0dbff;
 }

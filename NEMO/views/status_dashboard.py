@@ -67,7 +67,7 @@ def status_dashboard(request, tab=None):
 
 
 def get_tools_dictionary():
-	return {"tool_summary": create_tool_summary()}
+	return {"tool_summary": create_tool_summary(tooltip_info=True)}
 
 
 def get_occupancy_dictionary(request):
@@ -318,7 +318,7 @@ def area_tree_helper(filtered_area: List[TreeItem], records: QuerySet, areas: Op
 	yield "out"
 
 
-def create_tool_summary():
+def create_tool_summary(tooltip_info=False):
 	tools = Tool.objects.filter(visible=True).prefetch_related(
 		Prefetch("_requires_area_access", queryset=Area.objects.all().only("name"))
 	)
@@ -333,7 +333,7 @@ def create_tool_summary():
 	scheduled_outages = ScheduledOutage.objects.filter(
 		start__lte=timezone.now(), end__gt=timezone.now(), area__isnull=True
 	)
-	tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages)
+	tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info)
 	tool_summary = list(tool_summary.values())
 	tool_summary.sort(key=lambda x: x["name"])
 	return tool_summary
@@ -418,7 +418,7 @@ def create_area_summary(area_tree: ModelTreeHelper = None, add_resources=True, a
 	return area_summary
 
 
-def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):
+def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info=False):
 	result = {}
 	tools_with_delayed_logoff_in_effect = [
 		x.tool.tool_or_parent_id() for x in UsageEvent.objects.filter(end__gt=timezone.now())
@@ -444,6 +444,8 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages):
 			if tool.requires_area_access
 			else False,
 		}
+		if tooltip_info:
+			result[tool.tool_or_parent_id()]["get_tool_info_html"] = tool.get_tool_info_html()
 	for task in tasks:
 		result[task.tool.id]["problematic"] = True
 	for event in usage_events:

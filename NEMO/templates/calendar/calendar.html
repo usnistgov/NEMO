@@ -200,9 +200,9 @@ function event_render(event, element)
 function event_after_all_render()
 {
 	{# Remove visible tooltips first otherwise they get stuck #}
-	$('.tooltip').remove()
+	$('.tooltip').remove();
 	{# Show tooltips for events #}
-	$('a.fc-time-grid-event').tooltip({ container: 'body', delay: { "show": 1000, "hide": 100 }})
+	$('a.fc-time-grid-event').tooltip({ container: 'body', delay: { "show": 1000, "hide": 100 }});
 }
 
 {# This function is called when the user clicks and drags on the calendar to create a reservation. #}

@@ -19,7 +19,7 @@
 	<div class="tab-pane {% if areas_exist and tab == 'occupancy' %}active{% endif %}" id="occupancy">
 		{% include 'status_dashboard/occupancy.html' %}
 	</div>
-	<div class="tab-pane {% if tools_exist and tab == 'tools' %}active{% endif %}" id="tools">
+	<div class="tab-pane {% if tools_exist and tab == 'tools' %}active{% endif %} info-tooltip-container" id="tools">
 		<div class="btn-group sidebar-item">
 			<button id="filter" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" {% if no_header %}style="display:none;"{% endif %}>
 				Showing tools in use
@@ -54,6 +54,16 @@
 		tab_jq.click(refresh_status_dashboard);
 		tab_jq.click(update_url);
 		set_interval_when_visible(document, refresh_status_dashboard, 10000);
+        {# Set a global click handler to dismiss manual tooltips #}
+        $('html').on('click', function(e)
+        {
+            {# Only dimiss tooltips when clicking outside of them #}
+            let target_id = $(e.target).parents('.tooltip').attr('id');
+            if (typeof $(e.target).data('original-title') == 'undefined')
+            {
+                $(".tooltip").not('#'+target_id).remove();
+            }
+        });
 	}
 	$(on_load);
 
