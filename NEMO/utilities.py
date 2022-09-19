@@ -17,6 +17,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.db.models import QuerySet
 from django.http import HttpResponse
+from django.shortcuts import render
 from django.utils import timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.timezone import is_naive, localtime
@@ -342,7 +343,7 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 		clean_cc = filter(None, remove_duplicates(cc))
 	except TypeError:
 		raise TypeError("to, cc and bcc arguments must be a list, set or tuple")
-	user_reply_to = getattr(settings, 'EMAIL_USE_DEFAULT_AND_REPLY_TO', False)
+	user_reply_to = getattr(settings, "EMAIL_USE_DEFAULT_AND_REPLY_TO", False)
 	reply_to = None
 	if user_reply_to:
 		reply_to = [from_email]
@@ -475,3 +476,11 @@ def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryU
 
 def distinct_qs_value_list(qs: QuerySet, field_name: str) -> Set:
 	return set(list(qs.values_list(field_name, flat=True)))
+
+
+# Useful function to render and combine 2 separate django templates
+def render_combine_responses(request, original_response: HttpResponse, template_name, context):
+	""" Combines contents of an original http response with a new one """
+	additional_content = render(request, template_name, context)
+	original_response.content += additional_content.content
+	return original_response

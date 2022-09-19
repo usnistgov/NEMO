@@ -1,3 +1,4 @@
+import importlib
 import inspect
 from threading import Lock, RLock, Thread
 
@@ -122,3 +123,23 @@ def staff_member_or_tool_superuser_required(view_func=None, redirect_field_name=
 	if view_func:
 		return actual_decorator(view_func)
 	return actual_decorator
+
+
+# Use this decorator annotation to replace another existing function. The first parameter of
+# the new function should be "old_function" which will contain the function being replaced
+# For example, to replace NEMO.views.policy.check_policy_to_save_reservation(arg1, arg2)
+# @replace_function("NEMO.views.policy.check_policy_to_save_reservation")
+# def new_function(old_function, arg1, arg2)
+def replace_function(old_function_name):
+	pkg, fun_name = old_function_name.rsplit(".", 1)
+	pkg_mod = importlib.import_module(pkg)
+	old_function = getattr(pkg_mod, fun_name)
+
+	def decorator(function):
+		def wrapper(*args, **kwargs):
+			return function(old_function, *args, **kwargs)
+
+		setattr(pkg_mod, fun_name, wrapper)
+		return wrapper
+
+	return decorator
