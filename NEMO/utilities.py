@@ -390,6 +390,8 @@ def create_email_log(email: EmailMessage, email_category: EmailCategory):
 		for attachment in email.attachments:
 			if isinstance(attachment, MIMEBase):
 				email_attachments.append(attachment.get_filename() or "")
+			else:
+				email_attachments.append(attachment[0] or "")
 		if email_attachments:
 			email_record.attachments = ", ".join(email_attachments)
 	return email_record
