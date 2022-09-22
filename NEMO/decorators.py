@@ -1,5 +1,6 @@
 import importlib
 import inspect
+from functools import wraps
 from threading import Lock, RLock, Thread
 
 from django.contrib.auth import REDIRECT_FIELD_NAME
@@ -136,6 +137,7 @@ def replace_function(old_function_name):
 	old_function = getattr(pkg_mod, fun_name)
 
 	def decorator(function):
+		@wraps(function)
 		def wrapper(*args, **kwargs):
 			return function(old_function, *args, **kwargs)
 
