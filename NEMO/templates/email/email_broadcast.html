@@ -50,11 +50,11 @@
 
         <form class="col-sm-3" id="email" method="get" action="{% url 'compose_email' %}">
             <input type="hidden" name="audience" value="{{ audience }}">
-            <div class="row">
+            <div class="row checkbox">
                 <label><input type="checkbox" name="no_type" checked/> Users without a type</label>
             </div>
             {% for user_type in user_types %}
-                <div class="row">
+                <div class="row checkbox">
                     <label><input type="checkbox" name="selection" value="{{ user_type.id }}" checked/> {{ user_type.name }}</label>
                 </div>
             {% endfor %}
