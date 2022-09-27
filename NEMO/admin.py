@@ -845,14 +845,21 @@ class UserAdminForm(forms.ModelForm):
 		model = User
 		fields = "__all__"
 
+	tool_qualifications = forms.ModelMultipleChoiceField(
+		label="Qualifications",
+		queryset=Tool.objects.filter(parent_tool__isnull=True),
+		required=False,
+		widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
+	)
+
 	backup_owner_on_tools = forms.ModelMultipleChoiceField(
-		queryset=Tool.objects.all(),
+		queryset=Tool.objects.filter(parent_tool__isnull=True),
 		required=False,
 		widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
 	)
 
 	superuser_on_tools = forms.ModelMultipleChoiceField(
-		queryset=Tool.objects.all(),
+		queryset=Tool.objects.filter(parent_tool__isnull=True),
 		required=False,
 		widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
 	)
@@ -860,6 +867,7 @@ class UserAdminForm(forms.ModelForm):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		if self.instance.pk:
+			self.fields["tool_qualifications"].initial = self.instance.qualifications.all()
 			self.fields["backup_owner_on_tools"].initial = self.instance.backup_for_tools.all()
 			self.fields["superuser_on_tools"].initial = self.instance.superuser_for_tools.all()
 
@@ -884,7 +892,6 @@ class UserAdmin(admin.ModelAdmin):
 	filter_horizontal = (
 		"groups",
 		"user_permissions",
-		"qualifications",
 		"projects",
 		"managed_projects",
 		"physical_access_levels",
@@ -916,7 +923,7 @@ class UserAdmin(admin.ModelAdmin):
 			"Facility information",
 			{
 				"fields": (
-					"qualifications",
+					"tool_qualifications",
 					"backup_owner_on_tools",
 					"superuser_on_tools",
 					"projects",
@@ -953,18 +960,15 @@ class UserAdmin(admin.ModelAdmin):
 		"last_login",
 	)
 
-	def formfield_for_manytomany(self, db_field, request, **kwargs):
-		if db_field.name == "qualifications":
-			kwargs["queryset"] = Tool.objects.filter(parent_tool__isnull=True)
-		return super().formfield_for_manytomany(db_field, request, **kwargs)
-
 	def save_model(self, request, obj, form, change):
 		""" Audit project membership and qualifications when a user is saved. """
 		super(UserAdmin, self).save_model(request, obj, form, change)
 		record_local_many_to_many_changes(request, obj, form, "projects")
-		record_local_many_to_many_changes(request, obj, form, "qualifications")
+		record_local_many_to_many_changes(request, obj, form, "qualifications", "tool_qualifications")
 		record_local_many_to_many_changes(request, obj, form, "physical_access_levels")
 		record_active_state(request, obj, form, "is_active", not change)
+		if "tool_qualifications" in form.changed_data:
+			obj.qualifications.set(form.cleaned_data["tool_qualifications"])
 		if "backup_owner_on_tools" in form.changed_data:
 			obj.backup_for_tools.set(form.cleaned_data["backup_owner_on_tools"])
 		if "superuser_on_tools" in form.changed_data:

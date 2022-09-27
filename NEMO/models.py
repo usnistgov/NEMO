@@ -112,6 +112,7 @@ class UserPreferences(models.Model):
 	email_send_task_updates = models.BooleanField(default=True, help_text="Send task updates to my alternate email")
 	email_send_broadcast_emails = models.BooleanField(default=True, help_text="Send broadcast emails to my alternate email")
 	email_send_access_expiration_emails = models.BooleanField(default=True, help_text="Send access expiration emails to my alternate email")
+	email_send_tool_qualification_expiration_emails = models.BooleanField(default=True, help_text="Send tool qualification expiration emails to my alternate email")
 
 	class Meta:
 		verbose_name = 'User preferences'
@@ -391,7 +392,7 @@ class User(models.Model):
 	last_login = models.DateTimeField(null=True, blank=True)
 
 	# Facility information:
-	qualifications = models.ManyToManyField('Tool', blank=True, help_text='Select the tools that the user is qualified to use.')
+	qualifications = models.ManyToManyField('Tool', blank=True, help_text='Select the tools that the user is qualified to use.', through='Qualification')
 	projects = models.ManyToManyField('Project', blank=True, help_text='Select the projects that this user is currently working on.')
 	managed_projects = models.ManyToManyField('Project', related_name="manager_set", blank=True, help_text='Select the projects that this user is a PI for.')
 
@@ -1130,6 +1131,16 @@ def auto_delete_file_on_tool_document_change(sender, instance: ToolDocuments, **
 	if not old_file == new_file:
 		if os.path.isfile(old_file.path):
 			os.remove(old_file.path)
+
+
+class Qualification(models.Model):
+	user = models.ForeignKey(User, on_delete=models.CASCADE)
+	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+	qualified_on = models.DateField(default=datetime.date.today)
+
+	class Meta:
+		# For db consistency and compatibility with previous queries
+		db_table = "NEMO_user_qualifications"
 
 
 class Configuration(models.Model):
@@ -2507,7 +2518,7 @@ def record_remote_many_to_many_changes_and_save(request, obj, form, change, many
 	symmetric_difference = original_members ^ current_members
 	if symmetric_difference:
 		if change:  # the members have changed, so find out what was added and removed...
-			# We can can see the previous members of the object model by looking it up
+			# We can see the previous members of the object model by looking it up
 			# in the database because the member list hasn't been committed yet.
 			added_members = set(current_members) - set(original_members)
 			removed_members = set(original_members) - set(current_members)
@@ -2541,13 +2552,14 @@ def record_remote_many_to_many_changes_and_save(request, obj, form, change, many
 		ex_member.save()
 
 
-def record_local_many_to_many_changes(request, obj, form, many_to_many_field):
+def record_local_many_to_many_changes(request, obj, form, many_to_many_field, form_field=None):
 	"""
 	Record the changes in a many-to-many field that the model owns.
 	"""
-	if many_to_many_field in form.changed_data:
+	data_field = form_field or many_to_many_field
+	if data_field in form.changed_data:
 		original_members = set(getattr(obj, many_to_many_field).all())
-		current_members = set(form.cleaned_data[many_to_many_field])
+		current_members = set(form.cleaned_data[data_field])
 		added_members = set(current_members) - set(original_members)
 		for a in added_members:
 			p = MembershipHistory()

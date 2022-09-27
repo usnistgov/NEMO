@@ -28,6 +28,7 @@ from NEMO.models import (
 	ClosureTime,
 	Configuration,
 	Project,
+	Qualification,
 	Reservation,
 	ReservationItemType,
 	ReservationQuestions,
@@ -48,6 +49,7 @@ from NEMO.utilities import (
 	format_datetime,
 	localize,
 	parse_parameter_string,
+	quiet_int,
 	send_mail,
 )
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
@@ -1314,3 +1316,78 @@ def send_email_user_access_expiration_reminders():
 					send_to_alternate=send_to_alternate
 				)
 	return HttpResponse()
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def email_tool_qualification_expiration(request):
+	return send_email_tool_qualification_expiration()
+
+
+def send_email_tool_qualification_expiration():
+	user_office_email = EmailsCustomization.get("user_office_email_address")
+	qualification_reminder_days = UserCustomization.get("user_tool_qualification_reminder_days")
+	qualification_expiration_days = UserCustomization.get("user_tool_qualification_expiration_days")
+	qualification_expiration_never_used = UserCustomization.get("user_tool_qualification_expiration_never_used_days")
+	template = get_media_file_contents("tool_qualification_expiration_email.html")
+	if user_office_email and template:
+		if qualification_expiration_days or qualification_expiration_never_used:
+			qualification_expiration_days = quiet_int(qualification_expiration_days, None)
+			qualification_expiration_never_used = quiet_int(qualification_expiration_never_used, None)
+			for qualification in Qualification.objects.filter(user__is_active=True, user__is_staff=False):
+				user = qualification.user
+				tool = qualification.tool
+				last_tool_use = None
+				try:
+					last_tool_use = UsageEvent.objects.filter(user=user, tool=tool).latest("start").start.date()
+					expiration_date = last_tool_use + timedelta(days=qualification_expiration_days) if qualification_expiration_days else None
+				except UsageEvent.DoesNotExist:
+					# User never used the tool, use the qualification date
+					expiration_date = qualification.qualified_on + timedelta(days=qualification_expiration_never_used) if qualification_expiration_never_used else None
+				if expiration_date:
+					if expiration_date <= date.today():
+						qualification.delete()
+						send_tool_qualification_expiring_email(qualification, last_tool_use, expiration_date)
+					if qualification_reminder_days:
+						for remaining_days in [int(days) for days in qualification_reminder_days.split(",")]:
+							if expiration_date - timedelta(days=remaining_days) == date.today():
+								send_tool_qualification_expiring_email(qualification, last_tool_use, expiration_date, remaining_days)
+	return HttpResponse()
+
+
+def send_tool_qualification_expiring_email(qualification: Qualification, last_tool_use: date, expiration_date: date, remaining_days: int = None):
+	user_office_email = EmailsCustomization.get("user_office_email_address")
+	template = get_media_file_contents("tool_qualification_expiration_email.html")
+	# Add all recipients, starting with primary owner
+	recipient_users = [qualification.tool.primary_owner]
+	# Add backup owners
+	recipient_users.extend(qualification.tool.backup_owners.all())
+	# Add facility managers
+	recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
+	ccs = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_tool_qualification_expiration_emails)]
+	# Add extra cc emails
+	user_tool_qualification_cc = UserCustomization.get("user_tool_qualification_cc")
+	ccs.extend([e for e in user_tool_qualification_cc.split(",") if e])
+	if remaining_days:
+		subject_expiration = f" expires in {remaining_days} days!"
+	else:
+		subject_expiration = " has expired"
+	subject = f"Your {qualification.tool.name} qualification {subject_expiration}"
+	dictionary = {
+		"user": qualification.user,
+		"tool": qualification.tool,
+		"last_tool_use": last_tool_use,
+		"expiration_date": expiration_date,
+		"qualification_date": qualification.qualified_on,
+		"remaining_days": remaining_days
+	}
+	message = Template(template).render(Context(dictionary))
+	send_to_alternate = qualification.user.get_preferences().email_send_tool_qualification_expiration_emails
+	qualification.user.email_user(
+		subject=subject,
+		message=message,
+		from_email=user_office_email,
+		cc=ccs,
+		send_to_alternate=send_to_alternate
+	)

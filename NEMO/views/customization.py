@@ -140,10 +140,19 @@ class UserCustomization(CustomizationBase):
 		"default_user_training_not_required": "",
 		"user_access_expiration_reminder_days": "",
 		"user_access_expiration_reminder_cc": "",
+		"user_tool_qualification_reminder_days": "",
+		"user_tool_qualification_expiration_days": "",
+		"user_tool_qualification_expiration_never_used_days": "",
+		"user_tool_qualification_cc": "",
 	}
 
 	def validate(self, name, value):
-		if name == "user_access_expiration_reminder_days" and value:
+		if name == "user_tool_qualification_expiration_days" and value:
+			try:
+				int(value)
+			except ValueError:
+				raise ValidationError(f"{value} is not a valid integer")
+		if name in ["user_access_expiration_reminder_days", "user_tool_qualification_reminder_days"] and value:
 			# Check that we have an integer or a list of integers
 			try:
 				for reminder_days in value.split(","):
@@ -155,7 +164,7 @@ class UserCustomization(CustomizationBase):
 				raise
 			except Exception as e:
 				raise ValidationError(str(e))
-		elif name == "user_access_expiration_reminder_cc":
+		elif name in ["user_access_expiration_reminder_cc", "user_tool_qualification_cc"]:
 			recipients = tuple([e for e in value.split(",") if e])
 			for email in recipients:
 				validate_email(email)
@@ -262,6 +271,7 @@ class TemplatesCustomization(CustomizationBase):
 		("safety_issue_email", ".html"),
 		("staff_charge_reminder_email", ".html"),
 		("task_status_notification", ".html"),
+		("tool_qualification_expiration_email", ".html"),
 		("unauthorized_tool_access_email", ".html"),
 		("usage_reminder_email", ".html"),
 		("user_access_expiration_reminder_email", ".html"),

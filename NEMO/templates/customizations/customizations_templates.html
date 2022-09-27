@@ -271,6 +271,24 @@
 </div>
 
 <div class="panel-body">
+    <h3 class="customization-section-title" id="tool_qualification_expiration_email_id">Tool qualification expiration email</h3>
+    <p>
+        This email is sent to the user, tool owner & backup owners and facility managers when a tool qualification is about to expire (reminder) or expired.
+        The following context variables are provided when the email is rendered:
+    </p>
+    <ul>
+        <li><b>remaining_days</b> - the number of days left before the qualification expires. This variable is only provided when a reminder is sent</li>
+        <li><b>expiration_date</b> - the date the tool qualification expires</li>
+        <li><b>user</b> - the user whose qualification is expiring</li>
+        <li><b>tool</b> - the tool whose qualification is expiring</li>
+        <li><b>last_tool_use</b> - the last time the tool was used. Blank if the user never used the tool</li>
+        <li><b>qualification_date</b> - the time the user was last qualified on that tool</li>
+    </ul>
+    {% include 'customizations/customizations_upload.html' with element=tool_qualification_expiration_email name='tool qualification expiration email' key='templates' %}
+    <div class="customization-separation"></div>
+</div>
+
+<div class="panel-body">
     <h3 class="customization-section-title" id="unauthorized_tool_access_email_id">Unauthorized tool access email</h3>
     <p>
         This email is sent when a user tries to access a tool:
