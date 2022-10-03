@@ -3,6 +3,7 @@
 import datetime
 
 import django.db.models.deletion
+import django.db.models.functions.text
 from django.conf import settings
 from django.db import migrations, models
 
@@ -76,6 +77,118 @@ class Migration(migrations.Migration):
             model_name='userpreferences',
             name='email_send_tool_qualification_expiration_emails',
             field=models.BooleanField(default=True, help_text='Send tool qualification expiration emails to my alternate email'),
+        ),
+        migrations.AlterModelOptions(
+            name='account',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='accounttype',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='alertcategory',
+            options={'ordering': [django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'Alert categories'},
+        ),
+        migrations.AlterModelOptions(
+            name='chemical',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='chemicalhazard',
+            options={'ordering': ['display_order', django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='closure',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='configuration',
+            options={'ordering': ['tool', django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='consumable',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='consumablecategory',
+            options={'ordering': [django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'Consumable categories'},
+        ),
+        migrations.AlterModelOptions(
+            name='contactinformation',
+            options={'ordering': [django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'Contact information'},
+        ),
+        migrations.AlterModelOptions(
+            name='contactinformationcategory',
+            options={'ordering': ['display_order', django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'Contact information categories'},
+        ),
+        migrations.AlterModelOptions(
+            name='customization',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='interlockcardcategory',
+            options={'ordering': [django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'Interlock card categories'},
+        ),
+        migrations.AlterModelOptions(
+            name='physicalaccesslevel',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='project',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='reservationquestions',
+            options={'ordering': [django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'Reservation questions'},
+        ),
+        migrations.AlterModelOptions(
+            name='resource',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='resourcecategory',
+            options={'ordering': [django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'resource categories'},
+        ),
+        migrations.AlterModelOptions(
+            name='scheduledoutagecategory',
+            options={'ordering': [django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'Scheduled outage categories'},
+        ),
+        migrations.AlterModelOptions(
+            name='staffabsencetype',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='staffavailability',
+            options={'ordering': [django.db.models.functions.text.Lower('staff_member__first_name')], 'verbose_name_plural': 'Staff availability'},
+        ),
+        migrations.AlterModelOptions(
+            name='staffavailabilitycategory',
+            options={'ordering': ['display_order', django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'Staff availability categories'},
+        ),
+        migrations.AlterModelOptions(
+            name='taskcategory',
+            options={'ordering': [django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'Task categories'},
+        ),
+        migrations.AlterModelOptions(
+            name='taskstatus',
+            options={'ordering': [django.db.models.functions.text.Lower('name')], 'verbose_name_plural': 'task statuses'},
+        ),
+        migrations.AlterModelOptions(
+            name='tool',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='toolusagecounter',
+            options={'ordering': [django.db.models.functions.text.Lower('tool__name')]},
+        ),
+        migrations.AlterModelOptions(
+            name='user',
+            options={'ordering': [django.db.models.functions.text.Lower('first_name')], 'permissions': (('trigger_timed_services', 'Can trigger timed services'), ('use_billing_api', 'Can use billing API'), ('kiosk', 'Kiosk services'))},
+        ),
+        migrations.AlterModelOptions(
+            name='usertype',
+            options={'ordering': [django.db.models.functions.text.Lower('name')]},
         ),
     ]
 

@@ -17,6 +17,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, QuerySet
+from django.db.models.functions import Lower
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.template import Context, Template, loader
@@ -146,7 +147,7 @@ class UserType(models.Model):
 		return self.name
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 
 class PhysicalAccessLevel(models.Model):
@@ -222,7 +223,7 @@ class PhysicalAccessLevel(models.Model):
 		return str(self.name)
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 
 class TemporaryPhysicalAccess(models.Model):
@@ -307,7 +308,7 @@ class Closure(models.Model):
 		return str(self.name)
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 
 class ClosureTime(models.Model):
@@ -579,7 +580,7 @@ class User(models.Model):
 		return 'email'
 
 	class Meta:
-		ordering = ['first_name']
+		ordering = [Lower("first_name")]
 		permissions = (
 			("trigger_timed_services", "Can trigger timed services"),
 			("use_billing_api", "Can use billing API"),
@@ -626,7 +627,7 @@ class Tool(models.Model):
 	_policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 	@property
 	def category(self):
@@ -1191,7 +1192,7 @@ class Configuration(models.Model):
 		return False
 
 	class Meta:
-		ordering = ['tool', 'name']
+		ordering = ["tool", Lower("name")]
 
 	def __str__(self):
 		return str(self.tool.name) + ': ' + str(self.name)
@@ -1400,7 +1401,7 @@ class AccountType(models.Model):
 	name = models.CharField(max_length=100, unique=True)
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 	def __str__(self):
 		return str(self.name)
@@ -1413,7 +1414,7 @@ class Account(models.Model):
 	active = models.BooleanField(default=True, help_text="Users may only charge to an account if it is active. Deactivate the account to block future billable activity (such as tool usage and consumable check-outs) of all the projects that belong to it.")
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 	def __str__(self):
 		return str(self.name)
@@ -1429,7 +1430,7 @@ class Project(models.Model):
 	allow_consumable_withdrawals = models.BooleanField(default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project")
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 	def __str__(self):
 		return str(self.name)
@@ -1547,7 +1548,7 @@ class ReservationQuestions(models.Model):
 	only_for_projects = models.ManyToManyField(Project, blank=True, help_text="Select the projects these questions only apply to. Leave blank for all projects")
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 		verbose_name_plural = 'Reservation questions'
 
 	def __str__(self):
@@ -1584,7 +1585,7 @@ class Consumable(models.Model):
 	reminder_threshold_reached = models.BooleanField(default=False)
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 	def __str__(self):
 		return self.name
@@ -1610,7 +1611,7 @@ class ConsumableCategory(models.Model):
 	name = models.CharField(max_length=100)
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 		verbose_name_plural = 'Consumable categories'
 
 	def __str__(self):
@@ -1693,7 +1694,7 @@ class InterlockCardCategory(models.Model):
 
 	class Meta:
 		verbose_name_plural = 'Interlock card categories'
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 	def __str__(self):
 		return str(self.name)
@@ -1824,7 +1825,7 @@ class TaskCategory(models.Model):
 
 	class Meta:
 		verbose_name_plural = "Task categories"
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 	def __str__(self):
 		return str(self.name)
@@ -1843,7 +1844,7 @@ class TaskStatus(models.Model):
 
 	class Meta:
 		verbose_name_plural = 'task statuses'
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 
 class TaskHistory(models.Model):
@@ -1884,7 +1885,7 @@ class ResourceCategory(models.Model):
 
 	class Meta:
 		verbose_name_plural = 'resource categories'
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 
 class Resource(models.Model):
@@ -1897,7 +1898,7 @@ class Resource(models.Model):
 	restriction_message = models.TextField(blank=True, help_text="The message that is displayed to users on the tool control page when this resource is unavailable.")
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 	def visible_fully_dependent_tools(self):
 		return self.fully_dependent_tools.filter(visible=True)
@@ -2044,7 +2045,7 @@ class AlertCategory(models.Model):
 	name = models.CharField(max_length=200)
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 		verbose_name_plural = "Alert categories"
 
 	def __str__(self):
@@ -2076,8 +2077,8 @@ class ContactInformationCategory(models.Model):
 	display_order = models.IntegerField(help_text="Contact information categories are sorted according to display order. The lowest value category is displayed first in the 'Contact information' page.")
 
 	class Meta:
-		verbose_name_plural = 'Contact information categories'
-		ordering = ['display_order', 'name']
+		verbose_name_plural = "Contact information categories"
+		ordering = ["display_order", Lower("name")]
 
 	def __str__(self):
 		return str(self.name)
@@ -2096,7 +2097,7 @@ class ContactInformation(models.Model):
 
 	class Meta:
 		verbose_name_plural = 'Contact information'
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 	def __str__(self):
 		return str(self.name)
@@ -2149,7 +2150,7 @@ class Customization(models.Model):
 	value = models.TextField()
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 
 	def __str__(self):
 		return str(self.name)
@@ -2159,7 +2160,7 @@ class ScheduledOutageCategory(models.Model):
 	name = models.CharField(max_length=200)
 
 	class Meta:
-		ordering = ['name']
+		ordering = [Lower("name")]
 		verbose_name_plural = "Scheduled outage categories"
 
 	def __str__(self):
@@ -2272,7 +2273,7 @@ class ToolUsageCounter(models.Model):
 		return str(self.name)
 
 	class Meta:
-		ordering = ['tool__name']
+		ordering = [Lower("tool__name")]
 
 
 # This method is used to check when a tool usage counter value gets over the threshold
@@ -2331,7 +2332,7 @@ class StaffAbsenceType(models.Model):
 		return f"{self.name}{description}"
 
 	class Meta:
-		ordering = ["name"]
+		ordering = [Lower("name")]
 
 
 class StaffAvailabilityCategory(models.Model):
@@ -2339,8 +2340,8 @@ class StaffAvailabilityCategory(models.Model):
 	display_order = models.IntegerField(help_text="Staff availability categories are sorted according to display order. The lowest value category is displayed first in the 'Staff status' page.")
 
 	class Meta:
-		verbose_name_plural = 'Staff availability categories'
-		ordering = ['display_order', 'name']
+		verbose_name_plural = "Staff availability categories"
+		ordering = ["display_order", Lower("name")]
 
 	def __str__(self):
 		return str(self.name)
@@ -2375,7 +2376,7 @@ class StaffAvailability(models.Model):
 
 	class Meta:
 		verbose_name_plural = "Staff availability"
-		ordering = ["staff_member__first_name"]
+		ordering = [Lower("staff_member__first_name")]
 
 
 class StaffAbsence(models.Model):
@@ -2408,7 +2409,7 @@ class ChemicalHazard(models.Model):
 	logo = models.ImageField(upload_to=get_hazard_logo_filename, blank=True, help_text="The logo for this hazard")
 
 	class Meta:
-		ordering = ['display_order', 'name']
+		ordering = ["display_order", Lower("name")]
 
 	def __str__(self):
 		return str(self.name)
@@ -2422,7 +2423,7 @@ class Chemical(models.Model):
 	keywords = models.TextField(null=True, blank=True)
 
 	class Meta:
-		ordering = ["name"]
+		ordering = [Lower("name")]
 
 	def link(self):
 		return self.document.url if self.document else self.url
