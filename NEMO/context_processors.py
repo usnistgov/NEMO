@@ -65,7 +65,7 @@ def base_context(request):
 	return {
 		"facility_name": facility_name,
 		"site_title": site_title,
-		"device": request.device,
+		"device": getattr(request, "device", "desktop"),
 		"tools_exist": tools_exist,
 		"areas_exist": areas_exist,
 		"buddy_system_areas_exist": buddy_system_areas_exist,
