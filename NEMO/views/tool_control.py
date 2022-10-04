@@ -9,7 +9,6 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import Context, Template
 from django.template.defaultfilters import linebreaksbr
 from django.utils import formats, timezone
 from django.utils.safestring import mark_safe
@@ -41,6 +40,7 @@ from NEMO.utilities import (
 	extract_optional_beginning_and_end_times,
 	format_datetime,
 	quiet_int,
+	render_email_template,
 	send_mail,
 )
 from NEMO.views.calendar import shorten_reservation
@@ -589,5 +589,5 @@ def send_tool_usage_counter_email(counter: ToolUsageCounter):
 	message = get_media_file_contents('counter_threshold_reached_email.html')
 	if user_office_email and message:
 		subject = f"Warning threshold reached for {counter.tool.name} {counter.name} counter"
-		rendered_message = Template(message).render(Context({'counter': counter}))
+		rendered_message = render_email_template(message, {"counter": counter})
 		send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=counter.warning_email, email_category=EmailCategory.SYSTEM)

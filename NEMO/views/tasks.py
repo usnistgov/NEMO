@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import Context, Template
 from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
@@ -29,6 +28,7 @@ from NEMO.utilities import (
 	bootstrap_primary_color,
 	create_email_attachment,
 	format_datetime,
+	render_email_template,
 	resize_image,
 	send_mail,
 )
@@ -107,7 +107,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 			'tool_control_absolute_url': request.build_absolute_uri(task.tool.get_absolute_url())
 		}
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
-		message = Template(message).render(Context(dictionary))
+		message = render_email_template(message, dictionary, request)
 		# Add all recipients, starting with primary owner
 		recipient_users: List[User] = [task.tool.primary_owner]
 		# Add backup owners
@@ -127,10 +127,10 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 		for reservation in upcoming_reservations:
 			if not task.tool.operational:
 				subject = reservation.tool.name + " reservation problem"
-				rendered_message = Template(message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('danger'), 'fatal_error': True}))
+				rendered_message = render_email_template(message, {'reservation': reservation, 'template_color': bootstrap_primary_color('danger'), 'fatal_error': True}, request)
 			else:
 				subject = reservation.tool.name + " reservation warning"
-				rendered_message = Template(message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}))
+				rendered_message = render_email_template(message, {'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}, request)
 			send_to_alternate = reservation.user.get_preferences().email_send_reservation_emails
 			reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TASKS, send_to_alternate=send_to_alternate)
 
@@ -282,7 +282,7 @@ def set_task_status(request, task, status_name, user):
 			'tool_control_absolute_url': request.build_absolute_uri(task.tool.get_absolute_url())
 		}
 		subject = f'{task.tool} task notification'
-		message = Template(message).render(Context(dictionary))
+		message = render_email_template(message, dictionary, request)
 		# Add primary owner if applicable
 		recipient_users: List[User] = [task.tool.primary_owner] if status.notify_primary_tool_owner else []
 		if status.notify_backup_tool_owners:

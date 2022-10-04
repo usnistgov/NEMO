@@ -20,7 +20,7 @@ from django.db.models import Q, QuerySet
 from django.db.models.functions import Lower
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
-from django.template import Context, Template, loader
+from django.template import loader
 from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
@@ -40,6 +40,7 @@ from NEMO.utilities import (
 	get_task_image_filename,
 	get_tool_document_filename,
 	get_tool_image_filename,
+	render_email_template,
 	send_mail,
 )
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
@@ -328,7 +329,7 @@ class ClosureTime(models.Model):
 			"end_time": self.end_time,
 			"areas": areas,
 		}
-		contents = Template(self.closure.alert_template).render(Context(dictionary)) if self.closure.alert_template else None
+		contents = render_email_template(self.closure.alert_template, dictionary) if self.closure.alert_template else None
 		return contents
 
 	def clean(self):

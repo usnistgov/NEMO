@@ -4,14 +4,13 @@ from typing import List
 from django.contrib import messages
 from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect, render
-from django.template import Context, Template
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import staff_member_required
 from NEMO.exceptions import ProjectChargeException
 from NEMO.forms import ConsumableWithdrawForm
 from NEMO.models import Consumable, ConsumableWithdraw, User
-from NEMO.utilities import EmailCategory, send_mail
+from NEMO.utilities import EmailCategory, render_email_template, send_mail
 from NEMO.views.customization import EmailsCustomization, get_media_file_contents
 from NEMO.views.policy import check_billing_to_project
 
@@ -113,5 +112,5 @@ def send_reorder_supply_reminder_email(consumable: Consumable):
 	message = get_media_file_contents('reorder_supplies_reminder_email.html')
 	if user_office_email and message:
 		subject = f"Time to order more {consumable.name}"
-		rendered_message = Template(message).render(Context({'item': consumable}))
+		rendered_message = render_email_template(message, {'item': consumable})
 		send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=[consumable.reminder_email], email_category=EmailCategory.SYSTEM)

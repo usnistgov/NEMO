@@ -4,7 +4,6 @@ from typing import List, Optional, Union
 
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.template import Context, Template
 from django.utils import timezone
 
 from NEMO.exceptions import (
@@ -35,7 +34,14 @@ from NEMO.models import (
 	Tool,
 	User,
 )
-from NEMO.utilities import EmailCategory, distinct_qs_value_list, format_daterange, format_datetime, send_mail
+from NEMO.utilities import (
+	EmailCategory,
+	distinct_qs_value_list,
+	format_daterange,
+	format_datetime,
+	render_email_template,
+	send_mail,
+)
 from NEMO.views.customization import ApplicationCustomization, EmailsCustomization, get_media_file_contents
 
 
@@ -84,7 +90,7 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 				'tool': tool,
 				'type': 'access'
 			}
-			rendered_message = Template(message).render(Context(dictionary))
+			rendered_message = render_email_template(message, dictionary)
 			send_mail(subject="Area access requirement", content=rendered_message, from_email=abuse_email_address, to=[abuse_email_address], email_category=EmailCategory.ABUSE)
 		return HttpResponseBadRequest("You must be logged in to the {} to operate this tool.".format(tool.requires_area_access.name))
 
@@ -100,7 +106,7 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 					'tool': tool,
 					'type': 'reservation',
 				}
-				rendered_message = Template(message).render(Context(dictionary))
+				rendered_message = render_email_template(message, dictionary)
 				send_mail(subject="Area reservation requirement", content=rendered_message, from_email=abuse_email_address, to=[abuse_email_address], email_category=EmailCategory.ABUSE)
 			return HttpResponseBadRequest("You must have a current reservation for the {} to operate this tool.".format(tool.requires_area_access.name))
 

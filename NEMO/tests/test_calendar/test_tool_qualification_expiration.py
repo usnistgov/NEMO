@@ -122,9 +122,6 @@ class ToolQualificationTestCase(TestCase):
 		self.assertFalse(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 		# Email was sent
 		self.assertTrue(EmailLog.objects.filter(sender="user_office@example.com", to__contains=self.user.email).exists())
-		# Email was also sent to tool owner and facility manager
-		self.assertTrue(EmailLog.objects.filter(sender="user_office@example.com", to__contains=self.owner.email).exists())
-		self.assertTrue(EmailLog.objects.filter(sender="user_office@example.com", to__contains=self.manager.email).exists())
 
 	def test_qualification_expired_never_used(self, mock_open, mock_exist):
 		mock_exist.return_value = True
@@ -140,9 +137,6 @@ class ToolQualificationTestCase(TestCase):
 		self.assertFalse(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 		# Email was sent
 		self.assertTrue(EmailLog.objects.filter(sender="user_office@example.com", to__contains=self.user.email).exists())
-		# Email was also sent to tool owner and facility manager
-		self.assertTrue(EmailLog.objects.filter(sender="user_office@example.com", to__contains=self.owner.email).exists())
-		self.assertTrue(EmailLog.objects.filter(sender="user_office@example.com", to__contains=self.manager.email).exists())
 
 	def test_qualification_expired_a_while(self, mock_open, mock_exist):
 		mock_exist.return_value = True

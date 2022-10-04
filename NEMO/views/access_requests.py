@@ -6,7 +6,6 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import Context, Template
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -20,6 +19,7 @@ from NEMO.utilities import (
 	bootstrap_primary_color,
 	format_datetime,
 	quiet_int,
+	render_email_template,
 	send_mail,
 )
 from NEMO.views.customization import (
@@ -174,7 +174,11 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 		cc_users: List[User] = list(User.objects.filter(is_active=True, is_facility_manager=True))
 		# and other users
 		cc_users.extend(access_request.other_users.all())
-		ccs = [email for user in cc_users for email in user.get_emails(user.get_preferences().email_send_access_request_updates)]
+		ccs = [
+			email
+			for user in cc_users
+			for email in user.get_emails(user.get_preferences().email_send_access_request_updates)
+		]
 		ccs.append(user_office_email)
 		status = (
 			"approved"
@@ -187,15 +191,14 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 		)
 		absolute_url = request.build_absolute_uri(reverse("user_requests", kwargs={"tab": "access"}))
 		color_type = "success" if status == "approved" else "danger" if status == "denied" else "info"
-		message = Template(access_request_notification_email).render(
-			Context(
-				{
-					"template_color": bootstrap_primary_color(color_type),
-					"access_request": access_request,
-					"status": status,
-					"access_requests_url": absolute_url,
-				}
-			)
+		message = render_email_template(
+			access_request_notification_email,
+			{
+				"template_color": bootstrap_primary_color(color_type),
+				"access_request": access_request,
+				"status": status,
+				"access_requests_url": absolute_url,
+			},
 		)
 		send_to_alternate = access_request.creator.get_preferences().email_send_access_request_updates
 		send_mail(
@@ -273,14 +276,18 @@ def process_weekend_access_notification(user_office_email, email_to, access_cont
 def send_weekend_email_access(access, user_office_email, email_to, contents, beginning_of_the_week):
 	facility_name = ApplicationCustomization.get("facility_name")
 	recipients = tuple([e for e in email_to.split(",") if e])
-	ccs = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(manager.get_preferences().email_send_access_request_updates)]
+	ccs = [
+		email
+		for manager in User.objects.filter(is_active=True, is_facility_manager=True)
+		for email in manager.get_emails(manager.get_preferences().email_send_access_request_updates)
+	]
 	ccs.append(user_office_email)
 
 	sat = format_datetime(beginning_of_the_week + timedelta(days=5), "SHORT_DATE_FORMAT", as_current_timezone=False)
 	sun = format_datetime(beginning_of_the_week + timedelta(days=6), "SHORT_DATE_FORMAT", as_current_timezone=False)
 
 	subject = f"{'NO w' if not access else 'W'}eekend access for the {facility_name} {sat} - {sun}"
-	message = Template(contents).render(Context({"weekend_access": access}))
+	message = render_email_template(contents, {"weekend_access": access})
 	send_mail(
 		subject=subject,
 		content=message,

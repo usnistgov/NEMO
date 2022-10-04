@@ -8,7 +8,6 @@ from django.core.validators import validate_email
 from django.db.models import Q, QuerySet
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import Context, Template
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
@@ -16,7 +15,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import staff_member_required
 from NEMO.forms import EmailBroadcastForm
 from NEMO.models import Account, Area, Project, Tool, User, UserType
-from NEMO.utilities import EmailCategory, export_format_datetime, send_mail
+from NEMO.utilities import EmailCategory, export_format_datetime, render_email_template, send_mail
 from NEMO.views.customization import ApplicationCustomization, get_media_file_contents
 
 logger = getLogger(__name__)
@@ -127,7 +126,7 @@ def compose_email(request):
 			"contents": "Contents",
 			"template_color": "#5bc0de",
 		}
-		dictionary["generic_email_sample"] = Template(generic_email_sample).render(Context(generic_email_context))
+		dictionary["generic_email_sample"] = render_email_template(generic_email_sample, generic_email_context, request)
 	return render(request, "email/compose_email.html", dictionary)
 
 
@@ -173,7 +172,7 @@ def send_broadcast_email(request):
 		"contents": form.cleaned_data["contents"],
 		"template_color": form.cleaned_data["color"],
 	}
-	content = Template(content).render(Context(dictionary))
+	content = render_email_template(content, dictionary, request)
 	active_choice = form.cleaned_data["only_active_users"]
 	try:
 		audience = form.cleaned_data["audience"]
@@ -237,7 +236,7 @@ def email_preview(request):
 			"contents": form.data["contents"],
 			"template_color": form.data["color"],
 		}
-		email_content = Template(generic_email_template).render(Context(email_context))
+		email_content = render_email_template(generic_email_template, email_context, request)
 		return HttpResponse(mark_safe(email_content))
 	return HttpResponse()
 
