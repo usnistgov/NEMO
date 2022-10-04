@@ -16,8 +16,10 @@ from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.db.models import QuerySet
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import render
+from django.template import Template
+from django.template.context import make_context
 from django.utils import timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.timezone import is_naive, localtime
@@ -66,6 +68,13 @@ datetime_input_format = get_format("DATETIME_INPUT_FORMATS")[0]
 time_input_js_format = convert_py_format_to_js(time_input_format)
 date_input_js_format = convert_py_format_to_js(date_input_format)
 datetime_input_js_format = convert_py_format_to_js(datetime_input_format)
+
+
+class EmptyHttpRequest(HttpRequest):
+	def __init__(self):
+		super().__init__()
+		self.session = QueryDict(mutable=True)
+		self.device = "desktop"
 
 
 class BasicDisplayTable(object):
@@ -486,3 +495,10 @@ def render_combine_responses(request, original_response: HttpResponse, template_
 	additional_content = render(request, template_name, context)
 	original_response.content += additional_content.content
 	return original_response
+
+
+def render_email_template(template, dictionary: dict, request=None):
+	""" Use Django's templating engine to render the email template
+		If we don't have a request, create a empty one so context_processors (messages, customizations etc.) can be used
+	"""
+	return Template(template).render(make_context(dictionary, request or EmptyHttpRequest()))
