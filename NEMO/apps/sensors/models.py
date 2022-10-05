@@ -15,13 +15,13 @@ from django.utils.safestring import mark_safe
 from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.apps.sensors.evaluators import evaluate_boolean_expression
 from NEMO.fields import MultiEmailField
-from NEMO.models import InterlockCard
+from NEMO.models import BaseModel, InterlockCard
 from NEMO.utilities import EmailCategory, format_datetime, send_mail
 
 models_logger = getLogger(__name__)
 
 
-class SensorCardCategory(models.Model):
+class SensorCardCategory(BaseModel):
 	name = models.CharField(max_length=200, help_text="The name for this sensor card category")
 	key = models.CharField(max_length=100, help_text="The key to identify this sensor card category by in sensors.py")
 
@@ -33,7 +33,7 @@ class SensorCardCategory(models.Model):
 		return str(self.name)
 
 
-class SensorCard(models.Model):
+class SensorCard(BaseModel):
 	name = models.CharField(max_length=200)
 	server = models.CharField(max_length=200)
 	port = models.PositiveIntegerField()
@@ -50,7 +50,7 @@ class SensorCard(models.Model):
 		return card_name + str(self.server)
 
 
-class SensorCategory(models.Model):
+class SensorCategory(BaseModel):
 	name = models.CharField(max_length=200, help_text="The name for this sensor category")
 	parent = models.ForeignKey(
 		"SensorCategory", related_name="children", null=True, blank=True, on_delete=models.SET_NULL
@@ -92,7 +92,7 @@ class SensorCategory(models.Model):
 		ordering = ["name"]
 
 
-class Sensor(models.Model):
+class Sensor(BaseModel):
 	name = models.CharField(max_length=200)
 	visible = models.BooleanField(
 		default=True, help_text="Specifies whether this sensor is visible in the sensor dashboard"
@@ -173,7 +173,7 @@ class Sensor(models.Model):
 		return self.name
 
 
-class SensorData(models.Model):
+class SensorData(BaseModel):
 	sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
 	created_date = models.DateTimeField(auto_now_add=True)
 	value = models.FloatField()
@@ -186,7 +186,7 @@ class SensorData(models.Model):
 		ordering = ["-created_date"]
 
 
-class SensorAlertLog(models.Model):
+class SensorAlertLog(BaseModel):
 	sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
 	time = models.DateTimeField(auto_now_add=True)
 	value = models.FloatField(null=True, blank=True)
@@ -201,7 +201,7 @@ class SensorAlertLog(models.Model):
 		ordering = ["-time"]
 
 
-class SensorAlert(models.Model):
+class SensorAlert(BaseModel):
 	enabled = models.BooleanField(default=True)
 	sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
 	trigger_no_data = models.BooleanField(
@@ -314,7 +314,9 @@ class SensorAlert(models.Model):
 
 class SensorAlertEmail(SensorAlert):
 	additional_emails = MultiEmailField(
-		null=True, blank=True, help_text="Additional email address to contact when this alert is triggered. A comma-separated list can be used."
+		null=True,
+		blank=True,
+		help_text="Additional email address to contact when this alert is triggered. A comma-separated list can be used.",
 	)
 
 	def reset_alert(self, alert_time: datetime.datetime, value: float = None):
