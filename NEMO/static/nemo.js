@@ -537,43 +537,66 @@ function matcher(items, search_fields)
 //     ... called when an item is selected ...
 // }
 // $('#search').autocomplete('fruits', on_select, [{name:'apple', id:1}, {name:'banana', id:2}, {name:'cherry', id:3}]);
+// It can also be used with a URL
+// $('#search').autocomplete('fruits', on_select, 'search_url');
 (function($)
 {
-	$.fn.autocomplete = function(dataset_name, select_callback, items_to_search, hide_type)
+	$.fn.autocomplete = function(dataset_name, on_select, items_or_url, hide_type)
 	{
 		hide_type = hide_type || false;
 		let search_fields = ['name', 'application_identifier'];
-		let datasets =
+		let dataset =
 		{
-				source: matcher(items_to_search, search_fields),
-				name: dataset_name,
-				displayKey: 'name'
-		};
-		datasets['templates'] =
-		{
-			'suggestion': function(data)
+			name: dataset_name,
+			displayKey: 'name',
+			templates:
 			{
-				let result = data['name'];
-				if(!hide_type && data['type'])
+				'suggestion': function(data)
 				{
-					result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'].capitalize() + '</span>';
+					let result = data['name'];
+					if(!hide_type && data['type'])
+					{
+						result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'].capitalize() + '</span>';
+					}
+					if(data['application_identifier'])
+					{
+						result += '<span style="font-size:small; font-weight:bold; color:#bbbbbb" class="pull-right">' + data['application_identifier'] + '</span>';
+					}
+					return result;
 				}
-				if(data['application_identifier'])
-				{
-					result += '<span style="font-size:small; font-weight:bold; color:#bbbbbb" class="pull-right">' + data['application_identifier'] + '</span>';
-				}
-				return result;
 			}
 		};
+		if (Array.isArray(items_or_url))
+		{
+			dataset['source'] = matcher(items_or_url, search_fields);
+		}
+		else
+		{
+			dataset['async'] = true;
+			dataset['source'] = function (query, process)
+			{
+				return $.ajax(
+				{
+					url: items_or_url,
+					type: 'GET',
+					data: {query: query},
+					dataType: 'json',
+					success: function (json)
+					{
+						return process(json);
+					}
+				});
+			};
+		}
 		this.typeahead(
 			{
 				minLength: 1,
 				hint: false,
 				highlight: false
 			},
-			datasets
+			dataset
 		);
-		this.bind('typeahead:selected', select_callback);
+		this.bind('typeahead:selected', on_select);
 		return this;
 	};
 }(jQuery));
@@ -617,9 +640,12 @@ function submit_and_disable(input_submit)
 
 function auto_size_textarea(textarea)
 {
-	textarea.rows = 1;
-	textarea.style.height = '';
-	textarea.style.height = textarea.scrollHeight + 3 + 'px';
+	if (textarea)
+	{
+		textarea.rows = 1;
+		textarea.style.height = '';
+		textarea.style.height = textarea.scrollHeight + 3 + 'px';
+	}
 }
 
 function set_start_end_datetime_pickers(start_jq, end_jq, properties, end_before_start)

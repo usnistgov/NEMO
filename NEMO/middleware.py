@@ -12,6 +12,7 @@ from django.utils.deprecation import MiddlewareMixin
 
 from NEMO.exceptions import InactiveUserError
 from NEMO.models import User
+from NEMO.utilities import is_ajax
 
 middleware_logger = getLogger(__name__)
 
@@ -151,7 +152,3 @@ class NEMOAuditlogMiddleware:
 			if customer_id:
 				return User.objects.get(pk=customer_id)
 		return request.user
-
-
-def is_ajax(request):
-	return request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest"

@@ -6,12 +6,13 @@ from email import encoders
 from email.mime.base import MIMEBase
 from io import BytesIO
 from logging import getLogger
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List, Sequence, Set, Tuple, Union
 
 from PIL import Image
 from dateutil.parser import parse
 from dateutil.rrule import MONTHLY, rrule
 from django.conf import settings
+from django.contrib.admin import ModelAdmin
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
@@ -502,3 +503,27 @@ def render_email_template(template, dictionary: dict, request=None):
 		If we don't have a request, create a empty one so context_processors (messages, customizations etc.) can be used
 	"""
 	return Template(template).render(make_context(dictionary, request or EmptyHttpRequest()))
+
+
+def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request) -> HttpResponse:
+	"""
+	This function reuses django admin search result to implement our own autocomplete.
+	Its usage is the same as ModelAdmin, it needs a base queryset, list of fields and a search query
+	It returns the HttpResponse with json formatted data, ready to use by the autocomplete js code
+	"""
+	if is_ajax(request):
+		query = request.GET.get("query", "")
+		admin_model = ModelAdmin(query_set.model, None)
+		admin_model.search_fields = search_fields
+		search_qs, search_use_distinct = admin_model.get_search_results(None, query_set, query)
+		if search_use_distinct:
+			search_qs = search_qs.distinct()
+		from NEMO.templatetags.custom_tags_and_filters import json_search_base_with_extra_fields
+		data = json_search_base_with_extra_fields(search_qs, *search_fields)
+	else:
+		data = "This request can only be made as an ajax call"
+	return HttpResponse(data, "application/json")
+
+
+def is_ajax(request):
+	return request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest"
