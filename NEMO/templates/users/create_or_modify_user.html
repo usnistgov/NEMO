@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'users/users.html' %}
 {% load custom_tags_and_filters %}
 {% load mptt_tags %}
 {% block title %}{% if form.instance.id %}Modify user{% else %}New user{% endif %}{% endblock %}
@@ -7,28 +7,26 @@
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
 	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
 {% endblock %}
-{% block content %}
-	{% if form.errors %}
-		<div class="alert alert-danger">
-			Oops! Something went wrong. Please correct the errors highlighted below.<br>
-			{{ form.non_field_errors }}
-		</div>
-	{% endif %}
-	{% if warning %}
-		<div class="alert alert-warning">
-			{{ warning }}
-		</div>
-	{% endif %}
-	<div class="row">
-		<div class="col-sm-12">
-			<div class="form-group">
-				{% if form.instance.id %}
-					<a href="{% url 'users' %}">Search for another user</a><br>
-				{% endif %}
-			</div>
-		</div>
-	</div>
-	<h1 class="row" style="margin-bottom: 25px">{% if form.instance.id %}<div class="col-xs-6 col-sm-4">Modify user</div><div class="col-sm-2 text-right"><a class="btn btn-info" href="{% url 'history' 'user' form.instance.id %}">View user history</a></div>{% else %}New user{% endif %}</h1>
+{% block table_empty_content %}
+    <div class="row col-sm-12" style="margin-bottom: 25px">
+        <div class="col-sm-6" style="border-top: 1px solid #ddd;"></div>
+    </div>
+    <div class="row col-sm-12">
+    {% if form.errors %}
+        <div class="col-sm-6 alert alert-danger">
+            Oops! Something went wrong. Please correct the errors highlighted below.<br>
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+    {% if warning %}
+        <div class="col-sm-6 alert alert-warning">
+            {{ warning }}
+        </div>
+    {% endif %}
+    </div>
+	<div class="h1 row" style="margin-bottom: 25px">
+        {% if form.instance.id %}<div class="col-xs-6 col-sm-4" style="padding-right: 0">Modify user</div><div class="col-sm-2 text-right" style="padding-left: 0"><a class="btn btn-info" href="{% url 'history' 'user' form.instance.id %}">View user history</a></div>{% else %}<div class="col-sm-6">New user</div>{% endif %}
+    </div>
 	<form class="form-horizontal" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}">
 		{% csrf_token %}
 		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="user_id">{% endif %}

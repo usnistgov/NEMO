@@ -28,20 +28,26 @@ from NEMO.models import (
 	record_active_state,
 	record_local_many_to_many_changes,
 )
+from NEMO.utilities import queryset_search_filter
 from NEMO.views.customization import ApplicationCustomization, StatusDashboardCustomization, UserCustomization
 from NEMO.views.pagination import SortedPaginator
 from NEMO.views.status_dashboard import show_staff_status
 
 users_logger = getLogger(__name__)
 
+
 @staff_member_required
 @require_GET
 def users(request):
-	all_users = User.objects.all()
+	page = SortedPaginator(User.objects.all(), request, order_by="last_name").get_current_page()
 
-	page = SortedPaginator(all_users, request, order_by="last_name").get_current_page()
+	return render(request, "users/users.html", {"page": page})
 
-	return render(request, "users/users.html", {"page": page, "users": all_users})
+
+@staff_member_required
+@require_GET
+def user_search(request):
+	return queryset_search_filter(User.objects.all(), ["first_name", "last_name", "username"], request)
 
 
 @staff_member_required

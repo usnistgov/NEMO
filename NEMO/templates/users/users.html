@@ -2,11 +2,10 @@
 {% load custom_tags_and_filters %}
 {% block title %}Users{% endblock %}
 {% block before_pagination %}
-	<h1>
-		Users
-		<a href="{% url 'create_or_modify_user' 'new' %}" class="btn btn-success pull-right">New user</a>
-	</h1>
-	<div class="row" style="margin-bottom: 20px">
+	<div class="h1 row" style="margin-top: 0">
+        <div class="col-xs-6 col-sm-4">Users</div><div class="{% if page %}col-sm-8{% else %}col-sm-2{% endif %} text-right"><a href="{% url 'create_or_modify_user' 'new' %}" class="btn btn-success">New user</a></div>
+	</div>
+	<div class="row" style="margin-bottom: 25px">
 		<div class="col-sm-4">
 			<input id="search" type="text" placeholder="Search for a user" class="form-control" autofocus>
 		</div>
@@ -51,7 +50,7 @@
 		}
 		function on_load()
 		{
-			$("#search").autocomplete('users', get_user, {{ users|json_search_base }}).focus();
+			$("#search").autocomplete('users', get_user, '{% url 'user_search' %}', true).focus();
 		}
 		window.addEventListener('load', on_load, true);
 	</script>
