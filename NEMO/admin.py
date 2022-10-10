@@ -661,6 +661,7 @@ class UsageEventAdmin(admin.ModelAdmin):
 class ConsumableAdmin(admin.ModelAdmin):
 	list_display = ("name", "quantity", "category", "visible", "reminder_threshold", "reminder_email", "id")
 	list_filter = ("visible", "category")
+	search_fields = ("name",)
 	readonly_fields = ("reminder_threshold_reached",)
 
 
