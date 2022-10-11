@@ -2087,7 +2087,7 @@ class AlertCategory(BaseModel):
 class Alert(BaseModel):
 	title = models.CharField(blank=True, max_length=150)
 	category = models.CharField(blank=True, max_length=200,	help_text="A category/type for this alert.")
-	contents = models.CharField(max_length=500)
+	contents = models.TextField()
 	creation_time = models.DateTimeField(default=timezone.now)
 	creator = models.ForeignKey(User, null=True, blank=True, related_name='+', on_delete=models.SET_NULL)
 	debut_time = models.DateTimeField(help_text='The alert will not be displayed to users until the debut time is reached.')
