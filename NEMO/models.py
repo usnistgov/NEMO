@@ -172,6 +172,7 @@ class UserPreferences(BaseModel):
 		verbose_name = 'User preferences'
 		verbose_name_plural = 'User preferences'
 
+
 class UserType(BaseModel):
 	name = models.CharField(max_length=50, unique=True)
 
@@ -442,7 +443,7 @@ class User(BaseModel):
 			if self.pk:
 				username_taken = username_taken.exclude(pk=self.pk)
 			if username_taken.exists():
-				raise ValidationError({'username':'This username has already been taken'})
+				raise ValidationError({'username': 'This username has already been taken'})
 
 	def has_perm(self, perm, obj=None):
 		"""
@@ -520,7 +521,7 @@ class User(BaseModel):
 			emails.append(self.preferences.email_alternate)
 		return emails
 
-	def email_user(self, subject, message, from_email, cc=None, attachments=None, send_to_alternate=False, email_category:EmailCategory = EmailCategory.GENERAL):
+	def email_user(self, subject, message, from_email, cc=None, attachments=None, send_to_alternate=False, email_category: EmailCategory = EmailCategory.GENERAL):
 		""" Sends an email to this user. """
 		send_mail(subject=subject, content=message, from_email=from_email, to=self.get_emails(send_to_alternate), cc=cc, attachments=attachments, email_category=email_category)
 
@@ -599,13 +600,12 @@ class User(BaseModel):
 
 	def get_contact_info_html(self):
 		if hasattr(self, 'contactinformation'):
-			content = escape(loader.render_to_string('snippets/contact_person.html', {'person':self.contactinformation, 'email_form': True}))
+			content = escape(loader.render_to_string('snippets/contact_person.html', {'person' :self.contactinformation, 'email_form': True}))
 			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
 		else:
-			email_url = reverse('get_email_form_for_user', kwargs={'user_id':self.id})
+			email_url = reverse('get_email_form_for_user', kwargs={'user_id': self.id})
 			content = escape(f'<h4 style="margin-top:0; text-align: center">{self.get_name()}</h4>Email: <a href="{email_url}" target="_blank">{self.email}</a><br>')
 			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
-
 
 	@classmethod
 	def get_email_field_name(cls):
@@ -1306,7 +1306,6 @@ class Area(MPTTModel):
 	policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
 	policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
 
-
 	class MPTTMeta:
 		parent_attr = 'parent_area'
 
@@ -1621,6 +1620,7 @@ class Consumable(BaseModel):
 
 	def __str__(self):
 		return self.name
+
 
 # This method is used to check when the quantity of a consumable falls below the threshold and when it has been replenished
 @receiver(models.signals.pre_save, sender=Consumable)
@@ -2236,12 +2236,13 @@ class ScheduledOutage(BaseModel):
 	@property
 	def outage_item_filter(self):
 		if not self.outage_item_type:
-			return {'tool':None, 'area':None}
+			return {'tool': None, 'area': None}
 		else:
 			return {self.outage_item_type.value: self.outage_item}
 
 	def __str__(self):
 		return str(self.title)
+
 
 class News(BaseModel):
 	title = models.CharField(max_length=200)
@@ -2464,7 +2465,6 @@ class Chemical(BaseModel):
 		return str(self.name)
 
 
-
 # These two auto-delete tool images from filesystem when they are unneeded:
 @receiver(models.signals.post_delete, sender=ChemicalHazard)
 def auto_delete_file_on_tool_delete(sender, instance: ChemicalHazard, **kwargs):
@@ -2490,7 +2490,6 @@ def auto_delete_file_on_tool_change(sender, instance: ChemicalHazard, **kwargs):
 		if not old_file == new_file:
 			if os.path.isfile(old_file.path):
 				os.remove(old_file.path)
-
 
 
 # These two auto-delete tool images from filesystem when they are unneeded:
