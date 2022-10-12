@@ -190,5 +190,10 @@ class Migration(migrations.Migration):
             name='usertype',
             options={'ordering': [django.db.models.functions.text.Lower('name')]},
         ),
+        migrations.AlterField(
+            model_name='alert',
+            name='contents',
+            field=models.TextField(),
+        ),
     ]
 
