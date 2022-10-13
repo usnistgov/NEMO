@@ -86,7 +86,7 @@ def clear_withdrawals(request):
 @staff_member_required
 @require_POST
 def make_withdrawals(request):
-	withdrawals: List = request.session.get('withdrawals')
+	withdrawals: List = request.session.setdefault('withdrawals', [])
 	for withdraw in withdrawals:
 		make_withdrawal(consumable_id=withdraw['consumable_id'], merchant=request.user, customer_id=withdraw['customer_id'], quantity=withdraw['quantity'], project_id=withdraw['project_id'], request=request)
 	del request.session['withdrawals']
