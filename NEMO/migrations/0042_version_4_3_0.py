@@ -83,5 +83,19 @@ class Migration(migrations.Migration):
             name='contents',
             field=models.TextField(),
         ),
+        migrations.AddField(
+            model_name='consumable',
+            name='reusable',
+            field=models.BooleanField(default=False, help_text='Check this box if this item is reusable. The quantity of reusable items will not decrease when orders are made (storage bins for example).'),
+        ),
+        migrations.AlterField(
+            model_name='consumable',
+            name='reminder_email',
+            field=models.EmailField(blank=True, help_text='An email will be sent to this address when the quantity of this item falls below the reminder threshold.', max_length=254, null=True),
+        ),
+        migrations.AlterField(
+            model_name='consumable',
+            name='reminder_threshold',
+            field=models.IntegerField(blank=True, help_text='More of this item should be ordered when the quantity falls below this threshold.', null=True),
+        ),
     ]
-
