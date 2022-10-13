@@ -141,7 +141,7 @@ LOGGING = {
 		},
 		'django': {
 			'handlers': ['file', 'console'],
-			'level': 'DEBUG',
+			'level': 'INFO',
 			'propagate': True,
 		},
 		'NEMO': {

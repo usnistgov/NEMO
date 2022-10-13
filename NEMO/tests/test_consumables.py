@@ -35,7 +35,23 @@ class ToolTestCase(TestCase):
 		self.assertEqual(response.status_code, 200)
 		# Quantity has not changed yet since we haven't checked out
 		self.assertEqual(quantity, Consumable.objects.get(pk=consumable.id).quantity)
-		# Checkout
+		# Add a second withdrawal order
+		response = self.client.post(reverse("consumables"), data, follow=True)
+		self.assertEqual(response.status_code, 200)
+		# Remove first one from session
+		response = self.client.get(reverse("remove_consumable", args=[1]), follow=True)
+		self.assertEqual(response.status_code, 200)
+		# Clear them all out
+		response = self.client.get(reverse("clear_withdrawals"), follow=True)
+		self.assertEqual(response.status_code, 200)
+		# Checkout, nothing should happen since we cleared all orders
+		response = self.client.post(reverse("withdraw_consumables"), follow=True)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(quantity, Consumable.objects.get(pk=consumable.id).quantity)
+		# Add again
+		response = self.client.post(reverse("consumables"), data, follow=True)
+		self.assertEqual(response.status_code, 200)
+		# Checkout, now the withdrawal should have happened
 		response = self.client.post(reverse("withdraw_consumables"), follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(quantity - 1, Consumable.objects.get(pk=consumable.id).quantity)
