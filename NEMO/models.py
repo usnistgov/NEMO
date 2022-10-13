@@ -52,7 +52,7 @@ models_logger = getLogger(__name__)
 class BaseQuerySet(models.query.QuerySet):
 
 	def distinct(self, *field_names):
-		# If using Oracle, distinct and clobs don't work together, so we have to use defer to ignore them
+		# If using Oracle, distinct and CLOBs don't work together, so we have to use defer to ignore them
 		# The error is "ORA-00932: inconsistent datatypes: expected - got NCLOB"
 		# See https://code.djangoproject.com/ticket/4186
 		if self.is_oracle_vendor():
@@ -1609,30 +1609,42 @@ class Consumable(BaseModel):
 	name = models.CharField(max_length=100)
 	category = models.ForeignKey('ConsumableCategory', blank=True, null=True, on_delete=models.CASCADE)
 	quantity = models.IntegerField(help_text="The number of items currently in stock.")
+	reusable = models.BooleanField(default=False, help_text="Check this box if this item is reusable. The quantity of reusable items will not decrease when orders are made (storage bins for example).")
 	visible = models.BooleanField(default=True)
-	reminder_threshold = models.IntegerField(help_text="More of this item should be ordered when the quantity falls below this threshold.")
-	reminder_email = models.EmailField(help_text="An email will be sent to this address when the quantity of this item falls below the reminder threshold.")
+	reminder_threshold = models.IntegerField(null=True, blank=True, help_text="More of this item should be ordered when the quantity falls below this threshold.")
+	reminder_email = models.EmailField(null=True, blank=True, help_text="An email will be sent to this address when the quantity of this item falls below the reminder threshold.")
 	reminder_threshold_reached = models.BooleanField(default=False)
 
 	class Meta:
 		ordering = ["name"]
 
+	def clean(self):
+		if not self.reusable and (not self.reminder_threshold or not self.reminder_email):
+			raise ValidationError(
+				{
+					"reminder_threshold": "This field is required when the item is not reusable",
+					"reminder_email": "This field is required when the item is not reusable",
+				}
+			)
+
 	def __str__(self):
 		return self.name
 
 
-# This method is used to check when the quantity of a consumable falls below the threshold and when it has been replenished
+# This method is used to check when the quantity of a consumable falls below the threshold
+# or when it has been replenished
 @receiver(models.signals.pre_save, sender=Consumable)
 def check_consumable_quantity_threshold(sender, instance: Consumable, **kwargs):
 	try:
-		if not instance.reminder_threshold_reached and instance.quantity < instance.reminder_threshold:
-			# quantity is below threshold. set flag and send email
-			instance.reminder_threshold_reached = True
-			from NEMO.views.consumables import send_reorder_supply_reminder_email
-			send_reorder_supply_reminder_email(instance)
-		if instance.reminder_threshold_reached and instance.quantity >= instance.reminder_threshold:
-			# it has been replenished. reset flag
-			instance.reminder_threshold_reached = False
+		if instance.reminder_threshold:
+			if not instance.reminder_threshold_reached and instance.quantity < instance.reminder_threshold:
+				# quantity is below threshold. set flag and send email
+				instance.reminder_threshold_reached = True
+				from NEMO.views.consumables import send_reorder_supply_reminder_email
+				send_reorder_supply_reminder_email(instance)
+			if instance.reminder_threshold_reached and instance.quantity >= instance.reminder_threshold:
+				# it has been replenished. reset flag
+				instance.reminder_threshold_reached = False
 	except Exception as e:
 		models_logger.exception(e)
 		pass

@@ -95,7 +95,9 @@ def make_withdrawals(request):
 
 def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, request=None):
 	withdraw = ConsumableWithdraw.objects.create(consumable_id=consumable_id, quantity=quantity, merchant=merchant, customer_id=customer_id, project_id=project_id)
-	withdraw.consumable.quantity -= withdraw.quantity
+	if not withdraw.consumable.reusable:
+		# Only withdraw if it's an actual consumable (not reusable)
+		withdraw.consumable.quantity -= withdraw.quantity
 	withdraw.consumable.save()
 	# Only add notification message if request is present
 	if request:

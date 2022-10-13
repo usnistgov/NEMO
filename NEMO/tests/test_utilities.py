@@ -1,10 +1,11 @@
 from typing import List
 
 from django.contrib.auth.models import Permission
+from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
 from requests import Response
 
-from NEMO.models import User
+from NEMO.models import Account, Project, User
 
 
 def login_as(client: Client, user: User):
@@ -45,6 +46,30 @@ def login_as_user_with_permissions(client: Client, permissions: List[str]) -> Us
 	user.save()
 	client.force_login(user=user)
 	return user
+
+
+def validate_model_error(test_case: TestCase, model, *error_fields):
+	try:
+		model.full_clean()
+		test_case.fail(f"Should have failed with error fields: {error_fields}")
+	except ValidationError as e:
+		for error_field in error_fields:
+			test_case.assertIn(error_field, e.error_dict)
+
+
+def create_user_and_project(is_staff=False) -> (User, Project):
+	count = User.objects.count()
+	user = User.objects.create(
+		first_name="Testy",
+		last_name="McTester",
+		username=f"test{count}",
+		email=f"test{count}@test.com",
+		is_staff=is_staff,
+	)
+	project = Project.objects.create(
+		name=f"TestProject{count}", account=Account.objects.create(name=f"TestAccount{count}")
+	)
+	return user, project
 
 
 def test_response_is_login_page(test_case: TestCase, response: Response):
