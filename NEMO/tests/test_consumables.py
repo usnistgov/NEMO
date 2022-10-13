@@ -1,9 +1,10 @@
 from typing import Optional
 
 from django.test.testcases import TestCase
+from django.urls import reverse
 
 from NEMO.models import Consumable
-from NEMO.tests.test_utilities import create_user_and_project, validate_model_error
+from NEMO.tests.test_utilities import create_user_and_project, login_as_staff, validate_model_error
 from NEMO.views.consumables import make_withdrawal
 
 consumable: Optional[Consumable] = None
@@ -17,6 +18,27 @@ class ToolTestCase(TestCase):
 			name="Consumable", quantity=10, reminder_threshold=5, reminder_email="test@test.com"
 		)
 		supply = Consumable.objects.create(name="Consumable", quantity=1, reusable=True)
+
+	def test_get(self):
+		login_as_staff(self.client)
+		self.client.get(reverse("consumables"), follow=True)
+
+	def test_post(self):
+		quantity = consumable.quantity
+		data = {}
+		login_as_staff(self.client)
+		response = self.client.post(reverse("consumables"), data, follow=True)
+		self.assertEqual(response.status_code, 400)
+		customer, customer_project = create_user_and_project()
+		data = {"customer": customer.id, "project": customer_project.id, "consumable": consumable.id, "quantity": "1"}
+		response = self.client.post(reverse("consumables"), data, follow=True)
+		self.assertEqual(response.status_code, 200)
+		# Quantity has not changed yet since we haven't checked out
+		self.assertEqual(quantity, Consumable.objects.get(pk=consumable.id).quantity)
+		# Checkout
+		response = self.client.post(reverse("withdraw_consumables"), follow=True)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(quantity - 1, Consumable.objects.get(pk=consumable.id).quantity)
 
 	def test_clean(self):
 		test_consumable = Consumable()

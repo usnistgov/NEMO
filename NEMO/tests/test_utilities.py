@@ -59,7 +59,7 @@ def validate_model_error(test_case: TestCase, model, *error_fields):
 
 def create_user_and_project(is_staff=False) -> (User, Project):
 	count = User.objects.count()
-	user = User.objects.create(
+	user: User = User.objects.create(
 		first_name="Testy",
 		last_name="McTester",
 		username=f"test{count}",
@@ -69,6 +69,7 @@ def create_user_and_project(is_staff=False) -> (User, Project):
 	project = Project.objects.create(
 		name=f"TestProject{count}", account=Account.objects.create(name=f"TestAccount{count}")
 	)
+	user.projects.add(project)
 	return user, project
 
 
