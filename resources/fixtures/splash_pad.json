@@ -5998,6 +5998,19 @@
     }
   },
   {
+    "model": "NEMO.reservation",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "creator": 1,
+      "project": 1,
+      "tool": 1,
+      "start": "2022-06-21T20:10:00Z",
+      "end": "2022-06-23T20:10:00Z",
+      "short_notice": false
+    }
+  },
+  {
     "model": "NEMO.reservationquestions",
     "pk": 1,
     "fields": {
@@ -6010,6 +6023,16 @@
       ],
       "only_for_areas": [],
       "only_for_projects": []
+    }
+  },
+  {
+    "model": "NEMO.scheduledoutage",
+    "pk": 1,
+    "fields": {
+      "creator": 1,
+      "tool": 1,
+      "start": "2022-06-21T20:10:00Z",
+      "end": "2022-06-23T20:10:00Z"
     }
   },
   {
