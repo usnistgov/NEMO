@@ -53,6 +53,9 @@ url_kwargs_get_post = {
 			"event_type": "reservations",
 			"start": start.strftime("%Y-%m-%d"),
 			"end": end_one_day.strftime("%Y-%m-%d"),
+			"item_type": "tool",
+			"item_id": 1,
+			"personal_schedule": "yes",
 		}
 	},
 	"reservation_group_question": {"get": {"index": 1, "virtual_inputs": 1}},
