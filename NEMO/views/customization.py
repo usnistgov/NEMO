@@ -300,12 +300,12 @@ def get_media_file_contents(file_name):
 	storage = get_storage_class()()
 	if not storage.exists(file_name):
 		return ""
-	f = storage.open(file_name)
-	try:
-		return f.read().decode().strip()
-	except UnicodeDecodeError:
-		f = storage.open(file_name)
-		return f.read()
+	with storage.open(file_name) as opened_file:
+		read_file = opened_file.read()
+		try:
+			return read_file.decode().strip()
+		except UnicodeDecodeError:
+			return read_file
 
 
 def store_media_file(content, file_name):
