@@ -14,6 +14,7 @@ from django.urls.resolvers import RegexPattern
 
 from NEMO.models import User
 from NEMO.tests.test_utilities import login_as, login_as_staff, login_as_user, login_as_user_with_permissions
+from NEMO.views.customization import ApplicationCustomization
 
 url_test_logger = getLogger(__name__)
 
@@ -118,17 +119,100 @@ class URLsTestCase(TestCase):
 
 	def test_urls(self):
 		module = importlib.import_module(settings.ROOT_URLCONF)
-		test_urls(self, module.urlpatterns)
+		test_urls(self, module.urlpatterns, url_kwargs_get_post, urls_to_skip)
+
+	def test_more_calendar_urls(self):
+		facility_name = ApplicationCustomization.get("facility_name")
+		test_url(
+			self,
+			"event_feed",
+			{
+				"get": {
+					"event_type": f"{facility_name.lower()} usage",
+					"start": start.strftime("%Y-%m-%d"),
+					"end": end_one_day.strftime("%Y-%m-%d"),
+					"item_type": "tool",
+					"item_id": 1,
+				}
+			},
+		)
+		test_url(
+			self,
+			"event_feed",
+			{
+				"get": {
+					"event_type": f"{facility_name.lower()} usage",
+					"start": start.strftime("%Y-%m-%d"),
+					"end": end_one_day.strftime("%Y-%m-%d"),
+					"personal_schedule": "yes",
+				}
+			},
+		)
+		test_url(
+			self,
+			"event_feed",
+			{
+				"get": {
+					"event_type": f"{facility_name.lower()} usage",
+					"start": start.strftime("%Y-%m-%d"),
+					"end": end_one_day.strftime("%Y-%m-%d"),
+					"all_tools": "yes",
+				}
+			},
+		)
+		test_url(
+			self,
+			"event_feed",
+			{
+				"get": {
+					"event_type": f"{facility_name.lower()} usage",
+					"start": start.strftime("%Y-%m-%d"),
+					"end": end_one_day.strftime("%Y-%m-%d"),
+					"all_areas": "yes",
+				}
+			},
+		)
+		test_url(
+			self,
+			"event_feed",
+			{
+				"get": {
+					"event_type": f"{facility_name.lower()} usage",
+					"start": start.strftime("%Y-%m-%d"),
+					"end": end_one_day.strftime("%Y-%m-%d"),
+					"all_areastools": "yes",
+				}
+			},
+		)
+		test_url(
+			self,
+			"event_feed",
+			{
+				"login_id": 1,
+				"get": {
+					"event_type": "specific user",
+					"user": 3,
+					"start": start.strftime("%Y-%m-%d"),
+					"end": end_one_day.strftime("%Y-%m-%d"),
+				},
+			},
+		)
 
 
-def test_urls(test_case, url_patterns, prefix=""):
+def test_url(test_case, name, url_params):
+	module = importlib.import_module(settings.ROOT_URLCONF)
+	url_pattern = [url_patt for url_patt in module.urlpatterns if hasattr(url_patt, "name") and url_patt.name == name]
+	test_urls(test_case, url_pattern, {name: url_params}, [])
+
+
+def test_urls(test_case, url_patterns, url_params, url_skip, prefix=""):
 	for pattern in url_patterns:
 		if hasattr(pattern, "url_patterns"):
 			# this is an included urlconf
 			new_prefix = prefix
 			if pattern.namespace:
 				new_prefix = prefix + (":" if prefix else "") + pattern.namespace
-			test_urls(test_case, pattern.url_patterns, prefix=new_prefix)
+			test_urls(test_case, pattern.url_patterns, url_params, url_skip, prefix=new_prefix)
 		else:
 			try:
 				pkg, fun_name = pattern.lookup_str.rsplit(".", 1)
@@ -149,9 +233,10 @@ def test_urls(test_case, url_patterns, prefix=""):
 				if hasattr(pattern, "name") and pattern.name:
 					name = pattern.name
 					fullname = (prefix + ":" + name) if prefix else name
-					if fullname in urls_to_skip:
+					# Check if we should skip this URL
+					if fullname in url_skip:
 						continue
-					user, kwargs_params, get_params, post_params = get_all_params(fullname, pattern.pattern)
+					user, kwargs_params, get_params, post_params = get_all_params(fullname, url_params, pattern.pattern)
 					url = reverse(fullname, kwargs=kwargs_params)
 					annotations = get_annotations(function_def)
 					# Login depending on annotation
@@ -220,8 +305,8 @@ def login_as_relevant_user(test_case: TestCase, annotations: List[str]):
 		login_as(test_case.client, staff)
 
 
-def get_all_params(url: str, pattern: RegexPattern) -> (dict, dict, dict):
-	url_params = url_kwargs_get_post.get(url, {})
+def get_all_params(url: str, url_parameters: dict, pattern: RegexPattern) -> (dict, dict, dict):
+	url_params = url_parameters.get(url, {})
 	user = User.objects.get(pk=url_params.get("login_id")) if "login_id" in url_params else None
 	kwargs = url_params.get("kwargs", None)
 	# Try to fill regex groups with ones, since most test data has id 1
