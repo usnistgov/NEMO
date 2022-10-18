@@ -14,17 +14,17 @@ def login_as(client: Client, user: User):
 
 def login_as_staff(client: Client) -> User:
 	tester, created = User.objects.get_or_create(
-		username="test_staff", first_name="Test", last_name="Staff", is_staff=True, badge_number=1
+		username="test_staff", first_name="Test", last_name="Staff", is_staff=True, badge_number=111111
 	)
-	client.force_login(user=tester)
+	login_as(client, tester)
 	return tester
 
 
 def login_as_user(client: Client) -> User:
 	user, created = User.objects.get_or_create(
-		username="test_user", first_name="Testy", last_name="McTester", badge_number=2
+		username="test_user", first_name="Testy", last_name="McTester", badge_number=222222
 	)
-	client.force_login(user=user)
+	login_as(client, user)
 	return user
 
 
@@ -33,18 +33,18 @@ def login_as_access_user(client: Client) -> User:
 	user.user_permissions.add(Permission.objects.get(codename="add_areaaccessrecord"))
 	user.user_permissions.add(Permission.objects.get(codename="change_areaaccessrecord"))
 	user.save()
-	client.force_login(user=user)
+	login_as(client, user)
 	return user
 
 
 def login_as_user_with_permissions(client: Client, permissions: List[str]) -> User:
 	user, created = User.objects.get_or_create(
-		username="test_user", first_name="Testy", last_name="McTester", badge_number=2
+		username="test_user", first_name="Testy", last_name="McTester", badge_number=222222
 	)
 	for permission in Permission.objects.filter(codename__in=permissions):
 		user.user_permissions.add(permission)
 	user.save()
-	client.force_login(user=user)
+	login_as(client, user)
 	return user
 
 

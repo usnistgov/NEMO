@@ -1,3 +1,7 @@
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 DEBUG = True
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 FIXTURE_DIRS = ['/nemo/']
@@ -47,6 +51,7 @@ MIDDLEWARE = [
 	'django.middleware.common.BrokenLinkEmailsMiddleware',
 	'NEMO.middleware.DeviceDetectionMiddleware',
 	'NEMO.middleware.RemoteUserAuthenticationMiddleware',
+	'NEMO.middleware.ImpersonateMiddleware',
 ]
 
 TEMPLATES = [
@@ -98,7 +103,7 @@ DATABASES = {
 }
 
 STATIC_URL = '/static/'
-MEDIA_ROOT = '/nemo/media/'
+MEDIA_ROOT = BASE_DIR + '/../resources/emails'
 MEDIA_URL = '/media/'
 
 SECRET_KEY = 'test'

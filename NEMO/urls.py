@@ -98,6 +98,7 @@ for app in apps.get_app_configs():
 			urlpatterns += [path('', include('%s.urls' % app_name))]
 			logger.debug(f"automatically including urls for plugin: {app_name}")
 
+# The order matters for some tests to run properly
 urlpatterns += [
 	# Authentication & error pages:
 	url(r'^login/$', authentication.login_user, name='login'),
@@ -186,9 +187,9 @@ urlpatterns += [
 	# Staff charges:
 	url(r'^staff_charges/$', staff_charges.staff_charges, name='staff_charges'),
 	url(r'^begin_staff_charge/$', staff_charges.begin_staff_charge, name='begin_staff_charge'),
-	url(r'^end_staff_charge/$', staff_charges.end_staff_charge, name='end_staff_charge'),
 	url(r'^begin_staff_area_charge/$', staff_charges.begin_staff_area_charge, name='begin_staff_area_charge'),
 	url(r'^end_staff_area_charge/$', staff_charges.end_staff_area_charge, name='end_staff_area_charge'),
+	url(r'^end_staff_charge/$', staff_charges.end_staff_charge, name='end_staff_charge'),
 	url(r'^edit_staff_charge_note/$', staff_charges.edit_staff_charge_note, name='edit_staff_charge_note'),
 
 	# Status dashboard:
@@ -267,8 +268,8 @@ urlpatterns += [
 	# Area access:
 	url(r'^change_project/$', area_access.change_project, name='change_project'),
 	url(r'^change_project/(?P<new_project>\d+)/$', area_access.change_project, name='change_project'),
-	url(r'^force_area_logout/(?P<user_id>\d+)/$', area_access.force_area_logout, name='force_area_logout'),
 	url(r'^calendar_self_log_in/$', area_access.calendar_self_login, name='calendar_self_log_in'),
+	url(r'^force_area_logout/(?P<user_id>\d+)/$', area_access.force_area_logout, name='force_area_logout'),
 	url(r'^self_log_in/$', area_access.self_log_in, name='self_log_in'),
 	url(r'^self_log_out/(?P<user_id>\d+)$', area_access.self_log_out, name='self_log_out'),
 
