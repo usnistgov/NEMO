@@ -9,8 +9,8 @@ from logging import getLogger
 from typing import Dict, List, Sequence, Set, Tuple, Union
 
 from PIL import Image
+from dateutil import rrule
 from dateutil.parser import parse
-from dateutil.rrule import MONTHLY, rrule
 from django.conf import settings
 from django.contrib.admin import ModelAdmin
 from django.core.files.base import ContentFile
@@ -26,6 +26,16 @@ from django.utils.formats import date_format, get_format, time_format
 from django.utils.timezone import is_naive, localtime
 
 utilities_logger = getLogger(__name__)
+
+# List of recurrence frequencies to use
+recurrence_frequencies = {
+	'DAILY': (rrule.DAILY, 'Day(s)'),
+	'DAILY_WEEKDAYS': (rrule.DAILY, 'Week Day(s)'),
+	'DAILY WEEKENDS': (rrule.DAILY, 'Weekend Day(s)'),
+	'WEEKLY': (rrule.WEEKLY, 'Week(s)'),
+	'MONTHLY': (rrule.MONTHLY, 'Month(s)'),
+	'YEARLY': (rrule.YEARLY, 'Year(s)'),
+}
 
 # List of python to js formats
 py_to_js_date_formats = {
@@ -187,7 +197,7 @@ def parse_parameter_string(
 
 def month_list(since=datetime(year=2013, month=11, day=1)):
 	month_count = (timezone.now().year - since.year) * 12 + (timezone.now().month - since.month) + 1
-	result = list(rrule(MONTHLY, dtstart=since, count=month_count))
+	result = list(rrule.rrule(rrule.MONTHLY, dtstart=since, count=month_count))
 	result = localize(result)
 	result.reverse()
 	return result
@@ -527,3 +537,17 @@ def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request
 
 def is_ajax(request):
 	return request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest"
+
+
+def get_recurring_rule(start: date, frequency, until=None, interval=1):
+	by_week_day = None
+	if frequency == 'DAILY_WEEKDAYS':
+		by_week_day = (rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR)
+	elif frequency == 'DAILY_WEEKENDS':
+		by_week_day = (rrule.SA, rrule.SU)
+	freq = recurrence_frequencies.get(frequency, (rrule.DAILY,))[0]
+	return rrule.rrule(dtstart=start, freq=freq, interval=interval, until=until, byweekday=by_week_day)
+
+
+def get_recurring_frequency_options():
+	return {key: value[1] for key, value in recurrence_frequencies.items()}

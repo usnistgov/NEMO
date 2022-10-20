@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from NEMO.models import ScheduledOutage, Tool, User, Reservation, Area, ReservationItemType
+from NEMO.models import Area, Reservation, ReservationItemType, ScheduledOutage, Tool, User
 from NEMO.tests.test_utilities import login_as_staff, login_as_user, test_response_is_landing_page
 from NEMO.utilities import localize
 
@@ -92,7 +92,6 @@ class OutageTestCase(TestCase):
 		self.assertEqual(response.status_code, 200) # response code valid but form is sent back. let's make sure the outage was indeed NOT created
 		self.assertEqual(ScheduledOutage.objects.all().count(), 0)
 
-
 	def test_create_outage(self):
 		start = datetime.now()
 		end = start + timedelta(hours=1)
@@ -102,7 +101,6 @@ class OutageTestCase(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(ScheduledOutage.objects.all().count(), 1)
 		self.assertTrue(ScheduledOutage.objects.get(title="Outage"))
-
 
 	def test_create_area_outage(self):
 		start = datetime.now()

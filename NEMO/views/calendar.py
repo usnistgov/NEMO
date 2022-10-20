@@ -7,7 +7,6 @@ from re import match
 from typing import List, Optional, Union
 
 import pytz
-from dateutil import rrule
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
@@ -46,6 +45,8 @@ from NEMO.utilities import (
 	date_input_format,
 	extract_times,
 	format_datetime,
+	get_recurring_frequency_options,
+	get_recurring_rule,
 	localize,
 	parse_parameter_string,
 	quiet_int,
@@ -71,22 +72,6 @@ from NEMO.views.policy import (
 from NEMO.widgets.dynamic_form import DynamicForm, render_group_questions
 
 calendar_logger = getLogger(__name__)
-
-recurrence_frequency_display = {
-	'DAILY': 'Day(s)',
-	'DAILY_WEEKDAYS': 'Week Day(s)',
-	'DAILY WEEKENDS': 'Weekend Day(s)',
-	'WEEKLY': 'Week(s)',
-	'MONTHLY': 'Month(s)',
-}
-
-recurrence_frequencies = {
-	'DAILY': rrule.DAILY,
-	'DAILY_WEEKDAYS': rrule.DAILY,
-	'DAILY WEEKENDS': rrule.DAILY,
-	'WEEKLY': rrule.WEEKLY,
-	'MONTHLY': rrule.MONTHLY,
-}
 
 
 @login_required
@@ -562,7 +547,7 @@ def create_outage(request):
 		calendar_outage_recurrence_limit = CalendarCustomization.get("calendar_outage_recurrence_limit")
 		dictionary = {
 			'categories': ScheduledOutageCategory.objects.all(),
-			'recurrence_intervals': recurrence_frequency_display,
+			'recurrence_intervals': get_recurring_frequency_options(),
 			'recurrence_date_start': start.date(),
 			'calendar_outage_recurrence_limit': calendar_outage_recurrence_limit,
 		}
@@ -581,14 +566,9 @@ def create_outage(request):
 		date_until = end.replace(hour=0, minute=0, second=0)
 		if submitted_date_until:
 			date_until = localize(datetime.strptime(submitted_date_until, date_input_format))
-		date_until += timedelta(days=1, seconds=-1) # set at the end of the day
-		by_week_day = None
-		if submitted_frequency == 'DAILY_WEEKDAYS':
-			by_week_day = (rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR)
-		elif submitted_frequency == 'DAILY_WEEKENDS':
-			by_week_day = (rrule.SA, rrule.SU)
-		frequency = recurrence_frequencies.get(submitted_frequency, rrule.DAILY)
-		rules = rrule.rrule(dtstart=start, freq=frequency, interval=int(request.POST.get('recurrence_interval',1)), until=date_until, byweekday=by_week_day)
+		date_until += timedelta(days=1, seconds=-1)  # set at the end of the day
+
+		rules = get_recurring_rule(start, submitted_frequency, date_until, int(request.POST.get('recurrence_interval', 1)))
 		for rule in list(rules):
 			recurring_outage = ScheduledOutage()
 			recurring_outage.creator = outage.creator
