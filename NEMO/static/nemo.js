@@ -658,3 +658,29 @@ function set_start_end_datetime_pickers(start_jq, end_jq, properties, end_before
 		start_jq.on("dp.change", function (e) { end_date_picker.minDate(e.date); });
 	}
 }
+
+function sort_nav(list_element)
+{
+	let list, i, switching, b, shouldSwitch;
+	list = list_element;
+	switching = true;
+	while (switching)
+	{
+		switching = false;
+		b = list.getElementsByTagName("li");
+		for (i = 0; i < (b.length - 1); i++)
+		{
+			shouldSwitch = false;
+			if (b[i].innerText.toLowerCase() > b[i + 1].innerText.toLowerCase())
+			{
+				shouldSwitch = true;
+				break;
+			}
+		}
+		if (shouldSwitch)
+		{
+			b[i].parentNode.insertBefore(b[i + 1], b[i]);
+			switching = true;
+		}
+	}
+}
