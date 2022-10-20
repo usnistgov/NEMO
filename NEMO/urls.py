@@ -285,7 +285,7 @@ urlpatterns += [
 	path("news/", news.view_recent_news, name="view_recent_news"),
 	path("news/archive/", news.view_archived_news, name="view_archived_news"),
 	path("news/archive/<int:page>/", news.view_archived_news, name="view_archived_news"),
-	path("news/archive_story/<int:story_id>/$", news.archive_story, name="archive_story"),
+	path("news/archive_story/<int:story_id>/", news.archive_story, name="archive_story"),
 	path("news/new/", news.new_news_form, name="new_news_form"),
 	path("news/update/<int:story_id>/", news.news_update_form, name="news_update_form"),
 	path("news/publish/", news.publish, name="publish_new_news"),
@@ -326,7 +326,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# User management:
 		path("users/", users.users, name="users"),
-		re_path(r"^user/(?P<user_id>\d+|new)/", users.create_or_modify_user, name="create_or_modify_user"),
+		re_path(r"^user/(?P<user_id>\d+|new)/$", users.create_or_modify_user, name="create_or_modify_user"),
 		path("users/search/", users.user_search, name="user_search"),
 		path("deactivate_user/<int:user_id>/", users.deactivate, name="deactivate_user"),
 		path("reset_password/<int:user_id>/", users.reset_password, name="reset_password"),
