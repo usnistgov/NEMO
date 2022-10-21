@@ -4,6 +4,7 @@ from calendar import monthrange
 from datetime import date, datetime, time
 from email import encoders
 from email.mime.base import MIMEBase
+from enum import Enum
 from io import BytesIO
 from logging import getLogger
 from typing import Dict, List, Sequence, Set, Tuple, Union
@@ -26,16 +27,6 @@ from django.utils.formats import date_format, get_format, time_format
 from django.utils.timezone import is_naive, localtime
 
 utilities_logger = getLogger(__name__)
-
-# List of recurrence frequencies to use
-recurrence_frequencies = {
-	'DAILY': (rrule.DAILY, 'Day(s)'),
-	'DAILY_WEEKDAYS': (rrule.DAILY, 'Week Day(s)'),
-	'DAILY WEEKENDS': (rrule.DAILY, 'Weekend Day(s)'),
-	'WEEKLY': (rrule.WEEKLY, 'Week(s)'),
-	'MONTHLY': (rrule.MONTHLY, 'Month(s)'),
-	'YEARLY': (rrule.YEARLY, 'Year(s)'),
-}
 
 # List of python to js formats
 py_to_js_date_formats = {
@@ -159,6 +150,29 @@ class EmailCategory(object):
 		(ACCESS_REQUESTS, "Access Requests"),
 		(SENSORS, "Sensors"),
 	)
+
+
+class RecurrenceFrequency(Enum):
+	DAILY = 0, rrule.DAILY, 'Day(s)'
+	DAILY_WEEKDAYS = 1, rrule.DAILY, 'Week Day(s)'
+	DAILY_WEEKENDS = 2, rrule.DAILY, 'Weekend Day(s)'
+	WEEKLY = 3, rrule.WEEKLY, 'Week(s)'
+	MONTHLY = 4, rrule.MONTHLY, 'Month(s)'
+	YEARLY = 5, rrule.YEARLY, 'Year(s)'
+
+	def __new__(cls, *args, **kwargs):
+		obj = object.__new__(cls)
+		obj._value_ = args[0]
+		return obj
+
+	def __init__(self, index: int, rrule_freq, display_value):
+		self.index = index
+		self.rrule_freq = rrule_freq
+		self.display_value = display_value
+
+	@classmethod
+	def choices(cls):
+		return [(freq.index, freq.display_value) for freq in cls]
 
 
 def quiet_int(value_to_convert, default_upon_failure=0):
@@ -539,15 +553,10 @@ def is_ajax(request):
 	return request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest"
 
 
-def get_recurring_rule(start: date, frequency, until=None, interval=1):
+def get_recurring_rule(start: date, frequency: RecurrenceFrequency, until=None, interval=1):
 	by_week_day = None
-	if frequency == 'DAILY_WEEKDAYS':
+	if frequency == RecurrenceFrequency.DAILY_WEEKDAYS:
 		by_week_day = (rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR)
-	elif frequency == 'DAILY_WEEKENDS':
+	elif frequency == RecurrenceFrequency.DAILY_WEEKENDS:
 		by_week_day = (rrule.SA, rrule.SU)
-	freq = recurrence_frequencies.get(frequency, (rrule.DAILY,))[0]
-	return rrule.rrule(dtstart=start, freq=freq, interval=interval, until=until, byweekday=by_week_day)
-
-
-def get_recurring_frequency_options():
-	return {key: value[1] for key, value in recurrence_frequencies.items()}
+	return rrule.rrule(dtstart=start, freq=frequency.rrule_freq, interval=interval, until=until, byweekday=by_week_day)

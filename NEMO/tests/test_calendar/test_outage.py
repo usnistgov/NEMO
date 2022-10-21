@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from NEMO.models import Area, Reservation, ReservationItemType, ScheduledOutage, Tool, User
 from NEMO.tests.test_utilities import login_as_staff, login_as_user, test_response_is_landing_page
-from NEMO.utilities import localize
+from NEMO.utilities import RecurrenceFrequency, localize
 
 
 class OutageTestCase(TestCase):
@@ -22,7 +22,7 @@ class OutageTestCase(TestCase):
 		area = Area.objects.create(name='Cleanroom', welcome_message='')
 
 	@staticmethod
-	def get_outage_data(title='', start: datetime = None, end: datetime = None, item_id: int = '', item_type: ReservationItemType = ReservationItemType.TOOL, outage: bool = False, frequency: str = '', interval: int = '', until: datetime = None):
+	def get_outage_data(title='', start: datetime = None, end: datetime = None, item_id: int = '', item_type: ReservationItemType = ReservationItemType.TOOL, outage: bool = False, frequency: RecurrenceFrequency = None, interval: int = '', until: datetime = None):
 		if not start:
 			start = datetime.now()
 		if not end:
@@ -34,7 +34,7 @@ class OutageTestCase(TestCase):
 			'item_id': item_id if item_id else '',
 			'item_type': item_type.value,
 			'recurring_outage': 'on' if outage else '',
-			'recurrence_frequency': frequency,
+			'recurrence_frequency': frequency.value if frequency else '',
 			'recurrence_interval': interval,
 			'recurrence_until': localize(until).strftime('%m/%d/%Y') if until else ''
 		}
@@ -305,7 +305,7 @@ class OutageTestCase(TestCase):
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(days=5)
 
-		data = self.get_outage_data(start=start, end=end, outage=True, item_id=-1, frequency='DAILY', interval=1, until=until)
+		data = self.get_outage_data(start=start, end=end, outage=True, item_id=-1, frequency=RecurrenceFrequency.DAILY, interval=1, until=until)
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
@@ -320,7 +320,7 @@ class OutageTestCase(TestCase):
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(days=6)
 
-		data = self.get_outage_data(title='every day outage week', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency='DAILY', interval=1, until=until)
+		data = self.get_outage_data(title='every day outage week', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency=RecurrenceFrequency.DAILY, interval=1, until=until)
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
@@ -338,7 +338,7 @@ class OutageTestCase(TestCase):
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(days=365)
 
-		data = self.get_outage_data(title='every day outage year', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency='WEEKLY', interval=1, until=until)
+		data = self.get_outage_data(title='every day outage year', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency=RecurrenceFrequency.WEEKLY, interval=1, until=until)
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
@@ -362,7 +362,7 @@ class OutageTestCase(TestCase):
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(weeks=9)
 
-		data = self.get_outage_data(title='every week day outage', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency='DAILY_WEEKDAYS', interval=1, until=until)
+		data = self.get_outage_data(title='every week day outage', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency=RecurrenceFrequency.DAILY_WEEKDAYS, interval=1, until=until)
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
@@ -382,7 +382,7 @@ class OutageTestCase(TestCase):
 		end = start + timedelta(hours=1)
 		until = datetime.now() + timedelta(weeks=9)
 
-		data = self.get_outage_data(title='every weekend day outage', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency='DAILY_WEEKENDS', interval=1, until=until)
+		data = self.get_outage_data(title='every weekend day outage', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency=RecurrenceFrequency.DAILY_WEEKENDS, interval=1, until=until)
 
 		login_as_staff(self.client)
 		response = self.client.post(reverse('create_outage'), data, follow=True)

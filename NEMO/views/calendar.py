@@ -39,13 +39,13 @@ from NEMO.models import (
 )
 from NEMO.utilities import (
 	EmailCategory,
+	RecurrenceFrequency,
 	as_timezone,
 	bootstrap_primary_color,
 	create_email_attachment,
 	date_input_format,
 	extract_times,
 	format_datetime,
-	get_recurring_frequency_options,
 	get_recurring_rule,
 	localize,
 	parse_parameter_string,
@@ -547,7 +547,7 @@ def create_outage(request):
 		calendar_outage_recurrence_limit = CalendarCustomization.get("calendar_outage_recurrence_limit")
 		dictionary = {
 			'categories': ScheduledOutageCategory.objects.all(),
-			'recurrence_intervals': get_recurring_frequency_options(),
+			'recurrence_intervals': RecurrenceFrequency.choices(),
 			'recurrence_date_start': start.date(),
 			'calendar_outage_recurrence_limit': calendar_outage_recurrence_limit,
 		}
@@ -567,8 +567,8 @@ def create_outage(request):
 		if submitted_date_until:
 			date_until = localize(datetime.strptime(submitted_date_until, date_input_format))
 		date_until += timedelta(days=1, seconds=-1)  # set at the end of the day
-
-		rules = get_recurring_rule(start, submitted_frequency, date_until, int(request.POST.get('recurrence_interval', 1)))
+		frequency = RecurrenceFrequency(quiet_int(submitted_frequency, RecurrenceFrequency.DAILY.index))
+		rules = get_recurring_rule(start, frequency, date_until, int(request.POST.get('recurrence_interval', 1)))
 		for rule in list(rules):
 			recurring_outage = ScheduledOutage()
 			recurring_outage.creator = outage.creator
