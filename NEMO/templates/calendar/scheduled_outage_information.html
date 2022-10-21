@@ -51,8 +51,8 @@
 				<div class="form-group col-sm-6">
 					<label for="recurrence_frequency">Frequency</label>
 					<select class="form-control" name="recurrence_frequency" id="recurrence_frequency">
-						{% for value, display in recurrence_intervals.items %}
-							<option value="{{ value }}">{{ display }}</option>
+						{% for choice in recurrence_intervals %}
+							<option value="{{ choice.0 }}">{{ choice.1 }}</option>
 						{% endfor %}
 					</select>
 				</div>
