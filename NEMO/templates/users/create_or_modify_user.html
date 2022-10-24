@@ -7,10 +7,15 @@
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
 	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
 {% endblock %}
+{% block before_pagination %}
+    {% if form.instance.id %}{{ block.super }}{% endif %}
+{% endblock %}
 {% block table_empty_content %}
-    <div class="row col-sm-12" style="margin-bottom: 25px">
-        <div class="col-sm-6" style="border-top: 1px solid #ddd;"></div>
-    </div>
+    {% if form.instance.id %}
+        <div class="row col-sm-12" style="margin-bottom: 25px">
+            <div class="col-sm-6" style="border-top: 1px solid #ddd;"></div>
+        </div>
+    {% endif %}
     <div class="row col-sm-12">
     {% if form.errors %}
         <div class="col-sm-6 alert alert-danger">
