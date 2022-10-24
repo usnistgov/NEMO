@@ -39,7 +39,11 @@ users_logger = getLogger(__name__)
 @staff_member_required
 @require_GET
 def users(request):
-	page = SortedPaginator(User.objects.all(), request, order_by="last_name").get_current_page()
+	user_list = User.objects.all()
+	only_active = UserCustomization.get("user_list_active_only") == "enabled"
+	if only_active:
+		user_list = user_list.filter(is_active=True)
+	page = SortedPaginator(user_list, request, order_by="last_name").get_current_page()
 
 	return render(request, "users/users.html", {"page": page})
 

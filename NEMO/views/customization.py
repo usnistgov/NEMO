@@ -138,6 +138,7 @@ class ApplicationCustomization(CustomizationBase):
 class UserCustomization(CustomizationBase):
 	variables = {
 		"default_user_training_not_required": "",
+		"user_list_active_only": "",
 		"user_access_expiration_reminder_days": "",
 		"user_access_expiration_reminder_cc": "",
 		"user_tool_qualification_reminder_days": "",
