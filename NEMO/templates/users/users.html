@@ -34,7 +34,7 @@
 						<td><span class="glyphicon {% if user.is_staff %}glyphicon-ok success-highlight{% endif %}"></span></td>
 						<td><span class="glyphicon {% if user.is_superuser %}glyphicon-ok success-highlight{% endif %}"></span></td>
 						<td class="text-center button-column-minimum">
-							<button type="button" class="btn btn-xs btn-default" title="Edit user" onclick="window.location = '{% url 'create_or_modify_user' user.id %}'"><i class="glyphicon glyphicon-pencil"></i></button>
+							<button type="button" class="btn btn-xs btn-default" title="Edit user" onclick="window.location = '{% url 'create_or_modify_user' user.id %}?next={{ request.get_full_path|urlencode }}'"><i class="glyphicon glyphicon-pencil"></i></button>
 							<button type="button" class="btn btn-xs btn-danger {% if not user.is_active %}invisible{% endif %}" title="Deactivate user" onclick="window.location = '{% url 'deactivate_user' user.id %}'"><i class="glyphicon glyphicon-remove"></i></button>
 						</td>
 					</tr>

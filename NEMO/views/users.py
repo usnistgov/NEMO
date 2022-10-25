@@ -65,7 +65,7 @@ def create_or_modify_user(request, user_id):
 	area_access_levels = Area.objects.filter(id__in=[area.id for area in access_level_for_sort])
 	dict_area = {}
 	for access in access_levels:
-		dict_area.setdefault(access.area.id,[]).append(access)
+		dict_area.setdefault(access.area.id, []).append(access)
 
 	dictionary = {
 		'projects': Project.objects.filter(active=True, account__active=True),
@@ -205,7 +205,7 @@ def create_or_modify_user(request, user_id):
 
 		message = f"{user} has been added successfully to {site_title}" if user_id == 'new' else f"{user} has been updated successfully"
 		messages.success(request, message)
-		return redirect('users')
+		return redirect(request.GET.get("next") or "users")
 	else:
 		return HttpResponseBadRequest('Invalid method')
 

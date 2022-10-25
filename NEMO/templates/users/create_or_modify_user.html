@@ -32,7 +32,7 @@
 	<div class="h1 row" style="margin-bottom: 25px">
         {% if form.instance.id %}<div class="col-xs-6 col-sm-4" style="padding-right: 0">Modify user</div><div class="col-sm-2 text-right" style="padding-left: 0"><a class="btn btn-info" href="{% url 'history' 'user' form.instance.id %}">View user history</a></div>{% else %}<div class="col-sm-6">New user</div>{% endif %}
     </div>
-	<form class="form-horizontal" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}">
+	<form class="form-horizontal" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}?next={{ request.GET.next|default:''|urlencode }}">
 		{% csrf_token %}
 		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="user_id">{% endif %}
 		<div class="form-group">
