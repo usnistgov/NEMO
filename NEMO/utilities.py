@@ -153,12 +153,12 @@ class EmailCategory(object):
 
 
 class RecurrenceFrequency(Enum):
-	DAILY = 0, rrule.DAILY, 'Day(s)'
-	DAILY_WEEKDAYS = 1, rrule.DAILY, 'Week Day(s)'
-	DAILY_WEEKENDS = 2, rrule.DAILY, 'Weekend Day(s)'
-	WEEKLY = 3, rrule.WEEKLY, 'Week(s)'
-	MONTHLY = 4, rrule.MONTHLY, 'Month(s)'
-	YEARLY = 5, rrule.YEARLY, 'Year(s)'
+	DAILY = 1, rrule.DAILY, 'Day(s)'
+	DAILY_WEEKDAYS = 2, rrule.DAILY, 'Week Day(s)'
+	DAILY_WEEKENDS = 3, rrule.DAILY, 'Weekend Day(s)'
+	WEEKLY = 4, rrule.WEEKLY, 'Week(s)'
+	MONTHLY = 5, rrule.MONTHLY, 'Month(s)'
+	YEARLY = 6, rrule.YEARLY, 'Year(s)'
 
 	def __new__(cls, *args, **kwargs):
 		obj = object.__new__(cls)
@@ -553,10 +553,10 @@ def is_ajax(request):
 	return request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest"
 
 
-def get_recurring_rule(start: date, frequency: RecurrenceFrequency, until=None, interval=1):
+def get_recurring_rule(start: date, frequency: RecurrenceFrequency, until=None, interval=1, count=None) -> rrule:
 	by_week_day = None
 	if frequency == RecurrenceFrequency.DAILY_WEEKDAYS:
 		by_week_day = (rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR)
 	elif frequency == RecurrenceFrequency.DAILY_WEEKENDS:
 		by_week_day = (rrule.SA, rrule.SU)
-	return rrule.rrule(dtstart=start, freq=frequency.rrule_freq, interval=interval, until=until, byweekday=by_week_day)
+	return rrule.rrule(dtstart=start, freq=frequency.rrule_freq, interval=interval, until=until, count=count, byweekday=by_week_day)
