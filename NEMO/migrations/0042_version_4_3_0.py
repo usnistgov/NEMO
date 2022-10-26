@@ -98,4 +98,9 @@ class Migration(migrations.Migration):
             name='reminder_threshold',
             field=models.IntegerField(blank=True, help_text='More of this item should be ordered when the quantity falls below this threshold.', null=True),
         ),
+        migrations.AlterField(
+            model_name='user',
+            name='training_required',
+            field=models.BooleanField(default=True, help_text='When selected, the user is blocked from all reservation and tool usage capabilities.', verbose_name='facility rules tutorial required'),
+        ),
     ]
