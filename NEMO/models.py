@@ -7,6 +7,7 @@ from enum import Enum
 from html import escape
 from json import loads
 from logging import getLogger
+from re import match
 from typing import List, Set, Union
 
 from django.conf import settings
@@ -437,7 +438,10 @@ class User(BaseModel):
 	objects = UserManager()
 
 	def clean(self):
+		username_pattern = getattr(settings, "USERNAME_REGEX", None)
 		if self.username:
+			if username_pattern and not match(username_pattern, self.username):
+				raise ValidationError({"username": "Invalid username format"})
 			username_taken = User.objects.filter(username__iexact=self.username)
 			if self.pk:
 				username_taken = username_taken.exclude(pk=self.pk)
