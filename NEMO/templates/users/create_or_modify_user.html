@@ -135,9 +135,9 @@
 					<a href="{% url 'deactivate_user' form.instance.id %}">Safely deactivate this user</a>
 				</div>
 			{% endif %}
-			<div class="col-sm-offset-2 col-sm-2">
+			<div class="col-sm-offset-2 col-sm-4">
 				<div class="checkbox">
-					<label><input id="training_required" name="training_required" type="checkbox" {% if form.training_required.value %}checked{% endif %}> Training required</label>
+					<label><input id="training_required" name="training_required" type="checkbox" {% if form.training_required.value %}checked{% endif %}> Facility rules tutorial required</label>
 				</div>
 			</div>
 		</div>

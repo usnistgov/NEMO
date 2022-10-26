@@ -22,7 +22,7 @@
 <div class="panel-body">
     <h3 class="customization-section-title" id="facility_rules_tutorial_id">&quot;<a href="{% url 'facility_rules' %}" target="_blank">{{ facility_name }} rules tutorial</a>&quot; page</h3>
     <p>
-        The facility rules tutorial is an opportunity to provide new users with a tutorial to your lab operating procedures and rules.
+        The facility rules tutorial is an opportunity to provide new users with a tutorial to your facility operating procedures and rules.
         <br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.
         <br>
     </p>
@@ -31,7 +31,7 @@
         <li>Completion of the HTML form should be POSTed to <b>"{% templatetag openblock %} url 'facility_rules' {% templatetag closeblock %}"</b> (exactly as is).</li>
     </ul>
     <p>
-        Upon completion, the user's "training required" attribute is set to false, and they are able to make reservations and control tools.
+        Upon completion, the user's "facility rules tutorial required" attribute is set to false, and they are able to make reservations and control tools.
     </p>
     {% include 'customizations/customizations_upload.html' with element=facility_rules_tutorial name='facility rules tutorial' hide_content=True key='templates' %}
     <div class="customization-separation"></div>
