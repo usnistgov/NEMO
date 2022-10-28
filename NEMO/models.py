@@ -54,9 +54,10 @@ class BaseQuerySet(models.query.QuerySet):
 
 	def distinct(self, *field_names):
 		# If using Oracle, distinct and CLOBs don't work together, so we have to use defer to ignore them
+		# However, defer can only be used when no specific fields are present
 		# The error is "ORA-00932: inconsistent datatypes: expected - got NCLOB"
 		# See https://code.djangoproject.com/ticket/4186
-		if self.is_oracle_vendor():
+		if self.is_oracle_vendor() and self._fields is None:
 			return super().distinct(*field_names).defer(*self.model_text_fields())
 		else:
 			return super().distinct(*field_names)
