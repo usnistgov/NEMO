@@ -8,6 +8,7 @@ from enum import Enum
 from io import BytesIO
 from logging import getLogger
 from typing import Dict, List, Sequence, Set, Tuple, Union
+from urllib.parse import urljoin
 
 from PIL import Image
 from dateutil import rrule
@@ -560,3 +561,15 @@ def get_recurring_rule(start: date, frequency: RecurrenceFrequency, until=None, 
 	elif frequency == RecurrenceFrequency.DAILY_WEEKENDS:
 		by_week_day = (rrule.SA, rrule.SU)
 	return rrule.rrule(dtstart=start, freq=frequency.rrule_freq, interval=interval, until=until, count=count, byweekday=by_week_day)
+
+
+def get_full_url(location, request=None):
+	# For lazy locations
+	location = str(location)
+	main_url = getattr(settings, "MAIN_URL", None)
+	if main_url:
+		return urljoin(main_url, location)
+	elif request:
+		return request.build_absolute_uri(location)
+	else:
+		return location
