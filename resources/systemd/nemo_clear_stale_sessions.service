@@ -1,0 +1,6 @@
+[Unit]
+Description=Clear stale Django sessions in the NEMO database
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin clearsessions

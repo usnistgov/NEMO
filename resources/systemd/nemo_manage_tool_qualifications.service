@@ -1,0 +1,6 @@
+[Unit]
+Description=Manage tool qualifications in NEMO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin manage_tool_qualifications

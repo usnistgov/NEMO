@@ -1,0 +1,6 @@
+[Unit]
+Description=Cancel unused reservations in NEMO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin cancel_unused_reservations

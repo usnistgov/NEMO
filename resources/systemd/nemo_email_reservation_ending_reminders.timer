@@ -1,0 +1,8 @@
+[Unit]
+Description=Send reservation ending reminder emails every 15 minutes
+
+[Timer]
+OnCalendar=*:0,15,30,45
+
+[Install]
+WantedBy=multi-user.target

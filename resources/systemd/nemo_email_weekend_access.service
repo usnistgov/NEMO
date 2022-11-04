@@ -1,0 +1,6 @@
+[Unit]
+Description=Send weekend access notification email from NEMO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin send_email_weekend_access_notification

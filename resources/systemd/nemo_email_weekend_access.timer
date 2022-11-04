@@ -1,0 +1,8 @@
+[Unit]
+Description=Send weekend access email notification every hour
+
+[Timer]
+OnCalendar=hourly
+
+[Install]
+WantedBy=multi-user.target

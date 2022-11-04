@@ -1,0 +1,6 @@
+[Unit]
+Description=Email user access expiration reminders in NEMO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin send_email_user_access_expiration_reminders
