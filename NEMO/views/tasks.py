@@ -28,6 +28,7 @@ from NEMO.utilities import (
 	bootstrap_primary_color,
 	create_email_attachment,
 	format_datetime,
+	get_full_url,
 	render_email_template,
 	resize_image,
 	send_mail,
@@ -104,7 +105,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 			'user': request.user,
 			'task': task,
 			'tool': task.tool,
-			'tool_control_absolute_url': request.build_absolute_uri(task.tool.get_absolute_url())
+			'tool_control_absolute_url': get_full_url(task.tool.get_absolute_url(), request)
 		}
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
 		message = render_email_template(message, dictionary, request)
@@ -158,7 +159,7 @@ def cancel(request, task_id):
 	task.resolution_time = timezone.now()
 	task.save()
 	determine_tool_status(task.tool)
-	send_task_updated_email(task, request.build_absolute_uri(task.tool.get_absolute_url()))
+	send_task_updated_email(task, get_full_url(task.tool.get_absolute_url(), request))
 	return redirect('tool_control')
 
 
@@ -223,7 +224,7 @@ def update(request, task_id):
 	set_task_status(request, task, request.POST.get('status'), request.user)
 	determine_tool_status(task.tool)
 	task_images = save_task_images(request, task)
-	send_task_updated_email(task, request.build_absolute_uri(task.tool.get_absolute_url()), task_images)
+	send_task_updated_email(task, get_full_url(task.tool.get_absolute_url(), request), task_images)
 	if next_page == 'maintenance':
 		return redirect('maintenance')
 	else:
@@ -279,7 +280,7 @@ def set_task_status(request, task, status_name, user):
 			'status_message': status_message,
 			'notification_message': status.notification_message,
 			'task': task,
-			'tool_control_absolute_url': request.build_absolute_uri(task.tool.get_absolute_url())
+			'tool_control_absolute_url': get_full_url(task.tool.get_absolute_url(), request)
 		}
 		subject = f'{task.tool} task notification'
 		message = render_email_template(message, dictionary, request)

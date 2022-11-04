@@ -18,6 +18,7 @@ from NEMO.utilities import (
 	beginning_of_the_day,
 	bootstrap_primary_color,
 	format_datetime,
+	get_full_url,
 	quiet_int,
 	render_email_template,
 	send_mail,
@@ -189,7 +190,7 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 			if edit
 			else "received"
 		)
-		absolute_url = request.build_absolute_uri(reverse("user_requests", kwargs={"tab": "access"}))
+		absolute_url = get_full_url(reverse("user_requests", kwargs={"tab": "access"}), request)
 		color_type = "success" if status == "approved" else "danger" if status == "denied" else "info"
 		message = render_email_template(
 			access_request_notification_email,

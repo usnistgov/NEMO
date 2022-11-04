@@ -9,11 +9,13 @@ from typing import List
 from django.conf import settings
 from django.core.management import call_command
 from django.test.testcases import TestCase
+from django.test.client import RequestFactory
 from django.urls import reverse
 from django.urls.resolvers import RegexPattern
 
 from NEMO.models import User
 from NEMO.tests.test_utilities import login_as, login_as_staff, login_as_user, login_as_user_with_permissions
+from NEMO.utilities import get_full_url
 from NEMO.views.customization import ApplicationCustomization
 
 url_test_logger = getLogger(__name__)
@@ -119,6 +121,21 @@ class URLsTestCase(TestCase):
 	@classmethod
 	def setUpTestData(cls):
 		call_command("loaddata", "resources/fixtures/splash_pad.json", app_label="NEMO")
+
+	def test_get_full_url(self):
+		request = RequestFactory().get("/")
+		location = reverse("create_or_modify_user", args=[1])
+		# Test client request defaults to http://testserver
+		self.assertEqual(get_full_url(location, request), "http://testserver/user/1/")
+		self.assertEqual(get_full_url(location), "/user/1/")
+		settings.MAIN_URL = "https://nemo.nist.gov"
+		self.assertEqual(get_full_url(location), "https://nemo.nist.gov/user/1/")
+		settings.MAIN_URL = "https://nemo.nist.gov:80"
+		self.assertEqual(get_full_url(location), "https://nemo.nist.gov/user/1/")
+		settings.MAIN_URL = "https://nemo.nist.gov/"
+		self.assertEqual(get_full_url(location), "https://nemo.nist.gov/user/1/")
+		settings.MAIN_URL = "https://nemo.nist.gov:8000"
+		self.assertEqual(get_full_url(location), "https://nemo.nist.gov:8000/user/1/")
 
 	def test_urls(self):
 		module = importlib.import_module(settings.ROOT_URLCONF)

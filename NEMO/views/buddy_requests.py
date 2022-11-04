@@ -17,6 +17,7 @@ from NEMO.exceptions import (
 )
 from NEMO.forms import BuddyRequestForm
 from NEMO.models import Area, BuddyRequest, BuddyRequestMessage, User
+from NEMO.utilities import get_full_url
 from NEMO.views.customization import UserRequestsCustomization
 from NEMO.views.notifications import (
 	create_buddy_reply_notification,
@@ -115,7 +116,7 @@ def buddy_request_reply(request, request_id):
 		reply.save()
 		create_buddy_reply_notification(reply)
 		email_interested_parties(
-			reply, request.build_absolute_uri(f"{reverse('user_requests', kwargs={'tab': 'buddy'})}?#{reply.id}")
+			reply, get_full_url(f"{reverse('user_requests', kwargs={'tab': 'buddy'})}?#{reply.id}", request)
 		)
 	return redirect("user_requests", "buddy")
 
