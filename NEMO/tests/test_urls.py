@@ -8,8 +8,8 @@ from typing import List
 
 from django.conf import settings
 from django.core.management import call_command
-from django.test.testcases import TestCase
 from django.test.client import RequestFactory
+from django.test.testcases import TestCase
 from django.urls import reverse
 from django.urls.resolvers import RegexPattern
 
@@ -129,8 +129,6 @@ class URLsTestCase(TestCase):
 		self.assertEqual(get_full_url(location, request), "http://testserver/user/1/")
 		self.assertEqual(get_full_url(location), "/user/1/")
 		settings.MAIN_URL = "https://nemo.nist.gov"
-		self.assertEqual(get_full_url(location), "https://nemo.nist.gov/user/1/")
-		settings.MAIN_URL = "https://nemo.nist.gov:80"
 		self.assertEqual(get_full_url(location), "https://nemo.nist.gov/user/1/")
 		settings.MAIN_URL = "https://nemo.nist.gov/"
 		self.assertEqual(get_full_url(location), "https://nemo.nist.gov/user/1/")
