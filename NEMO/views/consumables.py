@@ -1,17 +1,19 @@
+from datetime import date
 from logging import getLogger
 from typing import List
 
 from django.contrib import messages
 from django.http import HttpResponseBadRequest
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import staff_member_required
 from NEMO.exceptions import ProjectChargeException
-from NEMO.forms import ConsumableWithdrawForm
-from NEMO.models import Consumable, ConsumableWithdraw, User
-from NEMO.utilities import EmailCategory, render_email_template, send_mail
-from NEMO.views.customization import EmailsCustomization, get_media_file_contents
+from NEMO.forms import ConsumableWithdrawForm, RecurringConsumableChargeForm
+from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, User
+from NEMO.utilities import EmailCategory, as_timezone, render_email_template, send_mail
+from NEMO.views.customization import EmailsCustomization, RecurringChargesCustomization, get_media_file_contents
+from NEMO.views.pagination import SortedPaginator
 from NEMO.views.policy import check_billing_to_project
 
 consumables_logger = getLogger(__name__)
@@ -91,6 +93,67 @@ def make_withdrawals(request):
 		make_withdrawal(consumable_id=withdraw['consumable_id'], merchant=request.user, customer_id=withdraw['customer_id'], quantity=withdraw['quantity'], project_id=withdraw['project_id'], request=request)
 	del request.session['withdrawals']
 	return redirect('consumables')
+
+
+@staff_member_required
+@require_GET
+def recurring_charges(request):
+	page = SortedPaginator(RecurringConsumableCharge.objects.all(), request, order_by="name").get_current_page()
+	dictionary = {"page": page, "extended_permissions": extended_permissions(request)}
+	return render(request, 'consumables/recurring_charges.html', dictionary)
+
+
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def create_recurring_charge(request, recurring_charge_id: int = None):
+	try:
+		instance = RecurringConsumableCharge.objects.get(pk=recurring_charge_id)
+	except RecurringConsumableCharge.DoesNotExist:
+		instance = None
+	locked = not extended_permissions(request)
+	if not recurring_charge_id and locked:
+		return redirect("login")
+	form = RecurringConsumableChargeForm(request.POST or None, instance=instance, locked=locked)
+	dictionary = {
+		"form": form,
+		"users": User.objects.filter(is_active=True),
+		"can_charge": not instance or not instance.last_charge or as_timezone(instance.last_charge).date() != date.today(),
+		"consumables": Consumable.objects.filter(visible=True).order_by("category", "name"),
+	}
+	if request.method == "POST":
+		if form.is_valid():
+			obj: RecurringConsumableCharge = form.save(commit=False)
+			if "save_and_charge" in request.POST:
+				obj.save_and_charge_with_user(request.user)
+			else:
+				obj.save_with_user(request.user)
+			return redirect("recurring_charges")
+	return render(request, "consumables/recurring_charge.html", dictionary)
+
+
+@staff_member_required
+@require_GET
+def delete_recurring_charge(request, recurring_charge_id: int):
+	if not extended_permissions(request):
+		return redirect("login")
+	recurring_charge = get_object_or_404(RecurringConsumableCharge, pk=recurring_charge_id)
+	if recurring_charge.delete():
+		messages.success(request, f"{recurring_charge.name} was successfully deleted")
+	return redirect("recurring_charges")
+
+
+@staff_member_required
+@require_GET
+def clear_recurring_charge(request, recurring_charge_id: int):
+	recurring_charge = get_object_or_404(RecurringConsumableCharge, pk=recurring_charge_id)
+	recurring_charge.clear()
+	return redirect("recurring_charges")
+
+
+def extended_permissions(request) -> bool:
+	user: User = request.user
+	lock_charges = RecurringChargesCustomization.get_bool("lock_recurring_charges")
+	return not lock_charges or user.is_facility_manager or user.is_superuser
 
 
 def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, request=None):

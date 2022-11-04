@@ -1,30 +1,37 @@
 {% extends 'base.html' %}
 {% block title %}Site customization{% endblock %}
+{% block extrahead %}
+	{% load static %}
+	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+{% endblock %}
 {% block content %}
-	<div class="container-fluid">
-		<h1>Customization</h1>
-		<p>You can customize portions of {{ site_title }} to suit your organization's needs.</p>
+    <h1>Customization</h1>
+    <p>You can customize portions of {{ site_title }} to suit your organization's needs.</p>
 
-        <ul class="nav nav-tabs" id="tabs">
-            {% for customization_instance in customization.instances %}
-                <li class="{% if customization_instance.key == customization.key %}active{% endif %}">
-                    <a id="{{ customization_instance.key }}-tab-link" href="{% url 'customization' customization_instance.key %}">{{ customization_instance.title }}</a>
-                </li>
-            {% endfor %}
-        </ul>
-        <div class="tab-content panel panel-default panel-tab-content">
-            <div class="tab-pane active" id="{{ customization.key }}-tab">
-                {% include customization.template %}
-            </div>
+    <ul class="nav nav-tabs" id="tabs">
+        {% for customization_instance in customization.instances %}
+            <li class="{% if customization_instance.key == customization.key %}active{% endif %}">
+                <a id="{{ customization_instance.key }}-tab-link" href="{% url 'customization' customization_instance.key %}">{{ customization_instance.title }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+    <div class="tab-content panel panel-default panel-tab-content">
+        <div class="tab-pane active" id="{{ customization.key }}-tab">
+            {% include customization.template %}
         </div>
-	</div>
+    </div>
 
 	<script type="application/javascript">
-		function check_delete_file_before_submit(name) {
+		function check_delete_file_before_submit(name)
+        {
 			let has_file = $('input[name='+name+']')[0].files.length !== 0;
-			if (!has_file) {
+			if (!has_file)
+            {
 			    return confirm("Submitting without a new file will delete any previous content. \nAre you sure you want to continue?");
-			} else {
+			}
+            else
+            {
 			    return true;
 			}
         }

@@ -10,13 +10,15 @@ from logging import getLogger
 from re import match
 from typing import List, Set, Union
 
+from dateutil import rrule
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
-from django.db import connections, models
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.core.validators import MinValueValidator
+from django.db import connections, models, transaction
 from django.db.models import Q, QuerySet
 from django.db.models.manager import Manager
 from django.db.models.signals import pre_delete
@@ -32,12 +34,15 @@ from mptt.models import MPTTModel
 from NEMO import fields
 from NEMO.utilities import (
 	EmailCategory,
+	RecurrenceFrequency,
+	beginning_of_the_day,
 	bootstrap_primary_color,
 	distinct_qs_value_list,
 	format_daterange,
 	format_datetime,
 	get_chemical_document_filename,
 	get_hazard_logo_filename,
+	get_recurring_rule,
 	get_task_image_filename,
 	get_tool_document_filename,
 	get_tool_image_filename,
@@ -1679,6 +1684,134 @@ class ConsumableWithdraw(BaseModel):
 
 	def __str__(self):
 		return str(self.id)
+
+
+class RecurringConsumableCharge(BaseModel):
+	name = models.CharField(max_length=200, help_text="The name/identifier for this recurring charge.")
+	customer = models.ForeignKey(User, null=True, blank=True, related_name="recurring_charge_customer", help_text="The user who will be charged.", on_delete=models.CASCADE)
+	consumable = models.ForeignKey(Consumable, on_delete=models.CASCADE)
+	quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)], help_text="The number of consumables to charge.")
+	project = models.ForeignKey(Project, null=True, blank=True, help_text="The project to bill.", on_delete=models.CASCADE)
+	last_charge = models.DateTimeField(null=True, blank=True, help_text="The date and time when the user was last charged.")
+	# Recurring schedule. TODO: think about extracting into its own model if used anywhere else
+	rec_start = models.DateField(verbose_name="start", null=True, blank=True, help_text="Start date of the recurring charge.")
+	rec_frequency = models.PositiveIntegerField(verbose_name="frequency", null=True, blank=True, choices=RecurrenceFrequency.choices(), help_text="The charge frequency.")
+	rec_interval = models.PositiveIntegerField(verbose_name="interval", default=1, validators=[MinValueValidator(1)], help_text="Recurring interval, i.e. every 5 days.")
+	rec_until = models.DateField(verbose_name="until", null=True, blank=True, help_text="End date of the recurring charge.")
+	rec_count = models.PositiveIntegerField(verbose_name="count", null=True, blank=True, validators=[MinValueValidator(1)], help_text="The number of recurrences to charge for.")
+	# Audit
+	last_updated = models.DateTimeField(help_text="The time this charge was last modified.")
+	last_updated_by = models.ForeignKey("User", related_name="recurring_charge_updated", help_text="The user who last modified this charge (and will be used as merchant on the charge).", on_delete=models.PROTECT)
+
+	class Meta:
+		ordering = ["name"]
+
+	@property
+	def get_rec_frequency_enum(self):
+		return RecurrenceFrequency(self.rec_frequency)
+
+	def next_charge(self, inc=False) -> datetime:
+		today = beginning_of_the_day(datetime.datetime.now(), in_local_timezone=False)
+		recurrence = self.get_recurrence()
+		return recurrence.after(today, inc=inc) if recurrence else None
+
+	def invalid_customer(self):
+		if self.customer:
+			if not self.customer.is_active:
+				return "This user is inactive"
+			if self.customer.access_expiration and self.customer.access_expiration < datetime.date.today():
+				return f"The facility access for this user expired on {format_datetime(self.customer.access_expiration)}"
+
+	def invalid_project(self):
+		if self.project:
+			if not self.project.active:
+				return "This project is inactive"
+			if not self.project.account.active:
+				return "The account for this project is inactive"
+			if not self.project.allow_consumable_withdrawals:
+				return "This project doesn't allow consumable charges"
+		if self.customer and self.project:
+			if self.project not in self.customer.active_projects():
+				return "The user does not belong to this project"
+
+	def get_recurrence(self) -> rrule:
+		if self.rec_start and self.rec_frequency:
+			return get_recurring_rule(self.rec_start, self.get_rec_frequency_enum, self.rec_until, self.rec_interval, self.rec_count)
+
+	def get_recurrence_interval_display(self) -> str:
+		if not self.rec_start or not self.rec_frequency:
+			return ""
+		interval = f"{self.rec_interval} " if self.rec_interval != 1 else ""
+		f_enum = self.get_rec_frequency_enum
+		frequency = f"{f_enum.display_text}s" if self.rec_interval != 1 else f_enum.display_text
+		return f"Every {interval}{frequency}"
+
+	def get_recurrence_display(self) -> str:
+		rec_display = ""
+		if self.rec_start and self.rec_frequency:
+			start = f", starting {format_datetime(self.rec_start, 'SHORT_DATE_FORMAT')}"
+			end = ""
+			if self.rec_until or self.rec_count:
+				end = f" and ending "
+				if self.rec_until:
+					end += f"on {format_datetime(self.rec_until, 'SHORT_DATE_FORMAT')}"
+				elif self.rec_count:
+					end += f"after {self.rec_count} iterations" if self.rec_count != 1 else f"after one time"
+					if self.get_recurrence():
+						end += f" on {format_datetime(list(self.get_recurrence())[-1], 'SHORT_DATE_FORMAT')}"
+			return f"{self.get_recurrence_interval_display()}{start}{end}"
+		return rec_display
+
+	def charge(self):
+		from NEMO.views.consumables import make_withdrawal
+		self.full_clean()
+		make_withdrawal(self.consumable.id, self.quantity, self.project.id, self.last_updated_by, self.customer.id)
+		self.last_charge = timezone.now()
+		self.save()
+
+	def is_empty(self):
+		return not any([self.customer, self.project])
+
+	def clear(self):
+		self.customer = None
+		self.project = None
+		self.last_charge = None
+		self.save()
+
+	def clean(self):
+		if not self.is_empty():
+			errors = {}
+			if not self.customer:
+				errors["customer"] = "This field is required."
+			if not self.project:
+				errors["project"] = "This field is required."
+			if not self.rec_start:
+				errors["rec_start"] = "This field is required."
+			if not self.rec_frequency:
+				errors["rec_frequency"] = "This field is required."
+			if self.rec_until and self.rec_count:
+				errors[NON_FIELD_ERRORS] = "'count' and 'until' cannot be used at the same time."
+			# Validate needed fields are present
+			if errors:
+				raise ValidationError(errors)
+			# Validate if we have everything to charge
+			from NEMO.forms import ConsumableWithdrawForm
+			charge_form = ConsumableWithdrawForm({"customer": self.customer.id, "project": self.project.id, "consumable": self.consumable.id, "quantity": self.quantity})
+			if not charge_form.is_valid():
+				raise ValidationError(charge_form.errors)
+
+	def save_with_user(self, user: User, *args, **kwargs):
+		self.last_updated_by = user
+		self.last_updated = timezone.now()
+		super().save(*args, **kwargs)
+
+	@transaction.atomic
+	def save_and_charge_with_user(self, user: User):
+		self.save_with_user(user)
+		self.charge()
+
+	def __str__(self):
+		return self.name
 
 
 class InterlockCard(BaseModel):

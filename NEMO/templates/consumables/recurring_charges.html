@@ -1,0 +1,53 @@
+{% extends 'pagination/pagination_base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}{{ recurring_charges_name }}{% endblock %}
+{% block before_pagination %}
+	<div class="h1 row">
+        <div class="col-xs-6 col-sm-4">{{ recurring_charges_name }}</div>
+        {% if extended_permissions %}
+            <div class="col-sm-8 text-right"><a href="{% url 'create_recurring_charge' %}" class="btn btn-success"><i class="glyphicon glyphicon-plus-sign"></i> Add item</a></div>
+        {% endif %}
+	</div>
+{% endblock %}
+{% block pagination_content %}
+    <table class="table table-bordered table-condensed table-hover table-align-middle thead-light">
+        <thead>
+            <tr>
+                <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='quantity' name='Quantity' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='consumable' name='Item' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='customer' name='Customer' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='project' name='Project' %}</th>
+                <th>Frequency</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='last_charge' name='Last charge' %}</th>
+                <th>Next charge</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% now "Y-m-d" as today_date %}
+            {% for recurring_charge in page %}
+                <tr {% if not recurring_charge.is_empty and not recurring_charge.next_charge %}class="alert-danger" data-toggle="tooltip" data-title="This item expired"{% endif %}>
+                    <td>{{ recurring_charge.name }}</td>
+                    <td>{{ recurring_charge.quantity }}</td>
+                    <td>{{ recurring_charge.consumable }}</td>
+                    <td {% if recurring_charge.invalid_customer %}class="alert-danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_customer|default:'' }}"{% endif %}>{{ recurring_charge.customer|default_if_none:"" }}</td>
+                    <td {% if recurring_charge.invalid_project %}class="alert-danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project|default:'' }}"{% endif %}>{{ recurring_charge.project|default_if_none:"" }}</td>
+                    <td>{% if recurring_charge.get_recurrence_interval_display %}{{ recurring_charge.get_recurrence_interval_display }} <span class="glyphicon glyphicon-info-sign primary-highlight" style="vertical-align: text-bottom" data-toggle="tooltip" data-title="{{ recurring_charge.get_recurrence_display|default_if_none:'' }}"></span>{% endif %}</td>
+                    <td>{{ recurring_charge.last_charge|date:'SHORT_DATE_FORMAT' }}</td>
+                    <td>{{ recurring_charge.next_charge|date:'SHORT_DATE_FORMAT' }}</td>
+                    <td class="button-column-minimum">
+                        <button type="button" class="btn btn-sm btn-info" title="Edit" onclick="window.location = '{% url 'edit_recurring_charge' recurring_charge.id %}'"><i class="glyphicon glyphicon-edit"></i> Edit</button>
+                        <button type="button" class="btn btn-sm btn-warning" title="Clear" onclick="if (confirm('Are you sure you want to clear ' + '{{ recurring_charge.name }}' + '?')) { window.location = '{% url 'clear_recurring_charge' recurring_charge.id %}' }"><i class="glyphicon glyphicon-log-out"></i> Clear</button>
+                        {% if extended_permissions %}
+                            <button type="button" class="btn btn-sm btn-danger" title="Delete" onclick="if (confirm('Are you sure you want to delete ' + '{{ recurring_charge.name }}' + '?')) { window.location = '{% url 'delete_recurring_charge' recurring_charge.id %}' }"><i class="glyphicon glyphicon-trash"></i> Delete</button>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+{% block after_pagination %}
+    <script>$('[data-toggle~="tooltip"]').tooltip({container: 'body'});</script>
+{% endblock %}

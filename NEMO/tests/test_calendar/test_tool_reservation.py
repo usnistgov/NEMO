@@ -108,7 +108,7 @@ class ReservationTestCase(TestCase):
 
 		# fix time
 		end = base_start + timedelta(hours=1)
-		# Create a outage and try to schedule a reservation at the same time
+		# Create an outage and try to schedule a reservation at the same time
 		outage = ScheduledOutage.objects.create(title="Outage", tool=tool, start=base_start, end=end, creator=staff)
 		data = self.get_reservation_data(base_start, end, tool)
 		response = self.client.post(reverse("create_reservation"), data, follow=True)

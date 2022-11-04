@@ -24,7 +24,7 @@ from NEMO.actions import (
 	synchronize_with_tool_usage,
 	unlock_selected_interlocks,
 )
-from NEMO.forms import BuddyRequestForm
+from NEMO.forms import BuddyRequestForm, RecurringConsumableChargeForm
 from NEMO.models import (
 	Account,
 	AccountType,
@@ -61,6 +61,7 @@ from NEMO.models import (
 	PhysicalAccessLevel,
 	PhysicalAccessLog,
 	Project,
+	RecurringConsumableCharge,
 	Reservation,
 	ReservationQuestions,
 	Resource,
@@ -675,6 +676,16 @@ class ConsumableWithdrawAdmin(admin.ModelAdmin):
 	list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date")
 	list_filter = ("date", "consumable")
 	date_hierarchy = "date"
+
+
+@register(RecurringConsumableCharge)
+class RecurringConsumableChargeAdmin(admin.ModelAdmin):
+	form = RecurringConsumableChargeForm
+	list_display = ("name", "customer", "project", "get_recurrence_display", "last_charge", "next_charge")
+	readonly_fields = ("last_charge", "last_updated", "last_updated_by")
+
+	def save_model(self, request, obj: RecurringConsumableCharge, form, change):
+		obj.save_with_user(request.user)
 
 
 class InterlockCardAdminForm(forms.ModelForm):

@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from NEMO.models import Account, EmailLog, Project, Qualification, Tool, UsageEvent, User
-from NEMO.views.calendar import send_email_tool_qualification_expiration
+from NEMO.views.calendar import do_manage_tool_qualifications
 from NEMO.views.customization import EmailsCustomization, UserCustomization
 
 
@@ -34,7 +34,7 @@ class ToolQualificationTestCase(TestCase):
 		UserCustomization.set("user_tool_qualification_expiration_never_used_days", 3)
 		EmailsCustomization.set("user_office_email_address", "user_office@example.com")
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was NOT removed
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 
@@ -48,7 +48,7 @@ class ToolQualificationTestCase(TestCase):
 		UserCustomization.set("user_tool_qualification_expiration_days", 3)
 		EmailsCustomization.set("user_office_email_address", "user_office@example.com")
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was NOT removed
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 
@@ -61,7 +61,7 @@ class ToolQualificationTestCase(TestCase):
 		UserCustomization.set("user_tool_qualification_expiration_never_used_days", 3)
 		UserCustomization.set("user_tool_qualification_expiration_days", 3)
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was NOT removed
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 
@@ -74,7 +74,7 @@ class ToolQualificationTestCase(TestCase):
 		UserCustomization.set("user_tool_qualification_expiration_days", 3)
 		EmailsCustomization.set("user_office_email_address", "user_office@example.com")
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was NOT removed
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 
@@ -89,7 +89,7 @@ class ToolQualificationTestCase(TestCase):
 		UserCustomization.set("user_tool_qualification_expiration_days", 3)
 		EmailsCustomization.set("user_office_email_address", "user_office@example.com")
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was NOT removed (3 days disqualified, but only 2 days since tool use)
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 
@@ -102,7 +102,7 @@ class ToolQualificationTestCase(TestCase):
 		UserCustomization.set("user_tool_qualification_expiration_never_used_days", 3)
 		EmailsCustomization.set("user_office_email_address", "user_office@example.com")
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was NOT removed (3 days disqualified, but only 2 days since qualification)
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 
@@ -117,7 +117,7 @@ class ToolQualificationTestCase(TestCase):
 		UserCustomization.set("user_tool_qualification_expiration_days", 3)
 		EmailsCustomization.set("user_office_email_address", "user_office@example.com")
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was removed
 		self.assertFalse(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 		# Email was sent
@@ -132,7 +132,7 @@ class ToolQualificationTestCase(TestCase):
 		UserCustomization.set("user_tool_qualification_expiration_never_used_days", 3)
 		EmailsCustomization.set("user_office_email_address", "user_office@example.com")
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was removed
 		self.assertFalse(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 		# Email was sent
@@ -154,7 +154,7 @@ class ToolQualificationTestCase(TestCase):
 		prefs.email_alternate = "user.alternate@example.com"
 		prefs.save()
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was removed
 		self.assertFalse(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 		# Email was sent to both user's emails
@@ -177,7 +177,7 @@ class ToolQualificationTestCase(TestCase):
 		prefs.email_alternate = "user.alternate@example.com"
 		prefs.save()
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was removed
 		self.assertFalse(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 		# Email was sent to both user's emails
@@ -199,7 +199,7 @@ class ToolQualificationTestCase(TestCase):
 		# Set reminder 2 days before expiration
 		UserCustomization.set("user_tool_qualification_reminder_days", 2)
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was NOT removed (3 days disqualified, but only 2 days since qualification)
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 		# Email reminder was not sent (not 2 days before yet)
@@ -216,7 +216,7 @@ class ToolQualificationTestCase(TestCase):
 		# Set reminder 2 days before expiration
 		UserCustomization.set("user_tool_qualification_reminder_days", 2)
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was NOT removed (3 days disqualified, but only 2 days since qualification)
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 		# Email reminder was not sent (not 2 days before yet)
@@ -235,7 +235,7 @@ class ToolQualificationTestCase(TestCase):
 		# Set reminder 1 day before expiration
 		UserCustomization.set("user_tool_qualification_reminder_days", 1)
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was NOT removed (3 days disqualified, but only 2 days since qualification)
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 		# Email reminder was sent
@@ -252,7 +252,7 @@ class ToolQualificationTestCase(TestCase):
 		# Set reminder 1 day before expiration
 		UserCustomization.set("user_tool_qualification_reminder_days", 1)
 		# Trigger the expiration timed service
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
 		# Qualification was NOT removed (3 days disqualified, but only 2 days since qualification)
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 		# Email reminder was sent

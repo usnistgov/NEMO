@@ -48,13 +48,20 @@ def login_as_user_with_permissions(client: Client, permissions: List[str]) -> Us
 	return user
 
 
-def validate_model_error(test_case: TestCase, model, *error_fields):
+def validate_model_error(test_case: TestCase, model, error_fields, strict=False):
 	try:
 		model.full_clean()
 		test_case.fail(f"Should have failed with error fields: {error_fields}")
 	except ValidationError as e:
 		for error_field in error_fields:
 			test_case.assertIn(error_field, e.error_dict)
+		if strict:
+			diff1 = set(error_fields).difference(e.error_dict.keys())
+			diff2 = set(e.error_dict.keys()).difference(error_fields)
+			if diff1:
+				test_case.fail(f"{diff1} don't have errors but should")
+			if diff2:
+				test_case.fail(f"{diff2} have errors but shouldn't")
 
 
 def create_user_and_project(is_staff=False) -> (User, Project):

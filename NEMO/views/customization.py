@@ -1,5 +1,6 @@
 import operator
 from abc import ABC
+from datetime import date, datetime
 from typing import Dict, Iterable
 
 from django.contrib import messages
@@ -14,7 +15,8 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
-from NEMO.models import Customization, Project
+from NEMO.models import Customization, Project, RecurringConsumableCharge
+from NEMO.utilities import date_input_format, datetime_input_format
 
 
 class CustomizationBase(ABC):
@@ -62,6 +64,12 @@ class CustomizationBase(ABC):
 		# This method is expected to throw a ValidationError when validation fails
 		pass
 
+	def validate_date(self, value):
+		try:
+			datetime.strptime(value, date_input_format)
+		except ValueError as e:
+			raise ValidationError(str(e))
+
 	@classmethod
 	def add_instance(cls, inst):
 		cls._instances[inst.key] = inst
@@ -96,6 +104,22 @@ class CustomizationBase(ABC):
 				raise
 			else:
 				return default_value
+
+	@classmethod
+	def get_bool(cls, name: str, raise_exception=True) -> bool:
+		return cls.get(name, raise_exception) == "enabled"
+
+	@classmethod
+	def get_date(cls, name: str, raise_exception=True) -> date:
+		str_date = cls.get(name, raise_exception)
+		if str_date:
+			return datetime.strptime(str_date, date_input_format).date()
+
+	@classmethod
+	def get_datetime(cls, name:str, raise_exception=True) -> datetime:
+		str_datetime = cls.get(name, raise_exception)
+		if str_datetime:
+			return datetime.strptime(str_datetime, datetime_input_format)
 
 	@classmethod
 	def set(cls, name: str, value):
@@ -248,7 +272,28 @@ class UserRequestsCustomization(CustomizationBase):
 				validate_email(email)
 
 
-@customization(key="templates", title="File & email templates", order=7)
+@customization(key="recurring_charges", title="Recurring charges", order=6)
+class RecurringChargesCustomization(CustomizationBase):
+	variables = {"recurring_charges_name": "Recurring charges", "lock_recurring_charges": ""}
+
+	def __init__(self, key, title, order):
+		super().__init__(key, title, order)
+		self.update_title()
+
+	def update_title(self):
+		self.title = self.get("recurring_charges_name", raise_exception=False)
+		meta_class = RecurringConsumableCharge._meta
+		meta_class.verbose_name = self.title
+		meta_class.verbose_name_plural = self.title if self.title.endswith("s") else self.title + "s"
+
+	def save(self, request, element=None):
+		errors = super().save(request, element)
+		if not errors:
+			self.update_title()
+		return errors
+
+
+@customization(key="templates", title="File & email templates", order=8)
 class TemplatesCustomization(CustomizationBase):
 	files = [
 		("login_banner", ".html"),
@@ -282,7 +327,7 @@ class TemplatesCustomization(CustomizationBase):
 	]
 
 
-@customization(key="rates", title="Rates", order=8)
+@customization(key="rates", title="Rates", order=9)
 class RatesCustomization(CustomizationBase):
 	variables = {"rates_expand_table": ""}
 	files = [("rates", ".json")]
@@ -310,7 +355,10 @@ def get_media_file_contents(file_name):
 
 
 def store_media_file(content, file_name):
-	""" Delete any existing media file with the same name and save the new content into file_name in the media directory. If content is blank then no new file is created. """
+	"""
+	Delete any existing media file with the same name and save the new content into file_name in the media directory.
+	If the content is blank then no new file is created.
+	"""
 	storage = get_storage_class()()
 	storage.delete(file_name)
 	if content:

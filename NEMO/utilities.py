@@ -154,22 +154,23 @@ class EmailCategory(object):
 
 
 class RecurrenceFrequency(Enum):
-	DAILY = 1, rrule.DAILY, 'Day(s)'
-	DAILY_WEEKDAYS = 2, rrule.DAILY, 'Week Day(s)'
-	DAILY_WEEKENDS = 3, rrule.DAILY, 'Weekend Day(s)'
-	WEEKLY = 4, rrule.WEEKLY, 'Week(s)'
-	MONTHLY = 5, rrule.MONTHLY, 'Month(s)'
-	YEARLY = 6, rrule.YEARLY, 'Year(s)'
+	DAILY = 1, rrule.DAILY, "Day(s)", "day"
+	DAILY_WEEKDAYS = 2, rrule.DAILY, "Week Day(s)", "week day"
+	DAILY_WEEKENDS = 3, rrule.DAILY, "Weekend Day(s)", "weekend day"
+	WEEKLY = 4, rrule.WEEKLY, "Week(s)", "week"
+	MONTHLY = 5, rrule.MONTHLY, "Month(s)", "month"
+	YEARLY = 6, rrule.YEARLY, "Year(s)", "year"
 
 	def __new__(cls, *args, **kwargs):
 		obj = object.__new__(cls)
 		obj._value_ = args[0]
 		return obj
 
-	def __init__(self, index: int, rrule_freq, display_value):
+	def __init__(self, index: int, rrule_freq, display_value, display_text):
 		self.index = index
 		self.rrule_freq = rrule_freq
 		self.display_value = display_value
+		self.display_text = display_text
 
 	@classmethod
 	def choices(cls):

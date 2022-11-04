@@ -9,15 +9,18 @@ from typing import List, Optional, Union
 import pytz
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
+from NEMO.forms import nice_errors
 from NEMO.models import (
 	Alert,
 	Area,
@@ -27,6 +30,7 @@ from NEMO.models import (
 	Configuration,
 	Project,
 	Qualification,
+	RecurringConsumableCharge,
 	Reservation,
 	ReservationItemType,
 	ReservationQuestions,
@@ -41,11 +45,13 @@ from NEMO.utilities import (
 	EmailCategory,
 	RecurrenceFrequency,
 	as_timezone,
+	beginning_of_the_day,
 	bootstrap_primary_color,
 	create_email_attachment,
 	date_input_format,
 	extract_times,
 	format_datetime,
+	get_full_url,
 	get_recurring_rule,
 	localize,
 	parse_parameter_string,
@@ -58,6 +64,7 @@ from NEMO.views.customization import (
 	ApplicationCustomization,
 	CalendarCustomization,
 	EmailsCustomization,
+	RecurringChargesCustomization,
 	UserCustomization,
 	get_media_file_contents,
 )
@@ -1302,11 +1309,11 @@ def send_email_user_access_expiration_reminders(request=None):
 @login_required
 @require_GET
 @permission_required("NEMO.trigger_timed_services", raise_exception=True)
-def email_tool_qualification_expiration(request):
-	return send_email_tool_qualification_expiration(request)
+def manage_tool_qualifications(request):
+	return do_manage_tool_qualifications(request)
 
 
-def send_email_tool_qualification_expiration(request=None):
+def do_manage_tool_qualifications(request=None):
 	user_office_email = EmailsCustomization.get("user_office_email_address")
 	qualification_reminder_days = UserCustomization.get("user_tool_qualification_reminder_days")
 	qualification_expiration_days = UserCustomization.get("user_tool_qualification_expiration_days")
@@ -1322,10 +1329,10 @@ def send_email_tool_qualification_expiration(request=None):
 				last_tool_use = None
 				try:
 					last_tool_use = as_timezone(UsageEvent.objects.filter(user=user, tool=tool).latest("start").start).date()
-					expiration_date = last_tool_use + timedelta(days=qualification_expiration_days) if qualification_expiration_days else None
+					expiration_date: date = last_tool_use + timedelta(days=qualification_expiration_days) if qualification_expiration_days else None
 				except UsageEvent.DoesNotExist:
 					# User never used the tool, use the qualification date
-					expiration_date = qualification.qualified_on + timedelta(days=qualification_expiration_never_used) if qualification_expiration_never_used else None
+					expiration_date: date = qualification.qualified_on + timedelta(days=qualification_expiration_never_used) if qualification_expiration_never_used else None
 				if expiration_date:
 					if expiration_date <= date.today():
 						qualification.delete()
@@ -1365,3 +1372,33 @@ def send_tool_qualification_expiring_email(qualification: Qualification, last_to
 		cc=ccs,
 		send_to_alternate=send_to_alternate
 	)
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def manage_recurring_charges(request):
+	return do_manage_recurring_charges(request)
+
+
+def do_manage_recurring_charges(request=None):
+	for recurring_charge in RecurringConsumableCharge.objects.filter(customer__isnull=False):
+		today = beginning_of_the_day(datetime.now(), in_local_timezone=False)
+		next_match_including_today = recurring_charge.next_charge(inc=True)
+		if not next_match_including_today:
+			continue
+		if next_match_including_today == today or next_match_including_today.date() == today.date():
+			try:
+				recurring_charge.charge()
+			except ValidationError as e:
+				url = get_full_url(reverse("edit_recurring_charge", args=[recurring_charge.id]), request)
+				recurring_charge_name = RecurringChargesCustomization.get("recurring_charges_name")
+				user_office_email = EmailsCustomization.get("user_office_email_address")
+				content = f"The item \"{recurring_charge.name}\" <b>could not be charged</b> for the following reason(s):<br><br>"
+				content += f"{nice_errors(e).as_ul()}"
+				content += f"You can go to the <a href=\"{url}\">edit {recurring_charge.name} page</a> to fix it."
+				send_mail(subject=f"Error processing {recurring_charge_name.lower()}", content=content, from_email=None, to=[user_office_email])
+			except Exception:
+				calendar_logger.exception("Error trying to charge for %s", recurring_charge.name)
+	# TODO: send reminder
+	return HttpResponse()

@@ -245,6 +245,13 @@ urlpatterns += [
 	path("consumables/withdraw/", consumables.make_withdrawals, name="withdraw_consumables"),
 	path("consumables/clear/", consumables.clear_withdrawals, name="clear_withdrawals"),
 
+	# Recurring consumable charges
+	path("recurring_charges/", consumables.recurring_charges, name="recurring_charges"),
+	path("create_recurring_charge/", consumables.create_recurring_charge, name="create_recurring_charge"),
+	path("edit_recurring_charge/<int:recurring_charge_id>", consumables.create_recurring_charge, name="edit_recurring_charge"),
+	path("clear_recurring_charge/<int:recurring_charge_id>", consumables.clear_recurring_charge, name="clear_recurring_charge"),
+	path("delete_recurring_charge/<int:recurring_charge_id>", consumables.delete_recurring_charge, name="delete_recurring_charge"),
+
 	# Training:
 	path("training/", training.training, name="training"),
 	path("training_entry/", training.training_entry, name="training_entry"),
@@ -318,7 +325,8 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		path("email_usage_reminders/", calendar.email_usage_reminders, name="email_usage_reminders"),
 		path("email_weekend_access_notification/", access_requests.email_weekend_access_notification, name="email_weekend_access_notification"),
 		path("email_user_access_expiration_reminders/", calendar.email_user_access_expiration_reminders, name="email_user_access_expiration_reminders"),
-		path("email_tool_qualification_expiration/", calendar.email_tool_qualification_expiration, name="email_tool_qualification_expiration"),
+		path("manage_tool_qualifications/", calendar.manage_tool_qualifications, name="manage_tool_qualifications"),
+		path("manage_recurring_charges/", calendar.manage_recurring_charges, name="manage_recurring_charges"),
 
 		# Abuse:
 		path("abuse/", abuse.abuse, name="abuse"),

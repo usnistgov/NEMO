@@ -5998,6 +5998,22 @@
     }
   },
   {
+    "model": "NEMO.recurringconsumablecharge",
+    "pk": 1,
+    "fields": {
+      "name": "Rental tweezers #1",
+      "customer": 2,
+      "project": 1,
+      "consumable": 1,
+      "quantity": 1,
+      "rec_start": "2022-11-02",
+      "rec_frequency": 1,
+      "rec_interval": 1,
+      "last_updated_by": 1,
+      "last_updated": "2022-11-01T20:10:00Z"
+    }
+  },
+  {
     "model": "NEMO.reservation",
     "pk": 1,
     "fields": {

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.forms import (
@@ -16,6 +16,7 @@ from django.forms import (
 from django.forms.utils import ErrorDict
 from django.utils import timezone
 
+from NEMO.exceptions import ProjectChargeException
 from NEMO.models import (
 	Account,
 	Alert,
@@ -25,6 +26,7 @@ from NEMO.models import (
 	Consumable,
 	ConsumableWithdraw,
 	Project,
+	RecurringConsumableCharge,
 	ReservationItemType,
 	SafetyIssue,
 	ScheduledOutage,
@@ -38,6 +40,7 @@ from NEMO.models import (
 )
 from NEMO.utilities import bootstrap_primary_color, format_datetime, quiet_int
 from NEMO.views.customization import UserRequestsCustomization
+from NEMO.views.policy import check_billing_to_project
 
 
 class UserForm(ModelForm):
@@ -255,6 +258,8 @@ class ConsumableWithdrawForm(ModelForm):
 			raise ValidationError(
 				"A consumable withdraw was requested for an inactive user. Only active users may withdraw consumables."
 			)
+		if customer.access_expiration and customer.access_expiration < date.today():
+			raise ValidationError(f"This user's access expired on {format_datetime(customer.access_expiration)}")
 		return customer
 
 	def clean_project(self):
@@ -289,12 +294,33 @@ class ConsumableWithdrawForm(ModelForm):
 			)
 		customer = cleaned_data["customer"]
 		project = cleaned_data["project"]
-		if project not in customer.active_projects():
-			raise ValidationError(
-				"{} is not a member of the project {}. Users can only bill to projects they belong to.".format(
-					customer, project
-				)
-			)
+		try:
+			check_billing_to_project(project, customer, consumable)
+		except ProjectChargeException as e:
+			raise ValidationError({"project": e.msg})
+		return cleaned_data
+
+
+class RecurringConsumableChargeForm(ModelForm):
+	class Meta:
+		model = RecurringConsumableCharge
+		exclude = ("last_charge", "last_updated", "last_updated_by")
+
+	def __init__(self, *args, **kwargs):
+		locked = kwargs.pop("locked", False)
+		super().__init__(*args, **kwargs)
+		if locked:
+			for field in self.fields:
+				if field not in ["customer", "project"]:
+					self.fields[field].disabled = True
+
+	def clean(self):
+		cleaned_data = super().clean()
+		if "save_and_charge" in self.data:
+			# We need to require customer, which in turn if provided makes all other necessary fields be required,
+			# so we can charge for this consumable.
+			if not cleaned_data.get("customer"):
+				self.add_error("customer", "This field is required when charging.")
 		return cleaned_data
 
 
@@ -438,13 +464,15 @@ class StaffAbsenceForm(ModelForm):
 		fields = "__all__"
 
 
-def nice_errors(form, non_field_msg="General form errors"):
+def nice_errors(obj, non_field_msg="General form errors") -> ErrorDict:
 	result = ErrorDict()
-	if isinstance(form, BaseForm):
-		for field, errors in form.errors.items():
-			if field == NON_FIELD_ERRORS:
-				key = non_field_msg
-			else:
-				key = form.fields[field].label
-			result[key] = errors
+	error_dict = obj.errors if isinstance(obj, BaseForm) else obj.message_dict if isinstance(obj, ValidationError) else {}
+	for field_name, errors in error_dict.items():
+		if field_name == NON_FIELD_ERRORS:
+			key = non_field_msg
+		elif hasattr(obj, "fields"):
+			key = obj.fields[field_name].label
+		else:
+			key = field_name
+		result[key] = errors
 	return result

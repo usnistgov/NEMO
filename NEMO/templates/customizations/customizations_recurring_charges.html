@@ -1,0 +1,27 @@
+{% load custom_tags_and_filters %}
+<div class="panel-body">
+    <h3 class="customization-section-title">{{ recurring_charges_name }} settings</h3>
+    <form method="POST" action="{% url 'customize' 'recurring_charges' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="control-label col-md-2" for="recurring_charges_name">Feature name</label>
+            <div class="col-md-3">
+                <input type="text" id="recurring_charges_name" name="recurring_charges_name" class="form-control" value="{{ recurring_charges_name }}">
+            </div>
+            <div class="col-md-7 help-block light-grey">
+                The name to use for this feature throughout the application.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">Lock {{ recurring_charges_name|lower }}</label>
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="lock_recurring_charges" {% if lock_recurring_charges %}checked{% endif %} value="enabled">Check this box to lock {{ recurring_charges_name|lower }}, so staff members can only change customer and project fields.</label><br/>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-offset-2">
+            <input type="submit" value="Save settings" class="btn btn-success">
+        </div>
+    </form>
+</div>

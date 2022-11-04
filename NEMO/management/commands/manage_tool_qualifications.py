@@ -1,6 +1,6 @@
 from django.core.management import BaseCommand
 
-from NEMO.views.calendar import send_email_tool_qualification_expiration
+from NEMO.views.calendar import do_manage_tool_qualifications
 
 
 class Command(BaseCommand):
@@ -10,4 +10,4 @@ class Command(BaseCommand):
 	)
 
 	def handle(self, *args, **options):
-		send_email_tool_qualification_expiration()
+		do_manage_tool_qualifications()
