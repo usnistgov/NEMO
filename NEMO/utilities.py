@@ -7,7 +7,7 @@ from email.mime.base import MIMEBase
 from enum import Enum
 from io import BytesIO
 from logging import getLogger
-from typing import Dict, List, Sequence, Set, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
 from urllib.parse import urljoin
 
 from PIL import Image
@@ -91,7 +91,7 @@ class BasicDisplayTable(object):
 
 	def add_header(self, header: Tuple[str, str]):
 		if not any(k[0] == header[0] for k in self.headers):
-			self.headers.append((header[0], header[1].capitalize()))
+			self.headers.append((header[0], capitalize(header[1])))
 
 	def add_row(self, row: Dict):
 		self.rows.append(row)
@@ -108,7 +108,7 @@ class BasicDisplayTable(object):
 	def to_csv(self) -> HttpResponse:
 		response = HttpResponse(content_type="text/csv")
 		writer = csv.writer(response)
-		writer.writerow([display_value.capitalize() for key, display_value in self.headers])
+		writer.writerow([capitalize(display_value) for key, display_value in self.headers])
 		for row in self.rows:
 			writer.writerow([row.get(key, "") for key, display_value in self.headers])
 		return response
@@ -574,3 +574,13 @@ def get_full_url(location, request=None):
 		return request.build_absolute_uri(location)
 	else:
 		return location
+
+
+def capitalize(string: Optional[str]) -> str:
+	"""
+	This function capitalizes the first letter only. Built-in .capitalize() method does it, but also
+	makes the rest of the string lowercase, which is not what we want here
+	"""
+	if not string:
+		return string
+	return string[0].upper() + string[1:]
