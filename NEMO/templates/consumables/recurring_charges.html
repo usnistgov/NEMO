@@ -48,6 +48,9 @@
         </tbody>
     </table>
 {% endblock %}
+{% block table_empty_content %}
+    <div>There are no current {{ recurring_charges_name|lower }}. {% if extended_permissions %}Please add some by clicking the "Add item" button above.{% endif %}</div>
+{% endblock %}
 {% block after_pagination %}
     <script>$('[data-toggle~="tooltip"]').tooltip({container: 'body'});</script>
 {% endblock %}
