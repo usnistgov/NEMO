@@ -224,7 +224,18 @@ class ConsumableTestCase(TestCase):
 		response = self.client.post(reverse("create_recurring_charge"), data, follow=True)
 		self.assertRedirects(response, reverse("recurring_charges"))
 		self.assertTrue(RecurringConsumableCharge.objects.filter(consumable=consumable, customer=user, quantity=1).exists())
-		self.assertTrue(ConsumableWithdraw.objects.filter(consumable=consumable, customer=user, quantity=1).exists())
+		withdraw = ConsumableWithdraw.objects.filter(consumable=consumable, customer=user, quantity=1).first()
+		self.assertIsNotNone(withdraw)
+		# Charged less than a second ago, but still before now
+		self.assertLess(timezone.now() - timedelta(seconds=1), withdraw.date)
+		self.assertLess(withdraw.date, timezone.now())
+		# Try editing and charging again on the same day
+		response = self.client.post(reverse("edit_recurring_charge", args=[withdraw.id]), data, follow=True)
+		self.assertRedirects(response, reverse("recurring_charges"))
+		new_withdraw = ConsumableWithdraw.objects.filter(consumable=consumable, customer=user, quantity=1).latest("date")
+		# There is no new withdraw, it should be the same as previous since you cannot charge twice the same day
+		self.assertEqual(withdraw.id, new_withdraw.id)
+		self.assertEqual(withdraw.date, new_withdraw.date)
 
 	def test_edit_when_locked(self):
 		RecurringChargesCustomization.set("lock_recurring_charges", "enabled")

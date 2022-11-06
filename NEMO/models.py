@@ -1763,11 +1763,15 @@ class RecurringConsumableCharge(BaseModel):
 		return rec_display
 
 	def charge(self):
-		from NEMO.views.consumables import make_withdrawal
-		self.full_clean()
-		make_withdrawal(self.consumable.id, self.quantity, self.project.id, self.last_updated_by, self.customer.id)
-		self.last_charge = timezone.now()
-		self.save()
+		# Cannot charge twice the same day
+		if self.last_charge and self.last_charge.date() == datetime.date.today():
+			return
+		else:
+			from NEMO.views.consumables import make_withdrawal
+			self.full_clean()
+			make_withdrawal(self.consumable.id, self.quantity, self.project.id, self.last_updated_by, self.customer.id)
+			self.last_charge = timezone.now()
+			self.save()
 
 	def is_empty(self):
 		return not any([self.customer, self.project])

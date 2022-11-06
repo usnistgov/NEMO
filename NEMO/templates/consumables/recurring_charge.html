@@ -29,7 +29,7 @@
         <div class="form-group">
             <label class="control-label col-sm-2" for="consumable">Consumable</label>
             <div class="col-sm-1">
-                <input id="quantity" name="quantity" type="number" class="form-control" value="{{ form.quantity.value }}" {% if form.fields.quantity.disabled %}disabled{% endif %}/>
+                <input aria-label="Quantity" id="quantity" name="quantity" type="number" class="form-control" value="{{ form.quantity.value }}" {% if form.fields.quantity.disabled %}disabled{% endif %}/>
             </div>
             <div class="col-sm-3">
                 <select class="form-control" id="consumable" name="consumable" {% if form.fields.consumable.disabled %}disabled{% endif %}>
@@ -102,7 +102,7 @@
                 <input id="rec_interval" name="rec_interval" type="number" class="form-control" value="{{ form.rec_interval.value }}" {% if form.fields.rec_interval.disabled %}disabled{% endif %}/>
             </div>
             <div class="col-sm-2">
-                <select class="form-control" name="rec_frequency" id="rec_frequency" {% if form.fields.rec_frequency.disabled %}disabled{% endif %}>
+                <select class="form-control" name="rec_frequency" id="rec_frequency" aria-label="Frequency" {% if form.fields.rec_frequency.disabled %}disabled{% endif %}>
                     {% for choice in form.fields.rec_frequency.choices %}
                         <option value="{{ choice.0 }}" {% if choice.0 == form.rec_frequency.value|to_int %}selected{% endif %}>{{ choice.1 }}</option>
                     {% endfor %}
@@ -139,7 +139,7 @@
         </div>
         <div class="text-right">
             <button name="save" type="submit" class="btn btn-success" onclick="submit_and_disable(this)"><i class="glyphicon glyphicon-floppy-save"></i> Save</button>
-            <div style="display: inline-block" {% if not can_charge %}title="The customer was already charged for this item today"{% endif %}><button id="save_and_charge" name="save_and_charge" type="submit" class="btn btn-warning" onclick="submit_and_disable(this)" {% if not can_charge %}disabled data-title="This was already charged today"{% endif %}><i class="glyphicon glyphicon-floppy-save"></i> Save and charge now</button></div>
+            <div style="display: inline-block" {% if not can_charge %}title="The customer was already charged for this item today"{% endif %}><button {% if not can_charge %}disabled{% endif %} id="save_and_charge" name="save_and_charge" type="submit" class="btn btn-warning" onclick="submit_and_disable(this)"><i class="glyphicon glyphicon-floppy-save"></i> Save and charge now</button></div>
 		</div>
     </form>
     <script>
