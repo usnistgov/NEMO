@@ -48,6 +48,15 @@
             </div>
         </div>
         <div class="form-group">
+            <label class="control-label col-md-2" for="calendar_time_format">Time format</label>
+            <div class="col-md-3">
+                <input type="text" id="calendar_time_format" name="calendar_time_format" class="form-control" value="{{ calendar_time_format }}"  placeholder="ha">
+            </div>
+            <div class="col-md-7 help-block light-grey">
+                The time format for the calendar.
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-2" for="calendar_day_column_format">Day column format</label>
             <div class="col-md-3">
                 <input type="text" id="calendar_day_column_format" name="calendar_day_column_format" class="form-control" value="{{ calendar_day_column_format }}"  placeholder="dddd MM/DD/YYYY">

@@ -213,6 +213,7 @@ class CalendarCustomization(CustomizationBase):
 	variables = {
 		"calendar_view": "agendaWeek",
 		"calendar_first_day_of_week": "1",
+		"calendar_time_format": "ha",
 		"calendar_day_column_format": "dddd MM/DD/YYYY",
 		"calendar_week_column_format": "ddd M/DD",
 		"calendar_month_column_format": "ddd",
