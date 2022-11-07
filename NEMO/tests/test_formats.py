@@ -10,7 +10,6 @@ from NEMO.utilities import format_daterange, format_datetime
 
 
 class FormatTestCase(TestCase):
-
 	def test_format_daterange(self):
 		self.assertTrue(format_datetime())
 		today = datetime.datetime.today()
@@ -24,16 +23,22 @@ class FormatTestCase(TestCase):
 
 		dt_format = "m/d/Y @ g:i A"
 		start = datetime.datetime(2022, 2, 11, 5, 0, 0)
-		end = start + datetime.timedelta(days = 2)
-		self.assertEqual(format_daterange(start, end, dt_format=dt_format), f"from 02/11/2022 @ 5:00 AM to 02/13/2022 @ 5:00 AM")
+		end = start + datetime.timedelta(days=2)
+		self.assertEqual(
+			format_daterange(start, end, dt_format=dt_format), f"from 02/11/2022 @ 5:00 AM to 02/13/2022 @ 5:00 AM"
+		)
 
 		start_same_day = datetime.datetime(2022, 2, 11, 5, 0, 0)
 		end_same_day = start_same_day + datetime.timedelta(hours=2)
-		self.assertEqual(format_daterange(start_same_day, end_same_day, dt_format=dt_format), f"02/11/2022 from 5:00 AM to 7:00 AM")
+		self.assertEqual(
+			format_daterange(start_same_day, end_same_day, dt_format=dt_format), f"02/11/2022 from 5:00 AM to 7:00 AM"
+		)
 
 		start_midnight = datetime.datetime(2022, 2, 11, 0, 0, 0)
 		end_midnight = datetime.datetime(2022, 2, 11, 23, 59, 0)
-		self.assertEqual(format_daterange(start_midnight, end_midnight, dt_format=dt_format), f"02/11/2022 from 12:00 AM to 11:59 PM")
+		self.assertEqual(
+			format_daterange(start_midnight, end_midnight, dt_format=dt_format), f"02/11/2022 from 12:00 AM to 11:59 PM"
+		)
 
 		t_format = "g:i A"
 		start_time = datetime.time(8, 0, 0)
@@ -46,12 +51,21 @@ class FormatTestCase(TestCase):
 		self.assertEqual(format_daterange(start_date, end_date, d_format=d_format), f"from 02/11/2022 to 02/11/2022")
 
 		tz = pytz.timezone("US/Pacific")
-		self.assertEqual(settings.TIME_ZONE, 'America/New_York')
-		start_tz = tz.localize(datetime.datetime(2022, 2, 11, 5, 0, 0)) # 5AM Pacific => 8AM Eastern
+		self.assertEqual(settings.TIME_ZONE, "America/New_York")
+		start_tz = tz.localize(datetime.datetime(2022, 2, 11, 5, 0, 0))  # 5AM Pacific => 8AM Eastern
 		end_tz = start_tz + datetime.timedelta(days=2)
-		self.assertNotEqual(format_daterange(start_tz, end_tz, dt_format=dt_format), f"from 02/11/2022 @ 5:00 AM to 02/13/2022 @ 5:00 AM")
-		self.assertEqual(format_daterange(start_tz, end_tz, dt_format=dt_format), f"from 02/11/2022 @ 8:00 AM to 02/13/2022 @ 8:00 AM")
+		self.assertNotEqual(
+			format_daterange(start_tz, end_tz, dt_format=dt_format),
+			f"from 02/11/2022 @ 5:00 AM to 02/13/2022 @ 5:00 AM",
+		)
+		self.assertEqual(
+			format_daterange(start_tz, end_tz, dt_format=dt_format),
+			f"from 02/11/2022 @ 8:00 AM to 02/13/2022 @ 8:00 AM",
+		)
 
-		start_midnight_tz = tz.localize(datetime.datetime(2022, 2, 11, 0, 0, 0)) # midnight Pacific -> 3AM Eastern
-		end_midnight_tz = tz.localize(datetime.datetime(2022, 2, 11, 23, 59, 0)) # 11:59 PM Pacific -> 2:59AM Eastern
-		self.assertEqual(format_daterange(start_midnight_tz, end_midnight_tz, dt_format=dt_format), f"from 02/11/2022 @ 3:00 AM to 02/12/2022 @ 2:59 AM")
+		start_midnight_tz = tz.localize(datetime.datetime(2022, 2, 11, 0, 0, 0))  # midnight Pacific -> 3AM Eastern
+		end_midnight_tz = tz.localize(datetime.datetime(2022, 2, 11, 23, 59, 0))  # 11:59 PM Pacific -> 2:59AM Eastern
+		self.assertEqual(
+			format_daterange(start_midnight_tz, end_midnight_tz, dt_format=dt_format),
+			f"from 02/11/2022 @ 3:00 AM to 02/12/2022 @ 2:59 AM",
+		)

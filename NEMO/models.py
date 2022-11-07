@@ -35,6 +35,7 @@ from NEMO import fields
 from NEMO.utilities import (
 	EmailCategory,
 	RecurrenceFrequency,
+	as_timezone,
 	beginning_of_the_day,
 	bootstrap_primary_color,
 	distinct_qs_value_list,
@@ -1764,7 +1765,7 @@ class RecurringConsumableCharge(BaseModel):
 
 	def charge(self):
 		# Cannot charge twice the same day
-		if self.last_charge and self.last_charge.date() == datetime.date.today():
+		if self.last_charge and as_timezone(self.last_charge).date() == datetime.date.today():
 			return
 		else:
 			from NEMO.views.consumables import make_withdrawal
