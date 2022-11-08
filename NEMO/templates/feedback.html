@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Feedback{% endblock %}
 {% block content %}
 	{% if customization_required %}
@@ -22,7 +23,7 @@
 				<label><textarea rows="6" cols="75" name="feedback" id="feedback" class="form-control" maxlength="5000" required></textarea></label>
 			</div>
 			<div class="form-group">
-				<input type="submit" value="Send feedback" class="btn btn-success">
+                {% button type="save" value="Send feedback" icon="glyphicon-send" %}
 			</div>
 		</form>
 	{% endif %}

@@ -57,10 +57,10 @@
 			{% if not project_autocomplete %}
 				<div class="hidden-lg hidden-md hidden-sm">&nbsp;</div>
 				<div class="col-md-3">
-					<input type="button" class="btn btn-success" onclick="$('#csv_export').val('');this.form.submit()" value="Update">
+                    {% button type="save" submit=False onclick="$('#csv_export').val('');this.form.submit();" value="Update" icon="glyphicon-refresh" %}
                     {% if can_export %}
                         <input id="csv_export" type="hidden" name="csv" value="">
-                        <input type="button" class="btn btn-info" style="margin-left: 15px" onclick="$('#csv_export').val('true');this.form.submit()" value="Export">
+                        {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
                     {% endif %}
 				</div>
 			{% endif %}
@@ -110,10 +110,10 @@
 				</div>
 				<div class="hidden-lg hidden-md hidden-sm">&nbsp;</div>
 				<div class="col-md-3">
-					<input type="button" class="btn btn-success" onclick="$('#csv_export').val('');this.form.submit()" value="Update">
+                    {% button type="save" submit=False onclick="$('#csv_export').val('');this.form.submit();" value="Update" icon="glyphicon-refresh" %}
                     {% if can_export %}
                         <input id="csv_export" type="hidden" name="csv" value="">
-                        <input type="button" class="btn btn-info" style="margin-left: 15px" onclick="$('#csv_export').val('true');this.form.submit()" value="Export">
+                        {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
                     {% endif %}
 				</div>
 			</div>

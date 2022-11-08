@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Safety{% endblock %}
 {% block content %}
 	<h1>Update a safety issue</h1>
@@ -19,11 +20,10 @@
 			</div>
 		</div>
 		<div class="form-group">
-			<textarea name="update" class="form-control" rows="4" placeholder="Provide an update on how this safety issue is being handled or resolved."></textarea>
+			<textarea name="update" class="form-control" rows="4" aria-label="Update text" placeholder="Provide an update on how this safety issue is being handled or resolved."></textarea>
 		</div>
 		<div class="form-group">
-			<input type="submit" class="btn btn-info" value="Save update">
-			<a href="{% url 'safety' %}"><input type="button" class="btn btn-warning pull-right" value="Abandon update"></a>
+            {% button type="save" value="Save update" %}
 		</div>
 	</form>
 

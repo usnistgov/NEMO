@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 {% if request.session.withdrawals %}
     <p>Current order:</p>
     <table class="table table-condensed table-striped thead-light">
@@ -16,17 +17,18 @@
                 <td>{{ withdraw.project }}</td>
                 <td>{{ withdraw.consumable }}</td>
                 <td>{{ withdraw.quantity }}</td>
-                <td>
+                <td style="vertical-align: middle">
                     <span class="glyphicon glyphicon-remove pull-right" style="cursor:pointer" onclick="$('#consumables_order').load('{% url 'remove_consumable' forloop.counter0 %}')" title="Remove this withdrawal"></span>
                 </td>
             </tr>
         {% endfor %}
     </table>
     <div class="pull-left">
-        <button class="btn btn-sm btn-danger" onclick="$('#consumables_order').load('{% url 'clear_withdrawals' %}')">Clear</button>
+        {% url 'clear_withdrawals' as clear_withdrawals_url %}
+        {% button type="delete" size="small" value="Clear" title="Remove all items in current order" onclick="$('#consumables_order').load('"|concat:clear_withdrawals_url|concat:"')" %}
     </div>
     <form action="{% url 'withdraw_consumables' %}" class="form-horizontal pull-right" method="post">
         {% csrf_token %}
-        <input type="submit" class="btn btn-sm btn-success" value="Confirm">
+        {% button type="save" size="small" value="Confirm" %}
     </form>
 {% endif %}

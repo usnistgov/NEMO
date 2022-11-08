@@ -16,7 +16,7 @@ from django.urls.resolvers import RegexPattern
 from NEMO.models import User
 from NEMO.tests.test_utilities import login_as, login_as_staff, login_as_user, login_as_user_with_permissions
 from NEMO.utilities import get_full_url
-from NEMO.views.customization import ApplicationCustomization
+from NEMO.views.customization import ApplicationCustomization, EmailsCustomization
 
 url_test_logger = getLogger(__name__)
 
@@ -121,6 +121,10 @@ class URLsTestCase(TestCase):
 	@classmethod
 	def setUpTestData(cls):
 		call_command("loaddata", "resources/fixtures/splash_pad.json", app_label="NEMO")
+		EmailsCustomization.set("feedback_email_address", "email@example.org")
+		EmailsCustomization.set("user_office_email_address", "email@example.org")
+		EmailsCustomization.set("safety_email_address", "email@example.org")
+		EmailsCustomization.set("abuse_email_address", "email@example.org")
 
 	def test_get_full_url(self):
 		request = RequestFactory().get("/")

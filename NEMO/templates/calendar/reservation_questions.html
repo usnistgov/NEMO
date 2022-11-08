@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div class="modal-header">
 	<button type="button" class="close" data-dismiss="modal">&times;</button>
 	<h4 class="modal-title">Reservation questions</h4>
@@ -20,7 +21,7 @@
 
 <div class="modal-footer">
     <p id="answer_to_proceed" style="text-align:center">Please answer the required questions (above) to proceed</p>
-    <button id="reservation_questions_submit" type="button" class="btn btn-success" data-dismiss="modal" onclick="$('#dialog_cancelled').val(false)">Submit</button>
+    {% button id="reservation_questions_submit" type="save" value="Submit" dismiss="modal" onclick="$('#dialog_cancelled').val(false);" submit=False %}
 </div>
 
 <script>

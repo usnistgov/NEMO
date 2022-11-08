@@ -2,6 +2,7 @@ import datetime
 from datetime import timedelta
 
 from django import template
+from django.shortcuts import resolve_url
 from django.template import Context, Template
 from django.template.defaultfilters import date, time
 from django.urls import NoReverseMatch, reverse
@@ -138,3 +139,59 @@ def app_version() -> str:
 			dist_version = None
 			pass
 	return dist_version
+
+
+@register.filter
+def concat(value, arg):
+	return str(value) + str(arg)
+
+
+@register.inclusion_tag("snippets/button.html")
+def button(value, type="default", size="", icon=None, onclick=None, dismiss="", submit=None, title=None, url="", **kwargs):
+	"""
+	This tag is useful to provide a consistent button experience throughout the application.
+	Button types are "view", "save", "add", "edit", "delete", "export", "warn", "default".
+	Button sizes are "xsmall", "small", "medium", "large".
+	"""
+	# Assume save button is a submit button
+	submit = submit if submit is not None else type == "save"
+	btn_class = "btn "
+	btn_icon = f"glyphicon "
+	second_icon = ""
+	if size == "xsmall":
+		btn_class += "btn-xs "
+	elif size == "small":
+		btn_class += "btn-sm "
+	elif size == "large":
+		btn_class += "btn-large "
+	if type in ["save", "add"]:
+		btn_class += "btn-success"
+		second_icon = "glyphicon-plus-sign" if type == "add" else "glyphicon-floppy-save"
+	elif type in ["edit", "info"]:
+		btn_class += "btn-info"
+		second_icon = "glyphicon-edit"
+	elif type == "warn":
+		btn_class += "btn-warning"
+	elif type == "export":
+		btn_class += "btn-primary"
+		second_icon = "glyphicon-export"
+	elif type == "view":
+		btn_class += "btn-primary"
+		second_icon = "glyphicon-search"
+	elif type == "delete":
+		btn_class += "btn-danger"
+		second_icon = "glyphicon-trash"
+	elif type == "default":
+		btn_class += "btn-default"
+	return {
+		"btn_element": "a" if url else "button",
+		"btn_value": value,
+		"btn_title": value if title is None else title,
+		"btn_class": btn_class,
+		"btn_icon": btn_icon + second_icon if icon is None else btn_icon + icon,
+		"btn_onclick": onclick if onclick is not None else "submit_and_disable(this);" if submit else "",
+		"btn_type": None if url else "submit" if submit else "button",
+		"btn_url": resolve_url(url) if url else None,
+		"btn_dismiss": dismiss,
+		"kwargs": kwargs,  # pass the rest of the kwargs directly to the button to be used as attributes
+	}

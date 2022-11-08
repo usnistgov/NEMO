@@ -5,7 +5,7 @@
 	<div class="h1 row">
         <div class="col-xs-6 col-sm-4">{{ recurring_charges_name }}</div>
         {% if extended_permissions %}
-            <div class="col-sm-8 text-right"><a href="{% url 'create_recurring_charge' %}" class="btn btn-success"><i class="glyphicon glyphicon-plus-sign"></i> Add item</a></div>
+            <div class="col-sm-8 text-right">{% button value="Add item" type="add" url="create_recurring_charge" %}</div>
         {% endif %}
 	</div>
 {% endblock %}
@@ -37,10 +37,13 @@
                     <td>{{ recurring_charge.last_charge|date:'SHORT_DATE_FORMAT' }}</td>
                     <td>{{ recurring_charge.next_charge|date:'SHORT_DATE_FORMAT' }}</td>
                     <td class="button-column-minimum">
-                        <button type="button" class="btn btn-sm btn-info" title="Edit" onclick="window.location = '{% url 'edit_recurring_charge' recurring_charge.id %}'"><i class="glyphicon glyphicon-edit"></i> Edit</button>
-                        <button type="button" class="btn btn-sm btn-warning" title="Clear" onclick="if (confirm('Are you sure you want to clear ' + '{{ recurring_charge.name }}' + '?')) { window.location = '{% url 'clear_recurring_charge' recurring_charge.id %}' }"><i class="glyphicon glyphicon-log-out"></i> Clear</button>
+                        {% url "edit_recurring_charge" recurring_charge.id as edit_charge %}
+                        {% url "clear_recurring_charge" recurring_charge.id as clear_charge %}
+                        {% url "delete_recurring_charge" recurring_charge.id as delete_charge %}
+                        {% button type="edit" size="small" value="Edit" url=edit_charge %}
+                        {% button type="warn" size="small" icon="glyphicon-log-out" value="Clear" onclick="return confirm('Are you sure you want to clear "|concat:recurring_charge.name|concat:"?');" url=clear_charge %}
                         {% if extended_permissions %}
-                            <button type="button" class="btn btn-sm btn-danger" title="Delete" onclick="if (confirm('Are you sure you want to delete ' + '{{ recurring_charge.name }}' + '?')) { window.location = '{% url 'delete_recurring_charge' recurring_charge.id %}' }"><i class="glyphicon glyphicon-trash"></i> Delete</button>
+                            {% button type="delete" size="small" value="Delete" onclick="return confirm('Are you sure you want to delete "|concat:recurring_charge.name|concat:"?');" url=delete_charge %}
                         {% endif %}
                     </td>
                 </tr>

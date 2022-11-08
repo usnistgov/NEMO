@@ -48,16 +48,16 @@
         {% endif %}
 		<h4>When would you like to reserve the {{ item }}?</h4>
 		<div class="form-group">
-			<input type="text" id="date" name="date" class="form-control" placeholder="Choose a date">
+			<input type="text" id="date" name="date" class="form-control" aria-label="Reservation day" placeholder="Choose a date">
 		</div>
 		<div class="form-group">
-			<input type="text" id="start" name="start" class="form-control" placeholder="Choose a start time">
+			<input type="text" id="start" name="start" class="form-control" aria-label="Reservation start time" placeholder="Choose a start time">
 		</div>
 		<div class="form-group">
-			<input type="text" id="end" name="end" class="form-control" placeholder="Choose an end time">
+			<input type="text" id="end" name="end" class="form-control" aria-label="Reservation end time" placeholder="Choose an end time">
 		</div>
 		<div class="form-group text-center" style="margin-top:40px">
-			<input type="submit" value="Create the reservation" class="btn btn-success">
+            {% button type="save" value="Create the reservation" %}
 		</div>
 	</form>
 	<div style="height:350px"></div>

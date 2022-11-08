@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div class="panel-body">
     <h3 class="customization-section-title">Interlock settings</h3>
     <form method="POST" action="{% url 'customize' 'interlock' %}" class="form-horizontal">
@@ -29,7 +30,7 @@
             </div>
         </div>
         <div class="col-md-offset-2">
-            <input type="submit" value="Save settings" class="btn btn-success">
+            {% button type="save" value="Save settings" %}
         </div>
     </form>
     <script type="text/javascript">

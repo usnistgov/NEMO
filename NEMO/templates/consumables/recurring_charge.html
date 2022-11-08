@@ -137,10 +137,12 @@
 				</div>
 			{% endif %}
         </div>
-        <div class="text-right">
-            <button name="save" type="submit" class="btn btn-success" onclick="submit_and_disable(this)"><i class="glyphicon glyphicon-floppy-save"></i> Save</button>
-            <div style="display: inline-block" {% if not can_charge %}title="The customer was already charged for this item today"{% endif %}><button {% if not can_charge %}disabled{% endif %} id="save_and_charge" name="save_and_charge" type="submit" class="btn btn-warning" onclick="submit_and_disable(this)"><i class="glyphicon glyphicon-floppy-save"></i> Save and charge now</button></div>
-		</div>
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+                {% button type="save" value="Save" name="save" %}
+                <div style="display: inline-block" {% if not can_charge %}title="The customer was already charged for this item today"{% endif %}>{% button type="warn" submit=True value="Save and charge now" icon="glyphicon-floppy-save" name="save_and_charge" disabled=can_charge|yesno:",disabled" %}</div>
+            </div>
+        </div>
     </form>
     <script>
         let timepicker_properties =

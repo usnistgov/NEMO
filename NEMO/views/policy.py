@@ -559,7 +559,7 @@ def check_policy_to_enter_any_area(user: User):
 		raise NoPhysicalAccessUserError(user=user)
 
 
-def check_policy_to_enter_this_area(area:Area, user:User):
+def check_policy_to_enter_this_area(area: Area, user: User):
 	# If explicitly set on the Physical Access Level, staff may be exempt from being granted explicit access
 	if user.is_staff and any([access_level.accessible() for access_level in PhysicalAccessLevel.objects.filter(allow_staff_access=True, area=area)]):
 		pass

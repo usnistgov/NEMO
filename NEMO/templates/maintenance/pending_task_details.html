@@ -8,16 +8,18 @@
 <div style="margin-bottom: 12px">
 	{% if task.tool.in_use %}
 		{% if task.tool.get_current_usage_event.operator.id == user.id %}
-			<button id="interlock" type="button" class="btn btn-default" onclick="disable_tool('{% url 'disable_tool' task.tool.id %}')">Disable tool</button>
+            {% url 'disable_tool' task.tool.id as disable_tool_url %}
+            {% button id="interlock" type="delete" onclick="disable_tool('"|concat:disable_tool_url|concat:"');" value="Disable tool" icon="glyphicon-stop" %}
 		{% else %}
-			<button type="button" class="btn btn-default disabled"><span class="glyphicon glyphicon-ban-circle"></span> Tool in use</button>
+            {% button type="warn" disabled="disabled" icon="glyphicon-ban-circle" value="Tool in use" %}
 		{% endif %}
 	{% else %}
 		{% if user.active_project_count == 1 %}
-			<button id="interlock" type="button" class="btn btn-default" onclick="enable_tool('{% url 'enable_tool' tool_id=task.tool.id user_id=user.id project_id=user.active_projects.0.id staff_charge='false' %}')">Enable tool</button>
+            {% url 'enable_tool' tool_id=task.tool.id user_id=user.id project_id=user.active_projects.0.id staff_charge='false' as enable_tool_one_project %}
+            {% button id="interlock" type="save" onclick="enable_tool('"|concat:enable_tool_one_project|concat:"');" value="Enable tool" icon="glyphicon-play" %}
 		{% elif user.active_project_count > 1 %}
 			<div class="btn-group">
-				<button id="interlock" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Enable tool <span class="caret"></span></button>
+				<button id="interlock" type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown"><i class="glyphicon glyphicon-play"></i> Enable tool <span class="caret"></span></button>
 				<ul class="dropdown-menu">
 					<li class="dropdown-header">Using which project?</li>
 					{% for project in user.active_projects %}
@@ -27,14 +29,10 @@
 			</div>
 		{% endif %}
 	{% endif %}
-	<a href="{% url 'calendar' item_type='tool' item_id=task.tool.id %}" class="btn btn-default" target="_blank">
-		<span class="glyphicon glyphicon-share-alt"></span>
-		Calendar
-	</a>
-	<a href="{% url 'tool_control' task.tool.id %}" class="btn btn-default" target="_blank">
-		<span class="glyphicon glyphicon-share-alt"></span>
-		Tool control
-	</a>
+    {% url 'calendar' item_type='tool' item_id=task.tool.id as tool_calendar_url %}
+    {% button value="Calendar" icon="glyphicon-share-alt" url=tool_calendar_url target="_blank" %}
+    {% url 'tool_control' tool_id=task.tool.id as tool_control_url %}
+    {% button value="Tool control" icon="glyphicon-share-alt" url=tool_control_url target="_blank" %}
 </div>
 <span style="color:grey">Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).</span>
 <p>
@@ -87,12 +85,12 @@
 	<div class="form-group">
 		<label for="estimated_resolution_time" class="control-label col-lg-3">Estimated resolution</label>
 		<div class="col-lg-3">
-			<input id="estimated_resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off" value="{{ task.estimated_resolution_time|date:"m/d/Y g:i A" }}">
+			<input id="estimated_resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off" value="{{ estimated_resolution_time|input_date_format }}">
 		</div>
 		<script>
 			let timepicker_properties =
 			{
-				sideBySide: true
+                format: '{{ datetime_input_js_format }}',
 			};
 			$('#estimated_resolution_time').datetimepicker(timepicker_properties);
 		</script>
@@ -113,7 +111,7 @@
 	</div>
 	<div class="form-group">
 		<div class="col-lg-6">
-			<textarea name="description" class="form-control" rows="3" placeholder="Please describe any actions being taken to resolve this task."></textarea>
+			<textarea name="description" class="form-control" rows="3" aria-label="Resolution description" placeholder="Please describe any actions being taken to resolve this task."></textarea>
 		</div>
 	</div>
 	<div id="resolution_category" class="form-group collapse">
@@ -147,7 +145,7 @@
 	</div>
 	<div class="form-group">
 		<div class="col-lg-12">
-			<input type="submit" class="btn btn-success" onclick="submit_and_disable(this)" value="Save task">
+            {% button type="save" value="Save task" %}
 		</div>
 	</div>
 </form>

@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <table class="table table-condensed table-double-stripped thead-light" style="border: 1px solid #ddd">
     <thead>
         <tr>
@@ -34,10 +35,12 @@
                 </td>
                 <td class="text-center" style="vertical-align: middle">
                     {% if request_status == 'pending' and user.is_facility_manager %}
-                        <button type="button" class="btn btn-xs btn-default" title="Approve/Deny" onclick="window.location = '{% url 'edit_access_request' a_request.id %}'"><i class="glyphicon glyphicon-ok success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-remove danger-highlight"></i></button>
+                        <a class="btn btn-sm btn-default" title="Approve/Deny" href="{% url 'edit_access_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
                     {% elif request_status == 'pending' and a_request.creator == user %}
-                        <button type="button" class="btn btn-xs btn-default" title="Edit request" onclick="window.location = '{% url 'edit_access_request' a_request.id %}'"><i class="glyphicon glyphicon-pencil"></i></button>
-                        <button type="button" class="btn btn-xs btn-danger" title="Delete request" onclick="if (confirm('Are you sure you want to delete this request?')) {window.location = '{% url 'delete_access_request' a_request.id %}'}"><i class="glyphicon glyphicon-remove"></i></button>
+                        {% url 'edit_access_request' a_request.id as edit_request_url %}
+                        {% url 'delete_access_request' a_request.id as delete_request_url %}
+                        {% button type="edit" size="small" value="Edit" title="Edit request" url=edit_request_url %}
+                        {% button type="delete" size="small" value="Delete" title="Delete request" url=delete_request_url onclick="return confirm('Are you sure you want to delete this request?');" %}
                     {% elif request_status == 'approved' or request_status == 'denied' %}
                         {{ a_request.reviewer.get_name }}
                     {% endif %}

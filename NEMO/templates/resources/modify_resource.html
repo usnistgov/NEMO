@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Modify resource{% endblock %}
 {% block content %}
 	{% if error %}
@@ -22,7 +23,7 @@
 				<li>Tools that partially depend on this resource will be available to users, however it is the user's responsibility to determine if their fabrication process will succeed without the resource available</li>
 			</ul>
 			<div class="form-group">
-				<textarea name="reason" class="form-control" rows="3" placeholder="Why is the resource unavailable?" required></textarea>
+				<textarea name="reason" aria-label="Reason for resource being unavailable" class="form-control" rows="3" placeholder="Why is the resource unavailable?" required></textarea>
 			</div>
 			{% if fully_dependent_tools_in_use %}
 				<div class="alert alert-danger">
@@ -59,7 +60,6 @@
 				<textarea id="reason" name="reason" rows="3" class="form-control">{{ resource.restriction_message }}</textarea>
 			</div>
 		{% endif %}
-		<input type="submit" id="submit" class="btn btn-info" value="Modify resource">
-		<a href="{% url 'resource_details' resource.id %}" class="btn btn-warning">Nevermind</a>
+        {% button type="save" value="Modify resource" %}
 	</form>
 {% endblock %}

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load humanize %}
+{% load custom_tags_and_filters %}
 {% block title %}Safe deactivation{% endblock %}
 {% block content %}
 	<h1>Safe deactivation for {{ user_to_deactivate }}</h1>
@@ -99,7 +100,7 @@
 			<h4>This user has no future reservations, is not using any tools, is not in a billable area, and has no staff charges in progress. It is safe to proceed.</h4>
 		{% endif %}
 		<div class="form-group">
-			<input type="submit" class="btn btn-warning" value="Deactivate user">
+            {% button type="warn" submit=True value="Deactivate user" icon="glyphicon-ban-circle" %}
 		</div>
 	</form>
 {% endblock %}

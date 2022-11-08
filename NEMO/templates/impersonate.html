@@ -8,10 +8,10 @@
 		<p>This form allows you to impersonate any active user.</p>
 		<div class="form-group">
 			<div class="col-md-4">
-				<input type="text" id="search_users" placeholder="Search for a user to impersonate" class="form-control sidebar-item" autocomplete="off">
+				<input type="text" id="search_users" aria-label="Search for user to impersonate" placeholder="Search for a user to impersonate" class="form-control sidebar-item" autocomplete="off">
 			</div>
 			<div class="col-md-2" style="margin-top: 5px; margin-bottom: 5px">
-				<input id="impersonate_submit" type="submit" class="btn btn-warning" value="Impersonate">
+                {% button id="impersonate_submit" type="warn" submit=True value="Impersonate" icon="glyphicon-user" %}
 			</div>
 		</div>
 		<script>

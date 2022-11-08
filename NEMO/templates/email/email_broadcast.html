@@ -22,7 +22,7 @@
 	{% if search_base %}
 		<div class="row">
 			<div class="col-sm-4">
-				<input id="search" class="form-control" placeholder="Which {{ audience }}?" autofocus />
+				<input id="search" class="form-control" aria-label="Audience" placeholder="Which {{ audience }}?" autofocus />
 			</div>
 		</div>
 
@@ -59,7 +59,7 @@
                 </div>
             {% endfor %}
             <div class="row">
-                <input type="submit" class="btn btn-sm btn-success" value="Confirm"/>
+                {% button type="save" size="small" value="Confirm" icon="glyphicon-ok-circle" %}
             </div>
         </form>
     {% endif %}

@@ -1,12 +1,15 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}{{ resource }}{% endblock %}
 {% block content %}
 	<div class="row pull-right h1">
 		<div class="col-md-4">
-			<a href="{% url 'modify_resource' resource.id %}" class="btn btn-info">Modify availability</a>
+            {% url 'modify_resource' resource.id as modify_resource_url %}
+            {% button type="edit" value="Modify availability" url=modify_resource_url %}
 		</div>
 		<div class="col-md-4 col-md-offset-2">
-			<a href="{% url 'schedule_resource_outage' resource.id %}" class="btn btn-success">Schedule outage</a>
+            {% url 'schedule_resource_outage' resource.id as resource_outage_url %}
+            {% button type="delete" value="Schedule outage" icon="glyphicon-time" url=resource_outage_url %}
 		</div>
 	</div>
 	<h1>{{ resource }} {% if resource.category %}({{ resource.category }}{% endif %})</h1>

@@ -2,22 +2,16 @@
 {% load custom_tags_and_filters %}
 {% block title %}Accounts and projects{% endblock %}
 {% block content %}
-	<h1>
-		Accounts and projects
-		<span class="hidden-sm hidden-xs">
-			<a href="{% url 'create_project' %}" class="btn btn-success pull-right" style="margin-left:17px">New project</a>
-			<a href="{% url 'create_account' %}" class="btn btn-success pull-right">New account</a>
-		</span>
-	</h1>
-	<div class="row visible-sm visible-xs" style="margin-bottom:17px">
-		<div class="col-sm-12">
-			<a href="{% url 'create_project' %}" class="btn btn-success pull-right">New project</a>
-			<a href="{% url 'create_account' %}" class="btn btn-success">New account</a>
+    <div class="h1 row">
+        <div class="col-xs-6 col-sm-7">Accounts and projects</div>
+		<div class="col-sm-5 text-right">
+            {% button type="add" value="New project" url="create_project" %}
+            {% button type="add" value="New account" url="create_account" %}
 		</div>
 	</div>
 	<div class="row">
-		<div class="col-md-4" id="search_container">
-			<input id="search" type="text" placeholder="Search for an account or project" class="form-control" autofocus>
+		<div class="col-sm-5" id="search_container">
+			<input id="search" type="text" aria-label="Search for account or project" placeholder="Search for an account or project" class="form-control" autofocus>
 		</div>
 	</div>
 	{% if account %}
@@ -37,7 +31,7 @@
                 {% endif %}
 				{% for project in account.project_set.all %}
                     {% if not selected_project or project == selected_project %}
-                        <h3>
+                        <div class="h3">
                             <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#project_{{ project.id }}_details" class="pointer" style="text-decoration:none">
                                 <span id="project_{{ project.id }}_chevron" class="glyphicon {% if selected_project %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
                                 {{ project }}
@@ -49,7 +43,7 @@
                                     {% if project.active %}Active{% else %}Inactive{% endif %}
                                 </a>
                             </form>
-                        </h3>
+                        </div>
                         <div style="margin-left:34px">
                             {% if selected_project %}<label class="control-label">Account:</label> <a href="{% url 'account' project.account.id %}">{{ project.account }}</a>{% endif %}
                             <div id="project_{{ project.id }}_details" class="collapse {% if selected_project %}in{% endif %}">

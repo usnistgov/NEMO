@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div class="panel-body">
     <h3 class="customization-section-title">User requests settings</h3>
     <form method="POST" action="{% url 'customize' 'requests' %}" class="form-horizontal">
@@ -76,7 +77,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2" for="weekend_access_notification_cutoff_hour">Weekend access notification cutoff</label>
+            <label class="control-label col-md-2" for="weekend_access_notification_cutoff_day">Weekend access notification cutoff</label>
             <div class="col-md-2">
                 <select id="weekend_access_notification_cutoff_day" name="weekend_access_notification_cutoff_day" class="form-control">
                     <option value=""></option>
@@ -87,8 +88,8 @@
                     <option value="5" {% if weekend_access_notification_cutoff_day == '5' %}selected{% endif %}>Saturday</option>
                 </select>
             </div>
-            <div class="col-md-1 help-block text-center">
-                at
+            <div class="col-md-1 text-center">
+                <label class="control-label" for="weekend_access_notification_cutoff_hour">at</label>
             </div>
             <div class="col-md-2">
                 <div class="input-group">
@@ -101,7 +102,7 @@
             </div>
         </div>
         <div class="col-md-offset-2">
-            <input type="submit" value="Save settings" class="btn btn-success">
+            {% button type="save" value="Save settings" %}
         </div>
     </form>
     <script type="text/javascript">

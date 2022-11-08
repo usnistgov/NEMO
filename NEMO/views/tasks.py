@@ -25,6 +25,7 @@ from NEMO.models import (
 )
 from NEMO.utilities import (
 	EmailCategory,
+	as_timezone,
 	bootstrap_primary_color,
 	create_email_attachment,
 	format_datetime,
@@ -240,6 +241,7 @@ def task_update_form(request, task_id):
 		'categories': categories,
 		'urgency': Task.Urgency.Choices,
 		'task': task,
+		"estimated_resolution_time": as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None,
 		'task_statuses': TaskStatus.objects.all(),
 	}
 	return render(request, 'tasks/update.html', dictionary)
@@ -253,6 +255,7 @@ def task_resolution_form(request, task_id):
 	dictionary = {
 		'categories': categories,
 		'task': task,
+		"estimated_resolution_time": as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None,
 	}
 	return render(request, 'tasks/resolve.html', dictionary)
 

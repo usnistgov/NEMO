@@ -67,7 +67,7 @@
 
 <div class="modal-footer">
 	<div class="col-sm-12">
-		<button id="schedule_outage" disabled type="button" class="btn btn-success" data-dismiss="modal" onclick="$('#dialog_cancelled').val(false)">Schedule this outage</button>
+        {% button id="schedule_outage" type="save" disabled="disabled" submit=False dismiss="modal" onclick="$('#dialog_cancelled').val(false)" value="Schedule this outage" %}
 	</div>
 </div>
 

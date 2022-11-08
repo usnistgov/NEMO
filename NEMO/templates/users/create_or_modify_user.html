@@ -30,7 +30,8 @@
     {% endif %}
     </div>
 	<div class="h1 row" style="margin-bottom: 25px">
-        {% if form.instance.id %}<div class="col-xs-6 col-sm-4" style="padding-right: 0">Modify user</div><div class="col-sm-2 text-right" style="padding-left: 0"><a class="btn btn-info" href="{% url 'history' 'user' form.instance.id %}">View user history</a></div>{% else %}<div class="col-sm-6">New user</div>{% endif %}
+        {% url 'history' 'user' form.instance.id as user_history_url %}
+        {% if form.instance.id %}<div class="col-xs-6 col-sm-4" style="padding-right: 0">Modify user</div><div class="col-sm-2 text-right" style="padding-left: 0">{% button type="info" icon="glyphicon-list" value="View user history" url=user_history_url %}</div>{% else %}<div class="col-sm-6">New user</div>{% endif %}
     </div>
 	<form class="form-horizontal" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}?next={{ request.GET.next|default:''|urlencode }}">
 		{% csrf_token %}
@@ -287,8 +288,8 @@
 			</div>
 		{% endif %}
 		<div class="form-group">
-			<div class="col-sm-2">
-				<input type="submit" class="btn btn-success pull-right" value="{% if form.instance.id %}Save changes{% else %}Create user{% endif %}">
+			<div class="col-sm-offset-2 col-md-10">
+                {% button type="save" value=form.instance.id|yesno:"Save changes,Create user" %}
 			</div>
 		</div>
 	</form>
@@ -296,8 +297,8 @@
 		<form class="form-horizontal" method="post" action="{% url 'reset_password' form.instance.id %}">
 			{% csrf_token %}
 			<div class="form-group">
-				<div class="col-sm-2">
-					<input type="submit" class="btn btn-warning pull-right" value="Reset password">
+				<div class="col-sm-offset-2 col-md-10">
+                    {% button type="warn" submit=True icon="glyphicon-repeat" value="Reset password" %}
 				</div>
 			</div>
 		</form>
@@ -306,8 +307,8 @@
 			<form class="form-horizontal" method="post" action="{% url 'unlock_account' form.instance.id %}">
 				{% csrf_token %}
 				<div class="form-group">
-					<div class="col-sm-2">
-						<input type="submit" class="btn btn-warning pull-right" value="Unlock account">
+					<div class="col-sm-offset-2 col-md-10">
+                        {% button type="warn" submit=True icon="glyphicon-lock" value="Unlock account" %}
 					</div>
 				</div>
 			</form>

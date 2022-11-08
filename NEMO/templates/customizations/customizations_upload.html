@@ -1,6 +1,7 @@
 {% load static %}
+{% load custom_tags_and_filters %}
 {% with element_name=name.split|join:"_"|lower extension=extension|default:"html" %}
-    <form method="POST" action="{% url 'customize' key element_name %}#{{ element_name }}_id" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('{{ element_name }}')">
+    <form method="POST" action="{% url 'customize' key element_name %}#{{ element_name }}_id" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="form-group" style="margin-bottom: 0">
             <input type="file" name="{{ element_name }}" class="customization-input-file" onchange="this.style.color = 'inherit';$('#{{ element_name }}_span').hide()">
@@ -10,11 +11,14 @@
         </div>
         <div class="form-group">
             <div style="display: inline-block;margin-right:15px;margin-top: 15px">
-                <input type="submit" value="{% if button_name %}{{ button_name }}{% else %}Upload {{ name }}{% endif %}" class="btn btn-success">
+                {% with upload_button_name="Upload "|concat:name %}
+                    {% button type="save" value=button_name|default:upload_button_name onclick="return check_delete_file_before_submit('"|concat:element_name|concat:"') && submit_and_disable(this);" icon="glyphicon-floppy-open" %}
+                {% endwith %}
             </div>
             {% if element and not hide_content %}
                 <div style="display: inline-block;margin-top: 15px">
-                    <a href="{% get_media_prefix %}{{ element_name }}.{{ extension }}" class="btn btn-info" target="_blank">Show current content</a>
+                    {% get_media_prefix as media_prefix %}
+                    {% button type="info" url=media_prefix|concat:element_name|concat:"."|concat:extension target="_blank" value="Show current content" icon="glyphicon-eye-open" %}
                 </div>
             {% endif %}
         </div>

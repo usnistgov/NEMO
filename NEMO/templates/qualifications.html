@@ -17,8 +17,8 @@
 		<div class="form-group">
 			<div class="row">
 				<div class="col-md-12">
-					<button type='submit' class="btn btn-primary" name="action" value="qualify">Qualify users</button>
-					<button type='submit' class="btn btn-primary pull-right" name="action" value="disqualify">Disqualify users</button>
+					<button type='submit' class="btn btn-success" name="action" value="qualify"><i class="glyphicon glyphicon-plus"></i> Qualify users</button>
+					<button type='submit' class="btn btn-danger pull-right" name="action" value="disqualify"><i class="glyphicon glyphicon-minus"></i> Disqualify users</button>
 				</div>
 			</div>
 		</div>
@@ -45,7 +45,7 @@
 		{
 			$('#user_search').typeahead('val', '');
 			$('#tool_search').typeahead('val', '');
-			var id = dataset_name + "_" + search_selection.id;
+			let id = dataset_name + "_" + search_selection.id;
 			if($("#" + id).length)
 				return;
 			$("#chosen_" + dataset_name + "s").append

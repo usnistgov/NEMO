@@ -3,16 +3,17 @@
 {% block title %}Users{% endblock %}
 {% block before_pagination %}
 	<div class="h1 row" style="margin-top: 0">
-        <div class="col-xs-6 col-sm-4">Users</div><div class="{% if page %}col-sm-8{% else %}col-sm-2{% endif %} text-right"><a href="{% url 'create_or_modify_user' 'new' %}" class="btn btn-success">New user</a></div>
+        {% url "create_or_modify_user" "new" as new_user_url %}
+        <div class="col-xs-3">Users</div><div class="{% if page %}col-sm-9{% else %}col-sm-3{% endif %} text-right">{% button value="New user" type="add" url=new_user_url %}</div>
 	</div>
 	<div class="row" style="margin-bottom: 25px">
 		<div class="col-sm-6">
-			<input id="search" type="text" placeholder="Search for a user" class="form-control" autofocus>
+			<input id="search" type="text" aria-label="Search for user" placeholder="Search for a user" class="form-control" autofocus>
 		</div>
 	</div>
 {% endblock %}
 {% block pagination_content %}
-	<table class="table table-bordered table-condensed table-striped table-hover thead-light">
+	<table class="table table-align-middle table-bordered table-condensed table-striped table-hover thead-light">
 			<thead>
 				<tr>
 					<th>{% include 'pagination/pagination_column.html' with order_by='first_name' name='First Name' %}</th>
@@ -34,8 +35,12 @@
 						<td><span class="glyphicon {% if user.is_staff %}glyphicon-ok success-highlight{% endif %}"></span></td>
 						<td><span class="glyphicon {% if user.is_superuser %}glyphicon-ok success-highlight{% endif %}"></span></td>
 						<td class="text-center button-column-minimum">
-							<button type="button" class="btn btn-xs btn-default" title="Edit user" onclick="window.location = '{% url 'create_or_modify_user' user.id %}?next={{ request.get_full_path|urlencode }}'"><i class="glyphicon glyphicon-pencil"></i></button>
-							<button type="button" class="btn btn-xs btn-danger {% if not user.is_active %}invisible{% endif %}" title="Deactivate user" onclick="window.location = '{% url 'deactivate_user' user.id %}'"><i class="glyphicon glyphicon-remove"></i></button>
+                            {% url 'create_or_modify_user' user.id as edit_url %}
+                            {% with next=request.get_full_path|urlencode %}
+                                {% button value="Edit" type="edit" size="small" url=edit_url|concat:"?next="|concat:next %}
+                                {% url "deactivate_user" user.id as deactivate_user_url %}
+							    {% if user.is_active %}{% button type="delete" size="small" icon="glyphicon-ban-circle" value="Deactivate" title="Deactivate user" url=deactivate_user_url %}{% endif %}
+                            {% endwith %}
 						</td>
 					</tr>
 				{% endfor %}

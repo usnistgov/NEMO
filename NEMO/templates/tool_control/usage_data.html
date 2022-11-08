@@ -56,10 +56,10 @@
             </div>
             <div class="col-md-4">
                 <div class="form-group pull-right extra-side-padding">
-                    <input type="button" class="btn btn-info" value="Export" onclick="load_usage_data('{{ tool_id }}', true)">
+                    {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', true);" %}
                 </div>
                 <div class="form-group pull-right extra-side-padding">
-                    <input type="button" class="btn btn-success" value="Update" onclick="load_usage_data('{{ tool_id }}')">
+                    {% button type="save" submit=False value="Update" onclick="load_usage_data('"|concat:tool_id|concat:"');" icon="glyphicon-refresh" %}
                 </div>
             </div>
         </div>

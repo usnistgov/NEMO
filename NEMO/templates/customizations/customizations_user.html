@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <form method="POST" action="{% url 'customize' 'user' %}" class="form-horizontal">
     <div class="panel-body">
         <h3 class="customization-section-title">General</h3>
@@ -118,7 +119,7 @@
     </div>
     <div class="panel-body">
         <div class="col-md-offset-2">
-            <input type="submit" value="Save settings" class="btn btn-success">
+            {% button type="save" value="Save settings" %}
         </div>
     </div>
 </form>

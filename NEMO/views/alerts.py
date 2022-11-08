@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -30,6 +32,7 @@ def alerts(request):
 		'form': form,
 		'editing': True if form.instance.id else False,
 		'alerts': Alert.objects.filter(user=None, expired=False, deleted=False),
+		'now': datetime.datetime.now(),
 		'alert_categories': AlertCategory.objects.all()
 	}
 	delete_expired_alerts()

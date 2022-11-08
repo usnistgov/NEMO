@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div style="margin: 15px 0">
     <div style="display: table-cell; width: 100%">
         {% if buddy_board_description %}
@@ -7,7 +8,7 @@
             </div>
         {% endif %}
     </div>
-    <div class="align-right" style="display: table-cell; vertical-align: top"><a class="btn btn-success" href="{% url 'create_buddy_request' %}">New request</a></div>
+    <div class="align-right" style="display: table-cell; vertical-align: top">{% button type="add" value="New request" url="create_buddy_request" %}</div>
 </div>
 {% if buddy_requests %}
     <div class="table-responsive buddy-system-requests">
@@ -27,8 +28,10 @@
                                     </div>
                                     {% if br.user == request.user and br.replies.count == 0 %}
                                         <div class="buddy-list-item-buttons">
-                                            <a href="{% url 'edit_buddy_request' br.id %}" class="btn btn-default btn-sm" style="margin-right: 5px">Edit</a>
-                                            <a href="{% url 'delete_buddy_request' br.id %}" class="btn btn-danger btn-sm">Delete</a>
+                                            {% url 'edit_buddy_request' br.id as edit_buddy_request_url %}
+                                            {% button type="edit" size="small" url=edit_buddy_request_url value="Edit" %}
+                                            {% url 'delete_buddy_request' br.id as delete_buddy_request_url %}
+                                            {% button type="delete" size="small" url=delete_buddy_request_url value="Delete" %}
                                         </div>
                                     {% endif %}
                                 </div>
@@ -46,16 +49,16 @@
                                 <div class="buddy-list-item-reply list-group-item-text">
                                     <form id="buddy_request_reply_{{ br.id }}" action="{% url 'buddy_request_reply' br.id %}" method="post">
                                         {% csrf_token %}
-                                        <textarea required name="reply_content" style="width: 100%"></textarea>
+                                        <textarea required name="reply_content" aria-label="Reply content" style="width: 100%"></textarea>
                                     </form>
                                 </div>
                             </li>
                             <li class="buddy-list-item-reply-buttons list-group-item-text text-right">
                                 <span data-toggle="tooltip" title="{{ br.user_reply_error|default_if_none:'' }}">
                                     {% if br.user_reply_error %}
-                                            <button class="btn btn-info btn-sm disabled">Reply</button>
+                                        {% button type="add" size="small" icon="glyphicon-send" value="Reply" disabled="disabled" %}
                                     {% else %}
-                                        <button class="btn btn-info btn-sm" onclick="show_or_send_reply(this, 'buddy_request_reply_{{ br.id }}')">Reply</button>
+                                        {% button type="add" size="small" icon="glyphicon-send" value="Reply" onclick="show_or_send_reply(this, 'buddy_request_reply_"|concat:br.id|concat:"')" %}
                                     {% endif %}
                                 </span>
                             </li>
@@ -80,7 +83,7 @@
         {
             form_element.parents('li').fadeIn('50');
             form_element.children('textarea').focus();
-            $(button_element).html("Send");
+            $(button_element).html('<i class="glyphicon glyphicon-send"></i> Send');
         }
     }
     $(function ()
