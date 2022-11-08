@@ -36,6 +36,7 @@ setup(
 		'Pillow==9.2.0',
 		'pymodbus==2.5.3',
 		'python-dateutil==2.8.2',
+		'pytz==2022.6',
 		'requests==2.28.1',
 	],
 	entry_points={
