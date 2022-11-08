@@ -118,13 +118,13 @@ urlpatterns += [
 	# This tool_control URL is needed to be able to reverse when choosing items on mobile using next_page.
 	# (see choose_item.html for details)
 	re_path(r"^tool_control/(?P<item_type>(tool))/(?P<tool_id>\d+)/$", tool_control.tool_control, name="tool_control"),
-	path("tool_control/<int:tool_id>)/", tool_control.tool_control, name="tool_control"),
+	path("tool_control/<int:tool_id>/", tool_control.tool_control, name="tool_control"),
 	path("tool_control/", tool_control.tool_control, name="tool_control"),
 	path("tool_status/<int:tool_id>/", tool_control.tool_status, name="tool_status"),
 	path("use_tool_for_other/", tool_control.use_tool_for_other, name="use_tool_for_other"),
 	path("tool_configuration/", tool_control.tool_configuration, name="tool_configuration"),
 	path("create_comment/", tool_control.create_comment, name="create_comment"),
-	path("hide_comment/<str:comment_id>)/", tool_control.hide_comment, name="hide_comment"),
+	path("hide_comment/<str:comment_id>/", tool_control.hide_comment, name="hide_comment"),
 	re_path(r"^enable_tool/(?P<tool_id>\d+)/user/(?P<user_id>\d+)/project/(?P<project_id>\d+)/staff_charge/(?P<staff_charge>(true|false))/$", tool_control.enable_tool, name="enable_tool"),
 	path("disable_tool/<int:tool_id>/", tool_control.disable_tool, name="disable_tool"),
 	path("usage_data_history/<int:tool_id>/", tool_control.usage_data_history, name="usage_data_history"),
@@ -152,8 +152,8 @@ urlpatterns += [
 
 	# Tasks:
 	path("create_task/", tasks.create, name="create_task"),
-	path("cancel_task/<int:task_id>)/", tasks.cancel, name="cancel_task"),
-	path("update_task/<int:task_id>)/", tasks.update, name="update_task"),
+	path("cancel_task/<int:task_id>/", tasks.cancel, name="cancel_task"),
+	path("update_task/<int:task_id>/", tasks.update, name="update_task"),
 	path("task_update_form/<int:task_id>/", tasks.task_update_form, name="task_update_form"),
 	path("task_resolution_form/<int:task_id>/", tasks.task_resolution_form, name="task_resolution_form"),
 
@@ -248,9 +248,9 @@ urlpatterns += [
 	# Recurring consumable charges
 	path("recurring_charges/", consumables.recurring_charges, name="recurring_charges"),
 	path("create_recurring_charge/", consumables.create_recurring_charge, name="create_recurring_charge"),
-	path("edit_recurring_charge/<int:recurring_charge_id>", consumables.create_recurring_charge, name="edit_recurring_charge"),
-	path("clear_recurring_charge/<int:recurring_charge_id>", consumables.clear_recurring_charge, name="clear_recurring_charge"),
-	path("delete_recurring_charge/<int:recurring_charge_id>", consumables.delete_recurring_charge, name="delete_recurring_charge"),
+	path("edit_recurring_charge/<int:recurring_charge_id>/", consumables.create_recurring_charge, name="edit_recurring_charge"),
+	path("clear_recurring_charge/<int:recurring_charge_id>/", consumables.clear_recurring_charge, name="clear_recurring_charge"),
+	path("delete_recurring_charge/<int:recurring_charge_id>/", consumables.delete_recurring_charge, name="delete_recurring_charge"),
 
 	# Training:
 	path("training/", training.training, name="training"),
