@@ -656,7 +656,7 @@ function on_load()
     {% endif %}
 	$(".item_tree").show(); {# Item tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
 	{% if auto_select_item_id %}
-		expand_to_item({{ auto_select_item_id }}, {{ auto_select_item_type }});
+		expand_to_item("{{ auto_select_item_id }}", "{{ auto_select_item_type }}");
 	{% else %}
 		update_event_sources();
 	{% endif %}
