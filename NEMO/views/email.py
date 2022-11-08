@@ -3,6 +3,7 @@ from logging import getLogger
 from smtplib import SMTPException
 from typing import List
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.validators import validate_email
 from django.db.models import Q, QuerySet
@@ -214,14 +215,10 @@ def send_broadcast_email(request):
 				+ str(error)
 		)
 		logger.exception(error_message)
-		dictionary = {
-			"title": "Email not sent",
-			"heading": "There was a problem sending your email",
-			"content": error_message,
-		}
-		return render(request, "acknowledgement.html", dictionary)
-	dictionary = {"title": "Email sent", "heading": "Your email was sent"}
-	return render(request, "acknowledgement.html", dictionary)
+		messages.error(request, message=error_message)
+		return redirect("email_broadcast")
+	messages.success(request, message="Your email was sent successfully")
+	return redirect("email_broadcast")
 
 
 @staff_member_required
