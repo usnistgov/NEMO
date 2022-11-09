@@ -8,12 +8,12 @@
 			<div class="col-lg-12">
 				<a href="{% url 'facility_rules' %}">
 					<div class="well clearfix">
-						<div class="col-lg-2 text-center"><img src="{% static 'icons/caution.png' %}" height="128" width="128"></div>
+						<div class="col-lg-2 text-center"><img src="{% static 'icons/caution.png' %}" alt="Caution image" height="128" width="128"></div>
 						<div class="col-lg-8 text-center">
 							<h2>{{ facility_name }} Rules Tutorial</h2>
 							<p style="text-align: center">You must complete your {{ facility_name }} rules tutorial before you can make reservations or use {{ facility_name }} tools. Click here to begin the tutorial.</p>
 						</div>
-						<div class="col-lg-2 text-center"><img src="{% static 'icons/agreement.png' %}" height="128" width="128"></div>
+						<div class="col-lg-2 text-center"><img src="{% static 'icons/agreement.png' %}" alt="Agreement icon" height="128" width="128"></div>
 					</div>
 				</a>
 			</div>
@@ -97,8 +97,8 @@
 		{% for choice in landing_page_choices %}
 			{% if forloop.counter0|divisibleby:4 %}<div class="row">{% endif %}
 				<div class="col-md-3 text-center" style="margin-bottom:30px">
-					<a href="{{ choice.url }}" {% if choice.open_in_new_tab %}target="_blank"{% endif %} {% if choice.secure_referral %}rel="noopener noreferrer"{% endif %} style="text-decoration: none !important">
-						<img src="{{ choice.image.url }}" height="128" width="128">
+					<a href="{{ choice.url }}" {% if choice.open_in_new_tab %}target="_blank" {% else %}onclick="show_spinner();"{% endif %} {% if choice.secure_referral %}rel="noopener noreferrer"{% endif %} style="text-decoration: none !important">
+						<img src="{{ choice.image.url }}" alt="{{ choice.name }} icon" height="128" width="128">
 						<h3 style="margin-top:0">
 							{{ choice.name }}
 							{% if choice.notifications %}
