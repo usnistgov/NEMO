@@ -9,7 +9,6 @@ from NEMO.utilities import (
 	BasicDisplayTable,
 	export_format_datetime,
 	extract_optional_beginning_and_end_dates,
-	format_datetime,
 	get_month_timeframe,
 	month_list,
 )
@@ -83,8 +82,8 @@ def remote_work(request):
 					ITEM: usage.tool,
 					STAFF: usage.operator,
 					CUSTOMER: usage.user,
-					START: format_datetime(usage.start, "SHORT_DATETIME_FORMAT"),
-					END: format_datetime(usage.end, "SHORT_DATETIME_FORMAT") if usage.end else "",
+					START: usage.start,
+					END: usage.end,
 					PROJECT: usage.project,
 				}
 			)
@@ -97,8 +96,8 @@ def remote_work(request):
 						ITEM: access.area,
 						STAFF: staff_charge.staff_member,
 						CUSTOMER: access.customer,
-						START: format_datetime(access.start, "SHORT_DATETIME_FORMAT"),
-						END: format_datetime(access.end, "SHORT_DATETIME_FORMAT") if access.end else "",
+						START: access.start,
+						END: access.end,
 						PROJECT: access.project,
 					}
 				)
@@ -109,8 +108,8 @@ def remote_work(request):
 					ITEM: "Staff Charge",
 					STAFF: staff_charge.staff_member,
 					CUSTOMER: staff_charge.customer,
-					START: format_datetime(staff_charge.start, "SHORT_DATETIME_FORMAT"),
-					END: format_datetime(staff_charge.end, "SHORT_DATETIME_FORMAT") if staff_charge.end else "",
+					START: staff_charge.start,
+					END: staff_charge.end,
 					PROJECT: staff_charge.project,
 				}
 			)

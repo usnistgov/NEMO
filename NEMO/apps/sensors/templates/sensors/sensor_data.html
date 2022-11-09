@@ -90,7 +90,7 @@
                         <div class="text-right">
                             <div>
                                 {% url 'export_sensor_data' sensor.id as export_url %}
-                                {% button type="export" value="Export" onclick="refresh_page();window.open('"|concat:export_url|concat:"')" %}
+                                {% button type="export" value="Export" onclick="refresh_page();window.open(get_base_url('"|concat:export_url|concat:"'))" %}
                             </div>
                         </div>
                         <div>

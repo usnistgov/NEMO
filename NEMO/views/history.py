@@ -4,11 +4,12 @@ from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render
-from django.utils.text import capfirst
+from django.utils.text import capfirst, slugify
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import staff_member_required
 from NEMO.models import Account, ActivityHistory, MembershipHistory, Project, User
+from NEMO.utilities import BasicDisplayTable, export_format_datetime
 
 
 @staff_member_required
@@ -27,14 +28,15 @@ def history(request, item_type, item_id):
 	membership = MembershipHistory.objects.filter(parent_object_id=item_id, parent_content_type__id__exact=content_type.id)
 	ownership = MembershipHistory.objects.filter(child_object_id=item_id, child_content_type__id__exact=content_type.id)
 	# Iterate over all activity history and membership history for this object.
-	action_list = []
+	action_list = BasicDisplayTable()
+	action_list.headers = [("date", "Date & time"), ("authorizer", "User"), ("message", "Action")]
 	for a in activity:
 		message = capfirst(content_type.name) + " "
 		if a.action == ActivityHistory.Action.ACTIVATED:
 			message += "activated."
 		else:
 			message += "deactivated."
-		action_list.append({"date": a.date, "authorizer": str(a.authorizer), "message": message})
+		action_list.add_row({"date": a.date, "authorizer": str(a.authorizer), "message": message})
 	for m in membership:
 		message = capfirst(m.child_content_type.name) + ' "' + m.get_child_content_object() + '" '
 		if m.action:
@@ -42,7 +44,7 @@ def history(request, item_type, item_id):
 		else:
 			message += "removed from"
 		message += " this " + content_type.name + "."
-		action_list.append({"date": m.date, "authorizer": str(m.authorizer), "message": message})
+		action_list.add_row({"date": m.date, "authorizer": str(m.authorizer), "message": message})
 	for o in ownership:
 		message = "This " + content_type.name + " "
 		if o.action:
@@ -50,22 +52,28 @@ def history(request, item_type, item_id):
 		else:
 			message += "no longer"
 		message += " belongs to " + o.parent_content_type.name + ' "' + o.get_parent_content_object() + '".'
-		action_list.append({"date": o.date, "authorizer": str(o.authorizer), "message": message})
+		action_list.add_row({"date": o.date, "authorizer": str(o.authorizer), "message": message})
 	if apps.is_installed("auditlog"):
 		from auditlog.models import LogEntry
 
 		logentries: List[LogEntry] = LogEntry.objects.filter(content_type=content_type, object_id=item_id)
 		for log_entry in logentries:
-			action_list.append(
+			action_list.add_row(
 				{
 					"date": log_entry.timestamp,
 					"authorizer": str(log_entry.actor),
 					"message": audit_log_message(log_entry),
 				}
 			)
-
 	# Sort the list of actions by date:
-	action_list.sort(key=lambda x: x["date"], reverse=True)
+	action_list.rows.sort(key=lambda x: x["date"], reverse=True)
+	csv_export = bool(request.GET.get("csv", False))
+	if csv_export:
+		name = slugify(getattr(item, 'name', str(item))).replace("-", "_")
+		response = action_list.to_csv()
+		filename = f"{item_type}_history_{name}_{export_format_datetime()}.csv"
+		response["Content-Disposition"] = f'attachment; filename="{filename}"'
+		return response
 	return render(request, "history.html", {"action_list": action_list, "name": str(item)})
 
 

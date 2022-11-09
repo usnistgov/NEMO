@@ -25,7 +25,6 @@ from NEMO.utilities import (
 	BasicDisplayTable,
 	export_format_datetime,
 	extract_optional_beginning_and_end_dates,
-	format_datetime,
 	get_month_timeframe,
 	month_list,
 )
@@ -358,9 +357,6 @@ def csv_export_response(usage_events, area_access, training_sessions, staff_char
 	data.extend(billable_items_area_access_records(area_access))
 	data.extend(billable_items_usage_events(usage_events))
 	for billable_item in data:
-		# Format start & end times
-		billable_item.start = format_datetime(billable_item.start, "SHORT_DATETIME_FORMAT")
-		billable_item.end = format_datetime(billable_item.end, "SHORT_DATETIME_FORMAT")
 		table_result.add_row(vars(billable_item))
 	response = table_result.to_csv()
 	filename = f"usage_export_{export_format_datetime()}.csv"

@@ -67,7 +67,7 @@ def export_sensor_data(request, sensor_id):
 	for data_point in sensor_data:
 		table_result.add_row(
 			{
-				"date": format_datetime(data_point.created_date, "SHORT_DATETIME_FORMAT"),
+				"date": data_point.created_date,
 				"value": data_point.value,
 				"display_value": data_point.display_value(),
 			}

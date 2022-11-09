@@ -105,12 +105,22 @@ class BasicDisplayTable(object):
 			flat_result.append([row.get(key, "") for key, display_value in self.headers])
 		return flat_result
 
+	def formatted_value(self, value):
+		if value:
+			if isinstance(value, time):
+				return format_datetime(value, "SHORT_TIME_FORMAT")
+			elif isinstance(value, datetime):
+				return format_datetime(value, "SHORT_DATETIME_FORMAT")
+			elif isinstance(value, date):
+				return format_datetime(value, "SHORT_DATE_FORMAT")
+		return value
+
 	def to_csv(self) -> HttpResponse:
 		response = HttpResponse(content_type="text/csv")
 		writer = csv.writer(response)
 		writer.writerow([capitalize(display_value) for key, display_value in self.headers])
 		for row in self.rows:
-			writer.writerow([row.get(key, "") for key, display_value in self.headers])
+			writer.writerow([self.formatted_value(row.get(key, "")) for key, display_value in self.headers])
 		return response
 
 

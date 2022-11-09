@@ -1,8 +1,16 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}History for {{ name }}{% endblock %}
 {% block content %}
 	{% if action_list %}
-		<h1>History for {{ name }}</h1>
+        <div class="row">
+            <div class="col-xs-10">
+                <h1>History for {{ name }}</h1>
+            </div>
+            <div class="col-sm-2 text-right">
+                <h1>{% button type="export" value="Export" url=request.path|concat:"?csv=true" target="_blank" %}</h1>
+            </div>
+        </div>
 		<table class="table">
 			<thead>
 			<tr>
@@ -12,11 +20,11 @@
 			</tr>
 			</thead>
 			<tbody>
-			{% for action in action_list %}
+			{% for row in action_list.rows %}
 				<tr>
-					<td class="text-nowrap">{{ action.date }}</td>
-					<td>{{ action.authorizer }}</td>
-					<td>{{ action.message|linebreaksbr }}</td>
+					<td class="text-nowrap">{{ row.date }}</td>
+					<td>{{ row.authorizer }}</td>
+					<td>{{ row.message|linebreaksbr }}</td>
 				</tr>
 			{% endfor %}
 			</tbody>
