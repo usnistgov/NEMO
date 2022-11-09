@@ -529,7 +529,7 @@ def reset_tool_counter(request, counter_id):
 	comment.tool = counter.tool
 	comment.content = f"The {counter.name} counter was reset to 0. Its last value was {counter.last_reset_value}."
 	comment.author = request.user
-	comment.expiration_date = datetime.now() + timedelta(weeks=1)
+	comment.expiration_date = timezone.now()
 	comment.save()
 
 	# Email Lab Managers about the counter being reset.
