@@ -39,7 +39,7 @@
                             {% with next=request.get_full_path|urlencode %}
                                 {% button value="Edit" type="edit" size="small" url=edit_url|concat:"?next="|concat:next %}
                                 {% url "deactivate_user" user.id as deactivate_user_url %}
-							    {% if user.is_active %}{% button type="delete" size="small" icon="glyphicon-ban-circle" value="Deactivate" title="Deactivate user" url=deactivate_user_url %}{% endif %}
+							    {% if user.is_active %}{% button type="warn" size="small" icon="glyphicon-ban-circle" value="Deactivate" title="Deactivate user" url=deactivate_user_url %}{% endif %}
                             {% endwith %}
 						</td>
 					</tr>
