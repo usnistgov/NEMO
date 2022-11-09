@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 from django.core.files.base import ContentFile
@@ -109,7 +109,7 @@ class ToolQualificationTestCase(TestCase):
 	def test_qualification_expired(self, mock_open, mock_exist):
 		mock_exist.return_value = True
 		mock_open.return_value = ContentFile(b'Email template', name="template")
-		qualification_date = datetime.today() - timedelta(days=3)
+		qualification_date = date.today() - timedelta(days=3)
 		Qualification.objects.create(tool=self.tool, user=self.user, qualified_on=qualification_date)
 		usage_date = timezone.now() - timedelta(days=3)
 		UsageEvent.objects.create(user=self.user, operator=self.user, tool=self.tool, project=self.project, start=usage_date)
