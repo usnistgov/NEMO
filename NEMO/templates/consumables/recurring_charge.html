@@ -36,7 +36,7 @@
                     {% if not form.consumable.value %}<option value="" disabled selected>Select a consumable</option>{% endif %}
                     {% regroup consumables by category as consumable_by_category %}
                     {% for category in consumable_by_category %}
-                        {% if category.grouper %}<optgroup label="a{{ category.grouper.name }}">{% endif %}
+                        {% if category.grouper %}<optgroup label="{{ category.grouper.name }}">{% endif %}
                         {% for consumable in category.list %}
                             <option label="{{ consumable.name }}" value="{{ consumable.id }}" {% if form.consumable.value|to_int == consumable.id %}selected{% endif %}></option>
                         {% endfor %}
