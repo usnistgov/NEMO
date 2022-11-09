@@ -33,7 +33,7 @@
                     <td>{{ recurring_charge.consumable }}</td>
                     <td {% if recurring_charge.invalid_customer %}class="alert-danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_customer|default:'' }}"{% endif %}>{{ recurring_charge.customer|default_if_none:"" }}</td>
                     <td {% if recurring_charge.invalid_project %}class="alert-danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project|default:'' }}"{% endif %}>{{ recurring_charge.project|default_if_none:"" }}</td>
-                    <td>{% if recurring_charge.get_recurrence_interval_display %}{{ recurring_charge.get_recurrence_interval_display }} <span class="glyphicon glyphicon-info-sign primary-highlight" style="vertical-align: text-bottom" data-toggle="tooltip" data-title="{{ recurring_charge.get_recurrence_display|default_if_none:'' }}"></span>{% endif %}</td>
+                    <td style="white-space: nowrap;">{% if recurring_charge.get_recurrence_interval_display %}{{ recurring_charge.get_recurrence_interval_display }} <span class="glyphicon glyphicon-info-sign primary-highlight" style="vertical-align: text-bottom" data-toggle="tooltip" data-title="{{ recurring_charge.get_recurrence_display|default_if_none:'' }}"></span>{% endif %}</td>
                     <td>{{ recurring_charge.last_charge|date:'SHORT_DATE_FORMAT' }}</td>
                     <td>{{ recurring_charge.next_charge|date:'SHORT_DATE_FORMAT' }}</td>
                     <td class="button-column-minimum">
