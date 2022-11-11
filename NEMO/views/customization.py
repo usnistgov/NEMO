@@ -15,8 +15,8 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
-from NEMO.models import Customization, Project, RecurringConsumableCharge
-from NEMO.utilities import date_input_format, datetime_input_format
+from NEMO.models import ConsumableCategory, Customization, Project, RecurringConsumableCharge
+from NEMO.utilities import date_input_format, datetime_input_format, quiet_int
 
 
 class CustomizationBase(ABC):
@@ -104,6 +104,10 @@ class CustomizationBase(ABC):
 				raise
 			else:
 				return default_value
+
+	@classmethod
+	def get_int(cls, name: str, default=None, raise_exception=True) -> int:
+		return quiet_int(cls.get(name, raise_exception), default)
 
 	@classmethod
 	def get_bool(cls, name: str, raise_exception=True) -> bool:
@@ -275,11 +279,22 @@ class UserRequestsCustomization(CustomizationBase):
 
 @customization(key="recurring_charges", title="Recurring charges", order=6)
 class RecurringChargesCustomization(CustomizationBase):
-	variables = {"recurring_charges_name": "Recurring charges", "lock_recurring_charges": ""}
+	variables = {
+		"recurring_charges_name": "Recurring charges",
+		"recurring_charges_lock": "",
+		"recurring_charges_category": "",
+		"recurring_charges_force_quantity": ""
+	}
 
 	def __init__(self, key, title, order):
 		super().__init__(key, title, order)
 		self.update_title()
+
+	def context(self) -> Dict:
+		# Override to add list of consumable categories
+		dictionary = super().context()
+		dictionary["consumable_categories"] = ConsumableCategory.objects.all()
+		return dictionary
 
 	def update_title(self):
 		self.title = self.get("recurring_charges_name", raise_exception=False)

@@ -28,10 +28,14 @@
         </div>
         <div class="form-group">
             <label class="control-label col-sm-2" for="consumable">Consumable</label>
-            <div class="col-sm-1">
-                <input aria-label="Quantity" id="quantity" name="quantity" type="number" class="form-control" value="{{ form.quantity.value }}" {% if form.fields.quantity.disabled %}disabled{% endif %}/>
-            </div>
-            <div class="col-sm-3">
+            {% if force_quantity %}
+                <input name="quantity" type="hidden" value="{{ force_quantity }}" {% if form.fields.quantity.disabled %}disabled{% endif %}/>
+            {% else %}
+                <div class="col-sm-1">
+                    <input aria-label="Quantity" id="quantity" name="quantity" type="number" class="form-control" value="{{ form.quantity.value }}" {% if form.fields.quantity.disabled %}disabled{% endif %}/>
+                </div>
+            {% endif %}
+            <div class="col-sm-{% if force_quantity %}4{% else %}3{% endif %}">
                 <select class="form-control" id="consumable" name="consumable" {% if form.fields.consumable.disabled %}disabled{% endif %}>
                     {% if not form.consumable.value %}<option value="" disabled selected>Select a consumable</option>{% endif %}
                     {% regroup consumables by category as consumable_by_category %}
@@ -140,7 +144,7 @@
         <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
                 {% button type="save" value="Save" name="save" %}
-                <div style="display: inline-block" {% if not can_charge %}title="The customer was already charged for this item today"{% endif %}>{% button type="warn" submit=True value="Save and charge now" icon="glyphicon-floppy-save" name="save_and_charge" disabled=can_charge|yesno:",disabled" %}</div>
+                <div style="display: inline-block" {% if not can_charge %}title="The customer was already charged for this item today"{% endif %}>{% button type="warn" submit=True value="Save and charge now" onclick="if (confirm('Are you sure you want to charge this customer today?')){ submit_and_disable(this); } else return false;" icon="glyphicon-floppy-save" name="save_and_charge" disabled=can_charge|yesno:",disabled" %}</div>
             </div>
         </div>
     </form>

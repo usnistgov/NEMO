@@ -114,11 +114,16 @@ def create_recurring_charge(request, recurring_charge_id: int = None):
 	if not recurring_charge_id and locked:
 		return redirect("login")
 	form = RecurringConsumableChargeForm(request.POST or None, instance=instance, locked=locked)
+	recurring_charges_category = RecurringChargesCustomization.get_int("recurring_charges_category")
+	consumables_options = Consumable.objects.filter(visible=True).order_by("category", "name")
+	if recurring_charges_category:
+		consumables_options = consumables_options.filter(category_id=recurring_charges_category)
 	dictionary = {
 		"form": form,
 		"users": User.objects.filter(is_active=True),
 		"can_charge": not instance or not instance.last_charge or as_timezone(instance.last_charge).date() != date.today(),
-		"consumables": Consumable.objects.filter(visible=True).order_by("category", "name"),
+		"force_quantity": RecurringChargesCustomization.get_int("recurring_charges_force_quantity", None),
+		"consumables": consumables_options,
 	}
 	if request.method == "POST":
 		if form.is_valid():
@@ -152,7 +157,7 @@ def clear_recurring_charge(request, recurring_charge_id: int):
 
 def extended_permissions(request) -> bool:
 	user: User = request.user
-	lock_charges = RecurringChargesCustomization.get_bool("lock_recurring_charges")
+	lock_charges = RecurringChargesCustomization.get_bool("recurring_charges_lock")
 	return not lock_charges or user.is_facility_manager or user.is_superuser
 
 

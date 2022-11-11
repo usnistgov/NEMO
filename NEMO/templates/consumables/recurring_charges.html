@@ -10,11 +10,12 @@
 	</div>
 {% endblock %}
 {% block pagination_content %}
+    {% regroup page by quantity as different_quantities %}
     <table class="table table-bordered table-condensed table-hover table-align-middle thead-light">
         <thead>
             <tr>
                 <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
-                <th>{% include 'pagination/pagination_column.html' with order_by='quantity' name='Quantity' %}</th>
+                {% if different_quantities|length != 1 or page.0.quantity != 1 %}<th>{% include 'pagination/pagination_column.html' with order_by='quantity' name='Quantity' %}</th>{% endif %}
                 <th>{% include 'pagination/pagination_column.html' with order_by='consumable' name='Item' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='customer' name='Customer' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='project' name='Project' %}</th>
@@ -29,7 +30,7 @@
             {% for recurring_charge in page %}
                 <tr {% if not recurring_charge.is_empty and not recurring_charge.next_charge %}class="alert-danger" data-toggle="tooltip" data-title="This item expired"{% endif %}>
                     <td>{{ recurring_charge.name }}</td>
-                    <td>{{ recurring_charge.quantity }}</td>
+                    {% if different_quantities|length != 1 or page.0.quantity != 1 %}<td>{{ recurring_charge.quantity }}</td>{% endif %}
                     <td>{{ recurring_charge.consumable }}</td>
                     <td {% if recurring_charge.invalid_customer %}class="alert-danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_customer|default:'' }}"{% endif %}>{{ recurring_charge.customer|default_if_none:"" }}</td>
                     <td {% if recurring_charge.invalid_project %}class="alert-danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project|default:'' }}"{% endif %}>{{ recurring_charge.project|default_if_none:"" }}</td>

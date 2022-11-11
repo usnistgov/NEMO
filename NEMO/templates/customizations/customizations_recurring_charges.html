@@ -16,8 +16,31 @@
             <label class="control-label col-md-2">Lock {{ recurring_charges_name|lower }}</label>
             <div class="col-md-10">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="lock_recurring_charges" {% if lock_recurring_charges %}checked{% endif %} value="enabled">Check this box to lock {{ recurring_charges_name|lower }}, so staff members can only change customer and project fields.</label><br/>
+                    <label><input type="checkbox" name="recurring_charges_lock" {% if recurring_charges_lock %}checked{% endif %} value="enabled">Check this box to lock {{ recurring_charges_name|lower }}, so staff members can only change customer and project fields.</label><br/>
                 </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="recurring_charges_category">Category</label>
+            <div class="col-md-3">
+                <select class="form-control" id="recurring_charges_category" name="recurring_charges_category">
+                    <option selected>All categories</option>
+                    {% for consumable_category in consumable_categories %}
+                        <option value="{{ consumable_category.id }}" {% if consumable_category.id == recurring_charges_category|to_int %}selected{% endif %}>{{ consumable_category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-7 help-block light-grey">
+                [Optional] Select a consumable category to restrict consumable choices to.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="recurring_charges_force_quantity">Force quantity</label>
+            <div class="col-md-3">
+                <input type="number" step="1" id="recurring_charges_force_quantity" name="recurring_charges_force_quantity" class="form-control" value="{{ recurring_charges_force_quantity }}">
+            </div>
+            <div class="col-md-7 help-block light-grey">
+                [Optional] Define a quantity to be automatically set for every {{ recurring_charges_name|lower }}.
             </div>
         </div>
         <div class="col-md-offset-2">

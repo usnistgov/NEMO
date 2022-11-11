@@ -238,7 +238,7 @@ class ConsumableTestCase(TestCase):
 		self.assertEqual(withdraw.date, new_withdraw.date)
 
 	def test_edit_when_locked(self):
-		RecurringChargesCustomization.set("lock_recurring_charges", "enabled")
+		RecurringChargesCustomization.set("recurring_charges_lock", "enabled")
 		user, project = create_user_and_project()
 		new_user, new_project = create_user_and_project()
 		charge = RecurringConsumableCharge()
@@ -282,7 +282,7 @@ class ConsumableTestCase(TestCase):
 		self.assertNotEqual(charge.last_updated, new_charge.last_updated)
 
 	def test_edit_when_locked_facility_manager(self):
-		RecurringChargesCustomization.set("lock_recurring_charges", "enabled")
+		RecurringChargesCustomization.set("recurring_charges_lock", "enabled")
 		user, project = create_user_and_project()
 		new_user, new_project = create_user_and_project()
 		charge = RecurringConsumableCharge()
@@ -324,7 +324,7 @@ class ConsumableTestCase(TestCase):
 		self.assertNotEqual(charge.last_updated, new_charge.last_updated)
 
 	def test_create_when_locked(self):
-		RecurringChargesCustomization.set("lock_recurring_charges", "enabled")
+		RecurringChargesCustomization.set("recurring_charges_lock", "enabled")
 		login_as_user(self.client)
 		response = self.client.get(reverse("create_recurring_charge"), follow=True)
 		test_response_is_landing_page(self, response)
@@ -333,7 +333,7 @@ class ConsumableTestCase(TestCase):
 		test_response_is_landing_page(self, response)
 
 	def test_delete_when_locked(self):
-		RecurringChargesCustomization.set("lock_recurring_charges", "enabled")
+		RecurringChargesCustomization.set("recurring_charges_lock", "enabled")
 		login_as_user(self.client)
 		response = self.client.get(reverse("delete_recurring_charge", args=[1]), follow=True)
 		test_response_is_landing_page(self, response)
