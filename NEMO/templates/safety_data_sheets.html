@@ -32,7 +32,11 @@
                         <th class="sds-box-shadow-bottom" style="display: none;border-right-style: hidden!important; border-top-style: hidden!important;background-color: white">
                     </tr>
                     <tr>
-                        <th class="text-center sds-box-shadow-top" style="overflow: hidden;vertical-align: middle">{% include "pagination/pagination_column.html" with order_by="name" name="Name" %}</th>
+                        <th class="text-center sds-box-shadow-top" style="overflow: hidden;vertical-align: middle">
+                            <span class="pagination-column" style="white-space: inherit;display: inline">
+                                <a href="?o={% if order_by == "name" %}-{% endif %}name">Name<span class="{% if order_by != "name" and order_by != "-name" %}hidden{% endif %} glyphicon glyphicon-triangle-{% if hazard_order == "name" %}bottom{% else %}top{% endif %}"></span></a>
+                            </span>
+                        </th>
                         {% for hazard in hazards %}
                             <th class="text-center sds-box-shadow-top" style="overflow: hidden;vertical-align: middle">
                                 <span class="pagination-column" style="white-space: inherit;display: inline">
