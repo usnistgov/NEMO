@@ -32,13 +32,13 @@
                         <th class="sds-box-shadow-bottom" style="display: none;border-right-style: hidden!important; border-top-style: hidden!important;background-color: white">
                     </tr>
                     <tr>
-                        <th class="text-center sds-box-shadow-top" style="overflow: hidden">{% include "pagination/pagination_column.html" with order_by="name" name="Name" %}</th>
+                        <th class="text-center sds-box-shadow-top" style="overflow: hidden;vertical-align: middle">{% include "pagination/pagination_column.html" with order_by="name" name="Name" %}</th>
                         {% for hazard in hazards %}
-                            <th class="text-center sds-box-shadow-top" style="overflow: hidden;">
-                                <span class="pagination-column" style="white-space: inherit">
-                                {% with hazard_order="hazard_"|concat:hazard.id %}
-                                    <a href="?o={% if order_by == hazard_order %}-{% endif %}{{ hazard_order }}">{{ hazard.name }}<span class="{% if order_by != hazard_order and order_by != "-"|concat:hazard_order %}invisible{% endif %} glyphicon glyphicon-triangle-{% if hazard_order == order_by %}bottom{% else %}top{% endif %}"></span></a>
-                                {% endwith %}
+                            <th class="text-center sds-box-shadow-top" style="overflow: hidden;vertical-align: middle">
+                                <span class="pagination-column" style="white-space: inherit;display: inline">
+                                    {% with hazard_order="hazard_"|concat:hazard.id %}
+                                        <a href="?o={% if order_by == hazard_order %}-{% endif %}{{ hazard_order }}">{{ hazard.name }}<span class="{% if order_by != hazard_order and order_by != "-"|concat:hazard_order %}hidden{% endif %} glyphicon glyphicon-triangle-{% if hazard_order == order_by %}bottom{% else %}top{% endif %}"></span></a>
+                                    {% endwith %}
                                 </span>
                             </th>
                         {% endfor %}
