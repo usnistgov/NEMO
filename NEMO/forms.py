@@ -286,7 +286,7 @@ class ConsumableWithdrawForm(ModelForm):
 		cleaned_data = super().clean()
 		quantity = cleaned_data["quantity"]
 		consumable = cleaned_data["consumable"]
-		if quantity > consumable.quantity:
+		if not consumable.reusable and quantity > consumable.quantity:
 			raise ValidationError(
 				'There are not enough "' + consumable.name + '". (The current quantity in stock is '
 				+ str(consumable.quantity)
