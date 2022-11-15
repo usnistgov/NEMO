@@ -137,6 +137,23 @@ class ReservationItemType(Enum):
 			return ReservationItemType.NONE
 
 
+class EmailNotificationType(object):
+	OFF = 0
+	BOTH_EMAILS = 1
+	MAIN_EMAIL = 2
+	ALTERNATE_EMAIL = 3
+	Choices = (
+		(BOTH_EMAILS, "Both emails"),
+		(MAIN_EMAIL, "Main email only"),
+		(ALTERNATE_EMAIL, "Alternate email only"),
+		(OFF, "Off"),
+	)
+
+	@classmethod
+	def on_choices(cls):
+		return [(choice[0], choice[1]) for choice in cls.Choices if choice[0] not in [cls.OFF, cls.ALTERNATE_EMAIL]]
+
+
 class CalendarDisplay(BaseModel):
 	"""
 	Inherit from this class to express that a class type can be displayed in the NEMO calendar.
@@ -164,16 +181,25 @@ class UserPreferences(BaseModel):
 	email_new_buddy_request_reply = models.BooleanField('email_new_buddy_request_reply', default=True, help_text='Whether or not to email the user of replies on buddy request he commented on')
 	staff_status_view = models.CharField('staff_status_view', max_length=100, default='day', choices=[('day', 'Day'), ('week', 'Week'), ('month', 'Month')], help_text='Preferred view for staff status page')
 	email_alternate = models.EmailField(null=True, blank=True)
-	email_send_reservation_emails = models.BooleanField(default=True, help_text="Send reservation emails to my alternate email")
-	email_send_usage_reminders = models.BooleanField(default=True, help_text="Send usage reminders to my alternate email")
-	email_send_reservation_reminders = models.BooleanField(default=True, help_text="Send reservation reminders to my alternate email")
-	email_send_reservation_ending_reminders = models.BooleanField(default=True, help_text="Send reservation ending reminders to my alternate email")
-	email_send_buddy_request_replies = models.BooleanField(default=True, help_text="Send buddy request replies to my alternate email")
-	email_send_access_request_updates = models.BooleanField(default=True, help_text="Send access request updates to my alternate email")
-	email_send_task_updates = models.BooleanField(default=True, help_text="Send task updates to my alternate email")
-	email_send_broadcast_emails = models.BooleanField(default=True, help_text="Send broadcast emails to my alternate email")
-	email_send_access_expiration_emails = models.BooleanField(default=True, help_text="Send access expiration emails to my alternate email")
-	email_send_tool_qualification_expiration_emails = models.BooleanField(default=True, help_text="Send tool qualification expiration emails to my alternate email")
+	# Sort by the notifications that cannot be turned off first
+	email_send_reservation_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Reservation emails")
+	email_send_buddy_request_replies = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Buddy request replies")
+	email_send_access_request_updates = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Access request updates")
+	email_send_broadcast_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Broadcast emails")
+	email_send_task_updates = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Task updates")
+	email_send_access_expiration_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Access expiration reminders")
+	email_send_tool_qualification_expiration_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Tool qualification expiration reminders")
+	email_send_usage_reminders = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Usage reminders")
+	email_send_reservation_reminders = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Reservation reminders")
+	email_send_reservation_ending_reminders = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Reservation ending reminders")
+	recurring_charges_reminder_days = models.CharField(null=True, blank=True, default="7", max_length=200, help_text="The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.")
+	email_send_recurring_charges_reminder_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Recurring charges reminders")
+
+	def get_recurring_charges_days(self) -> List[int]:
+		return [int(days) for days in self.recurring_charges_reminder_days.split(",") if self.recurring_charges_reminder_days]
+
+	def __str__(self):
+		return f"{self.user.username}'s preferences"
 
 	class Meta:
 		verbose_name = 'User preferences'
@@ -525,15 +551,17 @@ class User(BaseModel):
 	def set_unusable_password(self):
 		pass
 
-	def get_emails(self, include_alternate=False) -> List[str]:
-		emails = [self.email]
-		if include_alternate and self.get_preferences().email_alternate:
+	def get_emails(self, email_notification=EmailNotificationType.MAIN_EMAIL) -> List[str]:
+		emails = []
+		if email_notification in [EmailNotificationType.BOTH_EMAILS, EmailNotificationType.MAIN_EMAIL]:
+			emails.append(self.email)
+		if email_notification in [EmailNotificationType.BOTH_EMAILS, EmailNotificationType.ALTERNATE_EMAIL]:
 			emails.append(self.preferences.email_alternate)
 		return emails
 
-	def email_user(self, subject, message, from_email, cc=None, attachments=None, send_to_alternate=False, email_category: EmailCategory = EmailCategory.GENERAL):
+	def email_user(self, subject, message, from_email, cc=None, attachments=None, email_notification=EmailNotificationType.MAIN_EMAIL, email_category: EmailCategory = EmailCategory.GENERAL):
 		""" Sends an email to this user. """
-		send_mail(subject=subject, content=message, from_email=from_email, to=self.get_emails(send_to_alternate), cc=cc, attachments=attachments, email_category=email_category)
+		send_mail(subject=subject, content=message, from_email=from_email, to=self.get_emails(email_notification), cc=cc, attachments=attachments, email_category=email_category)
 
 	def get_full_name(self):
 		return self.get_name() + ' (' + self.username + ')'
@@ -601,7 +629,7 @@ class User(BaseModel):
 		except StaffCharge.DoesNotExist:
 			return None
 
-	def get_preferences(self):
+	def get_preferences(self) -> UserPreferences:
 		if not self.preferences:
 			default_reservation_preferences = getattr(settings, 'USER_RESERVATION_PREFERENCES_DEFAULT', False)
 			self.preferences = UserPreferences.objects.create(attach_cancelled_reservation=default_reservation_preferences, attach_created_reservation=default_reservation_preferences)

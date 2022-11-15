@@ -39,8 +39,8 @@
                     <div class="panel-body">
                         <h3>Staff status</h3>
                         <div class="form-group">
-                            <label class="col-sm-2 form-control-static" for="staff_status_view">Default view</label>
-                            <div class="col-sm-10">
+                            <label class="col-sm-3 form-control-static" for="staff_status_view">Default view</label>
+                            <div class="col-sm-9">
                                 <label class="radio-inline">
                                   <input type="radio" name="staff_status_view" id="staff_status_view" value="day" {% if user_preferences.staff_status_view == 'day' %}checked{% endif %}> Day
                                 </label>
@@ -59,48 +59,59 @@
             {% endif %}
             <div class="panel panel-default">
 				<div class="panel-body">
-					<h3>Alternate email</h3>
+					<h3>Email notifications</h3>
+                    <p>The following is a list of notifications you will receive from {{ site_title }}. You have
+                        the option to set an alternate email address and define your preferences for which notifications
+                        you want to be sent to either of your emails, or both.</p>
+                    <p>Some notifications can also be turned off completely.</p>
+                    <br>
                     <div class="form-group">
-                        <label class="col-sm-2 form-control-static" for="alternate_email_address">Alternate email address</label>
+                        <label class="col-sm-3 form-control-static" for="alternate_email_address">Alternate email address</label>
                         <div class="col-sm-4">
                             <input type="email" class="form-control" id="alternate_email_address" name="email_alternate" value="{{ form.email_alternate.value|default_if_none:'' }}" maxlength="254">
                         </div>
                         {% if form.email_alternate.errors %}
-                            <div class="col-sm-6 form-control-static danger-highlight">
+                            <div class="col-sm-5 form-control-static danger-highlight">
                                 {{ form.email_alternate.errors|striptags }}
                             </div>
 			            {% endif %}
                     </div>
-					<div class="form-group col-sm-12">
-						<div class="checkbox">
-							<label><input name="email_send_reservation_emails" type="checkbox" {% if user_preferences.email_send_reservation_emails %}checked{% endif %}>{{ form.email_send_reservation_emails.help_text }}</label>
-						</div>
-						<div class="checkbox">
-							<label><input name="email_send_usage_reminders" type="checkbox" {% if user_preferences.email_send_usage_reminders %}checked{% endif %}>{{ form.email_send_usage_reminders.help_text }}</label>
-						</div>
-						<div class="checkbox">
-							<label><input name="email_send_reservation_reminders" type="checkbox" {% if user_preferences.email_send_reservation_reminders %}checked{% endif %}>{{ form.email_send_reservation_reminders.help_text }}</label>
-						</div>
-						<div class="checkbox">
-							<label><input name="email_send_reservation_ending_reminders" type="checkbox" {% if user_preferences.email_send_reservation_ending_reminders %}checked{% endif %}>{{ form.email_send_reservation_ending_reminders.help_text }}</label>
-						</div>
-						<div class="checkbox">
-							<label><input name="email_send_buddy_request_replies" type="checkbox" {% if user_preferences.email_send_buddy_request_replies %}checked{% endif %}>{{ form.email_send_buddy_request_replies.help_text }}</label>
-						</div>
-						<div class="checkbox">
-							<label><input name="email_send_access_request_updates" type="checkbox" {% if user_preferences.email_send_access_request_updates %}checked{% endif %}>{{ form.email_send_access_request_updates.help_text }}</label>
-						</div>
-						<div class="checkbox">
-							<label><input name="email_send_task_updates" type="checkbox" {% if user_preferences.email_send_task_updates %}checked{% endif %}>{{ form.email_send_task_updates.help_text }}</label>
-						</div>
-						<div class="checkbox">
-							<label><input name="email_send_broadcast_emails" type="checkbox" {% if user_preferences.email_send_broadcast_emails %}checked{% endif %}>{{ form.email_send_broadcast_emails.help_text }}</label>
-						</div>
-                        <div class="checkbox">
-							<label><input name="email_send_access_expiration_emails" type="checkbox" {% if user_preferences.email_send_access_expiration_emails %}checked{% endif %}>{{ form.email_send_access_expiration_emails.help_text }}</label>
-						</div>
-					</div>
-				</div>
+                    {% for field_name, field in form.fields.items %}
+                        {% if field|class_name == "TypedChoiceField" and field_name != "staff_status_view" and field_name != "email_send_recurring_charges_reminder_emails" %}
+                            {% with data=form.data|get_item:field_name initial=form.initial|get_item:field_name %}
+                                <div class="form-group">
+                                    <label class="col-sm-3 form-control-static">{{ field.help_text }}</label>
+                                    <div class="col-sm-9">
+                                        {% for choice in field.choices %}
+                                            <label class="radio-inline"><input type="radio" name="{{ field_name }}" value="{{ choice.0 }}" {% if data|default:initial|to_int == choice.0 %}checked{% endif %}>{{ choice.1 }}</label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    <div class="form-group">
+                        <label class="col-sm-3 form-control-static" for="recurring_charges_reminder_days">{{ recurring_charges_name }} reminder days</label>
+                        <div class="col-sm-3">
+                            <input type="text" class="form-control" id="recurring_charges_reminder_days" name="recurring_charges_reminder_days" value="{{ form.recurring_charges_reminder_days.value|default_if_none:'' }}" maxlength="200">
+                        </div>
+                        {% if form.recurring_charges_reminder_days.errors %}
+                            <div class="col-sm-6 form-control-static danger-highlight">
+                                {{ form.recurring_charges_reminder_days.errors|striptags }}
+                            </div>
+                        {% else %}
+                            <div class="col-sm-6 form-control-static">Set the number of days to receive a reminder prior to {{ recurring_charges_name|lower }} being charged.</div>
+			            {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 form-control-static">{{ recurring_charges_name }} reminders:</label>
+                        <div class="col-sm-9">
+                        {% for choice in form.fields.email_send_recurring_charges_reminder_emails.choices %}
+                            <label class="radio-inline"><input type="radio" name="email_send_recurring_charges_reminder_emails" value="{{ choice.0 }}" {% if form.email_send_recurring_charges_reminder_emails.value|to_int == choice.0 %}checked{% endif %}>{{ choice.1 }}</label>
+                        {% endfor %}
+                        </div>
+                    </div>
+                </div>
 			</div>
             {% button type="save" value="Update preferences" %}
 		</form>

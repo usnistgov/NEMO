@@ -24,7 +24,7 @@ from NEMO.actions import (
 	synchronize_with_tool_usage,
 	unlock_selected_interlocks,
 )
-from NEMO.forms import BuddyRequestForm, RecurringConsumableChargeForm
+from NEMO.forms import BuddyRequestForm, RecurringConsumableChargeForm, UserPreferencesForm
 from NEMO.models import (
 	Account,
 	AccountType,
@@ -850,6 +850,7 @@ class UserTypeAdmin(admin.ModelAdmin):
 @register(UserPreferences)
 class UserPreferencesAdmin(admin.ModelAdmin):
 	list_display = ("user",)
+	form = UserPreferencesForm
 
 
 class UserAdminForm(forms.ModelForm):

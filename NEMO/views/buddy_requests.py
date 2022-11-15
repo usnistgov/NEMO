@@ -133,8 +133,8 @@ def email_interested_parties(reply: BuddyRequestMessage, reply_url):
 {linebreaksbr(reply.content)}
 <br><br>
 Please visit {reply_url} to reply"""
-			send_to_alternate = user.get_preferences().email_send_buddy_request_replies
-			user.email_user(subject=subject, message=message, from_email=settings.SERVER_EMAIL, send_to_alternate=send_to_alternate)
+			email_notification = user.get_preferences().email_send_buddy_request_replies
+			user.email_user(subject=subject, message=message, from_email=settings.SERVER_EMAIL, email_notification=email_notification)
 
 
 def check_user_reply_error(buddy_request: BuddyRequest, user: User) -> Optional[str]:

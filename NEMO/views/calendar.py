@@ -4,7 +4,7 @@ from http import HTTPStatus
 from json import dumps, loads
 from logging import getLogger
 from re import match
-from typing import List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union
 
 import pytz
 from django.conf import settings
@@ -28,6 +28,7 @@ from NEMO.models import (
 	Closure,
 	ClosureTime,
 	Configuration,
+	EmailNotificationType,
 	Project,
 	Qualification,
 	RecurringConsumableCharge,
@@ -808,8 +809,8 @@ def send_email_reservation_reminders(request=None):
 			subject = item.name + " reservation warning"
 			rendered_message = render_email_template(reservation_warning_message, {'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}, request)
 		user_office_email = EmailsCustomization.get('user_office_email_address')
-		send_to_alternate = reservation.user.get_preferences().email_send_reservation_reminders
-		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
+		email_notification = reservation.user.get_preferences().email_send_reservation_reminders
+		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
 	return HttpResponse()
 
 
@@ -847,8 +848,8 @@ def send_email_reservation_ending_reminders(request=None):
 	for reservation in ending_reservations:
 		subject = reservation.reservation_item.name + " reservation ending soon"
 		rendered_message = render_email_template(reservation_ending_reminder_message, {'reservation': reservation}, request)
-		send_to_alternate = reservation.user.get_preferences().email_send_reservation_ending_reminders
-		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
+		email_notification = reservation.user.get_preferences().email_send_reservation_ending_reminders
+		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
 	return HttpResponse()
 
 
@@ -899,8 +900,8 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
 		for user in aggregate.values():
 			rendered_message = render_email_template(message, {'user': user}, request)
 			user_instance: User = user['user']
-			send_to_alternate = user_instance.get_preferences().email_send_usage_reminders
-			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
+			email_notification = user_instance.get_preferences().email_send_usage_reminders
+			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
 
 	message = get_media_file_contents('staff_charge_reminder_email.html')
 	if message:
@@ -908,8 +909,8 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
 		for staff_charge in busy_staff:
 			subject = "Active staff charge since " + format_datetime(staff_charge.start)
 			rendered_message = render_email_template(message, {'staff_charge': staff_charge}, request)
-			send_to_alternate = staff_charge.staff_member.get_preferences().email_send_usage_reminders
-			staff_charge.staff_member.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
+			email_notification = staff_charge.staff_member.get_preferences().email_send_usage_reminders
+			staff_charge.staff_member.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
 
 	return HttpResponse()
 
@@ -1262,7 +1263,7 @@ def create_alert_for_closure_time(closure_time: ClosureTime):
 
 
 def email_last_closure_occurrence(closure_time):
-	facility_manager_emails = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(include_alternate=True)]
+	facility_manager_emails = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(EmailNotificationType.BOTH_EMAILS)]
 	message = f"""
 Dear facility manager,<br>
 This email is to inform you that today was the last occurrence for the {closure_time.closure.name} facility closure.
@@ -1297,13 +1298,13 @@ def send_email_user_access_expiration_reminders(request=None):
 			for user in User.objects.filter(is_active=True, access_expiration=expiration_date):
 				subject = f"Your {facility_name} access expires in {remaining_days} days ({format_datetime(user.access_expiration)})"
 				message = render_email_template(template, {"user": user, "remaining_days": remaining_days}, request)
-				send_to_alternate = user.get_preferences().email_send_access_expiration_emails
+				email_notification = user.get_preferences().email_send_access_expiration_emails
 				user.email_user(
 					subject=subject,
 					message=message,
 					from_email=user_office_email,
 					cc=ccs,
-					send_to_alternate=send_to_alternate
+					email_notification=email_notification
 				)
 	return HttpResponse()
 
@@ -1366,13 +1367,13 @@ def send_tool_qualification_expiring_email(qualification: Qualification, last_to
 		"remaining_days": remaining_days
 	}
 	message = render_email_template(template, dictionary, request)
-	send_to_alternate = qualification.user.get_preferences().email_send_tool_qualification_expiration_emails
+	email_notification = qualification.user.get_preferences().email_send_tool_qualification_expiration_emails
 	qualification.user.email_user(
 		subject=subject,
 		message=message,
 		from_email=user_office_email,
 		cc=ccs,
-		send_to_alternate=send_to_alternate
+		email_notification=email_notification
 	)
 
 

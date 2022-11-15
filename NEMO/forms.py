@@ -406,24 +406,21 @@ class ScheduledOutageForm(ModelForm):
 class UserPreferencesForm(ModelForm):
 	class Meta:
 		model = UserPreferences
-		fields = [
-			"attach_created_reservation",
-			"attach_cancelled_reservation",
-			"display_new_buddy_request_notification",
-			"display_new_buddy_request_reply_notification",
-			"email_new_buddy_request_reply",
-			"staff_status_view",
-			"email_alternate",
-			"email_send_reservation_emails",
-			"email_send_usage_reminders",
-			"email_send_reservation_reminders",
-			"email_send_reservation_ending_reminders",
-			"email_send_buddy_request_replies",
-			"email_send_access_request_updates",
-			"email_send_task_updates",
-			"email_send_broadcast_emails",
-			"email_send_access_expiration_emails"
-		]
+		fields = "__all__"
+
+	def clean_recurring_charges_reminder_days(self):
+		recurring_charges_reminder_days = self.cleaned_data["recurring_charges_reminder_days"]
+		try:
+			for reminder_days in recurring_charges_reminder_days.split(","):
+				try:
+					int(reminder_days)
+				except ValueError:
+					raise ValidationError(f"'{reminder_days}' is not a valid integer")
+		except ValidationError:
+			raise
+		except Exception as e:
+			raise ValidationError(str(e))
+		return recurring_charges_reminder_days
 
 
 class BuddyRequestForm(ModelForm):

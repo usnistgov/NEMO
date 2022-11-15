@@ -22,6 +22,7 @@ from NEMO.models import (
 	Comment,
 	Configuration,
 	ConfigurationHistory,
+	EmailNotificationType,
 	Project,
 	Reservation,
 	StaffCharge,
@@ -568,7 +569,7 @@ def email_managers_required_questions_disable_tool(tool_user:User, staff_member:
 	cc_users.extend(tool.backup_owners.all())
 	cc_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
 	facility_name = ApplicationCustomization.get('facility_name')
-	ccs = [email for user in cc_users for email in user.get_emails(include_alternate=True)]
+	ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
 	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
 	message = f"""
 Dear {tool_user.get_name()},<br/>
@@ -580,7 +581,7 @@ Regards,<br/>
 <br/>
 {facility_name} Management<br/>
 """
-	tos = tool_user.get_emails(include_alternate=True)
+	tos = tool_user.get_emails(EmailNotificationType.BOTH_EMAILS)
 	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=tos, cc=ccs, email_category=EmailCategory.ABUSE)
 
 

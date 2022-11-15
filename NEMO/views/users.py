@@ -365,6 +365,8 @@ def user_preferences(request):
 		if form.is_valid():
 			form.save()
 			messages.success(request, "Your preferences have been saved")
+		else:
+			messages.error(request, "Please correct the errors below:")
 	else:
 		form = UserPreferencesForm(instance=user.preferences)
 	dictionary = {

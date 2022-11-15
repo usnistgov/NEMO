@@ -133,8 +133,8 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 			else:
 				subject = reservation.tool.name + " reservation warning"
 				rendered_message = render_email_template(message, {'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}, request)
-			send_to_alternate = reservation.user.get_preferences().email_send_reservation_emails
-			reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TASKS, send_to_alternate=send_to_alternate)
+			email_notification = reservation.user.get_preferences().email_send_reservation_emails
+			reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TASKS, email_notification=email_notification)
 
 
 @login_required

@@ -201,12 +201,12 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 				"access_requests_url": absolute_url,
 			},
 		)
-		send_to_alternate = access_request.creator.get_preferences().email_send_access_request_updates
+		email_notification = access_request.creator.get_preferences().email_send_access_request_updates
 		send_mail(
 			subject=f"Your access request for the {access_request.physical_access_level.area} has been {status}",
 			content=message,
 			from_email=user_office_email,
-			to=access_request.creator.get_emails(include_alternate=send_to_alternate),
+			to=access_request.creator.get_emails(email_notification),
 			cc=ccs,
 			email_category=EmailCategory.ACCESS_REQUESTS,
 		)
