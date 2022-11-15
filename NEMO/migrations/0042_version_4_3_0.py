@@ -126,4 +126,64 @@ class Migration(migrations.Migration):
                 'ordering': ['name'],
             },
         ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='email_send_recurring_charges_reminder_emails',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only'), (3, 'Alternate email only'), (0, 'Off')], default=1, help_text='Recurring charges reminders'),
+        ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='recurring_charges_reminder_days',
+            field=models.CharField(blank=True, default='7', help_text='The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.', max_length=200, null=True),
+        ),
+        migrations.AlterField(
+            model_name='userpreferences',
+            name='email_send_access_expiration_emails',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Access expiration reminders'),
+        ),
+        migrations.AlterField(
+            model_name='userpreferences',
+            name='email_send_access_request_updates',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Access request updates'),
+        ),
+        migrations.AlterField(
+            model_name='userpreferences',
+            name='email_send_broadcast_emails',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Broadcast emails'),
+        ),
+        migrations.AlterField(
+            model_name='userpreferences',
+            name='email_send_buddy_request_replies',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Buddy request replies'),
+        ),
+        migrations.AlterField(
+            model_name='userpreferences',
+            name='email_send_reservation_emails',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Reservation emails'),
+        ),
+        migrations.AlterField(
+            model_name='userpreferences',
+            name='email_send_task_updates',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Task updates'),
+        ),
+        migrations.AlterField(
+            model_name='userpreferences',
+            name='email_send_reservation_ending_reminders',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only'), (3, 'Alternate email only'), (0, 'Off')], default=1, help_text='Reservation ending reminders'),
+        ),
+        migrations.AlterField(
+            model_name='userpreferences',
+            name='email_send_reservation_reminders',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only'), (3, 'Alternate email only'), (0, 'Off')], default=1, help_text='Reservation reminders'),
+        ),
+        migrations.AlterField(
+            model_name='userpreferences',
+            name='email_send_tool_qualification_expiration_emails',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Tool qualification expiration reminders'),
+        ),
+        migrations.AlterField(
+            model_name='userpreferences',
+            name='email_send_usage_reminders',
+            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only'), (3, 'Alternate email only'), (0, 'Off')], default=1, help_text='Usage reminders'),
+        ),
     ]
