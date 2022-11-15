@@ -1385,6 +1385,8 @@ def manage_recurring_charges(request):
 
 
 def do_manage_recurring_charges(request=None):
+	# Dictionary of user ids and list of recurring charges they need to be reminded of
+	user_reminders = {}
 	for recurring_charge in RecurringConsumableCharge.objects.filter(customer__isnull=False):
 		today = beginning_of_the_day(datetime.now(), in_local_timezone=False)
 		next_match_including_today = recurring_charge.next_charge(inc=True)
@@ -1397,11 +1399,38 @@ def do_manage_recurring_charges(request=None):
 				url = get_full_url(reverse("edit_recurring_charge", args=[recurring_charge.id]), request)
 				recurring_charge_name = RecurringChargesCustomization.get("recurring_charges_name")
 				user_office_email = EmailsCustomization.get("user_office_email_address")
-				content = f"The item \"{recurring_charge.name}\" <b>could not be charged</b> for the following reason(s):<br><br>"
+				content = f"The item \"{recurring_charge.name}\" <b>could not be charged</b> for the following reason(s):"
 				content += f"{nice_errors(e).as_ul()}"
-				content += f"You can go to the <a href=\"{url}\">edit {recurring_charge.name} page</a> to fix it."
+				content += f"You can fix the issue by going to the <a href=\"{url}\">{recurring_charge.name}</a> page."
 				send_mail(subject=f"Error processing {recurring_charge_name.lower()}", content=content, from_email=None, to=[user_office_email])
 			except Exception:
 				calendar_logger.exception("Error trying to charge for %s", recurring_charge.name)
-	# TODO: send reminder
+		customer: User = recurring_charge.customer
+		next_charge = recurring_charge.next_charge()
+		if customer.get_preferences().get_recurring_charges_days():
+			reminder_days = (next_charge - today).days
+			if reminder_days in customer.get_preferences().get_recurring_charges_days():
+				key = customer.id
+				if key in user_reminders:
+					user_reminders[key]["charges"].append(recurring_charge)
+				else:
+					user_reminders[key] = {
+						"user": customer,
+						"reminder_days": reminder_days,
+						"charges": [recurring_charge],
+					}
+	send_recurring_charge_reminders(request, user_reminders.values())
 	return HttpResponse()
+
+
+def send_recurring_charge_reminders(request, reminders: Iterable[Dict]):
+	message = get_media_file_contents("recurring_charges_reminder_email.html")
+	user_office_email = EmailsCustomization.get("user_office_email_address")
+	recurring_charges_name = RecurringChargesCustomization.get("recurring_charges_name")
+	if message and user_office_email:
+		for user_reminders in reminders:
+			subject = f"{recurring_charges_name} will be charged in {user_reminders['reminder_days']} day(s)"
+			user_instance: User = user_reminders["user"]
+			rendered_message = render_email_template(message, user_reminders, request)
+			email_notification = user_instance.get_preferences().email_send_recurring_charges_reminder_emails
+			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)

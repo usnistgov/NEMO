@@ -340,6 +340,7 @@ class TemplatesCustomization(CustomizationBase):
 		("reservation_created_user_email", ".html"),
 		("reservation_cancelled_user_email", ".html"),
 		("weekend_access_email", ".html"),
+		("recurring_charges_reminder_email", ".html"),
 	]
 
 

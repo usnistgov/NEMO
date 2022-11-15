@@ -6,7 +6,7 @@
         <div class="form-group" style="margin-bottom: 0">
             <input type="file" name="{{ element_name }}" class="customization-input-file" onchange="this.style.color = 'inherit';$('#{{ element_name }}_span').hide()">
             {% if element %}
-                <a id="{{ element_name }}_span" href="{% get_media_prefix %}{{ element_name }}.{{ extension }}" download="{{ element_name }}.{{ extension }}" target="_blank">{{ element_name }}.{{ extension }}</a>
+                <a id="{{ element_name }}_span" href="{% get_media_prefix %}{{ element_name }}.{{ extension }}" download="{{ element_name }}.{{ extension }}" target="_blank">{{ element_link_name|default:element_name }}.{{ extension }}</a>
             {% endif %}
         </div>
         <div class="form-group">

@@ -100,7 +100,7 @@
                                 {{ form.recurring_charges_reminder_days.errors|striptags }}
                             </div>
                         {% else %}
-                            <div class="col-sm-6 form-control-static">Set the number of days to receive a reminder prior to {{ recurring_charges_name|lower }} being charged.</div>
+                            <div class="col-sm-6 form-control-static">Set the number of days to receive a reminder prior to {{ recurring_charges_name|lower }} being charged. A comma-separated list can be used.</div>
 			            {% endif %}
                     </div>
                     <div class="form-group">

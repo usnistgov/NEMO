@@ -1,0 +1,33 @@
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+            <tr>
+                <td align="center" style="color: white; background: #5bc0de; padding: 50px 0;" bgcolor="#5bc0de">
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
+                        {{ recurring_charges_name }}
+                    </h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">
+                    <p>Dear {{ user.first_name }},</p>
+                    <p>This is a friendly reminder that the following items will be charged in {{ reminder_days }} day(s) on {{ charges.0.next_charge.date }}:</p>
+                    <ul>
+                        {% for charge in charges %}
+                            <li>{{ charge.name }} ({% if charge.quantity != 1 %}{{ charge.quantity }}x {% endif %}{{ charge.consumable }}) - to be charged to project "{{ charge.project }}"</li>
+                        {% endfor %}
+                    </ul>
+                    <p>
+                        You can reply to this email to contact staff with any questions or concerns.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+    </body>
+</html>

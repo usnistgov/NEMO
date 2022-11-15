@@ -660,7 +660,12 @@ function set_start_end_datetime_pickers(start_jq, end_jq, properties, end_before
 	}
 }
 
-function sort_nav(list_element)
+function sort_compare(element)
+{
+	return element.innerText.toLowerCase();
+}
+
+function sort_elements(list_element, selector, sort_function)
 {
 	let list, i, switching, b, shouldSwitch;
 	list = list_element;
@@ -668,11 +673,12 @@ function sort_nav(list_element)
 	while (switching)
 	{
 		switching = false;
-		b = list.getElementsByTagName("li");
+		b = $(list).find(selector);
 		for (i = 0; i < (b.length - 1); i++)
 		{
 			shouldSwitch = false;
-			if (b[i].innerText.toLowerCase() > b[i + 1].innerText.toLowerCase())
+			let comp_function = sort_function || sort_compare
+			if (comp_function(b[i]) > comp_function(b[i + 1]))
 			{
 				shouldSwitch = true;
 				break;

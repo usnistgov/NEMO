@@ -13,7 +13,7 @@ from django.forms import (
 	ModelChoiceField,
 	ModelForm,
 )
-from django.forms.utils import ErrorDict
+from django.forms.utils import ErrorDict, ErrorList
 from django.utils import timezone
 
 from NEMO.exceptions import ProjectChargeException
@@ -471,5 +471,5 @@ def nice_errors(obj, non_field_msg="General form errors") -> ErrorDict:
 			key = obj.fields[field_name].label
 		else:
 			key = field_name
-		result[key] = errors
+		result[key] = ErrorList(errors)
 	return result
