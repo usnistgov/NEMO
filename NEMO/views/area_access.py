@@ -99,7 +99,7 @@ def area_access(request):
 		dictionary['access_records'] = area_access_records
 	except:
 		pass
-	dictionary['area_select_field'] = TreeNodeChoiceField(Area.objects.filter(area_children_set__isnull=True).only('name'), empty_label="All").widget.render('area', area_id)
+	dictionary['area_select_field'] = TreeNodeChoiceField(Area.objects.filter(area_children_set__isnull=True).only('name'), empty_label="All").widget.render('area', area_id, attrs={"class": "form-control"})
 	return render(request, 'area_access/area_access.html', dictionary)
 
 

@@ -16,7 +16,7 @@
 		<li>Or, enter a custom date range</li>
 	</ul>
 	<form id="view_records" action="{% url 'area_access' %}" class="form-inline" method="get" style="margin-top: 15px; width: 500px;">
-		<div class="form-group col-md-3">Date range:</div>
+		<div class="form-group col-md-3 form-control-static">Date range:</div>
 		<div class="form-group">
 			<div class="form-group">
 				<div class="datetimepicker-container">
@@ -30,7 +30,7 @@
 			</div>
 		</div>
 		<div style="margin-top: 15px">
-			<div class="form-group col-md-3">Area:</div>
+			<div class="form-group col-md-3 form-control-static">Area:</div>
 			<div class="form-group">
 				{{ area_select_field }}
 			</div>
