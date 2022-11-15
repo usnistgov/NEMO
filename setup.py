@@ -33,7 +33,7 @@ setup(
 		'drf-flex-fields==1.0.0',
 		'drf-excel==2.1.0',
 		'ldap3==2.9.1',
-		'Pillow==9.2.0',
+		'Pillow==9.3.0',
 		'pymodbus==2.5.3',
 		'python-dateutil==2.8.2',
 		'pytz==2022.6',
