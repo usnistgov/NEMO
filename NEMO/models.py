@@ -555,7 +555,7 @@ class User(BaseModel):
 		emails = []
 		if email_notification in [EmailNotificationType.BOTH_EMAILS, EmailNotificationType.MAIN_EMAIL]:
 			emails.append(self.email)
-		if email_notification in [EmailNotificationType.BOTH_EMAILS, EmailNotificationType.ALTERNATE_EMAIL]:
+		if self.get_preferences().email_alternate and email_notification in [EmailNotificationType.BOTH_EMAILS, EmailNotificationType.ALTERNATE_EMAIL]:
 			emails.append(self.preferences.email_alternate)
 		return emails
 
