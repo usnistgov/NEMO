@@ -33,7 +33,7 @@ setup(
 		'ldap3==2.9.1',
 		'python-dateutil==2.8.2',
 		'requests==2.28.1',
-		'Pillow==9.2.0',
+		'Pillow==9.3.0',
 		'django-mptt==0.13.4',
 		'pymodbus==2.5.3',
 	],
