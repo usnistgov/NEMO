@@ -4,38 +4,21 @@
 	{% block before_pagination %}{% endblock %}
 	{% if page %}
 		{% with paginator=page.paginator %}
-			<div class="pagination pull-right">
-				<select id="results_per_page" onchange="window.location = '?o={{ paginator.order_by }}&p={{ page.number }}&pp='+this.value">
-					<option value="5" {% if paginator.per_page == 5 %}selected{% endif %}>5</option>
-					<option value="25" {% if paginator.per_page == 25 %}selected{% endif %}>25</option>
-					<option value="50" {% if paginator.per_page == 50 %}selected{% endif %}>50</option>
-					<option value="100" {% if paginator.per_page == 100 %}selected{% endif %}>100</option>
-					<option value="0" {% if paginator.per_page == paginator.count %}selected{% endif %}>All</option>
-				</select>
-				<label for="results_per_page">results per page</label>
-			</div>
+            {% block pagination_header %}
+                <div class="pagination pull-right">
+                    {% include "pagination/pagination_selector.html" %}
+                </div>
+            {% endblock %}
 
             <div class="table-responsive" style="width: 100%">
 			    {% block pagination_content %}{% endblock %}
             </div>
 
-			<div class="pagination pull-right">
-				<span class="step-links">
-					{% if page.has_previous %}
-						<a href="?o={{ paginator.order_by }}&p=1&pp={{ paginator.per_page }}">&laquo; first</a>
-						<a href="?o={{ paginator.order_by }}&p={{ page.previous_page_number }}&pp={{ paginator.per_page }}">previous</a>
-					{% endif %}
-
-					<span class="current">
-						Page {{ page.number }} of {{ paginator.num_pages }}
-					</span>
-
-					{% if page.has_next %}
-						<a href="?o={{ paginator.order_by }}&p={{ page.next_page_number }}&pp={{ paginator.per_page }}">next</a>
-						<a href="?o={{ paginator.order_by }}&p={{ paginator.num_pages }}&pp={{ paginator.per_page }}">last &raquo;</a>
-					{% endif %}
-				</span>
-			</div>
+			{% block pagination_footer %}
+                <div class="pagination pull-right">
+                    {% include "pagination/pagination_pages.html" %}
+                </div>
+            {% endblock %}
 		{% endwith %}
 	{% else %}
 		{% block table_empty_content %}{% endblock %}
