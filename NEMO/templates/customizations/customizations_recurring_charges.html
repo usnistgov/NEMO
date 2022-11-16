@@ -21,6 +21,14 @@
             </div>
         </div>
         <div class="form-group">
+            <label class="control-label col-md-2">Customer validation</label>
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="recurring_charges_skip_customer_validation" {% if recurring_charges_skip_customer_validation %}checked{% endif %} value="enabled">Check this box to skip customer validation (inactive or access has expired).</label><br/>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-2" for="recurring_charges_category">Category</label>
             <div class="col-md-3">
                 <select class="form-control" id="recurring_charges_category" name="recurring_charges_category">

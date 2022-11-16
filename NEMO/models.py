@@ -1745,7 +1745,9 @@ class RecurringConsumableCharge(BaseModel):
 		return recurrence.after(today, inc=inc) if recurrence else None
 
 	def invalid_customer(self):
-		if self.customer:
+		from NEMO.views.customization import RecurringChargesCustomization
+		skip_customer = RecurringChargesCustomization.get_bool("recurring_charges_skip_customer_validation")
+		if self.customer and not skip_customer:
 			if not self.customer.is_active:
 				return "This user is inactive"
 			if self.customer.access_expiration and self.customer.access_expiration < datetime.date.today():
@@ -1829,9 +1831,12 @@ class RecurringConsumableCharge(BaseModel):
 				raise ValidationError(errors)
 			# Validate if we have everything to charge
 			from NEMO.forms import ConsumableWithdrawForm
+			from NEMO.views.customization import RecurringChargesCustomization
+			skip_customer = RecurringChargesCustomization.get_bool("recurring_charges_skip_customer_validation")
 			charge_form = ConsumableWithdrawForm({"customer": self.customer.id, "project": self.project.id, "consumable": self.consumable.id, "quantity": self.quantity})
 			if not charge_form.is_valid():
-				raise ValidationError(charge_form.errors)
+				if not skip_customer or list(charge_form.errors.keys()) != ["customer"]:
+					raise ValidationError(charge_form.errors)
 
 	def save_with_user(self, user: User, *args, **kwargs):
 		self.last_updated_by = user

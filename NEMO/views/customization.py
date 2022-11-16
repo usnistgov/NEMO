@@ -283,7 +283,8 @@ class RecurringChargesCustomization(CustomizationBase):
 		"recurring_charges_name": "Recurring charges",
 		"recurring_charges_lock": "",
 		"recurring_charges_category": "",
-		"recurring_charges_force_quantity": ""
+		"recurring_charges_force_quantity": "",
+		"recurring_charges_skip_customer_validation": ""
 	}
 
 	def __init__(self, key, title, order):
