@@ -5,13 +5,22 @@ from typing import List
 from django.contrib import messages
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import staff_member_required
 from NEMO.exceptions import ProjectChargeException
 from NEMO.forms import ConsumableWithdrawForm, RecurringConsumableChargeForm
 from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, User
-from NEMO.utilities import EmailCategory, as_timezone, render_email_template, send_mail
+from NEMO.utilities import (
+	BasicDisplayTable,
+	EmailCategory,
+	as_timezone,
+	export_format_datetime,
+	format_datetime,
+	render_email_template,
+	send_mail,
+)
 from NEMO.views.customization import EmailsCustomization, RecurringChargesCustomization, get_media_file_contents
 from NEMO.views.pagination import SortedPaginator
 from NEMO.views.policy import check_billing_to_project
@@ -101,6 +110,51 @@ def recurring_charges(request):
 	page = SortedPaginator(RecurringConsumableCharge.objects.all(), request, order_by="name").get_current_page()
 	dictionary = {"page": page, "extended_permissions": extended_permissions(request)}
 	return render(request, 'consumables/recurring_charges.html', dictionary)
+
+
+@staff_member_required
+@require_GET
+def export_recurring_charges(request):
+	all_one_quantity = set(list(RecurringConsumableCharge.objects.values_list("quantity", flat=True)))
+	table = BasicDisplayTable()
+	table.add_header(("name", "Name"))
+	if len(all_one_quantity) > 1:
+		table.add_header(("quantity", "Quantity"))
+	table.add_header(("item", "Item"))
+	table.add_header(("customer", "Customer"))
+	table.add_header(("project", "Project"))
+	table.add_header(("frequency", "Frequency"))
+	table.add_header(("last_charge", "Last charge"))
+	table.add_header(("next_charge", "Next charge"))
+	table.add_header(("errors", "Errors"))
+
+	for charge in RecurringConsumableCharge.objects.all():
+		charge: RecurringConsumableCharge = charge
+		next_charge = charge.next_charge()
+		errors = []
+		if not charge.is_empty() and not next_charge:
+			errors.append("This item expired")
+		if charge.invalid_customer():
+			errors.append(charge.invalid_customer())
+		if charge.invalid_project():
+			errors.append(charge.invalid_project())
+		table.add_row({
+			"name": charge.name,
+			"quantity": charge.quantity,
+			"item": charge.consumable,
+			"customer": charge.customer,
+			"project": charge.project,
+			"frequency": charge.get_recurrence_display(),
+			"last_charge": format_datetime(charge.last_charge, "SHORT_DATETIME_FORMAT"),
+			"next_charge": format_datetime(next_charge, "SHORT_DATETIME_FORMAT"),
+			"errors": ", ".join(errors)
+		})
+
+	response = table.to_csv()
+	feature_name = RecurringChargesCustomization.get("recurring_charges_name")
+	filename = f"{slugify(feature_name.lower()).replace('-','_')}_{export_format_datetime()}.csv"
+	response["Content-Disposition"] = f'attachment; filename="{filename}"'
+	return response
 
 
 @staff_member_required

@@ -4,9 +4,12 @@
 {% block before_pagination %}
 	<div class="h1 row">
         <div class="col-xs-6 col-sm-4">{{ recurring_charges_name }}</div>
-        {% if extended_permissions %}
-            <div class="col-sm-8 text-right">{% button value="Add item" type="add" url="create_recurring_charge" %}</div>
-        {% endif %}
+        <div class="col-sm-8 text-right">
+            {% button type="export" value="Export" url="export_recurring_charges" target="_blank" %}
+            {% if extended_permissions %}
+                {% button value="Add item" type="add" url="create_recurring_charge" %}
+            {% endif %}
+        </div>
 	</div>
 {% endblock %}
 {% block pagination_content %}
