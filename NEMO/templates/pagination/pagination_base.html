@@ -10,6 +10,7 @@
 					<option value="25" {% if paginator.per_page == 25 %}selected{% endif %}>25</option>
 					<option value="50" {% if paginator.per_page == 50 %}selected{% endif %}>50</option>
 					<option value="100" {% if paginator.per_page == 100 %}selected{% endif %}>100</option>
+					<option value="0" {% if paginator.per_page == paginator.count %}selected{% endif %}>All</option>
 				</select>
 				<label for="results_per_page">results per page</label>
 			</div>

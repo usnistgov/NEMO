@@ -9,6 +9,9 @@ class SortedPaginator(Paginator):
         self.order_by = request.GET.get("o", order_by)
         if object_list and isinstance(object_list, QuerySet) and self.order_by:
             object_list = object_list.order_by(self.order_by)
+        if per_page == "0":
+            self.object_list = object_list
+            per_page = self.count
         super().__init__(object_list, per_page, orphans, allow_empty_first_page)
 
     def get_current_page(self):
