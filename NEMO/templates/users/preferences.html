@@ -34,7 +34,7 @@
 					</div>
 				</div>
 			</div>
-            {% if show_staff_status and user_view != 'day' %}
+            {% if not form.fields.staff_status_view.disabled %}
                 <div class="panel panel-default">
                     <div class="panel-body">
                         <h3>Staff status</h3>

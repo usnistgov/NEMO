@@ -360,20 +360,19 @@ def user_preferences(request):
 	user_view_options = StatusDashboardCustomization.get("dashboard_staff_status_user_view")
 	staff_view_options = StatusDashboardCustomization.get("dashboard_staff_status_staff_view")
 	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ''
+	form = UserPreferencesForm(data=request.POST or None, instance=user.preferences)
+	if not show_staff_status(request) or user_view == 'day':
+		form.fields["staff_status_view"].disabled = True
 	if request.method == 'POST':
-		form = UserPreferencesForm(data=request.POST, instance=user.preferences)
 		if form.is_valid():
 			form.save()
 			messages.success(request, "Your preferences have been saved")
 		else:
 			messages.error(request, "Please correct the errors below:")
-	else:
-		form = UserPreferencesForm(instance=user.preferences)
 	dictionary = {
 		'form': form,
 		'user_preferences': user.get_preferences(),
 		'user_view': user_view,
-		'show_staff_status': show_staff_status(request),
 	}
 	return render(request, 'users/preferences.html', dictionary)
 
