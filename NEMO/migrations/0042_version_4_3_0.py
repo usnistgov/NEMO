@@ -134,7 +134,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='userpreferences',
             name='recurring_charges_reminder_days',
-            field=models.CharField(blank=True, default='7', help_text='The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.', max_length=200, null=True),
+            field=models.CharField(blank=True, default='60,7', help_text='The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.', max_length=200, null=True),
         ),
         migrations.AlterField(
             model_name='userpreferences',
