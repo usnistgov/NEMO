@@ -99,7 +99,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 	attachments = None
 	if task_images:
 		attachments = [create_email_attachment(task_image.image, task_image.image.name) for task_image in task_images]
-	# Send an email to the appropriate staff that a new task has been created:
+	# Email the appropriate staff that a new task has been created:
 	if message:
 		dictionary = {
 			'template_color': bootstrap_primary_color('danger') if task.force_shutdown else bootstrap_primary_color('warning'),
@@ -110,13 +110,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 		}
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
 		message = render_email_template(message, dictionary, request)
-		# Add all recipients, starting with primary owner
-		recipient_users: List[User] = [task.tool.primary_owner]
-		# Add backup owners
-		recipient_users.extend(task.tool.backup_owners.all())
-		# Add facility managers
-		recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
-		recipients = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
+		recipients = get_task_email_recipients(task)
 		if task.tool.notification_email_address:
 			recipients.append(task.tool.notification_email_address)
 		send_mail(subject=subject, content=message, from_email=request.user.email, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
@@ -166,9 +160,7 @@ def cancel(request, task_id):
 
 def send_task_updated_email(task, url, task_images: List[TaskImages] = None):
 	try:
-		facility_managers = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(manager.get_preferences().email_send_task_updates)]
-		if not facility_managers:
-			return
+		recipients = get_task_email_recipients(task)
 		attachments = None
 		if task_images:
 			attachments = [create_email_attachment(task_image.image, task_image.image.name) for task_image in task_images]
@@ -198,7 +190,7 @@ Task resolution description:<br/>
 <br/><br/>
 Visit {url} to view the tool control page for the task.<br/>
 """
-		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=settings.SERVER_EMAIL, to=facility_managers, attachments=attachments, email_category=EmailCategory.TASKS)
+		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=settings.SERVER_EMAIL, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
 	except Exception as error:
 		site_title = ApplicationCustomization.get('site_title')
 		error_message = f"{site_title} was unable to send the task updated email. The error message that was received is: " + str(error)
@@ -314,3 +306,14 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
 	except Exception as e:
 		tasks_logger.exception(e)
 	return task_images
+
+
+def get_task_email_recipients(task: Task) -> List[User]:
+	# Add all recipients, starting with primary owner
+	recipient_users: List[User] = [task.tool.primary_owner]
+	# Add backup owners
+	recipient_users.extend(task.tool.backup_owners.all())
+	# Add facility managers
+	recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
+	recipients = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
+	return recipients
