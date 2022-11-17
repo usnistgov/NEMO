@@ -18,7 +18,7 @@ from NEMO.utilities import (
 	as_timezone,
 	export_format_datetime,
 	format_datetime,
-	render_email_template,
+	queryset_search_filter, render_email_template,
 	send_mail,
 )
 from NEMO.views.customization import EmailsCustomization, RecurringChargesCustomization, get_media_file_contents
@@ -118,6 +118,12 @@ def recurring_charges(request):
 	page = SortedPaginator(RecurringConsumableCharge.objects.all(), request, order_by="name").get_current_page()
 	dictionary = {"page": page, "extended_permissions": extended_permissions(request)}
 	return render(request, "consumables/recurring_charges.html", dictionary)
+
+
+@staff_member_required
+@require_GET
+def search_recurring_charges(request):
+	return queryset_search_filter(RecurringConsumableCharge.objects.all(), ["name", "customer__first_name", "customer__last_name", "customer__username", "project__name"], request, display="search_display")
 
 
 @staff_member_required

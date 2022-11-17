@@ -11,6 +11,13 @@
             {% endif %}
         </div>
 	</div>
+    {% if page %}
+        <div class="row" style="margin-bottom: 25px">
+            <div class="col-sm-6">
+                <input id="search" type="text" aria-label="Search for {{ recurring_charges_name|lower }}" placeholder="Search for {{ recurring_charges_name|lower }}" class="form-control" autofocus>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
 {% block pagination_content %}
     {% regroup page by quantity as different_quantities %}
@@ -59,5 +66,16 @@
     <div>There are no current {{ recurring_charges_name|lower }}. {% if extended_permissions %}Please add some by clicking the "Add item" button above.{% endif %}</div>
 {% endblock %}
 {% block after_pagination %}
-    <script>$('[data-toggle~="tooltip"]').tooltip({container: 'body'});</script>
+    <script>
+        $('[data-toggle~="tooltip"]').tooltip({container: 'body'});
+		function get_charge(jquery_event, search_selection, dataset_name)
+		{
+			window.location.href = "{% url 'edit_recurring_charge' 999 %}".replace('999', search_selection.id);
+		}
+		function on_load()
+		{
+			$("#search").autocomplete('recurring_charges', get_charge, '{% url 'search_recurring_charges' %}', true).focus();
+		}
+		window.addEventListener('load', on_load, true);
+    </script>
 {% endblock %}

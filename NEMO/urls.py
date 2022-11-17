@@ -252,6 +252,7 @@ urlpatterns += [
 	path("clear_recurring_charge/<int:recurring_charge_id>/", consumables.clear_recurring_charge, name="clear_recurring_charge"),
 	path("delete_recurring_charge/<int:recurring_charge_id>/", consumables.delete_recurring_charge, name="delete_recurring_charge"),
 	path("export_recurring_charges/", consumables.export_recurring_charges, name="export_recurring_charges"),
+	path("search_recurring_charges/", consumables.search_recurring_charges, name="search_recurring_charges"),
 
 	# Training:
 	path("training/", training.training, name="training"),

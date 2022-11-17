@@ -1848,6 +1848,14 @@ class RecurringConsumableCharge(BaseModel):
 		self.save_with_user(user)
 		self.charge()
 
+	def search_display(self):
+		display_attributes = [self.name]
+		if self.customer:
+			display_attributes.append(str(self.customer))
+		if self.project:
+			display_attributes.append(str(self.project))
+		return " - ".join(display_attributes)
+
 	def __str__(self):
 		return self.name
 
