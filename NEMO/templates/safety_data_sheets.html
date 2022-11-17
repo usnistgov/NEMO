@@ -12,16 +12,24 @@
     <h1 style="margin-top:0">
         Safety data sheets
     </h1>
-    <div class="row" style="margin-bottom: 20px">
+    <div class="row" style="margin-bottom: 20px; margin-right: -30px">
         <div class="col-sm-5">
             <input id="search" type="text" aria-label="Chemical search" placeholder="Search for a chemical name or keyword" class="form-control" autofocus>
         </div>
-        <div class="col-sm-7 checkbox">
+        <div class="col-sm-5 checkbox">
             <label><input type="checkbox" id="search_keywords" onchange="$('td:nth-child({{ hazards|length|add:2 }}),th:nth-child({{ hazards|length|add:2 }})').toggle();$('#search').trigger('keyup');"/>check this box to show and search through keywords</label>
         </div>
+        {% if chemicals and user.is_staff %}
+            <div class="col-sm-2 text-right hidden-xs" style="padding: 0">
+                {% button type="export" value="Export" url="export_safety_data_sheets" target="_blank" %}
+            </div>
+            <div class="col-sm-2 text-left visble-xs hidden-lg hidden-md hidden-sm" style="z-index: 999">
+                {% button type="export" value="Export" url="export_safety_data_sheets" target="_blank" %}
+            </div>
+        {% endif %}
     </div>
     {% if chemicals %}
-        <div class="container" style="bottom: 45px;top: 165px;padding:0; position: absolute; max-height: 100%; overflow-y: auto;overflow-x: hidden; margin-top: 25px;">
+        <div class="container" style="bottom: 45px;top: 175px;padding:0; position: absolute; max-height: 100%; overflow-y: auto;overflow-x: hidden; margin-top: 25px;">
             <table class="table table-align-middle table-responsive table-bordered table-condensed table-hover thead-light" style="overflow: auto; height: 1px;table-layout: fixed;">
                 <thead class="sticky">
                     <tr>

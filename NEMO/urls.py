@@ -377,6 +377,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# Chemical Safety Data Sheet
 		path("safety_data_sheets/", safety_data_sheets.safety_data_sheets, name="safety_data_sheets"),
+		path("export_safety_data_sheets/", safety_data_sheets.export_safety_data_sheets, name="export_safety_data_sheets"),
 
 		# Billing:
 		path("billing/", usage.billing, name="billing"),
