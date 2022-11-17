@@ -29,18 +29,19 @@ consumables_logger = getLogger(__name__)
 
 
 @staff_member_required
-@require_http_methods(['GET', 'POST'])
+@require_http_methods(["GET", "POST"])
 def consumables(request):
 	if request.method == "GET":
 		from NEMO.rates import rate_class
+
 		rate_dict = rate_class.get_consumable_rates(Consumable.objects.all())
 
 		dictionary = {
-			'users': User.objects.filter(is_active=True),
-			'consumables': Consumable.objects.filter(visible=True).order_by('category', 'name'),
-			'rates': rate_dict,
+			"users": User.objects.filter(is_active=True),
+			"consumables": Consumable.objects.filter(visible=True).order_by("category", "name"),
+			"rates": rate_dict,
 		}
-		return render(request, 'consumables/consumables.html', dictionary)
+		return render(request, "consumables/consumables.html", dictionary)
 	elif request.method == "POST":
 		form = ConsumableWithdrawForm(request.POST)
 		if form.is_valid():
@@ -56,20 +57,20 @@ def consumables(request):
 
 
 def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
-	request.session.setdefault('withdrawals', [])
-	withdrawals: List = request.session.get('withdrawals')
+	request.session.setdefault("withdrawals", [])
+	withdrawals: List = request.session.get("withdrawals")
 	if withdrawals is not None:
 		withdrawal_dict = {
-			'customer': str(withdrawal.customer),
-			'customer_id': withdrawal.customer_id,
-			'consumable': str(withdrawal.consumable),
-			'consumable_id': withdrawal.consumable_id,
-			'project': str(withdrawal.project),
-			'project_id': withdrawal.project_id,
-			'quantity': withdrawal.quantity
+			"customer": str(withdrawal.customer),
+			"customer_id": withdrawal.customer_id,
+			"consumable": str(withdrawal.consumable),
+			"consumable_id": withdrawal.consumable_id,
+			"project": str(withdrawal.project),
+			"project_id": withdrawal.project_id,
+			"quantity": withdrawal.quantity,
 		}
 		withdrawals.append(withdrawal_dict)
-	request.session['withdrawals'] = withdrawals
+	request.session["withdrawals"] = withdrawals
 
 
 @staff_member_required
@@ -77,10 +78,10 @@ def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
 def remove_withdraw_at_index(request, index: str):
 	try:
 		index = int(index)
-		withdrawals: List = request.session.get('withdrawals')
+		withdrawals: List = request.session.get("withdrawals")
 		if withdrawals:
 			del withdrawals[index]
-			request.session['withdrawals'] = withdrawals
+			request.session["withdrawals"] = withdrawals
 	except Exception as e:
 		consumables_logger.exception(e)
 	return render(request, "consumables/consumables_order.html")
@@ -89,19 +90,26 @@ def remove_withdraw_at_index(request, index: str):
 @staff_member_required
 @require_GET
 def clear_withdrawals(request):
-	if 'withdrawals' in request.session:
-		del request.session['withdrawals']
+	if "withdrawals" in request.session:
+		del request.session["withdrawals"]
 	return render(request, "consumables/consumables_order.html")
 
 
 @staff_member_required
 @require_POST
 def make_withdrawals(request):
-	withdrawals: List = request.session.setdefault('withdrawals', [])
+	withdrawals: List = request.session.setdefault("withdrawals", [])
 	for withdraw in withdrawals:
-		make_withdrawal(consumable_id=withdraw['consumable_id'], merchant=request.user, customer_id=withdraw['customer_id'], quantity=withdraw['quantity'], project_id=withdraw['project_id'], request=request)
-	del request.session['withdrawals']
-	return redirect('consumables')
+		make_withdrawal(
+			consumable_id=withdraw["consumable_id"],
+			merchant=request.user,
+			customer_id=withdraw["customer_id"],
+			quantity=withdraw["quantity"],
+			project_id=withdraw["project_id"],
+			request=request,
+		)
+	del request.session["withdrawals"]
+	return redirect("consumables")
 
 
 @staff_member_required
@@ -109,7 +117,7 @@ def make_withdrawals(request):
 def recurring_charges(request):
 	page = SortedPaginator(RecurringConsumableCharge.objects.all(), request, order_by="name").get_current_page()
 	dictionary = {"page": page, "extended_permissions": extended_permissions(request)}
-	return render(request, 'consumables/recurring_charges.html', dictionary)
+	return render(request, "consumables/recurring_charges.html", dictionary)
 
 
 @staff_member_required
@@ -129,7 +137,6 @@ def export_recurring_charges(request):
 	table.add_header(("errors", "Errors"))
 
 	for charge in RecurringConsumableCharge.objects.all():
-		charge: RecurringConsumableCharge = charge
 		next_charge = charge.next_charge()
 		errors = []
 		if not charge.is_empty() and not next_charge:
@@ -138,21 +145,23 @@ def export_recurring_charges(request):
 			errors.append(charge.invalid_customer())
 		if charge.invalid_project():
 			errors.append(charge.invalid_project())
-		table.add_row({
-			"name": charge.name,
-			"quantity": charge.quantity,
-			"item": charge.consumable,
-			"customer": charge.customer,
-			"project": charge.project,
-			"frequency": charge.get_recurrence_display(),
-			"last_charge": format_datetime(charge.last_charge, "SHORT_DATETIME_FORMAT"),
-			"next_charge": format_datetime(next_charge, "SHORT_DATETIME_FORMAT"),
-			"errors": ", ".join(errors)
-		})
+		table.add_row(
+			{
+				"name": charge.name,
+				"quantity": charge.quantity,
+				"item": charge.consumable,
+				"customer": charge.customer,
+				"project": charge.project,
+				"frequency": charge.get_recurrence_display(),
+				"last_charge": format_datetime(charge.last_charge, "SHORT_DATETIME_FORMAT"),
+				"next_charge": format_datetime(next_charge, "SHORT_DATETIME_FORMAT"),
+				"errors": ", ".join(errors),
+			}
+		)
 
 	response = table.to_csv()
 	feature_name = RecurringChargesCustomization.get("recurring_charges_name")
-	filename = f"{slugify(feature_name.lower()).replace('-','_')}_{export_format_datetime()}.csv"
+	filename = f"{slugify(feature_name.lower()).replace('-', '_')}_{export_format_datetime()}.csv"
 	response["Content-Disposition"] = f'attachment; filename="{filename}"'
 	return response
 
@@ -216,7 +225,13 @@ def extended_permissions(request) -> bool:
 
 
 def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, request=None):
-	withdraw = ConsumableWithdraw.objects.create(consumable_id=consumable_id, quantity=quantity, merchant=merchant, customer_id=customer_id, project_id=project_id)
+	withdraw = ConsumableWithdraw.objects.create(
+		consumable_id=consumable_id,
+		quantity=quantity,
+		merchant=merchant,
+		customer_id=customer_id,
+		project_id=project_id,
+	)
 	if not withdraw.consumable.reusable:
 		# Only withdraw if it's an actual consumable (not reusable)
 		withdraw.consumable.quantity -= withdraw.quantity
@@ -224,17 +239,23 @@ def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant
 	# Only add notification message if request is present
 	if request:
 		if request.user.id == customer_id:
-			message = f'Your withdrawal of {withdraw.quantity} of {withdraw.consumable}'
+			message = f"Your withdrawal of {withdraw.quantity} of {withdraw.consumable}"
 		else:
-			message = f'The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer}'
-		message += f' was successfully logged and will be billed to project {withdraw.project}.'
+			message = f"The withdrawal of {withdraw.quantity} of {withdraw.consumable} for {withdraw.customer}"
+		message += f" was successfully logged and will be billed to project {withdraw.project}."
 		messages.success(request, message, extra_tags="data-speed=9000")
 
 
 def send_reorder_supply_reminder_email(consumable: Consumable):
-	user_office_email = EmailsCustomization.get('user_office_email_address')
-	message = get_media_file_contents('reorder_supplies_reminder_email.html')
+	user_office_email = EmailsCustomization.get("user_office_email_address")
+	message = get_media_file_contents("reorder_supplies_reminder_email.html")
 	if user_office_email and message:
 		subject = f"Time to order more {consumable.name}"
-		rendered_message = render_email_template(message, {'item': consumable})
-		send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=[consumable.reminder_email], email_category=EmailCategory.SYSTEM)
+		rendered_message = render_email_template(message, {"item": consumable})
+		send_mail(
+			subject=subject,
+			content=rendered_message,
+			from_email=user_office_email,
+			to=[consumable.reminder_email],
+			email_category=EmailCategory.SYSTEM,
+		)
