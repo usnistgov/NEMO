@@ -541,7 +541,7 @@ def render_email_template(template, dictionary: dict, request=None):
 	return Template(template).render(make_context(dictionary, request or EmptyHttpRequest()))
 
 
-def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request) -> HttpResponse:
+def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request, display="__str__") -> HttpResponse:
 	"""
 	This function reuses django admin search result to implement our own autocomplete.
 	Its usage is the same as ModelAdmin, it needs a base queryset, list of fields and a search query
@@ -555,7 +555,7 @@ def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request
 		if search_use_distinct:
 			search_qs = search_qs.distinct()
 		from NEMO.templatetags.custom_tags_and_filters import json_search_base_with_extra_fields
-		data = json_search_base_with_extra_fields(search_qs, *search_fields)
+		data = json_search_base_with_extra_fields(search_qs, *search_fields, display=display)
 	else:
 		data = "This request can only be made as an ajax call"
 	return HttpResponse(data, "application/json")

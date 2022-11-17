@@ -64,7 +64,7 @@ def json_search_base(items_to_search, display="__str__"):
 
 
 @register.simple_tag
-def json_search_base_with_extra_fields(items_to_search, *extra_fields):
+def json_search_base_with_extra_fields(items_to_search, *extra_fields, display="__str__"):
 	"""
 	This tag is similar to the json_search_base filter, but adds extra information upon request.
 	The type of object is always provided in the JSON output. Thus, you have a heterogeneous collection
@@ -74,8 +74,11 @@ def json_search_base_with_extra_fields(items_to_search, *extra_fields):
 	result = "["
 	for item in items_to_search:
 		object_type = item.__class__.__name__.lower()
-		result += '{{"name":"{0}", "id":"{1}", "type":"{2}"'.format(escape(str(item)), item.id, object_type)
-		for x in extra_fields:
+		attr = getattr(item, display, None)
+		item_display = attr() if callable(attr) else attr
+		result += '{{"name":"{0}", "id":"{1}", "type":"{2}"'.format(escape(item_display), item.id, object_type)
+		# remove name just in case it's also given as extra fields (it would clash with search result name)
+		for x in [field for field in extra_fields if field != 'name']:
 			if hasattr(item, x):
 				result += ', "{0}":"{1}"'.format(x, getattr(item, x))
 		result += "},"
