@@ -1,4 +1,3 @@
-from NEMO.views.customization import ApplicationCustomization
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -7,6 +6,7 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 from NEMO.decorators import staff_member_required
 from NEMO.forms import AccountForm, ProjectForm
 from NEMO.models import Account, ActivityHistory, MembershipHistory, Project, ProjectDocuments, User
+from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.pagination import SortedPaginator
 
 
@@ -156,7 +156,11 @@ def remove_document_from_project(request, project_id:int, document_id:int):
 	document = get_object_or_404(ProjectDocuments, pk=document_id)
 	project = get_object_or_404(Project, id=project_id)
 	document.delete()
-	dictionary = {"documents": project.project_documents.all(), "project": project}
+	dictionary = {
+		"documents": project.project_documents.all(),
+		"project": project,
+		"allow_document_upload": ApplicationCustomization.get_bool("project_allow_document_upload")
+	}
 	return render(request, "accounts_and_projects/documents_for_project.html", dictionary)
 
 
@@ -166,7 +170,11 @@ def add_document_to_project(request, project_id:int):
 	project = get_object_or_404(Project, id=project_id)
 	for f in request.FILES.getlist('project_documents'):
 		ProjectDocuments.objects.create(document=f, project=project)
-	dictionary = {"documents": project.project_documents.all(), "project": project}
+	dictionary = {
+		"documents": project.project_documents.all(),
+		"project": project,
+		"allow_document_upload": ApplicationCustomization.get_bool("project_allow_document_upload"),
+	}
 	return render(request, "accounts_and_projects/documents_for_project.html", dictionary)
 
 
