@@ -63,13 +63,14 @@
                                         <span class="grey">{{ project.start_date }}</span>
                                     </div>
                                 {% endif %}
-                                <div style="height:10px"></div>
-                                <div id="add_user_to_project_{{ project.id }}">
-                                    <label class="control-label">Users:<input id="search_user_for_project_{{ project.id }}" type="text" class="form-control user_search" placeholder="Search for a user to add" data-project-id="{{ project.id }}" style="min-width: 250px;"></label>
-                                </div>
                                 <div id="project_{{ project.id }}_users">
                                     {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
                                 </div>
+								{% if allow_document_upload or project.project_documents.all %}
+									<div id="project_{{ project.id }}_documents">
+										{% include 'accounts_and_projects/documents_for_project.html' with documents=project.project_documents.all %}
+									</div>
+								{% endif %}
                             </div>
                         </div>
                     {% endif %}
@@ -98,6 +99,16 @@
 		{
 			let complete_callback = ajax_complete_callback('Unable to remove user from project');
 			$("#project_" + project_id + "_users").load("{% url 'remove_user_from_project' %}", {'user_id': user_id, 'project_id': project_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
+		}
+        function add_document_to_project(project_id, form)
+        {
+            let complete_callback = ajax_complete_callback('Unable to add document to project');
+            $("#project_" + project_id + "_documents").load_multipart(form.action, form, complete_callback);
+		}
+        function remove_document_from_project(url, project_id)
+		{
+			let complete_callback = ajax_complete_callback('Unable to remove document from project');
+			$("#project_" + project_id + "_documents").load(url, {'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
 		}
 		function on_load()
 		{

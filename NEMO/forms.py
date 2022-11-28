@@ -461,22 +461,6 @@ class StaffAbsenceForm(ModelForm):
 		fields = "__all__"
 
 
-class UserDocumentsForm(ModelForm):
-	document = FileField(label="Documents", required=False)
-
-	class Meta:
-		model = UserDocuments
-		fields = ["document"]
-
-
-class ProjectDocumentsForm(ModelForm):
-	document = FileField(label="Documents", required=False)
-
-	class Meta:
-		model = ProjectDocuments
-		fields = ["document"]
-
-
 def nice_errors(obj, non_field_msg="General form errors") -> ErrorDict:
 	result = ErrorDict()
 	error_dict = obj.errors if isinstance(obj, BaseForm) else obj.message_dict if isinstance(obj, ValidationError) else {}

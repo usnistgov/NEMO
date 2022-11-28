@@ -529,18 +529,41 @@ function matcher(items, search_fields)
 	};
 }
 
-// This jQuery plugin integrates Twitter Typeahead directly with default parameters & search function.
-//
-// Example usage:
-// function on_select(jquery_event, search_selection, dataset_name)
-// {
-//     ... called when an item is selected ...
-// }
-// $('#search').autocomplete('fruits', on_select, [{name:'apple', id:1}, {name:'banana', id:2}, {name:'cherry', id:3}]);
-// It can also be used with a URL
-// $('#search').autocomplete('fruits', on_select, 'search_url');
 (function($)
 {
+	// This jquery plugin is an extension of .load() that will work with multipart form-data
+	// Example usage:
+	// ("#my-div-element").load_multipart("http://example.com/submit", $("#my_form")[0], complete_callback);
+	$.fn.load_multipart = function(url, form, callback)
+	{
+		let self = this;
+		let response;
+		$.ajax(
+		{
+			url: url,
+			type: "POST",
+			data: new FormData(form),
+			contentType: false,
+			cache: false,
+			processData:false,
+			success: function(data) { response = arguments; self.html(data); },
+			complete: callback && function( jqXHR, status )
+			{
+				self.each( callback, response || [ jqXHR.responseText, status, jqXHR ] );
+			}
+		});
+		return self;
+	}
+	// This jQuery plugin integrates Twitter Typeahead directly with default parameters & search function.
+	//
+	// Example usage:
+	// function on_select(jquery_event, search_selection, dataset_name)
+	// {
+	//     ... called when an item is selected ...
+	// }
+	// $('#search').autocomplete('fruits', on_select, [{name:'apple', id:1}, {name:'banana', id:2}, {name:'cherry', id:3}]);
+	// It can also be used with a URL
+	// $('#search').autocomplete('fruits', on_select, 'search_url');
 	$.fn.autocomplete = function(dataset_name, on_select, items_or_url, hide_type)
 	{
 		hide_type = hide_type || false;

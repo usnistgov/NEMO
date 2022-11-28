@@ -14,7 +14,7 @@
 			{{ form.non_field_errors }}
 		</div>
 	{% endif %}
-	<form method="post" action="{% url 'create_project' %}" class="form-horizontal">
+	<form method="post" action="{% url 'create_project' %}" class="form-horizontal" enctype="multipart/form-data">
 		{% csrf_token %}
 		<div class="form-group">
 			<label for="name" class="control-label col-sm-2"><b>Name</b></label>
@@ -68,6 +68,17 @@
 				{{ form.start_date.errors|striptags }}
 			</div>
         </div>
+		{% if allow_document_upload %}
+			<div class="form-group">
+            <label for="project_documents" class="control-label col-sm-2">Documents</label>
+            <div class="col-sm-4">
+				<input type="file" id="project_documents" name="project_documents" class="form-control-static" multiple>
+            </div>
+            <div class="col-sm-6 form-control-static danger-highlight">
+				{{ form.project_documents.errors|striptags }}
+			</div>
+        </div>
+		{% endif %}
 		<div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
                 <div class="checkbox">
