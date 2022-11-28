@@ -58,15 +58,19 @@ from NEMO.models import (
 	MembershipHistory,
 	News,
 	Notification,
+	OnboardingPhase,
 	PhysicalAccessLevel,
 	PhysicalAccessLog,
 	Project,
+	Discipline,
+	ProjectDocuments,
 	RecurringConsumableCharge,
 	Reservation,
 	ReservationQuestions,
 	Resource,
 	ResourceCategory,
 	SafetyIssue,
+	SafetyTraining,
 	ScheduledOutage,
 	ScheduledOutageCategory,
 	StaffAbsence,
@@ -87,6 +91,7 @@ from NEMO.models import (
 	TrainingSession,
 	UsageEvent,
 	User,
+	UserDocuments,
 	UserPreferences,
 	UserType,
 	record_active_state,
@@ -494,6 +499,11 @@ class ProjectAdminForm(forms.ModelForm):
 			self.fields["principal_investigators"].initial = self.instance.manager_set.all()
 
 
+class ProjectDocumentsInline(admin.TabularInline):
+	model = ProjectDocuments
+	extra = 1
+
+
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
 	fields = (
@@ -511,6 +521,7 @@ class ProjectAdmin(admin.ModelAdmin):
 	filter_horizontal = ("only_allow_tools",)
 	search_fields = ("name", "application_identifier", "account__name")
 	list_filter = ("active", "account", "start_date")
+	inlines = (ProjectDocumentsInline,)
 	form = ProjectAdminForm
 
 	def save_model(self, request, obj, form, change):
@@ -899,15 +910,23 @@ class UserAdminForm(forms.ModelForm):
 		return cleaned_data
 
 
+class UserDocumentsInline(admin.TabularInline):
+	model = UserDocuments
+	extra = 1
+
+
 @register(User)
 class UserAdmin(admin.ModelAdmin):
 	form = UserAdminForm
+	inlines = (UserDocumentsInline,)
 	filter_horizontal = (
 		"groups",
 		"user_permissions",
 		"projects",
 		"managed_projects",
 		"physical_access_levels",
+		"onboarding_phases",
+		"safety_trainings"
 	)
 	fieldsets = (
 		(
@@ -941,6 +960,16 @@ class UserAdmin(admin.ModelAdmin):
 					"superuser_on_tools",
 					"projects",
 					"managed_projects",
+				)
+			},
+		),
+		(
+			"Other information",
+			{
+				"fields": (
+					"discipline",
+					"onboarding_phases",
+					"safety_trainings",
 				)
 			},
 		),
@@ -1482,6 +1511,9 @@ def iframe_content(content, extra_style = "padding-bottom: 75%") -> str:
 	return mark_safe(f'<div style="position: relative; display: block; overflow: hidden; {extra_style}"><iframe style="position: absolute; width:100%; height:100%; border:none" src="data:text/html,{urlencode(content)}"></iframe></div>')
 
 
+admin.site.register(Discipline)
+admin.site.register(SafetyTraining)
+admin.site.register(OnboardingPhase)
 admin.site.register(AccountType)
 admin.site.register(ResourceCategory)
 admin.site.register(Permission)

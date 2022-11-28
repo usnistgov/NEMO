@@ -114,6 +114,7 @@ urls_to_skip = [
 	"reset_tool_counter",
 	"update_safety_issue",
 	"new_reservation",
+	"remove_document_from_project",
 ]
 
 

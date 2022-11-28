@@ -1,3 +1,4 @@
+from NEMO.views.customization import ApplicationCustomization
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -5,7 +6,7 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 
 from NEMO.decorators import staff_member_required
 from NEMO.forms import AccountForm, ProjectForm
-from NEMO.models import Account, ActivityHistory, MembershipHistory, Project, User
+from NEMO.models import Account, ActivityHistory, MembershipHistory, Project, ProjectDocuments, User
 from NEMO.views.pagination import SortedPaginator
 
 
@@ -39,6 +40,7 @@ def select_accounts_and_projects(request, kind=None, identifier=None):
 		"selected_project": selected_project,
 		"accounts_and_projects": set(Account.objects.all()) | set(Project.objects.all()),
 		"users": User.objects.all(),
+		"allow_document_upload": ApplicationCustomization.get_bool("project_allow_document_upload"),
 	}
 	return render(request, "accounts_and_projects/account_and_projects.html", dictionary)
 
@@ -66,24 +68,34 @@ def toggle_active(request, kind, identifier):
 @require_http_methods(["GET", "POST"])
 def create_project(request):
 	form = ProjectForm(request.POST or None)
-	dictionary = {"account_list": Account.objects.all(), "user_list": User.objects.filter(is_active=True), "form": form}
+	dictionary = {
+		"account_list": Account.objects.all(),
+		"user_list": User.objects.filter(is_active=True),
+		"allow_document_upload": ApplicationCustomization.get_bool("project_allow_document_upload"),
+		"form": form
+	}
 	if request.method == "GET":
 		return render(request, "accounts_and_projects/create_project.html", dictionary)
 	if not form.is_valid():
+		if request.FILES.getlist("project_documents") or request.POST.get("remove_documents"):
+			form.add_error(field=None, error="Project document changes were lost, please resubmit them.")
 		return render(request, "accounts_and_projects/create_project.html", dictionary)
-	project = form.save()
-	account_history = MembershipHistory()
-	account_history.authorizer = request.user
-	account_history.action = MembershipHistory.Action.ADDED
-	account_history.child_content_object = project
-	account_history.parent_content_object = project.account
-	account_history.save()
-	project_history = ActivityHistory()
-	project_history.authorizer = request.user
-	project_history.action = project.active
-	project_history.content_object = project
-	project_history.save()
-	return redirect("project", project.id)
+	else:
+		project = form.save()
+		for f in request.FILES.getlist('project_documents'):
+			ProjectDocuments.objects.create(document=f, project=project)
+		account_history = MembershipHistory()
+		account_history.authorizer = request.user
+		account_history.action = MembershipHistory.Action.ADDED
+		account_history.child_content_object = project
+		account_history.parent_content_object = project.account
+		account_history.save()
+		project_history = ActivityHistory()
+		project_history.authorizer = request.user
+		project_history.action = project.active
+		project_history.content_object = project
+		project_history.save()
+		return redirect("project", project.id)
 
 
 @staff_member_required
@@ -136,6 +148,26 @@ def add_user_to_project(request):
 		project.user_set.add(user)
 	dictionary = {"users": project.user_set.all(), "project": project}
 	return render(request, "accounts_and_projects/users_for_project.html", dictionary)
+
+
+@staff_member_required
+@require_POST
+def remove_document_from_project(request, project_id:int, document_id:int):
+	document = get_object_or_404(ProjectDocuments, pk=document_id)
+	project = get_object_or_404(Project, id=project_id)
+	document.delete()
+	dictionary = {"documents": project.project_documents.all(), "project": project}
+	return render(request, "accounts_and_projects/documents_for_project.html", dictionary)
+
+
+@staff_member_required
+@require_POST
+def add_document_to_project(request, project_id:int):
+	project = get_object_or_404(Project, id=project_id)
+	for f in request.FILES.getlist('project_documents'):
+		ProjectDocuments.objects.create(document=f, project=project)
+	dictionary = {"documents": project.project_documents.all(), "project": project}
+	return render(request, "accounts_and_projects/documents_for_project.html", dictionary)
 
 
 @login_required

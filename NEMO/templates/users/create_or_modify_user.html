@@ -33,7 +33,7 @@
         {% url 'history' 'user' form.instance.id as user_history_url %}
         {% if form.instance.id %}<div class="col-xs-6 col-sm-4" style="padding-right: 0">Modify user</div><div class="col-sm-2 text-right" style="padding-left: 0">{% button type="info" icon="glyphicon-list" value="View user history" url=user_history_url %}</div>{% else %}<div class="col-sm-6">New user</div>{% endif %}
     </div>
-	<form class="form-horizontal" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}?next={{ request.GET.next|default:''|urlencode }}">
+	<form id="user_form" class="form-horizontal" enctype="multipart/form-data" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}?next={{ request.GET.next|default:''|urlencode }}">
 		{% csrf_token %}
 		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="user_id">{% endif %}
 		<div class="form-group">
@@ -90,6 +90,23 @@
 						{% endfor %}
 					</select>
 				</div>
+			</div>
+		{% endif %}
+		{% if form.fields.discipline.choices.queryset %}
+			<div class="form-group">
+				<label for="discipline" class="control-label col-sm-2">Main discipline</label>
+				<div class="col-sm-4">
+					<select name="discipline" id="discipline" class="form-control">
+						{% for discipline_id, discipline_name in form.fields.discipline.choices %}
+							<option value="{{ discipline_id }}" {% if discipline_id == form.discipline.value|to_int %}selected{% endif %}>{{ discipline_name|default_if_none:'' }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				{% if form.discipline.errors %}
+					<div class="col-sm-6 form-control-static danger-highlight">
+						{{ form.discipline.errors|striptags }}
+					</div>
+				{% endif %}
 			</div>
 		{% endif %}
 		<div class="form-group">
@@ -287,6 +304,59 @@
 				</div>
 			</div>
 		{% endif %}
+		{% if form.fields.safety_trainings.choices.queryset %}
+			<div class="form-group">
+				<span class="control-label col-sm-2">Safety training</span>
+				<div class="col-sm-8">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<span class="panel-title" style="font-size:inherit">Safety training</span>
+						</div>
+						<div class="panel-body">
+							{% for safety_training_id, safety_training_name in form.fields.safety_trainings.choices %}
+								<div class="checkbox">
+									<label><input name="safety_trainings" type="checkbox" {% if safety_training_id in form.safety_trainings.value %}checked{% endif %} value="{{ safety_training_id }}"> {{ safety_training_name }}</label>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
+		{% endif %}
+		{% if form.fields.onboarding_phases.choices.queryset %}
+			<div class="form-group">
+				<span class="control-label col-sm-2">Onboarding phases</span>
+				<div class="col-sm-8">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<span class="panel-title" style="font-size:inherit">Onboarding phases</span>
+						</div>
+						<div class="panel-body">
+							{% for onboarding_phase_id, onboarding_phase_name in form.fields.onboarding_phases.choices %}
+								<div class="checkbox">
+									<label><input name="onboarding_phases" type="checkbox" {% if onboarding_phase_id in form.onboarding_phases.value %}checked{% endif %} value="{{ onboarding_phase_id }}"> {{ onboarding_phase_name }}</label>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
+		{% endif %}
+		{% if form.instance.user_documents.all or allow_document_upload %}
+			<div class="form-group">
+				<span class="control-label col-sm-2">Documents</span>
+				<div class="col-sm-10">
+					{% for d in form.instance.user_documents.all %}
+						<div id="document_{{ d.id }}"><a href="javascript:mark_document_for_removal('{{ d.id }}')" class="grey hover-black" title="Remove {{ d.filename }}"><span class="glyphicon glyphicon-remove-circle"></span></a> <a href="{{ d.document.url }}" target="_blank" style="margin-right: 5px">{{ d.filename }}</a></div>
+					{% endfor %}
+				{% if allow_document_upload %}
+					<div style="padding-top: 10px">
+						<input id="fileupload" type="file" name="user_documents" multiple>
+					</div>
+				{% endif %}
+				</div>
+			</div>
+		{% endif %}
 		<div class="form-group">
 			<div class="col-sm-offset-2 col-md-10">
                 {% button type="save" value=form.instance.id|yesno:"Save changes,Create user" %}
@@ -339,6 +409,11 @@
 		function remove_tool_qualification(tool_id)
 		{
 			remove_from_list("#qualification-list", "#qualifications_" + tool_id, "This user is not qualified to use any tools.");
+		}
+        function mark_document_for_removal(document_id)
+        {
+            $("#document_"+document_id).remove();
+            $("#user_form").append('<input type="hidden" name="remove_documents" value="'+document_id+'" />');
 		}
 		function on_load()
 		{

@@ -25,6 +25,7 @@ from NEMO.models import (
 	Tool,
 	UsageEvent,
 	User,
+	UserDocuments,
 	record_active_state,
 	record_local_many_to_many_changes,
 )
@@ -75,6 +76,7 @@ def create_or_modify_user(request, user_id):
 		'one_year_from_now': timezone.localdate() + timedelta(days=365),
 		'identity_service_available': identity_service.get('available', False),
 		'identity_service_domains': identity_service.get('domains', []),
+		'allow_document_upload': UserCustomization.get_bool("user_allow_document_upload"),
 	}
 	try:
 		user = User.objects.get(id=user_id)
@@ -136,6 +138,8 @@ def create_or_modify_user(request, user_id):
 		form = UserForm(request.POST, instance=user)
 		dictionary['form'] = form
 		if not form.is_valid():
+			if request.FILES.getlist("user_documents") or request.POST.get("remove_documents"):
+				form.add_error(field=None, error="User document changes were lost, please resubmit them.")
 			return render(request, 'users/create_or_modify_user.html', dictionary)
 
 		# Remove the user account from the domain if it's deactivated, changed domain, or changed username...
@@ -202,6 +206,11 @@ def create_or_modify_user(request, user_id):
 		record_local_many_to_many_changes(request, user, form, 'physical_access_levels')
 		record_local_many_to_many_changes(request, user, form, 'projects')
 		form.save_m2m()
+
+		# Handle file uploads
+		for f in request.FILES.getlist("user_documents"):
+			UserDocuments.objects.create(document=f, user=user)
+		UserDocuments.objects.filter(id__in=request.POST.getlist("remove_documents")).delete()
 
 		message = f"{user} has been added successfully to {site_title}" if user_id == 'new' else f"{user} has been updated successfully"
 		messages.success(request, message)

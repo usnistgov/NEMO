@@ -26,6 +26,17 @@
                 Check this box to only show active users in the user list.
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="user_list_active_only">User document upload</label>
+            <div class="col-md-4">
+                <div class="checkbox">
+					<label><input type="checkbox" name="user_allow_document_upload" {% if user_allow_document_upload %}checked{% endif %} value="enabled">Enable</label>
+				</div>
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Check this box to allow uploading documents to users.
+            </div>
+        </div>
 
         <div class="customization-separation"></div>
     </div>

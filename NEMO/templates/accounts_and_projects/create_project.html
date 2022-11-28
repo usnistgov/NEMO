@@ -14,7 +14,7 @@
 			{{ form.non_field_errors }}
 		</div>
 	{% endif %}
-	<form method="post" action="{% url 'create_project' %}" class="form-horizontal">
+	<form method="post" action="{% url 'create_project' %}" class="form-horizontal" enctype="multipart/form-data">
 		{% csrf_token %}
 		<div class="form-group">
 			<label for="name" class="control-label col-sm-2"><b>Name</b></label>
@@ -44,6 +44,21 @@
 				{{ form.application_identifier.errors|striptags }}
 			</div>
 		</div>
+		{% if form.fields.discipline.choices.queryset %}
+			<div class="form-group">
+				<label for="discipline" class="control-label col-sm-2">Discipline</label>
+				<div class="col-sm-4">
+					<select name="discipline" id="discipline" class="form-control">
+						{% for discipline_id, discipline_name in form.fields.discipline.choices %}
+							<option value="{{ discipline_id }}" {% if discipline_id == form.discipline.value|to_int %}selected{% endif %}>{{ discipline_name|default_if_none:'' }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-sm-6 form-control-static danger-highlight">
+					{{ form.discipline.errors|striptags }}
+				</div>
+			</div>
+		{% endif %}
         <div class="form-group">
             <label for="start_date" class="control-label col-sm-2">Start date</label>
             <div class="col-sm-4">
@@ -53,6 +68,17 @@
 				{{ form.start_date.errors|striptags }}
 			</div>
         </div>
+		{% if allow_document_upload %}
+			<div class="form-group">
+            <label for="project_documents" class="control-label col-sm-2">Documents</label>
+            <div class="col-sm-4">
+				<input type="file" id="project_documents" name="project_documents" class="form-control-static" multiple>
+            </div>
+            <div class="col-sm-6 form-control-static danger-highlight">
+				{{ form.project_documents.errors|striptags }}
+			</div>
+        </div>
+		{% endif %}
 		<div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
                 <div class="checkbox">

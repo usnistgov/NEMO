@@ -352,6 +352,8 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		path("create_account/", accounts_and_projects.create_account, name="create_account"),
 		path("remove_user_from_project/", accounts_and_projects.remove_user_from_project, name="remove_user_from_project"),
 		path("add_user_to_project/", accounts_and_projects.add_user_to_project, name="add_user_to_project"),
+		path("projects/<int:project_id>/remove_document/<int:document_id>/", accounts_and_projects.remove_document_from_project, name="remove_document_from_project"),
+		path("projects/<int:project_id>/add_document/", accounts_and_projects.add_document_to_project, name="add_document_to_project"),
 
 		# Account, project, and user history
 		re_path(r"^history/(?P<item_type>account|project|user)/(?P<item_id>\d+)/$", history.history, name="history"),
