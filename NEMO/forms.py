@@ -7,6 +7,7 @@ from django.forms import (
 	CharField,
 	ChoiceField,
 	DateField,
+	FileField,
 	Form,
 	ImageField,
 	IntegerField,
@@ -26,6 +27,7 @@ from NEMO.models import (
 	Consumable,
 	ConsumableWithdraw,
 	Project,
+	ProjectDocuments,
 	RecurringConsumableCharge,
 	ReservationItemType,
 	SafetyIssue,
@@ -36,6 +38,7 @@ from NEMO.models import (
 	TaskImages,
 	TemporaryPhysicalAccessRequest,
 	User,
+	UserDocuments,
 	UserPreferences,
 )
 from NEMO.utilities import bootstrap_primary_color, format_datetime, quiet_int
@@ -46,34 +49,31 @@ from NEMO.views.policy import check_billing_to_project
 class UserForm(ModelForm):
 	class Meta:
 		model = User
-		fields = [
-			"username",
-			"first_name",
-			"last_name",
-			"email",
-			"badge_number",
-			"access_expiration",
-			"notes",
-			"type",
-			"domain",
-			"is_active",
-			"training_required",
-			"physical_access_levels",
-			"qualifications",
-			"projects",
+		exclude = [
+			"is_staff",
+			"is_service_personnel",
+			"is_technician",
+			"is_facility_manager",
+			"is_superuser",
+			"groups",
+			"user_permissions",
+			"date_joined",
+			"last_login",
+			"managed_projects",
+			"preferences"
 		]
 
 
 class ProjectForm(ModelForm):
 	class Meta:
 		model = Project
-		fields = ["name", "application_identifier", "account", "active", "start_date"]
+		exclude = ["only_allow_tools", "allow_consumable_withdrawals"]
 
 
 class AccountForm(ModelForm):
 	class Meta:
 		model = Account
-		fields = ["name", "active", "type", "start_date"]
+		fields = "__all__"
 
 
 class TaskForm(ModelForm):
@@ -459,6 +459,22 @@ class StaffAbsenceForm(ModelForm):
 	class Meta:
 		model = StaffAbsence
 		fields = "__all__"
+
+
+class UserDocumentsForm(ModelForm):
+	document = FileField(label="Documents", required=False)
+
+	class Meta:
+		model = UserDocuments
+		fields = ["document"]
+
+
+class ProjectDocumentsForm(ModelForm):
+	document = FileField(label="Documents", required=False)
+
+	class Meta:
+		model = ProjectDocuments
+		fields = ["document"]
 
 
 def nice_errors(obj, non_field_msg="General form errors") -> ErrorDict:

@@ -75,6 +75,7 @@ def create_or_modify_user(request, user_id):
 		'one_year_from_now': timezone.localdate() + timedelta(days=365),
 		'identity_service_available': identity_service.get('available', False),
 		'identity_service_domains': identity_service.get('domains', []),
+		'allow_document_upload': UserCustomization.get_bool("user_allow_document_upload"),
 	}
 	try:
 		user = User.objects.get(id=user_id)

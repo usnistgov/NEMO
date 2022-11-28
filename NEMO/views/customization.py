@@ -147,6 +147,7 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_out": "",
 		"calendar_login_logout": "",
 		"project_selection_template": "{{ project.name }}",
+		"project_allow_document_upload": "",
 	}
 
 	def validate(self, name, value):
@@ -173,6 +174,7 @@ class UserCustomization(CustomizationBase):
 		"user_tool_qualification_expiration_days": "",
 		"user_tool_qualification_expiration_never_used_days": "",
 		"user_tool_qualification_cc": "",
+		"user_allow_document_upload": "",
 	}
 
 	def validate(self, name, value):

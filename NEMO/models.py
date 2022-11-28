@@ -43,10 +43,12 @@ from NEMO.utilities import (
 	format_datetime,
 	get_chemical_document_filename,
 	get_hazard_logo_filename,
+	get_project_document_filename,
 	get_recurring_rule,
 	get_task_image_filename,
 	get_tool_document_filename,
 	get_tool_image_filename,
+	get_user_document_filename,
 	render_email_template,
 	send_mail,
 )
@@ -208,6 +210,16 @@ class UserPreferences(BaseModel):
 
 class UserType(BaseModel):
 	name = models.CharField(max_length=50, unique=True)
+
+	def __str__(self):
+		return self.name
+
+	class Meta:
+		ordering = ["name"]
+
+
+class Discipline(BaseModel):
+	name = models.CharField(max_length=200, unique=True, help_text="The name of the discipline")
 
 	def __str__(self):
 		return self.name
@@ -428,6 +440,28 @@ class PhysicalAccessLog(BaseModel):
 		ordering = ['-time']
 
 
+class SafetyTraining(BaseModel):
+	name = models.CharField(max_length=200, unique=True, help_text="The name of the training")
+	display_order = models.IntegerField(help_text="Safety trainings are sorted according to display order. The lowest value category is displayed first in the 'Users' page.")
+
+	class Meta:
+		ordering = ["display_order", "name"]
+
+	def __str__(self):
+		return self.name
+
+
+class OnboardingPhase(BaseModel):
+	name = models.CharField(max_length=200, unique=True, help_text="The name of the onboarding phase")
+	display_order = models.IntegerField(help_text="Onboarding phases are sorted according to display order. The lowest value category is displayed first in the 'Users' page.")
+
+	class Meta:
+		ordering = ["display_order", "name"]
+
+	def __str__(self):
+		return self.name
+
+
 class User(BaseModel):
 	# Personal information:
 	username = models.CharField(max_length=100, unique=True)
@@ -435,7 +469,10 @@ class User(BaseModel):
 	last_name = models.CharField(max_length=100)
 	email = models.EmailField(verbose_name='email address')
 	type = models.ForeignKey(UserType, null=True, blank=True, on_delete=models.SET_NULL)
+	discipline = models.ForeignKey(Discipline, null=True, blank=True, on_delete=models.SET_NULL)
 	domain = models.CharField(max_length=100, blank=True, help_text="The Active Directory domain that the account resides on")
+	onboarding_phases = models.ManyToManyField(OnboardingPhase, blank=True)
+	safety_trainings = models.ManyToManyField(SafetyTraining, blank=True)
 	notes = models.TextField(null=True, blank=True)
 
 	# Physical access fields
@@ -659,6 +696,59 @@ class User(BaseModel):
 
 	def __str__(self):
 		return self.get_full_name()
+
+
+class UserDocuments(BaseModel):
+	user = models.ForeignKey(User, related_name="user_documents", on_delete=models.CASCADE)
+	document = models.FileField(null=True, blank=True, upload_to=get_user_document_filename, verbose_name='Document')
+	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
+	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	def filename(self):
+		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1]
+
+	def link(self):
+		return self.document.url if self.document else self.url
+
+	def __str__(self):
+		return self.filename()
+
+	def clean(self):
+		if not self.document and not self.url:
+			raise ValidationError({'document': 'Either document or URL should be provided.'})
+		elif self.document and self.url:
+			raise ValidationError({'document': 'Choose either document or URL but not both.'})
+
+	class Meta:
+		verbose_name_plural = "User documents"
+		ordering = ['-uploaded_at']
+
+
+# These two auto-delete project documents from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=UserDocuments)
+def auto_delete_file_on_user_document_delete(sender, instance: UserDocuments, **kwargs):
+	"""	Deletes file from filesystem when corresponding `UserDocuments` object is deleted.	"""
+	if instance.document:
+		if os.path.isfile(instance.document.path):
+			os.remove(instance.document.path)
+
+
+@receiver(models.signals.pre_save, sender=UserDocuments)
+def auto_delete_file_on_user_document_change(sender, instance: UserDocuments, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `UserDocuments` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = UserDocuments.objects.get(pk=instance.pk).document
+	except UserDocuments.DoesNotExist:
+		return False
+
+	new_file = instance.document
+	if not old_file == new_file:
+		if os.path.isfile(old_file.path):
+			os.remove(old_file.path)
 
 
 class Tool(BaseModel):
@@ -1495,6 +1585,7 @@ class Project(BaseModel):
 	start_date = models.DateField(null=True, blank=True)
 	account = models.ForeignKey(Account, help_text="All charges for this project will be billed to the selected account.", on_delete=models.CASCADE)
 	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
+	discipline = models.ForeignKey(Discipline, null=True, blank=True, on_delete=models.SET_NULL)
 	only_allow_tools = models.ManyToManyField(Tool, blank=True, help_text="Selected tools will be the only ones allowed for this project.")
 	allow_consumable_withdrawals = models.BooleanField(default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project")
 
@@ -1503,6 +1594,59 @@ class Project(BaseModel):
 
 	def __str__(self):
 		return str(self.name)
+
+
+class ProjectDocuments(BaseModel):
+	project = models.ForeignKey(Project, related_name="project_documents", on_delete=models.CASCADE)
+	document = models.FileField(null=True, blank=True, upload_to=get_project_document_filename, verbose_name='Document')
+	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
+	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	def filename(self):
+		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1]
+
+	def link(self):
+		return self.document.url if self.document else self.url
+
+	def __str__(self):
+		return self.filename()
+
+	def clean(self):
+		if not self.document and not self.url:
+			raise ValidationError({'document': 'Either document or URL should be provided.'})
+		elif self.document and self.url:
+			raise ValidationError({'document': 'Choose either document or URL but not both.'})
+
+	class Meta:
+		verbose_name_plural = "Project documents"
+		ordering = ['-uploaded_at']
+
+
+# These two auto-delete project documents from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=ProjectDocuments)
+def auto_delete_file_on_project_document_delete(sender, instance: ProjectDocuments, **kwargs):
+	"""	Deletes file from filesystem when corresponding `ProjectDocuments` object is deleted.	"""
+	if instance.document:
+		if os.path.isfile(instance.document.path):
+			os.remove(instance.document.path)
+
+
+@receiver(models.signals.pre_save, sender=ProjectDocuments)
+def auto_delete_file_on_project_document_change(sender, instance: ProjectDocuments, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `ProjectDocuments` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = ProjectDocuments.objects.get(pk=instance.pk).document
+	except ProjectDocuments.DoesNotExist:
+		return False
+
+	new_file = instance.document
+	if not old_file == new_file:
+		if os.path.isfile(old_file.path):
+			os.remove(old_file.path)
 
 
 def pre_delete_entity(sender, instance, using, **kwargs):

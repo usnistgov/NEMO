@@ -44,6 +44,21 @@
 				{{ form.application_identifier.errors|striptags }}
 			</div>
 		</div>
+		{% if form.fields.discipline.choices.queryset %}
+			<div class="form-group">
+				<label for="discipline" class="control-label col-sm-2">Discipline</label>
+				<div class="col-sm-4">
+					<select name="discipline" id="discipline" class="form-control">
+						{% for discipline_id, discipline_name in form.fields.discipline.choices %}
+							<option value="{{ discipline_id }}" {% if discipline_id == form.discipline.value|to_int %}selected{% endif %}>{{ discipline_name|default_if_none:'' }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-sm-6 form-control-static danger-highlight">
+					{{ form.discipline.errors|striptags }}
+				</div>
+			</div>
+		{% endif %}
         <div class="form-group">
             <label for="start_date" class="control-label col-sm-2">Start date</label>
             <div class="col-sm-4">

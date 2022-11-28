@@ -51,6 +51,12 @@
                                     <label class="control-label">Identifier:</label>
                                     <span class="grey">{{ project.application_identifier }}</span>
                                 </div>
+								{% if project.discipline %}
+									<div>
+										<label class="control-label">Discipline:</label>
+										<span class="grey">{{ project.discipline }}</span>
+									</div>
+								{% endif %}
                                 {% if project.start_date %}
                                     <div>
                                         <label class="control-label">Start Date:</label>

@@ -479,7 +479,7 @@ def get_tool_image_filename(tool, filename):
 def get_tool_document_filename(tool_documents, filename):
 	from django.template.defaultfilters import slugify
 
-	tool_name = slugify(tool_documents.tool)
+	tool_name = slugify(tool_documents.tool.name)
 	return f"tool_documents/{tool_name}/{filename}"
 
 
@@ -496,6 +496,20 @@ def get_chemical_document_filename(chemical, filename):
 
 	chemical_name = slugify(chemical.name)
 	return f"chemical_documents/{chemical_name}/{filename}"
+
+
+def get_project_document_filename(project_documents, filename):
+	from django.template.defaultfilters import slugify
+
+	project_name = slugify(project_documents.project.name)
+	return f"project_documents/{project_name}/{filename}"
+
+
+def get_user_document_filename(user_documents, filename):
+	from django.template.defaultfilters import slugify
+
+	username = slugify(user_documents.user.username)
+	return f"user_documents/{username}/{filename}"
 
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
