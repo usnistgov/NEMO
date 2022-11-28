@@ -33,7 +33,7 @@
         {% url 'history' 'user' form.instance.id as user_history_url %}
         {% if form.instance.id %}<div class="col-xs-6 col-sm-4" style="padding-right: 0">Modify user</div><div class="col-sm-2 text-right" style="padding-left: 0">{% button type="info" icon="glyphicon-list" value="View user history" url=user_history_url %}</div>{% else %}<div class="col-sm-6">New user</div>{% endif %}
     </div>
-	<form class="form-horizontal" enctype="multipart/form-data" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}?next={{ request.GET.next|default:''|urlencode }}">
+	<form id="user_form" class="form-horizontal" enctype="multipart/form-data" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}?next={{ request.GET.next|default:''|urlencode }}">
 		{% csrf_token %}
 		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="user_id">{% endif %}
 		<div class="form-group">
@@ -345,14 +345,14 @@
 		{% if form.instance.user_documents.all or allow_document_upload %}
 			<div class="form-group">
 				<span class="control-label col-sm-2">Documents</span>
-				<div class="col-sm-4">
-					<ul style="padding-left: 15px">
-						{% for doc in form.instance.user_documents.all %}
-							<li><a href="{{ doc.document.url }}" target="_blank" style="margin-right: 5px">{{ doc.filename }}</a></li>
-						{% endfor %}
-					</ul>
+				<div class="col-sm-10">
+					{% for d in form.instance.user_documents.all %}
+						<div id="document_{{ d.id }}"><a href="javascript:mark_document_for_removal('{{ d.id }}')" class="grey hover-black" title="Remove {{ d.filename }}"><span class="glyphicon glyphicon-remove-circle"></span></a> <a href="{{ d.document.url }}" target="_blank" style="margin-right: 5px">{{ d.filename }}</a></div>
+					{% endfor %}
 				{% if allow_document_upload %}
-					<input id="fileupload" type="file" name="documents" multiple>
+					<div style="padding-top: 10px">
+						<input id="fileupload" type="file" name="user_documents" multiple>
+					</div>
 				{% endif %}
 				</div>
 			</div>
@@ -409,6 +409,11 @@
 		function remove_tool_qualification(tool_id)
 		{
 			remove_from_list("#qualification-list", "#qualifications_" + tool_id, "This user is not qualified to use any tools.");
+		}
+        function mark_document_for_removal(document_id)
+        {
+            $("#document_"+document_id).remove();
+            $("#user_form").append('<input type="hidden" name="remove_documents" value="'+document_id+'" />');
 		}
 		function on_load()
 		{

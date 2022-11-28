@@ -77,6 +77,8 @@ def create_project(request):
 	if request.method == "GET":
 		return render(request, "accounts_and_projects/create_project.html", dictionary)
 	if not form.is_valid():
+		if request.FILES.getlist("project_documents") or request.POST.get("remove_documents"):
+			form.add_error(field=None, error="Project document changes were lost, please resubmit them.")
 		return render(request, "accounts_and_projects/create_project.html", dictionary)
 	else:
 		project = form.save()
