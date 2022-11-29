@@ -75,55 +75,29 @@ def customization(key, title, order=999):
 	return customization_wrapper
 
 
-def staff_member_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
-	"""
-	Decorator for views that checks that the user is logged in and is a staff member.
-	"""
-	actual_decorator = user_passes_test(
-		lambda u: u.is_active and u.is_staff, login_url=login_url, redirect_field_name=redirect_field_name
-	)
-	if view_func:
-		return actual_decorator(view_func)
-	return actual_decorator
+# Utility function that returns a permission decorator based on the django user_passes_test decorator
+# (see multiple examples below)
+def permission_decorator(test_func):
+	def decorator(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
+		actual_decorator = user_passes_test(
+			test_func,
+			login_url=login_url,
+			redirect_field_name=redirect_field_name,
+		)
+		if view_func:
+			return actual_decorator(view_func)
+		return actual_decorator
+	return decorator
 
 
-def administrator_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
-	"""
-	Decorator for views that checks that the user is logged in and is an administrator.
-	"""
-	actual_decorator = user_passes_test(
-		lambda u: u.is_active and u.is_superuser, login_url=login_url, redirect_field_name=redirect_field_name
-	)
-	if view_func:
-		return actual_decorator(view_func)
-	return actual_decorator
-
-
-def facility_manager_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
-	"""
-	Decorator for views that checks that the user is logged in and is an facility manager.
-	"""
-	actual_decorator = user_passes_test(
-		lambda u: u.is_active and u.is_facility_manager, login_url=login_url, redirect_field_name=redirect_field_name
-	)
-	if view_func:
-		return actual_decorator(view_func)
-	return actual_decorator
-
-
-def staff_member_or_tool_superuser_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
-	"""
-	Decorator for views that checks that the user is logged in and is either a staff member or a superuser
-	on a tool (any tool).
-	"""
-	actual_decorator = user_passes_test(
-		lambda u: u.is_active and (u.is_staff or u.is_tool_superuser),
-		login_url=login_url,
-		redirect_field_name=redirect_field_name,
-	)
-	if view_func:
-		return actual_decorator(view_func)
-	return actual_decorator
+administrator_required = permission_decorator(lambda u: u.is_active and u.is_superuser)
+staff_member_or_tool_superuser_required = permission_decorator(lambda u: u.is_active and (u.is_staff or u.is_tool_superuser))
+facility_manager_required = permission_decorator(lambda u: u.is_active and u.is_facility_manager)
+user_office_required = permission_decorator(lambda u: u.is_active and u.is_user_office)
+staff_member_required = permission_decorator(lambda u: u.is_active and u.is_staff)
+accounting_required = permission_decorator(lambda u: u.is_active and u.is_accounting_officer)
+staff_member_or_user_office_required = permission_decorator(lambda u: u.is_active and (u.is_staff or u.is_user_office))
+accounting_or_user_office_required = permission_decorator(lambda u: u.is_active and (u.is_accounting_officer or u.is_user_office))
 
 
 # Use this decorator annotation to replace another existing function. The first parameter of
