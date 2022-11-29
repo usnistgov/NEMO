@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import any_staff_required
 from NEMO.forms import EmailBroadcastForm
 from NEMO.models import Account, Area, Project, Tool, User, UserType
 from NEMO.utilities import EmailCategory, export_format_datetime, render_email_template, send_mail
@@ -79,7 +79,7 @@ def send_email(request):
 	return render(request, "acknowledgement.html", dictionary)
 
 
-@staff_member_required
+@any_staff_required
 @require_GET
 def email_broadcast(request, audience=""):
 	dictionary = {}
@@ -100,7 +100,7 @@ def email_broadcast(request, audience=""):
 	return render(request, "email/email_broadcast.html", dictionary)
 
 
-@staff_member_required
+@any_staff_required
 @require_GET
 def compose_email(request):
 	try:
@@ -131,7 +131,7 @@ def compose_email(request):
 	return render(request, "email/compose_email.html", dictionary)
 
 
-@staff_member_required
+@any_staff_required
 @require_GET
 def export_email_addresses(request):
 	try:
@@ -156,7 +156,7 @@ def export_email_addresses(request):
 		return render(request, "email/email_broadcast.html", dictionary)
 
 
-@staff_member_required
+@any_staff_required
 @require_POST
 def send_broadcast_email(request):
 	content = get_media_file_contents("generic_email.html")
@@ -221,7 +221,7 @@ def send_broadcast_email(request):
 	return redirect("email_broadcast")
 
 
-@staff_member_required
+@any_staff_required
 @require_POST
 def email_preview(request):
 	generic_email_template = get_media_file_contents("generic_email.html")

@@ -7,12 +7,12 @@ from django.shortcuts import get_object_or_404, render
 from django.utils.text import capfirst, slugify
 from django.views.decorators.http import require_GET
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import any_staff_required
 from NEMO.models import Account, ActivityHistory, MembershipHistory, Project, User
 from NEMO.utilities import BasicDisplayTable, export_format_datetime
 
 
-@staff_member_required
+@any_staff_required
 @require_GET
 def history(request, item_type, item_id):
 	if item_type == "account":

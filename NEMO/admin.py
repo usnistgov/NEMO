@@ -49,6 +49,7 @@ from NEMO.models import (
 	ContactInformation,
 	ContactInformationCategory,
 	Customization,
+	Discipline,
 	Door,
 	EmailLog,
 	Interlock,
@@ -62,7 +63,6 @@ from NEMO.models import (
 	PhysicalAccessLevel,
 	PhysicalAccessLog,
 	Project,
-	Discipline,
 	ProjectDocuments,
 	RecurringConsumableCharge,
 	Reservation,
@@ -939,9 +939,11 @@ class UserAdmin(admin.ModelAdmin):
 				"fields": (
 					"is_active",
 					"is_staff",
+					"is_user_office",
+					"is_accounting_officer",
+					"is_service_personnel",
 					"is_facility_manager",
 					"is_technician",
-					"is_service_personnel",
 					"is_superuser",
 					"training_required",
 					"groups",
@@ -1511,6 +1513,21 @@ def iframe_content(content, extra_style = "padding-bottom: 75%") -> str:
 	return mark_safe(f'<div style="position: relative; display: block; overflow: hidden; {extra_style}"><iframe style="position: absolute; width:100%; height:100%; border:none" src="data:text/html,{urlencode(content)}"></iframe></div>')
 
 
+def has_admin_site_permission(request):
+	"""
+	Return True if the given HttpRequest has permission to view
+	*at least one* page in the admin site.
+	In our case, anyone with a staff permission should be able
+	to access the admin site
+	"""
+	user: User = request.user
+	return user.is_active and (user.is_staff or user.is_user_office or user.is_accounting_officer or user.is_facility_manager)
+
+
+# Register our new admin permission
+admin.site.has_permission = has_admin_site_permission
+
+# Register other models
 admin.site.register(Discipline)
 admin.site.register(SafetyTraining)
 admin.site.register(OnboardingPhase)

@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import facility_manager_required
 from NEMO.models import News
 from NEMO.utilities import format_datetime
 from NEMO.views.notifications import create_news_notification, delete_notification, get_notifications
@@ -38,7 +38,7 @@ def view_archived_news(request, page=1):
 	return render(request, "news/archived_news.html", dictionary)
 
 
-@staff_member_required
+@facility_manager_required
 @require_POST
 def archive_story(request, story_id):
 	try:
@@ -51,13 +51,13 @@ def archive_story(request, story_id):
 	return redirect(reverse("view_recent_news"))
 
 
-@staff_member_required
+@facility_manager_required
 @require_GET
 def new_news_form(request):
 	return render(request, "news/new_news_form.html")
 
 
-@staff_member_required
+@facility_manager_required
 @require_GET
 def news_update_form(request, story_id):
 	dictionary = {}
@@ -68,7 +68,7 @@ def news_update_form(request, story_id):
 	return render(request, "news/news_update_form.html", dictionary)
 
 
-@staff_member_required
+@facility_manager_required
 @require_POST
 def publish(request, story_id=None):
 	now = timezone.now()

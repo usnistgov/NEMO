@@ -3,14 +3,14 @@ from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import accounting_or_user_office_or_manager_required
 from NEMO.forms import AccountForm, ProjectForm
 from NEMO.models import Account, ActivityHistory, MembershipHistory, Project, ProjectDocuments, User
 from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.pagination import SortedPaginator
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_GET
 def accounts_and_projects(request):
 	all_accounts = Account.objects.all().order_by("name")
@@ -21,7 +21,7 @@ def accounts_and_projects(request):
 	return render(request, "accounts_and_projects/accounts_and_projects.html", dictionary)
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_GET
 def select_accounts_and_projects(request, kind=None, identifier=None):
 	selected_project = None
@@ -45,7 +45,7 @@ def select_accounts_and_projects(request, kind=None, identifier=None):
 	return render(request, "accounts_and_projects/account_and_projects.html", dictionary)
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_POST
 def toggle_active(request, kind, identifier):
 	if kind == "account":
@@ -64,7 +64,7 @@ def toggle_active(request, kind, identifier):
 	return redirect(request.META.get("HTTP_REFERER", "accounts_and_projects"))
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_http_methods(["GET", "POST"])
 def create_project(request):
 	form = ProjectForm(request.POST or None)
@@ -98,7 +98,7 @@ def create_project(request):
 		return redirect("project", project.id)
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_http_methods(["GET", "POST"])
 def create_account(request):
 	form = AccountForm(request.POST or None)
@@ -116,7 +116,7 @@ def create_account(request):
 	return redirect("account", account.id)
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_POST
 def remove_user_from_project(request):
 	user = get_object_or_404(User, id=request.POST["user_id"])
@@ -133,7 +133,7 @@ def remove_user_from_project(request):
 	return render(request, "accounts_and_projects/users_for_project.html", dictionary)
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_POST
 def add_user_to_project(request):
 	user = get_object_or_404(User, id=request.POST["user_id"])
@@ -150,7 +150,7 @@ def add_user_to_project(request):
 	return render(request, "accounts_and_projects/users_for_project.html", dictionary)
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_POST
 def remove_document_from_project(request, project_id:int, document_id:int):
 	document = get_object_or_404(ProjectDocuments, pk=document_id)
@@ -164,7 +164,7 @@ def remove_document_from_project(request, project_id:int, document_id:int):
 	return render(request, "accounts_and_projects/documents_for_project.html", dictionary)
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_POST
 def add_document_to_project(request, project_id:int):
 	project = get_object_or_404(Project, id=project_id)

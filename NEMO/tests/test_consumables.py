@@ -3,12 +3,12 @@ from typing import Optional
 
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
-from django.test.testcases import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from NEMO.forms import RecurringConsumableChargeForm
-from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge
+from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, User
 from NEMO.tests.test_utilities import (
 	create_user_and_project,
 	login_as,
@@ -205,7 +205,7 @@ class ConsumableTestCase(TestCase):
 			"quantity": 1,
 			"rec_interval": 1,
 		}
-		staff = login_as_staff(self.client)
+		staff = login_as_user_office(self.client)
 		response = self.client.post(reverse("create_recurring_charge"), data, follow=True)
 		# Validation error, Consumable is required
 		self.assertFormError(response, "form",  "consumable", "This field is required.")
@@ -265,7 +265,7 @@ class ConsumableTestCase(TestCase):
 		response = self.client.post(reverse("edit_recurring_charge", args=[charge.id]), data, follow=True)
 		test_response_is_landing_page(self, response)
 		# Login as staff now
-		staff = login_as_staff(self.client)
+		staff = login_as_user_office(self.client)
 		response = self.client.post(reverse("edit_recurring_charge", args=[charge.id]), data, follow=True)
 		self.assertTrue("edit_recurring_charge" not in response.request['PATH_INFO'])
 		self.assertEqual(response.status_code, 200)
@@ -354,9 +354,17 @@ class ConsumableTestCase(TestCase):
 		charge = RecurringConsumableCharge.objects.get(pk=charge.pk)
 		self.assertIsNotNone(charge.customer)
 		self.assertIsNotNone(charge.project)
-		login_as_staff(self.client)
+		login_as_user_office(self.client)
 		response = self.client.get(reverse("clear_recurring_charge", args=[charge.id]))
 		self.assertRedirects(response, reverse("recurring_charges"))
 		charge = RecurringConsumableCharge.objects.get(pk=charge.pk)
 		self.assertIsNone(charge.customer)
 		self.assertIsNone(charge.project)
+
+
+def login_as_user_office(client: Client) -> User:
+	tester, created = User.objects.get_or_create(
+		username="test_staff", first_name="Test", last_name="Staff", is_user_office=True, badge_number=999999
+	)
+	login_as(client, tester)
+	return tester

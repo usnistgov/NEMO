@@ -87,11 +87,13 @@ def json_search_base_with_extra_fields(items_to_search, *extra_fields, display="
 
 
 @register.simple_tag
-def navigation_url(url_name, description):
-	try:
-		return format_html('<li><a href="{}">{}</a></li>', reverse(url_name), description)
-	except NoReverseMatch:
-		return ""
+def navigation_url(url_name, description, *conditions):
+	if not conditions or any(conditions):
+		try:
+			return format_html('<li><a href="{}">{}</a></li>', reverse(url_name), description)
+		except NoReverseMatch:
+			pass
+	return ""
 
 
 @register.simple_tag

@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import staff_member_or_user_office_required, user_office_or_facility_manager_required
 from NEMO.exceptions import ProjectChargeException
 from NEMO.forms import ConsumableWithdrawForm, RecurringConsumableChargeForm
 from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, User
@@ -28,7 +28,7 @@ from NEMO.views.policy import check_billing_to_project
 consumables_logger = getLogger(__name__)
 
 
-@staff_member_required
+@staff_member_or_user_office_required
 @require_http_methods(["GET", "POST"])
 def consumables(request):
 	if request.method == "GET":
@@ -73,7 +73,7 @@ def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
 	request.session["withdrawals"] = withdrawals
 
 
-@staff_member_required
+@staff_member_or_user_office_required
 @require_GET
 def remove_withdraw_at_index(request, index: str):
 	try:
@@ -87,7 +87,7 @@ def remove_withdraw_at_index(request, index: str):
 	return render(request, "consumables/consumables_order.html")
 
 
-@staff_member_required
+@staff_member_or_user_office_required
 @require_GET
 def clear_withdrawals(request):
 	if "withdrawals" in request.session:
@@ -95,7 +95,7 @@ def clear_withdrawals(request):
 	return render(request, "consumables/consumables_order.html")
 
 
-@staff_member_required
+@staff_member_or_user_office_required
 @require_POST
 def make_withdrawals(request):
 	withdrawals: List = request.session.setdefault("withdrawals", [])
@@ -112,7 +112,7 @@ def make_withdrawals(request):
 	return redirect("consumables")
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_GET
 def recurring_charges(request):
 	page = SortedPaginator(RecurringConsumableCharge.objects.all(), request, order_by="name").get_current_page()
@@ -120,13 +120,13 @@ def recurring_charges(request):
 	return render(request, "consumables/recurring_charges.html", dictionary)
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_GET
 def search_recurring_charges(request):
 	return queryset_search_filter(RecurringConsumableCharge.objects.all(), ["name", "customer__first_name", "customer__last_name", "customer__username", "project__name"], request, display="search_display")
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_GET
 def export_recurring_charges(request):
 	all_one_quantity = set(list(RecurringConsumableCharge.objects.values_list("quantity", flat=True)))
@@ -172,7 +172,7 @@ def export_recurring_charges(request):
 	return response
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_http_methods(["GET", "POST"])
 def create_recurring_charge(request, recurring_charge_id: int = None):
 	try:
@@ -205,7 +205,7 @@ def create_recurring_charge(request, recurring_charge_id: int = None):
 	return render(request, "consumables/recurring_charge.html", dictionary)
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_GET
 def delete_recurring_charge(request, recurring_charge_id: int):
 	if not extended_permissions(request):
@@ -216,7 +216,7 @@ def delete_recurring_charge(request, recurring_charge_id: int):
 	return redirect("recurring_charges")
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_GET
 def clear_recurring_charge(request, recurring_charge_id: int):
 	recurring_charge = get_object_or_404(RecurringConsumableCharge, pk=recurring_charge_id)

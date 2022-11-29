@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET
 
-from NEMO.decorators import staff_member_or_tool_superuser_required, staff_member_required
+from NEMO.decorators import any_staff_required, staff_member_or_tool_superuser_required
 from NEMO.models import User
 
 
@@ -20,7 +20,7 @@ def get_projects(request):
 	return JsonResponse(dict(projects=list(projects.values('id', 'name'))))
 
 
-@staff_member_required
+@any_staff_required
 @require_GET
 def get_projects_for_tool_control(request):
 	user_id = request.GET.get('user_id')

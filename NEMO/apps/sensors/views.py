@@ -21,7 +21,7 @@ from NEMO.utilities import (
 )
 
 
-@staff_member_required
+@login_required
 @require_GET
 def sensors(request, category_id=None):
 	selected_category = None
@@ -36,7 +36,7 @@ def sensors(request, category_id=None):
 	)
 
 
-@staff_member_required
+@login_required
 @require_GET
 def sensor_details(request, sensor_id, tab: str = None):
 	sensor = get_object_or_404(Sensor, pk=sensor_id)
@@ -79,7 +79,7 @@ def export_sensor_data(request, sensor_id):
 	return response
 
 
-@staff_member_required
+@login_required
 @require_GET
 @disable_session_expiry_refresh
 def sensor_chart_data(request, sensor_id):
@@ -93,7 +93,7 @@ def sensor_chart_data(request, sensor_id):
 	return JsonResponse(data={"labels": labels, "data": data})
 
 
-@staff_member_required
+@login_required
 @require_GET
 @disable_session_expiry_refresh
 def sensor_alert_log(request, sensor_id):

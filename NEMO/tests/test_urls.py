@@ -314,14 +314,24 @@ def login_as_relevant_user(test_case: TestCase, annotations: List[str]):
 		login_as_user_with_permissions(test_case.client, ["add_areaaccessrecord", "change_areaaccessrecord"])
 	elif "login_required" in annotations:
 		login_as_user(test_case.client)
-	elif "staff_member_required" in annotations or "staff_member_or_tool_superuser_required" in annotations:
+	elif "staff_member_required" in annotations or "staff_member_or_tool_superuser_required" in annotations or "staff_member_or_user_office_required" in annotations:
 		login_as_staff(test_case.client)
 	elif "administrator_required" in annotations:
 		staff = login_as_staff(test_case.client)
 		staff.is_superuser = True
 		staff.save()
 		login_as(test_case.client, staff)
-	elif "facility_manager_required" in annotations:
+	elif "user_office_required" in annotations or "user_office_or_facility_manager_required" in annotations:
+		staff = login_as_staff(test_case.client)
+		staff.is_user_office = True
+		staff.save()
+		login_as(test_case.client, staff)
+	elif "accounting_required" in annotations or "accounting_or_user_office_or_manager_required" in annotations:
+		staff = login_as_staff(test_case.client)
+		staff.is_accounting_officer = True
+		staff.save()
+		login_as(test_case.client, staff)
+	elif "facility_manager_required" in annotations or "any_staff_required" in annotations:
 		staff = login_as_staff(test_case.client)
 		staff.is_facility_manager = True
 		staff.save()

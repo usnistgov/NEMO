@@ -6,12 +6,12 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET
 from mptt.forms import TreeNodeChoiceField
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import facility_manager_required
 from NEMO.forms import ReservationAbuseForm
 from NEMO.models import Area, Reservation, ReservationItemType, Tool, User
 
 
-@staff_member_required
+@facility_manager_required
 @require_GET
 def abuse(request):
 	dictionary = {
@@ -50,7 +50,7 @@ def abuse(request):
 	return render(request, 'abuse/abuse.html', dictionary)
 
 
-@staff_member_required
+@facility_manager_required
 @require_GET
 def user_drill_down(request):
 	try:
