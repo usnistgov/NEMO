@@ -1,5 +1,5 @@
 {% load custom_tags_and_filters %}
-{% if user.is_staff or user.is_user_office or user.is_accounting_office or user.is_facility_manager %}
+{% if user.is_staff or user.is_user_office or user.is_accounting_officer or user.is_facility_manager %}
     {% navigation_url 'abuse' 'Abuse' user.is_facility_manager %}
     {% navigation_url 'accounts_and_projects' 'Accounts and projects' user.is_accounting_officer user.is_user_office user.is_facility_manager %}
     {% navigation_url 'alerts' 'Alerts' user.is_staff user.is_user_office %}

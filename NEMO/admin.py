@@ -985,6 +985,8 @@ class UserAdmin(admin.ModelAdmin):
 		"is_active",
 		"domain",
 		"is_staff",
+		"is_user_office",
+		"is_accounting_officer",
 		"is_technician",
 		"is_service_personnel",
 		"is_facility_manager",
