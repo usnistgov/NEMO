@@ -4,7 +4,7 @@
 {% block before_pagination %}
 	<div class="h1 row" style="margin-top: 0">
         {% url "create_or_modify_user" "new" as new_user_url %}
-        <div class="col-xs-3">Users</div><div class="{% if page %}col-sm-9{% else %}col-sm-3{% endif %} text-right">{% button value="New user" type="add" url=new_user_url %}</div>
+        <div class="col-xs-3">Users</div>{% if not readonly %}<div class="{% if page %}col-sm-9{% else %}col-sm-3{% endif %} text-right">{% button value="New user" type="add" url=new_user_url %}</div>{% endif %}
 	</div>
 	<div class="row" style="margin-bottom: 25px">
 		<div class="col-sm-6">
@@ -36,11 +36,15 @@
 						<td><span class="glyphicon {% if user.is_superuser %}glyphicon-ok success-highlight{% endif %}"></span></td>
 						<td class="text-center button-column-minimum">
                             {% url 'create_or_modify_user' user.id as edit_url %}
-                            {% with next=request.get_full_path|urlencode %}
-                                {% button value="Edit" type="edit" size="small" url=edit_url|concat:"?next="|concat:next %}
-                                {% url "deactivate_user" user.id as deactivate_user_url %}
-							    {% if user.is_active %}{% button type="warn" size="small" icon="glyphicon-ban-circle" value="Deactivate" title="Deactivate user" url=deactivate_user_url %}{% endif %}
-                            {% endwith %}
+                            {% if not readonly %}
+                                {% with next=request.get_full_path|urlencode %}
+                                    {% button value="Edit" type="edit" size="small" url=edit_url|concat:"?next="|concat:next %}
+                                    {% url "deactivate_user" user.id as deactivate_user_url %}
+                                    {% if user.is_active %}{% button type="warn" size="small" icon="glyphicon-ban-circle" value="Deactivate" title="Deactivate user" url=deactivate_user_url %}{% endif %}
+                                {% endwith %}
+                            {% else %}
+                                {% button type="view" size="small" url=edit_url value="View" %}
+                            {% endif %}
 						</td>
 					</tr>
 				{% endfor %}

@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import any_staff_required, user_office_or_facility_manager_required
 from NEMO.forms import UserForm, UserPreferencesForm
 from NEMO.models import (
 	ActivityHistory,
@@ -37,7 +37,7 @@ from NEMO.views.status_dashboard import show_staff_status
 users_logger = getLogger(__name__)
 
 
-@staff_member_required
+@any_staff_required
 @require_GET
 def users(request):
 	user_list = User.objects.all()
@@ -46,16 +46,16 @@ def users(request):
 		user_list = user_list.filter(is_active=True)
 	page = SortedPaginator(user_list, request, order_by="last_name").get_current_page()
 
-	return render(request, "users/users.html", {"page": page})
+	return render(request, "users/users.html", {"page": page, "readonly": readonly_users(request)})
 
 
-@staff_member_required
+@any_staff_required
 @require_GET
 def user_search(request):
 	return queryset_search_filter(User.objects.all(), ["first_name", "last_name", "username"], request)
 
 
-@staff_member_required
+@any_staff_required
 @require_http_methods(['GET', 'POST'])
 def create_or_modify_user(request, user_id):
 	identity_service = get_identity_service()
@@ -68,6 +68,7 @@ def create_or_modify_user(request, user_id):
 	for access in access_levels:
 		dict_area.setdefault(access.area.id, []).append(access)
 
+	readonly = readonly_users(request)
 	dictionary = {
 		'projects': Project.objects.filter(active=True, account__active=True),
 		'tools': Tool.objects.filter(visible=True),
@@ -77,6 +78,7 @@ def create_or_modify_user(request, user_id):
 		'identity_service_available': identity_service.get('available', False),
 		'identity_service_domains': identity_service.get('domains', []),
 		'allow_document_upload': UserCustomization.get_bool("user_allow_document_upload"),
+		'readonly': readonly
 	}
 	try:
 		user = User.objects.get(id=user_id)
@@ -106,7 +108,7 @@ def create_or_modify_user(request, user_id):
 		# display warning if identity service is defined but disabled
 		dictionary['warning'] = 'The identity service is disabled. You will not be able to modify externally managed physical access levels, reset account passwords, or unlock accounts.'
 
-	if request.method == 'GET':
+	if readonly or request.method == 'GET':
 		training_not_required = UserCustomization.get("default_user_training_not_required", raise_exception=False)
 		# Only set training required initial value on new users
 		dictionary['form'] = UserForm(instance=user, initial={"training_required": not training_not_required} if not user else None)
@@ -219,7 +221,7 @@ def create_or_modify_user(request, user_id):
 		return HttpResponseBadRequest('Invalid method')
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_http_methods(['GET', 'POST'])
 def deactivate(request, user_id):
 	dictionary = {
@@ -306,7 +308,7 @@ def deactivate(request, user_id):
 		return redirect('users')
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_POST
 def reset_password(request, user_id):
 	try:
@@ -334,7 +336,7 @@ def reset_password(request, user_id):
 	return render(request, 'acknowledgement.html', dictionary)
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_POST
 def unlock_account(request, user_id):
 	try:
@@ -384,6 +386,11 @@ def user_preferences(request):
 		'user_view': user_view,
 	}
 	return render(request, 'users/preferences.html', dictionary)
+
+
+def readonly_users(request):
+	user: User = request.user
+	return not user.is_facility_manager and not user.is_user_office and (user.is_accounting_officer or user.is_staff)
 
 
 def get_identity_service():

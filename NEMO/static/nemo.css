@@ -881,3 +881,15 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 {
 	border-color: #dc3545!important;
 }
+
+/* Make form-control look like plain text */
+.form-control-plaintext
+{
+    display: block;
+    width: 100%;
+    padding-top: 6px;
+    margin-bottom: 0;
+    background-color: transparent;
+    border: solid transparent;
+    border-width: 1px 0;
+}
