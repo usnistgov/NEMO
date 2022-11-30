@@ -6,7 +6,7 @@
 		<h1>The Feedback page has not been customized yet</h1>
 		<p>
 			Feedback is emailed to an address specified by the {{ site_title }} site administrator.
-			{% if user.is_staff %}
+			{% if user.is_superuser %}
 				Use the <a href="{% url 'customization' %}">customizations page</a>
 				to enter an email address and upload a feedback email template, then all users will be able to send feedback.
 			{% endif %}
