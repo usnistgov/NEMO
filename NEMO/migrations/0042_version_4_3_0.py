@@ -272,4 +272,19 @@ class Migration(migrations.Migration):
             name='safety_trainings',
             field=models.ManyToManyField(blank=True, to='NEMO.SafetyTraining'),
         ),
+        migrations.AddField(
+            model_name='user',
+            name='is_accounting_officer',
+            field=models.BooleanField(default=False, help_text='Designates this user as Accounting officer. Accounting officers can manage projects, view user details, and check usage/billing.', verbose_name='accounting officer'),
+        ),
+        migrations.AddField(
+            model_name='user',
+            name='is_user_office',
+            field=models.BooleanField(default=False, help_text='Designates this user as part of the User Office. User Office staff can create and manage users and projects, charge supplies, check usage etc.', verbose_name='user office'),
+        ),
+        migrations.AlterField(
+            model_name='user',
+            name='is_staff',
+            field=models.BooleanField(default=False, help_text='Designates this user as techinical staff. Technical staff can start remote projects, check maintenance, change configuration, train users etc.', verbose_name='staff'),
+        ),
     ]
