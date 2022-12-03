@@ -152,7 +152,7 @@ class ApplicationCustomization(CustomizationBase):
 		return errors
 
 
-@customization(key="projects_and_accounts", title="Projects & Accounts")
+@customization(key="projects_and_accounts", title="Projects & accounts")
 class ProjectsAccountsCustomization(CustomizationBase):
 	variables = {
 		"project_selection_template": "{{ project.name }}",
