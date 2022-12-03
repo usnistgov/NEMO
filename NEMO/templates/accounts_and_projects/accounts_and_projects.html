@@ -29,7 +29,7 @@
 				{% for account in page %}
 					<tr style="background-color: #f9f9f9">
 						<td id="chevron_{{ account.id }}" data-toggle="collapse" data-target=".projects_{{ account.id }}" onclick="toggle_details($('#chevron_{{ account.id }}'))" style="font-weight: bold">
-							<span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>
+							<span class="glyphicon glyphicon-chevron-{% if account_list_collapse %}right{% else %}down{% endif %} pull-left chevron"></span>
 							{{ account.name }}
 						</td>
 						<td data-toggle="collapse" data-target=".projects_{{ account.id }}" onclick="toggle_details($('#chevron_{{ account.id }}'))"></td>
@@ -49,26 +49,28 @@
 						</td>
 					</tr>
 					{% for project in account.project_set.all %}
-						<tr class="collapse in projects_{{ account.id }}">
-							<td style="padding-left: 28px">{{ project.name }}</td>
-							<td>{{ project.application_identifier }}</td>
-							<td class="text-center">
-								<form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
-									{% csrf_token %}
-									{% if project.active %}
-                                        {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
-									{% else %}
-										{% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
-									{% endif %}
-								</form>
-							</td>
-							<td>
-                                {% url "project" project.id as project_url %}
-                                {% button type="view" size="small" value="View" title="View project" url=project_url %}
-							</td>
-						</tr>
+                        {% if project.active or not project_list_active_only %}
+                            <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
+                                <td style="padding-left: 28px">{{ project.name }}</td>
+                                <td>{{ project.application_identifier }}</td>
+                                <td class="text-center">
+                                    <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
+                                        {% csrf_token %}
+                                        {% if project.active %}
+                                            {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
+                                        {% else %}
+                                            {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
+                                        {% endif %}
+                                    </form>
+                                </td>
+                                <td>
+                                    {% url "project" project.id as project_url %}
+                                    {% button type="view" size="small" value="View" title="View project" url=project_url %}
+                                </td>
+                            </tr>
+                        {% endif %}
 					{% empty %}
-						<tr class="collapse in projects_{{ account.id }}">
+						<tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
 							<td colspan="4" style="padding-left: 28px">
 								<span class="grey">This account does not have any projects</span>
 							</td>

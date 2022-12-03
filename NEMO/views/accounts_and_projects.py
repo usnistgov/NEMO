@@ -13,11 +13,19 @@ from NEMO.views.pagination import SortedPaginator
 @accounting_or_user_office_or_manager_required
 @require_GET
 def accounts_and_projects(request):
-	all_accounts = Account.objects.all().order_by("name")
+	active_only = ProjectsAccountsCustomization.get_bool("account_list_active_only")
+	all_accounts = Account.objects.all().order_by("name").prefetch_related("project_set")
+	if active_only:
+		all_accounts = all_accounts.filter(active=True)
 
 	page = SortedPaginator(all_accounts, request, order_by="name").get_current_page()
 
-	dictionary = {"page": page, "accounts_and_projects": set(Account.objects.all()) | set(Project.objects.all())}
+	dictionary = {
+		"page": page,
+		"accounts_and_projects": set(Account.objects.all()) | set(Project.objects.all()),
+		"project_list_active_only": ProjectsAccountsCustomization.get_bool("project_list_active_only"),
+		"account_list_collapse": ProjectsAccountsCustomization.get_bool("account_list_collapse")
+	}
 	return render(request, "accounts_and_projects/accounts_and_projects.html", dictionary)
 
 

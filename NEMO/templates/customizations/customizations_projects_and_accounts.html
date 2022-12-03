@@ -3,6 +3,37 @@
     <h3 class="customization-section-title">Projects & accounts</h3>
     <form method="POST" action="{% url 'customize' 'projects_and_accounts' %}" class="form-horizontal">
         {% csrf_token %}
+        <div class="form-group" style="margin-bottom: 0">
+            <label class="control-label col-md-2" for="account_list_active_only">Account list</label>
+            <div class="col-md-3">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="account_list_active_only" name="account_list_active_only" {% if account_list_active_only %}checked{% endif %} value="enabled"> Hide inactive accounts</label>
+                </div>
+            </div>
+            <div class="col-md-7 help-block light-grey">
+                Check this box to only show active accounts in the user list.
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0">
+            <div class="col-md-offset-2 col-md-3">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="project_list_active_only" name="project_list_active_only" {% if project_list_active_only %}checked{% endif %} value="enabled"> Hide inactive projects</label>
+                </div>
+            </div>
+            <div class="col-md-7 help-block light-grey">
+                Check this box to only show active projects in the user list.
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-4">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="account_list_collapse" name="account_list_collapse" {% if account_list_collapse %}checked{% endif %} value="enabled"> Collapse project list by default</label>
+                </div>
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                Check this box to collapse account projects by default.
+            </div>
+        </div>
         <div class="form-group {% if errors.project_selection_template %}has-error{% endif %}">
             <label class="control-label col-md-2" for="project_selection_template">Project selection template</label>
             <div class="col-md-5">
@@ -17,7 +48,7 @@
             </div>
         </div>
 		<div class="form-group">
-			<label class="control-label col-md-2">Project document upload</label>
+			<label class="control-label col-md-2">Document upload</label>
 			<div class="col-md-5">
 				<div class="checkbox">
 					<label><input type="checkbox" name="project_allow_document_upload" {% if project_allow_document_upload %}checked{% endif %} value="enabled">Enable project document upload</label>
