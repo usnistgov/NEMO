@@ -6,7 +6,7 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 from NEMO.decorators import accounting_or_user_office_or_manager_required
 from NEMO.forms import AccountForm, ProjectForm
 from NEMO.models import Account, ActivityHistory, MembershipHistory, Project, ProjectDocuments, User
-from NEMO.views.customization import ApplicationCustomization
+from NEMO.views.customization import ProjectsAccountsCustomization
 from NEMO.views.pagination import SortedPaginator
 
 
@@ -40,7 +40,7 @@ def select_accounts_and_projects(request, kind=None, identifier=None):
 		"selected_project": selected_project,
 		"accounts_and_projects": set(Account.objects.all()) | set(Project.objects.all()),
 		"users": User.objects.all(),
-		"allow_document_upload": ApplicationCustomization.get_bool("project_allow_document_upload"),
+		"allow_document_upload": ProjectsAccountsCustomization.get_bool("project_allow_document_upload"),
 	}
 	return render(request, "accounts_and_projects/account_and_projects.html", dictionary)
 
@@ -71,7 +71,7 @@ def create_project(request):
 	dictionary = {
 		"account_list": Account.objects.all(),
 		"user_list": User.objects.filter(is_active=True),
-		"allow_document_upload": ApplicationCustomization.get_bool("project_allow_document_upload"),
+		"allow_document_upload": ProjectsAccountsCustomization.get_bool("project_allow_document_upload"),
 		"form": form
 	}
 	if request.method == "GET":
@@ -159,7 +159,7 @@ def remove_document_from_project(request, project_id:int, document_id:int):
 	dictionary = {
 		"documents": project.project_documents.all(),
 		"project": project,
-		"allow_document_upload": ApplicationCustomization.get_bool("project_allow_document_upload")
+		"allow_document_upload": ProjectsAccountsCustomization.get_bool("project_allow_document_upload")
 	}
 	return render(request, "accounts_and_projects/documents_for_project.html", dictionary)
 
@@ -173,7 +173,7 @@ def add_document_to_project(request, project_id:int):
 	dictionary = {
 		"documents": project.project_documents.all(),
 		"project": project,
-		"allow_document_upload": ApplicationCustomization.get_bool("project_allow_document_upload"),
+		"allow_document_upload": ProjectsAccountsCustomization.get_bool("project_allow_document_upload"),
 	}
 	return render(request, "accounts_and_projects/documents_for_project.html", dictionary)
 

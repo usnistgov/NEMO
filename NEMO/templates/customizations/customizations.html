@@ -9,20 +9,27 @@
     <h1>Customization</h1>
     <p>You can customize portions of {{ site_title }} to suit your organization's needs.</p>
 
-    <ul class="nav nav-tabs" id="tabs">
-        {% for customization_instance in customization.instances %}
-            <li class="{% if customization_instance.key == customization.key %}active{% endif %}">
-                <a id="{{ customization_instance.key }}-tab-link" href="{% url 'customization' customization_instance.key %}">{{ customization_instance.title }}</a>
-            </li>
-        {% endfor %}
-    </ul>
-    <div class="tab-content panel panel-default panel-tab-content">
-        <div class="tab-pane active" id="{{ customization.key }}-tab">
-            {% include customization.template %}
+    <div class="row">
+        <div class="col-sm-3">
+            <ul class="nav nav-pills nav-stacked sticky" id="tabs">
+                {% for customization_instance in customization.instances %}
+                    <li class="{% if customization_instance.key == customization.key %}active{% endif %}">
+                        <a id="{{ customization_instance.key }}-tab-link" href="{% url 'customization' customization_instance.key %}">{{ customization_instance.title }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-sm-9">
+            <div class="tab-content panel panel-default">
+                <div class="tab-pane active" id="{{ customization.key }}-tab">
+                    {% include customization.template %}
+                </div>
+            </div>
         </div>
     </div>
 
 	<script type="application/javascript">
+        sort_elements(document.getElementById('tabs'), "> li");
 		function check_delete_file_before_submit(name)
         {
 			let has_file = $('input[name='+name+']')[0].files.length !== 0;

@@ -1,4 +1,3 @@
-import operator
 from abc import ABC
 from datetime import date, datetime
 from typing import Dict, Iterable
@@ -25,10 +24,9 @@ class CustomizationBase(ABC):
 	variables = {"weekend_access_notification_last_sent": ""}
 	files = []
 
-	def __init__(self, key, title, order):
+	def __init__(self, key, title):
 		self.key = key
 		self.title = title
-		self.order = order
 
 	def template(self) -> str:
 		return f"customizations/customizations_{self.key}.html"
@@ -76,7 +74,7 @@ class CustomizationBase(ABC):
 
 	@classmethod
 	def instances(cls) -> Iterable:
-		return sorted(cls._instances.values(), key=operator.attrgetter("order"))
+		return cls._instances.values()
 
 	@classmethod
 	def get_instance(cls, key):
@@ -138,7 +136,7 @@ class CustomizationBase(ABC):
 				pass
 
 
-@customization(key="application", title="Application", order=1)
+@customization(key="application", title="Application")
 class ApplicationCustomization(CustomizationBase):
 	variables = {
 		"facility_name": "Facility",
@@ -146,6 +144,17 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_in": "",
 		"self_log_out": "",
 		"calendar_login_logout": "",
+	}
+
+	def save(self, request, element=None):
+		errors = super().save(request, element)
+		init_admin_site()
+		return errors
+
+
+@customization(key="projects_and_accounts", title="Projects & Accounts")
+class ProjectsAccountsCustomization(CustomizationBase):
+	variables = {
 		"project_selection_template": "{{ project.name }}",
 		"project_allow_document_upload": "",
 	}
@@ -157,13 +166,8 @@ class ApplicationCustomization(CustomizationBase):
 			except Exception as e:
 				raise ValidationError(str(e))
 
-	def save(self, request, element=None):
-		errors = super().save(request, element)
-		init_admin_site()
-		return errors
 
-
-@customization(key="user", title="User", order=2)
+@customization(key="user", title="User")
 class UserCustomization(CustomizationBase):
 	variables = {
 		"default_user_training_not_required": "",
@@ -201,7 +205,7 @@ class UserCustomization(CustomizationBase):
 				validate_email(email)
 
 
-@customization(key="emails", title="Email addresses", order=2)
+@customization(key="emails", title="Email addresses")
 class EmailsCustomization(CustomizationBase):
 	variables = {
 		"feedback_email_address": "",
@@ -214,7 +218,7 @@ class EmailsCustomization(CustomizationBase):
 		validate_email(value)
 
 
-@customization(key="calendar", title="Calendar", order=3)
+@customization(key="calendar", title="Calendar")
 class CalendarCustomization(CustomizationBase):
 	variables = {
 		"calendar_view": "agendaWeek",
@@ -234,7 +238,7 @@ class CalendarCustomization(CustomizationBase):
 	}
 
 
-@customization(key="dashboard", title="Status dashboard", order=4)
+@customization(key="dashboard", title="Status dashboard")
 class StatusDashboardCustomization(CustomizationBase):
 	variables = {
 		"dashboard_display_not_qualified_areas": "",
@@ -249,7 +253,7 @@ class StatusDashboardCustomization(CustomizationBase):
 	}
 
 
-@customization(key="interlock", title="Interlock", order=5)
+@customization(key="interlock", title="Interlock")
 class InterlockCustomization(CustomizationBase):
 	variables = {
 		"allow_bypass_interlock_on_failure": "",
@@ -258,7 +262,7 @@ class InterlockCustomization(CustomizationBase):
 	}
 
 
-@customization(key="requests", title="User requests", order=6)
+@customization(key="requests", title="User requests")
 class UserRequestsCustomization(CustomizationBase):
 	variables = {
 		"buddy_requests_title": "Buddy requests board",
@@ -279,7 +283,7 @@ class UserRequestsCustomization(CustomizationBase):
 				validate_email(email)
 
 
-@customization(key="recurring_charges", title="Recurring charges", order=6)
+@customization(key="recurring_charges", title="Recurring charges")
 class RecurringChargesCustomization(CustomizationBase):
 	variables = {
 		"recurring_charges_name": "Recurring charges",
@@ -289,8 +293,8 @@ class RecurringChargesCustomization(CustomizationBase):
 		"recurring_charges_skip_customer_validation": ""
 	}
 
-	def __init__(self, key, title, order):
-		super().__init__(key, title, order)
+	def __init__(self, key, title):
+		super().__init__(key, title)
 		self.update_title()
 
 	def context(self) -> Dict:
@@ -312,7 +316,7 @@ class RecurringChargesCustomization(CustomizationBase):
 		return errors
 
 
-@customization(key="templates", title="File & email templates", order=8)
+@customization(key="templates", title="File & email templates")
 class TemplatesCustomization(CustomizationBase):
 	files = [
 		("login_banner", ".html"),
@@ -347,7 +351,7 @@ class TemplatesCustomization(CustomizationBase):
 	]
 
 
-@customization(key="rates", title="Rates", order=9)
+@customization(key="rates", title="Rates")
 class RatesCustomization(CustomizationBase):
 	variables = {"rates_expand_table": ""}
 	files = [("rates", ".json")]

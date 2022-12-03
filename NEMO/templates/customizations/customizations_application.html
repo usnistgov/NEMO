@@ -31,27 +31,6 @@
                 The name of the site to use in all templates/headers.
             </div>
         </div>
-        <div class="form-group {% if errors.project_selection_template %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="project_selection_template">Project selection template</label>
-            <div class="col-md-5">
-                <textarea oninput="auto_size_textarea(this);" id="project_selection_template" name="project_selection_template" class="form-control">{% if errors.project_selection_template %}{{ errors.project_selection_template.value }}{% else %}{{ project_selection_template }}{% endif %}</textarea>
-            </div>
-            <div class="col-md-5 help-block light-grey">
-                {% if errors.project_selection_template %}
-                    {{ errors.project_selection_template.error }}
-                {% else %}
-                    The django template used for rendering project selection when enabling tools and making reservations. The context variable <b>project</b> is provided.
-                {% endif %}
-            </div>
-        </div>
-		<div class="form-group">
-			<label class="control-label col-md-2">Project document upload</label>
-			<div class="col-md-5">
-				<div class="checkbox">
-					<label><input type="checkbox" name="project_allow_document_upload" {% if project_allow_document_upload %}checked{% endif %} value="enabled">Enable project document upload</label>
-				</div>
-			</div>
-		</div>
         <div class="col-md-offset-2">
             {% button type="save" value="Save settings" %}
         </div>
