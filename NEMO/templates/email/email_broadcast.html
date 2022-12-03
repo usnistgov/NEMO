@@ -26,18 +26,31 @@
 			</div>
 		</div>
 
-		<form id="email" method="get" action="{% url 'compose_email' %}">
+		<form class="col-sm-3" id="email" method="get" action="{% url 'compose_email' %}">
 			<input type="hidden" name="audience" value="{{ audience }}">
-			<input type="hidden" id="selection" name="selection">
+            <div class="row" id="selection-list" style="margin-top: 10px; margin-bottom: 15px;">
+            </div>
+            <div class="row">
+                {% button type="save" id="confirm" size="small" value="Confirm" icon="glyphicon-ok-circle" style="display: none" %}
+            </div>
 		</form>
 
 		<script type="text/javascript">
 			$('#search').autocomplete('search_base', set_selection, {{ search_base|json_search_base }});
 			function set_selection(jquery_event, search_selection, dataset_name)
 			{
-				$('#selection').val(search_selection.id);
-				$('#email').submit();
+                add_to_list("#selection-list", "remove_selection", search_selection.id, search_selection.name, "Remove", "selection");
+                $(this).typeahead('val', '').focus();
+                $("#confirm").show();
 			}
+            function remove_selection(id)
+            {
+                $("#selection_" + id).remove();
+                if($("#selection-list").find("input").length === 0)
+                {
+                    $("#confirm").hide();
+                }
+            }
 		</script>
 	{% endif %}
 
