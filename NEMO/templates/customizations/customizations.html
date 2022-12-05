@@ -11,7 +11,7 @@
 
     <div class="row">
         <div class="col-sm-3">
-            <ul class="nav nav-pills nav-stacked sticky" id="tabs">
+            <ul class="nav nav-pills nav-stacked" id="tabs">
                 {% for customization_instance in customization.instances %}
                     <li class="{% if customization_instance.key == customization.key %}active{% endif %}">
                         <a id="{{ customization_instance.key }}-tab-link" href="{% url 'customization' customization_instance.key %}">{{ customization_instance.title }}</a>
