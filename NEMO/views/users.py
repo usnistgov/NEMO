@@ -26,6 +26,7 @@ from NEMO.models import (
 	UsageEvent,
 	User,
 	UserDocuments,
+	UserType,
 	record_active_state,
 	record_local_many_to_many_changes,
 )
@@ -46,7 +47,9 @@ def users(request):
 		user_list = user_list.filter(is_active=True)
 	page = SortedPaginator(user_list, request, order_by="last_name").get_current_page()
 
-	return render(request, "users/users.html", {"page": page, "readonly": readonly_users(request)})
+	dictionary = {"page": page, "user_types": UserType.objects.all(), "readonly": readonly_users(request)}
+
+	return render(request, "users/users.html", dictionary)
 
 
 @any_staff_required

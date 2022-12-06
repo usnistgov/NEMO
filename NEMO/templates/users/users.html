@@ -19,8 +19,11 @@
 					<th>{% include 'pagination/pagination_column.html' with order_by='first_name' name='First Name' %}</th>
 					<th>{% include 'pagination/pagination_column.html' with order_by='last_name' name='Last Name' %}</th>
 					<th>{% include 'pagination/pagination_column.html' with order_by='username' name='Username' %}</th>
+					{% if user_types %}<th>{% include 'pagination/pagination_column.html' with order_by='type' name='Type' %}</th>{% endif %}
 					<th>{% include 'pagination/pagination_column.html' with order_by='is_active' name='Active' %}</th>
 					<th>{% include 'pagination/pagination_column.html' with order_by='is_staff' name='Staff' %}</th>
+					<th>{% include 'pagination/pagination_column.html' with order_by='is_user_office' name='User Office' %}</th>
+					<th>{% include 'pagination/pagination_column.html' with order_by='is_accounting_officer' name='Accounting' %}</th>
 					<th>{% include 'pagination/pagination_column.html' with order_by='is_superuser' name='Admin' %}</th>
 					<th></th>
 				</tr>
@@ -31,8 +34,11 @@
 						<td>{{ user.first_name }}</td>
 						<td>{{ user.last_name }}</td>
 						<td>{{ user.username }}</td>
+						{% if user_types %}<td>{{ user.type|default_if_none:"" }}</td>{% endif %}
 						<td><span class="glyphicon {% if user.is_active %}glyphicon-ok success-highlight{% else %}glyphicon-remove danger-highlight{% endif %}"></span></td>
 						<td><span class="glyphicon {% if user.is_staff %}glyphicon-ok success-highlight{% endif %}"></span></td>
+						<td><span class="glyphicon {% if user.is_user_office %}glyphicon-ok success-highlight{% endif %}"></span></td>
+						<td><span class="glyphicon {% if user.is_accounting_officer %}glyphicon-ok success-highlight{% endif %}"></span></td>
 						<td><span class="glyphicon {% if user.is_superuser %}glyphicon-ok success-highlight{% endif %}"></span></td>
 						<td class="text-center button-column-minimum">
                             {% url 'create_or_modify_user' user.id as edit_url %}
