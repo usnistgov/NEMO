@@ -389,8 +389,9 @@ def user_preferences(request):
 
 
 def readonly_users(request):
+	# Only user office and facility managers can edit user information
 	user: User = request.user
-	return not user.is_facility_manager and not user.is_user_office and (user.is_accounting_officer or user.is_staff)
+	return user.is_any_part_of_staff and not user.is_facility_manager and not user.is_user_office and not user.is_superuser
 
 
 def get_identity_service():

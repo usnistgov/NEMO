@@ -1,25 +1,25 @@
 {% load custom_tags_and_filters %}
-{% if user.is_staff or user.is_user_office or user.is_accounting_officer or user.is_facility_manager %}
-    {% navigation_url 'abuse' 'Abuse' user.is_facility_manager %}
-    {% navigation_url 'accounts_and_projects' 'Accounts and projects' user.is_accounting_officer user.is_user_office user.is_facility_manager %}
-    {% navigation_url 'alerts' 'Alerts' user.is_staff user.is_user_office %}
+{% if user.is_any_part_of_staff %}
+    {% navigation_url 'abuse' 'Abuse' user.is_facility_manager user.is_superuser %}
+    {% navigation_url 'accounts_and_projects' 'Accounts and projects' user.is_accounting_officer user.is_user_office user.is_facility_manager user.is_superuser %}
+    {% navigation_url 'alerts' 'Alerts' user.is_staff user.is_user_office user.is_superuser %}
     {% navigation_url 'api-root' 'API' user.is_superuser %}
-    {% if areas_exist %}{% navigation_url 'area_access' 'Area access' user.is_staff user.is_user_office %}{% endif %}
-    {% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' user.is_staff %}{% endif %}
+    {% if areas_exist %}{% navigation_url 'area_access' 'Area access' user.is_staff user.is_user_office user.is_superuser %}{% endif %}
+    {% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' user.is_staff user.is_superuser %}{% endif %}
     {% navigation_url 'customization' 'Customization' user.is_superuser %}
     {% navigation_url 'admin:index' 'Detailed administration' %}
     {% navigation_url 'email_broadcast' 'Email' %}
     {% navigation_url 'impersonate' 'Impersonate' user.is_superuser %}
-    {% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' user.is_staff %}{% endif %}
-    {% navigation_url 'project_billing' 'Project billing' user.is_accounting_officer user.is_user_office %}
-    {% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' user.is_staff %}{% endif %}
-    {% navigation_url 'recurring_charges' recurring_charges_name user.is_user_office user.is_facility_manager %}
-    {% navigation_url 'remote_work' 'Remote work' user.is_staff %}
-    {% navigation_url 'resources' 'Resources' user.is_staff %}
+    {% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' user.is_staff  user.is_superuser %}{% endif %}
+    {% navigation_url 'project_billing' 'Project billing' user.is_accounting_officer user.is_user_office user.is_superuser %}
+    {% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' user.is_staff user.is_superuser %}{% endif %}
+    {% navigation_url 'recurring_charges' recurring_charges_name user.is_user_office user.is_facility_manager user.is_superuser %}
+    {% navigation_url 'remote_work' 'Remote work' user.is_staff user.is_superuser %}
+    {% navigation_url 'resources' 'Resources' user.is_staff user.is_superuser %}
     {% navigation_url 'sensors' 'Sensor data' %}
-    {% navigation_url 'staff_charges' 'Staff charges' user.is_staff %}
-    {% navigation_url 'consumables' 'Supplies' user.is_staff user.is_user_office %}
-    {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_staff %}{% endif %}
+    {% navigation_url 'staff_charges' 'Staff charges' user.is_staff user.is_superuser %}
+    {% navigation_url 'consumables' 'Supplies' user.is_staff user.is_user_office user.is_superuser %}
+    {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_staff user.is_superuser %}{% endif %}
     {% navigation_url 'users' 'Users' %}
 {% else %}
     {% navigation_url 'projects' 'Projects' user.is_project_pi %}

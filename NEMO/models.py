@@ -581,6 +581,10 @@ class User(BaseModel):
 	def is_project_pi(self):
 		return self.managed_projects.exists()
 
+	@property
+	def is_any_part_of_staff(self):
+		return any([self.is_staff, self.is_accounting_officer, self.is_user_office, self.is_facility_manager, self.is_superuser])
+
 	def get_username(self):
 		return self.username
 

@@ -4,13 +4,15 @@
 {% block content %}
 	<h1>
 		Recent news
-		{% if device == 'desktop' and user.is_facility_manager %}
-            {% button type="add" url="new_news_form" value="Publish new news" style="float: right" %}
-		{% endif %}
+        {% if user.is_any_part_of_staff %}
+		    {% if device == 'desktop' %}
+                {% button type="add" url="new_news_form" value="Publish new news" style="float: right" %}
+            {% elif device == 'mobile' %}<p>{% button type="add" url="new_news_form" value="Publish new news" %}</p>
+		    {% endif %}
+        {% endif %}
 	</h1>
 	{% if news %}
-		{% if user.is_facility_manager %}
-			{% if device == 'mobile' %}<p>{% button type="add" url="new_news_form" value="Publish new news" %}</p>{% endif %}
+		{% if user.is_any_part_of_staff %}
 			<p>Click a news story title to publish an update or archive it.</p>
 		{% endif %}
 		<p>Stories that were updated recently appear first.</p>
@@ -21,9 +23,9 @@
 			<div class="col-sm-12">
 				<h3 style="line-height:1.4">
 					{% if story.id in notifications %}<span class="label label-success">New update</span>{% endif %}
-					{% if user.is_facility_manager %}<a href="{% url 'news_update_form' story.id %}">{% endif %}
+					{% if user.is_any_part_of_staff %}<a href="{% url 'news_update_form' story.id %}">{% endif %}
 					{{ story.title }}
-					{% if user.is_facility_manager %}</a>{% endif %}
+					{% if user.is_any_part_of_staff %}</a>{% endif %}
 				</h3>
 				{% if story.update_count > 2 %}
 					<div id="abridged_story_{{ story.id }}">

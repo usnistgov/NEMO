@@ -1523,7 +1523,7 @@ def has_admin_site_permission(request):
 	to access the admin site
 	"""
 	user: User = request.user
-	return user.is_active and (user.is_staff or user.is_user_office or user.is_accounting_officer or user.is_facility_manager)
+	return user.is_active and (user.is_any_part_of_staff)
 
 
 # Register our new admin permission

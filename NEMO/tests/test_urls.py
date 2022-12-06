@@ -326,7 +326,7 @@ def login_as_relevant_user(test_case: TestCase, annotations: List[str]):
 		staff.is_user_office = True
 		staff.save()
 		login_as(test_case.client, staff)
-	elif "accounting_required" in annotations or "accounting_or_user_office_or_manager_required" in annotations:
+	elif "accounting_required" in annotations or "accounting_or_user_office_required" in annotations:
 		staff = login_as_staff(test_case.client)
 		staff.is_accounting_officer = True
 		staff.save()
