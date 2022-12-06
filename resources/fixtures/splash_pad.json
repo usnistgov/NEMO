@@ -392,7 +392,7 @@
       "first_name": "Assistant",
       "last_name": "Conseil",
       "email": "assistant.conseil@nautilus.com",
-      "type": 2,
+      "type": 1,
       "domain": "",
       "badge_number": "5",
       "access_expiration": null,
