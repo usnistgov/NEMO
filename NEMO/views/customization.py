@@ -68,6 +68,12 @@ class CustomizationBase(ABC):
 		except ValueError as e:
 			raise ValidationError(str(e))
 
+	def validate_int(self, value):
+		try:
+			int(value)
+		except ValueError:
+			raise ValidationError(f"{value} is not a valid integer")
+
 	@classmethod
 	def add_instance(cls, inst):
 		cls._instances[inst.key] = inst
@@ -186,18 +192,12 @@ class UserCustomization(CustomizationBase):
 
 	def validate(self, name, value):
 		if name == "user_tool_qualification_expiration_days" and value:
-			try:
-				int(value)
-			except ValueError:
-				raise ValidationError(f"{value} is not a valid integer")
+			self.validate_int(value)
 		if name in ["user_access_expiration_reminder_days", "user_tool_qualification_reminder_days"] and value:
 			# Check that we have an integer or a list of integers
 			try:
 				for reminder_days in value.split(","):
-					try:
-						int(reminder_days)
-					except ValueError:
-						raise ValidationError(f"{reminder_days} is not a valid integer")
+					self.validate_int(reminder_days)
 			except ValidationError:
 				raise
 			except Exception as e:
