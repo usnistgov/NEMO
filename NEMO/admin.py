@@ -998,10 +998,12 @@ class UserAdmin(admin.ModelAdmin):
 		"is_active",
 		"domain",
 		"is_staff",
+		"is_user_office",
+		"is_accounting_officer",
 		"is_facility_manager",
+		"is_superuser",
 		"is_technician",
 		"is_service_personnel",
-		"is_superuser",
 		"date_joined",
 		"last_login",
 	)
