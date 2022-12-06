@@ -347,6 +347,82 @@
     }
   },
   {
+    "model": "NEMO.user",
+    "pk": 4,
+    "fields": {
+      "username": "commander",
+      "first_name": "Commander",
+      "last_name": "Farragut",
+      "email": "commander.farragut@nautilus.com",
+      "type": 2,
+      "domain": "",
+      "badge_number": "4",
+      "access_expiration": null,
+      "is_active": true,
+      "is_staff": false,
+      "is_accounting_officer": true,
+      "is_service_personnel": false,
+      "is_technician": false,
+      "is_facility_manager": false,
+      "is_superuser": false,
+      "training_required": false,
+      "date_joined": "2012-12-10T16:48:43Z",
+      "last_login": null,
+      "preferences": null,
+      "physical_access_levels": [],
+      "groups": [],
+      "user_permissions": [],
+      "qualifications": [
+        1,
+        2,
+        3
+      ],
+      "projects": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "model": "NEMO.user",
+    "pk": 5,
+    "fields": {
+      "username": "conseil",
+      "first_name": "Assistant",
+      "last_name": "Conseil",
+      "email": "assistant.conseil@nautilus.com",
+      "type": 2,
+      "domain": "",
+      "badge_number": "5",
+      "access_expiration": null,
+      "is_active": true,
+      "is_staff": false,
+      "is_user_office": true,
+      "is_service_personnel": false,
+      "is_technician": false,
+      "is_facility_manager": false,
+      "is_superuser": false,
+      "training_required": false,
+      "date_joined": "2012-12-10T16:48:43Z",
+      "last_login": null,
+      "preferences": null,
+      "physical_access_levels": [],
+      "groups": [],
+      "user_permissions": [],
+      "qualifications": [
+        1,
+        2,
+        3
+      ],
+      "projects": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
     "model": "NEMO.tool",
     "pk": 1,
     "fields": {
