@@ -5,7 +5,7 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 
 from NEMO.decorators import accounting_or_user_office_or_manager_required
 from NEMO.forms import AccountForm, ProjectForm
-from NEMO.models import Account, ActivityHistory, MembershipHistory, Project, ProjectDocuments, User
+from NEMO.models import Account, AccountType, ActivityHistory, MembershipHistory, Project, ProjectDocuments, User
 from NEMO.views.customization import ProjectsAccountsCustomization
 from NEMO.views.pagination import SortedPaginator
 
@@ -22,6 +22,7 @@ def accounts_and_projects(request):
 
 	dictionary = {
 		"page": page,
+		"account_types": AccountType.objects.all(),
 		"accounts_and_projects": set(Account.objects.all()) | set(Project.objects.all()),
 		"project_list_active_only": ProjectsAccountsCustomization.get_bool("project_list_active_only"),
 		"account_list_collapse": ProjectsAccountsCustomization.get_bool("account_list_collapse")
