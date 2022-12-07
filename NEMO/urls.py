@@ -110,7 +110,8 @@ urlpatterns += [
 	path("", landing.landing, name="landing"),
 
 	# Get a list of projects for a user:
-	path("get_projects/", get_projects.get_projects, name="get_projects"),
+	path("get_projects_for_consumables/", get_projects.get_projects_for_consumables, name="get_projects_for_consumables"),
+	path("get_projects_for_training/", get_projects.get_projects_for_training, name="get_projects_for_training"),
 	path("get_projects_for_tool_control/", get_projects.get_projects_for_tool_control, name="get_projects_for_tool_control"),
 	path("get_projects_for_self/", get_projects.get_projects_for_self, name="get_projects_for_self"),
 

@@ -94,7 +94,7 @@
 			$('#customer_search').prop('required', false).hide();
 			$('#chosen_customer').val(search_selection.name).show();
 			$('#customer').val(search_selection.id);
-			ajax_get("{% url 'get_projects' %}", {'user_id': search_selection.id}, update_projects);
+			ajax_get("{% url 'get_projects_for_consumables' %}", {'user_id': search_selection.id}, update_projects);
 		}
 		function update_projects(response, status, xml_http_request)
 		{

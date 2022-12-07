@@ -18,7 +18,7 @@
         <div class="form-group">
             <label class="control-label col-sm-2" for="recurring_charge_name"><b>Name</b></label>
             <div class="col-sm-6 col-md-4">
-                <input required class="form-control" id="recurring_charge_name" name="name" type="text" autocomplete="off" value="{{ form.instance.name }}" {% if form.fields.name.disabled %}disabled{% endif %}/>
+                <input required class="form-control" id="recurring_charge_name" name="name" type="text" autocomplete="off" value="{{ form.instance.name }}" {% if form.fields.name.disabled %}disabled{% endif %} autofocus/>
             </div>
             {% if form.name.errors %}
 				<div class="col-sm-4 col-md-6 form-control-static danger-highlight">
@@ -167,7 +167,7 @@
 			$('#customer_search').hide();
 			$('#chosen_customer').val(search_selection.name).show();
 			$('#customer').val(search_selection.id);
-			ajax_get("{% url 'get_projects' %}", {'user_id': search_selection.id}, [update_projects, callback]);
+			ajax_get("{% url 'get_projects_for_consumables' %}", {'user_id': search_selection.id}, [update_projects, callback]);
 		}
 		function update_projects(response, status, xml_http_request)
 		{
@@ -199,7 +199,7 @@
 		}
         window.addEventListener("load", function ()
         {
-            $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
+            $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }});
             {% if form.cleaned_data %}
                 {% if form.cleaned_data.customer %}
                     fetch_projects(null, {'id': '{{ form.cleaned_data.customer.id }}', 'name': '{{ form.cleaned_data.customer.get_name }}' }, null, function(){$('#project').val('{{ form.cleaned_data.project.id }}');});
