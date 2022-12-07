@@ -6077,14 +6077,46 @@
     "model": "NEMO.recurringconsumablecharge",
     "pk": 1,
     "fields": {
-      "name": "Rental tweezers #1",
+      "name": "Storage bin #1",
       "customer": 2,
       "project": 1,
-      "consumable": 1,
+      "consumable": 3,
+      "quantity": 1,
+      "rec_start": "2022-11-02",
+      "rec_frequency": 2,
+      "rec_interval": 4,
+      "last_updated_by": 1,
+      "last_updated": "2022-11-01T20:10:00Z"
+    }
+  },
+  {
+    "model": "NEMO.recurringconsumablecharge",
+    "pk": 2,
+    "fields": {
+      "name": "Storage bin #2",
+      "customer": 1,
+      "project": 1,
+      "consumable": 3,
+      "quantity": 1,
+      "rec_start": "2022-11-02",
+      "rec_frequency": 2,
+      "rec_interval": 4,
+      "last_updated_by": 1,
+      "last_updated": "2022-11-01T20:10:00Z"
+    }
+  },
+  {
+    "model": "NEMO.recurringconsumablecharge",
+    "pk": 3,
+    "fields": {
+      "name": "Cleanroom gown #1",
+      "customer": 2,
+      "project": 1,
+      "consumable": 4,
       "quantity": 1,
       "rec_start": "2022-11-02",
       "rec_frequency": 1,
-      "rec_interval": 1,
+      "rec_interval": 5,
       "last_updated_by": 1,
       "last_updated": "2022-11-01T20:10:00Z"
     }
@@ -6164,6 +6196,34 @@
       "visible": true,
       "reminder_threshold": 5,
       "reminder_email": "service@nautilus.com",
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 3,
+    "fields": {
+      "name": "Storage bin",
+      "category": null,
+      "quantity": 10,
+      "visible": true,
+      "reusable": true,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 4,
+    "fields": {
+      "name": "Cleanroom gown",
+      "category": null,
+      "quantity": 10,
+      "visible": true,
+      "reusable": true,
+      "reminder_threshold": null,
+      "reminder_email": null,
       "reminder_threshold_reached": false
     }
   },
