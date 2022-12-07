@@ -97,7 +97,7 @@ def calendar(request, item_type=None, item_id=None):
 	areas = Area.objects.filter(requires_reservation=True).only('name')
 
 	# We want to remove areas the user doesn't have access to
-	display_all_areas = CalendarCustomization.get('calendar_display_not_qualified_areas') == 'enabled'
+	display_all_areas = CalendarCustomization.get_bool("calendar_display_not_qualified_areas")
 	if not display_all_areas and areas and user and not user.is_superuser:
 		areas = [area for area in areas if area in user.accessible_areas()]
 
@@ -138,12 +138,12 @@ def calendar(request, item_type=None, item_id=None):
 		'self_login': False,
 		'self_logout': False,
 	}
-	login_logout = ApplicationCustomization.get('calendar_login_logout', raise_exception=False)
-	self_login = ApplicationCustomization.get('self_log_in', raise_exception=False)
-	self_logout = ApplicationCustomization.get('self_log_out', raise_exception=False)
-	if login_logout == 'enabled':
-		dictionary['self_login'] = self_login == 'enabled'
-		dictionary['self_logout'] = self_logout == 'enabled'
+	login_logout = ApplicationCustomization.get_bool("calendar_login_logout", raise_exception=False)
+	self_login = ApplicationCustomization.get_bool("self_log_in", raise_exception=False)
+	self_logout = ApplicationCustomization.get_bool("self_log_out", raise_exception=False)
+	if login_logout:
+		dictionary['self_login'] = self_login
+		dictionary['self_logout'] = self_logout
 	if request.user.is_staff:
 		dictionary['users'] = User.objects.all()
 	return render(request, 'calendar/calendar.html', dictionary)

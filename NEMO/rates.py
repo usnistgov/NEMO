@@ -37,7 +37,7 @@ class Rates(ABC):
 	@staticmethod
 	def get_expand_rates_table() -> bool:
 		from NEMO.views.customization import RatesCustomization
-		return RatesCustomization.get("rates_expand_table", raise_exception=False) == 'enabled'
+		return RatesCustomization.get_bool("rates_expand_table", raise_exception=False)
 
 
 class NISTRates(Rates):

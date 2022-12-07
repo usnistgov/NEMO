@@ -550,11 +550,11 @@ Its last value was {counter.last_reset_value}."""
 
 
 def interlock_bypass_allowed(user: User):
-	return user.is_staff or InterlockCustomization.get('allow_bypass_interlock_on_failure') == 'enabled'
+	return user.is_staff or InterlockCustomization.get_bool("allow_bypass_interlock_on_failure")
 
 
 def interlock_error(action:str, user:User):
-	error_message = InterlockCustomization.get('tool_interlock_failure_message')
+	error_message = InterlockCustomization.get("tool_interlock_failure_message")
 	dictionary = {
 		"message": linebreaksbr(error_message),
 		"bypass_allowed": interlock_bypass_allowed(user),

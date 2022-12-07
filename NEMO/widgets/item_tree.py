@@ -60,7 +60,7 @@ class ItemTree(Widget):
 			area_tree_items = list(area_tree_items)
 			area_tree_items.sort(key=lambda area: area.tree_category)
 
-		display_all_areas = CalendarCustomization.get('calendar_display_not_qualified_areas') == 'enabled'
+		display_all_areas = CalendarCustomization.get_bool("calendar_display_not_qualified_areas")
 		for area in area_tree_items:
 			category = area.tree_category + '/' if area.tree_category else ''
 			is_qualified = True if not display_all_areas else (user and user.is_staff) or (user and area.item in user_accessible_areas)

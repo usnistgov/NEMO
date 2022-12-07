@@ -395,7 +395,7 @@ def log_out_user(user: User):
 
 def able_to_self_log_out_of_area(user):
 	# 'Self log out' must be enabled
-	if not ApplicationCustomization.get('self_log_out') == 'enabled':
+	if not ApplicationCustomization.get_bool("self_log_out"):
 		return False
 	# Check if the user is active
 	if not user.is_active:
@@ -409,7 +409,7 @@ def able_to_self_log_out_of_area(user):
 
 def able_to_self_log_in_to_area(user):
 	# 'Self log in' must be enabled
-	if not ApplicationCustomization.get('self_log_in') == 'enabled':
+	if not ApplicationCustomization.get_bool("self_log_in"):
 		return False
 	# Check if the user is already in an area. If so, the /change_project/ URL can be used to change their project.
 	if user.in_area():
