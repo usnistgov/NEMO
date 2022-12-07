@@ -37,6 +37,7 @@ INSTALLED_APPS = [
 	'rest_framework',
 	'django_filters',
 	'mptt',
+	'auditlog',
 ]
 
 MIDDLEWARE = [
@@ -107,3 +108,18 @@ SECRET_KEY = 'abc123'
 
 ALLOW_CONDITIONAL_URLS = True
 AUTHENTICATION_BACKENDS = ['NEMO.views.authentication.RemoteUserAuthenticationBackend']
+
+# Track changes to user access expiration, roles and managed projects
+AUDITLOG_INCLUDE_TRACKING_MODELS = (
+	{
+		"model": "NEMO.User",
+		"include_fields": ["first_name", "last_name", "username", "email", "access_expiration", "is_staff", "is_user_office", "is_accounting_officer", "is_service_personnel", "is_technician", "is_facility_manager", "is_superuser"],
+	},
+	"NEMO.RecurringConsumableCharge",
+	"NEMO.Project",
+	"NEMO.Account",
+	"NEMO.UsageEvent",
+	"NEMO.AreaAccessRecord",
+	"NEMO.Customization",
+	"NEMO.Qualification",
+)
