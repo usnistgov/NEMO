@@ -37,8 +37,6 @@
                 Check this box to allow uploading documents to users.
             </div>
         </div>
-
-        <div class="customization-separation"></div>
     </div>
     <div class="panel-body">
         <h3 class="customization-section-title">Access expiration reminder</h3>
@@ -66,64 +64,6 @@
                     {{ errors.user_access_expiration_reminder_cc.error }}
                 {% else %}
                     Extra email address to copy when a user access expiration reminder is sent. A comma-separated list can be used.
-                {% endif %}
-            </div>
-        </div>
-        <div class="customization-separation"></div>
-    </div>
-    <div class="panel-body">
-        <h3 class="customization-section-title">Tool qualification expiration</h3>
-        <p>If active, this feature will remove tool qualification from a user if the user has not used the tool after a while or never used it since qualified (configured separately).
-        <p>The <a href="{% url 'customization' 'templates' %}?#tool_qualification_expiration_email_id">user tool qualification expiration email</a> need to be set to enable this feature.</p><br/>
-        <div class="form-group {% if errors.user_tool_qualification_reminder_days %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="user_tool_qualification_reminder_days">Reminder days</label>
-            <div class="col-md-4">
-                <input type="text" id="user_tool_qualification_reminder_days" name="user_tool_qualification_reminder_days" class="form-control" value="{% if errors.user_tool_qualification_reminder_days %}{{ errors.user_tool_qualification_reminder_days.value }}{% else %}{{ user_tool_qualification_reminder_days }}{% endif %}"/>
-            </div>
-            <div class="col-md-6 help-block light-grey">
-                {% if errors.user_tool_qualification_reminder_days %}
-                    {{ errors.user_tool_qualification_reminder_days.error }}
-                {% else %}
-                    The (optional) number of days to send a reminder prior to the user's tool qualification expiration (below). A comma-separated list can be used for multiple reminders. This applies to both expiration cases.
-                {% endif %}
-            </div>
-        </div>
-        <div class="form-group {% if errors.user_tool_qualification_expiration_days %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="user_tool_qualification_expiration_days">Expiration days<br>(previous tool usage)</label>
-            <div class="col-md-4">
-                <input type="number" step="1" id="user_tool_qualification_expiration_days" name="user_tool_qualification_expiration_days" class="form-control" value="{% if errors.user_tool_qualification_expiration_days %}{{ errors.user_tool_qualification_expiration_days.value }}{% else %}{{ user_tool_qualification_expiration_days }}{% endif %}"/>
-            </div>
-            <div class="col-md-6 help-block light-grey">
-                {% if errors.user_tool_qualification_expiration_days %}
-                    {{ errors.user_tool_qualification_expiration_days.error }}
-                {% else %}
-                    The number of days before the user's tool qualification expires since the user last used the tool.
-                {% endif %}
-            </div>
-        </div>
-        <div class="form-group {% if errors.user_tool_qualification_expiration_never_used_days %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="user_tool_qualification_expiration_never_used_days">Expiration days<br>(no tool usage)</label>
-            <div class="col-md-4">
-                <input type="number" step="1" id="user_tool_qualification_expiration_never_used_days" name="user_tool_qualification_expiration_never_used_days" class="form-control" value="{% if errors.user_tool_qualification_expiration_never_used_days %}{{ errors.user_tool_qualification_expiration_never_used_days.value }}{% else %}{{ user_tool_qualification_expiration_never_used_days }}{% endif %}"/>
-            </div>
-            <div class="col-md-6 help-block light-grey">
-                {% if errors.user_tool_qualification_expiration_never_used_days %}
-                    {{ errors.user_tool_qualification_expiration_never_used_days.error }}
-                {% else %}
-                    The number of days before the user's tool qualification expires since the user qualified for the first time.
-                {% endif %}
-            </div>
-        </div>
-        <div class="form-group {% if errors.user_tool_qualification_cc %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="user_tool_qualification_cc">Reminder/expiration CC</label>
-            <div class="col-md-4">
-                <input type="text" id="user_tool_qualification_cc" name="user_tool_qualification_cc" class="form-control" value="{% if errors.user_tool_qualification_cc %}{{ errors.user_tool_qualification_cc.value }}{% else %}{{ user_tool_qualification_cc }}{% endif %}" placeholder="information@example.org"/>
-            </div>
-            <div class="col-md-6 help-block light-grey">
-                {% if errors.user_tool_qualification_cc %}
-                    {{ errors.user_tool_qualification_cc.error }}
-                {% else %}
-                    Extra email address to copy when a user's tool qualification reminder/expiration email is sent. A comma-separated list can be used.
                 {% endif %}
             </div>
         </div>

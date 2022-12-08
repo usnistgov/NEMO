@@ -183,17 +183,11 @@ class UserCustomization(CustomizationBase):
 		"user_list_active_only": "",
 		"user_access_expiration_reminder_days": "",
 		"user_access_expiration_reminder_cc": "",
-		"user_tool_qualification_reminder_days": "",
-		"user_tool_qualification_expiration_days": "",
-		"user_tool_qualification_expiration_never_used_days": "",
-		"user_tool_qualification_cc": "",
 		"user_allow_document_upload": "",
 	}
 
 	def validate(self, name, value):
-		if name == "user_tool_qualification_expiration_days" and value:
-			self.validate_int(value)
-		if name in ["user_access_expiration_reminder_days", "user_tool_qualification_reminder_days"] and value:
+		if name == "user_access_expiration_reminder_days" and value:
 			# Check that we have an integer or a list of integers
 			try:
 				for reminder_days in value.split(","):
@@ -202,7 +196,7 @@ class UserCustomization(CustomizationBase):
 				raise
 			except Exception as e:
 				raise ValidationError(str(e))
-		elif name in ["user_access_expiration_reminder_cc", "user_tool_qualification_cc"]:
+		elif name == "user_access_expiration_reminder_cc":
 			recipients = tuple([e for e in value.split(",") if e])
 			for email in recipients:
 				validate_email(email)
@@ -317,6 +311,33 @@ class RecurringChargesCustomization(CustomizationBase):
 		if not errors:
 			self.update_title()
 		return errors
+
+
+@customization(key="tool_qualification", title="Tool qualification")
+class ToolQualificationCustomization(CustomizationBase):
+	variables = {
+		"tool_qualification_reminder_days": "",
+		"tool_qualification_expiration_days": "",
+		"tool_qualification_expiration_never_used_days": "",
+		"tool_qualification_cc": "",
+	}
+
+	def validate(self, name, value):
+		if name == "tool_qualification_expiration_days" and value:
+			self.validate_int(value)
+		if name == "tool_qualification_reminder_days" and value:
+			# Check that we have an integer or a list of integers
+			try:
+				for reminder_days in value.split(","):
+					self.validate_int(reminder_days)
+			except ValidationError:
+				raise
+			except Exception as e:
+				raise ValidationError(str(e))
+		elif name == "tool_qualification_cc":
+			recipients = tuple([e for e in value.split(",") if e])
+			for email in recipients:
+				validate_email(email)
 
 
 @customization(key="templates", title="File & email templates")
