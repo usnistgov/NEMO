@@ -27,6 +27,7 @@ class UserSerializer(ModelSerializer):
 		fields = (
 			"id",
 			"type",
+			"discipline",
 			"domain",
 			"first_name",
 			"last_name",
