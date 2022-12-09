@@ -317,7 +317,8 @@ class ToolAdmin(admin.ModelAdmin):
 		"""
 		if obj.parent_tool:
 			if obj.pk:
-				# if this is an update (from regular to child tool), we want to make sure we are creating a clean version. In case the previous tool had fields that are now irrelevant
+				# if this is an update (from regular to child tool), we want to make sure we are creating
+				# a clean version. In case the previous tool had fields that are now irrelevant
 				clean_alt_tool = Tool(**form.cleaned_data)
 				clean_alt_tool.pk = obj.pk
 				obj = clean_alt_tool
@@ -741,7 +742,17 @@ class InterlockAdminForm(forms.ModelForm):
 @register(Interlock)
 class InterlockAdmin(admin.ModelAdmin):
 	form = InterlockAdminForm
-	list_display = ("id", "get_card_enabled", "card", "channel", "unit_id", "state", "tool", "door", "most_recent_reply_time")
+	list_display = (
+		"id",
+		"get_card_enabled",
+		"card",
+		"channel",
+		"unit_id",
+		"state",
+		"tool",
+		"door",
+		"most_recent_reply_time"
+	)
 	list_filter = ("card__enabled", "card", "state")
 	actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage]
 	readonly_fields = ["state", "most_recent_reply", "most_recent_reply_time"]
@@ -1270,7 +1281,17 @@ class TemporaryPhysicalAccessRequestFormAdmin(forms.ModelForm):
 @register(TemporaryPhysicalAccessRequest)
 class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
 	form = TemporaryPhysicalAccessRequestFormAdmin
-	list_display = ("creator", "creation_time", "other_users_display", "start_time", "end_time", "physical_access_level", "status_display", "reviewer", "deleted")
+	list_display = (
+		"creator",
+		"creation_time",
+		"other_users_display",
+		"start_time",
+		"end_time",
+		"physical_access_level",
+		"status_display",
+		"reviewer",
+		"deleted"
+	)
 	list_filter = ("status", "deleted")
 	filter_horizontal = ("other_users",)
 
@@ -1422,7 +1443,6 @@ class StaffAbsenceTypeAdmin(admin.ModelAdmin):
 	list_display = ("name", "description")
 
 
-
 @register(StaffAvailabilityCategory)
 class StaffAvailabilityCategoryAdmin(admin.ModelAdmin):
 	list_display = ("name", "display_order")
@@ -1490,6 +1510,16 @@ class ChemicalAdmin(admin.ModelAdmin):
 	filter_horizontal = ("hazards",)
 
 
+@register(SafetyTraining)
+class SafetyTrainingAdmin(admin.ModelAdmin):
+	list_display = ("name", "display_order")
+
+
+@register(OnboardingPhase)
+class OnboardingPhaseAdmin(admin.ModelAdmin):
+	list_display = ("name", "display_order")
+
+
 @register(EmailLog)
 class EmailLogAdmin(admin.ModelAdmin):
 	list_display = ["id", "category", "sender", "to", "subject", "when", "ok"]
@@ -1514,7 +1544,7 @@ class EmailLogAdmin(admin.ModelAdmin):
 		return False
 
 
-def iframe_content(content, extra_style = "padding-bottom: 75%") -> str:
+def iframe_content(content, extra_style="padding-bottom: 75%") -> str:
 	return mark_safe(f'<div style="position: relative; display: block; overflow: hidden; {extra_style}"><iframe style="position: absolute; width:100%; height:100%; border:none" src="data:text/html,{urlencode(content)}"></iframe></div>')
 
 
@@ -1526,7 +1556,7 @@ def has_admin_site_permission(request):
 	to access the admin site
 	"""
 	user: User = request.user
-	return user.is_active and (user.is_any_part_of_staff)
+	return user.is_active and user.is_any_part_of_staff
 
 
 # Register our new admin permission
@@ -1534,8 +1564,6 @@ admin.site.has_permission = has_admin_site_permission
 
 # Register other models
 admin.site.register(Discipline)
-admin.site.register(SafetyTraining)
-admin.site.register(OnboardingPhase)
 admin.site.register(AccountType)
 admin.site.register(ResourceCategory)
 admin.site.register(Permission)
