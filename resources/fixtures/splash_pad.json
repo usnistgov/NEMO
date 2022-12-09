@@ -7,7 +7,46 @@
       "attach_cancelled_reservation": false,
       "display_new_buddy_request_notification": true,
       "display_new_buddy_request_reply_notification": true,
-      "email_new_buddy_request_reply": true
+      "email_new_buddy_request_reply": true,
+      "staff_status_view": "day",
+      "email_alternate": null,
+      "email_send_reservation_emails": 1,
+      "email_send_buddy_request_replies": 1,
+      "email_send_access_request_updates": 1,
+      "email_send_broadcast_emails": 1,
+      "email_send_task_updates": 1,
+      "email_send_access_expiration_emails": 1,
+      "email_send_tool_qualification_expiration_emails": 1,
+      "email_send_usage_reminders": 1,
+      "email_send_reservation_reminders": 1,
+      "email_send_reservation_ending_reminders": 1,
+      "recurring_charges_reminder_days": "60,7",
+      "email_send_recurring_charges_reminder_emails": 1
+    }
+  },
+  {
+    "model": "NEMO.userpreferences",
+    "pk": 2,
+    "fields": {
+      "attach_created_reservation": false,
+      "attach_cancelled_reservation": false,
+      "display_new_buddy_request_notification": true,
+      "display_new_buddy_request_reply_notification": true,
+      "email_new_buddy_request_reply": true,
+      "staff_status_view": "day",
+      "email_alternate": null,
+      "email_send_reservation_emails": 1,
+      "email_send_buddy_request_replies": 1,
+      "email_send_access_request_updates": 1,
+      "email_send_broadcast_emails": 1,
+      "email_send_task_updates": 1,
+      "email_send_access_expiration_emails": 1,
+      "email_send_tool_qualification_expiration_emails": 1,
+      "email_send_usage_reminders": 1,
+      "email_send_reservation_reminders": 1,
+      "email_send_reservation_ending_reminders": 1,
+      "recurring_charges_reminder_days": "60,7",
+      "email_send_recurring_charges_reminder_emails": 1
     }
   },
   {
@@ -29,6 +68,34 @@
     "pk": 3,
     "fields": {
       "name": "Lab staff"
+    }
+  },
+  {
+    "model": "NEMO.discipline",
+    "pk": 1,
+    "fields": {
+      "name": "Physics"
+    }
+  },
+  {
+    "model": "NEMO.discipline",
+    "pk": 2,
+    "fields": {
+      "name": "Chemistry"
+    }
+  },
+  {
+    "model": "NEMO.discipline",
+    "pk": 3,
+    "fields": {
+      "name": "Biology"
+    }
+  },
+  {
+    "model": "NEMO.discipline",
+    "pk": 4,
+    "fields": {
+      "name": "Electronics"
     }
   },
   {
@@ -222,6 +289,62 @@
     }
   },
   {
+    "model": "NEMO.safetytraining",
+    "pk": 1,
+    "fields": {
+      "name": "Cleanroom training",
+      "display_order": 1
+    }
+  },
+  {
+    "model": "NEMO.safetytraining",
+    "pk": 2,
+    "fields": {
+      "name": "Chemical handling",
+      "display_order": 2
+    }
+  },
+  {
+    "model": "NEMO.safetytraining",
+    "pk": 3,
+    "fields": {
+      "name": "Fume hood training",
+      "display_order": 3
+    }
+  },
+  {
+    "model": "NEMO.safetytraining",
+    "pk": 4,
+    "fields": {
+      "name": "Compressed gases training",
+      "display_order": 4
+    }
+  },
+  {
+    "model": "NEMO.safetytraining",
+    "pk": 5,
+    "fields": {
+      "name": "Equipment training",
+      "display_order": 5
+    }
+  },
+  {
+    "model": "NEMO.onboardingphase",
+    "pk": 1,
+    "fields": {
+      "name": "General orientation",
+      "display_order": 1
+    }
+  },
+  {
+    "model": "NEMO.onboardingphase",
+    "pk": 2,
+    "fields": {
+      "name": "Cleanroom orientation",
+      "display_order": 2
+    }
+  },
+  {
     "model": "NEMO.user",
     "pk": 1,
     "fields": {
@@ -232,10 +355,13 @@
       "type": 3,
       "discipline": 1,
       "domain": "",
+      "notes": null,
       "badge_number": "1",
       "access_expiration": null,
       "is_active": true,
       "is_staff": true,
+      "is_user_office": false,
+      "is_accounting_officer": false,
       "is_service_personnel": false,
       "is_technician": false,
       "is_facility_manager": true,
@@ -244,6 +370,8 @@
       "date_joined": "2012-12-10T16:43:37Z",
       "last_login": "2022-03-14T12:52:58.154Z",
       "preferences": 1,
+      "onboarding_phases": [1,2],
+      "safety_trainings": [1,2,3],
       "physical_access_levels": [],
       "groups": [],
       "user_permissions": [],
@@ -256,7 +384,8 @@
         1,
         2,
         3
-      ]
+      ],
+      "managed_projects": []
     }
   },
   {
@@ -270,10 +399,13 @@
       "type": 2,
       "discipline": 2,
       "domain": "",
+      "notes": null,
       "badge_number": "2",
       "access_expiration": null,
       "is_active": true,
       "is_staff": true,
+      "is_user_office": false,
+      "is_accounting_officer": false,
       "is_service_personnel": false,
       "is_technician": false,
       "is_facility_manager": false,
@@ -281,7 +413,9 @@
       "training_required": false,
       "date_joined": "2012-12-10T16:48:43Z",
       "last_login": null,
-      "preferences": null,
+      "preferences": 2,
+      "onboarding_phases": [1],
+      "safety_trainings": [2],
       "physical_access_levels": [],
       "groups": [],
       "user_permissions": [],
@@ -294,7 +428,8 @@
         1,
         2,
         3
-      ]
+      ],
+      "managed_projects": []
     }
   },
   {
@@ -308,10 +443,13 @@
       "type": 1,
       "discipline": 3,
       "domain": "",
+      "notes": null,
       "badge_number": "3",
       "access_expiration": "2014-09-09",
       "is_active": true,
       "is_staff": false,
+      "is_user_office": false,
+      "is_accounting_officer": false,
       "is_service_personnel": false,
       "is_technician": false,
       "is_facility_manager": false,
@@ -320,6 +458,8 @@
       "date_joined": "2012-12-10T16:49:38Z",
       "last_login": null,
       "preferences": null,
+      "onboarding_phases": [1],
+      "safety_trainings": [1],
       "physical_access_levels": [],
       "groups": [],
       "user_permissions": [],
@@ -346,7 +486,8 @@
         1,
         2,
         3
-      ]
+      ],
+      "managed_projects": []
     }
   },
   {
@@ -360,10 +501,12 @@
       "type": 2,
       "discipline": 4,
       "domain": "",
+      "notes": null,
       "badge_number": "4",
       "access_expiration": null,
       "is_active": true,
       "is_staff": false,
+      "is_user_office": false,
       "is_accounting_officer": true,
       "is_service_personnel": false,
       "is_technician": false,
@@ -373,6 +516,8 @@
       "date_joined": "2012-12-10T16:48:43Z",
       "last_login": null,
       "preferences": null,
+      "onboarding_phases": [1],
+      "safety_trainings": [1],
       "physical_access_levels": [],
       "groups": [],
       "user_permissions": [],
@@ -385,7 +530,8 @@
         1,
         2,
         3
-      ]
+      ],
+      "managed_projects": []
     }
   },
   {
@@ -397,13 +543,15 @@
       "last_name": "Conseil",
       "email": "assistant.conseil@nautilus.com",
       "type": 1,
-      "discipline": 5,
+      "discipline": 4,
       "domain": "",
+      "notes": null,
       "badge_number": "5",
       "access_expiration": null,
       "is_active": true,
       "is_staff": false,
       "is_user_office": true,
+      "is_accounting_officer": false,
       "is_service_personnel": false,
       "is_technician": false,
       "is_facility_manager": false,
@@ -412,6 +560,8 @@
       "date_joined": "2012-12-10T16:48:43Z",
       "last_login": null,
       "preferences": null,
+      "onboarding_phases": [1],
+      "safety_trainings": [2,3],
       "physical_access_levels": [],
       "groups": [],
       "user_permissions": [],
@@ -424,7 +574,8 @@
         1,
         2,
         3
-      ]
+      ],
+      "managed_projects": []
     }
   },
   {
@@ -5911,8 +6062,8 @@
     "model": "NEMO.configuration",
     "pk": 1,
     "fields": {
-      "tool": 3,
       "name": "Blade type",
+      "tool": 3,
       "configurable_item_name": "Blade",
       "advance_notice_limit": 18,
       "display_order": 0,
@@ -5922,6 +6073,7 @@
       "qualified_users_are_maintainers": false,
       "exclude_from_configuration_agenda": false,
       "absence_string": null,
+      "enabled": true,
       "maintainers": [
         1,
         2,
@@ -6062,6 +6214,7 @@
       "start_date": null,
       "account": 1,
       "active": true,
+      "discipline": null,
       "allow_consumable_withdrawals": true,
       "only_allow_tools": []
     }
@@ -6075,6 +6228,7 @@
       "start_date": null,
       "account": 2,
       "active": true,
+      "discipline": 1,
       "allow_consumable_withdrawals": true,
       "only_allow_tools": []
     }
@@ -6088,56 +6242,9 @@
       "start_date": null,
       "account": 3,
       "active": true,
+      "discipline": 2,
       "allow_consumable_withdrawals": true,
       "only_allow_tools": []
-    }
-  },
-  {
-    "model": "NEMO.recurringconsumablecharge",
-    "pk": 1,
-    "fields": {
-      "name": "Storage bin #1",
-      "customer": 2,
-      "project": 1,
-      "consumable": 3,
-      "quantity": 1,
-      "rec_start": "2022-11-02",
-      "rec_frequency": 2,
-      "rec_interval": 4,
-      "last_updated_by": 1,
-      "last_updated": "2022-11-01T20:10:00Z"
-    }
-  },
-  {
-    "model": "NEMO.recurringconsumablecharge",
-    "pk": 2,
-    "fields": {
-      "name": "Storage bin #2",
-      "customer": 1,
-      "project": 1,
-      "consumable": 3,
-      "quantity": 1,
-      "rec_start": "2022-11-02",
-      "rec_frequency": 2,
-      "rec_interval": 4,
-      "last_updated_by": 1,
-      "last_updated": "2022-11-01T20:10:00Z"
-    }
-  },
-  {
-    "model": "NEMO.recurringconsumablecharge",
-    "pk": 3,
-    "fields": {
-      "name": "Cleanroom gown #1",
-      "customer": 2,
-      "project": 1,
-      "consumable": 4,
-      "quantity": 1,
-      "rec_start": "2022-11-02",
-      "rec_frequency": 1,
-      "rec_interval": 5,
-      "last_updated_by": 1,
-      "last_updated": "2022-11-01T20:10:00Z"
     }
   },
   {
@@ -6146,11 +6253,22 @@
     "fields": {
       "user": 1,
       "creator": 1,
-      "project": 1,
       "tool": 1,
+      "area": null,
+      "project": 1,
       "start": "2022-06-21T20:10:00Z",
       "end": "2022-06-23T20:10:00Z",
-      "short_notice": false
+      "short_notice": false,
+      "cancelled": false,
+      "cancellation_time": null,
+      "cancelled_by": null,
+      "missed": false,
+      "shortened": false,
+      "descendant": null,
+      "additional_information": null,
+      "self_configuration": false,
+      "title": "",
+      "question_data": null
     }
   },
   {
@@ -6169,16 +6287,6 @@
     }
   },
   {
-    "model": "NEMO.scheduledoutage",
-    "pk": 1,
-    "fields": {
-      "creator": 1,
-      "tool": 1,
-      "start": "2022-06-21T20:10:00Z",
-      "end": "2022-06-23T20:10:00Z"
-    }
-  },
-  {
     "model": "NEMO.usageevent",
     "pk": 1,
     "fields": {
@@ -6193,19 +6301,13 @@
     }
   },
   {
-    "model": "NEMO.consumablecategory",
-    "pk": 1,
-    "fields": {
-      "name": "Rental"
-    }
-  },
-  {
     "model": "NEMO.consumable",
     "pk": 1,
     "fields": {
       "name": "Tweezers",
       "category": null,
       "quantity": 10,
+      "reusable": false,
       "visible": true,
       "reminder_threshold": 5,
       "reminder_email": "service@nautilus.com",
@@ -6219,6 +6321,7 @@
       "name": "2 inch wafer tray",
       "category": null,
       "quantity": 10,
+      "reusable": false,
       "visible": true,
       "reminder_threshold": 5,
       "reminder_email": "service@nautilus.com",
@@ -6232,8 +6335,8 @@
       "name": "Storage bin",
       "category": 1,
       "quantity": 10,
-      "visible": true,
       "reusable": true,
+      "visible": true,
       "reminder_threshold": null,
       "reminder_email": null,
       "reminder_threshold_reached": false
@@ -6246,11 +6349,75 @@
       "name": "Cleanroom gown",
       "category": 1,
       "quantity": 10,
-      "visible": true,
       "reusable": true,
+      "visible": true,
       "reminder_threshold": null,
       "reminder_email": null,
       "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumablecategory",
+    "pk": 1,
+    "fields": {
+      "name": "Rental"
+    }
+  },
+  {
+    "model": "NEMO.recurringconsumablecharge",
+    "pk": 1,
+    "fields": {
+      "name": "Storage bin #1",
+      "customer": 2,
+      "consumable": 3,
+      "quantity": 1,
+      "project": 1,
+      "last_charge": "2022-12-09T01:55:11.118Z",
+      "rec_start": "2022-11-02",
+      "rec_frequency": 2,
+      "rec_interval": 4,
+      "rec_until": null,
+      "rec_count": null,
+      "last_updated": "2022-11-01T20:10:00Z",
+      "last_updated_by": 1
+    }
+  },
+  {
+    "model": "NEMO.recurringconsumablecharge",
+    "pk": 2,
+    "fields": {
+      "name": "Storage bin #2",
+      "customer": 1,
+      "consumable": 3,
+      "quantity": 1,
+      "project": 1,
+      "last_charge": "2022-12-09T01:55:11.163Z",
+      "rec_start": "2022-11-02",
+      "rec_frequency": 2,
+      "rec_interval": 4,
+      "rec_until": null,
+      "rec_count": null,
+      "last_updated": "2022-11-01T20:10:00Z",
+      "last_updated_by": 1
+    }
+  },
+  {
+    "model": "NEMO.recurringconsumablecharge",
+    "pk": 3,
+    "fields": {
+      "name": "Cleanroom gown #1",
+      "customer": 2,
+      "consumable": 4,
+      "quantity": 1,
+      "project": 1,
+      "last_charge": null,
+      "rec_start": "2022-11-02",
+      "rec_frequency": 1,
+      "rec_interval": 5,
+      "rec_until": null,
+      "rec_count": null,
+      "last_updated": "2022-11-01T20:10:00Z",
+      "last_updated_by": 1
     }
   },
   {
@@ -6275,8 +6442,10 @@
     "fields": {
       "card": 1,
       "channel": 3,
+      "unit_id": null,
       "state": -1,
-      "most_recent_reply": "None"
+      "most_recent_reply": "None",
+      "most_recent_reply_time": null
     }
   },
   {
@@ -6694,6 +6863,7 @@
       "hide_from_mobile_devices": false,
       "hide_from_desktop_computers": false,
       "hide_from_users": false,
+      "hide_from_staff": false,
       "notifications": null
     }
   },
@@ -6750,6 +6920,41 @@
   },
   {
     "model": "NEMO.customization",
+    "pk": "calendar_all_tools",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "calendar_login_logout",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "calendar_now_indicator",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "project_allow_document_upload",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "recurring_charges_category",
+    "fields": {
+      "value": "1"
+    }
+  },
+  {
+    "model": "NEMO.customization",
     "pk": "self_log_in",
     "fields": {
       "value": "enabled"
@@ -6764,37 +6969,9 @@
   },
   {
     "model": "NEMO.customization",
-    "pk": "calendar_login_logout",
-    "fields": {
-      "value": "enabled"
-    }
-  },
-  {
-    "model": "NEMO.customization",
-    "pk": "calendar_all_tools",
-    "fields": {
-      "value": "enabled"
-    }
-  },
-  {
-    "model": "NEMO.customization",
-    "pk": "calendar_now_indicator",
-    "fields": {
-      "value": "enabled"
-    }
-  },
-  {
-    "model": "NEMO.customization",
     "pk": "sensor_default_daterange",
     "fields": {
       "value": "last_year"
-    }
-  },
-  {
-    "model": "NEMO.customization",
-    "pk": "project_allow_document_upload",
-    "fields": {
-      "value": "enabled"
     }
   },
   {
@@ -6805,38 +6982,18 @@
     }
   },
   {
-    "model": "NEMO.customization",
-    "pk": "recurring_charges_category",
-    "fields": {
-      "value": "1"
-    }
-  },
-  {
-    "model": "NEMO.discipline",
+    "model": "NEMO.scheduledoutage",
     "pk": 1,
     "fields": {
-      "name": "Physics"
-    }
-  },
-  {
-    "model": "NEMO.discipline",
-    "pk": 2,
-    "fields": {
-      "name": "Chemistry"
-    }
-  },
-  {
-    "model": "NEMO.discipline",
-    "pk": 3,
-    "fields": {
-      "name": "Biology"
-    }
-  },
-  {
-    "model": "NEMO.discipline",
-    "pk": 4,
-    "fields": {
-      "name": "Electronics"
+      "start": "2022-06-21T20:10:00Z",
+      "end": "2022-06-23T20:10:00Z",
+      "creator": 1,
+      "title": "",
+      "details": "",
+      "category": "",
+      "tool": 1,
+      "area": null,
+      "resource": null
     }
   },
   {
@@ -7282,7 +7439,8 @@
       "start_date": "2022-03-21",
       "end_date": "2029-03-14",
       "full_day": true,
-      "description": "Taking a sabbatical"
+      "description": "Taking a sabbatical",
+      "manager_note": null
     }
   },
   {
@@ -7676,18 +7834,6 @@
     }
   },
   {
-    "model": "sensors.sensoralertemail",
-    "pk": 1,
-    "fields": {
-      "enabled": true,
-      "sensor": 1,
-      "trigger_no_data": false,
-      "trigger_condition": "value > 70",
-      "triggered_on": "2022-06-13T17:52:05.965Z",
-      "additional_emails": ""
-    }
-  },
-  {
     "model": "sensors.sensoralertlog",
     "pk": 1,
     "fields": {
@@ -7721,6 +7867,18 @@
       "condition": "value > 70",
       "sensor_id": 1,
       "time": "2022-06-13T17:52:05.965Z"
+    }
+  },
+  {
+    "model": "sensors.sensoralertemail",
+    "pk": 1,
+    "fields": {
+      "enabled": true,
+      "sensor": 1,
+      "trigger_no_data": false,
+      "trigger_condition": "value > 70",
+      "triggered_on": "2022-06-13T17:52:05.965Z",
+      "additional_emails": ""
     }
   }
 ]
