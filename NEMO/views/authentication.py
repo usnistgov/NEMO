@@ -174,7 +174,7 @@ class LDAPAuthenticationBackend(ModelBackend):
 				if not bind_as_authentication:
 					# binding to LDAP first, then search for user
 					bind_username = server.get("bind_username", None)
-					bind_username = username_format.format(bind_username)
+					bind_username = username_format.format(bind_username) if bind_username is not None else None
 					bind_password = server.get("bind_password", None)
 					authentication = SIMPLE if bind_username and bind_password else ANONYMOUS
 					c = Connection(
