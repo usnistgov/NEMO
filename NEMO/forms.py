@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.forms import (
@@ -7,15 +7,17 @@ from django.forms import (
 	CharField,
 	ChoiceField,
 	DateField,
+	FileField,
 	Form,
 	ImageField,
 	IntegerField,
 	ModelChoiceField,
 	ModelForm,
 )
-from django.forms.utils import ErrorDict
+from django.forms.utils import ErrorDict, ErrorList
 from django.utils import timezone
 
+from NEMO.exceptions import ProjectChargeException
 from NEMO.models import (
 	Account,
 	Alert,
@@ -25,6 +27,8 @@ from NEMO.models import (
 	Consumable,
 	ConsumableWithdraw,
 	Project,
+	ProjectDocuments,
+	RecurringConsumableCharge,
 	ReservationItemType,
 	SafetyIssue,
 	ScheduledOutage,
@@ -34,42 +38,42 @@ from NEMO.models import (
 	TaskImages,
 	TemporaryPhysicalAccessRequest,
 	User,
+	UserDocuments,
 	UserPreferences,
 )
 from NEMO.utilities import bootstrap_primary_color, format_datetime, quiet_int
 from NEMO.views.customization import UserRequestsCustomization
+from NEMO.views.policy import check_billing_to_project
 
 
 class UserForm(ModelForm):
 	class Meta:
 		model = User
-		fields = [
-			"username",
-			"first_name",
-			"last_name",
-			"email",
-			"badge_number",
-			"access_expiration",
-			"type",
-			"domain",
-			"is_active",
-			"training_required",
-			"physical_access_levels",
-			"qualifications",
-			"projects",
+		exclude = [
+			"is_staff",
+			"is_service_personnel",
+			"is_technician",
+			"is_facility_manager",
+			"is_superuser",
+			"groups",
+			"user_permissions",
+			"date_joined",
+			"last_login",
+			"managed_projects",
+			"preferences"
 		]
 
 
 class ProjectForm(ModelForm):
 	class Meta:
 		model = Project
-		fields = ["name", "application_identifier", "account", "active", "start_date"]
+		exclude = ["only_allow_tools", "allow_consumable_withdrawals"]
 
 
 class AccountForm(ModelForm):
 	class Meta:
 		model = Account
-		fields = ["name", "active", "type", "start_date"]
+		fields = "__all__"
 
 
 class TaskForm(ModelForm):
@@ -254,6 +258,8 @@ class ConsumableWithdrawForm(ModelForm):
 			raise ValidationError(
 				"A consumable withdraw was requested for an inactive user. Only active users may withdraw consumables."
 			)
+		if customer.access_expiration and customer.access_expiration < date.today():
+			raise ValidationError(f"This user's access expired on {format_datetime(customer.access_expiration)}")
 		return customer
 
 	def clean_project(self):
@@ -280,7 +286,7 @@ class ConsumableWithdrawForm(ModelForm):
 		cleaned_data = super().clean()
 		quantity = cleaned_data["quantity"]
 		consumable = cleaned_data["consumable"]
-		if quantity > consumable.quantity:
+		if not consumable.reusable and quantity > consumable.quantity:
 			raise ValidationError(
 				'There are not enough "' + consumable.name + '". (The current quantity in stock is '
 				+ str(consumable.quantity)
@@ -288,12 +294,33 @@ class ConsumableWithdrawForm(ModelForm):
 			)
 		customer = cleaned_data["customer"]
 		project = cleaned_data["project"]
-		if project not in customer.active_projects():
-			raise ValidationError(
-				"{} is not a member of the project {}. Users can only bill to projects they belong to.".format(
-					customer, project
-				)
-			)
+		try:
+			check_billing_to_project(project, customer, consumable)
+		except ProjectChargeException as e:
+			raise ValidationError({"project": e.msg})
+		return cleaned_data
+
+
+class RecurringConsumableChargeForm(ModelForm):
+	class Meta:
+		model = RecurringConsumableCharge
+		exclude = ("last_charge", "last_updated", "last_updated_by")
+
+	def __init__(self, *args, **kwargs):
+		locked = kwargs.pop("locked", False)
+		super().__init__(*args, **kwargs)
+		if locked:
+			for field in self.fields:
+				if field not in ["customer", "project"]:
+					self.fields[field].disabled = True
+
+	def clean(self):
+		cleaned_data = super().clean()
+		if "save_and_charge" in self.data:
+			# We need to require customer, which in turn if provided makes all other necessary fields be required,
+			# so we can charge for this consumable.
+			if not cleaned_data.get("customer"):
+				self.add_error("customer", "This field is required when charging.")
 		return cleaned_data
 
 
@@ -340,12 +367,12 @@ class EmailBroadcastForm(Form):
 	title = CharField(required=False)
 	greeting = CharField(required=False)
 	contents = CharField(required=False)
-	copy_me = BooleanField(initial=True)
+	copy_me = BooleanField(required=False, initial=True)
 
 	audience = ChoiceField(choices=[("tool", "tool"), ("project", "project"), ("account", "account"), ("area", "area"), ("user", "user")])
 	selection = CharField(required=False)
 	no_type = BooleanField(initial=False, required=False)
-	only_active_users = BooleanField(initial=True)
+	only_active_users = BooleanField(required=False, initial=True)
 
 	def clean_title(self):
 		return self.cleaned_data["title"].upper()
@@ -379,23 +406,21 @@ class ScheduledOutageForm(ModelForm):
 class UserPreferencesForm(ModelForm):
 	class Meta:
 		model = UserPreferences
-		fields = [
-			"attach_created_reservation",
-			"attach_cancelled_reservation",
-			"display_new_buddy_request_notification",
-			"display_new_buddy_request_reply_notification",
-			"email_new_buddy_request_reply",
-			"staff_status_view",
-			"email_alternate",
-			"email_send_reservation_emails",
-			"email_send_usage_reminders",
-			"email_send_reservation_reminders",
-			"email_send_reservation_ending_reminders",
-			"email_send_buddy_request_replies",
-			"email_send_access_request_updates",
-			"email_send_task_updates",
-			"email_send_broadcast_emails"
-		]
+		fields = "__all__"
+
+	def clean_recurring_charges_reminder_days(self):
+		recurring_charges_reminder_days = self.cleaned_data["recurring_charges_reminder_days"]
+		try:
+			for reminder_days in recurring_charges_reminder_days.split(","):
+				try:
+					int(reminder_days)
+				except ValueError:
+					raise ValidationError(f"'{reminder_days}' is not a valid integer")
+		except ValidationError:
+			raise
+		except Exception as e:
+			raise ValidationError(str(e))
+		return recurring_charges_reminder_days
 
 
 class BuddyRequestForm(ModelForm):
@@ -436,13 +461,15 @@ class StaffAbsenceForm(ModelForm):
 		fields = "__all__"
 
 
-def nice_errors(form, non_field_msg="General form errors"):
+def nice_errors(obj, non_field_msg="General form errors") -> ErrorDict:
 	result = ErrorDict()
-	if isinstance(form, BaseForm):
-		for field, errors in form.errors.items():
-			if field == NON_FIELD_ERRORS:
-				key = non_field_msg
-			else:
-				key = form.fields[field].label
-			result[key] = errors
+	error_dict = obj.errors if isinstance(obj, BaseForm) else obj.message_dict if isinstance(obj, ValidationError) else {}
+	for field_name, errors in error_dict.items():
+		if field_name == NON_FIELD_ERRORS:
+			key = non_field_msg
+		elif hasattr(obj, "fields"):
+			key = obj.fields[field_name].label
+		else:
+			key = field_name
+		result[key] = ErrorList(errors)
 	return result

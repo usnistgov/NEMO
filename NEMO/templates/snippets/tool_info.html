@@ -1,0 +1,31 @@
+<h4 style="margin-top:0; text-align: center">{{ tool.name }}</h4>
+Tool owner: <a href="{% url 'get_email_form_for_user' tool.primary_owner.id %}">{{ tool.primary_owner.get_name }}</a><br/>
+{% if tool.backup_owners.all.count == 1 %}
+    {% with tool.backup_owners.all|first as backup %}
+        Backup owner: <a href="{% url 'get_email_form_for_user' backup.id %}">{{ backup.get_name }}</a><br/>
+    {% endwith %}
+{% elif tool.backup_owners.all.count > 1 %}
+    Backup owners:
+    <ul style="padding-left: 25px; margin-bottom: 0">
+    {% for backup in tool.backup_owners.all %}
+        <li><a href="{% url 'get_email_form_for_user' backup.id %}">{{ backup.get_name }}</a></li>
+    {% endfor %}
+    </ul>
+{% endif %}
+{% if tool.superusers.all.count == 1 %}
+    {% with tool.superusers.all|first as superuser %}
+        Superuser: <a href="{% url 'get_email_form_for_user' superuser.id %}">{{ superuser.get_name }}</a><br/>
+    {% endwith %}
+{% elif tool.superusers.all.count > 1 %}
+    Superusers:
+    <ul style="padding-left: 25px; margin-bottom: 0">
+    {% for superuser in tool.superusers.all %}
+        <li><a href="{% url 'get_email_form_for_user' superuser.id %}">{{ superuser.get_name }}</a></li>
+    {% endfor %}
+    </ul>
+{% endif %}
+{% if tool.notification_email_address %}
+    Email: <a href="{% url 'get_email_form' %}?recipient={{ tool.notification_email_address }}" title="Email {{ tool.notification_email_address }}">{{ tool.notification_email_address }}</a><br/>
+{% endif %}
+Location: {{ tool.location }}<br/>
+Phone number: <a href="tel:{{ tool.phone_number }}">{{ tool.phone_number }}</a>

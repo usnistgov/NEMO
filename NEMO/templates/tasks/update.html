@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load humanize %}
 {% load static %}
+{% load custom_tags_and_filters %}
 {% block title %}Update task{% endblock %}
 {% block extrahead %}
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
@@ -60,10 +61,11 @@
 				{% endif %}
 				<div class="form-group">
 					<label for="resolution_time" class="control-label">When do you think the problem will be resolved? Leave this field blank if it's difficult to predict.</label>
-					<input id="resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off" value="{{ task.estimated_resolution_time|date:"m/d/Y g:i A" }}">
+					<input id="resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off" value="{{ estimated_resolution_time|input_date_format }}">
 					<script>
 						let timepicker_properties =
 						{
+                            format: "{{ datetime_input_js_format }}",
 							sideBySide: true,
 							showClose: true
 						};
@@ -91,7 +93,7 @@
 					<input id="fileupload" type="file" name="image" multiple>
 				</div>
 				<div class="form-group">
-					<input type="submit" class="btn btn-success" onclick="submit_and_disable(this);" value="Update">
+                    {% button type="save" value="Update" %}
 				</div>
 			</form>
 		</div>

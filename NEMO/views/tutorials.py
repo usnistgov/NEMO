@@ -1,10 +1,9 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from django.template import Context, RequestContext, Template
 from django.views.decorators.http import require_http_methods
 
 from NEMO.models import Project, User
-from NEMO.utilities import EmailCategory, send_mail
+from NEMO.utilities import EmailCategory, render_email_template, send_mail
 from NEMO.views.customization import ApplicationCustomization, EmailsCustomization, get_media_file_contents
 
 
@@ -18,7 +17,7 @@ def facility_rules(request):
 				"active_user_count": User.objects.filter(is_active=True).count(),
 				"active_project_count": Project.objects.filter(active=True).count(),
 			}
-			tutorial = Template(tutorial).render(RequestContext(request, dictionary))
+			tutorial = render_email_template(tutorial, dictionary, request)
 		return render(request, "facility_rules.html", {"facility_rules_tutorial": tutorial})
 	elif request.method == "POST":
 		facility_name = ApplicationCustomization.get("facility_name")
@@ -27,7 +26,7 @@ def facility_rules(request):
 		abuse_email = EmailsCustomization.get("abuse_email_address")
 		email_contents = get_media_file_contents("facility_rules_tutorial_email.html")
 		if abuse_email and email_contents:
-			message = Template(email_contents, dictionary).render(Context(dictionary))
+			message = render_email_template(email_contents, dictionary, request)
 			send_mail(
 				subject=f"{facility_name} rules tutorial",
 				content=message,

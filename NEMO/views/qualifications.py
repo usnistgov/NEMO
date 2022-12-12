@@ -2,8 +2,9 @@ from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
+from django.contrib import messages
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_required
@@ -85,12 +86,8 @@ def modify_qualifications(request):
 			entry.save()
 
 	if request.POST.get('redirect') == 'true':
-		dictionary = {
-			'title': 'Success!',
-			'heading': 'Success!',
-			'content': 'Tool qualifications were successfully modified.',
-		}
-		return render(request, 'acknowledgement.html', dictionary)
+		messages.success(request, "Tool qualifications were successfully modified")
+		return redirect("qualifications")
 	else:
 		return HttpResponse()
 

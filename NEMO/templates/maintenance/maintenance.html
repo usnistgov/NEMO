@@ -105,7 +105,7 @@
 	{
 		if(status === "error")
 		{
-			var message = "Unable to load task details.";
+			let message = "Unable to load task details.";
 			if (xml_header_request.responseText)
 				message += " " + xml_header_request.responseText;
 			$("#pending_task_details").html(message)
@@ -116,7 +116,7 @@
 	{
 		if(status === "error")
 		{
-			var message = "Unable to load task details.";
+			let message = "Unable to load task details.";
 			if (xml_header_request.responseText)
 				message += " " + xml_header_request.responseText;
 			$("#closed_task_details").html(message)
@@ -126,14 +126,14 @@
 	function enable_tool(url)
 	{
 		$("#interlock").prop('disabled', true);
-		var failure_dialog = ajax_failure_callback("Unable to enable tool");
+		let failure_dialog = ajax_failure_callback("Unable to enable tool");
 		ajax_post(url, undefined, reload_maintenance_page, failure_dialog);
 	}
 
 	function disable_tool(url)
 	{
 		$("#interlock").prop('disabled', true);
-		var failure_dialog = ajax_failure_callback("Unable to disable tool");
+		let failure_dialog = ajax_failure_callback("Unable to disable tool");
 		ajax_post(url, undefined, reload_maintenance_page, failure_dialog);
 	}
 
@@ -145,17 +145,17 @@
 
 	function save_active_task()
 	{
-		var active_row = $("#pending_tasks tr.active");
+		let active_row = $("#pending_tasks tr.active");
 		localStorage['Maintenance page, active task'] = active_row.data('task-id');
 	}
 
 	function on_load()
 	{
 		$("#tabs a").click(switch_tab);
-		var active_row = localStorage['Maintenance page, active task'];
+		let active_row = localStorage['Maintenance page, active task'];
 		if(active_row)
 		{
-			var row = $("#pending_tasks tr[data-task-id='" + active_row + "']");
+			let row = $("#pending_tasks tr[data-task-id='" + active_row + "']");
 			row.click();
 		}
 	}

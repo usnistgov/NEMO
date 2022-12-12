@@ -9,7 +9,6 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import Context, Template
 from django.template.defaultfilters import linebreaksbr
 from django.utils import formats, timezone
 from django.utils.safestring import mark_safe
@@ -23,6 +22,7 @@ from NEMO.models import (
 	Comment,
 	Configuration,
 	ConfigurationHistory,
+	EmailNotificationType,
 	Project,
 	Reservation,
 	StaffCharge,
@@ -41,6 +41,7 @@ from NEMO.utilities import (
 	extract_optional_beginning_and_end_times,
 	format_datetime,
 	quiet_int,
+	render_email_template,
 	send_mail,
 )
 from NEMO.views.calendar import shorten_reservation
@@ -529,7 +530,7 @@ def reset_tool_counter(request, counter_id):
 	comment.tool = counter.tool
 	comment.content = f"The {counter.name} counter was reset to 0. Its last value was {counter.last_reset_value}."
 	comment.author = request.user
-	comment.expiration_date = datetime.now() + timedelta(weeks=1)
+	comment.expiration_date = timezone.now()
 	comment.save()
 
 	# Email Lab Managers about the counter being reset.
@@ -549,11 +550,11 @@ Its last value was {counter.last_reset_value}."""
 
 
 def interlock_bypass_allowed(user: User):
-	return user.is_staff or InterlockCustomization.get('allow_bypass_interlock_on_failure') == 'enabled'
+	return user.is_staff or InterlockCustomization.get_bool("allow_bypass_interlock_on_failure")
 
 
 def interlock_error(action:str, user:User):
-	error_message = InterlockCustomization.get('tool_interlock_failure_message')
+	error_message = InterlockCustomization.get("tool_interlock_failure_message")
 	dictionary = {
 		"message": linebreaksbr(error_message),
 		"bypass_allowed": interlock_bypass_allowed(user),
@@ -568,7 +569,7 @@ def email_managers_required_questions_disable_tool(tool_user:User, staff_member:
 	cc_users.extend(tool.backup_owners.all())
 	cc_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
 	facility_name = ApplicationCustomization.get('facility_name')
-	ccs = [email for user in cc_users for email in user.get_emails(include_alternate=True)]
+	ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
 	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
 	message = f"""
 Dear {tool_user.get_name()},<br/>
@@ -580,7 +581,7 @@ Regards,<br/>
 <br/>
 {facility_name} Management<br/>
 """
-	tos = tool_user.get_emails(include_alternate=True)
+	tos = tool_user.get_emails(EmailNotificationType.BOTH_EMAILS)
 	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=tos, cc=ccs, email_category=EmailCategory.ABUSE)
 
 
@@ -589,5 +590,5 @@ def send_tool_usage_counter_email(counter: ToolUsageCounter):
 	message = get_media_file_contents('counter_threshold_reached_email.html')
 	if user_office_email and message:
 		subject = f"Warning threshold reached for {counter.tool.name} {counter.name} counter"
-		rendered_message = Template(message).render(Context({'counter': counter}))
+		rendered_message = render_email_template(message, {"counter": counter})
 		send_mail(subject=subject, content=rendered_message, from_email=user_office_email, to=counter.warning_email, email_category=EmailCategory.SYSTEM)

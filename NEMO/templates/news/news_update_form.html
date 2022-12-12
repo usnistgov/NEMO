@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Update a news story{% endblock %}
 {% block content %}
 	<h1>Update a news story</h1>
@@ -6,14 +7,14 @@
 	<form action="{% url 'archive_story' story.id %}" method="post">
 		{% csrf_token %}
 		<div class="form-group">
-			<input type="submit" class="btn btn-danger" value="Archive this news story">
+            {% button type="delete" submit=True value="Archive this news story" icon="glyphicon-folder-close" %}
 		</div>
 	</form>
 	<p>{{ story.all_content|safe|linebreaksbr }}</p>
 	<form method="post" action="{% url 'publish_news_update' story.id %}">
 		{% csrf_token %}
 		<div class="form-group">
-			<textarea name="update" class="form-control" rows="6" placeholder="Provide an update"></textarea>
+			<textarea name="update" class="form-control" rows="6" aria-label="Story update" placeholder="Provide an update"></textarea>
 		</div>
         <div class="form-group">
             <div class="checkbox">
@@ -22,8 +23,8 @@
                 </label>
             </div>
         </div>
-		<div class="form-group">
-			<input type="submit" class="btn btn-success pull-right" name="publish" value="Publish">
+		<div class="form-group text-right">
+            {% button type="save" name="publish" value="Publish" %}
 		</div>
 	</form>
 {% endblock %}

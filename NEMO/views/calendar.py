@@ -1,25 +1,26 @@
 import io
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from json import dumps, loads
 from logging import getLogger
 from re import match
-from typing import List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union
 
 import pytz
-from dateutil import rrule
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import Context, Template
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
+from NEMO.forms import nice_errors
 from NEMO.models import (
 	Alert,
 	Area,
@@ -27,7 +28,10 @@ from NEMO.models import (
 	Closure,
 	ClosureTime,
 	Configuration,
+	EmailNotificationType,
 	Project,
+	Qualification,
+	RecurringConsumableCharge,
 	Reservation,
 	ReservationItemType,
 	ReservationQuestions,
@@ -40,14 +44,20 @@ from NEMO.models import (
 )
 from NEMO.utilities import (
 	EmailCategory,
+	RecurrenceFrequency,
 	as_timezone,
+	beginning_of_the_day,
 	bootstrap_primary_color,
 	create_email_attachment,
 	date_input_format,
 	extract_times,
 	format_datetime,
+	get_full_url,
+	get_recurring_rule,
 	localize,
 	parse_parameter_string,
+	quiet_int,
+	render_email_template,
 	send_mail,
 )
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
@@ -55,6 +65,9 @@ from NEMO.views.customization import (
 	ApplicationCustomization,
 	CalendarCustomization,
 	EmailsCustomization,
+	RecurringChargesCustomization,
+	ToolQualificationCustomization,
+	UserCustomization,
 	get_media_file_contents,
 )
 from NEMO.views.policy import (
@@ -68,22 +81,6 @@ from NEMO.views.policy import (
 from NEMO.widgets.dynamic_form import DynamicForm, render_group_questions
 
 calendar_logger = getLogger(__name__)
-
-recurrence_frequency_display = {
-	'DAILY': 'Day(s)',
-	'DAILY_WEEKDAYS': 'Week Day(s)',
-	'DAILY WEEKENDS': 'Weekend Day(s)',
-	'WEEKLY': 'Week(s)',
-	'MONTHLY': 'Month(s)',
-}
-
-recurrence_frequencies = {
-	'DAILY': rrule.DAILY,
-	'DAILY_WEEKDAYS': rrule.DAILY,
-	'DAILY WEEKENDS': rrule.DAILY,
-	'WEEKLY': rrule.WEEKLY,
-	'MONTHLY': rrule.MONTHLY,
-}
 
 
 @login_required
@@ -101,7 +98,7 @@ def calendar(request, item_type=None, item_id=None):
 	areas = Area.objects.filter(requires_reservation=True).only('name')
 
 	# We want to remove areas the user doesn't have access to
-	display_all_areas = CalendarCustomization.get('calendar_display_not_qualified_areas') == 'enabled'
+	display_all_areas = CalendarCustomization.get_bool("calendar_display_not_qualified_areas")
 	if not display_all_areas and areas and user and not user.is_superuser:
 		areas = [area for area in areas if area in user.accessible_areas()]
 
@@ -110,6 +107,7 @@ def calendar(request, item_type=None, item_id=None):
 
 	calendar_view = CalendarCustomization.get('calendar_view')
 	calendar_first_day_of_week = CalendarCustomization.get('calendar_first_day_of_week')
+	calendar_time_format = CalendarCustomization.get('calendar_time_format')
 	calendar_day_column_format = CalendarCustomization.get('calendar_day_column_format')
 	calendar_week_column_format = CalendarCustomization.get('calendar_week_column_format')
 	calendar_month_column_format = CalendarCustomization.get('calendar_month_column_format')
@@ -128,6 +126,7 @@ def calendar(request, item_type=None, item_id=None):
 		'auto_select_item_type': item_type,
 		'calendar_view' : calendar_view,
 		'calendar_first_day_of_week' : calendar_first_day_of_week,
+		'calendar_time_format' : calendar_time_format,
 		'calendar_day_column_format' : calendar_day_column_format,
 		'calendar_week_column_format' : calendar_week_column_format,
 		'calendar_month_column_format' : calendar_month_column_format,
@@ -140,12 +139,12 @@ def calendar(request, item_type=None, item_id=None):
 		'self_login': False,
 		'self_logout': False,
 	}
-	login_logout = ApplicationCustomization.get('calendar_login_logout', raise_exception=False)
-	self_login = ApplicationCustomization.get('self_log_in', raise_exception=False)
-	self_logout = ApplicationCustomization.get('self_log_out', raise_exception=False)
-	if login_logout == 'enabled':
-		dictionary['self_login'] = self_login == 'enabled'
-		dictionary['self_logout'] = self_logout == 'enabled'
+	login_logout = ApplicationCustomization.get_bool("calendar_login_logout", raise_exception=False)
+	self_login = ApplicationCustomization.get_bool("self_log_in", raise_exception=False)
+	self_logout = ApplicationCustomization.get_bool("self_log_out", raise_exception=False)
+	if login_logout:
+		dictionary['self_login'] = self_login
+		dictionary['self_logout'] = self_logout
 	if request.user.is_staff:
 		dictionary['users'] = User.objects.all()
 	return render(request, 'calendar/calendar.html', dictionary)
@@ -559,7 +558,7 @@ def create_outage(request):
 		calendar_outage_recurrence_limit = CalendarCustomization.get("calendar_outage_recurrence_limit")
 		dictionary = {
 			'categories': ScheduledOutageCategory.objects.all(),
-			'recurrence_intervals': recurrence_frequency_display,
+			'recurrence_intervals': RecurrenceFrequency.choices(),
 			'recurrence_date_start': start.date(),
 			'calendar_outage_recurrence_limit': calendar_outage_recurrence_limit,
 		}
@@ -578,14 +577,9 @@ def create_outage(request):
 		date_until = end.replace(hour=0, minute=0, second=0)
 		if submitted_date_until:
 			date_until = localize(datetime.strptime(submitted_date_until, date_input_format))
-		date_until += timedelta(days=1, seconds=-1) # set at the end of the day
-		by_week_day = None
-		if submitted_frequency == 'DAILY_WEEKDAYS':
-			by_week_day = (rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR)
-		elif submitted_frequency == 'DAILY_WEEKENDS':
-			by_week_day = (rrule.SA, rrule.SU)
-		frequency = recurrence_frequencies.get(submitted_frequency, rrule.DAILY)
-		rules = rrule.rrule(dtstart=start, freq=frequency, interval=int(request.POST.get('recurrence_interval',1)), until=date_until, byweekday=by_week_day)
+		date_until += timedelta(days=1, seconds=-1)  # set at the end of the day
+		frequency = RecurrenceFrequency(quiet_int(submitted_frequency, RecurrenceFrequency.DAILY.index))
+		rules = get_recurring_rule(start, frequency, date_until, int(request.POST.get('recurrence_interval', 1)))
 		for rule in list(rules):
 			recurring_outage = ScheduledOutage()
 			recurring_outage.creator = outage.creator
@@ -718,7 +712,7 @@ def cancel_reservation(request, reservation_id):
 	reservation = get_object_or_404(Reservation, id=reservation_id)
 
 	reason = parse_parameter_string(request.POST, 'reason')
-	response = cancel_the_reservation(reservation=reservation, user_cancelling_reservation=request.user, reason=reason)
+	response = cancel_the_reservation(reservation=reservation, user_cancelling_reservation=request.user, reason=reason, request=request)
 
 	if request.device == 'desktop':
 		return response
@@ -784,10 +778,10 @@ def change_reservation_project(request, reservation_id):
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 @require_GET
 def email_reservation_reminders(request):
-	return send_email_reservation_reminders()
+	return send_email_reservation_reminders(request)
 
 
-def send_email_reservation_reminders():
+def send_email_reservation_reminders(request=None):
 	# Exit early if the reservation reminder email template has not been customized for the organization yet.
 	reservation_reminder_message = get_media_file_contents('reservation_reminder_email.html')
 	reservation_warning_message = get_media_file_contents('reservation_warning_email.html')
@@ -808,16 +802,16 @@ def send_email_reservation_reminders():
 		if item_type == ReservationItemType.TOOL and item.operational and not item.problematic() and item.all_resources_available()\
 				or item_type == ReservationItemType.AREA and not item.required_resource_is_unavailable():
 			subject = item.name + " reservation reminder"
-			rendered_message = Template(reservation_reminder_message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('success')}))
+			rendered_message = render_email_template(reservation_reminder_message, {'reservation': reservation, 'template_color': bootstrap_primary_color('success')}, request)
 		elif (item_type == ReservationItemType.TOOL and not item.operational) or item.required_resource_is_unavailable():
 			subject = item.name + " reservation problem"
-			rendered_message = Template(reservation_warning_message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('danger'), 'fatal_error': True}))
+			rendered_message = render_email_template(reservation_warning_message, {'reservation': reservation, 'template_color': bootstrap_primary_color('danger'), 'fatal_error': True}, request)
 		else:
 			subject = item.name + " reservation warning"
-			rendered_message = Template(reservation_warning_message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}))
+			rendered_message = render_email_template(reservation_warning_message, {'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}, request)
 		user_office_email = EmailsCustomization.get('user_office_email_address')
-		send_to_alternate = reservation.user.get_preferences().email_send_reservation_reminders
-		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
+		email_notification = reservation.user.get_preferences().email_send_reservation_reminders
+		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
 	return HttpResponse()
 
 
@@ -825,10 +819,10 @@ def send_email_reservation_reminders():
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 @require_GET
 def email_reservation_ending_reminders(request):
-	return send_email_reservation_ending_reminders()
+	return send_email_reservation_ending_reminders(request)
 
 
-def send_email_reservation_ending_reminders():
+def send_email_reservation_ending_reminders(request=None):
 	# Exit early if the reservation ending reminder email template has not been customized for the organization yet.
 	reservation_ending_reminder_message = get_media_file_contents('reservation_ending_reminder_email.html')
 	user_office_email = EmailsCustomization.get('user_office_email_address')
@@ -854,9 +848,9 @@ def send_email_reservation_ending_reminders():
 	# Email a reminder to each user with a reservation ending soon.
 	for reservation in ending_reservations:
 		subject = reservation.reservation_item.name + " reservation ending soon"
-		rendered_message = Template(reservation_ending_reminder_message).render(Context({'reservation': reservation}))
-		send_to_alternate = reservation.user.get_preferences().email_send_reservation_ending_reminders
-		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
+		rendered_message = render_email_template(reservation_ending_reminder_message, {'reservation': reservation}, request)
+		email_notification = reservation.user.get_preferences().email_send_reservation_ending_reminders
+		reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
 	return HttpResponse()
 
 
@@ -865,10 +859,10 @@ def send_email_reservation_ending_reminders():
 @require_GET
 def email_usage_reminders(request):
 	projects_to_exclude = request.GET.getlist("projects_to_exclude[]")
-	return send_email_usage_reminders(projects_to_exclude)
+	return send_email_usage_reminders(projects_to_exclude, request)
 
 
-def send_email_usage_reminders(projects_to_exclude=None):
+def send_email_usage_reminders(projects_to_exclude=None, request=None):
 	if projects_to_exclude is None:
 		projects_to_exclude = []
 	busy_users = AreaAccessRecord.objects.filter(end=None, staff_charge=None).exclude(project__id__in=projects_to_exclude)
@@ -905,19 +899,19 @@ def send_email_usage_reminders(projects_to_exclude=None):
 	if message:
 		subject = f"{facility_name} usage"
 		for user in aggregate.values():
-			rendered_message = Template(message).render(Context({'user': user}))
+			rendered_message = render_email_template(message, {'user': user}, request)
 			user_instance: User = user['user']
-			send_to_alternate = user_instance.get_preferences().email_send_usage_reminders
-			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
+			email_notification = user_instance.get_preferences().email_send_usage_reminders
+			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
 
 	message = get_media_file_contents('staff_charge_reminder_email.html')
 	if message:
 		busy_staff = StaffCharge.objects.filter(end=None)
 		for staff_charge in busy_staff:
 			subject = "Active staff charge since " + format_datetime(staff_charge.start)
-			rendered_message = Template(message).render(Context({'staff_charge': staff_charge}))
-			send_to_alternate = staff_charge.staff_member.get_preferences().email_send_usage_reminders
-			staff_charge.staff_member.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, send_to_alternate=send_to_alternate)
+			rendered_message = render_email_template(message, {'staff_charge': staff_charge}, request)
+			email_notification = staff_charge.staff_member.get_preferences().email_send_usage_reminders
+			staff_charge.staff_member.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
 
 	return HttpResponse()
 
@@ -926,10 +920,10 @@ def send_email_usage_reminders(projects_to_exclude=None):
 @require_GET
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def cancel_unused_reservations(request):
-	return do_cancel_unused_reservations()
+	return do_cancel_unused_reservations(request)
 
 
-def do_cancel_unused_reservations():
+def do_cancel_unused_reservations(request=None):
 	"""
 	Missed reservation for tools is when there is no tool activity during the reservation time + missed reservation threshold.
 	Any tool usage will count, since we don't want to charge for missed reservation when users swap reservation or somebody else gets to use the tool.
@@ -984,7 +978,7 @@ def do_cancel_unused_reservations():
 				missed_reservations.append(r)
 
 	for r in missed_reservations:
-		send_missed_reservation_notification(r)
+		send_missed_reservation_notification(r, request)
 
 	return HttpResponse()
 
@@ -993,10 +987,10 @@ def do_cancel_unused_reservations():
 @require_GET
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def email_out_of_time_reservation_notification(request):
-	return send_email_out_of_time_reservation_notification()
+	return send_email_out_of_time_reservation_notification(request)
 
 
-def send_email_out_of_time_reservation_notification():
+def send_email_out_of_time_reservation_notification(request=None):
 	"""
 	Out of time reservation notification for areas is when a user is still logged in a area but his reservation expired.
 	"""
@@ -1027,7 +1021,7 @@ def send_email_out_of_time_reservation_notification():
 				out_of_time_user_area.append(ending_reservations[0])
 
 	for reservation in out_of_time_user_area:
-		send_out_of_time_reservation_notification(reservation)
+		send_out_of_time_reservation_notification(reservation, request)
 
 	return HttpResponse()
 
@@ -1094,7 +1088,7 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 		pass
 
 
-def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation: User, reason: Optional[str]):
+def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation: User, reason: Optional[str], request=None):
 	# Check policy to cancel reservation contains rules common to cancelling and modifying
 	response = check_policy_to_cancel_reservation(user_cancelling_reservation, reservation)
 
@@ -1125,7 +1119,7 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 					'reason': reason,
 					'template_color': bootstrap_primary_color('info')
 				}
-				cancellation_email = Template(email_contents).render(Context(dictionary))
+				cancellation_email = render_email_template(email_contents, dictionary, request)
 				recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_emails)
 				if reservation.area:
 					recipients.extend(reservation.area.reservation_email_list())
@@ -1142,13 +1136,13 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 	return response
 
 
-def send_missed_reservation_notification(reservation):
+def send_missed_reservation_notification(reservation, request=None):
 	message = get_media_file_contents('missed_reservation_email.html')
 	user_office_email = EmailsCustomization.get('user_office_email_address')
 	abuse_email = EmailsCustomization.get('abuse_email_address')
 	if message and user_office_email:
 		subject = "Missed reservation for the " + str(reservation.reservation_item)
-		message = Template(message).render(Context({'reservation': reservation}))
+		message = render_email_template(message, {'reservation': reservation}, request)
 		recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_emails)
 		recipients.append(abuse_email)
 		recipients.append(user_office_email)
@@ -1157,12 +1151,12 @@ def send_missed_reservation_notification(reservation):
 		calendar_logger.error("Missed reservation email couldn't be send because missed_reservation_email.html or user_office_email are not defined")
 
 
-def send_out_of_time_reservation_notification(reservation:Reservation):
+def send_out_of_time_reservation_notification(reservation:Reservation, request=None):
 	message = get_media_file_contents('out_of_time_reservation_email.html')
 	user_office_email = EmailsCustomization.get('user_office_email_address')
 	if message and user_office_email:
 		subject = "Out of time in the " + str(reservation.area.name)
-		message = Template(message).render(Context({'reservation': reservation}))
+		message = render_email_template(message, {'reservation': reservation}, request)
 		recipients = reservation.user.get_emails(reservation.user.get_preferences().email_send_reservation_ending_reminders)
 		recipients.extend(reservation.area.abuse_email_list())
 		send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, email_category=EmailCategory.TIMED_SERVICES)
@@ -1179,7 +1173,7 @@ def send_user_created_reservation_notification(reservation: Reservation):
 	if recipients:
 		subject = f"[{site_title}] Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_created_user_email.html')
-		message = Template(message).render(Context({'reservation': reservation}))
+		message = render_email_template(message, {'reservation': reservation})
 		user_office_email = EmailsCustomization.get('user_office_email_address')
 		# We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
@@ -1198,7 +1192,7 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
 	if recipients:
 		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
-		message = Template(message).render(Context({'reservation': reservation}))
+		message = render_email_template(message, {'reservation': reservation})
 		user_office_email = EmailsCustomization.get('user_office_email_address')
 		# We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
@@ -1244,7 +1238,7 @@ def do_create_closure_alerts():
 		create_alert_for_closure_time(closure_time)
 	for closure in Closure.objects.filter(notify_managers_last_occurrence=True):
 		closure_time_ending = ClosureTime.objects.filter(closure=closure).latest("end_time")
-		if as_timezone(closure_time_ending.end_time).date() == timezone.now().date():
+		if as_timezone(closure_time_ending.end_time).date() == date.today():
 			email_last_closure_occurrence(closure_time_ending)
 	return HttpResponse()
 
@@ -1270,7 +1264,7 @@ def create_alert_for_closure_time(closure_time: ClosureTime):
 
 
 def email_last_closure_occurrence(closure_time):
-	facility_manager_emails = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(include_alternate=True)]
+	facility_manager_emails = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(EmailNotificationType.BOTH_EMAILS)]
 	message = f"""
 Dear facility manager,<br>
 This email is to inform you that today was the last occurrence for the {closure_time.closure.name} facility closure.
@@ -1283,3 +1277,161 @@ This email is to inform you that today was the last occurrence for the {closure_
 		to=facility_manager_emails,
 		email_category=EmailCategory.SYSTEM,
 	)
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def email_user_access_expiration_reminders(request):
+	return send_email_user_access_expiration_reminders(request)
+
+
+def send_email_user_access_expiration_reminders(request=None):
+	facility_name = ApplicationCustomization.get("facility_name")
+	user_office_email = EmailsCustomization.get("user_office_email_address")
+	access_expiration_reminder_days = UserCustomization.get("user_access_expiration_reminder_days")
+	template = get_media_file_contents("user_access_expiration_reminder_email.html")
+	if user_office_email and template and access_expiration_reminder_days:
+		user_expiration_reminder_cc = UserCustomization.get("user_access_expiration_reminder_cc")
+		ccs = [e for e in user_expiration_reminder_cc.split(",") if e]
+		for remaining_days in [int(days) for days in access_expiration_reminder_days.split(",")]:
+			expiration_date = date.today() + timedelta(days=remaining_days)
+			for user in User.objects.filter(is_active=True, access_expiration=expiration_date):
+				subject = f"Your {facility_name} access expires in {remaining_days} days ({format_datetime(user.access_expiration)})"
+				message = render_email_template(template, {"user": user, "remaining_days": remaining_days}, request)
+				email_notification = user.get_preferences().email_send_access_expiration_emails
+				user.email_user(
+					subject=subject,
+					message=message,
+					from_email=user_office_email,
+					cc=ccs,
+					email_notification=email_notification
+				)
+	return HttpResponse()
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def manage_tool_qualifications(request):
+	return do_manage_tool_qualifications(request)
+
+
+def do_manage_tool_qualifications(request=None):
+	user_office_email = EmailsCustomization.get("user_office_email_address")
+	qualification_reminder_days = ToolQualificationCustomization.get("tool_qualification_reminder_days")
+	qualification_expiration_days = ToolQualificationCustomization.get("tool_qualification_expiration_days")
+	qualification_expiration_never_used = ToolQualificationCustomization.get("tool_qualification_expiration_never_used_days")
+	template = get_media_file_contents("tool_qualification_expiration_email.html")
+	if user_office_email and template:
+		if qualification_expiration_days or qualification_expiration_never_used:
+			qualification_expiration_days = quiet_int(qualification_expiration_days, None)
+			qualification_expiration_never_used = quiet_int(qualification_expiration_never_used, None)
+			for qualification in Qualification.objects.filter(user__is_active=True, user__is_staff=False):
+				user = qualification.user
+				tool = qualification.tool
+				last_tool_use = None
+				try:
+					last_tool_use = as_timezone(UsageEvent.objects.filter(user=user, tool=tool).latest("start").start).date()
+					expiration_date: date = last_tool_use + timedelta(days=qualification_expiration_days) if qualification_expiration_days else None
+				except UsageEvent.DoesNotExist:
+					# User never used the tool, use the qualification date
+					expiration_date: date = qualification.qualified_on + timedelta(days=qualification_expiration_never_used) if qualification_expiration_never_used else None
+				if expiration_date:
+					if expiration_date <= date.today():
+						qualification.delete()
+						send_tool_qualification_expiring_email(qualification, last_tool_use, expiration_date, request=request)
+					if qualification_reminder_days:
+						for remaining_days in [int(days) for days in qualification_reminder_days.split(",")]:
+							if expiration_date - timedelta(days=remaining_days) == date.today():
+								send_tool_qualification_expiring_email(qualification, last_tool_use, expiration_date, remaining_days, request=request)
+	return HttpResponse()
+
+
+def send_tool_qualification_expiring_email(qualification: Qualification, last_tool_use: date, expiration_date: date, remaining_days: int = None, request=None):
+	user_office_email = EmailsCustomization.get("user_office_email_address")
+	template = get_media_file_contents("tool_qualification_expiration_email.html")
+	# Add extra cc emails
+	tool_qualification_cc = ToolQualificationCustomization.get("tool_qualification_cc")
+	ccs = [e for e in tool_qualification_cc.split(",") if e]
+	if remaining_days:
+		subject_expiration = f" expires in {remaining_days} days!"
+	else:
+		subject_expiration = " has expired"
+	subject = f"Your {qualification.tool.name} qualification {subject_expiration}"
+	dictionary = {
+		"user": qualification.user,
+		"tool": qualification.tool,
+		"last_tool_use": last_tool_use,
+		"expiration_date": expiration_date,
+		"qualification_date": qualification.qualified_on,
+		"remaining_days": remaining_days
+	}
+	message = render_email_template(template, dictionary, request)
+	email_notification = qualification.user.get_preferences().email_send_tool_qualification_expiration_emails
+	qualification.user.email_user(
+		subject=subject,
+		message=message,
+		from_email=user_office_email,
+		cc=ccs,
+		email_notification=email_notification
+	)
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def manage_recurring_charges(request):
+	return do_manage_recurring_charges(request)
+
+
+def do_manage_recurring_charges(request=None):
+	# Dictionary of user ids and list of recurring charges they need to be reminded of
+	user_reminders = {}
+	for recurring_charge in RecurringConsumableCharge.objects.filter(customer__isnull=False):
+		today = beginning_of_the_day(datetime.now(), in_local_timezone=False)
+		next_match_including_today = recurring_charge.next_charge(inc=True)
+		if not next_match_including_today:
+			continue
+		if next_match_including_today == today or next_match_including_today.date() == today.date():
+			try:
+				recurring_charge.charge()
+			except ValidationError as e:
+				url = get_full_url(reverse("edit_recurring_charge", args=[recurring_charge.id]), request)
+				recurring_charge_name = RecurringChargesCustomization.get("recurring_charges_name")
+				user_office_email = EmailsCustomization.get("user_office_email_address")
+				content = f"The item \"{recurring_charge.name}\" <b>could not be charged</b> for the following reason(s):"
+				content += f"{nice_errors(e).as_ul()}"
+				content += f"You can fix the issue by going to the <a href=\"{url}\">{recurring_charge.name}</a> page."
+				send_mail(subject=f"Error processing {recurring_charge_name.lower()}", content=content, from_email=None, to=[user_office_email])
+			except Exception:
+				calendar_logger.exception("Error trying to charge for %s", recurring_charge.name)
+		customer: User = recurring_charge.customer
+		next_charge = recurring_charge.next_charge()
+		if customer.get_preferences().get_recurring_charges_days():
+			reminder_days = (next_charge - today).days
+			if reminder_days in customer.get_preferences().get_recurring_charges_days():
+				key = customer.id
+				if key in user_reminders:
+					user_reminders[key]["charges"].append(recurring_charge)
+				else:
+					user_reminders[key] = {
+						"user": customer,
+						"reminder_days": reminder_days,
+						"charges": [recurring_charge],
+					}
+	send_recurring_charge_reminders(request, user_reminders.values())
+	return HttpResponse()
+
+
+def send_recurring_charge_reminders(request, reminders: Iterable[Dict]):
+	message = get_media_file_contents("recurring_charges_reminder_email.html")
+	user_office_email = EmailsCustomization.get("user_office_email_address")
+	recurring_charges_name = RecurringChargesCustomization.get("recurring_charges_name")
+	if message and user_office_email:
+		for user_reminders in reminders:
+			subject = f"{recurring_charges_name} will be charged in {user_reminders['reminder_days']} day(s)"
+			user_instance: User = user_reminders["user"]
+			rendered_message = render_email_template(message, user_reminders, request)
+			email_notification = user_instance.get_preferences().email_send_recurring_charges_reminder_emails
+			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)

@@ -45,9 +45,8 @@
 										{{ reservation.additional_information|linebreaksbr }}
 									</p>
 									{% if not reservation.tool.in_use and reservation.project %}
-										<button class="btn btn-info" onclick="enable_tool('{% url 'enable_tool' tool_id=reservation.tool.id user_id=reservation.user.id project_id=reservation.project.id staff_charge='false' %}')">
-											Enable the tool on behalf of {{ reservation.user.first_name }}
-										</button>
+                                        {% url 'enable_tool' tool_id=reservation.tool.id user_id=reservation.user.id project_id=reservation.project.id staff_charge='false' as enable_tool_for_user_url %}
+                                        {% button type="info" icon="glyphicon-play" value="Enable the tool on behalf of "|concat:reservation.user.first_name onclick="enable_tool('"|concat:enable_tool_for_user_url|concat:"');" %}
 									{% endif %}
 								</td>
 								{% if forloop.first %}
@@ -59,16 +58,18 @@
 										{% endfor %}
 										{% if reservation.tool.in_use %}
 											{% if reservation.tool.get_current_usage_event.operator.id == user.id %}
-												<button id="interlock" type="button" class="btn btn-default" onclick="disable_tool('{% url 'disable_tool' reservation.tool.id %}')">Disable tool</button>
+                                                {% url 'disable_tool' reservation.tool.id as disable_tool_url %}
+                                                {% button type="delete" id="interlock" icon="glyphicon-stop" onclick="disable_tool('"|concat:disable_tool_url|concat:"')" value="Disable tool" %}
 											{% else %}
-												<button type="button" class="btn btn-default disabled"><span class="glyphicon glyphicon-ban-circle"></span> Tool in use</button>
+                                                {% button type="warn" disabled="disabled" icon="glyphicon-ban-circle" value="Tool in use" %}
 											{% endif %}
 										{% else %}
 											{% if user.active_project_count == 1 %}
-												<button id="interlock" type="button" class="btn btn-default" onclick="enable_tool('{% url 'enable_tool' tool_id=reservation.tool.id user_id=user.id project_id=user.active_projects.0.id staff_charge='false' %}')">Enable the tool for myself</button>
+                                                {% url 'enable_tool' tool_id=reservation.tool.id user_id=user.id project_id=user.active_projects.0.id staff_charge='false' as enable_tool_one_project %}
+                                                {% button id="interlock" type="save" onclick="enable_tool('"|concat:enable_tool_one_project|concat:"');" value="Enable the tool for myself" icon="glyphicon-play" %}
 											{% elif user.active_project_count > 1 %}
 												<div class="btn-group">
-													<button id="interlock" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Enable the tool for myself <span class="caret"></span></button>
+													<button id="interlock" type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown"><i class="glyphicon glyphicon-play"></i> Enable the tool for myself <span class="caret"></span></button>
 													<ul class="dropdown-menu">
 														<li class="dropdown-header">Using which project?</li>
 														{% for project in user.active_projects %}
@@ -101,7 +102,7 @@
 
 			function reload_page(response, status, xml_http_request)
 			{
-				location.reload(true);
+				location.reload();
 			}
 		</script>
 	{% else %}

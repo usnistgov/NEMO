@@ -89,7 +89,8 @@
                     <div class="panel-body">
                         <div class="text-right">
                             <div>
-                                <input type="button" class="btn btn-info" value="Export" onclick="refresh_page();window.open('{% url 'export_sensor_data' sensor.id %}')">
+                                {% url 'export_sensor_data' sensor.id as export_url %}
+                                {% button type="export" value="Export" onclick="refresh_page();window.open(get_base_url('"|concat:export_url|concat:"'))" %}
                             </div>
                         </div>
                         <div>

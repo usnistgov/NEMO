@@ -1,6 +1,6 @@
 from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.utilities import date_input_js_format, datetime_input_js_format, time_input_js_format
-from NEMO.views.customization import ApplicationCustomization
+from NEMO.views.customization import ApplicationCustomization, RecurringChargesCustomization
 from NEMO.views.notifications import get_notification_counts
 
 
@@ -25,6 +25,10 @@ def base_context(request):
 		facility_name = ApplicationCustomization.get("facility_name")
 	except:
 		facility_name = "Facility"
+	try:
+		recurring_charges_name = RecurringChargesCustomization.get("recurring_charges_name")
+	except:
+		recurring_charges_name = "Recurring charges"
 	try:
 		site_title = ApplicationCustomization.get("site_title")
 	except:
@@ -64,8 +68,9 @@ def base_context(request):
 		facility_managers_exist = False
 	return {
 		"facility_name": facility_name,
+		"recurring_charges_name": recurring_charges_name,
 		"site_title": site_title,
-		"device": request.device,
+		"device": getattr(request, "device", "desktop"),
 		"tools_exist": tools_exist,
 		"areas_exist": areas_exist,
 		"buddy_system_areas_exist": buddy_system_areas_exist,

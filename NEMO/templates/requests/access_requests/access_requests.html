@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div style="margin: 15px 0">
     <div style="display: table-cell; width: 100%">
         {% if access_requests_description %}
@@ -7,7 +8,7 @@
             </div>
         {% endif %}
     </div>
-    <div class="align-right" style="display: table-cell; vertical-align: top"><a class="btn btn-success" href="{% url 'create_access_request' %}">New request</a></div>
+    <div class="align-right" style="display: table-cell; vertical-align: top">{% button type="add" url="create_access_request" value="New request" %}</div>
 </div>
 {% if pending_access_requests or approved_access_requests or denied_access_requests or expired_access_requests %}
     <div>

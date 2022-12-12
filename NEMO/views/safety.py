@@ -1,14 +1,13 @@
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
-from django.template import Context, Template
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import staff_member_required
 from NEMO.forms import SafetyIssueCreationForm, SafetyIssueUpdateForm
 from NEMO.models import SafetyIssue
-from NEMO.utilities import EmailCategory, send_mail
+from NEMO.utilities import EmailCategory, get_full_url, render_email_template, send_mail
 from NEMO.views.customization import EmailsCustomization, get_media_file_contents
 from NEMO.views.notifications import create_safety_notification, delete_notification, get_notifications
 
@@ -40,8 +39,8 @@ def send_safety_email_notification(request, issue):
 	message = get_media_file_contents("safety_issue_email.html")
 	if recipient and message:
 		subject = "Safety issue"
-		dictionary = {"issue": issue, "issue_absolute_url": request.build_absolute_uri(issue.get_absolute_url())}
-		rendered_message = Template(message).render(Context(dictionary))
+		dictionary = {"issue": issue, "issue_absolute_url": get_full_url(issue.get_absolute_url(), request)}
+		rendered_message = render_email_template(message, dictionary, request)
 		from_email = issue.reporter.email if issue.reporter else recipient
 		send_mail(
 			subject=subject,

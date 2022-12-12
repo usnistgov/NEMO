@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'users/users.html' %}
 {% load custom_tags_and_filters %}
 {% load mptt_tags %}
 {% block title %}{% if form.instance.id %}Modify user{% else %}New user{% endif %}{% endblock %}
@@ -7,31 +7,33 @@
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
 	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
 {% endblock %}
-{% block content %}
-	{% if form.errors %}
-		<div class="alert alert-danger">
-			Oops! Something went wrong. Please correct the errors highlighted below.<br>
-			{{ form.non_field_errors }}
-		</div>
-	{% endif %}
-	{% if warning %}
-		<div class="alert alert-warning">
-			{{ warning }}
-		</div>
-	{% endif %}
-	<div class="row">
-		<div class="col-sm-12">
-			<div class="form-group">
-				{% if form.instance.id %}
-					<a href="{% url 'users' %}">Search for another user</a><br>
-					<a href="{% url 'history' 'user' form.instance.id %}">View user history</a><br>
-					{% if form.is_active.value %}<a href="{% url 'deactivate_user' form.instance.id %}">Safely deactivate this user</a><br>{% endif %}
-				{% endif %}
-			</div>
-		</div>
-	</div>
-	<h1>{% if form.instance.id %}Modify user{% else %}New user{% endif %}</h1>
-	<form class="form-horizontal" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}">
+{% block before_pagination %}
+    {% if form.instance.id %}{{ block.super }}{% endif %}
+{% endblock %}
+{% block table_empty_content %}
+    {% if form.instance.id %}
+        <div class="row col-sm-12" style="margin-bottom: 25px">
+            <div class="col-sm-6" style="border-top: 1px solid #ddd;"></div>
+        </div>
+    {% endif %}
+    <div class="row col-sm-12">
+    {% if form.errors %}
+        <div class="col-sm-6 alert alert-danger">
+            Oops! Something went wrong. Please correct the errors highlighted below.<br>
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+    {% if warning %}
+        <div class="col-sm-6 alert alert-warning">
+            {{ warning }}
+        </div>
+    {% endif %}
+    </div>
+	<div class="h1 row" style="margin-bottom: 25px">
+        {% url 'history' 'user' form.instance.id as user_history_url %}
+        {% if form.instance.id %}<div class="col-xs-6 col-sm-4" style="padding-right: 0">{% if readonly %}View{% else %}Modify{% endif %} user</div><div class="col-sm-2 text-right" style="padding-left: 0">{% button type="info" icon="glyphicon-list" value="View user history" url=user_history_url %}</div>{% else %}<div class="col-sm-6">New user</div>{% endif %}
+    </div>
+	<form id="user_form" class="form-horizontal" enctype="multipart/form-data" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}?next={{ request.GET.next|default:''|urlencode }}">
 		{% csrf_token %}
 		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="user_id">{% endif %}
 		<div class="form-group">
@@ -57,7 +59,7 @@
 			{% endif %}
 		</div>
 		<div class="form-group">
-			<label class="control-label col-sm-2" for="username"><strong>User name</strong></label>
+			<label class="control-label col-sm-2" for="username"><strong>Username</strong></label>
 			<div class="col-sm-4">
 				<input id="username" name="username" type="text" autocomplete="off" class="form-control" value="{{ form.username.value|default_if_none:"" }}" required>
 			</div>
@@ -90,6 +92,23 @@
 				</div>
 			</div>
 		{% endif %}
+		{% if form.fields.discipline.choices.queryset %}
+			<div class="form-group">
+				<label for="discipline" class="control-label col-sm-2">Main discipline</label>
+				<div class="col-sm-4">
+					<select name="discipline" id="discipline" class="form-control">
+						{% for discipline_id, discipline_name in form.fields.discipline.choices %}
+							<option value="{{ discipline_id }}" {% if discipline_id == form.discipline.value|to_int %}selected{% endif %}>{{ discipline_name|default_if_none:'' }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				{% if form.discipline.errors %}
+					<div class="col-sm-6 form-control-static danger-highlight">
+						{{ form.discipline.errors|striptags }}
+					</div>
+				{% endif %}
+			</div>
+		{% endif %}
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="badge_number">Badge number</label>
 			<div class="col-sm-4">
@@ -101,13 +120,19 @@
 				</div>
 			{% endif %}
 		</div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="notes">Notes</label>
+			<div class="col-sm-4">
+				<textarea oninput="auto_size_textarea(this);" id="notes" name="notes" class="form-control">{{ form.notes.value|default_if_none:"" }}</textarea>
+			</div>
+        </div>
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="access_expiration">Access expiration</label>
 			<div class="col-sm-2">
 				<input id="access_expiration" name="access_expiration" type="text" autocomplete="off" class="form-control" value="{{ form.access_expiration.value|input_date_format }}">
 			</div>
 			<div class="control-label col-sm-2" style="text-align:left">
-				<a href="javascript:void(0)" onclick="$('#access_expiration').val('{{ one_year_from_now|input_date_format }}')">One year from now</a>
+				{% if not readonly %}<a href="javascript:void(0)" onclick="$('#access_expiration').val('{{ one_year_from_now|input_date_format }}')">One year from now</a>{% endif %}
 			</div>
 			{% if form.access_expiration.errors %}
 				<div class="col-sm-6 form-control-static danger-highlight">
@@ -116,21 +141,21 @@
 			{% endif %}
 		</div>
 		<div class="form-group">
-			<div class="col-sm-offset-2 {% if form.instance.id and form.is_active.value %}col-sm-2{% else %}col-sm-10{% endif %}">
+			<div class="col-sm-offset-2 {% if not readonly and form.instance.id and form.is_active.value %}col-sm-2{% else %}col-sm-10{% endif %}">
 				<div class="checkbox">
 					<label {% if form.instance.id and form.is_active.value %}data-toggle="tooltip" data-placement="left" title="Pro-tip: you can safely deactivate this user using the link on the right so that no future costs are incurred (such as missed reservations)."{% endif %}>
 						<input id="is_active" name="is_active" type="checkbox" {% if form.is_active.value %}checked{% endif %}> Active
 					</label>
 				</div>
 			</div>
-			{% if form.instance.id and form.is_active.value %}
+			{% if not readonly and form.instance.id and form.is_active.value %}
 				<div class="control-label col-sm-8" style="text-align: left">
 					<a href="{% url 'deactivate_user' form.instance.id %}">Safely deactivate this user</a>
 				</div>
 			{% endif %}
-			<div class="col-sm-offset-2 col-sm-2">
+			<div class="col-sm-offset-2 col-sm-4">
 				<div class="checkbox">
-					<label><input id="training_required" name="training_required" type="checkbox" {% if form.training_required.value %}checked{% endif %}> Training required</label>
+					<label><input id="training_required" name="training_required" type="checkbox" {% if form.training_required.value %}checked{% endif %}> Facility rules tutorial required</label>
 				</div>
 			</div>
 		</div>
@@ -168,27 +193,29 @@
 		</div>
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="add_a_project">Projects</label>
-			<div class="col-sm-4">
+			{% if not readonly %}<div class="col-sm-4">
 				<input id="add_a_project" type="text" autocomplete="off" class="form-control" placeholder="Add a project">
 			</div>
 		</div>
 		<div class="form-group">
-			<div id="project-list" class="col-sm-offset-2 col-sm-4">
+            {% endif %}
+			<div id="project-list" class="{% if not readonly %}col-sm-offset-2{% endif %} col-sm-4" {% if readonly %}style="padding-top: 7px"{% endif %}>
 				This user has no assigned projects.
 			</div>
 		</div>
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="add_a_tool_qualification">Tool qualifications</label>
-			<div class="col-sm-4">
+			{% if not readonly %}<div class="col-sm-4">
 				<input id="add_a_tool_qualification" type="text" autocomplete="off" class="form-control" placeholder="Add a qualification">
 			</div>
 		</div>
 		<div class="form-group">
-			<div id="qualification-list" class="col-sm-offset-2 col-sm-4">
+            {% endif %}
+			<div id="qualification-list" class="{% if not readonly %}col-sm-offset-2{% endif %} col-sm-4" {% if readonly %}style="padding-top: 7px"{% endif %}>
 				This user is not qualified to use any tools.
 			</div>
 		</div>
-		{% if area_access_levels or externally_managed_access_levels %}
+		{% if area_access_levels or externally_managed_physical_access_levels %}
 			<div class="form-group">
 				<span class="control-label col-sm-2">Physical access levels</span>
 				<div class="col-sm-8">
@@ -279,18 +306,75 @@
 				</div>
 			</div>
 		{% endif %}
-		<div class="form-group">
-			<div class="col-sm-2">
-				<input type="submit" class="btn btn-success pull-right" value="{% if form.instance.id %}Save changes{% else %}Create user{% endif %}">
+		{% if form.fields.safety_trainings.choices.queryset %}
+			<div class="form-group">
+				<span class="control-label col-sm-2">Safety training</span>
+				<div class="col-sm-8">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<span class="panel-title" style="font-size:inherit">Safety training</span>
+						</div>
+						<div class="panel-body">
+							{% for safety_training_id, safety_training_name in form.fields.safety_trainings.choices %}
+								<div class="checkbox">
+									<label><input name="safety_trainings" type="checkbox" {% if safety_training_id in form.safety_trainings.value %}checked{% endif %} value="{{ safety_training_id }}"> {{ safety_training_name }}</label>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
 			</div>
-		</div>
+		{% endif %}
+		{% if form.fields.onboarding_phases.choices.queryset %}
+			<div class="form-group">
+				<span class="control-label col-sm-2">Onboarding phases</span>
+				<div class="col-sm-8">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<span class="panel-title" style="font-size:inherit">Onboarding phases</span>
+						</div>
+						<div class="panel-body">
+							{% for onboarding_phase_id, onboarding_phase_name in form.fields.onboarding_phases.choices %}
+								<div class="checkbox">
+									<label><input name="onboarding_phases" type="checkbox" {% if onboarding_phase_id in form.onboarding_phases.value %}checked{% endif %} value="{{ onboarding_phase_id }}"> {{ onboarding_phase_name }}</label>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
+		{% endif %}
+		{% if form.instance.user_documents.all or allow_document_upload %}
+			<div class="form-group">
+				<span class="control-label col-sm-2">Documents</span>
+				<div class="col-sm-10">
+					{% for d in form.instance.user_documents.all %}
+						<div id="document_{{ d.id }}">{% if not readonly %}<a href="javascript:mark_document_for_removal('{{ d.id }}')" class="grey hover-black" title="Remove {{ d.filename }}"><span class="glyphicon glyphicon-remove-circle"></span></a>{% endif %} <a href="{{ d.document.url }}" target="_blank" style="margin-right: 5px">{{ d.filename }}</a></div>
+					{% empty %}
+                        <div class="form-control-static">This user doesn't have any documents.</div>
+					{% endfor %}
+                    {% if not readonly and allow_document_upload %}
+                        <div style="padding-top: 10px">
+                            <input id="fileupload" type="file" name="user_documents" multiple>
+                        </div>
+                    {% endif %}
+				</div>
+			</div>
+		{% endif %}
+        {% if not readonly %}
+            <div class="form-group">
+                <div class="col-sm-offset-2 col-md-10">
+                    {% button type="save" value=form.instance.id|yesno:"Save changes,Create user" %}
+                </div>
+            </div>
+        {% endif %}
 	</form>
-	{% if identity_service_available and form.instance.id and user_identity_information.can_reset_password_and_unlock_account %}
+	{% if not readonly and identity_service_available and form.instance.id and user_identity_information.can_reset_password_and_unlock_account %}
 		<form class="form-horizontal" method="post" action="{% url 'reset_password' form.instance.id %}">
 			{% csrf_token %}
 			<div class="form-group">
-				<div class="col-sm-2">
-					<input type="submit" class="btn btn-warning pull-right" value="Reset password">
+				<div class="col-sm-offset-2 col-md-10">
+                    {% button type="warn" submit=True icon="glyphicon-repeat" value="Reset password" %}
 				</div>
 			</div>
 		</form>
@@ -299,8 +383,8 @@
 			<form class="form-horizontal" method="post" action="{% url 'unlock_account' form.instance.id %}">
 				{% csrf_token %}
 				<div class="form-group">
-					<div class="col-sm-2">
-						<input type="submit" class="btn btn-warning pull-right" value="Unlock account">
+					<div class="col-sm-offset-2 col-md-10">
+                        {% button type="warn" submit=True icon="glyphicon-lock" value="Unlock account" %}
 					</div>
 				</div>
 			</form>
@@ -318,7 +402,7 @@
 		}
 		function add_project(project_name, project_id)
 		{
-			add_to_list("#project-list", "remove_project", project_id, project_name, "Remove this user from " + project_name, "projects");
+			add_to_list("#project-list", "remove_project", project_id, project_name, "Remove this user from " + project_name, "projects", {{ readonly|yesno:"true,false" }});
 		}
 		function remove_project(project_id)
 		{
@@ -326,14 +410,20 @@
 		}
 		function add_tool_qualification(tool_name, tool_id)
 		{
-			add_to_list("#qualification-list", "remove_tool_qualification", tool_id, tool_name, "Disqualify this user from using the " + tool_name, "qualifications");
+			add_to_list("#qualification-list", "remove_tool_qualification", tool_id, tool_name, "Disqualify this user from using the " + tool_name, "qualifications", {{ readonly|yesno:"true,false" }});
 		}
 		function remove_tool_qualification(tool_id)
 		{
 			remove_from_list("#qualification-list", "#qualifications_" + tool_id, "This user is not qualified to use any tools.");
 		}
+        function mark_document_for_removal(document_id)
+        {
+            $("#document_"+document_id).remove();
+            $("#user_form").append('<input type="hidden" name="remove_documents" value="'+document_id+'" />');
+		}
 		function on_load()
 		{
+            auto_size_textarea(document.getElementById('notes'));
 			$('[data-toggle="tooltip"]').tooltip();
 			$("#access_expiration").datetimepicker({format: '{{ date_input_js_format }}'});
 			$('#add_a_project').autocomplete('projects', on_search_selection, {% json_search_base_with_extra_fields projects 'application_identifier' %});
@@ -346,6 +436,11 @@
 					add_tool_qualification('{{ tool.name }}', {{ tool.id }});
 				{% endfor %}
 			{% endif %}
+            if ({{ readonly|yesno:"true,false" }})
+            {
+                $('#user_form :input[type=text], #user_form textarea').prop('readonly', true).removeClass("form-control").addClass("form-control-plaintext");
+                $('#user_form :input[type=checkbox], #user_form select').prop('disabled', true);
+            }
 		}
 		$(on_load);
 	</script>

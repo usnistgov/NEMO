@@ -1,0 +1,81 @@
+{% extends 'pagination/pagination_base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}{{ recurring_charges_name }}{% endblock %}
+{% block before_pagination %}
+	<div class="h1 row">
+        <div class="col-xs-6 col-sm-7 col-md-8">{{ recurring_charges_name }}</div>
+        <div class="col-xs-6 col-sm-5 col-md-4 text-right">
+            {% button type="export" value="Export" url="export_recurring_charges" target="_blank" %}
+            {% if extended_permissions %}
+                {% button value="Add item" type="add" url="create_recurring_charge" %}
+            {% endif %}
+        </div>
+	</div>
+    {% if page %}
+        <div class="row" style="margin-bottom: 25px">
+            <div class="col-sm-6">
+                <input id="search" type="text" aria-label="Search for {{ recurring_charges_name|lower }}" placeholder="Search for {{ recurring_charges_name|lower }}" class="form-control" autofocus>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+{% block pagination_content %}
+    {% regroup page by quantity as different_quantities %}
+    <table class="table table-bordered table-condensed table-hover table-align-middle thead-light">
+        <thead>
+            <tr>
+                <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
+                {% if different_quantities|length != 1 or page.0.quantity != 1 %}<th>{% include 'pagination/pagination_column.html' with order_by='quantity' name='Quantity' %}</th>{% endif %}
+                <th>{% include 'pagination/pagination_column.html' with order_by='consumable' name='Item' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='customer' name='Customer' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='project' name='Project' %}</th>
+                <th>Frequency</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='last_charge' name='Last charge' %}</th>
+                <th>Next charge</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% now "Y-m-d" as today_date %}
+            {% for recurring_charge in page %}
+                <tr {% if not recurring_charge.is_empty and not recurring_charge.next_charge %}class="alert-danger" data-toggle="tooltip" data-title="This item expired"{% endif %}>
+                    <td>{{ recurring_charge.name }}</td>
+                    {% if different_quantities|length != 1 or page.0.quantity != 1 %}<td>{{ recurring_charge.quantity }}</td>{% endif %}
+                    <td>{{ recurring_charge.consumable }}</td>
+                    <td {% if recurring_charge.invalid_customer %}class="alert-danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_customer|default:'' }}"{% endif %}>{{ recurring_charge.customer|default_if_none:"" }}</td>
+                    <td {% if recurring_charge.invalid_project %}class="alert-danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project|default:'' }}"{% endif %}>{{ recurring_charge.project|default_if_none:"" }}</td>
+                    <td style="white-space: nowrap;">{% if recurring_charge.get_recurrence_interval_display %}{{ recurring_charge.get_recurrence_interval_display }} <span class="glyphicon glyphicon-info-sign primary-highlight" style="vertical-align: text-bottom" data-toggle="tooltip" data-title="{{ recurring_charge.get_recurrence_display|default_if_none:'' }}"></span>{% endif %}</td>
+                    <td>{{ recurring_charge.last_charge|date:'SHORT_DATE_FORMAT' }}</td>
+                    <td>{{ recurring_charge.next_charge|date:'SHORT_DATE_FORMAT' }}</td>
+                    <td class="button-column-minimum">
+                        {% url "edit_recurring_charge" recurring_charge.id as edit_charge %}
+                        {% url "clear_recurring_charge" recurring_charge.id as clear_charge %}
+                        {% url "delete_recurring_charge" recurring_charge.id as delete_charge %}
+                        {% button type="edit" size="small" value="Edit" url=edit_charge %}
+                        {% button type="warn" size="small" icon="glyphicon-log-out" value="Clear" onclick="return confirm('Are you sure you want to clear "|concat:recurring_charge.name|concat:"?');" url=clear_charge %}
+                        {% if extended_permissions %}
+                            {% button type="delete" size="small" value="Delete" onclick="return confirm('Are you sure you want to delete "|concat:recurring_charge.name|concat:"?');" url=delete_charge %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+{% block table_empty_content %}
+    <div>There are no current {{ recurring_charges_name|lower }}. {% if extended_permissions %}Please add some by clicking the "Add item" button above.{% endif %}</div>
+{% endblock %}
+{% block after_pagination %}
+    <script>
+        $('[data-toggle~="tooltip"]').tooltip({container: 'body'});
+		function get_charge(jquery_event, search_selection, dataset_name)
+		{
+			window.location.href = "{% url 'edit_recurring_charge' 999 %}".replace('999', search_selection.id);
+		}
+		function on_load()
+		{
+			$("#search").autocomplete('recurring_charges', get_charge, '{% url 'search_recurring_charges' %}', true).focus();
+		}
+		window.addEventListener('load', on_load, true);
+    </script>
+{% endblock %}

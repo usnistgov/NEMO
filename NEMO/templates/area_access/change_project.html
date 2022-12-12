@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Bill to a different project{% endblock %}
 {% block content %}
 	<h1>Bill area access to a different project</h1>
@@ -16,7 +17,8 @@
 					<form action="{% url 'change_project' project.id %}" method="post">
 						<div class="form-group">
 							{% csrf_token %}
-							<input type="submit" class="btn btn-warning" value="{{ project }}">
+                            {% project_selection_display project as project_name %}
+							<input type="submit" class="btn btn-warning" title="{{ project_name }}" value="{{ project_name }}">
 						</div>
 					</form>
 				{% endif %}

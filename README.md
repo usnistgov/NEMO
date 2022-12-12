@@ -6,9 +6,11 @@ An online version of the splash pad is available at [https://nemo.nist.gov/demo]
 ### User roles
 You will be automatically logged in as superadmin "captain".<br>
 Use the [impersonate](https://nemo.nist.gov/demo/impersonate) feature to switch between user roles:
-* `Captain Nemo`: super admin
-* `Pierre Aronnax`: staff member
 * `Ned Land`: regular user
+* `Pierre Aronnax`: staff member
+* `Assistant Conseil`: user office
+* `Commander Farragut`: accounting
+* `Captain Nemo`: super admin
 
 ### Jumbotron
 The jumbotron is available at [https://nemo.nist.gov/demo/jumbotron/](https://nemo.nist.gov/demo/jumbotron/)

@@ -1,5 +1,5 @@
 {% extends popup_view|yesno:"base/popup.html,base.html" %}
-
+{% load custom_tags_and_filters %}
 {% block title %}Scheduled outage details{% endblock %}
 {% block content %}
     {% if not popup_view %}
@@ -21,7 +21,8 @@
     {# Allow the user to cancel the outage if they have that priviledge. only in popup view #}
     {% if user.is_staff and popup_view %}
         <div class="modal-footer">
-            <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_outage('{% url 'cancel_outage' outage.id %}', 'Outage {{ outage.id }}') })">Cancel this outage</button>
+            {% url 'cancel_outage' outage.id as cancel_outage_url %}
+            {% button type="delete" value="Cancel this outage" dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_outage('"|concat:cancel_outage_url|concat:"', 'Outage "|concat:outage.id|concat:"'); });" %}
         </div>
     {% endif %}
 {% endblock %}

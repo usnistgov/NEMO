@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div class="modal-header">
 	<button type="button" class="close" data-dismiss="modal">&times;</button>
 	<h4 class="modal-title">{{ facility_name }} policy conflict</h4>
@@ -19,8 +20,8 @@
 
 <div class="modal-footer">
 	{% if overridable %}
-		<button type="button" class="btn btn-info pull-left" data-dismiss="modal">Don't create the reservation</button>
-		<button type="button" class="btn btn-success" data-dismiss="modal" onclick="$('#dialog_cancelled').val(false)">Override policy and {{ reservation_action }} the reservation</button>
+		<button type="button" class="btn btn-info pull-left" data-dismiss="modal"><i class="glyphicon glyphicon-ban-circle"></i> Don't create the reservation</button>
+		{% button type="save" submit=False dismiss="modal" onclick="$('#dialog_cancelled').val(false)" value="Override policy and "|concat:reservation_action|concat:" the reservation" %}
 	{% else %}
 		<button type="button" class="btn btn-warning" data-dismiss="modal">Continue</button>
 	{% endif %}

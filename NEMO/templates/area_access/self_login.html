@@ -38,7 +38,7 @@
 				{% include 'area_access/login_areas.html' with area_id=area_id %}
 			{% endif %}
 			</div>
-			<input id="self_login_submit" type="submit" class="btn btn-success" value="Log in">
+            {% button type="save" icon="glyphicon-log-in" value="Log in" %}
 		</form>
 	{% endif %}
 {% endblock %}

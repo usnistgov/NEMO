@@ -3,20 +3,20 @@ from logging import getLogger
 from smtplib import SMTPException
 from typing import List
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.validators import validate_email
 from django.db.models import Q, QuerySet
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import Context, Template
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import any_staff_required
 from NEMO.forms import EmailBroadcastForm
 from NEMO.models import Account, Area, Project, Tool, User, UserType
-from NEMO.utilities import EmailCategory, export_format_datetime, send_mail
+from NEMO.utilities import EmailCategory, export_format_datetime, render_email_template, send_mail
 from NEMO.views.customization import ApplicationCustomization, get_media_file_contents
 
 logger = getLogger(__name__)
@@ -79,7 +79,7 @@ def send_email(request):
 	return render(request, "acknowledgement.html", dictionary)
 
 
-@staff_member_required
+@any_staff_required
 @require_GET
 def email_broadcast(request, audience=""):
 	dictionary = {}
@@ -100,7 +100,7 @@ def email_broadcast(request, audience=""):
 	return render(request, "email/email_broadcast.html", dictionary)
 
 
-@staff_member_required
+@any_staff_required
 @require_GET
 def compose_email(request):
 	try:
@@ -127,11 +127,11 @@ def compose_email(request):
 			"contents": "Contents",
 			"template_color": "#5bc0de",
 		}
-		dictionary["generic_email_sample"] = Template(generic_email_sample).render(Context(generic_email_context))
+		dictionary["generic_email_sample"] = render_email_template(generic_email_sample, generic_email_context, request)
 	return render(request, "email/compose_email.html", dictionary)
 
 
-@staff_member_required
+@any_staff_required
 @require_GET
 def export_email_addresses(request):
 	try:
@@ -156,7 +156,7 @@ def export_email_addresses(request):
 		return render(request, "email/email_broadcast.html", dictionary)
 
 
-@staff_member_required
+@any_staff_required
 @require_POST
 def send_broadcast_email(request):
 	content = get_media_file_contents("generic_email.html")
@@ -173,7 +173,7 @@ def send_broadcast_email(request):
 		"contents": form.cleaned_data["contents"],
 		"template_color": form.cleaned_data["color"],
 	}
-	content = Template(content).render(Context(dictionary))
+	content = render_email_template(content, dictionary, request)
 	active_choice = form.cleaned_data["only_active_users"]
 	try:
 		audience = form.cleaned_data["audience"]
@@ -215,17 +215,13 @@ def send_broadcast_email(request):
 				+ str(error)
 		)
 		logger.exception(error_message)
-		dictionary = {
-			"title": "Email not sent",
-			"heading": "There was a problem sending your email",
-			"content": error_message,
-		}
-		return render(request, "acknowledgement.html", dictionary)
-	dictionary = {"title": "Email sent", "heading": "Your email was sent"}
-	return render(request, "acknowledgement.html", dictionary)
+		messages.error(request, message=error_message)
+		return redirect("email_broadcast")
+	messages.success(request, message="Your email was sent successfully")
+	return redirect("email_broadcast")
 
 
-@staff_member_required
+@any_staff_required
 @require_POST
 def email_preview(request):
 	generic_email_template = get_media_file_contents("generic_email.html")
@@ -237,7 +233,7 @@ def email_preview(request):
 			"contents": form.data["contents"],
 			"template_color": form.data["color"],
 		}
-		email_content = Template(generic_email_template).render(Context(email_context))
+		email_content = render_email_template(generic_email_template, email_context, request)
 		return HttpResponse(mark_safe(email_content))
 	return HttpResponse()
 
@@ -247,11 +243,11 @@ def get_users_for_email(audience: str, selection: List, no_type: bool) -> QueryS
 	if audience == "tool":
 		users = User.objects.filter(qualifications__id__in=selection).distinct()
 	elif audience == "area":
-		access_levels = Area.objects.get(pk__in=selection).get_physical_access_levels()
+		access_levels = [access_level for area in Area.objects.filter(pk__in=selection) for access_level in area.get_physical_access_levels()]
 		user_filter = Q(physical_access_levels__in=access_levels)
 		# if one of the access levels allows staff, add all staff
-		if access_levels.filter(allow_staff_access=True).exists():
-			user_filter = user_filter | Q(is_staff=True)
+		if any([access_level.allow_staff_access for access_level in access_levels]):
+			user_filter |= Q(is_staff=True)
 		users = User.objects.filter(user_filter).distinct()
 	elif audience == "project":
 		users = User.objects.filter(projects__id__in=selection).distinct()

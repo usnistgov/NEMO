@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Safety{% endblock %}
 {% block content %}
 	<h1>Safety suggestions and observations</h1>
@@ -18,13 +19,13 @@
 	<h3>Report a new safety issue</h3>
 	<form action="{% url 'safety' %}" method="post">
 		{% csrf_token %}
-		<input type="text" name="location" class="form-control" style="max-width: 250px" placeholder="Where is the problem?" required><br>
-		<textarea name="concern" class="form-control" rows="6" placeholder="Why are you concerned?" required></textarea>
+		<input type="text" name="location" class="form-control" style="max-width: 250px" aria-label="Problem location" placeholder="Where is the problem?" required><br>
+		<textarea name="concern" class="form-control" rows="6" aria-label="Concern" placeholder="Why are you concerned?" required></textarea>
 		<input type="hidden" name="resolved" value="false">
 		<div class="checkbox">
 			<label><input type="checkbox" name="report_anonymously">Report this issue anonymously.</label> <span class="light-grey">Your name will not be visible to staff. There will be no way for us to follow up with you about how the safety issue was resolved.</span>
 		</div>
-		<input type="submit" value="Report a new safety concern" class="btn btn-danger">
+        {% button type="delete" submit=True value="Report a new safety concern" icon="glyphicon-send" %}
 	</form>
 
 	{% if tickets %}

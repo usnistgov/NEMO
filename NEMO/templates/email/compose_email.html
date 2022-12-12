@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Compose email{% endblock %}
 {% block content %}
 	<h1>Compose an email</h1>
@@ -11,7 +12,7 @@
 				<div class="col-sm-6">
                     <div class="row">
                         <div class="col-sm-6 h3">Recipients</div>
-                        <div class="col-sm-6 h3">{% if user_emails %}<button class="btn btn-info btn-sm" type="button" onclick="export_user_emails();">Export user list</button>{% endif %}</div>
+                        <div class="col-sm-6 h3">{% if user_emails %}{% button type="export" size="small" value="Export user list" onclick="export_user_emails();" %}{% endif %}</div>
                     </div>
 					Active users are listed below in black. Inactive users are <span style="color:lightgrey">gray</span>.
 					<div class="checkbox">
@@ -32,7 +33,7 @@
 					    <input type="hidden" name="selection" value="{{ selection_value }}" oninput="updated_email_link()">
                     {% endfor %}
 					<div class="form-group">
-						<input type="text" name="subject" class="form-control" placeholder="Subject line" oninput="updated_email_link()" autofocus required>
+						<input type="text" name="subject" class="form-control" aria-label="Email subject" placeholder="Subject line" oninput="updated_email_link()" autofocus required>
 					</div>
 					<div class="form-group">
 						Title background color:
@@ -62,23 +63,23 @@
 						</div>
 					</div>
 					<div class="form-group">
-						<input type="text" name="title" class="form-control" style="text-transform:uppercase" placeholder="Title (always uppercase)" oninput="updated_email_link()">
+						<input type="text" name="title" aria-label="Email title" class="form-control" style="text-transform:uppercase" placeholder="Title (always uppercase)" oninput="updated_email_link()">
 					</div>
 					<div class="form-group">
-						<input type="text" name="greeting" class="form-control" placeholder="Greeting" oninput="updated_email_link()">
+						<input type="text" name="greeting" aria-label="Email greeting" class="form-control" placeholder="Greeting" oninput="updated_email_link()">
 					</div>
 					<div class="form-group">
-						<textarea class="form-control" name="contents" rows="6" placeholder="What would you like to say?" oninput="updated_email_link()" required></textarea>
+						<textarea class="form-control" name="contents" aria-label="Email contents" rows="6" placeholder="What would you like to say?" oninput="updated_email_link()" required></textarea>
 					</div>
-					<button type="button" class="btn btn-default" onclick="update_preview()">Preview</button>
-					<input type="submit" class="btn btn-success" value="Send">
+                    {% button type="view" onclick="update_preview()" value="Preview" %}
+					{% button type="save" value="Send" icon="glyphicon-send" %}
                     {% if user_emails %}
                         {% if active_user_emails|length > 2000 %}
                             <div class="pull-right" style="display: inline-block" id="default_client_email_wrapper" data-title="There are too many email addresses to use the default email client. Use the export function instead.">
-                                <button class="btn btn-primary" disabled>Use default email client</button>
+                                {% button type="info" value="Use default email client" icon="glyphicon-envelope" disabled="disabled" %}
                             </div>
                         {% else %}
-                            <a id="email_client_link" href="" target="_blank"><button type="button" class="btn btn-primary pull-right">Use default email client</button></a>
+                            <a id="email_client_link" href="" target="_blank" class="pull-right">{% button type="info" value="Use default email client" icon="glyphicon-envelope" %}</a>
                         {% endif %}
                     {% endif %}
 					<div style="height:50px"></div>

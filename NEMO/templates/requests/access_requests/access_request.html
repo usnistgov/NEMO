@@ -74,10 +74,10 @@
 		<div class="text-right">
             {% if form.instance.status == form.instance.Status.PENDING %}
                 {% if form.instance.id and user.is_facility_manager %}
-                    <input name="approve_request" type="button" class="btn btn-success" title="Approve request" value="Approve" onclick="if (confirm('Are you sure you want to approve this request?')) {submit_and_disable(this)}"/>
-                    <input name="deny_request" type="button" class="btn btn-danger" title="Deny request" value="Deny" onclick="if (confirm('Are you sure you want to deny this request?')) {submit_and_disable(this)}"/>
+                    {% button type="save" submit=False name="approve_request" title="Approve request" icon="glyphicon-ok-circle" value="Approve" onclick="if (confirm('Are you sure you want to approve this request?')) {submit_and_disable(this)}" %}
+                    {% button type="delete" submit=False name="deny_request" title="Deny request" icon="glyphicon-ban-circle" value="Deny" onclick="if (confirm('Are you sure you want to deny this request?')) {submit_and_disable(this)}" %}
                 {% else %}
-                    <input type="submit" class="btn btn-success" onclick="submit_and_disable(this)" value="{% if form.instance.id %}Save changes{% else %}Create access request{% endif %}"/>
+                    {% button type="save" value=form.instance.id|yesno:"Save changes,Create access request" %}
                 {% endif %}
             {% endif %}
 		</div>

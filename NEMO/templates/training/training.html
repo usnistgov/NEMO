@@ -27,7 +27,7 @@
 			</tr>
 		</table>
 		<br>
-		<input type="submit" class="btn btn-default" id="record_training_sessions" value="Record training sessions">
+        {% button id="record_training_sessions" type="save" value="Record training sessions" %}
 	</form>
 
 	<script type="text/javascript">
@@ -103,7 +103,7 @@
 				"entry_number": row
 			};
 			let target_element = "#project__" + row;
-			let url = "{% url 'get_projects' %}?" + jQuery.param(parameters);
+			let url = "{% url 'get_projects_for_training' %}?" + jQuery.param(parameters);
 			let report_error = ajax_complete_callback("Could not fetch projects for user", "There was a problem obtaining the list of projects for the user.");
 			$(target_element).load(url, undefined, report_error);
 		}

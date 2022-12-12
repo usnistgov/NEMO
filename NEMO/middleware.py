@@ -1,25 +1,27 @@
+import contextlib
 import re
 from logging import getLogger
+from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.middleware import RemoteUserMiddleware
-from django.http import HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import redirect
-from django.urls import NoReverseMatch, reverse
+from django.urls import NoReverseMatch, resolve, reverse
 from django.utils.deprecation import MiddlewareMixin
 
 from NEMO.exceptions import InactiveUserError
 from NEMO.models import User
+from NEMO.utilities import is_ajax
 
 middleware_logger = getLogger(__name__)
 
 
 class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
-
 	def __init__(self, get_response=None):
 		self.api_url = None
 		try:
-			self.api_url = reverse('api-root')
+			self.api_url = reverse("api-root")
 		except NoReverseMatch:
 			pass
 		super().__init__(get_response)
@@ -38,9 +40,10 @@ class RemoteUserAuthenticationMiddleware(RemoteUserMiddleware):
 			super().process_request(request)
 		except (User.DoesNotExist, InactiveUserError):
 			from NEMO.views.authentication import all_auth_backends_are_pre_auth
+
 			# Only raise error if all we have are pre_authentication backends and they failed
 			if all_auth_backends_are_pre_auth():
-				return redirect('authorization_failed')
+				return redirect("authorization_failed")
 
 
 class HTTPHeaderAuthenticationMiddleware(RemoteUserAuthenticationMiddleware):
@@ -98,9 +101,54 @@ class DeviceDetectionMiddleware:
 
 class ImpersonateMiddleware(MiddlewareMixin):
 	def process_request(self, request):
-		if request.user.is_superuser and 'impersonate_id' in request.session:
-			request.user = User.objects.get(pk=request.session['impersonate_id'])
+		if request.user.is_superuser and "impersonate_id" in request.session:
+			request.user = User.objects.get(pk=request.session["impersonate_id"])
 
 
-def is_ajax(request):
-	return request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
+class NEMOAuditlogMiddleware:
+	"""
+	Middleware to couple the request's user to log items. This is accomplished by currying the
+	signal receiver with the user from the request (or None if the user is not authenticated).
+	"""
+
+	def __init__(self, get_response=None):
+		self.get_response = get_response
+
+	def __call__(self, request):
+
+		if request.META.get("HTTP_X_FORWARDED_FOR"):
+			# In case of proxy, set 'original' address
+			remote_addr = request.META.get("HTTP_X_FORWARDED_FOR").split(",")[0]
+		else:
+			remote_addr = request.META.get("REMOTE_ADDR")
+
+		# Default null context
+		context = contextlib.nullcontext()
+		if hasattr(request, "user") and request.user.is_authenticated:
+			from auditlog.context import set_actor
+
+			actor = request.user
+			# Special treatment if the request is coming from the Kiosk or Area access
+			try:
+				func_path: str = resolve(request.path)._func_path
+				if func_path.startswith('NEMO.apps.kiosk') or func_path.startswith('NEMO.apps.area_access'):
+					actor = self.get_actor_for_kiosk_area_access(request)
+			except Http404:
+				pass
+			except Exception as e:
+				middleware_logger.warning("Error setting up actor for audit log", exc_info=e)
+			context = set_actor(actor=actor, remote_addr=remote_addr)
+
+		with context:
+			return self.get_response(request)
+
+	# For Kiosk and Area access plugins, the user is not the one set on the request
+	def get_actor_for_kiosk_area_access(self, request) -> Optional[User]:
+		badge_number = request.POST.get("badge_number")
+		if badge_number:
+			return User.objects.get(badge_number=badge_number)
+		else:
+			customer_id = request.POST.get("customer_id")
+			if customer_id:
+				return User.objects.get(pk=customer_id)
+		return request.user

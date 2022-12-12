@@ -6,6 +6,7 @@ from django.views.decorators.http import require_GET
 
 from NEMO.decorators import staff_member_required
 from NEMO.models import Task, TaskCategory, TaskStatus
+from NEMO.utilities import as_timezone
 
 
 @staff_member_required
@@ -41,6 +42,7 @@ def task_details(request, task_id):
 
 	dictionary = {
 		'task': task,
+		"estimated_resolution_time": as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None,
 		'initial_assessment_categories': TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
 		'completion_categories': TaskCategory.objects.filter(stage=TaskCategory.Stage.COMPLETION),
 		'task_statuses': TaskStatus.objects.all(),

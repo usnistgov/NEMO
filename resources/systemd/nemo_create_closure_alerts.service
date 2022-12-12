@@ -1,0 +1,6 @@
+[Unit]
+Description=Create closure alerts in NEMO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin create_closure_alerts

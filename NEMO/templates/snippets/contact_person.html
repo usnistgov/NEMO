@@ -4,7 +4,7 @@
 {% if person.mobile_phone %}
 	Mobile phone:
 	{% if person.mobile_phone_is_sms_capable %}
-		<ul>
+		<ul style="margin-bottom: 0">
 			<li><a href="tel:{{ person.mobile_phone }}">Call {{ person.mobile_phone }}</a></li>
 			<li><a href="sms:{{ person.mobile_phone }}">Send a text message</a></li>
 		</ul>

@@ -11,7 +11,8 @@
                 <textarea oninput="auto_size_textarea(this)" class="form-control" id="staff_charge_note">{{ staff_charge.note|default_if_none:"" }}</textarea>
             </div>
             <div style="display: table-cell; vertical-align: bottom;">
-                <button class="btn btn-sm btn-success" onclick="ajax_post('{% url "edit_staff_charge_note" %}', {'staff_charge_note': $('#staff_charge_note').val()}, undefined, undefined, function(){location.reload()})">{% if staff_charge.note %}Update{% else %}Save{% endif %}</button>
+                {% url "edit_staff_charge_note" as edit_staff_charge_note_url %}
+                {% button type="save" size="small" submit=False value=staff_charge.note|yesno:"Update,Save" onclick="ajax_post('"|concat:edit_staff_charge_note_url|concat:"', {'staff_charge_note': $('#staff_charge_note').val()}, undefined, undefined, function(){location.reload()})" %}
             </div>
         </div>
 		<p><br>Here is a summary of the current charges:</p>

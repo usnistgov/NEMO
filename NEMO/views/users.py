@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import any_staff_required, user_office_or_facility_manager_required
 from NEMO.forms import UserForm, UserPreferencesForm
 from NEMO.models import (
 	ActivityHistory,
@@ -25,26 +25,40 @@ from NEMO.models import (
 	Tool,
 	UsageEvent,
 	User,
+	UserDocuments,
+	UserType,
 	record_active_state,
 	record_local_many_to_many_changes,
 )
-from NEMO.views.customization import ApplicationCustomization, StatusDashboardCustomization
+from NEMO.utilities import queryset_search_filter
+from NEMO.views.customization import ApplicationCustomization, StatusDashboardCustomization, UserCustomization
 from NEMO.views.pagination import SortedPaginator
 from NEMO.views.status_dashboard import show_staff_status
 
 users_logger = getLogger(__name__)
 
-@staff_member_required
+
+@any_staff_required
 @require_GET
 def users(request):
-	all_users = User.objects.all()
+	user_list = User.objects.all()
+	only_active = UserCustomization.get_bool("user_list_active_only")
+	if only_active:
+		user_list = user_list.filter(is_active=True)
+	page = SortedPaginator(user_list, request, order_by="last_name").get_current_page()
 
-	page = SortedPaginator(all_users, request, order_by="last_name").get_current_page()
+	dictionary = {"page": page, "user_types": UserType.objects.all(), "readonly": readonly_users(request)}
 
-	return render(request, "users/users.html", {"page": page, "users": all_users})
+	return render(request, "users/users.html", dictionary)
 
 
-@staff_member_required
+@any_staff_required
+@require_GET
+def user_search(request):
+	return queryset_search_filter(User.objects.all(), ["first_name", "last_name", "username"], request)
+
+
+@any_staff_required
 @require_http_methods(['GET', 'POST'])
 def create_or_modify_user(request, user_id):
 	identity_service = get_identity_service()
@@ -55,8 +69,9 @@ def create_or_modify_user(request, user_id):
 	area_access_levels = Area.objects.filter(id__in=[area.id for area in access_level_for_sort])
 	dict_area = {}
 	for access in access_levels:
-		dict_area.setdefault(access.area.id,[]).append(access)
+		dict_area.setdefault(access.area.id, []).append(access)
 
+	readonly = readonly_users(request)
 	dictionary = {
 		'projects': Project.objects.filter(active=True, account__active=True),
 		'tools': Tool.objects.filter(visible=True),
@@ -65,6 +80,8 @@ def create_or_modify_user(request, user_id):
 		'one_year_from_now': timezone.localdate() + timedelta(days=365),
 		'identity_service_available': identity_service.get('available', False),
 		'identity_service_domains': identity_service.get('domains', []),
+		'allow_document_upload': UserCustomization.get_bool("user_allow_document_upload"),
+		'readonly': readonly
 	}
 	try:
 		user = User.objects.get(id=user_id)
@@ -94,8 +111,8 @@ def create_or_modify_user(request, user_id):
 		# display warning if identity service is defined but disabled
 		dictionary['warning'] = 'The identity service is disabled. You will not be able to modify externally managed physical access levels, reset account passwords, or unlock accounts.'
 
-	if request.method == 'GET':
-		training_not_required = ApplicationCustomization.get("default_user_training_not_required", raise_exception=False)
+	if readonly or request.method == 'GET':
+		training_not_required = UserCustomization.get("default_user_training_not_required", raise_exception=False)
 		# Only set training required initial value on new users
 		dictionary['form'] = UserForm(instance=user, initial={"training_required": not training_not_required} if not user else None)
 		try:
@@ -126,6 +143,8 @@ def create_or_modify_user(request, user_id):
 		form = UserForm(request.POST, instance=user)
 		dictionary['form'] = form
 		if not form.is_valid():
+			if request.FILES.getlist("user_documents") or request.POST.get("remove_documents"):
+				form.add_error(field=None, error="User document changes were lost, please resubmit them.")
 			return render(request, 'users/create_or_modify_user.html', dictionary)
 
 		# Remove the user account from the domain if it's deactivated, changed domain, or changed username...
@@ -193,14 +212,19 @@ def create_or_modify_user(request, user_id):
 		record_local_many_to_many_changes(request, user, form, 'projects')
 		form.save_m2m()
 
+		# Handle file uploads
+		for f in request.FILES.getlist("user_documents"):
+			UserDocuments.objects.create(document=f, user=user)
+		UserDocuments.objects.filter(id__in=request.POST.getlist("remove_documents")).delete()
+
 		message = f"{user} has been added successfully to {site_title}" if user_id == 'new' else f"{user} has been updated successfully"
 		messages.success(request, message)
-		return redirect('users')
+		return redirect(request.GET.get("next") or "users")
 	else:
 		return HttpResponseBadRequest('Invalid method')
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_http_methods(['GET', 'POST'])
 def deactivate(request, user_id):
 	dictionary = {
@@ -287,7 +311,7 @@ def deactivate(request, user_id):
 		return redirect('users')
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_POST
 def reset_password(request, user_id):
 	try:
@@ -315,7 +339,7 @@ def reset_password(request, user_id):
 	return render(request, 'acknowledgement.html', dictionary)
 
 
-@staff_member_required
+@user_office_or_facility_manager_required
 @require_POST
 def unlock_account(request, user_id):
 	try:
@@ -350,20 +374,27 @@ def user_preferences(request):
 	user_view_options = StatusDashboardCustomization.get("dashboard_staff_status_user_view")
 	staff_view_options = StatusDashboardCustomization.get("dashboard_staff_status_staff_view")
 	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ''
+	form = UserPreferencesForm(data=request.POST or None, instance=user.preferences)
+	if not show_staff_status(request) or user_view == 'day':
+		form.fields["staff_status_view"].disabled = True
 	if request.method == 'POST':
-		form = UserPreferencesForm(data=request.POST, instance=user.preferences)
 		if form.is_valid():
 			form.save()
 			messages.success(request, "Your preferences have been saved")
-	else:
-		form = UserPreferencesForm(instance=user.preferences)
+		else:
+			messages.error(request, "Please correct the errors below:")
 	dictionary = {
 		'form': form,
 		'user_preferences': user.get_preferences(),
 		'user_view': user_view,
-		'show_staff_status': show_staff_status(request),
 	}
 	return render(request, 'users/preferences.html', dictionary)
+
+
+def readonly_users(request):
+	# Only user office and facility managers can edit user information
+	user: User = request.user
+	return user.is_any_part_of_staff and not user.is_facility_manager and not user.is_user_office and not user.is_superuser
 
 
 def get_identity_service():

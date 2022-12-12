@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div class="alert {% if personal_schedule %}alert-success{% else %}alert-info{% endif %}" role="alert">
 	<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}"></span>
 	<span style="cursor:pointer" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}"><strong>{% if personal_schedule %}{{ reservation.title|default:reservation.reservation_item }}{% else %}{{ reservation.title|default:reservation.user }}{% endif %}</strong></span><br>
@@ -32,10 +33,10 @@
 					{% if user != reservation.user %}
 						{# Staff must provide a reason for cancelling someone else's reservation. #}
 						<div class="form-group">
-							<input type="text" class="form-control" name="reason" maxlength="3000" placeholder="Cancellation reason (required)" required>
+							<input type="text" class="form-control" name="reason" maxlength="3000" placeholder="Cancellation reason (required)" aria-label="Cancellation reason (required)" required>
 						</div>
 					{% endif %}
-					<button type="submit" class="btn btn-danger">Cancel this reservation</button>
+                    {% button type="delete" submit=True value="Cancel this reservation" %}
 				</form>
 			{% endif %}
 		{% endif %}

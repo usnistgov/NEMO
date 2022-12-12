@@ -7,19 +7,23 @@ from enum import Enum
 from html import escape
 from json import loads
 from logging import getLogger
+from re import match
 from typing import List, Set, Union
 
+from dateutil import rrule
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
-from django.db import models
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.core.validators import MinValueValidator
+from django.db import connections, models, transaction
 from django.db.models import Q, QuerySet
+from django.db.models.manager import Manager
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
-from django.template import Context, Template, loader
+from django.template import loader
 from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
@@ -30,21 +34,80 @@ from mptt.models import MPTTModel
 from NEMO import fields
 from NEMO.utilities import (
 	EmailCategory,
+	RecurrenceFrequency,
+	as_timezone,
+	beginning_of_the_day,
 	bootstrap_primary_color,
 	distinct_qs_value_list,
 	format_daterange,
 	format_datetime,
 	get_chemical_document_filename,
 	get_hazard_logo_filename,
+	get_project_document_filename,
+	get_recurring_rule,
 	get_task_image_filename,
 	get_tool_document_filename,
 	get_tool_image_filename,
+	get_user_document_filename,
+	render_email_template,
 	send_mail,
 )
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
 models_logger = getLogger(__name__)
+
+
+class BaseQuerySet(models.query.QuerySet):
+
+	def distinct(self, *field_names):
+		# If using Oracle, distinct and CLOBs don't work together, so we have to use defer to ignore them
+		# However, defer can only be used when no specific fields are present
+		# The error is "ORA-00932: inconsistent datatypes: expected - got NCLOB"
+		# See https://code.djangoproject.com/ticket/4186
+		if self.is_oracle_vendor() and self._fields is None:
+			return super().distinct(*field_names).defer(*self.model_text_fields())
+		else:
+			return super().distinct(*field_names)
+
+	def is_oracle_vendor(self) -> bool:
+		connection = connections[self.db]
+		return getattr(connection, "vendor", "") == "oracle"
+
+	def model_text_fields(self) -> List[str]:
+		return [f.name for f in self.model._meta.fields if isinstance(f, models.TextField)]
+
+
+class BaseManager(Manager.from_queryset(BaseQuerySet)):
+	pass
+
+
+class UserManager(BaseUserManager.from_queryset(BaseQuerySet)):
+
+	def create_user(self, username, first_name, last_name, email):
+		user = User()
+		user.username = username
+		user.first_name = first_name
+		user.last_name = last_name
+		user.email = email
+		user.date_joined = timezone.now()
+		user.save()
+		return user
+
+	def create_superuser(self, username, first_name, last_name, email, password=None):
+		user = self.create_user(username, first_name, last_name, email)
+		user.is_superuser = True
+		user.is_staff = True
+		user.training_required = False
+		user.save()
+		return user
+
+
+class BaseModel(models.Model):
+	objects = BaseManager()
+
+	class Meta:
+		abstract = True
 
 
 class ReservationItemType(Enum):
@@ -76,9 +139,26 @@ class ReservationItemType(Enum):
 			return ReservationItemType.NONE
 
 
-class CalendarDisplay(models.Model):
+class EmailNotificationType(object):
+	OFF = 0
+	BOTH_EMAILS = 1
+	MAIN_EMAIL = 2
+	ALTERNATE_EMAIL = 3
+	Choices = (
+		(BOTH_EMAILS, "Both emails"),
+		(MAIN_EMAIL, "Main email only"),
+		(ALTERNATE_EMAIL, "Alternate email only"),
+		(OFF, "Off"),
+	)
+
+	@classmethod
+	def on_choices(cls):
+		return [(choice[0], choice[1]) for choice in cls.Choices if choice[0] not in [cls.OFF, cls.ALTERNATE_EMAIL]]
+
+
+class CalendarDisplay(BaseModel):
 	"""
-	Inherit from this class to express that a class type is able to be displayed in the NEMO calendar.
+	Inherit from this class to express that a class type can be displayed in the NEMO calendar.
 	Calling get_visual_end() will artificially lengthen the end time so the event is large enough to
 	be visible and clickable.
 	"""
@@ -95,7 +175,7 @@ class CalendarDisplay(models.Model):
 		abstract = True
 
 
-class UserPreferences(models.Model):
+class UserPreferences(BaseModel):
 	attach_created_reservation = models.BooleanField('created_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when creating a new reservation')
 	attach_cancelled_reservation = models.BooleanField('cancelled_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when cancelling a reservation')
 	display_new_buddy_request_notification = models.BooleanField('new_buddy_request_notification', default=True, help_text='Whether or not to notify the user of new buddy requests (via unread badges)')
@@ -103,51 +183,52 @@ class UserPreferences(models.Model):
 	email_new_buddy_request_reply = models.BooleanField('email_new_buddy_request_reply', default=True, help_text='Whether or not to email the user of replies on buddy request he commented on')
 	staff_status_view = models.CharField('staff_status_view', max_length=100, default='day', choices=[('day', 'Day'), ('week', 'Week'), ('month', 'Month')], help_text='Preferred view for staff status page')
 	email_alternate = models.EmailField(null=True, blank=True)
-	email_send_reservation_emails = models.BooleanField(default=True, help_text="Send reservation emails to my alternate email")
-	email_send_usage_reminders = models.BooleanField(default=True, help_text="Send usage reminders to my alternate email")
-	email_send_reservation_reminders = models.BooleanField(default=True, help_text="Send reservation reminders to my alternate email")
-	email_send_reservation_ending_reminders = models.BooleanField(default=True, help_text="Send reservation ending reminders to my alternate email")
-	email_send_buddy_request_replies = models.BooleanField(default=True, help_text="Send buddy request replies to my alternate email")
-	email_send_access_request_updates = models.BooleanField(default=True, help_text="Send access request updates to my alternate email")
-	email_send_task_updates = models.BooleanField(default=True, help_text="Send task updates to my alternate email")
-	email_send_broadcast_emails = models.BooleanField(default=True, help_text="Send broadcast emails to my alternate email")
+	# Sort by the notifications that cannot be turned off first
+	email_send_reservation_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Reservation emails")
+	email_send_buddy_request_replies = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Buddy request replies")
+	email_send_access_request_updates = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Access request updates")
+	email_send_broadcast_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Broadcast emails")
+	email_send_task_updates = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Task updates")
+	email_send_access_expiration_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Access expiration reminders")
+	email_send_tool_qualification_expiration_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Tool qualification expiration reminders")
+	email_send_usage_reminders = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Usage reminders")
+	email_send_reservation_reminders = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Reservation reminders")
+	email_send_reservation_ending_reminders = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Reservation ending reminders")
+	recurring_charges_reminder_days = models.CharField(null=True, blank=True, default="60,7", max_length=200, help_text="The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.")
+	email_send_recurring_charges_reminder_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Recurring charges reminders")
+
+	def get_recurring_charges_days(self) -> List[int]:
+		return [int(days) for days in self.recurring_charges_reminder_days.split(",") if self.recurring_charges_reminder_days]
+
+	def __str__(self):
+		return f"{self.user.username}'s preferences"
 
 	class Meta:
 		verbose_name = 'User preferences'
 		verbose_name_plural = 'User preferences'
 
 
-class UserManager(BaseUserManager):
-	def create_user(self, username, first_name, last_name, email):
-		user = User()
-		user.username = username
-		user.first_name = first_name
-		user.last_name = last_name
-		user.email = email
-		user.date_joined = timezone.now()
-		user.save()
-		return user
-
-	def create_superuser(self, username, first_name, last_name, email, password=None):
-		user = self.create_user(username, first_name, last_name, email)
-		user.is_superuser = True
-		user.is_staff = True
-		user.training_required = False
-		user.save()
-		return user
-
-
-class UserType(models.Model):
+class UserType(BaseModel):
 	name = models.CharField(max_length=50, unique=True)
 
 	def __str__(self):
 		return self.name
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 
 
-class PhysicalAccessLevel(models.Model):
+class Discipline(BaseModel):
+	name = models.CharField(max_length=200, unique=True, help_text="The name of the discipline")
+
+	def __str__(self):
+		return self.name
+
+	class Meta:
+		ordering = ["name"]
+
+
+class PhysicalAccessLevel(BaseModel):
 	class Schedule(object):
 		ALWAYS = 0
 		WEEKDAYS = 1
@@ -220,10 +301,10 @@ class PhysicalAccessLevel(models.Model):
 		return str(self.name)
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 
 
-class TemporaryPhysicalAccess(models.Model):
+class TemporaryPhysicalAccess(BaseModel):
 	user = models.ForeignKey("User", on_delete=models.CASCADE)
 	physical_access_level = models.ForeignKey(PhysicalAccessLevel, on_delete=models.CASCADE)
 	start_time = models.DateTimeField(help_text="The start of the temporary access")
@@ -253,7 +334,7 @@ class TemporaryPhysicalAccess(models.Model):
 		ordering = ['-end_time']
 
 
-class TemporaryPhysicalAccessRequest(models.Model):
+class TemporaryPhysicalAccessRequest(BaseModel):
 
 	class Status(object):
 		PENDING = 0
@@ -293,7 +374,7 @@ class TemporaryPhysicalAccessRequest(models.Model):
 		ordering = ['-creation_time']
 
 
-class Closure(models.Model):
+class Closure(BaseModel):
 	name = models.CharField(max_length=255, help_text="The name of this closure, that will be displayed as the policy problem and alert (if applicable).")
 	alert_days_before = models.PositiveIntegerField(null=True, blank=True, help_text="Enter the number of days before the closure when an alert should automatically be created. Leave blank for no alert.")
 	alert_template = models.TextField(null=True, blank=True, help_text=mark_safe("The template to create the alert with. The following variables are provided (when applicable): <b>name</b>, <b>start_time</b>, <b>end_time</b>, <b>areas</b>."))
@@ -305,10 +386,10 @@ class Closure(models.Model):
 		return str(self.name)
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 
 
-class ClosureTime(models.Model):
+class ClosureTime(BaseModel):
 	closure = models.ForeignKey(Closure, on_delete=models.CASCADE)
 	start_time = models.DateTimeField(help_text="The start date and time of the closure")
 	end_time = models.DateTimeField(help_text="The end date and time of the closure")
@@ -325,7 +406,7 @@ class ClosureTime(models.Model):
 			"end_time": self.end_time,
 			"areas": areas,
 		}
-		contents = Template(self.closure.alert_template).render(Context(dictionary)) if self.closure.alert_template else None
+		contents = render_email_template(self.closure.alert_template, dictionary) if self.closure.alert_template else None
 		return contents
 
 	def clean(self):
@@ -348,7 +429,7 @@ class PhysicalAccessType(object):
 	)
 
 
-class PhysicalAccessLog(models.Model):
+class PhysicalAccessLog(BaseModel):
 	user = models.ForeignKey("User", on_delete=models.CASCADE)
 	door = models.ForeignKey("Door", on_delete=models.CASCADE)
 	time = models.DateTimeField()
@@ -359,14 +440,40 @@ class PhysicalAccessLog(models.Model):
 		ordering = ['-time']
 
 
-class User(models.Model):
+class SafetyTraining(BaseModel):
+	name = models.CharField(max_length=200, unique=True, help_text="The name of the training")
+	display_order = models.IntegerField(help_text="Safety trainings are sorted according to display order. The lowest value category is displayed first in the 'Users' page.")
+
+	class Meta:
+		ordering = ["display_order", "name"]
+
+	def __str__(self):
+		return self.name
+
+
+class OnboardingPhase(BaseModel):
+	name = models.CharField(max_length=200, unique=True, help_text="The name of the onboarding phase")
+	display_order = models.IntegerField(help_text="Onboarding phases are sorted according to display order. The lowest value category is displayed first in the 'Users' page.")
+
+	class Meta:
+		ordering = ["display_order", "name"]
+
+	def __str__(self):
+		return self.name
+
+
+class User(BaseModel):
 	# Personal information:
 	username = models.CharField(max_length=100, unique=True)
 	first_name = models.CharField(max_length=100)
 	last_name = models.CharField(max_length=100)
 	email = models.EmailField(verbose_name='email address')
 	type = models.ForeignKey(UserType, null=True, blank=True, on_delete=models.SET_NULL)
+	discipline = models.ForeignKey(Discipline, null=True, blank=True, on_delete=models.SET_NULL)
 	domain = models.CharField(max_length=100, blank=True, help_text="The Active Directory domain that the account resides on")
+	onboarding_phases = models.ManyToManyField(OnboardingPhase, blank=True)
+	safety_trainings = models.ManyToManyField(SafetyTraining, blank=True)
+	notes = models.TextField(null=True, blank=True)
 
 	# Physical access fields
 	badge_number = models.CharField(null=True, blank=True, unique=True, max_length=50, help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.")
@@ -375,12 +482,14 @@ class User(models.Model):
 
 	# Permissions
 	is_active = models.BooleanField('active', default=True, help_text='Designates whether this user can log in. Unselect this instead of deleting accounts.')
-	is_staff = models.BooleanField('staff', default=False, help_text='Designates whether the user can log into this admin site.')
+	is_staff = models.BooleanField('staff', default=False, help_text='Designates this user as techinical staff. Technical staff can start remote projects, check maintenance, change configuration, train users etc.')
+	is_user_office = models.BooleanField('user office', default=False, help_text='Designates this user as part of the User Office. User Office staff can create and manage users and projects, charge supplies, check usage etc.')
+	is_accounting_officer = models.BooleanField('accounting officer', default=False, help_text='Designates this user as Accounting officer. Accounting officers can manage projects, view user details, and check usage/billing.')
 	is_service_personnel = models.BooleanField('service personnel', default=False, help_text='Designates this user as service personnel. Service personnel can operate qualified tools without a reservation even when they are shutdown or during an outage and can access authorized areas without a reservation.')
 	is_technician = models.BooleanField('technician', default=False, help_text='Specifies how to bill staff time for this user. When checked, customers are billed at technician rates.')
 	is_facility_manager = models.BooleanField('facility manager', default=False, help_text='Designates this user as facility manager. Facility managers receive updates on all reported problems in the facility and can also review access requests.')
 	is_superuser = models.BooleanField('administrator', default=False, help_text='Designates that this user has all permissions without explicitly assigning them.')
-	training_required = models.BooleanField(default=True, help_text='When selected, the user is blocked from all reservation and tool usage capabilities.')
+	training_required = models.BooleanField('facility rules tutorial required', default=True, help_text='When selected, the user is blocked from all reservation and tool usage capabilities.')
 	groups = models.ManyToManyField(Group, blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of his/her group.')
 	user_permissions = models.ManyToManyField(Permission, blank=True, help_text='Specific permissions for this user.')
 
@@ -389,7 +498,7 @@ class User(models.Model):
 	last_login = models.DateTimeField(null=True, blank=True)
 
 	# Facility information:
-	qualifications = models.ManyToManyField('Tool', blank=True, help_text='Select the tools that the user is qualified to use.')
+	qualifications = models.ManyToManyField('Tool', blank=True, help_text='Select the tools that the user is qualified to use.', through='Qualification')
 	projects = models.ManyToManyField('Project', blank=True, help_text='Select the projects that this user is currently working on.')
 	managed_projects = models.ManyToManyField('Project', related_name="manager_set", blank=True, help_text='Select the projects that this user is a PI for.')
 
@@ -401,12 +510,15 @@ class User(models.Model):
 	objects = UserManager()
 
 	def clean(self):
+		username_pattern = getattr(settings, "USERNAME_REGEX", None)
 		if self.username:
+			if username_pattern and not match(username_pattern, self.username):
+				raise ValidationError({"username": "Invalid username format"})
 			username_taken = User.objects.filter(username__iexact=self.username)
 			if self.pk:
 				username_taken = username_taken.exclude(pk=self.pk)
 			if username_taken.exists():
-				raise ValidationError({'username':'This username has already been taken'})
+				raise ValidationError({'username': 'This username has already been taken'})
 
 	def has_perm(self, perm, obj=None):
 		"""
@@ -469,6 +581,10 @@ class User(models.Model):
 	def is_project_pi(self):
 		return self.managed_projects.exists()
 
+	@property
+	def is_any_part_of_staff(self):
+		return any([self.is_staff, self.is_accounting_officer, self.is_user_office, self.is_facility_manager, self.is_superuser])
+
 	def get_username(self):
 		return self.username
 
@@ -478,15 +594,17 @@ class User(models.Model):
 	def set_unusable_password(self):
 		pass
 
-	def get_emails(self, include_alternate=False) -> List[str]:
-		emails = [self.email]
-		if include_alternate and self.get_preferences().email_alternate:
+	def get_emails(self, email_notification=EmailNotificationType.MAIN_EMAIL) -> List[str]:
+		emails = []
+		if email_notification in [EmailNotificationType.BOTH_EMAILS, EmailNotificationType.MAIN_EMAIL]:
+			emails.append(self.email)
+		if self.get_preferences().email_alternate and email_notification in [EmailNotificationType.BOTH_EMAILS, EmailNotificationType.ALTERNATE_EMAIL]:
 			emails.append(self.preferences.email_alternate)
 		return emails
 
-	def email_user(self, subject, message, from_email, attachments=None, send_to_alternate=False, email_category:EmailCategory = EmailCategory.GENERAL):
+	def email_user(self, subject, message, from_email, cc=None, attachments=None, email_notification=EmailNotificationType.MAIN_EMAIL, email_category: EmailCategory = EmailCategory.GENERAL):
 		""" Sends an email to this user. """
-		send_mail(subject=subject, content=message, from_email=from_email, to=self.get_emails(send_to_alternate), attachments=attachments, email_category=email_category)
+		send_mail(subject=subject, content=message, from_email=from_email, to=self.get_emails(email_notification), cc=cc, attachments=attachments, email_category=email_category)
 
 	def get_full_name(self):
 		return self.get_name() + ' (' + self.username + ')'
@@ -554,7 +672,7 @@ class User(models.Model):
 		except StaffCharge.DoesNotExist:
 			return None
 
-	def get_preferences(self):
+	def get_preferences(self) -> UserPreferences:
 		if not self.preferences:
 			default_reservation_preferences = getattr(settings, 'USER_RESERVATION_PREFERENCES_DEFAULT', False)
 			self.preferences = UserPreferences.objects.create(attach_cancelled_reservation=default_reservation_preferences, attach_created_reservation=default_reservation_preferences)
@@ -563,20 +681,19 @@ class User(models.Model):
 
 	def get_contact_info_html(self):
 		if hasattr(self, 'contactinformation'):
-			content = escape(loader.render_to_string('contact/contact_person.html', {'person':self.contactinformation, 'email_form': True}))
-			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip contact-info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
+			content = escape(loader.render_to_string('snippets/contact_person.html', {'person' :self.contactinformation, 'email_form': True}))
+			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
 		else:
-			email_url = reverse('get_email_form_for_user', kwargs={'user_id':self.id})
+			email_url = reverse('get_email_form_for_user', kwargs={'user_id': self.id})
 			content = escape(f'<h4 style="margin-top:0; text-align: center">{self.get_name()}</h4>Email: <a href="{email_url}" target="_blank">{self.email}</a><br>')
-			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip contact-info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
-
+			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
 
 	@classmethod
 	def get_email_field_name(cls):
 		return 'email'
 
 	class Meta:
-		ordering = ['first_name']
+		ordering = ["first_name"]
 		permissions = (
 			("trigger_timed_services", "Can trigger timed services"),
 			("use_billing_api", "Can use billing API"),
@@ -587,7 +704,60 @@ class User(models.Model):
 		return self.get_full_name()
 
 
-class Tool(models.Model):
+class UserDocuments(BaseModel):
+	user = models.ForeignKey(User, related_name="user_documents", on_delete=models.CASCADE)
+	document = models.FileField(null=True, blank=True, upload_to=get_user_document_filename, verbose_name='Document')
+	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
+	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	def filename(self):
+		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1]
+
+	def link(self):
+		return self.document.url if self.document else self.url
+
+	def __str__(self):
+		return self.filename()
+
+	def clean(self):
+		if not self.document and not self.url:
+			raise ValidationError({'document': 'Either document or URL should be provided.'})
+		elif self.document and self.url:
+			raise ValidationError({'document': 'Choose either document or URL but not both.'})
+
+	class Meta:
+		verbose_name_plural = "User documents"
+		ordering = ['-uploaded_at']
+
+
+# These two auto-delete project documents from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=UserDocuments)
+def auto_delete_file_on_user_document_delete(sender, instance: UserDocuments, **kwargs):
+	"""	Deletes file from filesystem when corresponding `UserDocuments` object is deleted.	"""
+	if instance.document:
+		if os.path.isfile(instance.document.path):
+			os.remove(instance.document.path)
+
+
+@receiver(models.signals.pre_save, sender=UserDocuments)
+def auto_delete_file_on_user_document_change(sender, instance: UserDocuments, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `UserDocuments` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = UserDocuments.objects.get(pk=instance.pk).document
+	except UserDocuments.DoesNotExist:
+		return False
+
+	new_file = instance.document
+	if not old_file == new_file:
+		if os.path.isfile(old_file.path):
+			os.remove(old_file.path)
+
+
+class Tool(BaseModel):
 	name = models.CharField(max_length=100, unique=True)
 	parent_tool = models.ForeignKey('Tool', related_name="tool_children_set", null=True, blank=True, help_text='Select a parent tool to allow alternate usage', on_delete=models.CASCADE)
 	visible = models.BooleanField(default=True, help_text="Specifies whether this tool is visible to users.")
@@ -623,7 +793,7 @@ class Tool(models.Model):
 	_policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 
 	@property
 	def category(self):
@@ -1072,8 +1242,12 @@ class Tool(models.Model):
 	def tool_documents(self):
 		return ToolDocuments.objects.filter(tool=self).order_by()
 
+	def get_tool_info_html(self):
+		content = escape(loader.render_to_string("snippets/tool_info.html", {"tool": self}))
+		return f'<a href="javascript:;" data-title="{content}" data-tooltip-id="tooltip-tool-{self.id}" data-placement="bottom" class="tool-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.name_or_child_in_use_name()}</a>'
 
-class ToolDocuments(models.Model):
+
+class ToolDocuments(BaseModel):
 	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
 	document = models.FileField(null=True, blank=True, upload_to=get_tool_document_filename, verbose_name='Document')
 	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
@@ -1126,7 +1300,17 @@ def auto_delete_file_on_tool_document_change(sender, instance: ToolDocuments, **
 			os.remove(old_file.path)
 
 
-class Configuration(models.Model):
+class Qualification(BaseModel):
+	user = models.ForeignKey(User, on_delete=models.CASCADE)
+	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+	qualified_on = models.DateField(default=datetime.date.today)
+
+	class Meta:
+		# For db consistency and compatibility with previous queries
+		db_table = "NEMO_user_qualifications"
+
+
+class Configuration(BaseModel):
 	name = models.CharField(max_length=200, help_text="The name of this overall configuration. This text is displayed as a label on the tool control page.")
 	tool = models.ForeignKey(Tool, help_text="The tool that this configuration option applies to.", on_delete=models.CASCADE)
 	configurable_item_name = models.CharField(blank=True, null=True, max_length=200, help_text="The name of the tool part being configured. This text is displayed as a label on the tool control page. Leave this field blank if there is only one configuration slot.")
@@ -1174,13 +1358,13 @@ class Configuration(models.Model):
 		return False
 
 	class Meta:
-		ordering = ['tool', 'name']
+		ordering = ["tool", "name"]
 
 	def __str__(self):
 		return str(self.tool.name) + ': ' + str(self.name)
 
 
-class TrainingSession(models.Model):
+class TrainingSession(BaseModel):
 	class Type(object):
 		INDIVIDUAL = 0
 		GROUP = 1
@@ -1255,7 +1439,6 @@ class Area(MPTTModel):
 	policy_off_start_time = models.TimeField(db_column="policy_off_start_time", null=True, blank=True, help_text="The start time when policy rules should NOT be enforced")
 	policy_off_end_time = models.TimeField(db_column="policy_off_end_time", null=True, blank=True, help_text="The end time when policy rules should NOT be enforced")
 	policy_off_weekend = models.BooleanField(db_column="policy_off_weekend", default=False, help_text="Whether or not policy rules should be enforced on weekends")
-
 
 	class MPTTMeta:
 		parent_attr = 'parent_area'
@@ -1364,7 +1547,7 @@ class AreaAccessRecord(CalendarDisplay):
 		return str(self.id)
 
 
-class ConfigurationHistory(models.Model):
+class ConfigurationHistory(BaseModel):
 	configuration = models.ForeignKey(Configuration, on_delete=models.CASCADE)
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	modification_time = models.DateTimeField(default=timezone.now)
@@ -1379,43 +1562,100 @@ class ConfigurationHistory(models.Model):
 		return str(self.id)
 
 
-class AccountType(models.Model):
+class AccountType(BaseModel):
 	name = models.CharField(max_length=100, unique=True)
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 
 	def __str__(self):
 		return str(self.name)
 
 
-class Account(models.Model):
+class Account(BaseModel):
 	name = models.CharField(max_length=100, unique=True)
 	type = models.ForeignKey(AccountType, null=True, blank=True, on_delete=models.SET_NULL)
 	start_date = models.DateField(null=True, blank=True)
 	active = models.BooleanField(default=True, help_text="Users may only charge to an account if it is active. Deactivate the account to block future billable activity (such as tool usage and consumable check-outs) of all the projects that belong to it.")
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
+
+	def sorted_projects(self):
+		return self.project_set.all().order_by("-active", "name")
 
 	def __str__(self):
 		return str(self.name)
 
 
-class Project(models.Model):
+class Project(BaseModel):
 	name = models.CharField(max_length=100, unique=True)
 	application_identifier = models.CharField(max_length=100)
 	start_date = models.DateField(null=True, blank=True)
 	account = models.ForeignKey(Account, help_text="All charges for this project will be billed to the selected account.", on_delete=models.CASCADE)
 	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
+	discipline = models.ForeignKey(Discipline, null=True, blank=True, on_delete=models.SET_NULL)
 	only_allow_tools = models.ManyToManyField(Tool, blank=True, help_text="Selected tools will be the only ones allowed for this project.")
 	allow_consumable_withdrawals = models.BooleanField(default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project")
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 
 	def __str__(self):
 		return str(self.name)
+
+
+class ProjectDocuments(BaseModel):
+	project = models.ForeignKey(Project, related_name="project_documents", on_delete=models.CASCADE)
+	document = models.FileField(null=True, blank=True, upload_to=get_project_document_filename, verbose_name='Document')
+	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
+	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	def filename(self):
+		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1]
+
+	def link(self):
+		return self.document.url if self.document else self.url
+
+	def __str__(self):
+		return self.filename()
+
+	def clean(self):
+		if not self.document and not self.url:
+			raise ValidationError({'document': 'Either document or URL should be provided.'})
+		elif self.document and self.url:
+			raise ValidationError({'document': 'Choose either document or URL but not both.'})
+
+	class Meta:
+		verbose_name_plural = "Project documents"
+		ordering = ['-uploaded_at']
+
+
+# These two auto-delete project documents from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=ProjectDocuments)
+def auto_delete_file_on_project_document_delete(sender, instance: ProjectDocuments, **kwargs):
+	"""	Deletes file from filesystem when corresponding `ProjectDocuments` object is deleted.	"""
+	if instance.document:
+		if os.path.isfile(instance.document.path):
+			os.remove(instance.document.path)
+
+
+@receiver(models.signals.pre_save, sender=ProjectDocuments)
+def auto_delete_file_on_project_document_change(sender, instance: ProjectDocuments, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `ProjectDocuments` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = ProjectDocuments.objects.get(pk=instance.pk).document
+	except ProjectDocuments.DoesNotExist:
+		return False
+
+	new_file = instance.document
+	if not old_file == new_file:
+		if os.path.isfile(old_file.path):
+			os.remove(old_file.path)
 
 
 def pre_delete_entity(sender, instance, using, **kwargs):
@@ -1520,7 +1760,7 @@ class Reservation(CalendarDisplay):
 		return str(self.id)
 
 
-class ReservationQuestions(models.Model):
+class ReservationQuestions(BaseModel):
 	name = models.CharField(max_length=100, help_text="The name of this ")
 	questions = models.TextField(help_text="Upon making a reservation, the user will be asked these questions. This field will only accept JSON format")
 	tool_reservations = models.BooleanField(default=True, help_text="Check this box to apply these questions to tool reservations")
@@ -1530,7 +1770,7 @@ class ReservationQuestions(models.Model):
 	only_for_projects = models.ManyToManyField(Project, blank=True, help_text="Select the projects these questions only apply to. Leave blank for all projects")
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 		verbose_name_plural = 'Reservation questions'
 
 	def __str__(self):
@@ -1557,50 +1797,63 @@ class UsageEvent(CalendarDisplay):
 		return str(self.id)
 
 
-class Consumable(models.Model):
+class Consumable(BaseModel):
 	name = models.CharField(max_length=100)
 	category = models.ForeignKey('ConsumableCategory', blank=True, null=True, on_delete=models.CASCADE)
 	quantity = models.IntegerField(help_text="The number of items currently in stock.")
+	reusable = models.BooleanField(default=False, help_text="Check this box if this item is reusable. The quantity of reusable items will not decrease when orders are made (storage bins for example).")
 	visible = models.BooleanField(default=True)
-	reminder_threshold = models.IntegerField(help_text="More of this item should be ordered when the quantity falls below this threshold.")
-	reminder_email = models.EmailField(help_text="An email will be sent to this address when the quantity of this item falls below the reminder threshold.")
+	reminder_threshold = models.IntegerField(null=True, blank=True, help_text="More of this item should be ordered when the quantity falls below this threshold.")
+	reminder_email = models.EmailField(null=True, blank=True, help_text="An email will be sent to this address when the quantity of this item falls below the reminder threshold.")
 	reminder_threshold_reached = models.BooleanField(default=False)
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
+
+	def clean(self):
+		if not self.reusable and (not self.reminder_threshold or not self.reminder_email):
+			raise ValidationError(
+				{
+					"reminder_threshold": "This field is required when the item is not reusable",
+					"reminder_email": "This field is required when the item is not reusable",
+				}
+			)
 
 	def __str__(self):
 		return self.name
 
-# This method is used to check when the quantity of a consumable falls below the threshold and when it has been replenished
+
+# This method is used to check when the quantity of a consumable falls below the threshold
+# or when it has been replenished
 @receiver(models.signals.pre_save, sender=Consumable)
 def check_consumable_quantity_threshold(sender, instance: Consumable, **kwargs):
 	try:
-		if not instance.reminder_threshold_reached and instance.quantity < instance.reminder_threshold:
-			# quantity is below threshold. set flag and send email
-			instance.reminder_threshold_reached = True
-			from NEMO.views.consumables import send_reorder_supply_reminder_email
-			send_reorder_supply_reminder_email(instance)
-		if instance.reminder_threshold_reached and instance.quantity >= instance.reminder_threshold:
-			# it has been replenished. reset flag
-			instance.reminder_threshold_reached = False
+		if instance.reminder_threshold:
+			if not instance.reminder_threshold_reached and instance.quantity < instance.reminder_threshold:
+				# quantity is below threshold. set flag and send email
+				instance.reminder_threshold_reached = True
+				from NEMO.views.consumables import send_reorder_supply_reminder_email
+				send_reorder_supply_reminder_email(instance)
+			if instance.reminder_threshold_reached and instance.quantity >= instance.reminder_threshold:
+				# it has been replenished. reset flag
+				instance.reminder_threshold_reached = False
 	except Exception as e:
 		models_logger.exception(e)
 		pass
 
 
-class ConsumableCategory(models.Model):
+class ConsumableCategory(BaseModel):
 	name = models.CharField(max_length=100)
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 		verbose_name_plural = 'Consumable categories'
 
 	def __str__(self):
 		return self.name
 
 
-class ConsumableWithdraw(models.Model):
+class ConsumableWithdraw(BaseModel):
 	customer = models.ForeignKey(User, related_name="consumable_user", help_text="The user who will use the consumable item.", on_delete=models.CASCADE)
 	merchant = models.ForeignKey(User, related_name="consumable_merchant", help_text="The staff member that performed the withdraw.", on_delete=models.CASCADE)
 	consumable = models.ForeignKey(Consumable, on_delete=models.CASCADE)
@@ -1615,7 +1868,152 @@ class ConsumableWithdraw(models.Model):
 		return str(self.id)
 
 
-class InterlockCard(models.Model):
+class RecurringConsumableCharge(BaseModel):
+	name = models.CharField(max_length=200, help_text="The name/identifier for this recurring charge.")
+	customer = models.ForeignKey(User, null=True, blank=True, related_name="recurring_charge_customer", help_text="The user who will be charged.", on_delete=models.CASCADE)
+	consumable = models.ForeignKey(Consumable, on_delete=models.CASCADE)
+	quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)], help_text="The number of consumables to charge.")
+	project = models.ForeignKey(Project, null=True, blank=True, help_text="The project to bill.", on_delete=models.CASCADE)
+	last_charge = models.DateTimeField(null=True, blank=True, help_text="The date and time when the user was last charged.")
+	# Recurring schedule. TODO: think about extracting into its own model if used anywhere else
+	rec_start = models.DateField(verbose_name="start", null=True, blank=True, help_text="Start date of the recurring charge.")
+	rec_frequency = models.PositiveIntegerField(verbose_name="frequency", null=True, blank=True, choices=RecurrenceFrequency.choices(), help_text="The charge frequency.")
+	rec_interval = models.PositiveIntegerField(verbose_name="interval", default=1, validators=[MinValueValidator(1)], help_text="Recurring interval, i.e. every 5 days.")
+	rec_until = models.DateField(verbose_name="until", null=True, blank=True, help_text="End date of the recurring charge.")
+	rec_count = models.PositiveIntegerField(verbose_name="count", null=True, blank=True, validators=[MinValueValidator(1)], help_text="The number of recurrences to charge for.")
+	# Audit
+	last_updated = models.DateTimeField(help_text="The time this charge was last modified.")
+	last_updated_by = models.ForeignKey("User", related_name="recurring_charge_updated", help_text="The user who last modified this charge (and will be used as merchant on the charge).", on_delete=models.PROTECT)
+
+	class Meta:
+		ordering = ["name"]
+
+	@property
+	def get_rec_frequency_enum(self):
+		return RecurrenceFrequency(self.rec_frequency)
+
+	def next_charge(self, inc=False) -> datetime:
+		today = beginning_of_the_day(datetime.datetime.now(), in_local_timezone=False)
+		recurrence = self.get_recurrence()
+		return recurrence.after(today, inc=inc) if recurrence else None
+
+	def invalid_customer(self):
+		from NEMO.views.customization import RecurringChargesCustomization
+		skip_customer = RecurringChargesCustomization.get_bool("recurring_charges_skip_customer_validation")
+		if self.customer and not skip_customer:
+			if not self.customer.is_active:
+				return "This user is inactive"
+			if self.customer.access_expiration and self.customer.access_expiration < datetime.date.today():
+				return f"The facility access for this user expired on {format_datetime(self.customer.access_expiration)}"
+
+	def invalid_project(self):
+		if self.project:
+			if not self.project.active:
+				return "This project is inactive"
+			if not self.project.account.active:
+				return "The account for this project is inactive"
+			if not self.project.allow_consumable_withdrawals:
+				return "This project doesn't allow consumable charges"
+		if self.customer and self.project:
+			if self.project not in self.customer.active_projects():
+				return "The user does not belong to this project"
+
+	def get_recurrence(self) -> rrule:
+		if self.rec_start and self.rec_frequency:
+			return get_recurring_rule(self.rec_start, self.get_rec_frequency_enum, self.rec_until, self.rec_interval, self.rec_count)
+
+	def get_recurrence_interval_display(self) -> str:
+		if not self.rec_start or not self.rec_frequency:
+			return ""
+		interval = f"{self.rec_interval} " if self.rec_interval != 1 else ""
+		f_enum = self.get_rec_frequency_enum
+		frequency = f"{f_enum.display_text}s" if self.rec_interval != 1 else f_enum.display_text
+		return f"Every {interval}{frequency}"
+
+	def get_recurrence_display(self) -> str:
+		rec_display = ""
+		if self.rec_start and self.rec_frequency:
+			start = f", starting {format_datetime(self.rec_start, 'SHORT_DATE_FORMAT')}"
+			end = ""
+			if self.rec_until or self.rec_count:
+				end = f" and ending "
+				if self.rec_until:
+					end += f"on {format_datetime(self.rec_until, 'SHORT_DATE_FORMAT')}"
+				elif self.rec_count:
+					end += f"after {self.rec_count} iterations" if self.rec_count != 1 else f"after one time"
+					if self.get_recurrence():
+						end += f" on {format_datetime(list(self.get_recurrence())[-1], 'SHORT_DATE_FORMAT')}"
+			return f"{self.get_recurrence_interval_display()}{start}{end}"
+		return rec_display
+
+	def charge(self):
+		# Cannot charge twice the same day
+		if self.last_charge and as_timezone(self.last_charge).date() == datetime.date.today():
+			return
+		else:
+			from NEMO.views.consumables import make_withdrawal
+			self.full_clean()
+			make_withdrawal(self.consumable.id, self.quantity, self.project.id, self.last_updated_by, self.customer.id)
+			self.last_charge = timezone.now()
+			self.save()
+
+	def is_empty(self):
+		return not any([self.customer, self.project])
+
+	def clear(self):
+		self.customer = None
+		self.project = None
+		self.last_charge = None
+		self.save()
+
+	def clean(self):
+		if not self.is_empty():
+			errors = {}
+			if not self.customer:
+				errors["customer"] = "This field is required."
+			if not self.project:
+				errors["project"] = "This field is required."
+			if not self.rec_start:
+				errors["rec_start"] = "This field is required."
+			if not self.rec_frequency:
+				errors["rec_frequency"] = "This field is required."
+			if self.rec_until and self.rec_count:
+				errors[NON_FIELD_ERRORS] = "'count' and 'until' cannot be used at the same time."
+			# Validate needed fields are present
+			if errors:
+				raise ValidationError(errors)
+			# Validate if we have everything to charge
+			from NEMO.forms import ConsumableWithdrawForm
+			from NEMO.views.customization import RecurringChargesCustomization
+			skip_customer = RecurringChargesCustomization.get_bool("recurring_charges_skip_customer_validation")
+			charge_form = ConsumableWithdrawForm({"customer": self.customer.id, "project": self.project.id, "consumable": self.consumable.id, "quantity": self.quantity})
+			if not charge_form.is_valid():
+				if not skip_customer or list(charge_form.errors.keys()) != ["customer"]:
+					raise ValidationError(charge_form.errors)
+
+	def save_with_user(self, user: User, *args, **kwargs):
+		self.last_updated_by = user
+		self.last_updated = timezone.now()
+		super().save(*args, **kwargs)
+
+	@transaction.atomic
+	def save_and_charge_with_user(self, user: User):
+		self.save_with_user(user)
+		self.charge()
+
+	def search_display(self):
+		display_attributes = [self.name]
+		if self.customer:
+			display_attributes.append(str(self.customer))
+		if self.project:
+			display_attributes.append(str(self.project))
+		return " - ".join(display_attributes)
+
+	def __str__(self):
+		return self.name
+
+
+class InterlockCard(BaseModel):
 	name = models.CharField(max_length=100, blank=True, null=True)
 	server = models.CharField(max_length=100)
 	port = models.PositiveIntegerField()
@@ -1635,7 +2033,7 @@ class InterlockCard(models.Model):
 		return card_name + str(self.server) + (', card ' + str(self.number) if self.number else '')
 
 
-class Interlock(models.Model):
+class Interlock(BaseModel):
 	class State(object):
 		UNKNOWN = -1
 		# The numeric command types for the interlock hardware:
@@ -1649,8 +2047,10 @@ class Interlock(models.Model):
 
 	card = models.ForeignKey(InterlockCard, on_delete=models.CASCADE)
 	channel = models.PositiveIntegerField(blank=True, null=True, verbose_name="Channel/Relay/Coil")
+	unit_id = models.PositiveIntegerField(null=True, blank=True)
 	state = models.IntegerField(choices=State.Choices, default=State.UNKNOWN)
 	most_recent_reply = models.TextField(default="None")
+	most_recent_reply_time = models.DateTimeField(null=True, blank=True)
 
 	def unlock(self):
 		from NEMO import interlocks
@@ -1668,19 +2068,19 @@ class Interlock(models.Model):
 		return str(self.card) + ", channel " + str(self.channel)
 
 
-class InterlockCardCategory(models.Model):
+class InterlockCardCategory(BaseModel):
 	name = models.CharField(max_length=200, help_text="The name for this interlock category")
 	key = models.CharField(max_length=100, help_text="The key to identify this interlock category by in interlocks.py")
 
 	class Meta:
 		verbose_name_plural = 'Interlock card categories'
-		ordering = ['name']
+		ordering = ["name"]
 
 	def __str__(self):
 		return str(self.name)
 
 
-class Task(models.Model):
+class Task(BaseModel):
 	class Urgency(object):
 		LOW = -1
 		NORMAL = 0
@@ -1726,7 +2126,7 @@ class Task(models.Model):
 		return TaskImages.objects.filter(task=self).order_by()
 
 
-class TaskImages(models.Model):
+class TaskImages(BaseModel):
 	task = models.ForeignKey(Task, on_delete=models.CASCADE)
 	image = models.ImageField(upload_to=get_task_image_filename, verbose_name='Image')
 	uploaded_at = models.DateTimeField(auto_now_add=True)
@@ -1792,7 +2192,7 @@ def auto_delete_file_on_change(sender, instance: TaskImages, **kwargs):
 			os.remove(old_file.path)
 
 
-class TaskCategory(models.Model):
+class TaskCategory(BaseModel):
 	class Stage(object):
 		INITIAL_ASSESSMENT = 0
 		COMPLETION = 1
@@ -1805,13 +2205,13 @@ class TaskCategory(models.Model):
 
 	class Meta:
 		verbose_name_plural = "Task categories"
-		ordering = ['name']
+		ordering = ["name"]
 
 	def __str__(self):
 		return str(self.name)
 
 
-class TaskStatus(models.Model):
+class TaskStatus(BaseModel):
 	name = models.CharField(max_length=200, unique=True)
 	notify_primary_tool_owner = models.BooleanField(default=False, help_text="Notify the primary tool owner when a task transitions to this status")
 	notify_backup_tool_owners = models.BooleanField(default=False, help_text="Notify the backup tool owners when a task transitions to this status")
@@ -1824,10 +2224,10 @@ class TaskStatus(models.Model):
 
 	class Meta:
 		verbose_name_plural = 'task statuses'
-		ordering = ['name']
+		ordering = ["name"]
 
 
-class TaskHistory(models.Model):
+class TaskHistory(BaseModel):
 	task = models.ForeignKey(Task, help_text='The task that this historical entry refers to', related_name='history', on_delete=models.CASCADE)
 	status = models.CharField(max_length=200, help_text="A text description of the task's status")
 	time = models.DateTimeField(auto_now_add=True, help_text='The date and time when the task status was changed')
@@ -1839,7 +2239,7 @@ class TaskHistory(models.Model):
 		get_latest_by = 'time'
 
 
-class Comment(models.Model):
+class Comment(BaseModel):
 	tool = models.ForeignKey(Tool, help_text="The tool that this comment relates to.", on_delete=models.CASCADE)
 	author = models.ForeignKey(User, on_delete=models.CASCADE)
 	creation_date = models.DateTimeField(default=timezone.now)
@@ -1857,7 +2257,7 @@ class Comment(models.Model):
 		return str(self.id)
 
 
-class ResourceCategory(models.Model):
+class ResourceCategory(BaseModel):
 	name = models.CharField(max_length=200)
 
 	def __str__(self):
@@ -1865,10 +2265,10 @@ class ResourceCategory(models.Model):
 
 	class Meta:
 		verbose_name_plural = 'resource categories'
-		ordering = ['name']
+		ordering = ["name"]
 
 
-class Resource(models.Model):
+class Resource(BaseModel):
 	name = models.CharField(max_length=200)
 	category = models.ForeignKey(ResourceCategory, blank=True, null=True, on_delete=models.SET_NULL)
 	available = models.BooleanField(default=True, help_text="Indicates whether the resource is available to be used.")
@@ -1878,7 +2278,7 @@ class Resource(models.Model):
 	restriction_message = models.TextField(blank=True, help_text="The message that is displayed to users on the tool control page when this resource is unavailable.")
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 
 	def visible_fully_dependent_tools(self):
 		return self.fully_dependent_tools.filter(visible=True)
@@ -1890,7 +2290,7 @@ class Resource(models.Model):
 		return self.name
 
 
-class ActivityHistory(models.Model):
+class ActivityHistory(BaseModel):
 	"""
 	Stores the history of when accounts, projects, and users are active.
 	This class uses generic relations in order to point to any model type.
@@ -1924,7 +2324,7 @@ class ActivityHistory(models.Model):
 		return str(self.content_type).capitalize() + " " + str(self.object_id) + " " + state
 
 
-class MembershipHistory(models.Model):
+class MembershipHistory(BaseModel):
 	"""
 	Stores the history of membership between related items. For example, users can be members of projects.
 	Likewise, projects can belong to accounts. This class uses generic relations in order to point to any model type.
@@ -1984,7 +2384,7 @@ def calculate_duration(start, end, unfinished_reason):
 		return end - start
 
 
-class Door(models.Model):
+class Door(BaseModel):
 	name = models.CharField(max_length=100)
 	area = TreeForeignKey(Area, related_name='doors', on_delete=models.PROTECT)
 	interlock = models.OneToOneField(Interlock, on_delete=models.PROTECT)
@@ -1998,7 +2398,7 @@ class Door(models.Model):
 	get_absolute_url.short_description = 'URL'
 
 
-class SafetyIssue(models.Model):
+class SafetyIssue(BaseModel):
 	reporter = models.ForeignKey(User, blank=True, null=True, related_name='reported_safety_issues', on_delete=models.SET_NULL)
 	location = models.CharField(max_length=200)
 	creation_time = models.DateTimeField(auto_now_add=True)
@@ -2021,21 +2421,21 @@ class SafetyIssue(models.Model):
 		return reverse('update_safety_issue', args=[self.id])
 
 
-class AlertCategory(models.Model):
+class AlertCategory(BaseModel):
 	name = models.CharField(max_length=200)
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 		verbose_name_plural = "Alert categories"
 
 	def __str__(self):
 		return self.name
 
 
-class Alert(models.Model):
+class Alert(BaseModel):
 	title = models.CharField(blank=True, max_length=150)
 	category = models.CharField(blank=True, max_length=200,	help_text="A category/type for this alert.")
-	contents = models.CharField(max_length=500)
+	contents = models.TextField()
 	creation_time = models.DateTimeField(default=timezone.now)
 	creator = models.ForeignKey(User, null=True, blank=True, related_name='+', on_delete=models.SET_NULL)
 	debut_time = models.DateTimeField(help_text='The alert will not be displayed to users until the debut time is reached.')
@@ -2052,19 +2452,19 @@ class Alert(models.Model):
 		return str(self.id)
 
 
-class ContactInformationCategory(models.Model):
+class ContactInformationCategory(BaseModel):
 	name = models.CharField(max_length=200)
 	display_order = models.IntegerField(help_text="Contact information categories are sorted according to display order. The lowest value category is displayed first in the 'Contact information' page.")
 
 	class Meta:
-		verbose_name_plural = 'Contact information categories'
-		ordering = ['display_order', 'name']
+		verbose_name_plural = "Contact information categories"
+		ordering = ["display_order", "name"]
 
 	def __str__(self):
 		return str(self.name)
 
 
-class ContactInformation(models.Model):
+class ContactInformation(BaseModel):
 	name = models.CharField(max_length=200)
 	image = models.ImageField(blank=True, help_text='Portraits are resized to 266 pixels high and 200 pixels wide. Crop portraits to these dimensions before uploading for optimal bandwidth usage')
 	category = models.ForeignKey(ContactInformationCategory, on_delete=models.CASCADE)
@@ -2077,13 +2477,13 @@ class ContactInformation(models.Model):
 
 	class Meta:
 		verbose_name_plural = 'Contact information'
-		ordering = ['name']
+		ordering = ["name"]
 
 	def __str__(self):
 		return str(self.name)
 
 
-class Notification(models.Model):
+class Notification(BaseModel):
 	user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
 	expiration = models.DateTimeField()
 	content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -2105,7 +2505,7 @@ class Notification(models.Model):
 		)
 
 
-class LandingPageChoice(models.Model):
+class LandingPageChoice(BaseModel):
 	image = models.ImageField(help_text='An image that symbolizes the choice. It is automatically resized to 128x128 pixels when displayed, so set the image to this size before uploading to optimize bandwidth usage and landing page load time')
 	name = models.CharField(max_length=40, help_text='The textual name that will be displayed underneath the image')
 	url = models.CharField(max_length=200, verbose_name='URL', help_text='The URL that the choice leads to when clicked. Relative paths such as /calendar/ are used when linking within the site. Use fully qualified URL paths such as https://www.google.com/ to link to external sites.')
@@ -2125,29 +2525,29 @@ class LandingPageChoice(models.Model):
 		return str(self.name)
 
 
-class Customization(models.Model):
+class Customization(BaseModel):
 	name = models.CharField(primary_key=True, max_length=50)
 	value = models.TextField()
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 
 	def __str__(self):
 		return str(self.name)
 
 
-class ScheduledOutageCategory(models.Model):
+class ScheduledOutageCategory(BaseModel):
 	name = models.CharField(max_length=200)
 
 	class Meta:
-		ordering = ['name']
+		ordering = ["name"]
 		verbose_name_plural = "Scheduled outage categories"
 
 	def __str__(self):
 		return self.name
 
 
-class ScheduledOutage(models.Model):
+class ScheduledOutage(BaseModel):
 	start = models.DateTimeField()
 	end = models.DateTimeField()
 	creator = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -2184,14 +2584,15 @@ class ScheduledOutage(models.Model):
 	@property
 	def outage_item_filter(self):
 		if not self.outage_item_type:
-			return {'tool':None, 'area':None}
+			return {'tool': None, 'area': None}
 		else:
 			return {self.outage_item_type.value: self.outage_item}
 
 	def __str__(self):
 		return str(self.title)
 
-class News(models.Model):
+
+class News(BaseModel):
 	title = models.CharField(max_length=200)
 	pinned = models.BooleanField(default=False, help_text="Check this box to keep this story at the top of the news feed")
 	created = models.DateTimeField(help_text="The date and time this story was first published")
@@ -2207,7 +2608,7 @@ class News(models.Model):
 		verbose_name_plural = 'News'
 
 
-class BadgeReader(models.Model):
+class BadgeReader(BaseModel):
 	name = models.CharField(max_length=200)
 	send_key = models.CharField(max_length=20, help_text="The name of the key which submits the badge number ('F2', 'Shift', 'Meta', 'Enter', 'a' etc.)")
 	record_key = models.CharField(null=True, blank=True, max_length=20, help_text="The name of the key which starts badge number recording. If left blank, badge number recording starts when any input is received.")
@@ -2224,7 +2625,7 @@ class BadgeReader(models.Model):
 		return default_badge_reader
 
 
-class ToolUsageCounter(models.Model):
+class ToolUsageCounter(BaseModel):
 	name = models.CharField(max_length=200, help_text="The name of this counter")
 	description = models.TextField(null=True, blank=True, help_text="The counter description to be displayed next to it on the tool control page")
 	value = models.FloatField(default=0, help_text="The current value of this counter")
@@ -2253,7 +2654,7 @@ class ToolUsageCounter(models.Model):
 		return str(self.name)
 
 	class Meta:
-		ordering = ['tool__name']
+		ordering = ["tool__name"]
 
 
 # This method is used to check when a tool usage counter value gets over the threshold
@@ -2273,7 +2674,7 @@ def check_tool_usage_counter_threshold(sender, instance: ToolUsageCounter, **kwa
 		pass
 
 
-class BuddyRequest(models.Model):
+class BuddyRequest(BaseModel):
 	creation_time = models.DateTimeField(default=timezone.now, help_text="The date and time when the request was created.")
 	start = models.DateField(help_text="The start date the user is requesting a buddy.")
 	end = models.DateField(help_text="The end date the user is requesting a buddy.")
@@ -2293,7 +2694,7 @@ class BuddyRequest(models.Model):
 		return f"BuddyRequest [{self.id}]"
 
 
-class BuddyRequestMessage(models.Model):
+class BuddyRequestMessage(BaseModel):
 	buddy_request = models.ForeignKey(BuddyRequest, related_name="replies", help_text="The request that this message relates to.", on_delete=models.CASCADE)
 	author = models.ForeignKey(User, on_delete=models.CASCADE)
 	creation_date = models.DateTimeField(default=timezone.now)
@@ -2303,7 +2704,7 @@ class BuddyRequestMessage(models.Model):
 		ordering = ['creation_date']
 
 
-class StaffAbsenceType(models.Model):
+class StaffAbsenceType(BaseModel):
 	name = models.CharField(max_length=255, help_text="The name of this absence type.")
 	description = models.CharField(max_length=255, help_text="The description for this absence type.")
 
@@ -2315,19 +2716,19 @@ class StaffAbsenceType(models.Model):
 		ordering = ["name"]
 
 
-class StaffAvailabilityCategory(models.Model):
+class StaffAvailabilityCategory(BaseModel):
 	name = models.CharField(max_length=200)
 	display_order = models.IntegerField(help_text="Staff availability categories are sorted according to display order. The lowest value category is displayed first in the 'Staff status' page.")
 
 	class Meta:
-		verbose_name_plural = 'Staff availability categories'
-		ordering = ['display_order', 'name']
+		verbose_name_plural = "Staff availability categories"
+		ordering = ["display_order", "name"]
 
 	def __str__(self):
 		return str(self.name)
 
 
-class StaffAvailability(models.Model):
+class StaffAvailability(BaseModel):
 	DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 	staff_member = models.ForeignKey("User", help_text="The staff member to display on the staff status page.", on_delete=models.CASCADE)
 	category = models.ForeignKey(StaffAvailabilityCategory, null=True, blank=True, help_text="The category for this staff member.", on_delete=models.CASCADE)
@@ -2359,7 +2760,7 @@ class StaffAvailability(models.Model):
 		ordering = ["staff_member__first_name"]
 
 
-class StaffAbsence(models.Model):
+class StaffAbsence(BaseModel):
 	creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the absence was created.")
 	staff_member = models.ForeignKey(StaffAvailability, help_text="The staff member who will be absent.", on_delete=models.CASCADE)
 	absence_type = models.ForeignKey(StaffAbsenceType, help_text="The absence type. This will only be visible to facility managers.", on_delete=models.CASCADE)
@@ -2383,19 +2784,19 @@ class StaffAbsence(models.Model):
 		ordering = ["-creation_time"]
 
 
-class ChemicalHazard(models.Model):
+class ChemicalHazard(BaseModel):
 	name = models.CharField(max_length=200)
 	display_order = models.IntegerField(help_text="Chemical hazards are sorted according to display order. The lowest value category is displayed first in the 'Safety data sheet' page.")
 	logo = models.ImageField(upload_to=get_hazard_logo_filename, blank=True, help_text="The logo for this hazard")
 
 	class Meta:
-		ordering = ['display_order', 'name']
+		ordering = ["display_order", "name"]
 
 	def __str__(self):
 		return str(self.name)
 
 
-class Chemical(models.Model):
+class Chemical(BaseModel):
 	name = models.CharField(max_length=200)
 	hazards = models.ManyToManyField(ChemicalHazard, blank=True, help_text="Select the hazards for this chemical.")
 	document = models.FileField(null=True, blank=True, upload_to=get_chemical_document_filename, max_length=500)
@@ -2410,7 +2811,6 @@ class Chemical(models.Model):
 
 	def __str__(self):
 		return str(self.name)
-
 
 
 # These two auto-delete tool images from filesystem when they are unneeded:
@@ -2440,7 +2840,6 @@ def auto_delete_file_on_tool_change(sender, instance: ChemicalHazard, **kwargs):
 				os.remove(old_file.path)
 
 
-
 # These two auto-delete tool images from filesystem when they are unneeded:
 @receiver(models.signals.post_delete, sender=Chemical)
 def auto_delete_file_on_tool_delete(sender, instance: Chemical, **kwargs):
@@ -2468,7 +2867,7 @@ def auto_delete_file_on_tool_change(sender, instance: Chemical, **kwargs):
 				os.remove(old_file.path)
 
 
-class EmailLog(models.Model):
+class EmailLog(BaseModel):
 	category = models.IntegerField(choices=EmailCategory.Choices, default=EmailCategory.GENERAL)
 	when = models.DateTimeField(null=False, auto_now_add=True)
 	sender = models.EmailField(null=False, blank=False)
@@ -2499,7 +2898,7 @@ def record_remote_many_to_many_changes_and_save(request, obj, form, change, many
 	symmetric_difference = original_members ^ current_members
 	if symmetric_difference:
 		if change:  # the members have changed, so find out what was added and removed...
-			# We can can see the previous members of the object model by looking it up
+			# We can see the previous members of the object model by looking it up
 			# in the database because the member list hasn't been committed yet.
 			added_members = set(current_members) - set(original_members)
 			removed_members = set(original_members) - set(current_members)
@@ -2533,13 +2932,14 @@ def record_remote_many_to_many_changes_and_save(request, obj, form, change, many
 		ex_member.save()
 
 
-def record_local_many_to_many_changes(request, obj, form, many_to_many_field):
+def record_local_many_to_many_changes(request, obj, form, many_to_many_field, form_field=None):
 	"""
 	Record the changes in a many-to-many field that the model owns.
 	"""
-	if many_to_many_field in form.changed_data:
+	data_field = form_field or many_to_many_field
+	if data_field in form.changed_data:
 		original_members = set(getattr(obj, many_to_many_field).all())
-		current_members = set(form.cleaned_data[many_to_many_field])
+		current_members = set(form.cleaned_data[data_field])
 		added_members = set(current_members) - set(original_members)
 		for a in added_members:
 			p = MembershipHistory()

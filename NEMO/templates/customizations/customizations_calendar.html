@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div class="panel-body">
     <h3 class="customization-section-title">Calendar settings</h3>
     <form method="POST" action="{% url 'customize' 'calendar' %}" class="form-horizontal">
@@ -45,6 +46,15 @@
         <div class="form-group">
             <div class="col-md-12" style="margin-top: 15px">
                 The following settings allow to customize the date format in the different calendar views. See <a href="https://fullcalendar.io/docs/v1/formatDate" target="_blank">FullCalendar documentation</a> for more information on the syntax.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-2" for="calendar_time_format">Time format</label>
+            <div class="col-md-3">
+                <input type="text" id="calendar_time_format" name="calendar_time_format" class="form-control" value="{{ calendar_time_format }}"  placeholder="ha">
+            </div>
+            <div class="col-md-7 help-block light-grey">
+                The time format for the calendar.
             </div>
         </div>
         <div class="form-group">
@@ -102,7 +112,7 @@
             </div>
         </div>
         <div class="col-md-offset-2">
-            <input type="submit" value="Save settings" class="btn btn-success">
+            {% button type="save" value="Save settings" %}
         </div>
     </form>
 </div>

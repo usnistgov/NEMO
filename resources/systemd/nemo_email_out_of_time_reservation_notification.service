@@ -1,0 +1,6 @@
+[Unit]
+Description=Email users when they are still logged in area and reservation ended
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin send_email_out_of_time_reservation_notification

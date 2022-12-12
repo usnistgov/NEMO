@@ -1,6 +1,6 @@
 {% load custom_tags_and_filters %}
 {% load tz %}
-<style type="text/css">
+<style>
 .table-hover-first tr:hover td:is(:first-child)
 {
   background: #ddd !important;
@@ -19,20 +19,21 @@
         <div style="display: table-cell; vertical-align: bottom; width: 100%">
             <div style="display: inline-flex">
                 <div class="btn-group" role="group" style="display: inline-flex">
-                    <button type="button" class="btn btn-default {% if page_view == 'day' %}active{% endif %}" onclick="window.location = '?timestamp={{ page_timestamp }}&view=day'" {% if page_view == 'day' %}aria-pressed="true"{% endif %}>Day</button>
-                    <button type="button" class="btn btn-default {% if not page_view or page_view == 'week' %}active{% endif %}" onclick="window.location = '?timestamp={{ page_timestamp }}&view=week'" {% if not page_view or page_view == 'week' %}aria-pressed="true"{% endif %}>Week</button>
+                    <button type="button" class="btn btn-default {% if page_view == 'day' %}active{% endif %}" onclick="location.href = '?timestamp={{ page_timestamp }}&view=day'" {% if page_view == 'day' %}aria-pressed="true"{% endif %}>Day</button>
+                    <button type="button" class="btn btn-default {% if not page_view or page_view == 'week' %}active{% endif %}" onclick="location.href = '?timestamp={{ page_timestamp }}&view=week'" {% if not page_view or page_view == 'week' %}aria-pressed="true"{% endif %}>Week</button>
                     {% if not user_view %}
-                        <button type="button" class="btn btn-default {% if page_view == 'month' %}active{% endif %}" onclick="window.location = '?timestamp={{ page_timestamp }}&view=month'" {% if page_view == 'month' %}aria-pressed="true"{% endif %}>Month</button>
+                        <button type="button" class="btn btn-default {% if page_view == 'month' %}active{% endif %}" onclick="location.href = '?timestamp={{ page_timestamp }}&view=month'" {% if page_view == 'month' %}aria-pressed="true"{% endif %}>Month</button>
                     {% endif %}
                 </div>
                 {% if user.is_facility_manager %}
-                    <a style="margin-left: 10px" class="btn btn-info" href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ page_timestamp }}&view={{ page_view }}&csv=true" role="button" target="_blank">Export</a>
+                    {% url 'status_dashboard_tab' 'staff' as staff_status_url %}
+                    {% button style="margin-left: 10px" value="Export" type="export" url=staff_status_url|concat:"?timestamp="|concat:page_timestamp|concat:"&view="|concat:page_view|concat:"&csv=true" role="button" target="_blank" %}
                 {% endif %}
             </div>
         </div>
     {% endif %}
 </div>
-<div id="contact-info-tooltip-container" class="contact-info-tooltip-container" style="overflow-x: auto; margin-top: 25px; margin-bottom: 20px; border: 1px solid #ddd;">
+<div id="contact-info-tooltip-container" class="info-tooltip-container" style="overflow-x: auto; margin-top: 25px; margin-bottom: 20px; border: 1px solid #ddd;">
     <table class="table table-responsive table-hover-first" style="margin: 0;border-collapse: collapse">
         <thead>
             <tr class="no-border">

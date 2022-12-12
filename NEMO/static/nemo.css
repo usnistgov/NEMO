@@ -537,6 +537,11 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 
 .spinner-container
 {
+	position: fixed;
+  	top: 0;
+  	left: 0;
+  	right: 0;
+  	bottom: 0;
 	text-align: center;
 	background-color: #ffffff;
 	font-size: 70px;
@@ -613,16 +618,16 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	margin-bottom: 0;
 }
 
-.contact-info-tooltip-container + .tooltip > .tooltip-inner,
-.contact-info-tooltip-container > .tooltip > .tooltip-inner
+.info-tooltip-container + .tooltip > .tooltip-inner,
+.info-tooltip-container > .tooltip > .tooltip-inner
 {
 	max-width: initial;
 	text-align: left;
 	padding: 10px 16px;
 }
 
-.contact-info-tooltip-container + .tooltip > .tooltip-inner a,
-.contact-info-tooltip-container > .tooltip > .tooltip-inner a
+.info-tooltip-container + .tooltip > .tooltip-inner a,
+.info-tooltip-container > .tooltip > .tooltip-inner a
 {
 	color: #b0dbff;
 }
@@ -875,4 +880,16 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 #additional_event_parameters input:invalid, #additional_event_parameters select:invalid, #additional_event_parameters textarea:invalid
 {
 	border-color: #dc3545!important;
+}
+
+/* Make form-control look like plain text */
+.form-control-plaintext
+{
+    display: block;
+    width: 100%;
+    padding-top: 6px;
+    margin-bottom: 0;
+    background-color: transparent;
+    border: solid transparent;
+    border-width: 1px 0;
 }

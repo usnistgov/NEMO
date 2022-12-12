@@ -13,7 +13,7 @@ from django.utils.http import urlencode
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from mptt.forms import TreeNodeChoiceField
 
-from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
+from NEMO.decorators import disable_session_expiry_refresh, staff_member_or_user_office_required, synchronized
 from NEMO.exceptions import (
 	InactiveUserError,
 	MaximumCapacityReachedError,
@@ -63,7 +63,7 @@ class ParseSelfLoginErrorMessage(HTMLParser):
 		pass
 
 
-@staff_member_required
+@staff_member_or_user_office_required
 @require_GET
 def area_access(request):
 	""" Presents a page that displays audit records for all areas. """
@@ -99,11 +99,11 @@ def area_access(request):
 		dictionary['access_records'] = area_access_records
 	except:
 		pass
-	dictionary['area_select_field'] = TreeNodeChoiceField(Area.objects.filter(area_children_set__isnull=True).only('name'), empty_label="All").widget.render('area', area_id)
+	dictionary['area_select_field'] = TreeNodeChoiceField(Area.objects.filter(area_children_set__isnull=True).only('name'), empty_label="All").widget.render('area', area_id, attrs={"class": "form-control"})
 	return render(request, 'area_access/area_access.html', dictionary)
 
 
-@staff_member_required
+@staff_member_or_user_office_required
 @require_http_methods(['GET', 'POST'])
 def new_area_access_record(request):
 	dictionary = {
@@ -189,7 +189,7 @@ def check_policy_for_user(customer: User):
 	return error_message
 
 
-@staff_member_required
+@staff_member_or_user_office_required
 @require_POST
 def force_area_logout(request, user_id):
 	user = get_object_or_404(User, id=user_id)
@@ -395,7 +395,7 @@ def log_out_user(user: User):
 
 def able_to_self_log_out_of_area(user):
 	# 'Self log out' must be enabled
-	if not ApplicationCustomization.get('self_log_out') == 'enabled':
+	if not ApplicationCustomization.get_bool("self_log_out"):
 		return False
 	# Check if the user is active
 	if not user.is_active:
@@ -409,7 +409,7 @@ def able_to_self_log_out_of_area(user):
 
 def able_to_self_log_in_to_area(user):
 	# 'Self log in' must be enabled
-	if not ApplicationCustomization.get('self_log_in') == 'enabled':
+	if not ApplicationCustomization.get_bool("self_log_in"):
 		return False
 	# Check if the user is already in an area. If so, the /change_project/ URL can be used to change their project.
 	if user.in_area():

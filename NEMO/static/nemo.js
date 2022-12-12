@@ -387,6 +387,8 @@ function ajax_complete_callback(title, preface)
 }
 
 // Take all the elements in a form and put them in a JavaScript object.
+// NOTE: This will not work when multiple values are submitted for the same input (checkboxes, hidden inputs)
+// Only the last input name/value will be submitted
 function serialize(form_selector, ajax_message)
 {
 	if (ajax_message === undefined)
@@ -465,17 +467,24 @@ function toggle_details(element)
 	return false;
 }
 
-function add_to_list(list_selector, on_click, id, text, removal_title, input_name)
+function add_to_list(list_selector, on_click, id, text, removal_title, input_name, readonly)
 {
+	if (readonly === undefined)
+	{
+		readonly = false;
+	}
 	let div_id = input_name + "_" + id;
 	let div_id_selector = "#" + div_id;
-	let addition =
-		'<div id="' + div_id + '">' +
-		'<a href="javascript:' + on_click + '(' + id + ')" class="grey hover-black" title="' + removal_title + '">' +
+	let addition = '<div id="' + div_id + '">';
+	if (!readonly)
+	{
+		addition += '<a href="javascript:' + on_click + '(' + id + ')" class="grey hover-black" title="' + removal_title + '">' +
 		'<span class="glyphicon glyphicon-remove-circle"></span>' +
-		'</a> ' + text +
-		'<input type="hidden" name="' + input_name + '" value="' + id + '"><br>' +
-		'</div>';
+		'</a> ';
+	}
+	addition += text +
+	'<input type="hidden" name="' + input_name + '" value="' + id + '"><br>' +
+	'</div>';
 	if($(list_selector).find('input').length === 0) // If the list is empty then replace the empty message with the list item.
 	{
 		$(list_selector).html(addition);
@@ -529,51 +538,97 @@ function matcher(items, search_fields)
 	};
 }
 
-// This jQuery plugin integrates Twitter Typeahead directly with default parameters & search function.
-//
-// Example usage:
-// function on_select(jquery_event, search_selection, dataset_name)
-// {
-//     ... called when an item is selected ...
-// }
-// $('#search').autocomplete('fruits', on_select, [{name:'apple', id:1}, {name:'banana', id:2}, {name:'cherry', id:3}]);
 (function($)
 {
-	$.fn.autocomplete = function(dataset_name, select_callback, items_to_search, hide_type)
+	// This jquery plugin is an extension of .load() that will work with multipart form-data
+	// Example usage:
+	// ("#my-div-element").load_multipart("http://example.com/submit", $("#my_form")[0], complete_callback);
+	$.fn.load_multipart = function(url, form, callback)
+	{
+		let self = this;
+		let response;
+		$.ajax(
+		{
+			url: url,
+			type: "POST",
+			data: new FormData(form),
+			contentType: false,
+			cache: false,
+			processData:false,
+			success: function(data) { response = arguments; self.html(data); },
+			complete: callback && function( jqXHR, status )
+			{
+				self.each( callback, response || [ jqXHR.responseText, status, jqXHR ] );
+			}
+		});
+		return self;
+	}
+	// This jQuery plugin integrates Twitter Typeahead directly with default parameters & search function.
+	//
+	// Example usage:
+	// function on_select(jquery_event, search_selection, dataset_name)
+	// {
+	//     ... called when an item is selected ...
+	// }
+	// $('#search').autocomplete('fruits', on_select, [{name:'apple', id:1}, {name:'banana', id:2}, {name:'cherry', id:3}]);
+	// It can also be used with a URL
+	// $('#search').autocomplete('fruits', on_select, 'search_url');
+	$.fn.autocomplete = function(dataset_name, on_select, items_or_url, hide_type)
 	{
 		hide_type = hide_type || false;
 		let search_fields = ['name', 'application_identifier'];
-		let datasets =
+		let dataset =
 		{
-				source: matcher(items_to_search, search_fields),
-				name: dataset_name,
-				displayKey: 'name'
-		};
-		datasets['templates'] =
-		{
-			'suggestion': function(data)
+			name: dataset_name,
+			displayKey: 'name',
+			templates:
 			{
-				let result = data['name'];
-				if(!hide_type && data['type'])
+				'suggestion': function(data)
 				{
-					result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'].capitalize() + '</span>';
+					let result = data['name'];
+					if(!hide_type && data['type'])
+					{
+						result += '<br><span style="font-size:small; font-weight:bold; color:#bbbbbb">' + data['type'].capitalize() + '</span>';
+					}
+					if(data['application_identifier'])
+					{
+						result += '<span style="font-size:small; font-weight:bold; color:#bbbbbb" class="pull-right">' + data['application_identifier'] + '</span>';
+					}
+					return result;
 				}
-				if(data['application_identifier'])
-				{
-					result += '<span style="font-size:small; font-weight:bold; color:#bbbbbb" class="pull-right">' + data['application_identifier'] + '</span>';
-				}
-				return result;
 			}
 		};
+		if (Array.isArray(items_or_url))
+		{
+			dataset['source'] = matcher(items_or_url, search_fields);
+		}
+		else
+		{
+			dataset['async'] = true;
+			dataset['source'] = function (query, process)
+			{
+				return $.ajax(
+				{
+					url: items_or_url,
+					type: 'GET',
+					data: {query: query},
+					dataType: 'json',
+					success: function (json)
+					{
+						return process(json);
+					}
+				});
+			};
+		}
 		this.typeahead(
 			{
 				minLength: 1,
 				hint: false,
 				highlight: false
 			},
-			datasets
+			dataset
 		);
-		this.bind('typeahead:selected', select_callback);
+		this.bind('typeahead:selected', on_select);
 		return this;
 	};
 }(jQuery));
@@ -597,6 +652,7 @@ function navigate_to_login_on_session_expiration(logout_url, event, xhr, status,
 // This function as its name indicate will submit a form and disable the button
 // Use it on an input submit onclick attribute: onclick="submit_and_disable(this)"
 // Note: Depending on how validation is handled, this might not work if the form is invalid
+// Note: this doesn't trigger "onsubmit" on form itself.
 function submit_and_disable(input_submit)
 {
 	if (input_submit.form.checkValidity())
@@ -617,9 +673,12 @@ function submit_and_disable(input_submit)
 
 function auto_size_textarea(textarea)
 {
-	textarea.rows = 1;
-	textarea.style.height = '';
-	textarea.style.height = textarea.scrollHeight + 3 + 'px';
+	if (textarea)
+	{
+		textarea.rows = 1;
+		textarea.style.height = '';
+		textarea.style.height = textarea.scrollHeight + 3 + 'px';
+	}
 }
 
 function set_start_end_datetime_pickers(start_jq, end_jq, properties, end_before_start)
@@ -630,5 +689,37 @@ function set_start_end_datetime_pickers(start_jq, end_jq, properties, end_before
 	{
 		let end_date_picker = end_jq.data("DateTimePicker");
 		start_jq.on("dp.change", function (e) { end_date_picker.minDate(e.date); });
+	}
+}
+
+function sort_compare(element)
+{
+	return element.innerText.toLowerCase();
+}
+
+function sort_elements(list_element, selector, sort_function)
+{
+	let list, i, switching, b, shouldSwitch;
+	list = list_element;
+	switching = true;
+	while (switching)
+	{
+		switching = false;
+		b = $(list).find(selector);
+		for (i = 0; i < (b.length - 1); i++)
+		{
+			shouldSwitch = false;
+			let comp_function = sort_function || sort_compare
+			if (comp_function(b[i]) > comp_function(b[i + 1]))
+			{
+				shouldSwitch = true;
+				break;
+			}
+		}
+		if (shouldSwitch)
+		{
+			b[i].parentNode.insertBefore(b[i + 1], b[i]);
+			switching = true;
+		}
 	}
 }

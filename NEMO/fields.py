@@ -26,7 +26,7 @@ class IsEmpty(BuiltinLookup):
 		else:
 			if getattr(connection, "vendor", "") == "oracle" and isinstance(self.lhs.field, TextField):
 				# we need to handle textfields for oracle differently as they are set as clobs
-				return "dbms_lob.getlength(%s) != 0" % sql, params
+				return "length(%s) <> 0" % sql, params
 			else:
 				return "%s <> ''" % sql, params
 

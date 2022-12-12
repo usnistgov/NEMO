@@ -1,4 +1,5 @@
 {% load static %}
+{% load custom_tags_and_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,19 +37,19 @@
 
 			<div class="form-group">
 				<div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
-					<input type="text" id="username" name="username" class="form-control" placeholder="User name" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" autofocus>
+					<input type="text" aria-label="Username" id="username" name="username" class="form-control" placeholder="User name" spellcheck="false" autocapitalize="off" autocomplete="off" autofocus>
 				</div>
 			</div>
 
 			<div class="form-group">
 				<div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
-					<input type="password" id="password" name="password" class="form-control" placeholder="Password" autocomplete="off">
+					<input type="password" aria-label="Password" id="password" name="password" class="form-control" placeholder="Password" autocomplete="off">
 				</div>
 			</div>
 
 			<div class="form-group">
 				<div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
-					<input type="submit" class="btn btn-success form-control" value="Log in">
+					{% button style="width: 100%;" type="save" value="Log in" icon="glyphicon-log-in" %}
 				</div>
 			</div>
 		</form>

@@ -1,0 +1,15 @@
+<span class="step-links">
+    {% if page.has_previous %}
+        <a href="?o={{ paginator.order_by }}&p=1&pp={{ paginator.per_page }}">&laquo; first</a>
+        <a href="?o={{ paginator.order_by }}&p={{ page.previous_page_number }}&pp={{ paginator.per_page }}">previous</a>
+    {% endif %}
+
+    <span class="current">
+        Page {{ page.number }} of {{ paginator.num_pages }}
+    </span>
+
+    {% if page.has_next %}
+        <a href="?o={{ paginator.order_by }}&p={{ page.next_page_number }}&pp={{ paginator.per_page }}">next</a>
+        <a href="?o={{ paginator.order_by }}&p={{ paginator.num_pages }}&pp={{ paginator.per_page }}">last &raquo;</a>
+    {% endif %}
+</span>

@@ -10,7 +10,7 @@
 	{% for tool in tool_summary %}
 		<tr class="{% if tool.problematic or not tool.operational or tool.required_resource_is_unavailable or tool.nonrequired_resource_is_unavailable %}problematic{% else %}healthy{% endif %} {% if tool.in_use %}in_use{% else %}idle{% endif %}">
 			<td>
-				{{ tool.name }}
+				{{ tool.get_tool_info_html|safe }}
 				{# Output the state of the tool, summarizing any associated problems. #}
 				{% if tool.in_use %}
 					<span class="glyphicon glyphicon-user primary-highlight" title="{{ tool.user }} is using this tool"></span>
@@ -54,3 +54,22 @@
 	{% endfor %}
 	</tbody>
 </table>
+<script>
+    $(".tool-info-tooltip").on('click', function () {
+        let tooltip_class = $(this).data("tooltip-id");
+        {# Remove other tool tooltips except for the tool we clicked on #}
+        $("#tools .tooltip").not('.'+tooltip_class).remove();
+        {# Check if current tool tooltip is open #}
+        if ($('.'+tooltip_class).length)
+        {
+            {# Remove current tool tooltip #}
+            $('.tooltip.'+tooltip_class).remove();
+        }
+        else
+        {
+            {# Set up new tooltip #}
+            $(this).tooltip({template: '<div class="tooltip '+tooltip_class+'" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>', trigger: 'manual', html: 'true', container: '#tools'}).tooltip("show");
+        }
+    });
+    $("[data-toggle='tooltip']").tooltip({html: 'true'});
+</script>

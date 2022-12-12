@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import Context, Template
 from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
@@ -26,9 +25,12 @@ from NEMO.models import (
 )
 from NEMO.utilities import (
 	EmailCategory,
+	as_timezone,
 	bootstrap_primary_color,
 	create_email_attachment,
 	format_datetime,
+	get_full_url,
+	render_email_template,
 	resize_image,
 	send_mail,
 )
@@ -97,24 +99,18 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 	attachments = None
 	if task_images:
 		attachments = [create_email_attachment(task_image.image, task_image.image.name) for task_image in task_images]
-	# Send an email to the appropriate staff that a new task has been created:
+	# Email the appropriate staff that a new task has been created:
 	if message:
 		dictionary = {
 			'template_color': bootstrap_primary_color('danger') if task.force_shutdown else bootstrap_primary_color('warning'),
 			'user': request.user,
 			'task': task,
 			'tool': task.tool,
-			'tool_control_absolute_url': request.build_absolute_uri(task.tool.get_absolute_url())
+			'tool_control_absolute_url': get_full_url(task.tool.get_absolute_url(), request)
 		}
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
-		message = Template(message).render(Context(dictionary))
-		# Add all recipients, starting with primary owner
-		recipient_users: List[User] = [task.tool.primary_owner]
-		# Add backup owners
-		recipient_users.extend(task.tool.backup_owners.all())
-		# Add facility managers
-		recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
-		recipients = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
+		message = render_email_template(message, dictionary, request)
+		recipients = get_task_email_recipients(task)
 		if task.tool.notification_email_address:
 			recipients.append(task.tool.notification_email_address)
 		send_mail(subject=subject, content=message, from_email=request.user.email, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
@@ -127,12 +123,12 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 		for reservation in upcoming_reservations:
 			if not task.tool.operational:
 				subject = reservation.tool.name + " reservation problem"
-				rendered_message = Template(message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('danger'), 'fatal_error': True}))
+				rendered_message = render_email_template(message, {'reservation': reservation, 'template_color': bootstrap_primary_color('danger'), 'fatal_error': True}, request)
 			else:
 				subject = reservation.tool.name + " reservation warning"
-				rendered_message = Template(message).render(Context({'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}))
-			send_to_alternate = reservation.user.get_preferences().email_send_reservation_emails
-			reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TASKS, send_to_alternate=send_to_alternate)
+				rendered_message = render_email_template(message, {'reservation': reservation, 'template_color': bootstrap_primary_color('warning'), 'fatal_error': False}, request)
+			email_notification = reservation.user.get_preferences().email_send_reservation_emails
+			reservation.user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TASKS, email_notification=email_notification)
 
 
 @login_required
@@ -158,15 +154,13 @@ def cancel(request, task_id):
 	task.resolution_time = timezone.now()
 	task.save()
 	determine_tool_status(task.tool)
-	send_task_updated_email(task, request.build_absolute_uri(task.tool.get_absolute_url()))
+	send_task_updated_email(task, get_full_url(task.tool.get_absolute_url(), request))
 	return redirect('tool_control')
 
 
 def send_task_updated_email(task, url, task_images: List[TaskImages] = None):
 	try:
-		facility_managers = [email for manager in User.objects.filter(is_active=True, is_facility_manager=True) for email in manager.get_emails(manager.get_preferences().email_send_task_updates)]
-		if not facility_managers:
-			return
+		recipients = get_task_email_recipients(task)
 		attachments = None
 		if task_images:
 			attachments = [create_email_attachment(task_image.image, task_image.image.name) for task_image in task_images]
@@ -196,7 +190,7 @@ Task resolution description:<br/>
 <br/><br/>
 Visit {url} to view the tool control page for the task.<br/>
 """
-		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=settings.SERVER_EMAIL, to=facility_managers, attachments=attachments, email_category=EmailCategory.TASKS)
+		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=settings.SERVER_EMAIL, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
 	except Exception as error:
 		site_title = ApplicationCustomization.get('site_title')
 		error_message = f"{site_title} was unable to send the task updated email. The error message that was received is: " + str(error)
@@ -223,7 +217,7 @@ def update(request, task_id):
 	set_task_status(request, task, request.POST.get('status'), request.user)
 	determine_tool_status(task.tool)
 	task_images = save_task_images(request, task)
-	send_task_updated_email(task, request.build_absolute_uri(task.tool.get_absolute_url()), task_images)
+	send_task_updated_email(task, get_full_url(task.tool.get_absolute_url(), request), task_images)
 	if next_page == 'maintenance':
 		return redirect('maintenance')
 	else:
@@ -239,6 +233,7 @@ def task_update_form(request, task_id):
 		'categories': categories,
 		'urgency': Task.Urgency.Choices,
 		'task': task,
+		"estimated_resolution_time": as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None,
 		'task_statuses': TaskStatus.objects.all(),
 	}
 	return render(request, 'tasks/update.html', dictionary)
@@ -252,6 +247,7 @@ def task_resolution_form(request, task_id):
 	dictionary = {
 		'categories': categories,
 		'task': task,
+		"estimated_resolution_time": as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None,
 	}
 	return render(request, 'tasks/resolve.html', dictionary)
 
@@ -279,10 +275,10 @@ def set_task_status(request, task, status_name, user):
 			'status_message': status_message,
 			'notification_message': status.notification_message,
 			'task': task,
-			'tool_control_absolute_url': request.build_absolute_uri(task.tool.get_absolute_url())
+			'tool_control_absolute_url': get_full_url(task.tool.get_absolute_url(), request)
 		}
 		subject = f'{task.tool} task notification'
-		message = Template(message).render(Context(dictionary))
+		message = render_email_template(message, dictionary, request)
 		# Add primary owner if applicable
 		recipient_users: List[User] = [task.tool.primary_owner] if status.notify_primary_tool_owner else []
 		if status.notify_backup_tool_owners:
@@ -310,3 +306,14 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
 	except Exception as e:
 		tasks_logger.exception(e)
 	return task_images
+
+
+def get_task_email_recipients(task: Task) -> List[User]:
+	# Add all recipients, starting with primary owner
+	recipient_users: List[User] = [task.tool.primary_owner]
+	# Add backup owners
+	recipient_users.extend(task.tool.backup_owners.all())
+	# Add facility managers
+	recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
+	recipients = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
+	return recipients

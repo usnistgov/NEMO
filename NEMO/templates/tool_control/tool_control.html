@@ -279,7 +279,7 @@
             let export_callback = function(response, status, xml_header_request)
             {
                 if (status !== "error") {
-                    window.location = export_url;
+                    location.href = export_url;
                 }
                 return export_failure_dialog(response, status, xml_header_request);
             }

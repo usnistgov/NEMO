@@ -1,0 +1,6 @@
+[Unit]
+Description=Manage recurring charges in NEMO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin manage_recurring_charges

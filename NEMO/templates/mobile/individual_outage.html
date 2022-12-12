@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div class="alert alert-danger" role="alert">
 	<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down" data-toggle="collapse" data-target="#extended_outage_information_{{ outage.id }}"></span>
 	<span style="cursor:pointer" data-toggle="collapse" data-target="#extended_outage_information_{{ outage.id }}"><strong>{{ outage.title }}</strong></span><br>
@@ -14,7 +15,7 @@
 			<div style="height:10px">{# Vertical spacer #}</div>
 			<form method="post" action="{% url 'cancel_outage' outage.id %}">
 				{% csrf_token %}
-				<button type="submit" class="btn btn-danger">Cancel this outage</button>
+                {% button type="delete" submit=True value="Cancel this outage" %}
 			</form>
 		{% endif %}
 	</div>

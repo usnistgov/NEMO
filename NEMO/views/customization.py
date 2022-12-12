@@ -1,5 +1,5 @@
-import operator
 from abc import ABC
+from datetime import date, datetime
 from typing import Dict, Iterable
 
 from django.contrib import messages
@@ -14,7 +14,8 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
-from NEMO.models import Customization, Project
+from NEMO.models import ConsumableCategory, Customization, Project, RecurringConsumableCharge
+from NEMO.utilities import date_input_format, datetime_input_format, quiet_int
 
 
 class CustomizationBase(ABC):
@@ -23,10 +24,9 @@ class CustomizationBase(ABC):
 	variables = {"weekend_access_notification_last_sent": ""}
 	files = []
 
-	def __init__(self, key, title, order):
+	def __init__(self, key, title):
 		self.key = key
 		self.title = title
-		self.order = order
 
 	def template(self) -> str:
 		return f"customizations/customizations_{self.key}.html"
@@ -62,13 +62,25 @@ class CustomizationBase(ABC):
 		# This method is expected to throw a ValidationError when validation fails
 		pass
 
+	def validate_date(self, value):
+		try:
+			datetime.strptime(value, date_input_format)
+		except ValueError as e:
+			raise ValidationError(str(e))
+
+	def validate_int(self, value):
+		try:
+			int(value)
+		except ValueError:
+			raise ValidationError(f"{value} is not a valid integer")
+
 	@classmethod
 	def add_instance(cls, inst):
 		cls._instances[inst.key] = inst
 
 	@classmethod
 	def instances(cls) -> Iterable:
-		return sorted(cls._instances.values(), key=operator.attrgetter("order"))
+		return cls._instances.values()
 
 	@classmethod
 	def get_instance(cls, key):
@@ -98,6 +110,26 @@ class CustomizationBase(ABC):
 				return default_value
 
 	@classmethod
+	def get_int(cls, name: str, default=None, raise_exception=True) -> int:
+		return quiet_int(cls.get(name, raise_exception), default)
+
+	@classmethod
+	def get_bool(cls, name: str, raise_exception=True) -> bool:
+		return cls.get(name, raise_exception) == "enabled"
+
+	@classmethod
+	def get_date(cls, name: str, raise_exception=True) -> date:
+		str_date = cls.get(name, raise_exception)
+		if str_date:
+			return datetime.strptime(str_date, date_input_format).date()
+
+	@classmethod
+	def get_datetime(cls, name:str, raise_exception=True) -> datetime:
+		str_datetime = cls.get(name, raise_exception)
+		if str_datetime:
+			return datetime.strptime(str_datetime, datetime_input_format)
+
+	@classmethod
 	def set(cls, name: str, value):
 		if name not in cls.variables:
 			raise InvalidCustomizationException(name, value)
@@ -110,7 +142,7 @@ class CustomizationBase(ABC):
 				pass
 
 
-@customization(key="application", title="Application", order=1)
+@customization(key="application", title="Application")
 class ApplicationCustomization(CustomizationBase):
 	variables = {
 		"facility_name": "Facility",
@@ -118,8 +150,22 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_in": "",
 		"self_log_out": "",
 		"calendar_login_logout": "",
+	}
+
+	def save(self, request, element=None):
+		errors = super().save(request, element)
+		init_admin_site()
+		return errors
+
+
+@customization(key="projects_and_accounts", title="Projects & accounts")
+class ProjectsAccountsCustomization(CustomizationBase):
+	variables = {
 		"project_selection_template": "{{ project.name }}",
-		"default_user_training_not_required": "",
+		"project_allow_document_upload": "",
+		"account_list_active_only": "",
+		"project_list_active_only": "",
+		"account_list_collapse": "",
 	}
 
 	def validate(self, name, value):
@@ -129,13 +175,34 @@ class ApplicationCustomization(CustomizationBase):
 			except Exception as e:
 				raise ValidationError(str(e))
 
-	def save(self, request, element=None):
-		errors = super().save(request, element)
-		init_admin_site()
-		return errors
+
+@customization(key="user", title="User")
+class UserCustomization(CustomizationBase):
+	variables = {
+		"default_user_training_not_required": "",
+		"user_list_active_only": "",
+		"user_access_expiration_reminder_days": "",
+		"user_access_expiration_reminder_cc": "",
+		"user_allow_document_upload": "",
+	}
+
+	def validate(self, name, value):
+		if name == "user_access_expiration_reminder_days" and value:
+			# Check that we have an integer or a list of integers
+			try:
+				for reminder_days in value.split(","):
+					self.validate_int(reminder_days)
+			except ValidationError:
+				raise
+			except Exception as e:
+				raise ValidationError(str(e))
+		elif name == "user_access_expiration_reminder_cc":
+			recipients = tuple([e for e in value.split(",") if e])
+			for email in recipients:
+				validate_email(email)
 
 
-@customization(key="emails", title="Email addresses", order=2)
+@customization(key="emails", title="Email addresses")
 class EmailsCustomization(CustomizationBase):
 	variables = {
 		"feedback_email_address": "",
@@ -148,11 +215,12 @@ class EmailsCustomization(CustomizationBase):
 		validate_email(value)
 
 
-@customization(key="calendar", title="Calendar", order=3)
+@customization(key="calendar", title="Calendar")
 class CalendarCustomization(CustomizationBase):
 	variables = {
 		"calendar_view": "agendaWeek",
 		"calendar_first_day_of_week": "1",
+		"calendar_time_format": "ha",
 		"calendar_day_column_format": "dddd MM/DD/YYYY",
 		"calendar_week_column_format": "ddd M/DD",
 		"calendar_month_column_format": "ddd",
@@ -167,7 +235,7 @@ class CalendarCustomization(CustomizationBase):
 	}
 
 
-@customization(key="dashboard", title="Status dashboard", order=4)
+@customization(key="dashboard", title="Status dashboard")
 class StatusDashboardCustomization(CustomizationBase):
 	variables = {
 		"dashboard_display_not_qualified_areas": "",
@@ -182,7 +250,7 @@ class StatusDashboardCustomization(CustomizationBase):
 	}
 
 
-@customization(key="interlock", title="Interlock", order=5)
+@customization(key="interlock", title="Interlock")
 class InterlockCustomization(CustomizationBase):
 	variables = {
 		"allow_bypass_interlock_on_failure": "",
@@ -191,7 +259,7 @@ class InterlockCustomization(CustomizationBase):
 	}
 
 
-@customization(key="requests", title="User requests", order=6)
+@customization(key="requests", title="User requests")
 class UserRequestsCustomization(CustomizationBase):
 	variables = {
 		"buddy_requests_title": "Buddy requests board",
@@ -212,7 +280,67 @@ class UserRequestsCustomization(CustomizationBase):
 				validate_email(email)
 
 
-@customization(key="templates", title="File & email templates", order=7)
+@customization(key="recurring_charges", title="Recurring charges")
+class RecurringChargesCustomization(CustomizationBase):
+	variables = {
+		"recurring_charges_name": "Recurring charges",
+		"recurring_charges_lock": "",
+		"recurring_charges_category": "",
+		"recurring_charges_force_quantity": "",
+		"recurring_charges_skip_customer_validation": ""
+	}
+
+	def __init__(self, key, title):
+		super().__init__(key, title)
+		self.update_title()
+
+	def context(self) -> Dict:
+		# Override to add list of consumable categories
+		dictionary = super().context()
+		dictionary["consumable_categories"] = ConsumableCategory.objects.all()
+		return dictionary
+
+	def update_title(self):
+		self.title = self.get("recurring_charges_name", raise_exception=False)
+		meta_class = RecurringConsumableCharge._meta
+		meta_class.verbose_name = self.title
+		meta_class.verbose_name_plural = self.title if self.title.endswith("s") else self.title + "s"
+
+	def save(self, request, element=None):
+		errors = super().save(request, element)
+		if not errors:
+			self.update_title()
+		return errors
+
+
+@customization(key="tool_qualification", title="Tool qualification")
+class ToolQualificationCustomization(CustomizationBase):
+	variables = {
+		"tool_qualification_reminder_days": "",
+		"tool_qualification_expiration_days": "",
+		"tool_qualification_expiration_never_used_days": "",
+		"tool_qualification_cc": "",
+	}
+
+	def validate(self, name, value):
+		if name == "tool_qualification_expiration_days" and value:
+			self.validate_int(value)
+		if name == "tool_qualification_reminder_days" and value:
+			# Check that we have an integer or a list of integers
+			try:
+				for reminder_days in value.split(","):
+					self.validate_int(reminder_days)
+			except ValidationError:
+				raise
+			except Exception as e:
+				raise ValidationError(str(e))
+		elif name == "tool_qualification_cc":
+			recipients = tuple([e for e in value.split(",") if e])
+			for email in recipients:
+				validate_email(email)
+
+
+@customization(key="templates", title="File & email templates")
 class TemplatesCustomization(CustomizationBase):
 	files = [
 		("login_banner", ".html"),
@@ -236,15 +364,18 @@ class TemplatesCustomization(CustomizationBase):
 		("safety_issue_email", ".html"),
 		("staff_charge_reminder_email", ".html"),
 		("task_status_notification", ".html"),
+		("tool_qualification_expiration_email", ".html"),
 		("unauthorized_tool_access_email", ".html"),
 		("usage_reminder_email", ".html"),
+		("user_access_expiration_reminder_email", ".html"),
 		("reservation_created_user_email", ".html"),
 		("reservation_cancelled_user_email", ".html"),
 		("weekend_access_email", ".html"),
+		("recurring_charges_reminder_email", ".html"),
 	]
 
 
-@customization(key="rates", title="Rates", order=8)
+@customization(key="rates", title="Rates")
 class RatesCustomization(CustomizationBase):
 	variables = {"rates_expand_table": ""}
 	files = [("rates", ".json")]
@@ -263,16 +394,19 @@ def get_media_file_contents(file_name):
 	storage = get_storage_class()()
 	if not storage.exists(file_name):
 		return ""
-	f = storage.open(file_name)
-	try:
-		return f.read().decode().strip()
-	except UnicodeDecodeError:
-		f = storage.open(file_name)
-		return f.read()
+	with storage.open(file_name) as opened_file:
+		read_file = opened_file.read()
+		try:
+			return read_file.decode().strip()
+		except UnicodeDecodeError:
+			return read_file
 
 
 def store_media_file(content, file_name):
-	""" Delete any existing media file with the same name and save the new content into file_name in the media directory. If content is blank then no new file is created. """
+	"""
+	Delete any existing media file with the same name and save the new content into file_name in the media directory.
+	If the content is blank then no new file is created.
+	"""
 	storage = get_storage_class()()
 	storage.delete(file_name)
 	if content:

@@ -1,4 +1,6 @@
+import importlib
 import inspect
+from functools import wraps
 from threading import Lock, RLock, Thread
 
 from django.contrib.auth import REDIRECT_FIELD_NAME
@@ -60,65 +62,62 @@ def synchronized(method_argument=""):
 
 # Use this decorator annotation to register your own customizations which will be shown in the customization page
 # The key should be unique and if possible one word, the title will be shown on the customization tab
-def customization(key, title, order=999):
+def customization(key, title):
 	from NEMO.views.customization import CustomizationBase
 
 	def customization_wrapper(customization_class):
 		if not issubclass(customization_class, CustomizationBase):
 			raise ValueError("Wrapped class must subclass CustomizationBase.")
-		customization_instance = customization_class(key, title, order)
+		customization_instance = customization_class(key, title)
 		CustomizationBase.add_instance(customization_instance)
 		return customization_instance
 
 	return customization_wrapper
 
 
-def staff_member_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
-	"""
-	Decorator for views that checks that the user is logged in and is a staff member.
-	"""
-	actual_decorator = user_passes_test(
-		lambda u: u.is_active and u.is_staff, login_url=login_url, redirect_field_name=redirect_field_name
-	)
-	if view_func:
-		return actual_decorator(view_func)
-	return actual_decorator
+# Utility function that returns a permission decorator based on the django user_passes_test decorator
+# (see multiple examples below)
+def permission_decorator(test_func):
+	def decorator(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
+		actual_decorator = user_passes_test(
+			test_func,
+			login_url=login_url,
+			redirect_field_name=redirect_field_name,
+		)
+		if view_func:
+			return actual_decorator(view_func)
+		return actual_decorator
+	return decorator
 
 
-def administrator_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
-	"""
-	Decorator for views that checks that the user is logged in and is an administrator.
-	"""
-	actual_decorator = user_passes_test(
-		lambda u: u.is_active and u.is_superuser, login_url=login_url, redirect_field_name=redirect_field_name
-	)
-	if view_func:
-		return actual_decorator(view_func)
-	return actual_decorator
+administrator_required = permission_decorator(lambda u: u.is_active and u.is_superuser)
+facility_manager_required = permission_decorator(lambda u: u.is_active and (u.is_facility_manager or u.is_superuser))
+staff_member_required = permission_decorator(lambda u: u.is_active and (u.is_staff or u.is_superuser))
+user_office_required = permission_decorator(lambda u: u.is_active and (u.is_user_office or u.is_superuser))
+accounting_required = permission_decorator(lambda u: u.is_active and (u.is_accounting_officer or u.is_superuser))
+staff_member_or_tool_superuser_required = permission_decorator(lambda u: u.is_active and (u.is_staff or u.is_tool_superuser or u.is_superuser))
+staff_member_or_user_office_required = permission_decorator(lambda u: u.is_active and (u.is_staff or u.is_user_office or u.is_superuser))
+accounting_or_user_office_or_manager_required = permission_decorator(lambda u: u.is_active and (u.is_accounting_officer or u.is_user_office or u.is_facility_manager or u.is_superuser))
+user_office_or_facility_manager_required = permission_decorator(lambda u: u.is_active and (u.is_user_office or u.is_facility_manager or u.is_superuser))
+any_staff_required = permission_decorator(lambda u: u.is_active and (u.is_any_part_of_staff))
 
 
-def facility_manager_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
-	"""
-	Decorator for views that checks that the user is logged in and is an facility manager.
-	"""
-	actual_decorator = user_passes_test(
-		lambda u: u.is_active and u.is_facility_manager, login_url=login_url, redirect_field_name=redirect_field_name
-	)
-	if view_func:
-		return actual_decorator(view_func)
-	return actual_decorator
+# Use this decorator annotation to replace another existing function. The first parameter of
+# the new function should be "old_function" which will contain the function being replaced
+# For example, to replace NEMO.views.policy.check_policy_to_save_reservation(arg1, arg2)
+# @replace_function("NEMO.views.policy.check_policy_to_save_reservation")
+# def new_function(old_function, arg1, arg2)
+def replace_function(old_function_name):
+	pkg, fun_name = old_function_name.rsplit(".", 1)
+	pkg_mod = importlib.import_module(pkg)
+	old_function = getattr(pkg_mod, fun_name)
 
+	def decorator(function):
+		@wraps(function)
+		def wrapper(*args, **kwargs):
+			return function(old_function, *args, **kwargs)
 
-def staff_member_or_tool_superuser_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
-	"""
-	Decorator for views that checks that the user is logged in and is either a staff member or a superuser
-	on a tool (any tool).
-	"""
-	actual_decorator = user_passes_test(
-		lambda u: u.is_active and (u.is_staff or u.is_tool_superuser),
-		login_url=login_url,
-		redirect_field_name=redirect_field_name,
-	)
-	if view_func:
-		return actual_decorator(view_func)
-	return actual_decorator
+		setattr(pkg_mod, fun_name, wrapper)
+		return wrapper
+
+	return decorator

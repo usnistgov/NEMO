@@ -1,0 +1,8 @@
+[Unit]
+Description=Cancel unused reservations every minute in NEMO
+
+[Timer]
+OnCalendar=minutely
+
+[Install]
+WantedBy=multi-user.target

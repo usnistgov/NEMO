@@ -3,7 +3,7 @@
 <nav class="navbar navbar-default navbar-static-top">
 	<div class="container">
 		<div class="navbar-header">
-			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#site-navigation">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#site-navigation" aria-label="menu button">
 				<span class="icon-bar"></span>
 				<span class="icon-bar"></span>
 				<span class="icon-bar"></span>
@@ -12,58 +12,14 @@
 		</div>
 		<div class="navbar-collapse collapse" id="site-navigation">
 			<ul class="nav navbar-nav">
-				<li><a href="{% url 'calendar' %}">Calendar</a></li>
-				{% if tools_exist %}<li><a href="{% url 'tool_control' %}">Tool control</a></li>{% endif %}
-				{% if tools_exist or areas_exist %}
-                    {% if areas_exist %}
-                        <li><a href="{% url 'status_dashboard' %}">Status dashboard</a></li>
-                    {% else %}
-                        <li><a href="{% url 'status_dashboard_tab' 'tools' %}">Status dashboard</a></li>
-                    {% endif %}
-                {% endif %}
-				{% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist %}
-					<li><a href="{% url 'user_requests' %}">
-						Requests
-						{% if buddy_notification_count or temporary_access_notification_count %}
-							<span class="badge" style="vertical-align:middle; background-color:red">{{ buddy_notification_count|add:temporary_access_notification_count }}</span>
-						{% endif %}
-					</a></li>
-				{% endif %}
-				{% if user.is_staff or user.is_tool_superuser or user.is_project_pi %}
+				{% include 'base/navbar_main.html' %}
+				{% if user.is_any_part_of_staff or user.is_tool_superuser or user.is_project_pi %}
 					<li class="dropdown">
 						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Administration <b class="caret"></b></a>
-						<ul class="dropdown-menu">
+						<ul id="admin-nav" class="dropdown-menu">
 							{# The navigation_url tag will display the item if the URL name can be reversed. #}
 							{# This allows items to be easily removed from the public facing version. #}
-                            {% if user.is_staff %}
-                                {% navigation_url 'abuse' 'Abuse' %}
-                                {% navigation_url 'accounts_and_projects' 'Accounts and projects' %}
-                                {% navigation_url 'alerts' 'Alerts' %}
-                                {% if user.is_superuser %}{% navigation_url 'api-root' 'API' %}{% endif %}
-                                {% if areas_exist %}{% navigation_url 'area_access' 'Area access' %}{% endif %}
-                                {% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' %}{% endif %}
-                                {% if user.is_superuser %}{% navigation_url 'customization' 'Customization' %}{% endif %}
-                                {% navigation_url 'admin:index' 'Detailed administration' %}
-                                {% navigation_url 'email_broadcast' 'Email' %}
-                                {% if user.is_superuser %}{% navigation_url 'impersonate' 'Impersonate' %}{% endif %}
-                                {% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' %}{% endif %}
-                                {% navigation_url 'project_billing' 'Project billing' %}
-                                {% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' %}{% endif %}
-                                {% navigation_url 'remote_work' 'Remote work' %}
-                                {% navigation_url 'resources' 'Resources' %}
-                                {% navigation_url 'sensors' 'Sensor data' %}
-                                {% navigation_url 'staff_charges' 'Staff charges' %}
-                                {% navigation_url 'consumables' 'Supplies' %}
-							    {% if tools_exist %}{% navigation_url 'training' 'Training' %}{% endif %}
-                                {% navigation_url 'users' 'Users' %}
-                            {% else %}
-                                {% if user.is_project_pi %}
-                                    {% navigation_url 'projects' 'Projects' %}
-                                {% endif %}
-                                {% if user.is_tool_superuser %}
-                                    {% if tools_exist %}{% navigation_url 'training' 'Training' %}{% endif %}
-                                {% endif %}
-                            {% endif %}
+                            {% include 'base/navbar_admin.html' %}
 						</ul>
 					</li>
 				{% endif %}
@@ -94,3 +50,9 @@
 		</div>
 	</div>
 </nav>
+<script>
+    window.addEventListener("load", function ()
+    {
+        sort_elements(document.getElementById('admin-nav'), "> li");
+    });
+</script>

@@ -4,19 +4,25 @@ from calendar import monthrange
 from datetime import date, datetime, time
 from email import encoders
 from email.mime.base import MIMEBase
+from enum import Enum
 from io import BytesIO
 from logging import getLogger
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
+from urllib.parse import urljoin
 
 from PIL import Image
+from dateutil import rrule
 from dateutil.parser import parse
-from dateutil.rrule import MONTHLY, rrule
 from django.conf import settings
+from django.contrib.admin import ModelAdmin
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.db.models import QuerySet
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse, QueryDict
+from django.shortcuts import render
+from django.template import Template
+from django.template.context import make_context
 from django.utils import timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.timezone import is_naive, localtime
@@ -67,6 +73,13 @@ date_input_js_format = convert_py_format_to_js(date_input_format)
 datetime_input_js_format = convert_py_format_to_js(datetime_input_format)
 
 
+class EmptyHttpRequest(HttpRequest):
+	def __init__(self):
+		super().__init__()
+		self.session = QueryDict(mutable=True)
+		self.device = "desktop"
+
+
 class BasicDisplayTable(object):
 	""" Utility table to make adding headers and rows easier, and export to csv """
 
@@ -78,7 +91,7 @@ class BasicDisplayTable(object):
 
 	def add_header(self, header: Tuple[str, str]):
 		if not any(k[0] == header[0] for k in self.headers):
-			self.headers.append((header[0], header[1].capitalize()))
+			self.headers.append((header[0], capitalize(header[1])))
 
 	def add_row(self, row: Dict):
 		self.rows.append(row)
@@ -92,12 +105,22 @@ class BasicDisplayTable(object):
 			flat_result.append([row.get(key, "") for key, display_value in self.headers])
 		return flat_result
 
+	def formatted_value(self, value):
+		if value:
+			if isinstance(value, time):
+				return format_datetime(value, "SHORT_TIME_FORMAT")
+			elif isinstance(value, datetime):
+				return format_datetime(value, "SHORT_DATETIME_FORMAT")
+			elif isinstance(value, date):
+				return format_datetime(value, "SHORT_DATE_FORMAT")
+		return value
+
 	def to_csv(self) -> HttpResponse:
 		response = HttpResponse(content_type="text/csv")
 		writer = csv.writer(response)
-		writer.writerow([display_value.capitalize() for key, display_value in self.headers])
+		writer.writerow([capitalize(display_value) for key, display_value in self.headers])
 		for row in self.rows:
-			writer.writerow([row.get(key, "") for key, display_value in self.headers])
+			writer.writerow([self.formatted_value(row.get(key, "")) for key, display_value in self.headers])
 		return response
 
 
@@ -140,6 +163,30 @@ class EmailCategory(object):
 	)
 
 
+class RecurrenceFrequency(Enum):
+	DAILY = 1, rrule.DAILY, "Day(s)", "day"
+	DAILY_WEEKDAYS = 2, rrule.DAILY, "Week Day(s)", "week day"
+	DAILY_WEEKENDS = 3, rrule.DAILY, "Weekend Day(s)", "weekend day"
+	WEEKLY = 4, rrule.WEEKLY, "Week(s)", "week"
+	MONTHLY = 5, rrule.MONTHLY, "Month(s)", "month"
+	YEARLY = 6, rrule.YEARLY, "Year(s)", "year"
+
+	def __new__(cls, *args, **kwargs):
+		obj = object.__new__(cls)
+		obj._value_ = args[0]
+		return obj
+
+	def __init__(self, index: int, rrule_freq, display_value, display_text):
+		self.index = index
+		self.rrule_freq = rrule_freq
+		self.display_value = display_value
+		self.display_text = display_text
+
+	@classmethod
+	def choices(cls):
+		return [(freq.index, freq.display_value) for freq in cls]
+
+
 def quiet_int(value_to_convert, default_upon_failure=0):
 	"""
 	Attempt to convert the given value to an integer. If there is any problem
@@ -176,7 +223,7 @@ def parse_parameter_string(
 
 def month_list(since=datetime(year=2013, month=11, day=1)):
 	month_count = (timezone.now().year - since.year) * 12 + (timezone.now().month - since.month) + 1
-	result = list(rrule(MONTHLY, dtstart=since, count=month_count))
+	result = list(rrule.rrule(rrule.MONTHLY, dtstart=since, count=month_count))
 	result = localize(result)
 	result.reverse()
 	return result
@@ -342,6 +389,11 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 		clean_cc = filter(None, remove_duplicates(cc))
 	except TypeError:
 		raise TypeError("to, cc and bcc arguments must be a list, set or tuple")
+	user_reply_to = getattr(settings, "EMAIL_USE_DEFAULT_AND_REPLY_TO", False)
+	reply_to = None
+	if user_reply_to:
+		reply_to = [from_email]
+		from_email = None
 	mail = EmailMessage(
 		subject=subject,
 		body=content,
@@ -350,6 +402,7 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 		bcc=clean_bcc,
 		cc=clean_cc,
 		attachments=attachments,
+		reply_to=reply_to,
 	)
 	mail.content_subtype = "html"
 	msg_sent = 0
@@ -383,6 +436,8 @@ def create_email_log(email: EmailMessage, email_category: EmailCategory):
 		for attachment in email.attachments:
 			if isinstance(attachment, MIMEBase):
 				email_attachments.append(attachment.get_filename() or "")
+			else:
+				email_attachments.append(attachment[0] or "")
 		if email_attachments:
 			email_record.attachments = ", ".join(email_attachments)
 	return email_record
@@ -424,7 +479,7 @@ def get_tool_image_filename(tool, filename):
 def get_tool_document_filename(tool_documents, filename):
 	from django.template.defaultfilters import slugify
 
-	tool_name = slugify(tool_documents.tool)
+	tool_name = slugify(tool_documents.tool.name)
 	return f"tool_documents/{tool_name}/{filename}"
 
 
@@ -441,6 +496,20 @@ def get_chemical_document_filename(chemical, filename):
 
 	chemical_name = slugify(chemical.name)
 	return f"chemical_documents/{chemical_name}/{filename}"
+
+
+def get_project_document_filename(project_documents, filename):
+	from django.template.defaultfilters import slugify
+
+	project_name = slugify(project_documents.project.name)
+	return f"project_documents/{project_name}/{filename}"
+
+
+def get_user_document_filename(user_documents, filename):
+	from django.template.defaultfilters import slugify
+
+	username = slugify(user_documents.user.username)
+	return f"user_documents/{username}/{filename}"
 
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
@@ -469,3 +538,73 @@ def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryU
 
 def distinct_qs_value_list(qs: QuerySet, field_name: str) -> Set:
 	return set(list(qs.values_list(field_name, flat=True)))
+
+
+# Useful function to render and combine 2 separate django templates
+def render_combine_responses(request, original_response: HttpResponse, template_name, context):
+	""" Combines contents of an original http response with a new one """
+	additional_content = render(request, template_name, context)
+	original_response.content += additional_content.content
+	return original_response
+
+
+def render_email_template(template, dictionary: dict, request=None):
+	""" Use Django's templating engine to render the email template
+		If we don't have a request, create a empty one so context_processors (messages, customizations etc.) can be used
+	"""
+	return Template(template).render(make_context(dictionary, request or EmptyHttpRequest()))
+
+
+def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request, display="__str__") -> HttpResponse:
+	"""
+	This function reuses django admin search result to implement our own autocomplete.
+	Its usage is the same as ModelAdmin, it needs a base queryset, list of fields and a search query
+	It returns the HttpResponse with json formatted data, ready to use by the autocomplete js code
+	"""
+	if is_ajax(request):
+		query = request.GET.get("query", "")
+		admin_model = ModelAdmin(query_set.model, None)
+		admin_model.search_fields = search_fields
+		search_qs, search_use_distinct = admin_model.get_search_results(None, query_set, query)
+		if search_use_distinct:
+			search_qs = search_qs.distinct()
+		from NEMO.templatetags.custom_tags_and_filters import json_search_base_with_extra_fields
+		data = json_search_base_with_extra_fields(search_qs, *search_fields, display=display)
+	else:
+		data = "This request can only be made as an ajax call"
+	return HttpResponse(data, "application/json")
+
+
+def is_ajax(request):
+	return request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest"
+
+
+def get_recurring_rule(start: date, frequency: RecurrenceFrequency, until=None, interval=1, count=None) -> rrule:
+	by_week_day = None
+	if frequency == RecurrenceFrequency.DAILY_WEEKDAYS:
+		by_week_day = (rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR)
+	elif frequency == RecurrenceFrequency.DAILY_WEEKENDS:
+		by_week_day = (rrule.SA, rrule.SU)
+	return rrule.rrule(dtstart=start, freq=frequency.rrule_freq, interval=interval, until=until, count=count, byweekday=by_week_day)
+
+
+def get_full_url(location, request=None):
+	# For lazy locations
+	location = str(location)
+	main_url = getattr(settings, "MAIN_URL", None)
+	if main_url:
+		return urljoin(main_url, location)
+	elif request:
+		return request.build_absolute_uri(location)
+	else:
+		return location
+
+
+def capitalize(string: Optional[str]) -> str:
+	"""
+	This function capitalizes the first letter only. Built-in .capitalize() method does it, but also
+	makes the rest of the string lowercase, which is not what we want here
+	"""
+	if not string:
+		return string
+	return string[0].upper() + string[1:]

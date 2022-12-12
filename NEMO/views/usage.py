@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET
 from requests import get
 
-from NEMO.decorators import staff_member_required
+from NEMO.decorators import accounting_or_user_office_or_manager_required
 from NEMO.models import (
 	Account,
 	AreaAccessRecord,
@@ -25,7 +25,6 @@ from NEMO.utilities import (
 	BasicDisplayTable,
 	export_format_datetime,
 	extract_optional_beginning_and_end_dates,
-	format_datetime,
 	get_month_timeframe,
 	month_list,
 )
@@ -158,7 +157,7 @@ def billing(request):
 		return render(request, 'usage/billing.html', base_dictionary)
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_GET
 def project_usage(request):
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
@@ -218,7 +217,7 @@ def project_usage(request):
 	return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
 
 
-@staff_member_required
+@accounting_or_user_office_or_manager_required
 @require_GET
 def project_billing(request):
 	base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request)
@@ -358,9 +357,6 @@ def csv_export_response(usage_events, area_access, training_sessions, staff_char
 	data.extend(billable_items_area_access_records(area_access))
 	data.extend(billable_items_usage_events(usage_events))
 	for billable_item in data:
-		# Format start & end times
-		billable_item.start = format_datetime(billable_item.start, "SHORT_DATETIME_FORMAT")
-		billable_item.end = format_datetime(billable_item.end, "SHORT_DATETIME_FORMAT")
 		table_result.add_row(vars(billable_item))
 	response = table_result.to_csv()
 	filename = f"usage_export_{export_format_datetime()}.csv"

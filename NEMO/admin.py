@@ -24,7 +24,7 @@ from NEMO.actions import (
 	synchronize_with_tool_usage,
 	unlock_selected_interlocks,
 )
-from NEMO.forms import BuddyRequestForm
+from NEMO.forms import BuddyRequestForm, RecurringConsumableChargeForm, UserPreferencesForm
 from NEMO.models import (
 	Account,
 	AccountType,
@@ -49,6 +49,7 @@ from NEMO.models import (
 	ContactInformation,
 	ContactInformationCategory,
 	Customization,
+	Discipline,
 	Door,
 	EmailLog,
 	Interlock,
@@ -58,14 +59,18 @@ from NEMO.models import (
 	MembershipHistory,
 	News,
 	Notification,
+	OnboardingPhase,
 	PhysicalAccessLevel,
 	PhysicalAccessLog,
 	Project,
+	ProjectDocuments,
+	RecurringConsumableCharge,
 	Reservation,
 	ReservationQuestions,
 	Resource,
 	ResourceCategory,
 	SafetyIssue,
+	SafetyTraining,
 	ScheduledOutage,
 	ScheduledOutageCategory,
 	StaffAbsence,
@@ -86,6 +91,7 @@ from NEMO.models import (
 	TrainingSession,
 	UsageEvent,
 	User,
+	UserDocuments,
 	UserPreferences,
 	UserType,
 	record_active_state,
@@ -311,7 +317,8 @@ class ToolAdmin(admin.ModelAdmin):
 		"""
 		if obj.parent_tool:
 			if obj.pk:
-				# if this is an update (from regular to child tool), we want to make sure we are creating a clean version. In case the previous tool had fields that are now irrelevant
+				# if this is an update (from regular to child tool), we want to make sure we are creating
+				# a clean version. In case the previous tool had fields that are now irrelevant
 				clean_alt_tool = Tool(**form.cleaned_data)
 				clean_alt_tool.pk = obj.pk
 				obj = clean_alt_tool
@@ -493,6 +500,11 @@ class ProjectAdminForm(forms.ModelForm):
 			self.fields["principal_investigators"].initial = self.instance.manager_set.all()
 
 
+class ProjectDocumentsInline(admin.TabularInline):
+	model = ProjectDocuments
+	extra = 1
+
+
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
 	fields = (
@@ -510,6 +522,7 @@ class ProjectAdmin(admin.ModelAdmin):
 	filter_horizontal = ("only_allow_tools",)
 	search_fields = ("name", "application_identifier", "account__name")
 	list_filter = ("active", "account", "start_date")
+	inlines = (ProjectDocumentsInline,)
 	form = ProjectAdminForm
 
 	def save_model(self, request, obj, form, change):
@@ -659,8 +672,9 @@ class UsageEventAdmin(admin.ModelAdmin):
 
 @register(Consumable)
 class ConsumableAdmin(admin.ModelAdmin):
-	list_display = ("name", "quantity", "category", "visible", "reminder_threshold", "reminder_email", "id")
-	list_filter = ("visible", "category")
+	list_display = ("name", "quantity", "category", "visible", "reusable", "reminder_threshold", "reminder_email", "id")
+	list_filter = ("visible", "category", "reusable")
+	search_fields = ("name",)
 	readonly_fields = ("reminder_threshold_reached",)
 
 
@@ -674,6 +688,16 @@ class ConsumableWithdrawAdmin(admin.ModelAdmin):
 	list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date")
 	list_filter = ("date", "consumable")
 	date_hierarchy = "date"
+
+
+@register(RecurringConsumableCharge)
+class RecurringConsumableChargeAdmin(admin.ModelAdmin):
+	form = RecurringConsumableChargeForm
+	list_display = ("name", "customer", "project", "get_recurrence_display", "last_charge", "next_charge")
+	readonly_fields = ("last_charge", "last_updated", "last_updated_by")
+
+	def save_model(self, request, obj: RecurringConsumableCharge, form, change):
+		obj.save_with_user(request.user)
 
 
 class InterlockCardAdminForm(forms.ModelForm):
@@ -718,9 +742,20 @@ class InterlockAdminForm(forms.ModelForm):
 @register(Interlock)
 class InterlockAdmin(admin.ModelAdmin):
 	form = InterlockAdminForm
-	list_display = ("id", "get_card_enabled", "card", "channel", "state", "tool", "door")
+	list_display = (
+		"id",
+		"get_card_enabled",
+		"card",
+		"channel",
+		"unit_id",
+		"state",
+		"tool",
+		"door",
+		"most_recent_reply_time"
+	)
+	list_filter = ("card__enabled", "card", "state")
 	actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage]
-	readonly_fields = ["state", "most_recent_reply"]
+	readonly_fields = ["state", "most_recent_reply", "most_recent_reply_time"]
 
 	@display(boolean=True, ordering='card__enabled', description='Card Enabled')
 	def get_card_enabled(self, obj):
@@ -838,6 +873,7 @@ class UserTypeAdmin(admin.ModelAdmin):
 @register(UserPreferences)
 class UserPreferencesAdmin(admin.ModelAdmin):
 	list_display = ("user",)
+	form = UserPreferencesForm
 
 
 class UserAdminForm(forms.ModelForm):
@@ -845,14 +881,21 @@ class UserAdminForm(forms.ModelForm):
 		model = User
 		fields = "__all__"
 
+	tool_qualifications = forms.ModelMultipleChoiceField(
+		label="Qualifications",
+		queryset=Tool.objects.filter(parent_tool__isnull=True),
+		required=False,
+		widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
+	)
+
 	backup_owner_on_tools = forms.ModelMultipleChoiceField(
-		queryset=Tool.objects.all(),
+		queryset=Tool.objects.filter(parent_tool__isnull=True),
 		required=False,
 		widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
 	)
 
 	superuser_on_tools = forms.ModelMultipleChoiceField(
-		queryset=Tool.objects.all(),
+		queryset=Tool.objects.filter(parent_tool__isnull=True),
 		required=False,
 		widget=FilteredSelectMultiple(verbose_name="tools", is_stacked=False),
 	)
@@ -860,6 +903,7 @@ class UserAdminForm(forms.ModelForm):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		if self.instance.pk:
+			self.fields["tool_qualifications"].initial = self.instance.qualifications.all()
 			self.fields["backup_owner_on_tools"].initial = self.instance.backup_for_tools.all()
 			self.fields["superuser_on_tools"].initial = self.instance.superuser_for_tools.all()
 
@@ -878,21 +922,40 @@ class UserAdminForm(forms.ModelForm):
 		return cleaned_data
 
 
+class UserDocumentsInline(admin.TabularInline):
+	model = UserDocuments
+	extra = 1
+
+
 @register(User)
 class UserAdmin(admin.ModelAdmin):
 	form = UserAdminForm
+	inlines = (UserDocumentsInline,)
 	filter_horizontal = (
 		"groups",
 		"user_permissions",
-		"qualifications",
 		"projects",
 		"managed_projects",
 		"physical_access_levels",
+		"onboarding_phases",
+		"safety_trainings"
 	)
 	fieldsets = (
 		(
 			"Personal information",
-			{"fields": ("first_name", "last_name", "username", "email", "badge_number", "type", "domain")},
+			{
+				"fields": (
+					"first_name",
+					"last_name",
+					"username",
+					"email",
+					"badge_number",
+					"type",
+					"domain",
+					"discipline",
+					"notes"
+				)
+			},
 		),
 		(
 			"Permissions",
@@ -900,9 +963,11 @@ class UserAdmin(admin.ModelAdmin):
 				"fields": (
 					"is_active",
 					"is_staff",
-					"is_facility_manager",
-					"is_technician",
+					"is_user_office",
+					"is_accounting_officer",
 					"is_service_personnel",
+					"is_technician",
+					"is_facility_manager",
 					"is_superuser",
 					"training_required",
 					"groups",
@@ -916,11 +981,20 @@ class UserAdmin(admin.ModelAdmin):
 			"Facility information",
 			{
 				"fields": (
-					"qualifications",
+					"tool_qualifications",
 					"backup_owner_on_tools",
 					"superuser_on_tools",
 					"projects",
 					"managed_projects",
+				)
+			},
+		),
+		(
+			"Other information",
+			{
+				"fields": (
+					"onboarding_phases",
+					"safety_trainings",
 				)
 			},
 		),
@@ -934,6 +1008,8 @@ class UserAdmin(admin.ModelAdmin):
 		"is_active",
 		"domain",
 		"is_staff",
+		"is_user_office",
+		"is_accounting_officer",
 		"is_technician",
 		"is_service_personnel",
 		"is_facility_manager",
@@ -945,26 +1021,25 @@ class UserAdmin(admin.ModelAdmin):
 		"is_active",
 		"domain",
 		"is_staff",
+		"is_user_office",
+		"is_accounting_officer",
 		"is_facility_manager",
+		"is_superuser",
 		"is_technician",
 		"is_service_personnel",
-		"is_superuser",
 		"date_joined",
 		"last_login",
 	)
-
-	def formfield_for_manytomany(self, db_field, request, **kwargs):
-		if db_field.name == "qualifications":
-			kwargs["queryset"] = Tool.objects.filter(parent_tool__isnull=True)
-		return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 	def save_model(self, request, obj, form, change):
 		""" Audit project membership and qualifications when a user is saved. """
 		super(UserAdmin, self).save_model(request, obj, form, change)
 		record_local_many_to_many_changes(request, obj, form, "projects")
-		record_local_many_to_many_changes(request, obj, form, "qualifications")
+		record_local_many_to_many_changes(request, obj, form, "qualifications", "tool_qualifications")
 		record_local_many_to_many_changes(request, obj, form, "physical_access_levels")
 		record_active_state(request, obj, form, "is_active", not change)
+		if "tool_qualifications" in form.changed_data:
+			obj.qualifications.set(form.cleaned_data["tool_qualifications"])
 		if "backup_owner_on_tools" in form.changed_data:
 			obj.backup_for_tools.set(form.cleaned_data["backup_owner_on_tools"])
 		if "superuser_on_tools" in form.changed_data:
@@ -1217,7 +1292,17 @@ class TemporaryPhysicalAccessRequestFormAdmin(forms.ModelForm):
 @register(TemporaryPhysicalAccessRequest)
 class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
 	form = TemporaryPhysicalAccessRequestFormAdmin
-	list_display = ("creator", "creation_time", "other_users_display", "start_time", "end_time", "physical_access_level", "status_display", "reviewer", "deleted")
+	list_display = (
+		"creator",
+		"creation_time",
+		"other_users_display",
+		"start_time",
+		"end_time",
+		"physical_access_level",
+		"status_display",
+		"reviewer",
+		"deleted"
+	)
 	list_filter = ("status", "deleted")
 	filter_horizontal = ("other_users",)
 
@@ -1369,7 +1454,6 @@ class StaffAbsenceTypeAdmin(admin.ModelAdmin):
 	list_display = ("name", "description")
 
 
-
 @register(StaffAvailabilityCategory)
 class StaffAvailabilityCategoryAdmin(admin.ModelAdmin):
 	list_display = ("name", "display_order")
@@ -1437,6 +1521,16 @@ class ChemicalAdmin(admin.ModelAdmin):
 	filter_horizontal = ("hazards",)
 
 
+@register(SafetyTraining)
+class SafetyTrainingAdmin(admin.ModelAdmin):
+	list_display = ("name", "display_order")
+
+
+@register(OnboardingPhase)
+class OnboardingPhaseAdmin(admin.ModelAdmin):
+	list_display = ("name", "display_order")
+
+
 @register(EmailLog)
 class EmailLogAdmin(admin.ModelAdmin):
 	list_display = ["id", "category", "sender", "to", "subject", "when", "ok"]
@@ -1461,10 +1555,26 @@ class EmailLogAdmin(admin.ModelAdmin):
 		return False
 
 
-def iframe_content(content, extra_style = "padding-bottom: 75%") -> str:
+def iframe_content(content, extra_style="padding-bottom: 75%") -> str:
 	return mark_safe(f'<div style="position: relative; display: block; overflow: hidden; {extra_style}"><iframe style="position: absolute; width:100%; height:100%; border:none" src="data:text/html,{urlencode(content)}"></iframe></div>')
 
 
+def has_admin_site_permission(request):
+	"""
+	Return True if the given HttpRequest has permission to view
+	*at least one* page in the admin site.
+	In our case, anyone with a staff permission should be able
+	to access the admin site
+	"""
+	user: User = request.user
+	return user.is_active and user.is_any_part_of_staff
+
+
+# Register our new admin permission
+admin.site.has_permission = has_admin_site_permission
+
+# Register other models
+admin.site.register(Discipline)
 admin.site.register(AccountType)
 admin.site.register(ResourceCategory)
 admin.site.register(Permission)
