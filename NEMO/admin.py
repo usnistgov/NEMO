@@ -943,7 +943,19 @@ class UserAdmin(admin.ModelAdmin):
 	fieldsets = (
 		(
 			"Personal information",
-			{"fields": ("first_name", "last_name", "username", "email", "badge_number", "type", "domain", "notes")},
+			{
+				"fields": (
+					"first_name",
+					"last_name",
+					"username",
+					"email",
+					"badge_number",
+					"type",
+					"domain",
+					"discipline",
+					"notes"
+				)
+			},
 		),
 		(
 			"Permissions",
@@ -954,8 +966,8 @@ class UserAdmin(admin.ModelAdmin):
 					"is_user_office",
 					"is_accounting_officer",
 					"is_service_personnel",
-					"is_facility_manager",
 					"is_technician",
+					"is_facility_manager",
 					"is_superuser",
 					"training_required",
 					"groups",
@@ -981,7 +993,6 @@ class UserAdmin(admin.ModelAdmin):
 			"Other information",
 			{
 				"fields": (
-					"discipline",
 					"onboarding_phases",
 					"safety_trainings",
 				)
