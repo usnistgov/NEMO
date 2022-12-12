@@ -56,7 +56,7 @@
 </div>
 
 <div id="calendar" class="application-content"></div>
-<input type="hidden" id="impersonate" name="impersonate" value="test">
+<input type="hidden" id="impersonate" name="impersonate" value="">
 
 <script type="text/javascript">
 let logged_in = false;
@@ -180,7 +180,11 @@ function submit_event_with_more_information(ajax_post, success_callback)
     {
         return;
     }
-	serialize("#additional_event_parameters", ajax_post.data);
+    if (ajax_post.data && ajax_post.data.constructor === Object)
+    {
+        ajax_post.data = $.param(ajax_post.data)
+    }
+    ajax_post.data += "&" + $("#additional_event_parameters").serialize();
 	jQuery.ajax(ajax_post)
 		.fail(ajax_failure_callback("Oops, something went wrong!"))
 		.done(function(response, status, xml_http_request)

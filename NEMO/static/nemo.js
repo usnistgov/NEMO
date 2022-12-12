@@ -387,6 +387,8 @@ function ajax_complete_callback(title, preface)
 }
 
 // Take all the elements in a form and put them in a JavaScript object.
+// NOTE: This will not work when multiple values are submitted for the same input (checkboxes, hidden inputs)
+// Only the last input name/value will be submitted
 function serialize(form_selector, ajax_message)
 {
 	if (ajax_message === undefined)
