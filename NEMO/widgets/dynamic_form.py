@@ -3,7 +3,7 @@ from copy import copy
 from distutils.util import strtobool
 from json import dumps, loads
 from logging import getLogger
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Type
 
 from django.urls import NoReverseMatch, reverse
 from django.utils.safestring import mark_safe
@@ -16,17 +16,11 @@ from NEMO.views.consumables import make_withdrawal
 dynamic_form_logger = getLogger(__name__)
 
 
+GROUP_TYPE_QUESTION_KEY = "group"
+
+
 class PostUsageQuestion:
 	question_type = "Question"
-
-	number_type = "number"
-	float_type = "float"
-	text_type = "textbox"
-	textarea_type = "textarea"
-	radio_type = "radio"
-	dropdown_type = "dropdown"
-	group_type = "group"
-	question_types = [number_type, float_type, text_type, textarea_type, radio_type, dropdown_type, group_type]
 
 	required_span = '<span style="color:red">*</span>'
 
@@ -89,9 +83,9 @@ class PostUsageQuestion:
 	def render_script(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
 		return ""
 
-	def extract(self, request) -> Dict:
+	def extract(self, request, index=None) -> Dict:
 		answered_question = copy(self.properties)
-		user_input = request.POST.get(self.form_name)
+		user_input = request.POST.get(f"{self.form_name}_{index}" if index else self.form_name)
 		if user_input:
 			answered_question["user_input"] = user_input
 		return answered_question
@@ -105,18 +99,9 @@ class PostUsageQuestion:
 	@staticmethod
 	def load_questions(questions: Optional[List[Dict]], index: int = None):
 		questions_to_load = questions or []
-		constructor = {
-			PostUsageQuestion.number_type: PostUsageNumberFieldQuestion,
-			PostUsageQuestion.float_type: PostUsageFloatFieldQuestion,
-			PostUsageQuestion.text_type: PostUsageTextFieldQuestion,
-			PostUsageQuestion.textarea_type: PostUsageTextAreaFieldQuestion,
-			PostUsageQuestion.radio_type: PostUsageRadioQuestion,
-			PostUsageQuestion.dropdown_type: PostUsageDropdownQuestion,
-			PostUsageQuestion.group_type: PostUsageGroupQuestion,
-		}
 		post_usage_questions: List[PostUsageQuestion] = []
 		for question in questions_to_load:
-			post_usage_questions.append(constructor.get(question["type"], PostUsageQuestion)(question, index))
+			post_usage_questions.append(question_types.get(question["type"], PostUsageQuestion)(question, index))
 		return post_usage_questions
 
 
@@ -349,25 +334,27 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			result += question.render_as_text()
 		return result
 
-	def extract(self, request) -> Dict:
-		# For group question, we also have to look for answers submitted with a numbered suffix (i.e. question, question_1, question_2 etc.)
-		# The result of the extraction will be a dictionary, with the keys being the group number, and the values the user inputs for all questions of the group.
+	def extract(self, request, index=None) -> Dict:
+		# For group question, we also have to look for answers submitted
+		# with a numbered suffix (i.e. question, question_1, question_2 etc.)
+		# The result of the extraction will be a dictionary, with the keys being the group number,
+		# and the values the user inputs for all questions of the group.
 		sub_results = copy(self.properties)
 		user_inputs = {}
 		question_form_names = [sub_question.form_name for sub_question in self.sub_questions]
-		for key, value in request.POST.items():
+		for key in request.POST.keys():
 			if key in question_form_names:
 				for sub_question in self.sub_questions:
 					if key == sub_question.form_name:
 						user_inputs.setdefault(0, {})
-						user_inputs[0][sub_question.name] = value
+						user_inputs[0][sub_question.name] = sub_question.extract(request).get("user_input")
 			else:
 				for sub_question in self.sub_questions:
 					name = sub_question.form_name
 					if key.startswith(name + "_"):
 						index = int(key.rsplit("_", 1)[1])
 						user_inputs.setdefault(index, {})
-						user_inputs[index][sub_question.name] = value
+						user_inputs[index][sub_question.name] = sub_question.extract(request, index).get("user_input")
 		sub_results["user_input"] = user_inputs
 		return sub_results
 
@@ -389,15 +376,16 @@ class DynamicForm:
 	def validate(self, group_question_url: str, group_item_id: int):
 		# We need to validate the raw json for types
 		for question in self.untreated_questions:
-			if question["type"] not in PostUsageQuestion.question_types:
-				raise Exception(f"type has to be one of {', '.join(PostUsageQuestion.question_types)}")
-			if question["type"] == PostUsageQuestion.group_type and "questions" in question:
+			if question["type"] not in question_types.keys():
+				raise Exception(f"type has to be one of {', '.join(question_types.keys())}")
+			if question["type"] == GROUP_TYPE_QUESTION_KEY and "questions" in question:
 				for sub_question in question["questions"]:
-					if sub_question["type"] not in PostUsageQuestion.question_types:
-						raise Exception(f"type has to be one of {', '.join(PostUsageQuestion.question_types)}")
+					if sub_question["type"] not in question_types.keys():
+						raise Exception(f"type has to be one of {', '.join(question_types.keys())}")
 		for question in self.questions:
 			question.validate()
-		# Test the rendering, but catch reverse exception if this the item doesn't have an id yet (when creating it the first time)
+		# Test the rendering, but catch reverse exception if this the item doesn't have an id yet
+		# (when creating it the first time)
 		try:
 			self.render(group_question_url, group_item_id)
 		except NoReverseMatch:
@@ -556,3 +544,14 @@ def get_counter_increment_for_question(question, input_data, counter_question):
 			else:
 				additional_value = float(input_data["user_input"])
 	return additional_value
+
+
+question_types : Dict[str, Type[PostUsageQuestion]] = {
+	"number": PostUsageNumberFieldQuestion,
+	"float": PostUsageFloatFieldQuestion,
+	"textbox": PostUsageTextFieldQuestion,
+	"textarea": PostUsageTextAreaFieldQuestion,
+	"radio": PostUsageRadioQuestion,
+	"dropdown": PostUsageDropdownQuestion,
+	"group": PostUsageGroupQuestion,
+}
