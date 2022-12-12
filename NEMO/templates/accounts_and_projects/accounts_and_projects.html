@@ -50,35 +50,45 @@
                             {% button type="view" size="small" value="View" title="View account" url=account_url %}
 						</td>
 					</tr>
-					{% for project in account.project_set.all %}
-                        {% if project.active or not project_list_active_only %}
-                            <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
-                                <td style="padding-left: 28px">{{ project.name }}</td>
-                                {% if account_types %}<td></td>{% endif %}
-                                <td>{{ project.application_identifier }}</td>
-                                <td class="text-center">
-                                    <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
-                                        {% csrf_token %}
-                                        {% if project.active %}
-                                            {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
-                                        {% else %}
-                                            {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
-                                        {% endif %}
-                                    </form>
-                                </td>
-                                <td>
-                                    {% url "project" project.id as project_url %}
-                                    {% button type="view" size="small" value="View" title="View project" url=project_url %}
-                                </td>
-                            </tr>
+                    {% regroup account.sorted_projects by active as active_inactive_projects %}
+                    {% if active_inactive_projects|length_is:1 and not active_inactive_projects.0.grouper and project_list_active_only %}
+                        <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
+							<td colspan="4" style="padding-left: 28px">
+								<span class="grey">This account does not have any active projects</span>
+							</td>
+						</tr>
+                    {% endif %}
+					{% for project_list in active_inactive_projects %}
+                        {% if project_list.grouper or not project_list_active_only %}
+                            {% for project in project_list.list %}
+                                <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
+                                    <td style="padding-left: 28px">{{ project.name }}</td>
+                                    {% if account_types %}<td></td>{% endif %}
+                                    <td>{{ project.application_identifier }}</td>
+                                    <td class="text-center">
+                                        <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
+                                            {% csrf_token %}
+                                            {% if project.active %}
+                                                {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
+                                            {% else %}
+                                                {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
+                                            {% endif %}
+                                        </form>
+                                    </td>
+                                    <td>
+                                        {% url "project" project.id as project_url %}
+                                        {% button type="view" size="small" value="View" title="View project" url=project_url %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
                         {% endif %}
-					{% empty %}
+                    {% empty %}
 						<tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
 							<td colspan="4" style="padding-left: 28px">
 								<span class="grey">This account does not have any projects</span>
 							</td>
 						</tr>
-					{% endfor %}
+                    {% endfor %}
 				{% endfor %}
 			</tbody>
 		</table>

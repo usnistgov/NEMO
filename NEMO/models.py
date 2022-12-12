@@ -1581,6 +1581,9 @@ class Account(BaseModel):
 	class Meta:
 		ordering = ["name"]
 
+	def sorted_projects(self):
+		return self.project_set.all().order_by("-active", "name")
+
 	def __str__(self):
 		return str(self.name)
 
