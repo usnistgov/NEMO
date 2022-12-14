@@ -51,6 +51,7 @@ MIDDLEWARE = [
 	'django.middleware.common.BrokenLinkEmailsMiddleware',
 	'NEMO.middleware.DeviceDetectionMiddleware',
 	'NEMO.middleware.RemoteUserAuthenticationMiddleware',
+	'NEMO.middleware.NEMOAuditlogMiddleware',
 	'NEMO.middleware.ImpersonateMiddleware',
 ]
 

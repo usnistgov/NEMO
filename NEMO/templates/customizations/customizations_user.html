@@ -1,8 +1,8 @@
 {% load custom_tags_and_filters %}
 <form method="POST" action="{% url 'customize' 'user' %}" class="form-horizontal">
     <div class="panel-body">
-        <h3 class="customization-section-title">General</h3>
         {% csrf_token %}
+        <h3 class="customization-section-title">General</h3>
         <div class="form-group">
             <label class="control-label col-md-2" for="default_user_training_not_required">New user facility tutorial</label>
             <div class="col-md-4">
