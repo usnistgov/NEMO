@@ -246,7 +246,7 @@
 													{% endif %}
 													{% for level in area_access_dict|get_item:node.id %}
 														<div class="checkbox" {% if not node.is_leaf_node %}style="display: inline-block;margin-left: -3px"{% endif %}>
-															<label><input name="physical_access_levels" type="checkbox" {% if form.instance.is_staff and level.allow_staff_access %}disabled title="This access is automatically granted to staff users"{% endif %} value="{{ level.id }}" {% if level in checked_access_levels %}checked{% endif %}>{% if node.category %}({{ node.category }}) {% endif %}{{ level }}</label>
+															<label><input name="physical_access_levels" type="checkbox" {% if form.instance.is_staff and level.allow_staff_access or form.instance.is_user_office and level.allow_staff_access %}disabled title="This access is automatically granted to staff users"{% endif %} value="{{ level.id }}" {% if level in checked_access_levels %}checked{% endif %}>{% if node.category %}({{ node.category }}) {% endif %}{{ level }}</label>
 														</div>
 													{% endfor %}
 													{% if not node.is_leaf_node %}
