@@ -2,8 +2,6 @@
 
 from django.db import migrations, models
 
-from NEMO.migrations_utils import create_news_for_version
-
 
 class Migration(migrations.Migration):
 
@@ -11,11 +9,7 @@ class Migration(migrations.Migration):
         ('NEMO', '0042_version_4_3_0'),
     ]
 
-    def new_version_news(apps, schema_editor):
-        create_news_for_version(apps, "4.4.0", "")
-
     operations = [
-        migrations.RunPython(new_version_news),
         migrations.AlterField(
             model_name='physicalaccesslevel',
             name='allow_staff_access',
