@@ -560,8 +560,8 @@ def check_policy_to_enter_any_area(user: User):
 
 
 def check_policy_to_enter_this_area(area: Area, user: User):
-	# If explicitly set on the Physical Access Level, staff may be exempt from being granted explicit access
-	if user.is_staff and any([access_level.accessible() for access_level in PhysicalAccessLevel.objects.filter(allow_staff_access=True, area=area)]):
+	# If explicitly set on the Physical Access Level, staff & user office may be exempt from being granted explicit access
+	if (user.is_staff or user.is_user_office) and any([access_level.accessible() for access_level in PhysicalAccessLevel.objects.filter(allow_staff_access=True, area=area)]):
 		pass
 	else:
 		# Check if the user normally has access to this area door at the current time (or access to any parent)

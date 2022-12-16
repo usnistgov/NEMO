@@ -85,21 +85,21 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 	user_can_check_past_status = (
 			not check_past_status
 			or check_past_status == "staffs"
-			and user.is_staff
+			and user.is_any_part_of_staff
 			or check_past_status == "managers"
 			and user.is_facility_manager
 	)
 	user_can_check_future_status = (
 			not check_future_status
 			or check_future_status == "staffs"
-			and user.is_staff
+			and user.is_any_part_of_staff
 			or check_future_status == "managers"
 			and user.is_facility_manager
 	)
 	# Check and set ability for users/staffs to look at the week/month view
 	user_view_options = StatusDashboardCustomization.get("dashboard_staff_status_user_view")
 	staff_view_options = StatusDashboardCustomization.get("dashboard_staff_status_staff_view")
-	user_view = user_view_options if not user.is_staff else staff_view_options if not user.is_facility_manager else ""
+	user_view = user_view_options if not user.is_any_part_of_staff else staff_view_options if not user.is_facility_manager else ""
 	# Take the default view from user preferences
 	view = request.GET.get("view", user.get_preferences().staff_status_view)
 	# If user_view is set to day only, then force day view
@@ -269,13 +269,13 @@ def show_staff_status(request):
 	if not settings.ALLOW_CONDITIONAL_URLS:
 		return False
 	dashboard_staff_status_staff_only = StatusDashboardCustomization.get("dashboard_staff_status_staff_only")
-	return StaffAvailability.objects.exists() and (not dashboard_staff_status_staff_only or request.user.is_staff)
+	return StaffAvailability.objects.exists() and (not dashboard_staff_status_staff_only or request.user.is_any_part_of_staff)
 
 
 def process_area_access_record_with_parents(user: User):
 	show_not_qualified_areas = StatusDashboardCustomization.get("dashboard_display_not_qualified_areas")
 	records = AreaAccessRecord.objects.filter(end=None, staff_charge=None)
-	if not user.is_staff and show_not_qualified_areas != "enabled":
+	if not user.is_any_part_of_staff and show_not_qualified_areas != "enabled":
 		records = records.filter(area__in=user.accessible_areas())
 	records = records.prefetch_related("customer", "project", "area")
 	no_occupants = not records.exists()
@@ -385,12 +385,12 @@ def create_area_summary(area_tree: ModelTreeHelper = None, add_resources=True, a
 		occupants: List[AreaAccessRecord] = AreaAccessRecord.objects.filter(
 			end=None, staff_charge=None
 		).prefetch_related(
-			Prefetch("customer", queryset=User.objects.all().only("first_name", "last_name", "username", "is_staff"))
+			Prefetch("customer", queryset=User.objects.all().only("first_name", "last_name", "username", "is_staff", "is_accounting_officer", "is_user_office", "is_facility_manager", "is_superuser"))
 		)
 		for occupant in occupants:
 			# Get ids for area and all the parents (so we can add occupants info on parents)
 			area_ids = area_tree.get_area(occupant.area_id).ancestor_ids(include_self=True)
-			if occupant.customer.is_staff:
+			if occupant.customer.is_any_part_of_staff:
 				customer_display = f'<span class="success-highlight">{str(occupant.customer)}</span>'
 			elif occupant.customer.is_service_personnel:
 				customer_display = f'<span class="warning-highlight">{str(occupant.customer)}</span>'
@@ -401,11 +401,11 @@ def create_area_summary(area_tree: ModelTreeHelper = None, add_resources=True, a
 			for area_id in area_ids:
 				if area_id in result:
 					result[area_id]["occupancy"] += 1
-					if occupant.customer.is_staff:
+					if occupant.customer.is_any_part_of_staff:
 						result[area_id]["occupancy_staff"] += 1
 					if occupant.customer.is_service_personnel:
 						result[area_id]["occupancy_service_personnel"] += 1
-					if (not occupant.customer.is_staff or result[area_id]["count_staff_in_occupancy"]) and (
+					if (not occupant.customer.is_any_part_of_staff or result[area_id]["count_staff_in_occupancy"]) and (
 							not occupant.customer.is_service_personnel
 							or result[area_id]["count_service_personnel_in_occupancy"]
 					):

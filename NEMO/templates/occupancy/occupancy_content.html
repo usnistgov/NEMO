@@ -23,7 +23,7 @@
 					{% if show_force_logout and user.is_staff or show_force_logout and user.is_user_office %}
 						<span class="glyphicon glyphicon-remove-circle grey pointer" onclick="force_user_out_of_the_area('{% url 'force_area_logout' o.customer_id %}')" title="Force {{ o.customer }} to log out of the {{ o.area }}"></span>
 					{% endif %}
-					<span {% if o.customer.is_staff %}class="success-highlight" {% elif o.customer.is_service_personnel %}class="warning-highlight" {% elif o.customer.is_logged_in_area_without_reservation %}class="danger-highlight" {% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
+					<span {% if o.customer.is_any_part_of_staff %}class="success-highlight" {% elif o.customer.is_service_personnel %}class="warning-highlight" {% elif o.customer.is_logged_in_area_without_reservation %}class="danger-highlight" {% endif %}>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
 				</td>
 				<td style="white-space: nowrap;width:25%">{{ o.start|date:"l @ "}} {{ o.start|time }}</td>
 				<td><div style="width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ o.project }}</div></td>

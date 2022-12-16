@@ -245,9 +245,10 @@ def get_users_for_email(audience: str, selection: List, no_type: bool) -> QueryS
 	elif audience == "area":
 		access_levels = [access_level for area in Area.objects.filter(pk__in=selection) for access_level in area.get_physical_access_levels()]
 		user_filter = Q(physical_access_levels__in=access_levels)
-		# if one of the access levels allows staff, add all staff
+		# if one of the access levels allows staff, add all staff & user office
 		if any([access_level.allow_staff_access for access_level in access_levels]):
 			user_filter |= Q(is_staff=True)
+			user_filter |= Q(is_user_office=True)
 		users = User.objects.filter(user_filter).distinct()
 	elif audience == "project":
 		users = User.objects.filter(projects__id__in=selection).distinct()

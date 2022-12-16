@@ -244,7 +244,7 @@ class PhysicalAccessLevel(BaseModel):
 	schedule = models.IntegerField(choices=Schedule.Choices)
 	weekdays_start_time = models.TimeField(default=datetime.time(hour=7), null=True, blank=True, help_text="The weekday access start time")
 	weekdays_end_time = models.TimeField(default=datetime.time(hour=0), null=True, blank=True, help_text="The weekday access end time")
-	allow_staff_access = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow access to Staff users without explicitly granting them access")
+	allow_staff_access = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow access to Staff and User Office members without explicitly granting them access")
 	allow_user_request = models.BooleanField(blank=False, null=False, default=False, help_text="Check this box to allow users to request this access temporarily in \"Access requests\"")
 
 	def get_schedule_display_with_times(self):
@@ -616,7 +616,7 @@ class User(BaseModel):
 		return self.first_name + ' ' + self.last_name
 
 	def accessible_access_levels(self):
-		if not self.is_staff:
+		if not self.is_staff and not self.is_user_office:
 			return self.physical_access_levels.all()
 		else:
 			return PhysicalAccessLevel.objects.filter(Q(id__in=self.physical_access_levels.all()) | Q(allow_staff_access=True)).distinct()
