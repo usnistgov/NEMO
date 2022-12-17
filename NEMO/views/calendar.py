@@ -876,7 +876,7 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
 		key = access_record.customer_id
 		aggregate[key] = {
 			'user': access_record.customer,
-			'resources_in_use': [access_record.area.name],
+			'resources_in_use': [access_record.area],
 		}
 	for usage_event in busy_tools:
 		key = usage_event.operator_id
@@ -885,7 +885,7 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
 		else:
 			aggregate[key] = {
 				'user': usage_event.operator,
-				'resources_in_use': [usage_event.tool.name],
+				'resources_in_use': [usage_event.tool],
 			}
 
 	user_office_email = EmailsCustomization.get('user_office_email_address')
@@ -894,14 +894,14 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
 	facility_name = ApplicationCustomization.get('facility_name')
 	if message:
 		subject = f"{facility_name} usage"
-		for user in aggregate.values():
-			user_instance: User = user["user"]
-			resources_in_use = user["resources_in_use"]
+		for value in aggregate.values():
+			user: User = value["user"]
+			resources_in_use = value["resources_in_use"]
 			# for backwards compatibility, add it to the user object (that's how it was defined and used in the template)
-			user_instance.resources_in_use = resources_in_use
-			rendered_message = render_email_template(message, {"user": user_instance, "resources_in_use": resources_in_use}, request)
-			email_notification = user_instance.get_preferences().email_send_usage_reminders
-			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
+			user.resources_in_use = resources_in_use
+			rendered_message = render_email_template(message, {"user": user, "resources_in_use": resources_in_use}, request)
+			email_notification = user.get_preferences().email_send_usage_reminders
+			user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
 
 	message = get_media_file_contents('staff_charge_reminder_email.html')
 	if message:
