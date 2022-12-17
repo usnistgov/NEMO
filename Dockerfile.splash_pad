@@ -1,6 +1,6 @@
 FROM python:3.7
 
-RUN apt-get update && apt-get install -y systemctl rsync
+RUN apt-get update && apt-get upgrade -y && apt-get install -y systemctl rsync
 
 COPY . /nemo/
 RUN pip install /nemo/
