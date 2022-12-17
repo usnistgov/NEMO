@@ -18,7 +18,7 @@
                     <p>Dear {{ user.first_name }},</p>
                     <p>This is a friendly reminder that you are currently using the following facility resources:</p>
                     <ul>
-                        {% for resource in user.resources_in_use %}
+                        {% for resource in resources_in_use %}
                             <li>{{ resource }}</li>
                         {% endfor %}
                     </ul>
