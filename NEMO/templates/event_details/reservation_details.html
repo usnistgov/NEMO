@@ -112,7 +112,7 @@
                     <div class="input-group">
                         <select id="change_project" name="project" aria-label="Reservation project" class="form-control">
                             {% for p in reservation.user.active_projects %}
-                                <option value="{{ p.id }}" {% if reservation.project.id == p.id %}selected{% endif %}>{{ p }}</option>
+                                <option value="{{ p.id }}" {% if reservation.project.id == p.id %}selected{% endif %}>{% project_selection_display p %}</option>
                             {% endfor %}
                         </select>
                         <span class="input-group-btn">

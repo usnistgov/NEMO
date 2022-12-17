@@ -1,10 +1,11 @@
+{% load custom_tags_and_filters %}
 <h1>Welcome to the {{ area }}, {{ user.first_name }}!</h1>
 <h2>Please choose a project to bill for area access.</h2>
 <h2>You can always change your choice later.</h2>
 {% for project in user.active_projects %}
 	<p>
 		<button type="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area('{{ user.badge_number }}', {{ project.id }})">
-			{{ project.name }}
+			{% project_selection_display project %}
 		</button>
 	</p>
 {% endfor %}
