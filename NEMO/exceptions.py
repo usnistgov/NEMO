@@ -4,14 +4,15 @@ from NEMO.models import Area, ClosureTime, Interlock, Resource, User
 
 
 class NEMOException(Exception):
-	""" Basic NEMO exception """
+	"""Basic NEMO exception"""
 
 	default_msg = "A {} error occurred"
 
 	def __init__(self, msg=None):
 		if msg is None:
 			from NEMO.views.customization import ApplicationCustomization
-			site_title = ApplicationCustomization.get('site_title')
+
+			site_title = ApplicationCustomization.get("site_title")
 			msg = self.default_msg.format(site_title)
 		self.msg = msg
 		super().__init__(msg)
@@ -26,7 +27,7 @@ class InvalidCustomizationException(NEMOException):
 
 
 class InterlockError(NEMOException):
-	""" Interlock related errors """
+	"""Interlock related errors"""
 
 	def __init__(self, interlock: Interlock, msg=None):
 		self.message = msg
@@ -38,7 +39,7 @@ class InterlockError(NEMOException):
 
 
 class UserAccessError(NEMOException):
-	""" User access related errors """
+	"""User access related errors"""
 
 	detailed_msg = ""
 
@@ -128,9 +129,9 @@ class ItemNotAllowedForProjectException(ProjectChargeException):
 
 
 class RequiredUnansweredQuestionsException(NEMOException):
-	def __init__(self, run_data:str, questions: List):
+	def __init__(self, run_data: str, questions: List):
 		self.run_data = run_data
 		self.questions = questions
-		display_questions = ", ".join([f"\"{question.title}\"" for question in questions])
+		display_questions = ", ".join([f'"{question.title}"' for question in questions])
 		msg = f"You have to answer the following required questions: {display_questions}"
 		super().__init__(msg)
