@@ -1,10 +1,10 @@
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 
 setup(
 	name='NEMO',
 	version='4.4.0.dev',
 	python_requires='>=3.7',
-	packages=find_packages(exclude=['NEMO.tests','NEMO.tests.*']),
+	packages=find_namespace_packages(exclude=['NEMO.tests', 'NEMO.tests.*']),
 	include_package_data=True,
 	url='https://github.com/usnistgov/NEMO',
 	license='Public domain',
