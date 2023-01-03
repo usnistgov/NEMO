@@ -3,7 +3,7 @@ from setuptools import find_namespace_packages, setup
 setup(
 	name='NEMO',
 	version='4.4.0.dev',
-	python_requires='>=3.7',
+	python_requires='>=3.8',
 	packages=find_namespace_packages(exclude=['NEMO.tests', 'NEMO.tests.*']),
 	include_package_data=True,
 	url='https://github.com/usnistgov/NEMO',
@@ -21,7 +21,7 @@ setup(
 		'License :: Public Domain',
 		'Natural Language :: English',
 		'Operating System :: OS Independent',
-		'Programming Language :: Python :: 3.7',
+		'Programming Language :: Python :: 3.8',
 	],
 	install_requires=[
 		'cryptography==38.0.4',
