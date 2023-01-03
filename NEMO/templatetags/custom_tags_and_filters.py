@@ -1,5 +1,6 @@
 import datetime
 from datetime import timedelta
+from importlib.metadata import version
 
 from django import template
 from django.shortcuts import resolve_url
@@ -10,9 +11,9 @@ from django.utils import timezone
 from django.utils.formats import localize_input
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
-from pkg_resources import DistributionNotFound, get_distribution
+from pkg_resources import DistributionNotFound
 
-from NEMO.views.customization import ProjectsAccountsCustomization
+from NEMO.views.customization import CustomizationBase, ProjectsAccountsCustomization
 
 register = template.Library()
 
@@ -149,6 +150,18 @@ def app_version() -> str:
 @register.filter
 def concat(value, arg):
 	return str(value) + str(arg)
+
+
+@register.filter
+def customization(customization_key, key):
+	return CustomizationBase.get_instance(customization_key).get(key)
+
+
+@register.filter
+def app_installed(app_name):
+	from django.apps import apps
+
+	return apps.is_installed(app_name)
 
 
 @register.inclusion_tag("snippets/button.html")
