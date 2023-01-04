@@ -19,6 +19,7 @@ def init_rates():
 
 
 class NEMOConfig(AppConfig):
+	default_auto_field = 'django.db.models.AutoField'
 	name = "NEMO"
 
 	def ready(self):
