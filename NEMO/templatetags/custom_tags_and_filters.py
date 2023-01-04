@@ -139,7 +139,7 @@ def app_version() -> str:
 		return dist_version
 	else:
 		try:
-			dist_version = get_distribution("NEMO").version
+			dist_version = version("NEMO")
 		except DistributionNotFound:
 			# package is not installed
 			dist_version = None
