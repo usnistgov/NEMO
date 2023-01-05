@@ -1,6 +1,6 @@
 import datetime
 from datetime import timedelta
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
 from django import template
 from django.shortcuts import resolve_url
@@ -11,7 +11,6 @@ from django.utils import timezone
 from django.utils.formats import localize_input
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
-from pkg_resources import DistributionNotFound
 
 from NEMO.views.customization import CustomizationBase, ProjectsAccountsCustomization
 
@@ -140,7 +139,7 @@ def app_version() -> str:
 	else:
 		try:
 			dist_version = version("NEMO")
-		except DistributionNotFound:
+		except PackageNotFoundError:
 			# package is not installed
 			dist_version = None
 			pass
