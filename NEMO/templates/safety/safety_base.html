@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block content %}
+    {% navigation_url "safety_data_sheets" "url" as data_sheets_url %}
+    <div id="safety_tabs" style="margin-top: 0">
+        <span class="h1" style="margin-top: 0;margin-right: 15px">{% block safety_title %}Safety{% endblock %}</span>
+        <ul class="nav nav-pills nav-pills-spacer" id="tabs" style="display: inline-block;float: right; margin-bottom: 15px">
+            {% if show_safety_issues %}
+            <li class="{% if tab == 'safety_issues' %}active{% endif %}">
+                <a href="#safety" onclick="location.href = '{% url "safety_issues" %}'">Safety issues</a>
+            </li>
+            {% endif %}
+            {% if show_safety_data_sheets and data_sheets_url %}
+                <li class="{% if tab == 'safety_data_sheets' %}active{% endif %}">
+                    <a href="#safety" onclick="location.href = '{% url "safety_data_sheets" %}'">Safety data sheets</a>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+    <div class="tab-content">
+        <div class="tab-pane active" id="safety">
+             {% block tab_content %}{% endblock %}
+        </div>
+    </div>
+    <script>
+        $("#tabs").find("a").click(switch_tab);
+    </script>
+{% endblock %}

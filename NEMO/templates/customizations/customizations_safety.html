@@ -1,0 +1,34 @@
+{% load custom_tags_and_filters %}
+<div class="panel-body">
+    <h3 class="customization-section-title">Safety settings</h3>
+    <form method="POST" action="{% url 'customize' 'safety' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3" >Main menu item</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <input type="hidden" name="safety_main_menu" value="off"/>
+                    <label for="safety_main_menu"><input type="checkbox" id="safety_main_menu" name="safety_main_menu" {% if safety_main_menu != "off" %}checked{% endif %} value=""> Show</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3" >Safety page items</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <div class="row col-sm-12">
+                        <input type="hidden" name="safety_show_safety_issues" value="off"/>
+                        <label for="safety_show_safety_issues"><input type="checkbox" id="safety_show_safety_issues" name="safety_show_safety_issues" {% if safety_show_safety_issues != "off" %}checked{% endif %} value=""> Safety issues</label>
+                    </div>
+                    <div class="row col-sm-12">
+                        <input type="hidden" name="safety_show_safety_data_sheets" value="off"/>
+                        <label for="safety_show_safety_data_sheets"><input type="checkbox" id="safety_show_safety_data_sheets" name="safety_show_safety_data_sheets" {% if safety_show_safety_data_sheets != "off" %}checked{% endif %} value=""> Safety data sheets</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-offset-2">
+            {% button type="save" value="Save settings" %}
+        </div>
+    </form>
+</div>

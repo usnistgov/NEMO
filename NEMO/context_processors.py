@@ -1,6 +1,6 @@
 from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.utilities import date_input_js_format, datetime_input_js_format, time_input_js_format
-from NEMO.views.customization import ApplicationCustomization, RecurringChargesCustomization
+from NEMO.views.customization import ApplicationCustomization, RecurringChargesCustomization, SafetyCustomization
 from NEMO.views.notifications import get_notification_counts
 
 
@@ -66,6 +66,10 @@ def base_context(request):
 		facility_managers_exist = User.objects.filter(is_active=True, is_facility_manager=True).exists()
 	except:
 		facility_managers_exist = False
+	try:
+		safety_menu_item = SafetyCustomization.get_bool("safety_main_menu")
+	except:
+		safety_menu_item = True
 	return {
 		"facility_name": facility_name,
 		"recurring_charges_name": recurring_charges_name,
@@ -83,4 +87,5 @@ def base_context(request):
 		"date_input_js_format": date_input_js_format,
 		"datetime_input_js_format": datetime_input_js_format,
 		"no_header": request.session.get("no_header", False),
+		"safety_menu_item": safety_menu_item,
 	}

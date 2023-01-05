@@ -1,0 +1,68 @@
+{% extends 'safety/safety_base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Safety issues{% endblock %}
+{% block safety_title %}Safety suggestions and observations{% endblock %}
+{% block tab_content %}
+    {% if safety_introduction %}
+        <p>{{ safety_introduction|safe }}</p>
+    {% else %}
+        <p style="font-weight:bold; color:red">Call 911 if there is an immediate emergency.</p>
+        <p>
+            We invite your suggestions and observations in order to provide a safer and more effective environment for all users and staff.
+            Use the safety issues form to report non-emergency related safety issues, unsafe working conditions, housekeeping suggestions, or observations.
+            You can send your comments or concerns completely anonymously or provide your name so that we can follow up with you.
+        </p>
+    {% endif %}
+
+	<p>You can also <a href="{% url 'resolved_safety_issues' %}">view past safety issues that have been resolved</a>.</p>
+
+	<h3>Report a new safety issue</h3>
+	<form action="{% url 'safety_issues' %}" method="post">
+		{% csrf_token %}
+		<input type="text" name="location" class="form-control" style="max-width: 250px" aria-label="Problem location" placeholder="Where is the problem?" required><br>
+		<textarea name="concern" class="form-control" rows="6" aria-label="Concern" placeholder="Why are you concerned?" required></textarea>
+		<input type="hidden" name="resolved" value="false">
+		<div class="checkbox">
+			<label><input type="checkbox" name="report_anonymously">Report this issue anonymously.</label> <span class="light-grey">Your name will not be visible to staff. There will be no way for us to follow up with you about how the safety issue was resolved.</span>
+		</div>
+        {% button type="delete" submit=True value="Report a new safety concern" icon="glyphicon-send" %}
+	</form>
+
+	{% if tickets %}
+		<h3>Existing safety issues</h3>
+		{% for ticket in tickets %}
+			{% if user.is_staff %}
+				<a href="{% url 'update_safety_issue' ticket.id %}" style="text-decoration: none">
+			{% endif %}
+			<div class="panel panel-default">
+				<div class="panel-body">
+					<div class="form-group">
+						<h4>
+							{% if ticket.id in notifications %}
+								<span class="badge" style="vertical-align:middle; background-color:red">New</span>
+							{% endif %}
+							Concern
+						</h4>
+						{{ ticket.concern|linebreaksbr }}
+					</div>
+					<div class="form-group">
+						{% if not ticket.visible %}<span class="glyphicon glyphicon-eye-close"></span> This issue is hidden from users<br>{% endif %}
+						Location: {{ ticket.location }}<br>
+						{% if ticket.reporter %}
+							Reported on {{ ticket.creation_time }}{% if user.is_staff %} by {{ ticket.reporter }}{% endif %}<br>
+						{% else %}
+							Reported anonymously on {{ ticket.creation_time }}<br>
+						{% endif %}
+					</div>
+					{% if ticket.progress %}
+						<div class="form-group">
+							<h4>Progress</h4>
+							{{ ticket.progress|linebreaksbr }}
+						</div>
+					{% endif %}
+				</div>
+			</div>
+		{% if user.is_staff %}</a>{% endif %}
+		{% endfor %}
+	{% endif %}
+{% endblock %}

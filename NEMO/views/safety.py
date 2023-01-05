@@ -1,37 +1,48 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
-from django.urls import reverse
+from django.db.models import Case, When
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import staff_member_required
 from NEMO.forms import SafetyIssueCreationForm, SafetyIssueUpdateForm
-from NEMO.models import SafetyIssue
-from NEMO.utilities import EmailCategory, get_full_url, render_email_template, send_mail
-from NEMO.views.customization import EmailsCustomization, get_media_file_contents
+from NEMO.models import Chemical, ChemicalHazard, SafetyIssue
+from NEMO.utilities import (
+	BasicDisplayTable,
+	EmailCategory,
+	export_format_datetime,
+	get_full_url,
+	render_email_template,
+	send_mail,
+)
+from NEMO.views.customization import EmailsCustomization, SafetyCustomization, get_media_file_contents
 from NEMO.views.notifications import create_safety_notification, delete_notification, get_notifications
 
 
 @login_required
-@require_http_methods(["GET", "POST"])
+@require_GET
 def safety(request):
-	dictionary = {}
+	return redirect("safety_issues")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def safety_issues(request):
+	dictionary = safety_dictionary("safety_issues")
 	if request.method == "POST":
 		form = SafetyIssueCreationForm(request.user, data=request.POST)
 		if form.is_valid():
 			issue = form.save()
 			send_safety_email_notification(request, issue)
-			dictionary["title"] = "Concern received"
-			dictionary["heading"] = "Your safety concern was sent to the staff and will be addressed promptly"
 			create_safety_notification(issue)
-			return render(request, "acknowledgement.html", dictionary)
+			messages.success(request, "Your safety concern was sent to the staff and will be addressed promptly")
+			return redirect("safety_issues")
 	tickets = SafetyIssue.objects.filter(resolved=False).order_by("-creation_time")
 	if not request.user.is_staff:
 		tickets = tickets.filter(visible=True)
 	dictionary["tickets"] = tickets
-	dictionary["safety_introduction"] = get_media_file_contents("safety_introduction.html")
 	dictionary["notifications"] = get_notifications(request.user, SafetyIssue)
-	return render(request, "safety/safety.html", dictionary)
+	return render(request, "safety/safety_issues.html", dictionary)
 
 
 def send_safety_email_notification(request, issue):
@@ -54,15 +65,18 @@ def send_safety_email_notification(request, issue):
 @login_required
 @require_GET
 def resolved_safety_issues(request):
+	dictionary = safety_dictionary("safety_issues")
 	tickets = SafetyIssue.objects.filter(resolved=True)
 	if not request.user.is_staff:
 		tickets = tickets.filter(visible=True)
-	return render(request, "safety/resolved_issues.html", {"tickets": tickets})
+	dictionary["tickets"] = tickets
+	return render(request, "safety/safety_issues_resolved.html", dictionary)
 
 
 @staff_member_required
 @require_http_methods(["GET", "POST"])
 def update_safety_issue(request, ticket_id):
+	dictionary = safety_dictionary("safety_issues")
 	if request.method == "POST":
 		ticket = get_object_or_404(SafetyIssue, id=ticket_id)
 		form = SafetyIssueUpdateForm(request.user, data=request.POST, instance=ticket)
@@ -70,6 +84,70 @@ def update_safety_issue(request, ticket_id):
 			issue = form.save()
 			if issue.resolved:
 				delete_notification(SafetyIssue, issue.id)
-			return HttpResponseRedirect(reverse("safety"))
-	dictionary = {"ticket": get_object_or_404(SafetyIssue, id=ticket_id)}
-	return render(request, "safety/update_issue.html", dictionary)
+			messages.success(request, "This safety issue was updated successfully")
+			return redirect("safety_issues")
+	dictionary["ticket"] = get_object_or_404(SafetyIssue, id=ticket_id)
+	return render(request, "safety/safety_issues_update.html", dictionary)
+
+
+@login_required
+@require_GET
+def safety_data_sheets(request):
+	chemicals = Chemical.objects.all().prefetch_related("hazards").order_by()
+	hazards = ChemicalHazard.objects.all()
+
+	for hazard in hazards:
+		chemicals = chemicals.annotate(
+			**{f"hazard_{hazard.id}": Case(When(hazards__in=[hazard.id], then=True), default=False)}
+		)
+
+	order_by = request.GET.get("o", "name")
+	reverse_order = order_by.startswith("-")
+	order = order_by[1:] if reverse_order else order_by
+	chemicals = list(set(chemicals))
+	if order == "name":
+		chemicals.sort(key=lambda x: x.name.lower(), reverse=reverse_order)
+	elif order.startswith("hazard_"):
+		hazard_id = int(order[7:])
+		chemicals.sort(key=lambda x: x.name.lower())
+		chemicals.sort(key=lambda x: hazard_id in [h.id for h in x.hazards.all()], reverse=not reverse_order)
+
+	dictionary = safety_dictionary("safety_data_sheets")
+	dictionary.update({"chemicals": chemicals, "hazards": hazards, "order_by": order_by})
+
+	return render(request, "safety/safety_data_sheets.html", dictionary)
+
+
+@staff_member_required
+@require_GET
+def export_safety_data_sheets(request):
+	hazards = ChemicalHazard.objects.all()
+
+	table = BasicDisplayTable()
+	table.add_header(("name", "Name"))
+	for hazard in hazards:
+		table.add_header((f"hazard_{hazard.id}", hazard.name))
+	table.add_header(("keywords", "Keywords"))
+
+	for chemical in Chemical.objects.all():
+		chemical: Chemical = chemical
+		values = {f"hazard_{hazard.id}": "X" for hazard in hazards if hazard in chemical.hazards.all()}
+		values["name"] = chemical.name
+		values["keywords"] = chemical.keywords
+		table.add_row(values)
+
+	response = table.to_csv()
+	filename = f"safety_data_sheets_{export_format_datetime()}.csv"
+	response["Content-Disposition"] = f'attachment; filename="{filename}"'
+	return response
+
+
+def safety_dictionary(tab):
+	dictionary = {
+		"tab": tab,
+		"show_safety_issues": SafetyCustomization.get_bool("safety_show_safety_issues"),
+		"show_safety_data_sheets": SafetyCustomization.get_bool("safety_show_safety_data_sheets"),
+	}
+	if tab == "safety_issues":
+		dictionary["safety_introduction"] = get_media_file_contents("safety_introduction.html")
+	return dictionary

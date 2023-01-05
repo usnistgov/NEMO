@@ -1,9 +1,8 @@
-{% extends 'base.html' %}
+{% extends 'safety/safety_base.html' %}
 {% load custom_tags_and_filters %}
-{% block title %}Safety{% endblock %}
-{% block content %}
-	<h1>Update a safety issue</h1>
-
+{% block title %}Safety issues{% endblock %}
+{% block safety_title %}Update a safety issue{% endblock %}
+{% block tab_content %}
 	{% if errors %}
 		{{ form.errors }}
 	{% endif %}

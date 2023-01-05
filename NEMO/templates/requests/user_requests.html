@@ -5,7 +5,7 @@
         <ul class="nav nav-pills nav-pills-spacer" id="tabs">
             {% if access_user_request_allowed_exist and facility_managers_exist %}
                 <li class="{% if tab == 'access' %}active{% endif %}">
-                    <a href="#access-requests" onclick="window.location = '{% url "user_requests" "access" %}'">{{ access_requests_title }}
+                    <a href="#access-requests" onclick="location.href = '{% url "user_requests" "access" %}'">{{ access_requests_title }}
                         {% if temporary_access_notification_count %}
                             <span class="badge badge-tab-top">{{ temporary_access_notification_count }}</span>
                         {% endif %}
@@ -14,7 +14,7 @@
             {% endif %}
             {% if buddy_system_areas_exist %}
                 <li class="{% if tab == 'buddy' %}active{% endif %}">
-                    <a href="#buddy-requests" onclick="window.location = '{% url "user_requests" "buddy" %}'">{{ buddy_requests_title }}
+                    <a href="#buddy-requests" onclick="location.href = '{% url "user_requests" "buddy" %}'">{{ buddy_requests_title }}
                         {% if buddy_notification_count %}
                             <span class="badge badge-tab-top">{{ buddy_notification_count }}</span>
                         {% endif %}

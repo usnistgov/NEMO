@@ -340,6 +340,15 @@ class ToolQualificationCustomization(CustomizationBase):
 				validate_email(email)
 
 
+@customization(key="safety", title="Safety")
+class SafetyCustomization(CustomizationBase):
+	variables = {
+		"safety_main_menu": "enabled",
+		"safety_show_safety_issues": "enabled",
+		"safety_show_safety_data_sheets": "enabled",
+	}
+
+
 @customization(key="templates", title="File & email templates")
 class TemplatesCustomization(CustomizationBase):
 	files = [
