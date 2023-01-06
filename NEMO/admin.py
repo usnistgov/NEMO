@@ -69,7 +69,10 @@ from NEMO.models import (
 	ReservationQuestions,
 	Resource,
 	ResourceCategory,
+	SafetyCategory,
 	SafetyIssue,
+	SafetyItem,
+	SafetyItemDocuments,
 	SafetyTraining,
 	ScheduledOutage,
 	ScheduledOutageCategory,
@@ -1069,6 +1072,27 @@ class SafetyIssueAdmin(admin.ModelAdmin):
 	list_filter = ("resolved", "visible", "creation_time", "resolution_time")
 	readonly_fields = ("creation_time", "resolution_time")
 	search_fields = ("location", "concern", "progress", "resolution")
+
+
+@register(SafetyCategory)
+class SafetyCategoryAdmin(admin.ModelAdmin):
+	list_display = ("name", "display_order")
+
+
+class SafetyItemDocumentsInline(admin.TabularInline):
+	model = SafetyItemDocuments
+	extra = 1
+
+
+@register(SafetyItem)
+class SafetyItemAdmin(admin.ModelAdmin):
+	inlines = [SafetyItemDocumentsInline]
+	list_display = ("name", "category", "get_documents_number")
+	list_filter = ("category",)
+
+	@display(description='Documents')
+	def get_documents_number(self, obj: SafetyItem):
+		return SafetyItemDocuments.objects.filter(safety_item=obj).count()
 
 
 @register(Door)

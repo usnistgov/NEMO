@@ -836,7 +836,7 @@ def send_email_reservation_ending_reminders(request=None):
 	user_area_reservations = valid_reservations.filter(area__isnull=False, user__in=current_logged_in_user.values_list('customer', flat=True))
 
 	# Find all reservations that end 30 or 15 min from now, plus or minus 3 minutes to allow for time skew.
-	reminder_times = [30,15]
+	reminder_times = [30, 15]
 	tolerance = 3
 	time_filter = Q()
 	for reminder_time in reminder_times:
@@ -994,14 +994,14 @@ def send_email_out_of_time_reservation_notification(request=None):
 	Out of time reservation notification for areas is when a user is still logged in a area but his reservation expired.
 	"""
 	# Exit early if the out of time reservation email template has not been customized for the organization yet.
-	# This feature only sends emails, so there if the template is not defined there nothing to do.
+	# This feature only sends emails, so if the template is not defined there nothing to do.
 	if not get_media_file_contents('out_of_time_reservation_email.html'):
 		return HttpResponseNotFound('The out of time reservation email template has not been customized for your organization yet. Please visit the customization page to upload a template, then out of time email notifications can be sent.')
 
 	out_of_time_user_area = []
 
 	# Find all logged users
-	access_records:List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'area').only('customer', 'area')
+	access_records: List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'area').only('customer', 'area')
 	for access_record in access_records:
 		# staff and service personnel are exempt from out of time notification
 		customer = access_record.customer

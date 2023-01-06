@@ -17,6 +17,10 @@
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
                     <div class="row col-sm-12">
+                        <input type="hidden" name="safety_show_safety" value="off"/>
+                        <label for="safety_show_safety"><input type="checkbox" id="safety_show_safety" name="safety_show_safety" {% if safety_show_safety != "off" %}checked{% endif %} value=""> Safety</label>
+                    </div>
+                    <div class="row col-sm-12">
                         <input type="hidden" name="safety_show_safety_issues" value="off"/>
                         <label for="safety_show_safety_issues"><input type="checkbox" id="safety_show_safety_issues" name="safety_show_safety_issues" {% if safety_show_safety_issues != "off" %}checked{% endif %} value=""> Safety issues</label>
                     </div>

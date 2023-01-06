@@ -1,10 +1,10 @@
 {% extends 'safety/safety_base.html' %}
 {% load custom_tags_and_filters %}
 {% block title %}Safety issues{% endblock %}
-{% block safety_title %}Safety suggestions and observations{% endblock %}
+{% block safety_title %}Safety issues{% endblock %}
 {% block tab_content %}
     {% if safety_introduction %}
-        <p>{{ safety_introduction|safe }}</p>
+        {{ safety_introduction|safe }}
     {% else %}
         <p style="font-weight:bold; color:red">Call 911 if there is an immediate emergency.</p>
         <p>

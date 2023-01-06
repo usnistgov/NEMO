@@ -6,10 +6,12 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import staff_member_required
 from NEMO.forms import SafetyIssueCreationForm, SafetyIssueUpdateForm
-from NEMO.models import Chemical, ChemicalHazard, SafetyIssue
+from NEMO.models import Chemical, ChemicalHazard, SafetyCategory, SafetyIssue, SafetyItem
+from NEMO.templatetags.custom_tags_and_filters import navigation_url
 from NEMO.utilities import (
 	BasicDisplayTable,
 	EmailCategory,
+	distinct_qs_value_list,
 	export_format_datetime,
 	get_full_url,
 	render_email_template,
@@ -22,7 +24,39 @@ from NEMO.views.notifications import create_safety_notification, delete_notifica
 @login_required
 @require_GET
 def safety(request):
-	return redirect("safety_issues")
+	dictionary = safety_dictionary("")
+	if not dictionary["show_safety"]:
+		if not dictionary["show_safety_issues"]:
+			if not dictionary["show_safety_data_sheets"]:
+				return redirect("safety_issues")
+			return redirect("safety_data_sheets")
+		return redirect("safety_issues")
+	return redirect("safety_categories")
+
+
+@login_required
+@require_GET
+def safety_categories(request, category_id=None):
+	dictionary = safety_dictionary("safety")
+	try:
+		SafetyCategory.objects.get(pk=category_id)
+	except SafetyCategory.DoesNotExist:
+		pass
+	safety_items_qs = SafetyItem.objects.filter(category_id=category_id)
+	if not category_id and not safety_items_qs.exists():
+		first_category = SafetyCategory.objects.first()
+		category_id = first_category.id if first_category else None
+	dictionary.update(
+		{
+			"category_id": category_id,
+			"safety_items": SafetyItem.objects.filter(category_id=category_id),
+			"safety_categories": SafetyCategory.objects.filter(
+				id__in=distinct_qs_value_list(SafetyItem.objects.all(), "category_id")
+			),
+			"safety_general": SafetyItem.objects.filter(category_id__isnull=True).exists(),
+		}
+	)
+	return render(request, "safety/safety.html", dictionary)
 
 
 @login_required
@@ -143,11 +177,14 @@ def export_safety_data_sheets(request):
 
 
 def safety_dictionary(tab):
-	dictionary = {
-		"tab": tab,
-		"show_safety_issues": SafetyCustomization.get_bool("safety_show_safety_issues"),
-		"show_safety_data_sheets": SafetyCustomization.get_bool("safety_show_safety_data_sheets"),
-	}
+	sds_url_exist = navigation_url("safety_data_sheets", "")
+	dictionary = dict(
+		show_safety=SafetyCustomization.get_bool("safety_show_safety"),
+		show_safety_issues=SafetyCustomization.get_bool("safety_show_safety_issues"),
+		show_safety_data_sheets=SafetyCustomization.get_bool("safety_show_safety_data_sheets") and sds_url_exist,
+	)
+	dictionary["show_tabs"] = len([key for key, value in dictionary.items() if value])
+	dictionary["tab"] = tab
 	if tab == "safety_issues":
 		dictionary["safety_introduction"] = get_media_file_contents("safety_introduction.html")
 	return dictionary

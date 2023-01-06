@@ -8,6 +8,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LogoutView
 from django.urls import path, re_path
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.generic import RedirectView
 from django.views.static import serve
 from rest_framework import routers
@@ -27,6 +28,7 @@ from NEMO.views import (
 	consumables,
 	contact_staff,
 	customization,
+	documents,
 	email,
 	event_details,
 	feedback,
@@ -262,6 +264,10 @@ urlpatterns += [
 
 	# Safety:
 	path("safety/", safety.safety, name="safety"),
+	path("safety/categories/", include([
+		path("", safety.safety_categories, name="safety_categories"),
+		path("<int:category_id>/", safety.safety_categories, name="safety_categories"),
+	])),
 	path("safety/issues/", safety.safety_issues, name="safety_issues"),
 	path("safety/issues/resolved/", safety.resolved_safety_issues, name="resolved_safety_issues"),
 	path("safety/issues/<int:ticket_id>/update/", safety.update_safety_issue, name="update_safety_issue"),
@@ -303,7 +309,8 @@ urlpatterns += [
 	path("news/publish/<int:story_id>/", news.publish, name="publish_news_update"),
 
 	# Media
-	re_path(r"^media/(?P<path>.*)$", login_required(serve), {"document_root": settings.MEDIA_ROOT}, name="media"),
+	re_path(r"^media/(?P<path>.*)$", login_required(xframe_options_sameorigin(serve)), {"document_root": settings.MEDIA_ROOT}, name="media"),
+	re_path(r"^media_view/(?P<popup>(true|false))/(?P<document_type>\w+)/(?P<document_id>\d+)/$", documents.media_view, name="media_view"),
 
 	# User Preferences
 	path("user_preferences/", users.user_preferences, name="user_preferences"),

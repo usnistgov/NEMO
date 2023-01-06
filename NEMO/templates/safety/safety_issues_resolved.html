@@ -2,9 +2,8 @@
 {% block title %}Safety issues{% endblock %}
 {% block safety_title %}Resolved safety issues{% endblock %}
 {% block tab_content %}
-	<p>This page lists previously reported and resolved safety issues.</p>
-
-	<p>You can also <a href="{% url 'safety_issues' %}">view current safety issues</a>.</p>
+    <p>This page lists previously reported and resolved safety issues.</p>
+    <p>You can also <a href="{% url 'safety_issues' %}">view current safety issues</a>.</p>
 
 	{% for ticket in tickets %}
 		<div class="panel panel-default">

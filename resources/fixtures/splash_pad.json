@@ -288,6 +288,82 @@
       "end_time": "2025-06-20T03:59:00Z"
     }
   },
+   {
+    "model": "NEMO.safetycategory",
+    "pk": 1,
+    "fields": {
+      "name": "First safety category",
+      "display_order": 1
+    }
+  },
+  {
+    "model": "NEMO.safetycategory",
+    "pk": 2,
+    "fields": {
+      "name": "Second safety category",
+      "display_order": 2
+    }
+  },
+  {
+    "model": "NEMO.safetyitem",
+    "pk": 1,
+    "fields": {
+      "name": "Safety test item",
+      "description": "This is a very important safety informational item. Please check out the following documents:",
+      "category": 1
+    }
+  },
+  {
+    "model": "NEMO.safetyitem",
+    "pk": 2,
+    "fields": {
+      "name": "Safety test item 2",
+      "description": "This is a very important safety informational item. Please check out the following documents:",
+      "category": 1
+    }
+  },
+  {
+    "model": "NEMO.safetyitem",
+    "pk": 2,
+    "fields": {
+      "name": "Safety test item 3",
+      "description": "This is a very important safety informational item. Please check out the following documents:",
+      "category": 2
+    }
+  },
+  {
+    "model": "NEMO.safetyitemdocuments",
+    "pk": 1,
+    "fields": {
+      "safety_item": 1,
+      "document": "",
+      "url": "https://filesamples.com/samples/video/mp4/sample_960x400_ocean_with_audio.mp4",
+      "name": "MP4 video example URL",
+      "uploaded_at": "2023-01-06T01:35:06.582Z"
+    }
+  },
+  {
+    "model": "NEMO.safetyitemdocuments",
+    "pk": 2,
+    "fields": {
+      "safety_item": 1,
+      "document": "",
+      "url": "https://filesamples.com/samples/document/pdf/sample1.pdf",
+      "name": "PDF document example URL",
+      "uploaded_at": "2023-01-06T18:31:45.260Z"
+    }
+  },
+  {
+    "model": "NEMO.safetyitemdocuments",
+    "pk": 3,
+    "fields": {
+      "safety_item": 2,
+      "document": "",
+      "url": "https://filesamples.com/samples/video/ogv/sample_640x360.ogv",
+      "name": "OGV video example URL",
+      "uploaded_at": "2023-01-06T18:31:45.260Z"
+    }
+  },
   {
     "model": "NEMO.safetytraining",
     "pk": 1,

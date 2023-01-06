@@ -893,3 +893,33 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
     border: solid transparent;
     border-width: 1px 0;
 }
+
+@media (max-width: 768px)
+{
+	.media-popup
+	{
+		max-width: 450px;
+		max-height: calc(100vh - 150px);
+	}
+}
+
+.media-popup
+{
+	max-width: 570px;
+	max-height: calc(100vh - 150px);
+}
+
+.media-pdf
+{
+	width: 100%;
+	height: calc(100vh - 150px);
+}
+
+@media (min-width: 992px)
+{
+	.modal-lg .media-popup
+	{
+		max-width: 870px;
+		max-height: calc(100vh - 150px);
+	}
+}

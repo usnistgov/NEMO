@@ -512,6 +512,13 @@ def get_user_document_filename(user_documents, filename):
 	return f"user_documents/{username}/{filename}"
 
 
+def get_safety_document_filename(safety_documents, filename):
+	from django.template.defaultfilters import slugify
+
+	item_name = slugify(safety_documents.safety_item.name)
+	return f"safety_item/{item_name}/{filename}"
+
+
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
 	""" Returns a resized image based on the given maximum size """
 	with Image.open(image) as img:
