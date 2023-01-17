@@ -264,6 +264,7 @@ urlpatterns += [
 
 	# Safety:
 	path("safety/", safety.safety, name="safety"),
+	path("safety/all_in_one/", safety.safety_all_in_one, name="safety_all_in_one"),
 	path("safety/categories/", include([
 		path("", safety.safety_categories, name="safety_categories"),
 		path("<int:category_id>/", safety.safety_categories, name="safety_categories"),

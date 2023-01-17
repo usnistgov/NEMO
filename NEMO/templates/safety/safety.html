@@ -4,52 +4,44 @@
 {% block tab_content %}
     <div class="row">
         {% if safety_categories or safety_items %}
-            {% if safety_categories %}
-                <div class="col-sm-3">
-                    <ul class="nav nav-pills nav-stacked">
-                        {% if safety_general %}
-                            <li class="{% if category_id is None %}active{% endif %}">
-                                <a href="{% url 'safety_categories' %}">General</a>
-                            </li>
-                        {% endif %}
-                        {% for safety_category in safety_categories %}
-                            <li class="{% if category_id and safety_category.id == category_id %}active{% endif %}">
-                                <a href="{% url 'safety_categories' safety_category.id %}">{{ safety_category.name }}</a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
-            <div class="col-sm-{% if safety_categories %}9{% else %}12{% endif %}">
-                <div class="tab-content panel panel-default">
-                    <div class="tab-pane active" style="padding: 15px">
-                        <ul style="padding-left: 15px">
-                            {% for safety_item in safety_items %}
-                                <li style="margin-bottom: 15px"><u>{{ safety_item.name }}:</u>
-                                    {% if safety_item.description %}
-                                        <div style="margin: 5px 0">{{ safety_item.description|safe }}</div>
-                                    {% endif %}
-                                    <ul>
-                                        {% for doc in safety_item.safetyitemdocuments_set.all %}
-                                            {% if doc.can_be_embedded %}
-                                                <li><a href="#" onclick="open_doc('{% url 'media_view' 'true' 'safety_document' doc.id %}')">{{ doc.filename }}</a></li>
-                                            {% else %}
-                                                <li><a href="{{ doc.link }}" target="_blank">{{ doc.filename }}</a></li>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </ul>
+            {% if not safety_items_expand_categories %}
+                {% if safety_categories %}
+                    <div class="col-sm-3">
+                        <ul class="nav nav-pills nav-stacked">
+                            {% if safety_general %}
+                                <li class="{% if category_id is None %}active{% endif %}">
+                                    <a href="{% url 'safety_categories' %}">General</a>
+                                </li>
+                            {% endif %}
+                            {% for safety_category in safety_categories %}
+                                <li class="{% if category_id and safety_category.id == category_id %}active{% endif %}">
+                                    <a href="{% url 'safety_categories' safety_category.id %}">{{ safety_category.name }}</a>
                                 </li>
                             {% endfor %}
                         </ul>
                     </div>
+                {% endif %}
+                <div class="col-sm-{% if safety_categories %}9{% else %}12{% endif %}">
+                    {% include 'safety/safety_items.html' %}
                 </div>
-            </div>
-        {% else %}
-            <p>There are currently no safety items.</p>
-            {% if user.is_superuser %}
-                <p>Please go to <a href="{% url 'admin:NEMO_safetyitem_changelist' %}">Administration -> Detailed Administration -> SafetyItems</a>
-                </p>
+            {% else %}
+                <div class="col-sm-12">
+                    {% if safety_general %}
+                        {% include 'safety/safety_items.html' with safety_items=safety_general safety_category="General" %}
+                    {% endif %}
+                    {% for safety_category in safety_categories %}
+                        {% include 'safety/safety_items.html' with safety_items=safety_category.safetyitem_set.all %}
+                    {% endfor %}
+                </div>
             {% endif %}
+        {% else %}
+            <div class="col-sm-12">
+                <p>There are currently no safety items.</p>
+                {% if user.is_superuser %}
+                    <p>Please go to <a href="{% url 'admin:NEMO_safetyitem_changelist' %}">Administration -> Detailed Administration -> SafetyItems</a>
+                    </p>
+                {% endif %}
+            </div>
         {% endif %}
     </div>
     <script>

@@ -32,6 +32,15 @@
             </div>
         </div>
         <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3" >Safety items view</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="radio">
+                    <label><input type="radio" id="safety_items_expand_categories" name="safety_items_expand_categories" {% if not safety_items_expand_categories %}checked{% endif %} value=""> Side category panel</label>
+                    <label><input type="radio" name="safety_items_expand_categories" {% if safety_items_expand_categories %}checked{% endif %} value="enabled"> All expanded categories</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-sm-4 col-md-3" >Safety data sheets</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">

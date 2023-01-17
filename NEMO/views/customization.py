@@ -334,6 +334,7 @@ class SafetyCustomization(CustomizationBase):
 		"safety_show_safety_issues": "enabled",
 		"safety_show_safety_data_sheets": "enabled",
 		"safety_data_sheets_keywords_default": "",
+		"safety_items_expand_categories": "",
 	}
 
 

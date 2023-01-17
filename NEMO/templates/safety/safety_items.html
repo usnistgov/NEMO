@@ -1,0 +1,30 @@
+<div class="tab-content panel panel-default">
+    {% if safety_category %}
+    <div class="panel-heading pointer" data-toggle="collapse" data-target="#items-{{ safety_category.id }}" onclick="toggle_details($(this).children(':first'))">
+        <h3 class="panel-title pointer"><i class="glyphicon glyphicon-chevron-down chevron"></i> {{ safety_category }}</h3>
+    </div>
+    <div class="collapse in" id="items-{{ safety_category.id }}">
+        <div class="panel-body">
+    {% endif %}
+        <div class="tab-pane active" style="padding: 15px">
+            <ul style="padding-left: 15px">
+                {% for safety_item in safety_items %}
+                    <li style="margin-bottom: 15px"><u>{{ safety_item.name }}:</u>
+                        {% if safety_item.description %}
+                            <div style="margin: 5px 0">{{ safety_item.description|safe }}</div>
+                        {% endif %}
+                        <ul>
+                            {% for doc in safety_item.safetyitemdocuments_set.all %}
+                                {% if doc.can_be_embedded %}
+                                    <li><a href="#" onclick="open_doc('{% url 'media_view' 'true' 'safety_document' doc.id %}')">{{ doc.filename }}</a></li>
+                                {% else %}
+                                    <li><a href="{{ doc.link }}" target="_blank">{{ doc.filename }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% if safety_category %}</div></div>{% endif %}
+</div>

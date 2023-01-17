@@ -24,6 +24,7 @@ from NEMO.views.notifications import create_safety_notification, delete_notifica
 @login_required
 @require_GET
 def safety(request):
+	safety_items_expand_categories = SafetyCustomization.get_bool("safety_items_expand_categories")
 	dictionary = safety_dictionary("")
 	if not dictionary["show_safety"]:
 		if not dictionary["show_safety_issues"]:
@@ -31,7 +32,19 @@ def safety(request):
 				return redirect("safety_issues")
 			return redirect("safety_data_sheets")
 		return redirect("safety_issues")
-	return redirect("safety_categories")
+	return redirect("safety_categories") if not safety_items_expand_categories else redirect("safety_all_in_one")
+
+
+@login_required
+@require_GET
+def safety_all_in_one(request):
+	dictionary = safety_dictionary("safety")
+	dictionary["safety_categories"] = SafetyCategory.objects.filter(
+		id__in=distinct_qs_value_list(SafetyItem.objects.all(), "category_id")
+	)
+	dictionary["safety_general"] = SafetyItem.objects.filter(category__isnull=True)
+	dictionary["safety_items_expand_categories"] = True
+	return render(request, "safety/safety.html", dictionary)
 
 
 @login_required
