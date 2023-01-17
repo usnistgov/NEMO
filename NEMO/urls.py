@@ -264,10 +264,12 @@ urlpatterns += [
 
 	# Safety:
 	path("safety/", safety.safety, name="safety"),
-	path("safety/all_in_one/", safety.safety_all_in_one, name="safety_all_in_one"),
-	path("safety/categories/", include([
+	path("safety/items/<int:safety_item_id>/", safety.safety_item, name="safety_item"),
+	path("safety/items/search/", safety.safety_items_search, name="safety_items_search"),
+	path("safety/items/categories/", include([
 		path("", safety.safety_categories, name="safety_categories"),
 		path("<int:category_id>/", safety.safety_categories, name="safety_categories"),
+		path("all_in_one/", safety.safety_all_in_one, name="safety_all_in_one"),
 	])),
 	path("safety/issues/", safety.safety_issues, name="safety_issues"),
 	path("safety/issues/resolved/", safety.resolved_safety_issues, name="resolved_safety_issues"),

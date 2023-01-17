@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, When
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import staff_member_required
@@ -14,6 +15,7 @@ from NEMO.utilities import (
 	distinct_qs_value_list,
 	export_format_datetime,
 	get_full_url,
+	queryset_search_filter,
 	render_email_template,
 	send_mail,
 )
@@ -52,6 +54,9 @@ def safety_all_in_one(request):
 def safety_categories(request, category_id=None):
 	dictionary = safety_dictionary("safety")
 	try:
+		safety_item_id = request.GET.get("safety_item_id")
+		if safety_item_id:
+			category_id = SafetyItem.objects.get(pk=safety_item_id).category.id
 		SafetyCategory.objects.get(pk=category_id)
 	except SafetyCategory.DoesNotExist:
 		pass
@@ -70,6 +75,22 @@ def safety_categories(request, category_id=None):
 		}
 	)
 	return render(request, "safety/safety.html", dictionary)
+
+
+@login_required
+@require_GET
+def safety_item(request, safety_item_id: int):
+	# Redirect to the appropriate URL with hashtag included to scroll to the item
+	safety_items_expand_categories = SafetyCustomization.get_bool("safety_items_expand_categories")
+	url_params = f"?safety_item_id={safety_item_id}#safety_item_{safety_item_id}"
+	redirect_url = reverse("safety_categories") if not safety_items_expand_categories else reverse("safety_all_in_one")
+	return redirect(redirect_url + url_params)
+
+
+@login_required
+@require_GET
+def safety_items_search(request):
+	return queryset_search_filter(SafetyItem.objects.all(), ["name", "description"], request)
 
 
 @login_required

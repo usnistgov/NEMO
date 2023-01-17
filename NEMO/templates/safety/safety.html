@@ -2,8 +2,13 @@
 {% block title %}Safety{% endblock %}
 {% block safety_title %}Safety{% endblock %}
 {% block tab_content %}
-    <div class="row">
-        {% if safety_categories or safety_items %}
+    {% if safety_categories or safety_items %}
+        <div class="row" style="margin-bottom: 25px">
+            <div class="col-sm-6">
+                <input id="search" type="text" aria-label="Search" placeholder="Search" class="form-control">
+            </div>
+        </div>
+        <div class="row">
             {% if not safety_items_expand_categories %}
                 {% if safety_categories %}
                     <div class="col-sm-3">
@@ -34,20 +39,27 @@
                     {% endfor %}
                 </div>
             {% endif %}
-        {% else %}
-            <div class="col-sm-12">
-                <p>There are currently no safety items.</p>
-                {% if user.is_superuser %}
-                    <p>Please go to <a href="{% url 'admin:NEMO_safetyitem_changelist' %}">Administration -> Detailed Administration -> SafetyItems</a>
-                    </p>
-                {% endif %}
-            </div>
+        </div>
+    {% else %}
+        <p>There are currently no safety items.</p>
+        {% if user.is_superuser %}
+            <p>Please go to <a href="{% url 'admin:NEMO_safetyitem_changelist' %}">Administration -> Detailed Administration -> SafetyItems</a>
+            </p>
         {% endif %}
-    </div>
+    {% endif %}
     <script>
+        function get_safety_item(jquery_event, search_selection, dataset_name)
+		{
+			window.location.href = "{% url 'safety_item' 999 %}".replace('999', search_selection.id);
+		}
+		function on_load()
+		{
+			$("#search").autocomplete('safety_items', get_safety_item, '{% url 'safety_items_search' %}', true);
+		}
         function open_doc(url)
         {
             ajax_get(url, undefined, ajax_success_callback, ajax_failure_callback("Unable to display document"));
         }
+		window.addEventListener('load', on_load, true);
     </script>
 {% endblock %}

@@ -565,7 +565,7 @@ def render_email_template(template, dictionary: dict, request=None):
 def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request, display="__str__") -> HttpResponse:
 	"""
 	This function reuses django admin search result to implement our own autocomplete.
-	Its usage is the same as ModelAdmin, it needs a base queryset, list of fields and a search query
+	Its usage is the same as ModelAdmin, it needs a base queryset, list of fields and a search query.
 	It returns the HttpResponse with json formatted data, ready to use by the autocomplete js code
 	"""
 	if is_ajax(request):
