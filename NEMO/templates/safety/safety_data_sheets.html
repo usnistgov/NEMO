@@ -121,5 +121,10 @@
         }
         $(window).on("resize", resize_container);
         resize_container();
+
+        if ({{ search_keywords|yesno:"true,false" }})
+        {
+            $("#search_keywords").prop("checked", true).trigger("onchange");
+        }
     </script>
 {% endblock %}

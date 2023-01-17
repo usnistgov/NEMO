@@ -5,7 +5,7 @@
     <div class="row">
         {% if safety_categories or safety_items %}
             {% if safety_categories %}
-                <div class="col-sm-2">
+                <div class="col-sm-3">
                     <ul class="nav nav-pills nav-stacked">
                         {% if safety_general %}
                             <li class="{% if category_id is None %}active{% endif %}">
@@ -20,7 +20,7 @@
                     </ul>
                 </div>
             {% endif %}
-            <div class="col-sm-{% if safety_categories %}10{% else %}12{% endif %}">
+            <div class="col-sm-{% if safety_categories %}9{% else %}12{% endif %}">
                 <div class="tab-content panel panel-default">
                     <div class="tab-pane active" style="padding: 15px">
                         <ul style="padding-left: 15px">

@@ -147,7 +147,14 @@ def safety_data_sheets(request):
 		chemicals.sort(key=lambda x: hazard_id in [h.id for h in x.hazards.all()], reverse=not reverse_order)
 
 	dictionary = safety_dictionary("safety_data_sheets")
-	dictionary.update({"chemicals": chemicals, "hazards": hazards, "order_by": order_by})
+	dictionary.update(
+		{
+			"chemicals": chemicals,
+			"hazards": hazards,
+			"order_by": order_by,
+			"search_keywords": SafetyCustomization.get_bool("safety_data_sheets_keywords_default"),
+		}
+	)
 
 	return render(request, "safety/safety_data_sheets.html", dictionary)
 
