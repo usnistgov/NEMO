@@ -271,6 +271,10 @@ urlpatterns += [
 	path("safety/issues/", safety.safety_issues, name="safety_issues"),
 	path("safety/issues/resolved/", safety.resolved_safety_issues, name="resolved_safety_issues"),
 	path("safety/issues/<int:ticket_id>/update/", safety.update_safety_issue, name="update_safety_issue"),
+	path("safety/safety_data_sheets/", safety.safety_data_sheets, name="safety_data_sheets"),
+	path("safety/safety_data_sheets/export/", safety.export_safety_data_sheets, name="export_safety_data_sheets"),
+	# For backwards compatibility
+	path("safety_data_sheets/", RedirectView.as_view(pattern_name="safety_data_sheets", permanent=True)),
 
 	# Mobile:
 	re_path(r"^choose_item/then/(?P<next_page>view_calendar|tool_control)/$", mobile.choose_item, name="choose_item"),
@@ -386,12 +390,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		path("create_staff_absence/", status_dashboard.create_staff_absence, name="create_staff_absence"),
 		path("edit_staff_absence/<int:absence_id>/", status_dashboard.create_staff_absence, name="edit_staff_absence"),
 		path("delete_staff_absence/<int:absence_id>/", status_dashboard.delete_staff_absence, name="delete_staff_absence"),
-
-		# Chemical Safety Data Sheet
-		path("safety/safety_data_sheets/", safety.safety_data_sheets, name="safety_data_sheets"),
-		path("safety/safety_data_sheets/export/", safety.export_safety_data_sheets, name="export_safety_data_sheets"),
-		# For backwards compatibility
-		path("safety_data_sheets/", RedirectView.as_view(pattern_name="safety_data_sheets", permanent=True)),
 
 		# Billing:
 		path("billing/", usage.billing, name="billing"),
