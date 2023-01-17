@@ -26,7 +26,7 @@ setup(
 	install_requires=[
 		'cryptography==38.0.4',
 		'Django==3.2.16',
-		'django-auditlog==2.2.1',
+		'django-auditlog==2.2.2',
 		'django-filter==22.1',
 		'django-mptt==0.14.0',
 		'djangorestframework==3.14.0',
