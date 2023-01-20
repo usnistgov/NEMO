@@ -285,6 +285,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='user',
             name='is_staff',
-            field=models.BooleanField(default=False, help_text='Designates this user as techinical staff. Technical staff can start remote projects, check maintenance, change configuration, train users etc.', verbose_name='staff'),
+            field=models.BooleanField(default=False, help_text='Designates this user as technical staff. Technical staff can start remote projects, check maintenance, change configuration, train users etc.', verbose_name='staff'),
         ),
     ]

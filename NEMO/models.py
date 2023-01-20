@@ -482,7 +482,7 @@ class User(BaseModel):
 
 	# Permissions
 	is_active = models.BooleanField('active', default=True, help_text='Designates whether this user can log in. Unselect this instead of deleting accounts.')
-	is_staff = models.BooleanField('staff', default=False, help_text='Designates this user as techinical staff. Technical staff can start remote projects, check maintenance, change configuration, train users etc.')
+	is_staff = models.BooleanField('staff', default=False, help_text='Designates this user as technical staff. Technical staff can start remote projects, check maintenance, change configuration, train users etc.')
 	is_user_office = models.BooleanField('user office', default=False, help_text='Designates this user as part of the User Office. User Office staff can create and manage users and projects, charge supplies, check usage etc.')
 	is_accounting_officer = models.BooleanField('accounting officer', default=False, help_text='Designates this user as Accounting officer. Accounting officers can manage projects, view user details, and check usage/billing.')
 	is_service_personnel = models.BooleanField('service personnel', default=False, help_text='Designates this user as service personnel. Service personnel can operate qualified tools without a reservation even when they are shutdown or during an outage and can access authorized areas without a reservation.')
@@ -681,7 +681,7 @@ class User(BaseModel):
 
 	def get_contact_info_html(self):
 		if hasattr(self, 'contactinformation'):
-			content = escape(loader.render_to_string('snippets/contact_person.html', {'person' :self.contactinformation, 'email_form': True}))
+			content = escape(loader.render_to_string('snippets/contact_person.html', {'person': self.contactinformation, 'email_form': True}))
 			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
 		else:
 			email_url = reverse('get_email_form_for_user', kwargs={'user_id': self.id})
@@ -1056,7 +1056,7 @@ class Tool(BaseModel):
 		self.raise_setter_error_if_child_tool("tool_calendar_color")
 		self._tool_calendar_color = value
 
-	def name_or_child_in_use_name(self, parent_ids = None) -> str:
+	def name_or_child_in_use_name(self, parent_ids=None) -> str:
 		""" This method returns the tool name unless one of its children is in use."""
 		""" When used in loops, provide the parent_ids list to avoid unnecessary db calls """
 		if self.is_parent_tool(parent_ids) and self.in_use():
@@ -1066,9 +1066,9 @@ class Tool(BaseModel):
 	def is_child_tool(self):
 		return self.parent_tool is not None
 
-	def is_parent_tool(self, parent_ids = None):
+	def is_parent_tool(self, parent_ids=None):
 		if not parent_ids:
-			parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
+			parent_ids = list(Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True))
 		return self.id in parent_ids
 
 	def tool_or_parent_id(self):
