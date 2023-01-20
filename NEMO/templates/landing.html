@@ -137,10 +137,13 @@
     <script>
         let facility_usage_height = document.getElementById('facility-usage') ? document.getElementById('facility-usage').scrollHeight : 0;
         let reservations_height = document.getElementById('upcoming-reservations') ? document.getElementById('upcoming-reservations').scrollHeight : 0;
-        $('#alerts-outages').css("max-height", "" + Math.max(300, reservations_height, facility_usage_height)-15 + "px");
-        if (document.getElementById('alerts-outages').scrollHeight > document.getElementById('alerts-outages').offsetHeight)
+        if (document.getElementById('alerts-outages'))
         {
-            $('#scroll-icon').show();
+            $('#alerts-outages').css("max-height", "" + Math.max(300, reservations_height, facility_usage_height)-15 + "px");
+            if (document.getElementById('alerts-outages').scrollHeight > document.getElementById('alerts-outages').offsetHeight)
+            {
+                $('#scroll-icon').show();
+            }
         }
     </script>
 {% endblock %}
