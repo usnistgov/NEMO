@@ -144,6 +144,12 @@
             $('#dialog .modal-dialog').removeClass('modal-lg', 'modal-sm');
         });
     }, false);
+
+    {# Hide spinner on page show, just in case for some browser back button reloading it #}
+    window.addEventListener('pageshow', function()
+    {
+        hide_spinner();
+    });
 </script>
 
 </body>
