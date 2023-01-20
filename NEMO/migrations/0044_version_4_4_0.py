@@ -17,6 +17,10 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(new_version_news),
+        migrations.RemoveField(
+            model_name='user',
+            name='discipline',
+        ),
         migrations.AlterField(
             model_name='chemicalhazard',
             name='display_order',
