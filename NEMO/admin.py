@@ -955,7 +955,6 @@ class UserAdmin(admin.ModelAdmin):
 					"badge_number",
 					"type",
 					"domain",
-					"discipline",
 					"notes"
 				)
 			},

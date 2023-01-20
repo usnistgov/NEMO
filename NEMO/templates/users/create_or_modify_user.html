@@ -92,23 +92,6 @@
 				</div>
 			</div>
 		{% endif %}
-		{% if form.fields.discipline.choices.queryset %}
-			<div class="form-group">
-				<label for="discipline" class="control-label col-sm-2">Main discipline</label>
-				<div class="col-sm-4">
-					<select name="discipline" id="discipline" class="form-control">
-						{% for discipline_id, discipline_name in form.fields.discipline.choices %}
-							<option value="{{ discipline_id }}" {% if discipline_id == form.discipline.value|to_int %}selected{% endif %}>{{ discipline_name|default_if_none:'' }}</option>
-						{% endfor %}
-					</select>
-				</div>
-				{% if form.discipline.errors %}
-					<div class="col-sm-6 form-control-static danger-highlight">
-						{{ form.discipline.errors|striptags }}
-					</div>
-				{% endif %}
-			</div>
-		{% endif %}
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="badge_number">Badge number</label>
 			<div class="col-sm-4">

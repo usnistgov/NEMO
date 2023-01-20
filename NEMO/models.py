@@ -469,7 +469,6 @@ class User(BaseModel):
 	last_name = models.CharField(max_length=100)
 	email = models.EmailField(verbose_name='email address')
 	type = models.ForeignKey(UserType, null=True, blank=True, on_delete=models.SET_NULL)
-	discipline = models.ForeignKey(Discipline, null=True, blank=True, on_delete=models.SET_NULL)
 	domain = models.CharField(max_length=100, blank=True, help_text="The Active Directory domain that the account resides on")
 	onboarding_phases = models.ManyToManyField(OnboardingPhase, blank=True)
 	safety_trainings = models.ManyToManyField(SafetyTraining, blank=True)

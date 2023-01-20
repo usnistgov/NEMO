@@ -22,7 +22,6 @@ from NEMO.models import (
 
 
 class UserSerializer(ModelSerializer):
-	discipline = CharField(source="discipline.name", default=None)
 	type = CharField(source="type.name", default=None)
 
 	class Meta:
