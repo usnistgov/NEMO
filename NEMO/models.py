@@ -1402,7 +1402,7 @@ class StaffCharge(CalendarDisplay):
 		ordering = ['-start']
 
 	def __str__(self):
-		return str(self.id)
+		return f"Staff charge #{self.id}"
 
 
 class Area(MPTTModel):
