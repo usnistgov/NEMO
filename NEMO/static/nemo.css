@@ -896,16 +896,15 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 
 @media (max-width: 768px)
 {
-	.media-popup
+	.modal-lg .media-popup
 	{
-		max-width: 450px;
-		max-height: calc(100vh - 150px);
+		max-height: calc(100vh - 115px);
 	}
 }
 
 .media-popup
 {
-	max-width: 570px;
+	max-width: calc(100vw - 60px);
 	max-height: calc(100vh - 150px);
 }
 
@@ -915,11 +914,18 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	height: calc(100vh - 150px);
 }
 
+@media (min-width: 768px)
+{
+	.modal-lg .media-popup
+	{
+		max-width: 570px;
+	}
+}
+
 @media (min-width: 992px)
 {
 	.modal-lg .media-popup
 	{
 		max-width: 870px;
-		max-height: calc(100vh - 150px);
 	}
 }
