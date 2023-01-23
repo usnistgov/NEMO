@@ -142,7 +142,7 @@ def check_policy_to_enable_tool(tool: Tool, operator: User, user: User, project:
 def check_policy_to_disable_tool(tool, operator, downtime):
 	""" Check that the user is allowed to disable the tool. """
 	current_usage_event = tool.get_current_usage_event()
-	if current_usage_event.operator != operator and current_usage_event.user != operator and not operator.is_staff:
+	if current_usage_event.operator != operator and current_usage_event.user != operator and not (operator.is_staff or operator.is_user_office):
 		return HttpResponseBadRequest('You may not disable a tool while another user is using it unless you are a staff member.')
 	if downtime < timedelta():
 		return HttpResponseBadRequest('Downtime cannot be negative.')

@@ -383,8 +383,10 @@
 	</div>
 
 	<div class="tab-pane" id="details">
-		{% if user.is_staff and tool.in_use %}
-			<p>You may <a href="javascript:void(0)" onclick="disable_tool('{% url 'disable_tool' tool.id %}')">force {{ tool.get_current_usage_event.operator }} off this tool</a>.</p>
+		{% if tool.in_use %}
+            {% if user.is_staff or user.is_user_office %}
+			    <p>You may <a href="javascript:void(0)" onclick="disable_tool('{% url 'disable_tool' tool.id %}')">force {{ tool.get_current_usage_event.operator }} off this tool</a>.</p>
+            {% endif %}
 		{% endif %}
 		<div class="media">
 			<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
