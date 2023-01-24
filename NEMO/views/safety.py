@@ -97,6 +97,18 @@ def safety_items_search(request):
 @require_http_methods(["GET", "POST"])
 def safety_issues(request):
 	dictionary = safety_dictionary("safety_issues")
+	tickets = SafetyIssue.objects.filter(resolved=False).order_by("-creation_time")
+	if not request.user.is_staff:
+		tickets = tickets.filter(visible=True)
+	dictionary["tickets"] = tickets
+	dictionary["notifications"] = get_notifications(request.user, SafetyIssue)
+	return render(request, "safety/safety_issues.html", dictionary)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def create_safety_issue(request):
+	dictionary = safety_dictionary("safety_issues")
 	if request.method == "POST":
 		form = SafetyIssueCreationForm(request.user, data=request.POST)
 		if form.is_valid():
@@ -105,12 +117,7 @@ def safety_issues(request):
 			create_safety_notification(issue)
 			messages.success(request, "Your safety concern was sent to the staff and will be addressed promptly")
 			return redirect("safety_issues")
-	tickets = SafetyIssue.objects.filter(resolved=False).order_by("-creation_time")
-	if not request.user.is_staff:
-		tickets = tickets.filter(visible=True)
-	dictionary["tickets"] = tickets
-	dictionary["notifications"] = get_notifications(request.user, SafetyIssue)
-	return render(request, "safety/safety_issues.html", dictionary)
+	return render(request, "safety/safety_issues_create.html", dictionary)
 
 
 def send_safety_email_notification(request, issue):

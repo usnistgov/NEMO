@@ -15,4 +15,11 @@
         {% endif %}
     </a></li>
 {% endif %}
-{% if safety_menu_item %}<li><a href="{% url 'safety' %}">Safety</a></li>{% endif %}
+{% if safety_menu_item %}
+    <li><a href="{% url 'safety' %}">
+        Safety
+        {% if safety_notification_count %}
+            <span class="badge" style="vertical-align:middle; background-color:red">{{ safety_notification_count }}</span>
+        {% endif %}
+    </a></li>
+{% endif %}

@@ -63,6 +63,10 @@ def base_context(request):
 	except:
 		temporary_access_notification_count = 0
 	try:
+		safety_notification_count = notification_counts.get(Notification.Types.SAFETY, 0)
+	except:
+		safety_notification_count = 0
+	try:
 		facility_managers_exist = User.objects.filter(is_active=True, is_facility_manager=True).exists()
 	except:
 		facility_managers_exist = False
@@ -82,6 +86,7 @@ def base_context(request):
 		"notification_counts": notification_counts,
 		"buddy_notification_count": buddy_notification_count,
 		"temporary_access_notification_count": temporary_access_notification_count,
+		"safety_notification_count": safety_notification_count,
 		"facility_managers_exist": facility_managers_exist,
 		"time_input_js_format": time_input_js_format,
 		"date_input_js_format": date_input_js_format,

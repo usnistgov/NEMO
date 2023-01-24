@@ -272,6 +272,7 @@ urlpatterns += [
 		path("all_in_one/", safety.safety_all_in_one, name="safety_all_in_one"),
 	])),
 	path("safety/issues/", safety.safety_issues, name="safety_issues"),
+	path("safety/issues/create", safety.create_safety_issue, name="create_safety_issue"),
 	path("safety/issues/resolved/", safety.resolved_safety_issues, name="resolved_safety_issues"),
 	path("safety/issues/<int:ticket_id>/update/", safety.update_safety_issue, name="update_safety_issue"),
 	path("safety/safety_data_sheets/", safety.safety_data_sheets, name="safety_data_sheets"),

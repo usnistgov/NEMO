@@ -12,7 +12,11 @@
                 {% endif %}
                 {% if show_safety_issues %}
                     <li class="{% if tab == 'safety_issues' %}active{% endif %}">
-                        <a href="#safety" onclick="location.href = '{% url "safety_issues" %}'">Safety issues</a>
+                        <a href="#safety" onclick="location.href = '{% url "safety_issues" %}'">Safety issues
+                            {% if safety_notification_count %}
+                                <span class="badge badge-tab-top">{{ safety_notification_count }}</span>
+                            {% endif %}
+                        </a>
                     </li>
                 {% endif %}
                 {% if show_safety_data_sheets %}

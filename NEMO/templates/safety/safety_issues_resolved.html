@@ -1,9 +1,12 @@
 {% extends 'safety/safety_base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Safety issues{% endblock %}
 {% block safety_title %}Resolved safety issues{% endblock %}
 {% block tab_content %}
     <p>This page lists previously reported and resolved safety issues.</p>
-    <p>You can also <a href="{% url 'safety_issues' %}">view current safety issues</a>.</p>
+    <div class="text-right" style="margin-bottom: 15px">
+        {% button type="info" url="safety_issues" value="Current safety issues"  icon="glyphicon-list" %}
+    </div>
 
 	{% for ticket in tickets %}
 		<div class="panel panel-default">
