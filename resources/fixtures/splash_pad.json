@@ -6874,7 +6874,7 @@
     "model": "NEMO.landingpagechoice",
     "pk": 4,
     "fields": {
-      "image": "safety.png",
+      "image": "safety_alt.png",
       "name": "Safety",
       "url": "/safety/",
       "display_order": 3,
@@ -6970,23 +6970,6 @@
       "hide_from_users": false,
       "hide_from_staff": false,
       "notifications": "news"
-    }
-  },
-  {
-    "model": "NEMO.landingpagechoice",
-    "pk": 10,
-    "fields": {
-      "image": "sds.png",
-      "name": "Safety data sheets",
-      "url": "/safety_data_sheets/",
-      "display_order": 10,
-      "open_in_new_tab": false,
-      "secure_referral": false,
-      "hide_from_mobile_devices": false,
-      "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
-      "notifications": null
     }
   },
   {
