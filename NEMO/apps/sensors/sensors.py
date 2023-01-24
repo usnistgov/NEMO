@@ -4,7 +4,7 @@ from typing import Dict, List
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 
 from NEMO.apps.sensors.admin import SensorAdminForm, SensorCardAdminForm
 from NEMO.apps.sensors.evaluators import evaluate_expression, evaluate_modbus_expression
