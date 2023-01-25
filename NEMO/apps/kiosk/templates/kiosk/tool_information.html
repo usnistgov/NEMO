@@ -27,8 +27,10 @@
 				</h2>
 			{% endwith %}
 		</div>
-		{% if customer.is_staff and tool.in_use %}
-			<p>You may <a href="javascript:void(0)" onclick="disable_tool();">force {{ tool.get_current_usage_event.operator }} off this tool</a>.</p>
+		{% if tool.in_use %}
+            {% if customer.is_staff or customer.is_user_office %}
+			    <p>You may <a href="javascript:void(0)" onclick="disable_tool();">force {{ tool.get_current_usage_event.operator }} off this tool</a>.</p>
+            {% endif %}
 		{% endif %}
 	{% elif tool.delayed_logoff_in_progress %}
 		{% with tool.get_delayed_logoff_usage_event as delayed_logoff_event %}

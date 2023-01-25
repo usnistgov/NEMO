@@ -45,6 +45,7 @@ from NEMO.utilities import (
 	get_hazard_logo_filename,
 	get_project_document_filename,
 	get_recurring_rule,
+	get_safety_document_filename,
 	get_task_image_filename,
 	get_tool_document_filename,
 	get_tool_image_filename,
@@ -53,6 +54,7 @@ from NEMO.utilities import (
 	send_mail,
 )
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
+from NEMO.views.documents import supported_embedded_extensions
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
 models_logger = getLogger(__name__)
@@ -108,6 +110,18 @@ class BaseModel(models.Model):
 
 	class Meta:
 		abstract = True
+
+
+class BaseCategory(BaseModel):
+	name = models.CharField(max_length=200, unique=True, help_text="The unique name for this item")
+	display_order = models.IntegerField(help_text="The display order is used to sort these items. The lowest value category is displayed first.")
+
+	class Meta:
+		abstract = True
+		ordering = ["display_order", "name"]
+
+	def __str__(self):
+		return str(self.name)
 
 
 class ReservationItemType(Enum):
@@ -440,26 +454,12 @@ class PhysicalAccessLog(BaseModel):
 		ordering = ['-time']
 
 
-class SafetyTraining(BaseModel):
-	name = models.CharField(max_length=200, unique=True, help_text="The name of the training")
-	display_order = models.IntegerField(help_text="Safety trainings are sorted according to display order. The lowest value category is displayed first in the 'Users' page.")
-
-	class Meta:
-		ordering = ["display_order", "name"]
-
-	def __str__(self):
-		return self.name
+class SafetyTraining(BaseCategory):
+	pass
 
 
-class OnboardingPhase(BaseModel):
-	name = models.CharField(max_length=200, unique=True, help_text="The name of the onboarding phase")
-	display_order = models.IntegerField(help_text="Onboarding phases are sorted according to display order. The lowest value category is displayed first in the 'Users' page.")
-
-	class Meta:
-		ordering = ["display_order", "name"]
-
-	def __str__(self):
-		return self.name
+class OnboardingPhase(BaseCategory):
+	pass
 
 
 class User(BaseModel):
@@ -469,7 +469,6 @@ class User(BaseModel):
 	last_name = models.CharField(max_length=100)
 	email = models.EmailField(verbose_name='email address')
 	type = models.ForeignKey(UserType, null=True, blank=True, on_delete=models.SET_NULL)
-	discipline = models.ForeignKey(Discipline, null=True, blank=True, on_delete=models.SET_NULL)
 	domain = models.CharField(max_length=100, blank=True, help_text="The Active Directory domain that the account resides on")
 	onboarding_phases = models.ManyToManyField(OnboardingPhase, blank=True)
 	safety_trainings = models.ManyToManyField(SafetyTraining, blank=True)
@@ -482,7 +481,7 @@ class User(BaseModel):
 
 	# Permissions
 	is_active = models.BooleanField('active', default=True, help_text='Designates whether this user can log in. Unselect this instead of deleting accounts.')
-	is_staff = models.BooleanField('staff', default=False, help_text='Designates this user as techinical staff. Technical staff can start remote projects, check maintenance, change configuration, train users etc.')
+	is_staff = models.BooleanField('staff', default=False, help_text='Designates this user as technical staff. Technical staff can start remote projects, check maintenance, change configuration, train users etc.')
 	is_user_office = models.BooleanField('user office', default=False, help_text='Designates this user as part of the User Office. User Office staff can create and manage users and projects, charge supplies, check usage etc.')
 	is_accounting_officer = models.BooleanField('accounting officer', default=False, help_text='Designates this user as Accounting officer. Accounting officers can manage projects, view user details, and check usage/billing.')
 	is_service_personnel = models.BooleanField('service personnel', default=False, help_text='Designates this user as service personnel. Service personnel can operate qualified tools without a reservation even when they are shutdown or during an outage and can access authorized areas without a reservation.')
@@ -681,7 +680,7 @@ class User(BaseModel):
 
 	def get_contact_info_html(self):
 		if hasattr(self, 'contactinformation'):
-			content = escape(loader.render_to_string('snippets/contact_person.html', {'person' :self.contactinformation, 'email_form': True}))
+			content = escape(loader.render_to_string('snippets/contact_person.html', {'person': self.contactinformation, 'email_form': True}))
 			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.contactinformation.name}</a>'
 		else:
 			email_url = reverse('get_email_form_for_user', kwargs={'user_id': self.id})
@@ -1056,7 +1055,7 @@ class Tool(BaseModel):
 		self.raise_setter_error_if_child_tool("tool_calendar_color")
 		self._tool_calendar_color = value
 
-	def name_or_child_in_use_name(self, parent_ids = None) -> str:
+	def name_or_child_in_use_name(self, parent_ids=None) -> str:
 		""" This method returns the tool name unless one of its children is in use."""
 		""" When used in loops, provide the parent_ids list to avoid unnecessary db calls """
 		if self.is_parent_tool(parent_ids) and self.in_use():
@@ -1066,9 +1065,9 @@ class Tool(BaseModel):
 	def is_child_tool(self):
 		return self.parent_tool is not None
 
-	def is_parent_tool(self, parent_ids = None):
+	def is_parent_tool(self, parent_ids=None):
 		if not parent_ids:
-			parent_ids = Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True)
+			parent_ids = list(Tool.objects.filter(parent_tool__isnull=False).values_list('parent_tool_id', flat=True))
 		return self.id in parent_ids
 
 	def tool_or_parent_id(self):
@@ -1158,6 +1157,7 @@ class Tool(BaseModel):
 
 	def get_delayed_logoff_usage_event(self):
 		try:
+			# TODO: find a better way in case we have future events set up (although it shouldn't happen)
 			return UsageEvent.objects.get(tool_id__in=self.get_family_tool_ids(), end__gt=timezone.now())
 		except UsageEvent.DoesNotExist:
 			return None
@@ -1402,7 +1402,7 @@ class StaffCharge(CalendarDisplay):
 		ordering = ['-start']
 
 	def __str__(self):
-		return str(self.id)
+		return f"Staff charge #{self.id}"
 
 
 class Area(MPTTModel):
@@ -2421,6 +2421,76 @@ class SafetyIssue(BaseModel):
 		return reverse('update_safety_issue', args=[self.id])
 
 
+class SafetyCategory(BaseCategory):
+	class Meta(BaseCategory.Meta):
+		verbose_name_plural = "Safety categories"
+
+
+class SafetyItem(BaseModel):
+	name = models.CharField(max_length=200, help_text="The safety item name.")
+	description = models.TextField(null=True, blank=True, help_text="The description for this safety item. HTML can be used.")
+	category = models.ForeignKey(SafetyCategory, null=True, blank=True, help_text="The category for this safety item.", on_delete=models.SET_NULL)
+
+	def __str__(self):
+		return self.name
+
+
+class SafetyItemDocuments(BaseModel):
+	safety_item = models.ForeignKey(SafetyItem, on_delete=models.CASCADE)
+	document = models.FileField(null=True, blank=True, upload_to=get_safety_document_filename, verbose_name='Document')
+	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
+	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	def filename(self):
+		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1] if self.url else ""
+
+	def link(self):
+		return self.document.url if self.document else self.url
+
+	def can_be_embedded(self):
+		return any([self.link().lower().endswith(ext) for ext in supported_embedded_extensions])
+
+	def __str__(self):
+		return self.filename()
+
+	def clean(self):
+		if not self.document and not self.url:
+			raise ValidationError({'document': 'Either document or URL should be provided.'})
+		elif self.document and self.url:
+			raise ValidationError({'document': 'Choose either document or URL but not both.'})
+
+	class Meta:
+		verbose_name_plural = "Safety item documents"
+		ordering = ['-uploaded_at']
+
+
+# These two auto-delete safety item documents from filesystem when they are unneeded:
+@receiver(models.signals.post_delete, sender=SafetyItemDocuments)
+def auto_delete_file_on_safety_item_document_delete(sender, instance: SafetyItemDocuments, **kwargs):
+	"""	Deletes file from filesystem when corresponding `SafetyItemDocuments` object is deleted.	"""
+	if instance.document:
+		if os.path.isfile(instance.document.path):
+			os.remove(instance.document.path)
+
+
+@receiver(models.signals.pre_save, sender=SafetyItemDocuments)
+def auto_delete_file_on_safety_item_document_change(sender, instance: SafetyItemDocuments, **kwargs):
+	"""	Deletes old file from filesystem when corresponding `SafetyItemDocuments` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	try:
+		old_file = SafetyItemDocuments.objects.get(pk=instance.pk).document
+	except SafetyItemDocuments.DoesNotExist:
+		return False
+
+	new_file = instance.document
+	if not old_file == new_file:
+		if os.path.isfile(old_file.path):
+			os.remove(old_file.path)
+
+
 class AlertCategory(BaseModel):
 	name = models.CharField(max_length=200)
 
@@ -2452,16 +2522,9 @@ class Alert(BaseModel):
 		return str(self.id)
 
 
-class ContactInformationCategory(BaseModel):
-	name = models.CharField(max_length=200)
-	display_order = models.IntegerField(help_text="Contact information categories are sorted according to display order. The lowest value category is displayed first in the 'Contact information' page.")
-
-	class Meta:
+class ContactInformationCategory(BaseCategory):
+	class Meta(BaseCategory.Meta):
 		verbose_name_plural = "Contact information categories"
-		ordering = ["display_order", "name"]
-
-	def __str__(self):
-		return str(self.name)
 
 
 class ContactInformation(BaseModel):
@@ -2716,16 +2779,9 @@ class StaffAbsenceType(BaseModel):
 		ordering = ["name"]
 
 
-class StaffAvailabilityCategory(BaseModel):
-	name = models.CharField(max_length=200)
-	display_order = models.IntegerField(help_text="Staff availability categories are sorted according to display order. The lowest value category is displayed first in the 'Staff status' page.")
-
-	class Meta:
+class StaffAvailabilityCategory(BaseCategory):
+	class Meta(BaseCategory.Meta):
 		verbose_name_plural = "Staff availability categories"
-		ordering = ["display_order", "name"]
-
-	def __str__(self):
-		return str(self.name)
 
 
 class StaffAvailability(BaseModel):
@@ -2784,16 +2840,8 @@ class StaffAbsence(BaseModel):
 		ordering = ["-creation_time"]
 
 
-class ChemicalHazard(BaseModel):
-	name = models.CharField(max_length=200)
-	display_order = models.IntegerField(help_text="Chemical hazards are sorted according to display order. The lowest value category is displayed first in the 'Safety data sheet' page.")
+class ChemicalHazard(BaseCategory):
 	logo = models.ImageField(upload_to=get_hazard_logo_filename, blank=True, help_text="The logo for this hazard")
-
-	class Meta:
-		ordering = ["display_order", "name"]
-
-	def __str__(self):
-		return str(self.name)
 
 
 class Chemical(BaseModel):

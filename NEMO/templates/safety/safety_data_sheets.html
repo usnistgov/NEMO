@@ -1,0 +1,130 @@
+{% extends 'safety/safety_base.html' %}
+{% load static %}
+{% load custom_tags_and_filters %}
+{% block title %}Safety data sheets{% endblock %}
+{% block safety_title %}Safety data sheets{% endblock %}
+{% block tab_content %}
+    <style>
+    .table-hover tr:hover td
+    {
+      background-color: #f5f5f5 !important;
+    }
+    </style>
+    <div id="data_sheets_header">
+        <div class="row" style="margin: 25px 0 20px -15px;">
+            <div class="col-sm-5">
+                <input id="search" type="text" aria-label="Chemical search" placeholder="Search for a chemical name or keyword" class="form-control" autofocus>
+            </div>
+            <div class="col-sm-5 checkbox">
+                <label><input type="checkbox" id="search_keywords" onchange="$('td:nth-child({{ hazards|length|add:2 }}),th:nth-child({{ hazards|length|add:2 }})').toggle();$('#search').trigger('keyup');"/>check this box to show and search through keywords</label>
+            </div>
+            {% if chemicals and user.is_staff %}
+                <div class="col-sm-2 text-right hidden-xs" style="padding: 0">
+                    {% button type="export" value="Export" url="export_safety_data_sheets" target="_blank" %}
+                </div>
+                <div class="col-sm-2 text-left visble-xs hidden-lg hidden-md hidden-sm" style="z-index: 999">
+                    {% button type="export" value="Export" url="export_safety_data_sheets" target="_blank" %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% if chemicals %}
+        <div id="safety_data_sheets_container" class="container" style="bottom: 45px;top: 175px;position: absolute; max-height: 100%; overflow-y: auto;overflow-x: hidden; margin-top: 25px; padding: 0 30px 0 0;">
+            <table class="table table-align-middle table-responsive table-bordered table-condensed table-hover thead-light" style="overflow: auto; height: 1px;table-layout: fixed;">
+                <thead class="sticky">
+                    <tr>
+                        <th class="sds-box-shadow-bottom" style="border-left-style: hidden !important; border-top-style: hidden!important;background-color: white"></th>
+                        {% for hazard in hazards %}
+                            <th class="text-center sds-box-shadow-bottom" style="width: calc(75%/{{ hazards|length }})"><img style="display:block; width: 100%;" alt="{{ hazard.name }} logo" src="{% get_media_prefix %}{{ hazard.logo }}"/></th>
+                        {% endfor %}
+                        <th class="sds-box-shadow-bottom" style="display: none;border-right-style: hidden!important; border-top-style: hidden!important;background-color: white">
+                    </tr>
+                    <tr>
+                        <th class="text-center sds-box-shadow-top" style="overflow: hidden;vertical-align: middle">
+                            <span class="pagination-column" style="white-space: inherit;display: inline">
+                                <a href="?o={% if order_by == "name" %}-{% endif %}name">Name<span class="{% if order_by != "name" and order_by != "-name" %}hidden{% endif %} glyphicon glyphicon-triangle-{% if hazard_order == "name" %}bottom{% else %}top{% endif %}"></span></a>
+                            </span>
+                        </th>
+                        {% for hazard in hazards %}
+                            <th class="text-center sds-box-shadow-top" style="overflow: hidden;vertical-align: middle">
+                                <span class="pagination-column" style="white-space: inherit;display: inline">
+                                    {% with hazard_order="hazard_"|concat:hazard.id %}
+                                        <a href="?o={% if order_by == hazard_order %}-{% endif %}{{ hazard_order }}">{{ hazard.name }}<span class="{% if order_by != hazard_order and order_by != "-"|concat:hazard_order %}hidden{% endif %} glyphicon glyphicon-triangle-{% if hazard_order == order_by %}bottom{% else %}top{% endif %}"></span></a>
+                                    {% endwith %}
+                                </span>
+                            </th>
+                        {% endfor %}
+                        <th class="text-center sds-box-shadow-top" style="display: none;overflow: hidden">Keywords</th>
+                    </tr>
+                </thead>
+                <tbody id="table-to-filter">
+                    {% for chemical in chemicals %}
+                        <tr style="height: 100%">
+                            <td style="overflow: hidden;background-color: white;">{% if chemical.link %}<a target="_blank" href="{{ chemical.link }}">{{ chemical.name }}</a>{% else %}{{ chemical.name }}{% endif %}</td>
+                            {% for hazard in hazards %}
+                                <td class="text-center" style="height: 100%; padding: 0; position: relative">
+                                {% for chem_hazard in chemical.hazards.all %}
+                                    {% if chem_hazard == hazard %}
+                                        <div style="height: 100%;width: 100%" class="alert-success"><span class="glyphicon glyphicon-ok success-highlight" style="font-size: 1.5em;position: absolute; left: 50%; top: 50%; -ms-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);"></span></div>
+                                    {% endif %}
+                                {% endfor %}
+                                </td>
+                            {% endfor %}
+                            <td style="display: none;overflow: hidden;">{{ chemical.keywords }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div>
+            There are no chemicals to display.
+            {% if user.is_superuser %}
+                <br/><br/>You can add some by navigating to<br>
+                <a href="{% url 'admin:NEMO_chemical_changelist' %}">
+                    Administration -> Detailed Administration -> Chemicals
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+    <script>
+        $("html").css("overflow", "hidden");
+        $("#search").keyup(function ()
+        {
+            let rows = $("#table-to-filter").find("tr").hide();
+            if (this.value.length)
+            {
+                let data = this.value.split(" ");
+                $.each(data, function (i, v)
+                {
+                    $.each(rows, function(i, row)
+                    {
+                       let $row = $(row);
+                       // Only look in td within the row that don't have display:none, so we don't look in keyworkds unless they are shown
+                       if ($row.find("td").filter(function() { return $(this).css('display') !== 'none'; }).filter(":icontains('" + v + "')").length !== 0)
+                       {
+                           $row.show();
+                       }
+                    });
+                });
+            }
+            else
+            {
+                rows.show();
+            }
+        });
+
+        function resize_container()
+        {
+            const safety_height = $(".navbar.navbar-default").outerHeight(true) + $("#safety_tabs").outerHeight(true) + $("#data_sheets_header").outerHeight(true) + 20;
+            $("#safety_data_sheets_container").css("top", safety_height + "px");
+        }
+        $(window).on("resize", resize_container);
+        resize_container();
+
+        if ({{ search_keywords|yesno:"true,false" }})
+        {
+            $("#search_keywords").prop("checked", true).trigger("onchange");
+        }
+    </script>
+{% endblock %}

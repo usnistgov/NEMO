@@ -1,0 +1,48 @@
+{% extends 'safety/safety_base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}Safety issues{% endblock %}
+{% block safety_title %}Update a safety issue{% endblock %}
+{% block tab_content %}
+	{% if errors %}
+		{{ form.errors }}
+	{% endif %}
+
+	<form action="{% url 'update_safety_issue' ticket.id %}" method="POST">
+		{% csrf_token %}
+		<input type="hidden" name="id" value="{{ ticket.id }}">
+		<div class="form-group">
+			<div class="checkbox">
+				<label><input name="resolved" type="checkbox">This issue has been resolved</label>
+			</div>
+			<div class="checkbox">
+				<label><input name="visible" type="checkbox" {% if ticket.visible %}checked{% endif %}>This issue is visible to users</label>
+			</div>
+		</div>
+		<div class="form-group">
+			<textarea name="update" class="form-control" rows="4" aria-label="Update text" placeholder="Provide an update on how this safety issue is being handled or resolved."></textarea>
+		</div>
+		<div class="form-group">
+            {% button type="save" value="Save update" %}
+		</div>
+	</form>
+
+	<div class="form-group" style="margin-top:50px">
+		<h4>Concern</h4>
+		{{ ticket.concern|linebreaksbr }}
+	</div>
+	<div class="form-group">
+		{% if not ticket.visible %}<span class="glyphicon glyphicon-eye-close"></span> This issue is hidden from users<br>{% endif %}
+		Location: {{ ticket.location }}<br>
+		{% if ticket.reporter %}
+			Reported on {{ ticket.creation_time }}{% if user.is_staff %} by {{ ticket.reporter }}{% endif %}<br>
+		{% else %}
+			Reported anonymously on {{ ticket.creation_time }}<br>
+		{% endif %}
+	</div>
+	{% if ticket.progress %}
+		<div class="form-group">
+			<h4>Progress</h4>
+			{{ ticket.progress|linebreaksbr }}
+		</div>
+	{% endif %}
+{% endblock %}

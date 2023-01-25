@@ -7,7 +7,6 @@ from django.forms import (
 	CharField,
 	ChoiceField,
 	DateField,
-	FileField,
 	Form,
 	ImageField,
 	IntegerField,
@@ -27,7 +26,6 @@ from NEMO.models import (
 	Consumable,
 	ConsumableWithdraw,
 	Project,
-	ProjectDocuments,
 	RecurringConsumableCharge,
 	ReservationItemType,
 	SafetyIssue,
@@ -38,7 +36,6 @@ from NEMO.models import (
 	TaskImages,
 	TemporaryPhysicalAccessRequest,
 	User,
-	UserDocuments,
 	UserPreferences,
 )
 from NEMO.utilities import bootstrap_primary_color, format_datetime, quiet_int
@@ -60,7 +57,7 @@ class UserForm(ModelForm):
 			"date_joined",
 			"last_login",
 			"managed_projects",
-			"preferences"
+			"preferences",
 		]
 
 
@@ -288,7 +285,9 @@ class ConsumableWithdrawForm(ModelForm):
 		consumable = cleaned_data["consumable"]
 		if not consumable.reusable and quantity > consumable.quantity:
 			raise ValidationError(
-				'There are not enough "' + consumable.name + '". (The current quantity in stock is '
+				'There are not enough "'
+				+ consumable.name
+				+ '". (The current quantity in stock is '
 				+ str(consumable.quantity)
 				+ "). Please order more as soon as possible."
 			)
@@ -369,7 +368,9 @@ class EmailBroadcastForm(Form):
 	contents = CharField(required=False)
 	copy_me = BooleanField(required=False, initial=True)
 
-	audience = ChoiceField(choices=[("tool", "tool"), ("project", "project"), ("account", "account"), ("area", "area"), ("user", "user")])
+	audience = ChoiceField(
+		choices=[("tool", "tool"), ("project", "project"), ("account", "account"), ("area", "area"), ("user", "user")]
+	)
 	selection = CharField(required=False)
 	no_type = BooleanField(initial=False, required=False)
 	only_active_users = BooleanField(required=False, initial=True)
@@ -378,7 +379,7 @@ class EmailBroadcastForm(Form):
 		return self.cleaned_data["title"].upper()
 
 	def clean_selection(self):
-		return self.data.getlist('selection')
+		return self.data.getlist("selection")
 
 
 class AlertForm(ModelForm):
@@ -450,8 +451,11 @@ class TemporaryPhysicalAccessRequestForm(ModelForm):
 		cleaned_data = super().clean()
 		other_users = len(cleaned_data.get("other_users")) if "other_users" in cleaned_data else 0
 		minimum_total_users = quiet_int(UserRequestsCustomization.get("access_requests_minimum_users"), 2)
-		if other_users < minimum_total_users -1:
-			self.add_error("other_users", f"You need at least {minimum_total_users-1} other {'buddy' if minimum_total_users == 2 else 'buddies'} for this request")
+		if other_users < minimum_total_users - 1:
+			self.add_error(
+				"other_users",
+				f"You need at least {minimum_total_users - 1} other {'buddy' if minimum_total_users == 2 else 'buddies'} for this request",
+			)
 		return cleaned_data
 
 
@@ -463,7 +467,9 @@ class StaffAbsenceForm(ModelForm):
 
 def nice_errors(obj, non_field_msg="General form errors") -> ErrorDict:
 	result = ErrorDict()
-	error_dict = obj.errors if isinstance(obj, BaseForm) else obj.message_dict if isinstance(obj, ValidationError) else {}
+	error_dict = (
+		obj.errors if isinstance(obj, BaseForm) else obj.message_dict if isinstance(obj, ValidationError) else {}
+	)
 	for field_name, errors in error_dict.items():
 		if field_name == NON_FIELD_ERRORS:
 			key = non_field_msg

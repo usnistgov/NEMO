@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block content %}
+    <div id="safety_tabs" class="clearfix" style="margin-top: 0;margin-bottom: 15px">
+        <span class="h1" style="margin-top: 0;margin-right: 15px">{% block safety_title %}Safety{% endblock %}</span>
+        {% if show_tabs > 1 %}
+            <ul class="nav nav-pills nav-pills-spacer" id="tabs" style="display: inline-block;float: right;">
+                {% if show_safety %}
+                    <li class="{% if tab == 'safety' %}active{% endif %}">
+                        <a href="#safety" onclick="location.href = '{% url "safety" %}'">Safety</a>
+                    </li>
+                {% endif %}
+                {% if show_safety_issues %}
+                    <li class="{% if tab == 'safety_issues' %}active{% endif %}">
+                        <a href="#safety" onclick="location.href = '{% url "safety_issues" %}'">Safety issues
+                            {% if safety_notification_count %}
+                                <span class="badge badge-tab-top">{{ safety_notification_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                {% endif %}
+                {% if show_safety_data_sheets %}
+                    <li class="{% if tab == 'safety_data_sheets' %}active{% endif %}">
+                        <a href="#safety" onclick="location.href = '{% url "safety_data_sheets" %}'">Safety data sheets</a>
+                    </li>
+                {% endif %}
+            </ul>
+        {% endif %}
+    </div>
+    <div class="tab-content">
+        <div class="tab-pane active" id="safety">
+             {% block tab_content %}{% endblock %}
+        </div>
+    </div>
+    <script>
+        $("#tabs").find("a").click(switch_tab);
+    </script>
+{% endblock %}

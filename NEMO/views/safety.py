@@ -1,37 +1,123 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
+from django.db.models import Case, When
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import staff_member_required
 from NEMO.forms import SafetyIssueCreationForm, SafetyIssueUpdateForm
-from NEMO.models import SafetyIssue
-from NEMO.utilities import EmailCategory, get_full_url, render_email_template, send_mail
-from NEMO.views.customization import EmailsCustomization, get_media_file_contents
+from NEMO.models import Chemical, ChemicalHazard, SafetyCategory, SafetyIssue, SafetyItem
+from NEMO.templatetags.custom_tags_and_filters import navigation_url
+from NEMO.utilities import (
+	BasicDisplayTable,
+	EmailCategory,
+	distinct_qs_value_list,
+	export_format_datetime,
+	get_full_url,
+	queryset_search_filter,
+	render_email_template,
+	send_mail,
+)
+from NEMO.views.customization import EmailsCustomization, SafetyCustomization, get_media_file_contents
 from NEMO.views.notifications import create_safety_notification, delete_notification, get_notifications
 
 
 @login_required
-@require_http_methods(["GET", "POST"])
+@require_GET
 def safety(request):
-	dictionary = {}
+	safety_items_expand_categories = SafetyCustomization.get_bool("safety_items_expand_categories")
+	dictionary = safety_dictionary("")
+	if not dictionary["show_safety"]:
+		if not dictionary["show_safety_issues"]:
+			if not dictionary["show_safety_data_sheets"]:
+				return redirect("safety_issues")
+			return redirect("safety_data_sheets")
+		return redirect("safety_issues")
+	return redirect("safety_categories") if not safety_items_expand_categories else redirect("safety_all_in_one")
+
+
+@login_required
+@require_GET
+def safety_all_in_one(request):
+	dictionary = safety_dictionary("safety")
+	dictionary["safety_categories"] = SafetyCategory.objects.filter(
+		id__in=distinct_qs_value_list(SafetyItem.objects.all(), "category_id")
+	)
+	dictionary["safety_general"] = SafetyItem.objects.filter(category__isnull=True)
+	dictionary["safety_items_expand_categories"] = True
+	return render(request, "safety/safety.html", dictionary)
+
+
+@login_required
+@require_GET
+def safety_categories(request, category_id=None):
+	dictionary = safety_dictionary("safety")
+	try:
+		safety_item_id = request.GET.get("safety_item_id")
+		if safety_item_id:
+			category_id = SafetyItem.objects.get(pk=safety_item_id).category.id
+		SafetyCategory.objects.get(pk=category_id)
+	except SafetyCategory.DoesNotExist:
+		pass
+	safety_items_qs = SafetyItem.objects.filter(category_id=category_id)
+	if not category_id and not safety_items_qs.exists():
+		first_category = SafetyCategory.objects.first()
+		category_id = first_category.id if first_category else None
+	dictionary.update(
+		{
+			"category_id": category_id,
+			"safety_items": SafetyItem.objects.filter(category_id=category_id),
+			"safety_categories": SafetyCategory.objects.filter(
+				id__in=distinct_qs_value_list(SafetyItem.objects.all(), "category_id")
+			),
+			"safety_general": SafetyItem.objects.filter(category_id__isnull=True).exists(),
+		}
+	)
+	return render(request, "safety/safety.html", dictionary)
+
+
+@login_required
+@require_GET
+def safety_item(request, safety_item_id: int):
+	# Redirect to the appropriate URL with hashtag included to scroll to the item
+	safety_items_expand_categories = SafetyCustomization.get_bool("safety_items_expand_categories")
+	url_params = f"?safety_item_id={safety_item_id}#safety_item_{safety_item_id}"
+	redirect_url = reverse("safety_categories") if not safety_items_expand_categories else reverse("safety_all_in_one")
+	return redirect(redirect_url + url_params)
+
+
+@login_required
+@require_GET
+def safety_items_search(request):
+	return queryset_search_filter(SafetyItem.objects.all(), ["name", "description"], request)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def safety_issues(request):
+	dictionary = safety_dictionary("safety_issues")
+	tickets = SafetyIssue.objects.filter(resolved=False).order_by("-creation_time")
+	if not request.user.is_staff:
+		tickets = tickets.filter(visible=True)
+	dictionary["tickets"] = tickets
+	dictionary["notifications"] = get_notifications(request.user, SafetyIssue)
+	return render(request, "safety/safety_issues.html", dictionary)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def create_safety_issue(request):
+	dictionary = safety_dictionary("safety_issues")
 	if request.method == "POST":
 		form = SafetyIssueCreationForm(request.user, data=request.POST)
 		if form.is_valid():
 			issue = form.save()
 			send_safety_email_notification(request, issue)
-			dictionary["title"] = "Concern received"
-			dictionary["heading"] = "Your safety concern was sent to the staff and will be addressed promptly"
 			create_safety_notification(issue)
-			return render(request, "acknowledgement.html", dictionary)
-	tickets = SafetyIssue.objects.filter(resolved=False).order_by("-creation_time")
-	if not request.user.is_staff:
-		tickets = tickets.filter(visible=True)
-	dictionary["tickets"] = tickets
-	dictionary["safety_introduction"] = get_media_file_contents("safety_introduction.html")
-	dictionary["notifications"] = get_notifications(request.user, SafetyIssue)
-	return render(request, "safety/safety.html", dictionary)
+			messages.success(request, "Your safety concern was sent to the staff and will be addressed promptly")
+			return redirect("safety_issues")
+	return render(request, "safety/safety_issues_create.html", dictionary)
 
 
 def send_safety_email_notification(request, issue):
@@ -54,15 +140,18 @@ def send_safety_email_notification(request, issue):
 @login_required
 @require_GET
 def resolved_safety_issues(request):
+	dictionary = safety_dictionary("safety_issues")
 	tickets = SafetyIssue.objects.filter(resolved=True)
 	if not request.user.is_staff:
 		tickets = tickets.filter(visible=True)
-	return render(request, "safety/resolved_issues.html", {"tickets": tickets})
+	dictionary["tickets"] = tickets
+	return render(request, "safety/safety_issues_resolved.html", dictionary)
 
 
 @staff_member_required
 @require_http_methods(["GET", "POST"])
 def update_safety_issue(request, ticket_id):
+	dictionary = safety_dictionary("safety_issues")
 	if request.method == "POST":
 		ticket = get_object_or_404(SafetyIssue, id=ticket_id)
 		form = SafetyIssueUpdateForm(request.user, data=request.POST, instance=ticket)
@@ -70,6 +159,80 @@ def update_safety_issue(request, ticket_id):
 			issue = form.save()
 			if issue.resolved:
 				delete_notification(SafetyIssue, issue.id)
-			return HttpResponseRedirect(reverse("safety"))
-	dictionary = {"ticket": get_object_or_404(SafetyIssue, id=ticket_id)}
-	return render(request, "safety/update_issue.html", dictionary)
+			messages.success(request, "This safety issue was updated successfully")
+			return redirect("safety_issues")
+	dictionary["ticket"] = get_object_or_404(SafetyIssue, id=ticket_id)
+	return render(request, "safety/safety_issues_update.html", dictionary)
+
+
+@login_required
+@require_GET
+def safety_data_sheets(request):
+	chemicals = Chemical.objects.all().prefetch_related("hazards").order_by()
+	hazards = ChemicalHazard.objects.all()
+
+	for hazard in hazards:
+		chemicals = chemicals.annotate(
+			**{f"hazard_{hazard.id}": Case(When(hazards__in=[hazard.id], then=True), default=False)}
+		)
+
+	order_by = request.GET.get("o", "name")
+	reverse_order = order_by.startswith("-")
+	order = order_by[1:] if reverse_order else order_by
+	chemicals = list(set(chemicals))
+	if order == "name":
+		chemicals.sort(key=lambda x: x.name.lower(), reverse=reverse_order)
+	elif order.startswith("hazard_"):
+		hazard_id = int(order[7:])
+		chemicals.sort(key=lambda x: x.name.lower())
+		chemicals.sort(key=lambda x: hazard_id in [h.id for h in x.hazards.all()], reverse=not reverse_order)
+
+	dictionary = safety_dictionary("safety_data_sheets")
+	dictionary.update(
+		{
+			"chemicals": chemicals,
+			"hazards": hazards,
+			"order_by": order_by,
+			"search_keywords": SafetyCustomization.get_bool("safety_data_sheets_keywords_default"),
+		}
+	)
+
+	return render(request, "safety/safety_data_sheets.html", dictionary)
+
+
+@staff_member_required
+@require_GET
+def export_safety_data_sheets(request):
+	hazards = ChemicalHazard.objects.all()
+
+	table = BasicDisplayTable()
+	table.add_header(("name", "Name"))
+	for hazard in hazards:
+		table.add_header((f"hazard_{hazard.id}", hazard.name))
+	table.add_header(("keywords", "Keywords"))
+
+	for chemical in Chemical.objects.all():
+		chemical: Chemical = chemical
+		values = {f"hazard_{hazard.id}": "X" for hazard in hazards if hazard in chemical.hazards.all()}
+		values["name"] = chemical.name
+		values["keywords"] = chemical.keywords
+		table.add_row(values)
+
+	response = table.to_csv()
+	filename = f"safety_data_sheets_{export_format_datetime()}.csv"
+	response["Content-Disposition"] = f'attachment; filename="{filename}"'
+	return response
+
+
+def safety_dictionary(tab):
+	sds_url_exist = navigation_url("safety_data_sheets", "")
+	dictionary = dict(
+		show_safety=SafetyCustomization.get_bool("safety_show_safety"),
+		show_safety_issues=SafetyCustomization.get_bool("safety_show_safety_issues"),
+		show_safety_data_sheets=SafetyCustomization.get_bool("safety_show_safety_data_sheets") and sds_url_exist,
+	)
+	dictionary["show_tabs"] = len([key for key, value in dictionary.items() if value])
+	dictionary["tab"] = tab
+	if tab == "safety_issues":
+		dictionary["safety_introduction"] = get_media_file_contents("safety_introduction.html")
+	return dictionary

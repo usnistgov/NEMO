@@ -1,8 +1,10 @@
-FROM python:3.7
+FROM python:3.8
+
+RUN apt-get update && apt-get upgrade -y
 
 # Intall NEMO (in the current directory) and Gunicorn
 COPY . /nemo/
-RUN pip install /nemo/ gunicorn==19.9.0
+RUN pip install /nemo/ gunicorn==20.1.0
 RUN rm --recursive --force /nemo/
 
 RUN mkdir /nemo

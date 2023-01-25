@@ -288,6 +288,93 @@
       "end_time": "2025-06-20T03:59:00Z"
     }
   },
+   {
+    "model": "NEMO.safetycategory",
+    "pk": 1,
+    "fields": {
+      "name": "Chemical handling",
+      "display_order": 1
+    }
+  },
+  {
+    "model": "NEMO.safetycategory",
+    "pk": 2,
+    "fields": {
+      "name": "Cleanroom safety",
+      "display_order": 2
+    }
+  },
+  {
+    "model": "NEMO.safetyitem",
+    "pk": 1,
+    "fields": {
+      "name": "How to handle chemicals",
+      "description": "This is a very important safety informational item. Please check out the following documents:",
+      "category": 1
+    }
+  },
+  {
+    "model": "NEMO.safetyitem",
+    "pk": 2,
+    "fields": {
+      "name": "Dispose of chemicals",
+      "description": "Use the bins at your disposals throughout the facility. Check the following link for more information:",
+      "category": 1
+    }
+  },
+  {
+    "model": "NEMO.safetyitem",
+    "pk": 3,
+    "fields": {
+      "name": "Code of conduct",
+      "description": "Please click on the following document to find out more:",
+      "category": 2
+    }
+  },
+  {
+    "model": "NEMO.safetyitemdocuments",
+    "pk": 1,
+    "fields": {
+      "safety_item": 1,
+      "document": "",
+      "url": "https://filesamples.com/samples/video/mp4/sample_960x400_ocean_with_audio.mp4",
+      "name": "MP4 video example URL",
+      "uploaded_at": "2023-01-06T01:35:06.582Z"
+    }
+  },
+  {
+    "model": "NEMO.safetyitemdocuments",
+    "pk": 2,
+    "fields": {
+      "safety_item": 1,
+      "document": "",
+      "url": "https://filesamples.com/samples/document/pdf/sample1.pdf",
+      "name": "PDF document example URL",
+      "uploaded_at": "2023-01-06T18:31:45.260Z"
+    }
+  },
+  {
+    "model": "NEMO.safetyitemdocuments",
+    "pk": 3,
+    "fields": {
+      "safety_item": 2,
+      "document": "",
+      "url": "https://filesamples.com/samples/video/ogv/sample_640x360.ogv",
+      "name": "OGV video example URL",
+      "uploaded_at": "2023-01-06T18:31:45.260Z"
+    }
+  },
+  {
+    "model": "NEMO.safetyitemdocuments",
+    "pk": 4,
+    "fields": {
+      "safety_item": 3,
+      "document": "",
+      "url": "https://www.wikihow.com/Enter-a-Cleanroom",
+      "name": "Entering a cleanroom",
+      "uploaded_at": "2023-01-06T18:31:45.260Z"
+    }
+  },
   {
     "model": "NEMO.safetytraining",
     "pk": 1,
@@ -353,7 +440,6 @@
       "last_name": "Nemo",
       "email": "captain.nemo@nautilus.com",
       "type": 3,
-      "discipline": 1,
       "domain": "",
       "notes": null,
       "badge_number": "1",
@@ -397,7 +483,6 @@
       "last_name": "Aronnax",
       "email": "pierre.aronnax@nautilus.com",
       "type": 2,
-      "discipline": 2,
       "domain": "",
       "notes": null,
       "badge_number": "2",
@@ -441,7 +526,6 @@
       "last_name": "Land",
       "email": "ned.land@nautilus.com",
       "type": 1,
-      "discipline": 3,
       "domain": "",
       "notes": null,
       "badge_number": "3",
@@ -499,7 +583,6 @@
       "last_name": "Farragut",
       "email": "commander.farragut@nautilus.com",
       "type": 2,
-      "discipline": 4,
       "domain": "",
       "notes": null,
       "badge_number": "4",
@@ -543,7 +626,6 @@
       "last_name": "Conseil",
       "email": "assistant.conseil@nautilus.com",
       "type": 1,
-      "discipline": 4,
       "domain": "",
       "notes": null,
       "badge_number": "5",
@@ -6803,7 +6885,7 @@
     "model": "NEMO.landingpagechoice",
     "pk": 4,
     "fields": {
-      "image": "safety.png",
+      "image": "safety_alt.png",
       "name": "Safety",
       "url": "/safety/",
       "display_order": 3,
@@ -6899,23 +6981,6 @@
       "hide_from_users": false,
       "hide_from_staff": false,
       "notifications": "news"
-    }
-  },
-  {
-    "model": "NEMO.landingpagechoice",
-    "pk": 10,
-    "fields": {
-      "image": "sds.png",
-      "name": "Safety data sheets",
-      "url": "/safety_data_sheets/",
-      "display_order": 10,
-      "open_in_new_tab": false,
-      "secure_referral": false,
-      "hide_from_mobile_devices": false,
-      "hide_from_desktop_computers": false,
-      "hide_from_users": false,
-      "hide_from_staff": false,
-      "notifications": null
     }
   },
   {

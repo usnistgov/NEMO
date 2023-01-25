@@ -100,6 +100,7 @@ staff_member_or_user_office_required = permission_decorator(lambda u: u.is_activ
 accounting_or_user_office_or_manager_required = permission_decorator(lambda u: u.is_active and (u.is_accounting_officer or u.is_user_office or u.is_facility_manager or u.is_superuser))
 user_office_or_facility_manager_required = permission_decorator(lambda u: u.is_active and (u.is_user_office or u.is_facility_manager or u.is_superuser))
 any_staff_required = permission_decorator(lambda u: u.is_active and (u.is_any_part_of_staff))
+accounting_or_manager_required = permission_decorator(lambda u: u.is_active and (u.is_accounting_officer or u.is_facility_manager or u.is_superuser))
 
 
 # Use this decorator annotation to replace another existing function. The first parameter of

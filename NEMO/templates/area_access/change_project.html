@@ -17,8 +17,7 @@
 					<form action="{% url 'change_project' project.id %}" method="post">
 						<div class="form-group">
 							{% csrf_token %}
-                            {% project_selection_display project as project_name %}
-							<input type="submit" class="btn btn-warning" title="{{ project_name }}" value="{{ project_name }}">
+                            <button type="submit" class="btn btn-warning" title="{{ project.name }}">{% project_selection_display project %}</button>
 						</div>
 					</form>
 				{% endif %}

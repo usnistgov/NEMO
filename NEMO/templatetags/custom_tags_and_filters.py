@@ -1,5 +1,6 @@
 import datetime
 from datetime import timedelta
+from importlib.metadata import PackageNotFoundError, version
 
 from django import template
 from django.shortcuts import resolve_url
@@ -8,11 +9,10 @@ from django.template.defaultfilters import date, time
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.formats import localize_input
-from django.utils.html import escape, format_html
+from django.utils.html import escape, escapejs, format_html
 from django.utils.safestring import mark_safe
-from pkg_resources import DistributionNotFound, get_distribution
 
-from NEMO.views.customization import ProjectsAccountsCustomization
+from NEMO.views.customization import CustomizationBase, ProjectsAccountsCustomization
 
 register = template.Library()
 
@@ -76,11 +76,12 @@ def json_search_base_with_extra_fields(items_to_search, *extra_fields, display="
 		object_type = item.__class__.__name__.lower()
 		attr = getattr(item, display, None)
 		item_display = attr() if callable(attr) else attr
-		result += '{{"name":"{0}", "id":"{1}", "type":"{2}"'.format(escape(item_display), item.id, object_type)
+		# we need to escape the name and the extra fields in case they contain new lines etc. otherwise it breaks.
+		result += '{{"name":"{0}", "id":"{1}", "type":"{2}"'.format(escapejs(item_display), item.id, object_type)
 		# remove name just in case it's also given as extra fields (it would clash with search result name)
 		for x in [field for field in extra_fields if field != 'name']:
 			if hasattr(item, x):
-				result += ', "{0}":"{1}"'.format(x, getattr(item, x))
+				result += ', "{0}":"{1}"'.format(x, escapejs(getattr(item, x)))
 		result += "},"
 	result = result.rstrip(",") + "]"
 	return mark_safe(result)
@@ -138,8 +139,8 @@ def app_version() -> str:
 		return dist_version
 	else:
 		try:
-			dist_version = get_distribution("NEMO").version
-		except DistributionNotFound:
+			dist_version = version("NEMO")
+		except PackageNotFoundError:
 			# package is not installed
 			dist_version = None
 			pass
@@ -149,6 +150,18 @@ def app_version() -> str:
 @register.filter
 def concat(value, arg):
 	return str(value) + str(arg)
+
+
+@register.filter
+def customization(customization_key, key):
+	return CustomizationBase.get_instance(customization_key).get(key)
+
+
+@register.filter
+def app_installed(app_name):
+	from django.apps import apps
+
+	return apps.is_installed(app_name)
 
 
 @register.inclusion_tag("snippets/button.html")

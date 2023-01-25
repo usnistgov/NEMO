@@ -5,7 +5,11 @@ from typing import Dict, Iterable
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.files.storage import get_storage_class
-from django.core.validators import validate_email
+from django.core.validators import (
+	validate_comma_separated_integer_list,
+	validate_email,
+	validate_integer,
+)
 from django.http import HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.template import Context, Template
@@ -67,12 +71,6 @@ class CustomizationBase(ABC):
 			datetime.strptime(value, date_input_format)
 		except ValueError as e:
 			raise ValidationError(str(e))
-
-	def validate_int(self, value):
-		try:
-			int(value)
-		except ValueError:
-			raise ValidationError(f"{value} is not a valid integer")
 
 	@classmethod
 	def add_instance(cls, inst):
@@ -189,13 +187,7 @@ class UserCustomization(CustomizationBase):
 	def validate(self, name, value):
 		if name == "user_access_expiration_reminder_days" and value:
 			# Check that we have an integer or a list of integers
-			try:
-				for reminder_days in value.split(","):
-					self.validate_int(reminder_days)
-			except ValidationError:
-				raise
-			except Exception as e:
-				raise ValidationError(str(e))
+			validate_comma_separated_integer_list(value)
 		elif name == "user_access_expiration_reminder_cc":
 			recipients = tuple([e for e in value.split(",") if e])
 			for email in recipients:
@@ -324,20 +316,26 @@ class ToolQualificationCustomization(CustomizationBase):
 
 	def validate(self, name, value):
 		if name == "tool_qualification_expiration_days" and value:
-			self.validate_int(value)
+			validate_integer(value)
 		if name == "tool_qualification_reminder_days" and value:
 			# Check that we have an integer or a list of integers
-			try:
-				for reminder_days in value.split(","):
-					self.validate_int(reminder_days)
-			except ValidationError:
-				raise
-			except Exception as e:
-				raise ValidationError(str(e))
+			validate_comma_separated_integer_list(value)
 		elif name == "tool_qualification_cc":
 			recipients = tuple([e for e in value.split(",") if e])
 			for email in recipients:
 				validate_email(email)
+
+
+@customization(key="safety", title="Safety")
+class SafetyCustomization(CustomizationBase):
+	variables = {
+		"safety_main_menu": "enabled",
+		"safety_show_safety": "enabled",
+		"safety_show_safety_issues": "enabled",
+		"safety_show_safety_data_sheets": "enabled",
+		"safety_data_sheets_keywords_default": "",
+		"safety_items_expand_categories": "",
+	}
 
 
 @customization(key="templates", title="File & email templates")

@@ -836,7 +836,7 @@ def send_email_reservation_ending_reminders(request=None):
 	user_area_reservations = valid_reservations.filter(area__isnull=False, user__in=current_logged_in_user.values_list('customer', flat=True))
 
 	# Find all reservations that end 30 or 15 min from now, plus or minus 3 minutes to allow for time skew.
-	reminder_times = [30,15]
+	reminder_times = [30, 15]
 	tolerance = 3
 	time_filter = Q()
 	for reminder_time in reminder_times:
@@ -876,9 +876,7 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
 		key = access_record.customer_id
 		aggregate[key] = {
 			'user': access_record.customer,
-			'email': access_record.customer.email,
-			'first_name': access_record.customer.first_name,
-			'resources_in_use': [access_record.area.name],
+			'resources_in_use': [access_record.area],
 		}
 	for usage_event in busy_tools:
 		key = usage_event.operator_id
@@ -887,9 +885,7 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
 		else:
 			aggregate[key] = {
 				'user': usage_event.operator,
-				'email': usage_event.operator.email,
-				'first_name': usage_event.operator.first_name,
-				'resources_in_use': [usage_event.tool.name],
+				'resources_in_use': [usage_event.tool],
 			}
 
 	user_office_email = EmailsCustomization.get('user_office_email_address')
@@ -898,11 +894,14 @@ def send_email_usage_reminders(projects_to_exclude=None, request=None):
 	facility_name = ApplicationCustomization.get('facility_name')
 	if message:
 		subject = f"{facility_name} usage"
-		for user in aggregate.values():
-			rendered_message = render_email_template(message, {'user': user}, request)
-			user_instance: User = user['user']
-			email_notification = user_instance.get_preferences().email_send_usage_reminders
-			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
+		for value in aggregate.values():
+			user: User = value["user"]
+			resources_in_use = value["resources_in_use"]
+			# for backwards compatibility, add it to the user object (that's how it was defined and used in the template)
+			user.resources_in_use = resources_in_use
+			rendered_message = render_email_template(message, {"user": user, "resources_in_use": resources_in_use}, request)
+			email_notification = user.get_preferences().email_send_usage_reminders
+			user.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
 
 	message = get_media_file_contents('staff_charge_reminder_email.html')
 	if message:
@@ -995,14 +994,14 @@ def send_email_out_of_time_reservation_notification(request=None):
 	Out of time reservation notification for areas is when a user is still logged in a area but his reservation expired.
 	"""
 	# Exit early if the out of time reservation email template has not been customized for the organization yet.
-	# This feature only sends emails, so there if the template is not defined there nothing to do.
+	# This feature only sends emails, so if the template is not defined there nothing to do.
 	if not get_media_file_contents('out_of_time_reservation_email.html'):
 		return HttpResponseNotFound('The out of time reservation email template has not been customized for your organization yet. Please visit the customization page to upload a template, then out of time email notifications can be sent.')
 
 	out_of_time_user_area = []
 
 	# Find all logged users
-	access_records:List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'area').only('customer', 'area')
+	access_records: List[AreaAccessRecord] = AreaAccessRecord.objects.filter(end=None, staff_charge=None).prefetch_related('customer', 'area').only('customer', 'area')
 	for access_record in access_records:
 		# staff and service personnel are exempt from out of time notification
 		customer = access_record.customer

@@ -377,21 +377,22 @@ def disable_tool(request, tool_id):
 	tool = get_object_or_404(Tool, id=tool_id)
 	if tool.get_current_usage_event() is None:
 		return HttpResponse()
+	user: User = request.user
 	downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
 	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
-	response = check_policy_to_disable_tool(tool, request.user, downtime)
+	response = check_policy_to_disable_tool(tool, user, downtime)
 	if response.status_code != HTTPStatus.OK:
 		return response
 
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
-		if bypass_interlock and interlock_bypass_allowed(request.user):
+		if bypass_interlock and interlock_bypass_allowed(user):
 			pass
 		else:
-			return interlock_error("Disable", request.user)
+			return interlock_error("Disable", user)
 
 	# Shorten the user's tool reservation since we are now done using the tool
-	shorten_reservation(user=request.user, item=tool, new_end=timezone.now() + downtime)
+	shorten_reservation(user=user, item=tool, new_end=timezone.now() + downtime)
 
 	# End the current usage event for the tool
 	current_usage_event = tool.get_current_usage_event()
@@ -403,10 +404,10 @@ def disable_tool(request, tool_id):
 	try:
 		current_usage_event.run_data = dynamic_form.extract(request)
 	except RequiredUnansweredQuestionsException as e:
-		if request.user.is_staff and request.user != current_usage_event.operator and current_usage_event.user != request.user:
+		if (user.is_staff or user.is_user_office) and user != current_usage_event.operator and current_usage_event.user != user:
 			# if a staff is forcing somebody off the tool and there are required questions, send an email and proceed
 			current_usage_event.run_data = e.run_data
-			email_managers_required_questions_disable_tool(current_usage_event.operator, request.user, tool, e.questions)
+			email_managers_required_questions_disable_tool(current_usage_event.operator, user, tool, e.questions)
 		else:
 			return HttpResponseBadRequest(str(e))
 
@@ -420,7 +421,6 @@ def disable_tool(request, tool_id):
 	dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
 
 	current_usage_event.save()
-	user: User = request.user
 	if user.charging_staff_time():
 		existing_staff_charge = user.get_staff_charge()
 		if (

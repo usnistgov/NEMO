@@ -512,6 +512,13 @@ def get_user_document_filename(user_documents, filename):
 	return f"user_documents/{username}/{filename}"
 
 
+def get_safety_document_filename(safety_documents, filename):
+	from django.template.defaultfilters import slugify
+
+	item_name = slugify(safety_documents.safety_item.name)
+	return f"safety_item/{item_name}/{filename}"
+
+
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
 	""" Returns a resized image based on the given maximum size """
 	with Image.open(image) as img:
@@ -558,7 +565,7 @@ def render_email_template(template, dictionary: dict, request=None):
 def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request, display="__str__") -> HttpResponse:
 	"""
 	This function reuses django admin search result to implement our own autocomplete.
-	Its usage is the same as ModelAdmin, it needs a base queryset, list of fields and a search query
+	Its usage is the same as ModelAdmin, it needs a base queryset, list of fields and a search query.
 	It returns the HttpResponse with json formatted data, ready to use by the autocomplete js code
 	"""
 	if is_ajax(request):

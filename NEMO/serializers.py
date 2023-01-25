@@ -22,31 +22,17 @@ from NEMO.models import (
 
 
 class UserSerializer(ModelSerializer):
+	type = CharField(source="type.name", default=None)
+
 	class Meta:
 		model = User
-		fields = (
-			"id",
-			"type",
-			"discipline",
-			"domain",
-			"first_name",
-			"last_name",
-			"username",
-			"email",
-			"notes",
-			"onboarding_phases",
-			"safety_trainings",
-			"date_joined",
-			"last_login",
-			"access_expiration",
-			"badge_number",
-			"is_active",
-			"is_staff",
-			"is_facility_manager",
-			"is_superuser",
-			"is_technician",
-			"is_service_personnel",
-			"training_required"
+		exclude = (
+			"user_permissions",
+			"qualifications",
+			"physical_access_levels",
+			"preferences",
+			"projects",
+			"managed_projects"
 		)
 
 
