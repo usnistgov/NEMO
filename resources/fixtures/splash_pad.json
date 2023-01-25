@@ -292,7 +292,7 @@
     "model": "NEMO.safetycategory",
     "pk": 1,
     "fields": {
-      "name": "First safety category",
+      "name": "Chemical handling",
       "display_order": 1
     }
   },
@@ -300,7 +300,7 @@
     "model": "NEMO.safetycategory",
     "pk": 2,
     "fields": {
-      "name": "Second safety category",
+      "name": "Cleanroom safety",
       "display_order": 2
     }
   },
@@ -308,7 +308,7 @@
     "model": "NEMO.safetyitem",
     "pk": 1,
     "fields": {
-      "name": "Safety test item",
+      "name": "How to handle chemicals",
       "description": "This is a very important safety informational item. Please check out the following documents:",
       "category": 1
     }
@@ -317,17 +317,17 @@
     "model": "NEMO.safetyitem",
     "pk": 2,
     "fields": {
-      "name": "Safety test item 2",
-      "description": "This is a very important safety informational item. Please check out the following documents:",
+      "name": "Dispose of chemicals",
+      "description": "Use the bins at your disposals throughout the facility. Check the following link for more information:",
       "category": 1
     }
   },
   {
     "model": "NEMO.safetyitem",
-    "pk": 2,
+    "pk": 3,
     "fields": {
-      "name": "Safety test item 3",
-      "description": "This is a very important safety informational item. Please check out the following documents:",
+      "name": "Code of conduct",
+      "description": "Please click on the following document to find out more:",
       "category": 2
     }
   },
@@ -361,6 +361,17 @@
       "document": "",
       "url": "https://filesamples.com/samples/video/ogv/sample_640x360.ogv",
       "name": "OGV video example URL",
+      "uploaded_at": "2023-01-06T18:31:45.260Z"
+    }
+  },
+  {
+    "model": "NEMO.safetyitemdocuments",
+    "pk": 4,
+    "fields": {
+      "safety_item": 3,
+      "document": "",
+      "url": "https://www.wikihow.com/Enter-a-Cleanroom",
+      "name": "Entering a cleanroom",
       "uploaded_at": "2023-01-06T18:31:45.260Z"
     }
   },

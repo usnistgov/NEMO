@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
 {% block content %}
-    <div id="safety_tabs" class="clearfix" style="margin-top: 0;">
+    <div id="safety_tabs" class="clearfix" style="margin-top: 0;margin-bottom: 15px">
         <span class="h1" style="margin-top: 0;margin-right: 15px">{% block safety_title %}Safety{% endblock %}</span>
         {% if show_tabs > 1 %}
-            <ul class="nav nav-pills nav-pills-spacer" id="tabs" style="display: inline-block;float: right; margin-bottom: 15px">
+            <ul class="nav nav-pills nav-pills-spacer" id="tabs" style="display: inline-block;float: right;">
                 {% if show_safety %}
                     <li class="{% if tab == 'safety' %}active{% endif %}">
                         <a href="#safety" onclick="location.href = '{% url "safety" %}'">Safety</a>
