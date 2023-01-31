@@ -377,6 +377,7 @@ class ModbusTcpInterlock(Interlock):
 			elif command_type == Interlock_model.State.UNLOCKED:
 				state = self.setRelayState(interlock, self.MODBUS_ON)
 		except Exception as error:
+			interlocks_logger.exception(error)
 			raise Exception("General exception: " + str(error))
 		return state
 
@@ -385,7 +386,7 @@ class ModbusTcpInterlock(Interlock):
 		coil = interlock.channel
 		client = ModbusTcpClient(interlock.card.server, port=interlock.card.port)
 		client.connect()
-		kwargs = {"unit": interlock.unit_id} if interlock.unit_id is not None else {}
+		kwargs = {"slave": interlock.unit_id} if interlock.unit_id is not None else {}
 		write_reply = client.write_coil(coil, state, **kwargs)
 		if write_reply.isError():
 			raise Exception(str(write_reply))

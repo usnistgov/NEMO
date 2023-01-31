@@ -98,7 +98,7 @@ class ModbusTcpSensor(Sensor):
 		valid_connection = client.connect()
 		if not valid_connection:
 			raise Exception(f"Connection to server {sensor.card.server}:{sensor.card.port} could not be established")
-		kwargs = {"unit": sensor.unit_id} if sensor.unit_id is not None else {}
+		kwargs = {"slave": sensor.unit_id} if sensor.unit_id is not None else {}
 		read_response = client.read_holding_registers(sensor.read_address, sensor.number_of_values, **kwargs)
 		if read_response.isError():
 			raise Exception(str(read_response))
