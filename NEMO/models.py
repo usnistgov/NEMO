@@ -346,6 +346,7 @@ class TemporaryPhysicalAccess(BaseModel):
 
 	class Meta:
 		ordering = ['-end_time']
+		verbose_name_plural = "TemporaryPhysicalAccess"
 
 
 class TemporaryPhysicalAccessRequest(BaseModel):
@@ -2724,14 +2725,15 @@ class ToolUsageCounter(BaseModel):
 @receiver(models.signals.pre_save, sender=ToolUsageCounter)
 def check_tool_usage_counter_threshold(sender, instance: ToolUsageCounter, **kwargs):
 	try:
-		if instance.is_active and not instance.warning_threshold_reached and instance.value >= instance.warning_threshold:
-			# value is over threshold. set flag and send email
-			instance.warning_threshold_reached = True
-			from NEMO.views.tool_control import send_tool_usage_counter_email
-			send_tool_usage_counter_email(instance)
-		if instance.warning_threshold_reached and instance.value < instance.warning_threshold:
-			# it has been reset. reset flag
-			instance.warning_threshold_reached = False
+		if instance.warning_threshold:
+			if instance.is_active and not instance.warning_threshold_reached and instance.value >= instance.warning_threshold:
+				# value is over threshold. set flag and send email
+				instance.warning_threshold_reached = True
+				from NEMO.views.tool_control import send_tool_usage_counter_email
+				send_tool_usage_counter_email(instance)
+			if instance.warning_threshold_reached and instance.value < instance.warning_threshold:
+				# it has been reset. reset flag
+				instance.warning_threshold_reached = False
 	except Exception as e:
 		models_logger.exception(e)
 		pass

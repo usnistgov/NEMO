@@ -2,8 +2,8 @@ from setuptools import find_namespace_packages, setup
 
 setup(
 	name='NEMO',
-	version='4.4.1',
-	python_requires='>=3.8',
+	version='4.5.0.dev',
+	python_requires='>=3.8, <4',
 	packages=find_namespace_packages(exclude=['NEMO.tests', 'NEMO.tests.*']),
 	include_package_data=True,
 	url='https://github.com/usnistgov/NEMO',
