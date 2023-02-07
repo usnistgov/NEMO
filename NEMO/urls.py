@@ -94,7 +94,7 @@ for app in apps.get_app_configs():
 			logger.warning(f"no urls found for NEMO plugin: {app_name}")
 			pass
 		except Exception as e:
-			logger.warning(f"could not import urls for NEMO plugin: {app_name} {str(e)}")
+			logger.exception(f"could not import urls for NEMO plugin: {app_name}")
 			pass
 		else:
 			urlpatterns += [path("", include("%s.urls" % app_name))]
