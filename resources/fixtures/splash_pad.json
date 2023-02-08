@@ -71,28 +71,28 @@
     }
   },
   {
-    "model": "NEMO.discipline",
+    "model": "NEMO.projectdiscipline",
     "pk": 1,
     "fields": {
       "name": "Physics"
     }
   },
   {
-    "model": "NEMO.discipline",
+    "model": "NEMO.projectdiscipline",
     "pk": 2,
     "fields": {
       "name": "Chemistry"
     }
   },
   {
-    "model": "NEMO.discipline",
+    "model": "NEMO.projectdiscipline",
     "pk": 3,
     "fields": {
       "name": "Biology"
     }
   },
   {
-    "model": "NEMO.discipline",
+    "model": "NEMO.projectdiscipline",
     "pk": 4,
     "fields": {
       "name": "Electronics"

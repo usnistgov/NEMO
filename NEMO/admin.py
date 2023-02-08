@@ -49,7 +49,6 @@ from NEMO.models import (
 	ContactInformation,
 	ContactInformationCategory,
 	Customization,
-	Discipline,
 	Door,
 	EmailLog,
 	Interlock,
@@ -63,6 +62,7 @@ from NEMO.models import (
 	PhysicalAccessLevel,
 	PhysicalAccessLog,
 	Project,
+	ProjectDiscipline,
 	ProjectDocuments,
 	RecurringConsumableCharge,
 	Reservation,
@@ -1586,7 +1586,7 @@ def has_admin_site_permission(request):
 admin.site.has_permission = has_admin_site_permission
 
 # Register other models
-admin.site.register(Discipline)
+admin.site.register(ProjectDiscipline)
 admin.site.register(AccountType)
 admin.site.register(ResourceCategory)
 admin.site.register(Permission)

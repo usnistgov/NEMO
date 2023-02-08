@@ -16,5 +16,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(new_version_news),
+        migrations.AlterModelOptions(
+            name='temporaryphysicalaccess',
+            options={'ordering': ['-end_time'], 'verbose_name_plural': 'TemporaryPhysicalAccess'},
+        ),
+        migrations.RenameModel(
+            old_name='Discipline',
+            new_name='ProjectDiscipline',
+        ),
     ]
 

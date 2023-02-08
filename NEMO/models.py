@@ -232,7 +232,7 @@ class UserType(BaseModel):
 		ordering = ["name"]
 
 
-class Discipline(BaseModel):
+class ProjectDiscipline(BaseModel):
 	name = models.CharField(max_length=200, unique=True, help_text="The name of the discipline")
 
 	def __str__(self):
@@ -1594,7 +1594,7 @@ class Project(BaseModel):
 	application_identifier = models.CharField(max_length=100)
 	start_date = models.DateField(null=True, blank=True)
 	account = models.ForeignKey(Account, help_text="All charges for this project will be billed to the selected account.", on_delete=models.CASCADE)
-	discipline = models.ForeignKey(Discipline, null=True, blank=True, on_delete=models.SET_NULL)
+	discipline = models.ForeignKey(ProjectDiscipline, null=True, blank=True, on_delete=models.SET_NULL)
 	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
 	only_allow_tools = models.ManyToManyField(Tool, blank=True, help_text="Selected tools will be the only ones allowed for this project.")
 	allow_consumable_withdrawals = models.BooleanField(default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project")
