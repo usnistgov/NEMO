@@ -510,17 +510,6 @@ class ProjectDocumentsInline(admin.TabularInline):
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-	fields = (
-		"name",
-		"application_identifier",
-		"account",
-		"start_date",
-		"allow_consumable_withdrawals",
-		"active",
-		"members",
-		"principal_investigators",
-		"only_allow_tools",
-	)
 	list_display = ("name", "id", "application_identifier", "account", "active", "start_date")
 	filter_horizontal = ("only_allow_tools",)
 	search_fields = ("name", "application_identifier", "account__name")

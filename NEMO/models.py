@@ -1594,8 +1594,8 @@ class Project(BaseModel):
 	application_identifier = models.CharField(max_length=100)
 	start_date = models.DateField(null=True, blank=True)
 	account = models.ForeignKey(Account, help_text="All charges for this project will be billed to the selected account.", on_delete=models.CASCADE)
-	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
 	discipline = models.ForeignKey(Discipline, null=True, blank=True, on_delete=models.SET_NULL)
+	active = models.BooleanField(default=True, help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).")
 	only_allow_tools = models.ManyToManyField(Tool, blank=True, help_text="Selected tools will be the only ones allowed for this project.")
 	allow_consumable_withdrawals = models.BooleanField(default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project")
 
@@ -2863,9 +2863,9 @@ class Chemical(BaseModel):
 		return str(self.name)
 
 
-# These two auto-delete tool images from filesystem when they are unneeded:
+# These two auto-delete hazard images from filesystem when they are unneeded:
 @receiver(models.signals.post_delete, sender=ChemicalHazard)
-def auto_delete_file_on_tool_delete(sender, instance: ChemicalHazard, **kwargs):
+def auto_delete_file_on_hazard_delete(sender, instance: ChemicalHazard, **kwargs):
 	"""	Deletes file from filesystem when corresponding `ChemicalHazard` object is deleted.	"""
 	if instance.logo:
 		if os.path.isfile(instance.logo.path):
@@ -2873,7 +2873,7 @@ def auto_delete_file_on_tool_delete(sender, instance: ChemicalHazard, **kwargs):
 
 
 @receiver(models.signals.pre_save, sender=ChemicalHazard)
-def auto_delete_file_on_tool_change(sender, instance: ChemicalHazard, **kwargs):
+def auto_delete_file_on_hazard_change(sender, instance: ChemicalHazard, **kwargs):
 	"""	Deletes old file from filesystem when corresponding `ChemicalHazard` object is updated with new file. """
 	if not instance.pk:
 		return False
@@ -2890,9 +2890,9 @@ def auto_delete_file_on_tool_change(sender, instance: ChemicalHazard, **kwargs):
 				os.remove(old_file.path)
 
 
-# These two auto-delete tool images from filesystem when they are unneeded:
+# These two auto-delete chemical document from filesystem when they are unneeded:
 @receiver(models.signals.post_delete, sender=Chemical)
-def auto_delete_file_on_tool_delete(sender, instance: Chemical, **kwargs):
+def auto_delete_file_on_chemical_delete(sender, instance: Chemical, **kwargs):
 	"""	Deletes file from filesystem when corresponding `Chemical` object is deleted.	"""
 	if instance.document:
 		if os.path.isfile(instance.document.path):
@@ -2900,7 +2900,7 @@ def auto_delete_file_on_tool_delete(sender, instance: Chemical, **kwargs):
 
 
 @receiver(models.signals.pre_save, sender=Chemical)
-def auto_delete_file_on_tool_change(sender, instance: Chemical, **kwargs):
+def auto_delete_file_on_chemical_change(sender, instance: Chemical, **kwargs):
 	"""	Deletes old file from filesystem when corresponding `Chemical` object is updated with new file. """
 	if not instance.pk:
 		return False
