@@ -91,7 +91,7 @@ def date_parameters_dictionary(request):
 		'end_date': end_date,
 		'kind': kind,
 		'identifier': identifier,
-		'tab_url': get_url_for_other_tab(request),
+		'tab_url': get_url_for_other_tab(request) if  get_billing_service().get('available', False) else '',
 		'billing_service': get_billing_service().get('available', False),
 	}
 	return dictionary, start_date, end_date, kind, identifier
