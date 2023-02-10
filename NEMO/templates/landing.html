@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_tags_and_filters %}
 
 {% block title %}{{ site_title }}{% endblock %}
 {% block content %}
@@ -123,15 +124,17 @@
 			<span style="font-size:xx-large">
 				Welcome! This is {{ site_title }}'s landing page - the first page users see when visiting the site. There's nothing here yet...<br>&nbsp;<br>
 
-				Add landing page choices by navigating to<br>
-				<a href="{% url 'admin:NEMO_landingpagechoice_add' %}">
-					Administration -> Detailed Administration -><br>
-					Landing page choices -> Add landing page choice
-				</a>
-				<br>&nbsp;<br>
+                {% if user.is_superuser and "django.contrib.admin"|app_installed %}
+                    Add landing page choices by navigating to<br>
+                    <a href="{% url 'admin:NEMO_landingpagechoice_add' %}">
+                        Administration -> Detailed Administration -><br>
+                        Landing page choices -> Add landing page choice
+                    </a>
+                    <br>&nbsp;<br>
 
-				Customize {{ site_title }} further by navigating to<br>
-				<a href="{% url 'customization' %}">Administration -> Customization</a>
+                    Customize {{ site_title }} further by navigating to<br>
+                    <a href="{% url 'customization' %}">Administration -> Customization</a>
+                {% endif %}
 			</span>
 		{% endfor %}
     <script>

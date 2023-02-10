@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load custom_tags_and_filters %}
 {% block extrahead %}
     <link rel="stylesheet" type="text/css" href="{% static "sensors/sensors.css" %}"/>
 {% endblock %}
@@ -37,7 +38,7 @@
             {% if not sensors and not categories %}
                 <div class="dashboard-no-group-items">
                     no items to display.
-                    {% if user.is_superuser and not selected_category %}
+                    {% if user.is_superuser and not selected_category and "django.contrib.admin"|app_installed %}
                         <br/><br/>You can add sensors, categories and alerts by navigating to<br>
                         <a href="{% url 'admin:app_list' 'sensors' %}">
                             Administration -> Detailed Administration -> Sensors

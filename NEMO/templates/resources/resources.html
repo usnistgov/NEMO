@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Resources{% endblock %}
 {% block content %}
 	<h1>Resources</h1>
@@ -23,7 +24,7 @@
 				{% endfor %}
 			</div>
 		{% endfor %}
-	{% else %}
+	{% elif user.is_superuser and "django.contrib.admin"|app_installed %}
 		<h3>No resources exist yet. You can <a href="{% url 'admin:NEMO_resource_changelist' %}">create some in the Resources section of 'Detailed Administration'</a>.</h3>
 	{% endif %}
 {% endblock %}

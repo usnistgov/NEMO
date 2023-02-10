@@ -79,7 +79,7 @@
     {% else %}
         <div>
             There are no chemicals to display.
-            {% if user.is_superuser %}
+            {% if user.is_superuser and "django.contrib.admin"|app_installed %}
                 <br/><br/>You can add some by navigating to<br>
                 <a href="{% url 'admin:NEMO_chemical_changelist' %}">
                     Administration -> Detailed Administration -> Chemicals
