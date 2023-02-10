@@ -1,6 +1,7 @@
 FROM python:3.8
 
 RUN apt-get update && apt-get upgrade -y
+RUN apt-get install -y less vim
 
 # Intall NEMO (in the current directory) and Gunicorn
 COPY . /nemo/
