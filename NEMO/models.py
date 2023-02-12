@@ -1959,7 +1959,7 @@ class RecurringConsumableCharge(BaseModel):
 			self.save()
 
 	def is_empty(self):
-		return not any([self.customer, self.project])
+		return not any([self.customer_id, self.project_id])
 
 	def clear(self):
 		self.customer = None
@@ -1987,7 +1987,7 @@ class RecurringConsumableCharge(BaseModel):
 			from NEMO.forms import ConsumableWithdrawForm
 			from NEMO.views.customization import RecurringChargesCustomization
 			skip_customer = RecurringChargesCustomization.get_bool("recurring_charges_skip_customer_validation")
-			charge_form = ConsumableWithdrawForm({"customer": self.customer.id, "project": self.project.id, "consumable": self.consumable.id, "quantity": self.quantity})
+			charge_form = ConsumableWithdrawForm({"customer": self.customer_id, "project": self.project_id, "consumable": self.consumable_id, "quantity": self.quantity})
 			if not charge_form.is_valid():
 				if not skip_customer or list(charge_form.errors.keys()) != ["customer"]:
 					raise ValidationError(charge_form.errors)
