@@ -316,19 +316,26 @@ def deactivate(request, user_id):
 def reset_password(request, user_id):
 	try:
 		identity_service = get_identity_service()
-		user = get_object_or_404(User, id=user_id)
-		timeout = identity_service.get('timeout', 3)
-		result = requests.post(urljoin(identity_service['url'], '/reset_password/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
-		if result.status_code == HTTPStatus.OK:
-			dictionary = {
-				'title': 'Password reset',
-				'heading': 'The account password was set to the default',
-			}
+		if identity_service.get("available", False):
+			user = get_object_or_404(User, id=user_id)
+			timeout = identity_service.get('timeout', 3)
+			result = requests.post(urljoin(identity_service['url'], '/reset_password/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
+			if result.status_code == HTTPStatus.OK:
+				dictionary = {
+					'title': 'Password reset',
+					'heading': 'The account password was set to the default',
+				}
+			else:
+				dictionary = {
+					'title': 'Oops',
+					'heading': 'There was a problem resetting the password',
+					'content': 'The identity service returned HTTP error code {}. {}'.format(result.status_code, result.text),
+				}
 		else:
 			dictionary = {
-				'title': 'Oops',
+				'title': 'Identity service not available',
 				'heading': 'There was a problem resetting the password',
-				'content': 'The identity service returned HTTP error code {}. {}'.format(result.status_code, result.text),
+				'content': 'The identity service is not set or not available'
 			}
 	except Exception as e:
 		dictionary = {
@@ -344,19 +351,26 @@ def reset_password(request, user_id):
 def unlock_account(request, user_id):
 	try:
 		identity_service = get_identity_service()
-		user = get_object_or_404(User, id=user_id)
-		timeout = identity_service.get('timeout', 3)
-		result = requests.post(urljoin(identity_service['url'], '/unlock_account/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
-		if result.status_code == HTTPStatus.OK:
-			dictionary = {
-				'title': 'Account unlocked',
-				'heading': 'The account is now unlocked',
-			}
+		if identity_service.get("available", False):
+			user = get_object_or_404(User, id=user_id)
+			timeout = identity_service.get('timeout', 3)
+			result = requests.post(urljoin(identity_service['url'], '/unlock_account/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
+			if result.status_code == HTTPStatus.OK:
+				dictionary = {
+					'title': 'Account unlocked',
+					'heading': 'The account is now unlocked',
+				}
+			else:
+				dictionary = {
+					'title': 'Oops',
+					'heading': 'There was a problem unlocking the account',
+					'content': 'The identity service returned HTTP error code {}. {}'.format(result.status_code, result.text),
+				}
 		else:
 			dictionary = {
-				'title': 'Oops',
+				'title': 'Identity service not available',
 				'heading': 'There was a problem unlocking the account',
-				'content': 'The identity service returned HTTP error code {}. {}'.format(result.status_code, result.text),
+				'content': 'The identity service is not set or not available'
 			}
 	except Exception as e:
 		dictionary = {
