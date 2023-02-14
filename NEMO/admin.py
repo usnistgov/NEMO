@@ -992,9 +992,9 @@ class UserAdmin(admin.ModelAdmin):
 	)
 	search_fields = ("first_name", "last_name", "username", "email")
 	list_display = (
+		"username",
 		"first_name",
 		"last_name",
-		"username",
 		"email",
 		"is_active",
 		"domain",
