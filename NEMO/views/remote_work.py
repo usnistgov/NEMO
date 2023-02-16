@@ -17,6 +17,7 @@ from NEMO.utilities import (
 	month_list,
 )
 from NEMO.views.area_access import load_areas_for_use_in_template
+from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.policy import check_billing_to_project
 
 
@@ -133,6 +134,7 @@ def remote_work(request):
 		"month_list": month_list(),
 		"selected_staff": operator.id if operator else "all staff",
 		"selected_project": project.id if project else "all projects",
+		"remote_work_validation": ApplicationCustomization.get_bool("remote_work_validation"),
 	}
 	return render(request, "remote_work/remote_work.html", dictionary)
 

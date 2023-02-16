@@ -1,4 +1,5 @@
 {% extends 'staff_charges/staff_charges_base.html' %}
+{% block remote_work_title %}Current staff charge{% endblock %}
 {% block staff_charges_content %}
 	<div class="col-sm-12">
 		<form action="{% url 'end_staff_area_charge' %}" class="form-horizontal" method="post">

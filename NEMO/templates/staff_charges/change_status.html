@@ -1,6 +1,7 @@
 {% extends 'staff_charges/staff_charges_base.html' %}
 {% load custom_tags_and_filters %}
 {% load mptt_tags %}
+{% block remote_work_title %}Current staff charge{% endblock %}
 {% block staff_charges_content %}
 	<form action="{% url 'end_staff_charge' %}" class="form-horizontal" method="post">
 		{% csrf_token %}

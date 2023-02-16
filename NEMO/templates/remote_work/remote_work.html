@@ -1,8 +1,8 @@
 {% extends 'remote_work/remote_work_base.html' %}
 {% load static %}
 {% load custom_tags_and_filters %}
-{% block title %}Remote work{% endblock %}
-{% block remote_work_title %}Remote work{% endblock %}
+{% block title %}Previous work{% endblock %}
+{% block remote_work_title %}Previous work{% endblock %}
 {% block remote_work_tab_class %}active{% endblock %}
 {% block extrahead %}
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
@@ -86,33 +86,35 @@
 			<th>Project</th>
 			<th>Start</th>
 			<th>End</th>
-			<th>Validate</th>
+			{% if remote_work_validation %}<th>Validate</th>{% endif %}
 		</tr>
 		</thead>
 		<tbody>
 		{% for c in staff_charges %}
-			<tr class="staff_charge_row_{{ c.id }} {% if c.validated %}success-highlight{% endif %}">
+			<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and  c.validated %}success-highlight{% endif %}">
 				<td>{{ c.id }}</td>
 				<td>{{ c.staff_member }}</td>
 				<td>{{ c.customer }}</td>
 				<td>{{ c.project }}</td>
 				<td>{{ c.start }}</td>
 				<td>{{ c.end|default_if_none:'' }}</td>
-				<td {% if c.note and c.areaaccessrecord_set.exists %}rowspan="3" {% elif c.note or c.areaaccessrecord_set.exists %}rowspan="2"{% endif %} style="vertical-align: middle">
-                    {% url 'validate_staff_charge' c.id as validate_staff_charge_url %}
-                    {% if not c.validated %}
-                        {% button type="save" submit=False onclick="validate_charge('"|concat:validate_staff_charge_url|concat:"', this, '.staff_charge_row_"|concat:c.id|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
-                    {% endif %}
-                </td>
+				{% if remote_work_validation %}
+                    <td {% if c.note and c.areaaccessrecord_set.exists %}rowspan="3" {% elif c.note or c.areaaccessrecord_set.exists %}rowspan="2"{% endif %} style="vertical-align: middle">
+                        {% url 'validate_staff_charge' c.id as validate_staff_charge_url %}
+                        {% if not c.validated %}
+                            {% button type="save" submit=False onclick="validate_charge('"|concat:validate_staff_charge_url|concat:"', this, '.staff_charge_row_"|concat:c.id|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
+                        {% endif %}
+                    </td>
+                {% endif %}
 			</tr>
             {% if c.note %}
-                <tr class="staff_charge_row_{{ c.id }} {% if c.validated %}success-highlight{% endif %}">
+                <tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}">
                     <td style="border: none; padding-top: 0"></td>
                     <td colspan="5" style="border:none; padding-top: 0">Charge note: {{ c.note|linebreaksbr }}<br></td>
                 </tr>
             {% endif %}
 			{% for area_access_record in c.areaaccessrecord_set.all %}
-				<tr class="staff_charge_row_{{ c.id }} {% if c.validated %}success-highlight{% endif %}" style="font-size: smaller">
+				<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}" style="font-size: smaller">
 					<td style="border-top: none"></td>
 					<td colspan="3" style="border-top-style: dotted">{{ area_access_record.area.name }} access</td>
 					<td style="border-top-style: dotted">{{ area_access_record.start }}</td>
@@ -140,12 +142,12 @@
 			<th>Start</th>
 			<th>End</th>
 			<th>Tool</th>
-			<th>Validate</th>
+			{% if remote_work_validation %}<th>Validate</th>{% endif %}
 		</tr>
 		</thead>
 		<tbody>
 		{% for u in usage %}
-			<tr {% if u.validated %}class="success-highlight"{% endif %} id="usage_event_row_{{ forloop.counter }}">
+			<tr {% if remote_work_validation and u.validated %}class="success-highlight"{% endif %} id="usage_event_row_{{ forloop.counter }}">
 				<td>{{ u.id }}</td>
 				<td>{{ u.operator }}</td>
 				<td>{{ u.user }}</td>
@@ -153,12 +155,14 @@
 				<td>{{ u.start }}</td>
 				<td>{{ u.end|default_if_none:'' }}</td>
 				<td>{{ u.tool }}</td>
-				<td>
-                    {% url 'validate_usage_event' u.id as validate_usage_url %}
-                    {% if not u.validated %}
-                        {% button type="save" submit=False onclick="validate_charge('"|concat:validate_usage_url|concat:"', this, '#usage_event_row_"|concat:forloop.counter|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
-                    {% endif %}
-                </td>
+				{% if remote_work_validation %}
+                    <td>
+                        {% url 'validate_usage_event' u.id as validate_usage_url %}
+                        {% if not u.validated %}
+                            {% button type="save" submit=False onclick="validate_charge('"|concat:validate_usage_url|concat:"', this, '#usage_event_row_"|concat:forloop.counter|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
+                        {% endif %}
+                    </td>
+                {% endif %}
 			</tr>
         {% empty %}
             <tr><td colspan="8">

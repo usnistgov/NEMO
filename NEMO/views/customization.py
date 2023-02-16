@@ -148,6 +148,7 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_in": "",
 		"self_log_out": "",
 		"calendar_login_logout": "",
+		"remote_work_validation": "",
 	}
 
 	def save(self, request, element=None):
