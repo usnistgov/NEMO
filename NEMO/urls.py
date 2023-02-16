@@ -44,7 +44,6 @@ from NEMO.views import (
 	resources,
 	safety,
 	sidebar,
-	staff_charges,
 	status_dashboard,
 	tasks,
 	tool_control,
@@ -188,13 +187,16 @@ urlpatterns += [
 	path("modify_qualifications/", qualifications.modify_qualifications, name="modify_qualifications"),
 	path("get_qualified_users/", qualifications.get_qualified_users, name="get_qualified_users"),
 
-	# Staff charges:
-	path("staff_charges/", staff_charges.staff_charges, name="staff_charges"),
-	path("begin_staff_charge/", staff_charges.begin_staff_charge, name="begin_staff_charge"),
-	path("begin_staff_area_charge/", staff_charges.begin_staff_area_charge, name="begin_staff_area_charge"),
-	path("end_staff_area_charge/", staff_charges.end_staff_area_charge, name="end_staff_area_charge"),
-	path("end_staff_charge/", staff_charges.end_staff_charge, name="end_staff_charge"),
-	path("edit_staff_charge_note/", staff_charges.edit_staff_charge_note, name="edit_staff_charge_note"),
+	# Remote work:
+	path("remote_work/", remote_work.remote_work, name="remote_work"),
+	path("validate_staff_charge/<int:staff_charge_id>/", remote_work.validate_staff_charge, name="validate_staff_charge"),
+	path("validate_usage_event/<int:usage_event_id>/", remote_work.validate_usage_event, name="validate_usage_event"),
+	path("staff_charges/", remote_work.staff_charges, name="staff_charges"),
+	path("begin_staff_charge/", remote_work.begin_staff_charge, name="begin_staff_charge"),
+	path("begin_staff_area_charge/", remote_work.begin_staff_area_charge, name="begin_staff_area_charge"),
+	path("end_staff_area_charge/", remote_work.end_staff_area_charge, name="end_staff_area_charge"),
+	path("end_staff_charge/", remote_work.end_staff_charge, name="end_staff_charge"),
+	path("edit_staff_charge_note/", remote_work.edit_staff_charge_note, name="edit_staff_charge_note"),
 
 	# Status dashboard:
 	path("status_dashboard/", status_dashboard.status_dashboard, name="status_dashboard"),
@@ -374,11 +376,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# Account, project, and user history
 		re_path(r"^history/(?P<item_type>account|project|user)/(?P<item_id>\d+)/$", history.history, name="history"),
-
-		# Remote work:
-		path("remote_work/", remote_work.remote_work, name="remote_work"),
-		path("validate_staff_charge/<int:staff_charge_id>/", remote_work.validate_staff_charge, name="validate_staff_charge"),
-		path("validate_usage_event/<int:usage_event_id>/", remote_work.validate_usage_event, name="validate_usage_event"),
 
 		# Site customization:
 		path("customization/", customization.customization, name="customization"),
