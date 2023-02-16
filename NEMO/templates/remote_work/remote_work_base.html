@@ -2,13 +2,13 @@
 {% load custom_tags_and_filters %}
 {% block content %}
     <div class="clearfix" style="margin-top: 0;margin-bottom: 15px">
-        <span class="h1" style="margin-top: 0;margin-right: 15px">{% block remote_work_title %}Staff charge{% endblock %}</span>
+        <span class="h1" style="margin-top: 0;margin-right: 15px">{% block remote_work_title %}Staff charges{% endblock %}</span>
         <ul class="nav nav-pills nav-pills-spacer" id="tabs" style="display: inline-block;float: right;">
             <li class="{% block staff_charges_tab_class %}{% endblock %}">
                 <a href="#remote_work_tab" onclick="location.href = '{% url "staff_charges" %}'">Staff charges</a>
             </li>
             <li class="{% block remote_work_tab_class %}{% endblock %}">
-                <a href="#remote_work_tab" onclick="location.href = '{% url "remote_work" %}'">History</a>
+                <a href="#remote_work_tab" onclick="location.href = '{% url "remote_work" %}'">Previous work</a>
             </li>
         </ul>
     </div>
