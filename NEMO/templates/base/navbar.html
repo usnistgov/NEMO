@@ -3,12 +3,12 @@
 <nav class="navbar navbar-default navbar-static-top">
 	<div class="container">
 		<div class="navbar-header">
-			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#site-navigation" aria-label="menu button">
+			<a class="navbar-brand" href="{% url 'landing' %}">{{ site_title }}</a>
+			<button type="button" class="navbar-toggle navbar-btn" data-toggle="collapse" data-target="#site-navigation" aria-label="menu button">
 				<span class="icon-bar"></span>
 				<span class="icon-bar"></span>
 				<span class="icon-bar"></span>
 			</button>
-			<a class="navbar-brand" href="{% url 'landing' %}">{{ site_title }}</a>
 		</div>
 		<div class="navbar-collapse collapse" id="site-navigation">
 			<ul class="nav navbar-nav">
@@ -23,14 +23,14 @@
 						</ul>
 					</li>
 				{% endif %}
-				<li class="visible-xs"><a href="{%  url 'user_preferences' %}">Preferences</a></li>
+				<li class="visible-xs visible-sm"><a href="{%  url 'user_preferences' %}">Preferences</a></li>
 				{% if logout_allowed %}
-					<li class="visible-xs"><a href="{% url 'logout' %}">Logout</a></li>
+					<li class="visible-xs visible-sm"><a href="{% url 'logout' %}">Logout</a></li>
 				{% endif %}
 			</ul>
-			<ul class="nav navbar-nav navbar-right hidden-xs">
+			<ul class="nav navbar-nav navbar-right hidden-sm hidden-xs">
 				{% if user.is_staff and user.charging_staff_time %}
-					<li class="hidden-sm">
+					<li>
 						<p class="navbar-text">
 							<a id="staff_charge_link" href="{% url 'staff_charges' %}" style="color:red; text-decoration: none" data-toggle="tooltip" data-placement="bottom" title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">
 								Charging staff time
@@ -41,7 +41,7 @@
 						</script>
 					</li>
 				{% endif %}
-				<li class="hidden-sm"><p class="navbar-text">Welcome, {{ user.first_name }}</p></li>
+				<li><p class="navbar-text">Welcome, {{ user.first_name }}</p></li>
 				<li class="navbar-preferences"><a href="{%  url 'user_preferences' %}"><img src="{% static 'icons/preferences.png' %}" alt="preferences"/></a></li>
 				{% if logout_allowed %}
 					<li><a href="{% url 'logout' %}" style="padding-left: 0;padding-right: 0;margin-left: 15px; margin-right: 15px">Logout</a></li>
