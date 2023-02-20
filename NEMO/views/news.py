@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import any_staff_required
-from NEMO.models import News
+from NEMO.models import News, Notification
 from NEMO.utilities import format_datetime
 from NEMO.views.notifications import create_news_notification, delete_notification, get_notifications
 
@@ -16,7 +16,7 @@ from NEMO.views.notifications import create_news_notification, delete_notificati
 def view_recent_news(request):
 	dictionary = {
 		"news": News.objects.filter(archived=False).order_by("-pinned", "-last_updated"),
-		"notifications": get_notifications(request.user, News),
+		"notifications": get_notifications(request.user, Notification.Types.NEWS),
 	}
 	return render(request, "news/recent_news.html", dictionary)
 
@@ -45,7 +45,7 @@ def archive_story(request, story_id):
 		story = News.objects.get(id=story_id)
 		story.archived = True
 		story.save()
-		delete_notification(News, story.id)
+		delete_notification(Notification.Types.NEWS, story.id)
 	except News.DoesNotExist:
 		pass
 	return redirect(reverse("view_recent_news"))

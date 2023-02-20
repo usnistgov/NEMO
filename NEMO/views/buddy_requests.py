@@ -16,7 +16,7 @@ from NEMO.exceptions import (
 	PhysicalAccessExpiredUserError,
 )
 from NEMO.forms import BuddyRequestForm
-from NEMO.models import Area, BuddyRequest, BuddyRequestMessage, User
+from NEMO.models import Area, BuddyRequest, BuddyRequestMessage, Notification, User
 from NEMO.utilities import get_full_url
 from NEMO.views.customization import UserRequestsCustomization
 from NEMO.views.notifications import (
@@ -41,8 +41,8 @@ def buddy_requests(request):
 	dictionary = {
 		"buddy_requests": buddy_requests,
 		"buddy_board_description": UserRequestsCustomization.get("buddy_board_description"),
-		"request_notifications": get_notifications(request.user, BuddyRequest),
-		"reply_notifications": get_notifications(request.user, BuddyRequestMessage),
+		"request_notifications": get_notifications(request.user, Notification.Types.BUDDY_REQUEST),
+		"reply_notifications": get_notifications(request.user, Notification.Types.BUDDY_REQUEST_REPLY),
 	}
 	return render(request, "requests/buddy_requests/buddy_requests.html", dictionary)
 
@@ -94,7 +94,7 @@ def delete_buddy_request(request, request_id):
 
 	buddy_request.deleted = True
 	buddy_request.save(update_fields=["deleted"])
-	delete_notification(BuddyRequest, buddy_request.id)
+	delete_notification(Notification.Types.BUDDY_REQUEST, buddy_request.id)
 	return redirect("user_requests", "buddy")
 
 

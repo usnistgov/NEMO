@@ -13,6 +13,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.forms import TemporaryPhysicalAccessRequestForm
 from NEMO.models import (
+	Notification,
 	PhysicalAccessLevel,
 	RequestStatus,
 	TemporaryPhysicalAccess,
@@ -60,7 +61,7 @@ def access_requests(request):
 		"expired_access_requests": physical_access_requests.filter(status=RequestStatus.EXPIRED)[:max_requests],
 		"access_requests_description": UserRequestsCustomization.get("access_requests_description"),
 		"access_request_notifications": get_notifications(
-			request.user, TemporaryPhysicalAccessRequest, delete=not user.is_facility_manager
+			request.user, Notification.Types.TEMPORARY_ACCESS_REQUEST, delete=not user.is_facility_manager
 		),
 	}
 	return render(request, "requests/access_requests/access_requests.html", dictionary)
@@ -122,10 +123,10 @@ def create_access_request(request, request_id=None):
 			create_access_request_notification(new_access_request)
 			if edit:
 				# remove notification for current user and other facility managers
-				delete_notification(TemporaryPhysicalAccessRequest, new_access_request.id, [user])
+				delete_notification(Notification.Types.TEMPORARY_ACCESS_REQUEST, new_access_request.id, [user])
 				if user.is_facility_manager:
 					managers = User.objects.filter(is_active=True, is_facility_manager=True)
-					delete_notification(TemporaryPhysicalAccessRequest, new_access_request.id, managers)
+					delete_notification(Notification.Types.TEMPORARY_ACCESS_REQUEST, new_access_request.id, managers)
 			send_request_received_email(request, new_access_request, edit)
 			return redirect("user_requests", "access")
 		else:
@@ -149,7 +150,7 @@ def delete_access_request(request, request_id):
 
 	access_request.deleted = True
 	access_request.save(update_fields=["deleted"])
-	delete_notification(TemporaryPhysicalAccessRequest, access_request.id)
+	delete_notification(Notification.Types.TEMPORARY_ACCESS_REQUEST, access_request.id)
 	return redirect("user_requests", "access")
 
 
@@ -167,8 +168,8 @@ def mark_requests_expired():
 	for expired_request in TemporaryPhysicalAccessRequest.objects.filter(
 		status=RequestStatus.PENDING, deleted=False, end_time__lt=timezone.now()
 	):
-		delete_notification(TemporaryPhysicalAccessRequest, expired_request.id)
-		expired_request.status = TemporaryPhysicalAccessRequest.Status.EXPIRED
+		delete_notification(Notification.Types.TEMPORARY_ACCESS_REQUEST, expired_request.id)
+		expired_request.status = RequestStatus.EXPIRED
 		expired_request.save(update_fields=["status"])
 
 

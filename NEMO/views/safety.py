@@ -7,7 +7,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import staff_member_required
 from NEMO.forms import SafetyIssueCreationForm, SafetyIssueUpdateForm
-from NEMO.models import Chemical, ChemicalHazard, SafetyCategory, SafetyIssue, SafetyItem
+from NEMO.models import Chemical, ChemicalHazard, Notification, SafetyCategory, SafetyIssue, SafetyItem
 from NEMO.templatetags.custom_tags_and_filters import navigation_url
 from NEMO.utilities import (
 	BasicDisplayTable,
@@ -101,7 +101,7 @@ def safety_issues(request):
 	if not request.user.is_staff:
 		tickets = tickets.filter(visible=True)
 	dictionary["tickets"] = tickets
-	dictionary["notifications"] = get_notifications(request.user, SafetyIssue)
+	dictionary["notifications"] = get_notifications(request.user, Notification.Types.SAFETY)
 	return render(request, "safety/safety_issues.html", dictionary)
 
 
@@ -158,7 +158,7 @@ def update_safety_issue(request, ticket_id):
 		if form.is_valid():
 			issue = form.save()
 			if issue.resolved:
-				delete_notification(SafetyIssue, issue.id)
+				delete_notification(Notification.Types.SAFETY, issue.id)
 			messages.success(request, "This safety issue was updated successfully")
 			return redirect("safety_issues")
 	dictionary["ticket"] = get_object_or_404(SafetyIssue, id=ticket_id)

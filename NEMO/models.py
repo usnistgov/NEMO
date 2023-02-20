@@ -2552,12 +2552,6 @@ class ContactInformation(BaseModel):
 
 
 class Notification(BaseModel):
-	user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
-	expiration = models.DateTimeField()
-	content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-	object_id = models.PositiveIntegerField()
-	content_object = GenericForeignKey('content_type', 'object_id')
-
 	class Types:
 		NEWS = 'news'
 		SAFETY = 'safetyissue'
@@ -2571,6 +2565,14 @@ class Notification(BaseModel):
 			(BUDDY_REQUEST_REPLY, 'New buddy request reply - notifies request creator and users who have replied'),
 			(TEMPORARY_ACCESS_REQUEST, 'New access request - notifies other users on request and reviewers')
 		)
+
+	user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
+	expiration = models.DateTimeField()
+	notification_type = models.CharField(max_length=100, choices=Types.Choices)
+	content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+	object_id = models.PositiveIntegerField()
+	content_object = GenericForeignKey('content_type', 'object_id')
+
 
 
 class LandingPageChoice(BaseModel):
@@ -2919,6 +2921,23 @@ def auto_delete_file_on_chemical_change(sender, instance: Chemical, **kwargs):
 		if not old_file == new_file:
 			if os.path.isfile(old_file.path):
 				os.remove(old_file.path)
+
+
+class AdjustmentRequest(BaseModel):
+	creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the request was created.")
+	creator = models.ForeignKey("User", related_name='adjustment_requests_created', on_delete=models.CASCADE)
+	last_updated = models.DateTimeField(auto_now=True, help_text="The last time this request was modified.")
+	last_updated_by = models.ForeignKey("User", null=True, blank=True, related_name="adjustment_requests_updated", help_text="The last user who modified this request.", on_delete=models.SET_NULL)
+	item_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+	item_id = models.PositiveIntegerField()
+	item = GenericForeignKey('item_type', 'item_id')
+	description = models.TextField(null=True, blank=True, help_text="The description of the request.")
+	status = models.IntegerField(choices=RequestStatus.choices_without_expired(), default=RequestStatus.PENDING)
+	reviewer = models.ForeignKey("User", null=True, blank=True, related_name='adjustment_requests_reviewed', on_delete=models.CASCADE)
+	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
+
+	class Meta:
+		ordering = ['-creation_time']
 
 
 class EmailLog(BaseModel):
