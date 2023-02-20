@@ -2923,23 +2923,6 @@ def auto_delete_file_on_chemical_change(sender, instance: Chemical, **kwargs):
 				os.remove(old_file.path)
 
 
-class AdjustmentRequest(BaseModel):
-	creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the request was created.")
-	creator = models.ForeignKey("User", related_name='adjustment_requests_created', on_delete=models.CASCADE)
-	last_updated = models.DateTimeField(auto_now=True, help_text="The last time this request was modified.")
-	last_updated_by = models.ForeignKey("User", null=True, blank=True, related_name="adjustment_requests_updated", help_text="The last user who modified this request.", on_delete=models.SET_NULL)
-	item_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-	item_id = models.PositiveIntegerField()
-	item = GenericForeignKey('item_type', 'item_id')
-	description = models.TextField(null=True, blank=True, help_text="The description of the request.")
-	status = models.IntegerField(choices=RequestStatus.choices_without_expired(), default=RequestStatus.PENDING)
-	reviewer = models.ForeignKey("User", null=True, blank=True, related_name='adjustment_requests_reviewed', on_delete=models.CASCADE)
-	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
-
-	class Meta:
-		ordering = ['-creation_time']
-
-
 class EmailLog(BaseModel):
 	category = models.IntegerField(choices=EmailCategory.Choices, default=EmailCategory.GENERAL)
 	when = models.DateTimeField(null=False, auto_now_add=True)
