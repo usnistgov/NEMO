@@ -189,14 +189,14 @@ urlpatterns += [
 
 	# Remote work:
 	path("remote_work/", remote_work.remote_work, name="remote_work"),
-	path("validate_staff_charge/<int:staff_charge_id>/", remote_work.validate_staff_charge, name="validate_staff_charge"),
-	path("validate_usage_event/<int:usage_event_id>/", remote_work.validate_usage_event, name="validate_usage_event"),
 	path("staff_charges/", remote_work.staff_charges, name="staff_charges"),
 	path("begin_staff_charge/", remote_work.begin_staff_charge, name="begin_staff_charge"),
 	path("begin_staff_area_charge/", remote_work.begin_staff_area_charge, name="begin_staff_area_charge"),
 	path("end_staff_area_charge/", remote_work.end_staff_area_charge, name="end_staff_area_charge"),
 	path("end_staff_charge/", remote_work.end_staff_charge, name="end_staff_charge"),
 	path("edit_staff_charge_note/", remote_work.edit_staff_charge_note, name="edit_staff_charge_note"),
+	path("validate_staff_charge/<int:staff_charge_id>/", remote_work.validate_staff_charge, name="validate_staff_charge"),
+	path("validate_usage_event/<int:usage_event_id>/", remote_work.validate_usage_event, name="validate_usage_event"),
 
 	# Status dashboard:
 	path("status_dashboard/", status_dashboard.status_dashboard, name="status_dashboard"),
