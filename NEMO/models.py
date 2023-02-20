@@ -170,6 +170,23 @@ class EmailNotificationType(object):
 		return [(choice[0], choice[1]) for choice in cls.Choices if choice[0] not in [cls.OFF, cls.ALTERNATE_EMAIL]]
 
 
+class RequestStatus(object):
+	PENDING = 0
+	APPROVED = 1
+	DENIED = 2
+	EXPIRED = 3
+	Choices = (
+		(PENDING, "Pending"),
+		(APPROVED, "Approved"),
+		(DENIED, "Denied"),
+		(EXPIRED, "Expired"),
+	)
+
+	@classmethod
+	def choices_without_expired(cls):
+		return [(choice[0], choice[1]) for choice in cls.Choices if choice[0] not in [cls.EXPIRED]]
+
+
 class CalendarDisplay(BaseModel):
 	"""
 	Inherit from this class to express that a class type can be displayed in the NEMO calendar.
@@ -350,19 +367,6 @@ class TemporaryPhysicalAccess(BaseModel):
 
 
 class TemporaryPhysicalAccessRequest(BaseModel):
-
-	class Status(object):
-		PENDING = 0
-		APPROVED = 1
-		DENIED = 2
-		EXPIRED = 3
-		Choices = (
-			(PENDING, "Pending"),
-			(APPROVED, "Approved"),
-			(DENIED, "Denied"),
-			(EXPIRED, "Expired"),
-		)
-
 	creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the request was created.")
 	creator = models.ForeignKey("User", related_name='access_requests_created', on_delete=models.CASCADE)
 	last_updated = models.DateTimeField(auto_now=True, help_text="The last time this request was modified.")
@@ -372,7 +376,7 @@ class TemporaryPhysicalAccessRequest(BaseModel):
 	start_time = models.DateTimeField(help_text="The requested time for the access to start.")
 	end_time = models.DateTimeField(help_text="The requested time for the access to end.")
 	other_users = models.ManyToManyField("User", blank=True, help_text="Select the other users requesting access.")
-	status = models.IntegerField(choices=Status.Choices, default=Status.PENDING)
+	status = models.IntegerField(choices=RequestStatus.Choices, default=RequestStatus.PENDING)
 	reviewer = models.ForeignKey("User", null=True, blank=True, related_name='access_requests_reviewed', on_delete=models.CASCADE)
 	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
 
