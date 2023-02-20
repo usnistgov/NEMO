@@ -12,7 +12,13 @@ from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.forms import TemporaryPhysicalAccessRequestForm
-from NEMO.models import PhysicalAccessLevel, TemporaryPhysicalAccess, TemporaryPhysicalAccessRequest, User
+from NEMO.models import (
+	PhysicalAccessLevel,
+	RequestStatus,
+	TemporaryPhysicalAccess,
+	TemporaryPhysicalAccessRequest,
+	User,
+)
 from NEMO.utilities import (
 	EmailCategory,
 	beginning_of_the_day,
@@ -40,7 +46,6 @@ access_request_logger = getLogger(__name__)
 def access_requests(request):
 	mark_requests_expired()
 	user: User = request.user
-	status = TemporaryPhysicalAccessRequest.Status
 	max_requests = quiet_int(UserRequestsCustomization.get("access_requests_display_max"), None)
 	physical_access_requests = TemporaryPhysicalAccessRequest.objects.filter(deleted=False)
 	physical_access_requests = physical_access_requests.order_by("-end_time")
@@ -49,10 +54,10 @@ def access_requests(request):
 		other_user_physical_access_requests = physical_access_requests.filter(other_users__in=[user]).distinct()
 		physical_access_requests = physical_access_requests.filter(Q(creator=user) | Q(id__in=other_user_physical_access_requests))
 	dictionary = {
-		"pending_access_requests": physical_access_requests.filter(status=status.PENDING).order_by("start_time"),
-		"approved_access_requests": physical_access_requests.filter(status=status.APPROVED)[:max_requests],
-		"denied_access_requests": physical_access_requests.filter(status=status.DENIED)[:max_requests],
-		"expired_access_requests": physical_access_requests.filter(status=status.EXPIRED)[:max_requests],
+		"pending_access_requests": physical_access_requests.filter(status=RequestStatus.PENDING).order_by("start_time"),
+		"approved_access_requests": physical_access_requests.filter(status=RequestStatus.APPROVED)[:max_requests],
+		"denied_access_requests": physical_access_requests.filter(status=RequestStatus.DENIED)[:max_requests],
+		"expired_access_requests": physical_access_requests.filter(status=RequestStatus.EXPIRED)[:max_requests],
 		"access_requests_description": UserRequestsCustomization.get("access_requests_description"),
 		"access_request_notifications": get_notifications(
 			request.user, TemporaryPhysicalAccessRequest, delete=not user.is_facility_manager
@@ -82,7 +87,7 @@ def create_access_request(request, request_id=None):
 		if edit:
 			if access_request.deleted:
 				errors.append("You are not allowed to edit expired or deleted requests.")
-			if access_request.status != TemporaryPhysicalAccessRequest.Status.PENDING:
+			if access_request.status != RequestStatus.PENDING:
 				errors.append("Only pending requests can be modified.")
 			if access_request.creator != user and not user.is_facility_manager:
 				errors.append("You are not allowed to edit a request you didn't create.")
@@ -106,10 +111,10 @@ def create_access_request(request, request_id=None):
 				decision = [state for state in ["approve_request", "deny_request"] if state in request.POST]
 				if decision:
 					if next(iter(decision)) == "approve_request":
-						access_request.status = TemporaryPhysicalAccessRequest.Status.APPROVED
+						access_request.status = RequestStatus.APPROVED
 						create_temporary_access(access_request)
 					else:
-						access_request.status = TemporaryPhysicalAccessRequest.Status.DENIED
+						access_request.status = RequestStatus.DENIED
 					access_request.reviewer = user
 
 			form.instance.last_updated_by = user
@@ -139,7 +144,7 @@ def delete_access_request(request, request_id):
 
 	if access_request.creator != request.user:
 		return HttpResponseBadRequest("You are not allowed to delete a request you didn't create.")
-	if access_request and access_request.status != TemporaryPhysicalAccessRequest.Status.PENDING:
+	if access_request and access_request.status != RequestStatus.PENDING:
 		return HttpResponseBadRequest("You are not allowed to delete a request that is not pending.")
 
 	access_request.deleted = True
@@ -160,7 +165,7 @@ def create_temporary_access(access_request: TemporaryPhysicalAccessRequest):
 
 def mark_requests_expired():
 	for expired_request in TemporaryPhysicalAccessRequest.objects.filter(
-			status=TemporaryPhysicalAccessRequest.Status.PENDING, deleted=False, end_time__lt=timezone.now()
+		status=RequestStatus.PENDING, deleted=False, end_time__lt=timezone.now()
 	):
 		delete_notification(TemporaryPhysicalAccessRequest, expired_request.id)
 		expired_request.status = TemporaryPhysicalAccessRequest.Status.EXPIRED
@@ -183,9 +188,9 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 		ccs.append(user_office_email)
 		status = (
 			"approved"
-			if access_request.status == TemporaryPhysicalAccessRequest.Status.APPROVED
+			if access_request.status == RequestStatus.APPROVED
 			else "denied"
-			if access_request.status == TemporaryPhysicalAccessRequest.Status.DENIED
+			if access_request.status == RequestStatus.DENIED
 			else "updated"
 			if edit
 			else "received"
@@ -250,9 +255,8 @@ def process_weekend_access_notification(user_office_email, email_to, access_cont
 	beginning_of_the_weekend = beginning_of_the_week + timedelta(days=5)
 
 	# Approved access request that include weekend time do overlap with weekend date interval.
-	approved_status = TemporaryPhysicalAccessRequest.Status.APPROVED
 	approved_weekend_access_requests = TemporaryPhysicalAccessRequest.objects.filter(
-		deleted=False, status=approved_status
+		deleted=False, status=RequestStatus.APPROVED
 	)
 	approved_weekend_access_requests = approved_weekend_access_requests.exclude(start_time__gte=end_of_the_week)
 	approved_weekend_access_requests = approved_weekend_access_requests.exclude(end_time__lte=beginning_of_the_weekend)
