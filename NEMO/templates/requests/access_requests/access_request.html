@@ -78,7 +78,7 @@
 			<textarea class="form-control" rows="3" name="description" id="description" maxlength="{{ form.fields.description.max_length }}" placeholder="Provide additional details if needed">{{ form.description.value|default_if_none:"" }}</textarea>
 		</div>
 		<div class="text-right">
-            {% if form.instance.status == form.instance.Status.PENDING %}
+            {% if form.instance.get_status_display == "Pending" %}
                 {% if form.instance.id and user.is_facility_manager %}
                     {% button type="save" submit=False name="approve_request" title="Approve request" icon="glyphicon-ok-circle" value="Approve" onclick="if (confirm('Are you sure you want to approve this request?')) {submit_and_disable(this)}" %}
                     {% button type="delete" submit=False name="deny_request" title="Deny request" icon="glyphicon-ban-circle" value="Deny" onclick="if (confirm('Are you sure you want to deny this request?')) {submit_and_disable(this)}" %}
