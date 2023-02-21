@@ -100,7 +100,7 @@ from NEMO.models import (
 	record_local_many_to_many_changes,
 	record_remote_many_to_many_changes_and_save,
 )
-from NEMO.utilities import format_daterange
+from NEMO.utilities import admin_get_item, format_daterange
 from NEMO.widgets.dynamic_form import (
 	DynamicForm,
 	PostUsageFloatFieldQuestion,
@@ -835,23 +835,35 @@ class ResourceAdmin(admin.ModelAdmin):
 
 @register(ActivityHistory)
 class ActivityHistoryAdmin(admin.ModelAdmin):
-	list_display = ("__str__", "content_type", "object_id", "action", "date", "authorizer")
+	list_display = ("__str__", "get_item", "action", "date", "authorizer")
+	list_filter = ("action", ("content_type", admin.RelatedOnlyFieldListFilter),)
 	date_hierarchy = "date"
+
+	@admin.display(description="Item")
+	def get_item(self, obj: ActivityHistory):
+		return admin_get_item(obj.content_type, obj.object_id)
 
 
 @register(MembershipHistory)
 class MembershipHistoryAdmin(admin.ModelAdmin):
 	list_display = (
 		"__str__",
-		"parent_content_type",
-		"parent_object_id",
+		"get_parent",
 		"action",
-		"child_content_type",
-		"child_object_id",
+		"get_child",
 		"date",
 		"authorizer",
 	)
+	list_filter = (("parent_content_type", admin.RelatedOnlyFieldListFilter), ("child_content_type", admin.RelatedOnlyFieldListFilter),)
 	date_hierarchy = "date"
+
+	@admin.display(description="Parent")
+	def get_parent(self, obj: MembershipHistory):
+		return admin_get_item(obj.parent_content_type, obj.parent_object_id)
+
+	@admin.display(description="Child")
+	def get_child(self, obj: MembershipHistory):
+		return admin_get_item(obj.child_content_type, obj.child_object_id)
 
 
 @register(UserType)
@@ -1367,8 +1379,12 @@ class NewsAdmin(admin.ModelAdmin):
 
 @register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
-	list_display = ("id", "user", "notification_type", "expiration", "content_type", "object_id")
-	list_filter = ("notification_type", ("content_type", admin.RelatedOnlyFieldListFilter),)
+	list_display = ("id", "user", "get_item", "notification_type", "expiration")
+	list_filter = (("content_type", admin.RelatedOnlyFieldListFilter), "notification_type", )
+
+	@admin.display(description="Item")
+	def get_item(self, obj: Notification):
+		return admin_get_item(obj.content_type, obj.object_id)
 
 
 @register(BadgeReader)
