@@ -803,11 +803,9 @@ class TaskHistoryAdmin(admin.ModelAdmin):
 class TaskImagesAdmin(admin.ModelAdmin):
 	list_display = ("id", "get_tool", "task", "uploaded_at")
 
+	@admin.display(ordering="tool", description="Tool Name")
 	def get_tool(self, task_image: TaskImages):
 		return task_image.task.tool.name
-
-	get_tool.admin_order_field = "tool"  # Allows column order sorting
-	get_tool.short_description = "Tool Name"  # Renames column head
 
 
 @register(Comment)
@@ -1251,10 +1249,9 @@ class ClosureAdmin(admin.ModelAdmin):
 				pass
 		return ""
 
+	@admin.display(description="Times")
 	def get_times_display(self, closure: Closure) -> str:
 		return mark_safe("<br>".join([format_daterange(ct.start_time, ct.end_time, dt_format="SHORT_DATETIME_FORMAT", d_format="SHORT_DATE_FORMAT", date_separator=" ", time_separator=" - ") for ct in ClosureTime.objects.filter(closure=closure)]))
-
-	get_times_display.short_description = 'Times'
 
 
 class TemporaryPhysicalAccessAdminForm(forms.ModelForm):
@@ -1282,16 +1279,13 @@ class TemporaryPhysicalAccessAdmin(admin.ModelAdmin):
 	list_filter = ("physical_access_level", "physical_access_level__area", "end_time", "start_time")
 	form = TemporaryPhysicalAccessAdminForm
 
+	@admin.display(ordering="physical_access_level__area", description="Area")
 	def get_area_name(self, tpa: TemporaryPhysicalAccess) -> str:
 		return tpa.physical_access_level.area.name
 
-	get_area_name.admin_order_field = 'physical_access_level__area'
-	get_area_name.short_description = 'Area'
-
+	@admin.display(description="Schedule")
 	def get_schedule_display_with_times(self, tpa: TemporaryPhysicalAccess) -> str:
 		return tpa.physical_access_level.get_schedule_display_with_times()
-
-	get_schedule_display_with_times.short_description = 'Schedule'
 
 
 class TemporaryPhysicalAccessRequestFormAdmin(forms.ModelForm):
@@ -1317,17 +1311,13 @@ class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
 	list_filter = ("status", "deleted")
 	filter_horizontal = ("other_users",)
 
+	@admin.display(ordering="other_users", description="Buddies")
 	def other_users_display(self, access_request: TemporaryPhysicalAccessRequest):
 		return mark_safe("<br>".join([u.username for u in access_request.other_users.all()]))
 
-	other_users_display.admin_order_field = "other_users"
-	other_users_display.short_description = "Buddies"
-
+	@admin.display(ordering="status", description="Status")
 	def status_display(self, access_request: TemporaryPhysicalAccessRequest):
 		return access_request.get_status_display()
-
-	status_display.admin_order_field = "status"
-	status_display.short_description = "Status"
 
 
 @register(ContactInformationCategory)
