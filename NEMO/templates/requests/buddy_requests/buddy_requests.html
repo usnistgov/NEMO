@@ -36,7 +36,7 @@
                                     {% endif %}
                                 </div>
                             </li>
-                            {% for message in br.replies.all %}
+                            {% for message in br.replies %}
                                 <li class="buddy-list-item" id="{{ message.id }}">
                                     {% if message.id in reply_notifications %}<span class="label label-success">New reply</span>{% endif %}
                                     <div class="list-group-item buddy-list-item-message">

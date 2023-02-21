@@ -4,7 +4,7 @@ from typing import List, Set
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
-from NEMO.models import BuddyRequest, BuddyRequestMessage, Notification, TemporaryPhysicalAccessRequest, User
+from NEMO.models import BuddyRequest, Notification, RequestMessage, TemporaryPhysicalAccessRequest, User
 from NEMO.utilities import end_of_the_day
 
 
@@ -78,12 +78,12 @@ def create_buddy_request_notification(buddy_request: BuddyRequest):
 			)
 
 
-def create_buddy_reply_notification(reply: BuddyRequestMessage):
-	creator: User = reply.buddy_request.user
-	request_end = reply.buddy_request.end
+def create_buddy_reply_notification(reply: RequestMessage):
+	creator: User = reply.content_object.user
+	request_end = reply.content_object.end
 	# Unread buddy request reply notifications expire after the request ends
 	expiration = end_of_the_day(datetime(request_end.year, request_end.month, request_end.day))
-	for user in reply.buddy_request.creator_and_reply_users():
+	for user in reply.content_object.creator_and_reply_users():
 		if user != reply.author and (
 			user == creator or user.get_preferences().display_new_buddy_request_reply_notification
 		):

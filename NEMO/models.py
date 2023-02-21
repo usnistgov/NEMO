@@ -2574,7 +2574,6 @@ class Notification(BaseModel):
 	content_object = GenericForeignKey('content_type', 'object_id')
 
 
-
 class LandingPageChoice(BaseModel):
 	image = models.ImageField(help_text='An image that symbolizes the choice. It is automatically resized to 128x128 pixels when displayed, so set the image to this size before uploading to optimize bandwidth usage and landing page load time')
 	name = models.CharField(max_length=40, help_text='The textual name that will be displayed underneath the image')
@@ -2755,9 +2754,13 @@ class BuddyRequest(BaseModel):
 	expired = models.BooleanField(default=False, help_text="Indicates the request has expired and won't be shown anymore.")
 	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
 
+	@property
+	def replies(self) -> QuerySet:
+		return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
+
 	def creator_and_reply_users(self) -> List[User]:
 		result = {self.user}
-		for reply in self.replies.all():
+		for reply in self.replies:
 			result.add(reply.author)
 		return list(result)
 
@@ -2765,8 +2768,10 @@ class BuddyRequest(BaseModel):
 		return f"BuddyRequest [{self.id}]"
 
 
-class BuddyRequestMessage(BaseModel):
-	buddy_request = models.ForeignKey(BuddyRequest, related_name="replies", help_text="The request that this message relates to.", on_delete=models.CASCADE)
+class RequestMessage(BaseModel):
+	content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+	object_id = models.PositiveIntegerField()
+	content_object = GenericForeignKey('content_type', 'object_id')
 	author = models.ForeignKey(User, on_delete=models.CASCADE)
 	creation_date = models.DateTimeField(default=timezone.now)
 	content = models.TextField()

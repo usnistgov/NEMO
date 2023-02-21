@@ -16,7 +16,7 @@ from NEMO.exceptions import (
 	PhysicalAccessExpiredUserError,
 )
 from NEMO.forms import BuddyRequestForm
-from NEMO.models import Area, BuddyRequest, BuddyRequestMessage, Notification, User
+from NEMO.models import Area, BuddyRequest, Notification, RequestMessage, User
 from NEMO.utilities import get_full_url
 from NEMO.views.customization import UserRequestsCustomization
 from NEMO.views.notifications import (
@@ -109,8 +109,8 @@ def buddy_request_reply(request, request_id):
 	if error_message:
 		return HttpResponseBadRequest(error_message)
 	elif message_content:
-		reply = BuddyRequestMessage()
-		reply.buddy_request = buddy_request
+		reply = RequestMessage()
+		reply.content_object = buddy_request
 		reply.content = message_content
 		reply.author = user
 		reply.save()
@@ -121,9 +121,9 @@ def buddy_request_reply(request, request_id):
 	return redirect("user_requests", "buddy")
 
 
-def email_interested_parties(reply: BuddyRequestMessage, reply_url):
-	creator: User = reply.buddy_request.user
-	for user in reply.buddy_request.creator_and_reply_users():
+def email_interested_parties(reply: RequestMessage, reply_url):
+	creator: User = reply.content_object.user
+	for user in reply.content_object.creator_and_reply_users():
 		if user != reply.author and (user == creator or user.get_preferences().email_new_buddy_request_reply):
 			creator_display = f"{creator.get_name()}'s" if creator != user else "your"
 			creator_display_his = creator_display if creator != reply.author else "his"

@@ -8,12 +8,11 @@ from django.contrib.admin import register
 from django.contrib.admin.decorators import display
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.admin import GenericTabularInline
 from django.db.models import Q
 from django.db.models.fields.files import FieldFile
 from django.forms import BaseInlineFormSet
 from django.template.defaultfilters import linebreaksbr, urlencode
-from django.urls import reverse
-from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFilter
 
@@ -35,7 +34,6 @@ from NEMO.models import (
 	AreaAccessRecord,
 	BadgeReader,
 	BuddyRequest,
-	BuddyRequestMessage,
 	Chemical,
 	ChemicalHazard,
 	Closure,
@@ -65,6 +63,7 @@ from NEMO.models import (
 	ProjectDiscipline,
 	ProjectDocuments,
 	RecurringConsumableCharge,
+	RequestMessage,
 	Reservation,
 	ReservationQuestions,
 	Resource,
@@ -514,7 +513,7 @@ class ProjectAdmin(admin.ModelAdmin):
 	filter_horizontal = ("only_allow_tools",)
 	search_fields = ("name", "application_identifier", "account__name")
 	list_filter = ("active", "account", "start_date")
-	inlines = (ProjectDocumentsInline,)
+	inlines = [ProjectDocumentsInline]
 	form = ProjectAdminForm
 
 	def save_model(self, request, obj, form, change):
@@ -922,7 +921,7 @@ class UserDocumentsInline(admin.TabularInline):
 @register(User)
 class UserAdmin(admin.ModelAdmin):
 	form = UserAdminForm
-	inlines = (UserDocumentsInline,)
+	inlines = [UserDocumentsInline]
 	filter_horizontal = (
 		"groups",
 		"user_permissions",
@@ -1378,8 +1377,8 @@ class NewsAdmin(admin.ModelAdmin):
 
 @register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
-	list_display = ("id", "user", "expiration", "content_type", "object_id")
-	list_filter = (("content_type", admin.RelatedOnlyFieldListFilter),)
+	list_display = ("id", "user", "notification_type", "expiration", "content_type", "object_id")
+	list_filter = ("notification_type", ("content_type", admin.RelatedOnlyFieldListFilter),)
 
 
 @register(BadgeReader)
@@ -1437,28 +1436,21 @@ class CounterAdmin(admin.ModelAdmin):
 	form = CounterAdminForm
 
 
+class RequestMessageInlines(GenericTabularInline):
+	model = RequestMessage
+	extra = 1
+
+
 @register(BuddyRequest)
 class BuddyRequestAdmin(admin.ModelAdmin):
+	inlines = [RequestMessageInlines]
 	form = BuddyRequestForm
 	list_display = ("user", "start", "end", "area", "reply_count", "expired", "deleted")
 	list_filter = ("expired", "deleted")
 
+	@admin.display(ordering="replies", description="Replies")
 	def reply_count(self, buddy_request: BuddyRequest):
 		return buddy_request.replies.count()
-
-	reply_count.admin_order_field = "replies"
-	reply_count.short_description = "Replies"
-
-
-@register(BuddyRequestMessage)
-class BuddyRequestMessageAdmin(admin.ModelAdmin):
-	list_display = ("id", "link_to_buddy_request", "author", "creation_date")
-
-	def link_to_buddy_request(self, obj):
-		link = reverse("admin:NEMO_buddyrequest_change", args=[obj.buddy_request.id])  # model name has to be lowercase
-		return format_html('<a href="%s">%s</a>' % (link, obj.buddy_request))
-
-	link_to_buddy_request.short_description = "BUDDY REQUEST"
 
 
 @register(StaffAbsenceType)
