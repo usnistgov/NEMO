@@ -37,5 +37,9 @@ def create_news_for_version(apps, version, extra_content=None):
         expiration = now + timedelta(days=30)  # Unread news story notifications always expire after 30 days
         for u in users:
             Notification.objects.create(
-                user=u, expiration=expiration, content_type=news_content_type, object_id=story.id
+                user=u,
+                expiration=expiration,
+                notification_type=Notification.Types.NEWS,
+                content_type=news_content_type,
+                object_id=story.id,
             )
