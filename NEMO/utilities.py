@@ -13,8 +13,10 @@ from urllib.parse import urljoin
 from PIL import Image
 from dateutil import rrule
 from dateutil.parser import parse
+from django.apps import apps
 from django.conf import settings
 from django.contrib.admin import ModelAdmin
+from django.contrib.contenttypes.models import ContentType
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
@@ -23,8 +25,10 @@ from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import render
 from django.template import Template
 from django.template.context import make_context
+from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.formats import date_format, get_format, time_format
+from django.utils.html import format_html
 from django.utils.timezone import is_naive, localtime
 
 utilities_logger = getLogger(__name__)
@@ -615,3 +619,28 @@ def capitalize(string: Optional[str]) -> str:
 	if not string:
 		return string
 	return string[0].upper() + string[1:]
+
+
+def admin_get_item(content_type, object_id):
+	"""
+	This function can be used in django admin to display the item of a generic foreign key with a link
+	"""
+	if not content_type or not object_id:
+		return "-"
+	app_label, model = content_type.app_label, content_type.model
+	viewname = f"admin:{app_label}_{model}_change"
+	try:
+		args = [object_id]
+		link = reverse(viewname, args=args)
+	except NoReverseMatch:
+		return "-"
+	else:
+		return format_html('<a href="{}">{} - #{}</a>', link, get_model_name(content_type), object_id)
+
+
+def get_model_name(content_type: ContentType):
+	try:
+		model = apps.get_model(content_type.app_label, content_type.model)
+		return model._meta.verbose_name.capitalize()
+	except (LookupError, AttributeError):
+		return ""
