@@ -32,6 +32,7 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from NEMO import fields
+from NEMO.mixins import CalendarDisplayMixin
 from NEMO.utilities import (
 	EmailCategory,
 	RecurrenceFrequency,
@@ -185,25 +186,6 @@ class RequestStatus(object):
 	@classmethod
 	def choices_without_expired(cls):
 		return [(choice[0], choice[1]) for choice in cls.Choices if choice[0] not in [cls.EXPIRED]]
-
-
-class CalendarDisplay(BaseModel):
-	"""
-	Inherit from this class to express that a class type can be displayed in the NEMO calendar.
-	Calling get_visual_end() will artificially lengthen the end time so the event is large enough to
-	be visible and clickable.
-	"""
-	start = None
-	end = None
-
-	def get_visual_end(self):
-		if self.end is None:
-			return max(self.start + timedelta(minutes=15), timezone.now())
-		else:
-			return max(self.start + timedelta(minutes=15), self.end)
-
-	class Meta:
-		abstract = True
 
 
 class UserPreferences(BaseModel):
@@ -1394,7 +1376,7 @@ class TrainingSession(BaseModel):
 		return str(self.id)
 
 
-class StaffCharge(CalendarDisplay):
+class StaffCharge(BaseModel, CalendarDisplayMixin):
 	staff_member = models.ForeignKey(User, related_name='staff_charge_actor', on_delete=models.CASCADE)
 	customer = models.ForeignKey(User, related_name='staff_charge_customer', on_delete=models.CASCADE)
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
@@ -1535,7 +1517,7 @@ class Area(MPTTModel):
 		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.reservation_email]
 
 
-class AreaAccessRecord(CalendarDisplay):
+class AreaAccessRecord(BaseModel, CalendarDisplayMixin):
 	area = TreeForeignKey(Area, on_delete=models.CASCADE)
 	customer = models.ForeignKey(User, on_delete=models.CASCADE)
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
@@ -1678,7 +1660,7 @@ pre_delete.connect(pre_delete_entity, sender=Tool)
 pre_delete.connect(pre_delete_entity, sender=User)
 
 
-class Reservation(CalendarDisplay):
+class Reservation(BaseModel, CalendarDisplayMixin):
 	user = models.ForeignKey(User, related_name="reservation_user", on_delete=models.CASCADE)
 	creator = models.ForeignKey(User, related_name="reservation_creator", on_delete=models.CASCADE)
 	creation_time = models.DateTimeField(default=timezone.now)
@@ -1782,7 +1764,7 @@ class ReservationQuestions(BaseModel):
 		return self.name
 
 
-class UsageEvent(CalendarDisplay):
+class UsageEvent(BaseModel, CalendarDisplayMixin):
 	user = models.ForeignKey(User, related_name="usage_event_user", on_delete=models.CASCADE)
 	operator = models.ForeignKey(User, related_name="usage_event_operator", on_delete=models.CASCADE)
 	project = models.ForeignKey(Project, on_delete=models.CASCADE)
