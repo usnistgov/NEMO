@@ -121,10 +121,17 @@
 		let alert_users = $(".alert.show-on-load");
 		alert_users.each(function(index, element) {
 		    let speed = 4500;
-		    if ($(element).data('speed')) speed = $(element).data('speed')
-			$(element).fadeTo(speed, 500).slideUp(500, function () {
-				$(element).slideUp(500);
-			});
+		    if ($(element).data('speed')) { speed = $(element).data('speed'); }
+            let manual_only = $(element).data("trigger") === "manual";
+            if (manual_only)
+            {
+                {# Manual dismissal only #}
+                $(element).fadeTo(speed, 500);
+            }
+            else
+            {
+                $(element).fadeTo(speed, 500).slideUp(500, function () { $(element).slideUp(500); });
+            }
 		});
 	}
 	{# Add an event listener on load for scripts. UseCapture is False so this is executed a bit later #}
