@@ -370,67 +370,84 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 }
 
 /* Navbar customization, mainly size when switching */
-@media (max-width: 991px) {
-  .navbar-header {
-      float: none;
-  }
-  .navbar-left,.navbar-right {
-      float: none !important;
-  }
-  .navbar-toggle {
-      display: block;
-  }
-  .navbar-collapse {
-      border-top: 1px solid transparent;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
-  }
-  .navbar-fixed-top {
-      top: 0;
-      border-width: 0 0 1px;
-  }
-  .navbar-collapse.collapse {
-      display: none!important;
-  }
-  .navbar-nav {
-      float: none!important;
-      margin: 7.5px -15px;
-  }
-  .navbar-nav>li {
-      float: none;
-  }
-  .navbar-nav>li>a {
-      padding-top: 10px;
-      padding-bottom: 10px;
-  }
-  .collapse.in{
-      display:block !important;
-  }
-  /* sub-menu */
-  .navbar-nav .open .dropdown-menu {
-    position: static;
-    float: none;
-    width: auto;
-    margin-top: 0;
-    background-color: transparent;
-    border: 0;
-    -webkit-box-shadow: none;
-            box-shadow: none;
-  }
-  .navbar-nav .open .dropdown-menu > li > a,
-  .navbar-nav .open .dropdown-menu .dropdown-header {
-    padding: 5px 15px 5px 25px;
-  }
-  .navbar-nav .open .dropdown-menu > li > a {
-    line-height: 20px;
-  }
-  .navbar-nav .open .dropdown-menu > li > a:hover,
-  .navbar-nav .open .dropdown-menu > li > a:focus {
-    background-image: none;
-  }
-  .navbar-default .navbar-nav .open .dropdown-menu > li > a {
-    color: #777;
-  }
+@media (max-width: 991px)
+{
+	.navbar-header
+	{
+		float: none;
+	}
+	.navbar-left,.navbar-right
+	{
+		float: none !important;
+	}
+	.navbar-toggle
+	{
+		display: block;
+	}
+	.navbar-collapse
+	{
+		border-top: 1px solid transparent;
+		box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+	}
+	.navbar-fixed-top
+	{
+		top: 0;
+		border-width: 0 0 1px;
+	}
+	.navbar-collapse.collapse
+	{
+		display: none!important;
+	}
+	.navbar-nav
+	{
+		float: none!important;
+		margin: 7.5px -15px;
+	}
+	.navbar-nav>li
+	{
+		float: none;
+	}
+	.navbar-nav>li>a
+	{
+		padding-top: 10px;
+		padding-bottom: 10px;
+	}
+	.collapse.in
+	{
+		display:block !important;
+	}
+	/* sub-menu */
+	.navbar-nav .open .dropdown-menu
+	{
+		position: static;
+		float: none;
+		width: auto;
+		margin-top: 0;
+		background-color: transparent;
+		border: 0;
+		-webkit-box-shadow: none;
+		box-shadow: none;
+	}
+	.navbar-nav .open .dropdown-menu > li > a,
+	.navbar-nav .open .dropdown-menu .dropdown-header
+	{
+		padding: 5px 15px 5px 25px;
+	}
+	.navbar-nav .open .dropdown-menu > li > a
+	{
+		line-height: 20px;
+	}
+	.navbar-nav .open .dropdown-menu > li > a:hover,
+	.navbar-nav .open .dropdown-menu > li > a:focus
+	{
+		background-image: none;
+	}
+	.navbar-default .navbar-nav .open .dropdown-menu > li > a
+	{
+		color: #777;
+	}
 }
+
 @media (min-width: 768px)
 {
 	.navbar-toggle
@@ -964,6 +981,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
     border-width: 1px 0;
 }
 
+/* Media queries for popups in safety and other media items */
 @media (max-width: 768px)
 {
 	.modal-lg .media-popup
