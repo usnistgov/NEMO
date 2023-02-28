@@ -14,7 +14,7 @@ from PIL import Image
 from dateutil import rrule
 from dateutil.parser import parse
 from django.apps import apps
-from django.conf import settings
+from django.conf import global_settings, settings
 from django.contrib.admin import ModelAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.base import ContentFile
@@ -152,6 +152,7 @@ class EmailCategory(object):
 	TASKS = 8
 	ACCESS_REQUESTS = 9
 	SENSORS = 10
+	ADJUSTMENT_REQUESTS = 11
 	Choices = (
 		(GENERAL, "General"),
 		(SYSTEM, "System"),
@@ -164,6 +165,7 @@ class EmailCategory(object):
 		(TASKS, "Tasks"),
 		(ACCESS_REQUESTS, "Access Requests"),
 		(SENSORS, "Sensors"),
+		(ADJUSTMENT_REQUESTS, "Adjustment Requests"),
 	)
 
 
@@ -466,7 +468,10 @@ def get_task_image_filename(task_images, filename):
 	date = export_format_datetime(now, t_format=False, as_current_timezone=False)
 	year = now.strftime("%Y")
 	number = "{:02d}".format(
-		TaskImages.objects.filter(task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day).count()	+ 1
+		TaskImages.objects.filter(
+			task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day
+		).count()
+		+ 1
 	)
 	ext = os.path.splitext(filename)[1]
 	return f"task_images/{year}/{tool_name}/{date}_{tool_name}_{number}{ext}"
@@ -580,6 +585,7 @@ def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request
 		if search_use_distinct:
 			search_qs = search_qs.distinct()
 		from NEMO.templatetags.custom_tags_and_filters import json_search_base_with_extra_fields
+
 		data = json_search_base_with_extra_fields(search_qs, *search_fields, display=display)
 	else:
 		data = "This request can only be made as an ajax call"
@@ -644,3 +650,16 @@ def get_model_name(content_type: ContentType):
 		return model._meta.verbose_name.capitalize()
 	except (LookupError, AttributeError):
 		return ""
+
+
+def get_email_from_settings() -> str:
+	"""
+	Return the default from email if it has been overriden, otherwise the server email
+	This allows admins to specify a different default from email (used for communication)
+	from the server email which is more meant for errors and such.
+	"""
+	return (
+		settings.DEFAULT_FROM_EMAIL
+		if settings.DEFAULT_FROM_EMAIL != global_settings.DEFAULT_FROM_EMAIL
+		else settings.SERVER_EMAIL
+	)
