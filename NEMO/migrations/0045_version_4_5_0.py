@@ -3,8 +3,6 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
-from NEMO.migrations_utils import create_news_for_version
-
 
 class Migration(migrations.Migration):
 
@@ -14,7 +12,8 @@ class Migration(migrations.Migration):
     ]
 
     def new_version_news(apps, schema_editor):
-        create_news_for_version(apps, "4.5.0", "")
+        # create_news_for_version(apps, "4.5.0", "")
+        pass
 
     def migrate_notification_types(apps, schema_editor):
         Notification = apps.get_model('NEMO', 'Notification')
