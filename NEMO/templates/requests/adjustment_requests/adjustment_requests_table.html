@@ -2,13 +2,14 @@
 <table class="table table-condensed table-double-stripped thead-light" style="border: 1px solid #ddd">
     <thead>
         <tr>
+            <th>Created</th>
             {% if user.is_any_part_of_staff %}
                 <th>User</th>
             {% endif %}
-            <th>Created</th>
             <th class="text-center">Charge</th>
             <th class="text-center">New start</th>
             <th class="text-center">New end</th>
+            <th class="text-center">Difference</th>
             <th class="text-right">
                 {% if request_status == 'pending' and user.is_facility_manager %}
                     Action
@@ -23,13 +24,14 @@
     <tbody>
         {% for a_request in adjustment_request_list %}
             <tr>
+                <td style="vertical-align: middle">{% if a_request.id in request_notifications %}<span class="label label-success">New</span> {% endif %}{{ a_request.creation_time|date:'SHORT_DATETIME_FORMAT' }}</td>
                 {% if user.is_any_part_of_staff %}
                     <td style="vertical-align: middle">{{ a_request.creator.get_name }}</td>
                 {% endif %}
-                <td style="vertical-align: middle">{% if a_request.id in adjustment_request_notifications %}<span class="label label-success">New</span> {% endif %}{{ a_request.creation_time|date:'SHORT_DATETIME_FORMAT' }}</td>
                 <td class="text-center" style="vertical-align: middle">{{ a_request.item.get_display }}</td>
                 <td class="text-center" style="vertical-align: middle">{{ a_request.get_new_start|date:'SHORT_DATETIME_FORMAT' }}</td>
                 <td class="text-center" style="vertical-align: middle">{{ a_request.get_new_end|date:'SHORT_DATETIME_FORMAT' }}</td>
+                <td class="text-center" style="vertical-align: middle">{{ a_request.get_time_difference }}</td>
                 <td class="text-right" style="vertical-align: middle">
                     {% if request_status == 'pending' and user.is_facility_manager %}
                         <a class="btn btn-sm btn-default" title="Approve/Deny" href="{% url 'edit_adjustment_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
@@ -44,7 +46,7 @@
                 </td>
             </tr>
             <tr>
-                <td colspan="{% if user.is_any_part_of_staff %}6{% else %}5{% endif %}" style="border: none">
+                <td colspan="{% if user.is_any_part_of_staff %}7{% else %}6{% endif %}" style="border: none">
                     <div style="width: 70%; color: gray">
                         {% if a_request.description %}
                             <div>
