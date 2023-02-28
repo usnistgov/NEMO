@@ -48,7 +48,7 @@
             </tr>
             <tr>
                 {% if a_request.description %}
-                    <td colspan="{% if user.is_facility_manager %}7{% else %}6{% endif %}" style="border: none">{% if a_request.description %}<u>Description:</u><br>{{ a_request.description|linebreaksbr }}{% endif %}</td>
+                    <td colspan="6" style="border: none">{% if a_request.description %}<u>Description:</u><br>{{ a_request.description|linebreaksbr }}{% endif %}</td>
                 {% endif %}
             </tr>
         {% endfor %}
