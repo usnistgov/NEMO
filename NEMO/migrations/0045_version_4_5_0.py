@@ -3,6 +3,8 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+from NEMO.migrations_utils import create_news_for_version
+
 
 class Migration(migrations.Migration):
 
@@ -12,8 +14,7 @@ class Migration(migrations.Migration):
     ]
 
     def new_version_news(apps, schema_editor):
-        # create_news_for_version(apps, "4.5.0", "")
-        pass
+        create_news_for_version(apps, "4.5.0", "")
 
     def migrate_notification_types(apps, schema_editor):
         Notification = apps.get_model('NEMO', 'Notification')
@@ -30,6 +31,12 @@ class Migration(migrations.Migration):
             request_message.save(update_fields=["content_type", "object_id"])
 
     operations = [
+        migrations.AddField(
+            model_name='notification',
+            name='notification_type',
+            field=models.CharField(choices=[('news', 'News creation and updates - notifies all users'), ('safetyissue', 'New safety issues - notifies staff only'), ('buddyrequest', 'New buddy request - notifies all users'), ('buddyrequestmessage', 'New buddy request reply - notifies request creator and users who have replied'), ('temporaryphysicalaccessrequest', 'New access request - notifies other users on request and reviewers')], max_length=100, null=True),
+        ),
+        migrations.RunPython(migrate_notification_types),
         migrations.RunPython(new_version_news),
         migrations.AlterModelOptions(
             name='temporaryphysicalaccess',
@@ -39,12 +46,6 @@ class Migration(migrations.Migration):
             old_name='Discipline',
             new_name='ProjectDiscipline',
         ),
-        migrations.AddField(
-            model_name='notification',
-            name='notification_type',
-            field=models.CharField(choices=[('news', 'News creation and updates - notifies all users'), ('safetyissue', 'New safety issues - notifies staff only'), ('buddyrequest', 'New buddy request - notifies all users'), ('buddyrequestmessage', 'New buddy request reply - notifies request creator and users who have replied'), ('temporaryphysicalaccessrequest', 'New access request - notifies other users on request and reviewers')], max_length=100, null=True),
-        ),
-        migrations.RunPython(migrate_notification_types),
         migrations.AlterField(
             model_name='notification',
             name='notification_type',
