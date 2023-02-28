@@ -3,6 +3,7 @@ from datetime import timedelta
 from importlib.metadata import PackageNotFoundError, version
 
 from django import template
+from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import resolve_url
 from django.template import Context, Template
 from django.template.defaultfilters import date, time
@@ -24,7 +25,7 @@ def class_name(value):
 
 @register.filter
 def is_soon(time):
-	""" 'Soon' is defined as within 10 minutes from now. """
+	"""'Soon' is defined as within 10 minutes from now."""
 	return time <= timezone.now() + timedelta(minutes=10)
 
 
@@ -79,7 +80,7 @@ def json_search_base_with_extra_fields(items_to_search, *extra_fields, display="
 		# we need to escape the name and the extra fields in case they contain new lines etc. otherwise it breaks.
 		result += '{{"name":"{0}", "id":"{1}", "type":"{2}"'.format(escapejs(item_display), item.id, object_type)
 		# remove name just in case it's also given as extra fields (it would clash with search result name)
-		for x in [field for field in extra_fields if field != 'name']:
+		for x in [field for field in extra_fields if field != "name"]:
 			if hasattr(item, x):
 				result += ', "{0}":"{1}"'.format(x, escapejs(getattr(item, x)))
 		result += "},"
@@ -162,6 +163,12 @@ def app_installed(app_name):
 	from django.apps import apps
 
 	return apps.is_installed(app_name)
+
+
+@register.filter
+def content_type(obj):
+	if obj:
+		return ContentType.objects.get_for_model(obj)
 
 
 @register.inclusion_tag("snippets/button.html")
