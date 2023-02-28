@@ -65,7 +65,7 @@
                                 </div>
                             {% endfor %}
                         {% endif %}
-                        {% if a_request.status == "PENDING" %}
+                        {% if a_request.get_status_display == "Pending" %}
                             {% if user == a_request.creator or user.is_facility_manager %}
                                 <div>
                                     <div class="adjustment-request-reply-textarea" style="display: none;">
