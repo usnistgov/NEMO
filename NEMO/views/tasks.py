@@ -29,6 +29,7 @@ from NEMO.utilities import (
 	bootstrap_primary_color,
 	create_email_attachment,
 	format_datetime,
+	get_email_from_settings,
 	get_full_url,
 	render_email_template,
 	resize_image,
@@ -190,7 +191,7 @@ Task resolution description:<br/>
 <br/><br/>
 Visit {url} to view the tool control page for the task.<br/>
 """
-		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=settings.SERVER_EMAIL, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
+		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=get_email_from_settings(), to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
 	except Exception as error:
 		site_title = ApplicationCustomization.get('site_title')
 		error_message = f"{site_title} was unable to send the task updated email. The error message that was received is: " + str(error)

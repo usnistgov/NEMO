@@ -40,6 +40,7 @@ from NEMO.utilities import (
 	export_format_datetime,
 	extract_optional_beginning_and_end_times,
 	format_datetime,
+	get_email_from_settings,
 	quiet_int,
 	render_email_template,
 	send_mail,
@@ -542,7 +543,7 @@ Its last value was {counter.last_reset_value}."""
 		send_mail(
 			subject=f"{counter.tool.name} counter reset",
 			content=message,
-			from_email=settings.SERVER_EMAIL,
+			from_email=get_email_from_settings(),
 			to=facility_managers,
 			email_category=EmailCategory.SYSTEM,
 		)

@@ -52,6 +52,7 @@ from NEMO.utilities import (
 	date_input_format,
 	extract_times,
 	format_datetime,
+	get_email_from_settings,
 	get_full_url,
 	get_recurring_rule,
 	localize,
@@ -1272,7 +1273,7 @@ This email is to inform you that today was the last occurrence for the {closure_
 	send_mail(
 		subject=f"Last {closure_time.closure.name} occurrence",
 		content=message,
-		from_email=settings.SERVER_EMAIL,
+		from_email=get_email_from_settings(),
 		to=facility_manager_emails,
 		email_category=EmailCategory.SYSTEM,
 	)
