@@ -41,7 +41,7 @@
                                     {% if message.id in reply_notifications %}<span class="label label-success">New reply</span>{% endif %}
                                     <div class="list-group-item buddy-list-item-message">
                                         {{ message.content|linebreaksbr }}
-                                        <div class="buddy-list-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
+                                        <div class="request-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
                                     </div>
                                 </li>
                             {% endfor %}

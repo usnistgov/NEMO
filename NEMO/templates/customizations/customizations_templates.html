@@ -61,6 +61,22 @@
     </div>
 
     <div class="panel-body">
+        <h3 class="customization-section-title" id="adjustment_request_notification_email_id">Adjustment request notification email</h3>
+        <p>This email is sent to the person who created the request when an adjustment request is created or updated. Facility managers are cc'ed.</p>
+        <p>When an adjustment request is approved it is also sent to the User Office</p>
+        <p>The following context variables are provided when the email is rendered:</p>
+        <ul>
+            <li><b>template_color</b> - the color: green if approved, red if denied, blue otherwise</li>
+            <li><b>adjustment_request</b> - the user's adjustment request that was created or updated</li>
+            <li><b>status</b> - the status of the request: received, updated, approved or denied</li>
+            <li><b>adjustment_requests_url</b> - the URL to the adjustment requests page</li>
+            <li><b>manager_note</b> - an extra (optional) note from the manager sent to the user when the request is denied or to the user office when it is approved</li>
+        </ul>
+        {% include 'customizations/customizations_upload.html' with element=adjustment_request_notification_email name='adjustment request notification email' key='templates' %}
+        <div class="customization-separation"></div>
+    </div>
+
+    <div class="panel-body">
         <h3 class="customization-section-title" id="cancellation_email_id">Cancellation email</h3>
         <p>This email is sent to a user when a staff member cancels the user's reservation. The following context variables are provided when the email is rendered:</p>
         <ul>

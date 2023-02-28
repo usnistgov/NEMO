@@ -12,14 +12,16 @@ def user_requests(request, tab: str = None):
 	active_tab = (
 		tab or "access"
 		if PhysicalAccessLevel.objects.filter(allow_user_request=True).exists()
-		   and User.objects.filter(is_active=True, is_facility_manager=True).exists()
+		and User.objects.filter(is_active=True, is_facility_manager=True).exists()
 		else "buddy"
 	)
 	buddy_requests_title = UserRequestsCustomization.get("buddy_requests_title")
 	access_requests_title = UserRequestsCustomization.get("access_requests_title")
+	adjustment_requests_title = UserRequestsCustomization.get("adjustment_requests_title")
 	dictionary = {
 		"tab": active_tab,
 		"buddy_requests_title": buddy_requests_title,
 		"access_requests_title": access_requests_title,
+		"adjustment_requests_title": adjustment_requests_title,
 	}
 	return render(request, "requests/user_requests.html", dictionary)

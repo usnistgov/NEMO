@@ -796,7 +796,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	width: 90%;
 }
 
-.buddy-list-item-message-user
+.request-item-message-user
 {
 	position: absolute;
 	top: 5px;
@@ -1016,4 +1016,20 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	{
 		max-width: 870px;
 	}
+}
+
+.adjustment-request-message, .adjustment-request-reply-textarea
+{
+	border-top: 1px solid #eae9e9 !important;
+}
+
+.adjustment-request-message
+{
+	position: relative;
+	padding-top: 20px;
+}
+
+.adjustment-request-reply-textarea
+{
+	padding-top: 5px;
 }

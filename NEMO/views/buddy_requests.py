@@ -1,7 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -17,11 +16,11 @@ from NEMO.exceptions import (
 )
 from NEMO.forms import BuddyRequestForm
 from NEMO.models import Area, BuddyRequest, Notification, RequestMessage, User
-from NEMO.utilities import get_full_url
+from NEMO.utilities import end_of_the_day, get_email_from_settings, get_full_url
 from NEMO.views.customization import UserRequestsCustomization
 from NEMO.views.notifications import (
-	create_buddy_reply_notification,
 	create_buddy_request_notification,
+	create_request_message_notification,
 	delete_notification,
 	get_notifications,
 )
@@ -114,7 +113,10 @@ def buddy_request_reply(request, request_id):
 		reply.content = message_content
 		reply.author = user
 		reply.save()
-		create_buddy_reply_notification(reply)
+		request_end = buddy_request.end
+		# Unread buddy request reply notifications expire after the request ends
+		expiration = end_of_the_day(datetime(request_end.year, request_end.month, request_end.day))
+		create_request_message_notification(reply, Notification.Types.BUDDY_REQUEST_REPLY, expiration)
 		email_interested_parties(
 			reply, get_full_url(f"{reverse('user_requests', kwargs={'tab': 'buddy'})}?#{reply.id}", request)
 		)
@@ -134,7 +136,7 @@ def email_interested_parties(reply: RequestMessage, reply_url):
 <br><br>
 Please visit {reply_url} to reply"""
 			email_notification = user.get_preferences().email_send_buddy_request_replies
-			user.email_user(subject=subject, message=message, from_email=settings.SERVER_EMAIL, email_notification=email_notification)
+			user.email_user(subject=subject, message=message, from_email=get_email_from_settings(), email_notification=email_notification)
 
 
 def check_user_reply_error(buddy_request: BuddyRequest, user: User) -> Optional[str]:

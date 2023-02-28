@@ -1,0 +1,9 @@
+{% load custom_tags_and_filters %}
+{% if "requests"|customization:"adjustment_requests_enabled" %}
+    <span style="position: absolute; top: 15px; right: 15px">
+        {% with content_type=charge|content_type %}
+            {% url 'create_adjustment_request' content_type.id charge.id as create_adjustment_request %}
+            {% button size="small" type="warn" url=create_adjustment_request value="Contest this charge" icon="glyphicon-flag" %}
+        {% endwith %}
+    </span>
+{% endif %}

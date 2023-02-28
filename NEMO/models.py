@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import os
 import sys
@@ -8,7 +10,7 @@ from html import escape
 from json import loads
 from logging import getLogger
 from re import match
-from typing import List, Set, Union
+from typing import List, Optional, Set, Union
 
 from dateutil import rrule
 from django.conf import settings
@@ -32,7 +34,7 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from NEMO import fields
-from NEMO.mixins import CalendarDisplayMixin
+from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin
 from NEMO.utilities import (
 	EmailCategory,
 	RecurrenceFrequency,
@@ -192,14 +194,15 @@ class UserPreferences(BaseModel):
 	attach_created_reservation = models.BooleanField('created_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when creating a new reservation')
 	attach_cancelled_reservation = models.BooleanField('cancelled_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when cancelling a reservation')
 	display_new_buddy_request_notification = models.BooleanField('new_buddy_request_notification', default=True, help_text='Whether or not to notify the user of new buddy requests (via unread badges)')
-	display_new_buddy_request_reply_notification = models.BooleanField('new_buddy_request_reply_notification', default=True, help_text='Whether or not to notify the user of replies on buddy request he commented on (via unread badges)')
 	email_new_buddy_request_reply = models.BooleanField('email_new_buddy_request_reply', default=True, help_text='Whether or not to email the user of replies on buddy request he commented on')
+	email_new_adjustment_request_reply = models.BooleanField('email_new_adjustment_request_reply', default=True, help_text='Whether or not to email the user of replies on adjustment request he commented on')
 	staff_status_view = models.CharField('staff_status_view', max_length=100, default='day', choices=[('day', 'Day'), ('week', 'Week'), ('month', 'Month')], help_text='Preferred view for staff status page')
 	email_alternate = models.EmailField(null=True, blank=True)
 	# Sort by the notifications that cannot be turned off first
 	email_send_reservation_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Reservation emails")
 	email_send_buddy_request_replies = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Buddy request replies")
 	email_send_access_request_updates = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Access request updates")
+	email_send_adjustment_request_updates = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Adjustment request updates")
 	email_send_broadcast_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Broadcast emails")
 	email_send_task_updates = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Task updates")
 	email_send_access_expiration_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.on_choices(), help_text="Access expiration reminders")
@@ -1517,7 +1520,7 @@ class Area(MPTTModel):
 		return [email for area in self.get_ancestors(ascending=True, include_self=True) for email in area.reservation_email]
 
 
-class AreaAccessRecord(BaseModel, CalendarDisplayMixin):
+class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	area = TreeForeignKey(Area, on_delete=models.CASCADE)
 	customer = models.ForeignKey(User, on_delete=models.CASCADE)
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
@@ -1764,7 +1767,7 @@ class ReservationQuestions(BaseModel):
 		return self.name
 
 
-class UsageEvent(BaseModel, CalendarDisplayMixin):
+class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	user = models.ForeignKey(User, related_name="usage_event_user", on_delete=models.CASCADE)
 	operator = models.ForeignKey(User, related_name="usage_event_operator", on_delete=models.CASCADE)
 	project = models.ForeignKey(Project, on_delete=models.CASCADE)
@@ -2539,12 +2542,16 @@ class Notification(BaseModel):
 		SAFETY = 'safetyissue'
 		BUDDY_REQUEST = 'buddyrequest'
 		BUDDY_REQUEST_REPLY = 'buddyrequestmessage'
+		ADJUSTMENT_REQUEST = 'adjustmentrequest'
+		ADJUSTMENT_REQUEST_REPLY = 'adjustmentrequestmessage'
 		TEMPORARY_ACCESS_REQUEST = 'temporaryphysicalaccessrequest'
 		Choices = (
 			(NEWS, 'News creation and updates - notifies all users'),
 			(SAFETY, 'New safety issues - notifies staff only'),
 			(BUDDY_REQUEST, 'New buddy request - notifies all users'),
 			(BUDDY_REQUEST_REPLY, 'New buddy request reply - notifies request creator and users who have replied'),
+			(ADJUSTMENT_REQUEST, 'New adjustment request - notifies facility managers only'),
+			(ADJUSTMENT_REQUEST_REPLY, 'New adjustment request reply - notifies request creator and users who have replied'),
 			(TEMPORARY_ACCESS_REQUEST, 'New access request - notifies other users on request and reviewers')
 		)
 
@@ -2737,6 +2744,10 @@ class BuddyRequest(BaseModel):
 	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
 
 	@property
+	def creator(self) -> User:
+		return self.user
+
+	@property
 	def replies(self) -> QuerySet:
 		return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
 
@@ -2748,6 +2759,61 @@ class BuddyRequest(BaseModel):
 
 	def __str__(self):
 		return f"BuddyRequest [{self.id}]"
+
+
+class AdjustmentRequest(BaseModel):
+	creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the request was created.")
+	creator = models.ForeignKey("User", related_name='adjustment_requests_created', on_delete=models.CASCADE)
+	last_updated = models.DateTimeField(auto_now=True, help_text="The last time this request was modified.")
+	last_updated_by = models.ForeignKey("User", null=True, blank=True, related_name="adjustment_requests_updated", help_text="The last user who modified this request.", on_delete=models.SET_NULL)
+	item_type = models.ForeignKey(ContentType, null=True, blank=True, on_delete=models.CASCADE)
+	item_id = models.PositiveIntegerField(null=True, blank=True)
+	item = GenericForeignKey('item_type', 'item_id')
+	description = models.TextField(null=True, blank=True, help_text="The description of the request.")
+	manager_note = models.TextField(null=True, blank=True, help_text="A manager's note to send to the user when a request is denied or to the user office when it is approved.")
+	new_start = models.DateTimeField(null=True, blank=True)
+	new_end = models.DateTimeField(null=True, blank=True)
+	status = models.IntegerField(choices=RequestStatus.choices_without_expired(), default=RequestStatus.PENDING)
+	reviewer = models.ForeignKey("User", null=True, blank=True, related_name='adjustment_requests_reviewed', on_delete=models.CASCADE)
+	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
+
+	@property
+	def replies(self) -> QuerySet:
+		return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
+
+	def get_new_start(self) -> Optional[datetime]:
+		# Returns the new start if different from the item's start (not counting seconds and microseconds)
+		return self.new_start if self.new_start and self.item and self.item.start and self.item.start.replace(microsecond=0, second=0) != self.new_start else None
+
+	def get_new_end(self) -> Optional[datetime]:
+		# Returns the new end if different from the item's end (not counting seconds and microseconds)
+		return self.new_end if self.new_end and self.item and self.item.end and self.item.end.replace(microsecond=0, second=0) != self.new_end else None
+
+	def get_time_difference(self) -> str:
+		if self.item and self.new_start and self.new_end:
+			previous_duration = self.item.end.replace(microsecond=0, second=0) - self.item.start.replace(microsecond=0, second=0)
+			new_duration = self.new_end - self.new_start
+			return f"+{(new_duration - previous_duration)}" if new_duration >= previous_duration else f"- {(previous_duration - new_duration)}"
+
+	def creator_and_reply_users(self) -> List[User]:
+		result = {self.creator}
+		for reply in self.replies:
+			result.add(reply.author)
+		for manager in User.objects.filter(is_active=True, is_facility_manager=True):
+			result.add(manager)
+		return list(result)
+
+	def clean(self):
+		if not self.description and not self.item:
+			raise ValidationError({NON_FIELD_ERRORS: "You must enter a description or select a charge"})
+		if self.item:
+			if self.new_start and self.new_end and self.new_start > self.new_end:
+				raise ValidationError({"new_end": "The end must be later than the start"})
+			if self.new_start and format_datetime(self.new_start) == format_datetime(self.item.start) and self.new_end and format_datetime(self.new_end) == format_datetime(self.item.end):
+				raise ValidationError({NON_FIELD_ERRORS: "One of the dates must be different from the original charge"})
+
+	class Meta:
+		ordering = ['-creation_time']
 
 
 class RequestMessage(BaseModel):

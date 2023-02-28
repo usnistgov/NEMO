@@ -7,11 +7,11 @@
         <li><a href="{% url 'status_dashboard_tab' 'tools' %}">Status dashboard</a></li>
     {% endif %}
 {% endif %}
-{% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist %}
+{% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist or adjustment_request_allowed and facility_managers_exist %}
     <li><a href="{% url 'user_requests' %}">
         Requests
-        {% if buddy_notification_count or temporary_access_notification_count %}
-            <span class="badge" style="vertical-align:middle; background-color:red">{{ buddy_notification_count|add:temporary_access_notification_count }}</span>
+        {% if buddy_notification_count or temporary_access_notification_count or adjustment_notification_count %}
+            <span class="badge" style="vertical-align:middle; background-color:red">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count }}</span>
         {% endif %}
     </a></li>
 {% endif %}

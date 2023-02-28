@@ -28,6 +28,7 @@ from NEMO.models import (
 	Account,
 	AccountType,
 	ActivityHistory,
+	AdjustmentRequest,
 	Alert,
 	AlertCategory,
 	Area,
@@ -1457,6 +1458,25 @@ class BuddyRequestAdmin(admin.ModelAdmin):
 	@admin.display(ordering="replies", description="Replies")
 	def reply_count(self, buddy_request: BuddyRequest):
 		return buddy_request.replies.count()
+
+
+@register(AdjustmentRequest)
+class AdjustmentRequestAdmin(admin.ModelAdmin):
+	inlines = [RequestMessageInlines]
+	list_display = ("creator", "last_updated", "get_item", "get_time_difference", "get_status_display", "reply_count", "deleted")
+	list_filter = ("status", "deleted")
+
+	@admin.display(description="Diff")
+	def get_time_difference(self, adjustment_request: AdjustmentRequest):
+		return adjustment_request.get_time_difference()
+
+	@admin.display(ordering="replies", description="Replies")
+	def reply_count(self, adjustment_request: AdjustmentRequest):
+		return adjustment_request.replies.count()
+
+	@admin.display(description="Item")
+	def get_item(self, adjustment_request: AdjustmentRequest):
+		return admin_get_item(adjustment_request.item_type, adjustment_request.item_id)
 
 
 @register(StaffAbsenceType)

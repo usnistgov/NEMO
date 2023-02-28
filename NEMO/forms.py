@@ -19,6 +19,7 @@ from django.utils import timezone
 from NEMO.exceptions import ProjectChargeException
 from NEMO.models import (
 	Account,
+	AdjustmentRequest,
 	Alert,
 	AlertCategory,
 	BuddyRequest,
@@ -443,7 +444,7 @@ class BuddyRequestForm(ModelForm):
 class TemporaryPhysicalAccessRequestForm(ModelForm):
 	class Meta:
 		model = TemporaryPhysicalAccessRequest
-		fields = ["start_time", "end_time", "physical_access_level", "other_users", "description"]
+		exclude = ["creation_time", "creator", "last_updated", "last_updated_by", "status", "reviewer", "deleted"]
 
 	def clean(self):
 		if any(self.errors):
@@ -457,6 +458,12 @@ class TemporaryPhysicalAccessRequestForm(ModelForm):
 				f"You need at least {minimum_total_users - 1} other {'buddy' if minimum_total_users == 2 else 'buddies'} for this request",
 			)
 		return cleaned_data
+
+
+class AdjustmentRequestForm(ModelForm):
+	class Meta:
+		model = AdjustmentRequest
+		exclude = ["creation_time", "creator", "last_updated", "last_updated_by", "status", "reviewer", "deleted"]
 
 
 class StaffAbsenceForm(ModelForm):

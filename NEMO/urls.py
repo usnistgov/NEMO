@@ -18,6 +18,7 @@ from NEMO.views import (
 	abuse,
 	access_requests,
 	accounts_and_projects,
+	adjustment_requests,
 	alerts,
 	api,
 	area_access,
@@ -137,7 +138,7 @@ urlpatterns += [
 
 	# User requests
 	path("user_requests/", user_requests.user_requests, name="user_requests"),
-	re_path(r"^user_requests/(?P<tab>buddy|access)/$", user_requests.user_requests, name="user_requests"),
+	re_path(r"^user_requests/(?P<tab>buddy|access|adjustment)/$", user_requests.user_requests, name="user_requests"),
 
 	# Access requests
 	path("access_requests/", access_requests.access_requests, name="access_requests"),
@@ -151,6 +152,15 @@ urlpatterns += [
 	path("edit_buddy_request/<int:request_id>/", buddy_requests.create_buddy_request, name="edit_buddy_request"),
 	path("delete_buddy_request/<int:request_id>/", buddy_requests.delete_buddy_request, name="delete_buddy_request"),
 	path("buddy_request_reply/<int:request_id>/", buddy_requests.buddy_request_reply, name="buddy_request_reply"),
+
+	# Adjustment requests
+	path("adjustment_requests/", adjustment_requests.adjustment_requests, name="adjustment_requests"),
+	path("create_adjustment_request/", adjustment_requests.create_adjustment_request, name="create_adjustment_request"),
+	path("create_adjustment_request/<int:item_type_id>/<int:item_id>/", adjustment_requests.create_adjustment_request, name="create_adjustment_request"),
+	path("edit_adjustment_request/<int:request_id>/", adjustment_requests.create_adjustment_request, name="edit_adjustment_request"),
+	path("edit_adjustment_request/<int:request_id>/<int:item_type_id>/<int:item_id>/", adjustment_requests.create_adjustment_request, name="edit_adjustment_request"),
+	path("adjustment_request_reply/<int:request_id>/", adjustment_requests.adjustment_request_reply, name="adjustment_request_reply"),
+	path("delete_adjustment_request/<int:request_id>/", adjustment_requests.delete_adjustment_request, name="delete_adjustment_request"),
 
 	# Tasks:
 	path("create_task/", tasks.create, name="create_task"),
