@@ -119,6 +119,8 @@ urls_to_skip = [
 	"new_reservation",
 	"remove_document_from_project",
 	# TODO: remove those when data is added to splash pad
+	"edit_adjustment_request",
+	"create_adjustment_request",
 	"delete_adjustment_request",
 	"adjustment_request_reply",
 ]
