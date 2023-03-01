@@ -71,6 +71,7 @@
             <li><b>status</b> - the status of the request: received, updated, approved or denied</li>
             <li><b>adjustment_requests_url</b> - the URL to the adjustment requests page</li>
             <li><b>manager_note</b> - an extra (optional) note from the manager sent to the user when the request is denied or to the user office when it is approved</li>
+            <li><b>user_office</b> - a flag that is true when the email is addressed to the User Office</li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=adjustment_request_notification_email name='adjustment request notification email' key='templates' %}
         <div class="customization-separation"></div>

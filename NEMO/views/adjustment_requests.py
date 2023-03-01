@@ -222,6 +222,7 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             "status": status,
             "adjustment_requests_url": absolute_url,
             "manager_note": adjustment_request.manager_note if status == "denied" else None,
+            "user_office": False,
         }
         message = render_email_template(adjustment_request_notification_email, dictionary)
         email_notification = adjustment_request.creator.get_preferences().email_send_adjustment_request_updates
@@ -236,6 +237,7 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
         # Send separate email to the user office (with the extra note) when a request is approved
         if adjustment_request.status == RequestStatus.APPROVED:
             dictionary["manager_note"] = adjustment_request.manager_note
+            dictionary["user_office"] = True
             message = render_email_template(adjustment_request_notification_email, dictionary)
             send_mail(
                 subject=f"{adjustment_request.creator.get_name()}'s adjustment request has been {status}",

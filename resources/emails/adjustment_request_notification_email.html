@@ -17,8 +17,8 @@
             </tr>
             <tr>
                 <td style="padding: 10px;">
-                    <p>Dear {{ adjustment_request.creator.first_name }},</p>
-                    <p>Your adjustment request has been {{ status }}{% if adjustment_request.creator != adjustment_request.last_updated_by %} by {{ adjustment_request.last_updated_by.get_name }}{% endif %}.</p>
+                    <p>Dear {% if user_office %}User Office{% else %}{{ adjustment_request.creator.first_name }}{% endif %},</p>
+                    <p>{% if user_office %}The following{% else %}Your{% endif %} adjustment request has been {{ status }}{% if adjustment_request.creator != adjustment_request.last_updated_by %} by {{ adjustment_request.last_updated_by.get_name }}{% endif %}.</p>
                 </td>
             </tr>
             <tr>
