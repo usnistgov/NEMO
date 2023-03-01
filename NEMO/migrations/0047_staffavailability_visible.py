@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('NEMO', '0045_version_4_5_0'),
+        ('NEMO', '0046_auto_20230224_1350'),
     ]
 
     operations = [
