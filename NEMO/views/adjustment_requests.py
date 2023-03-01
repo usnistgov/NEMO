@@ -1,8 +1,9 @@
 from datetime import timedelta
-from typing import List, Union
+from typing import List
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import F
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
@@ -11,12 +12,14 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.forms import AdjustmentRequestForm
+from NEMO.mixins import BillableItemMixin
 from NEMO.models import (
     AdjustmentRequest,
     AreaAccessRecord,
     Notification,
     RequestMessage,
     RequestStatus,
+    StaffCharge,
     UsageEvent,
     User,
 )
@@ -266,18 +269,28 @@ Please visit {reply_url} to reply"""
             )
 
 
-def adjustment_eligible_items(user: User, current_item=None) -> List[Union[UsageEvent, AreaAccessRecord]]:
+def adjustment_eligible_items(user: User, current_item=None) -> List[BillableItemMixin]:
     item_number = UserRequestsCustomization.get_int("adjustment_requests_charges_display_number")
-    tool_usage = list(
-        UsageEvent.objects.filter(user=user, operator=user, end__isnull=False).order_by("-end")[:item_number]
-    )
-    area_access = list(
+    items: List[BillableItemMixin] = []
+    items.extend(UsageEvent.objects.filter(user=user, operator=user, end__isnull=False).order_by("-end")[:item_number])
+    items.extend(
         AreaAccessRecord.objects.filter(customer=user, end__isnull=False, staff_charge__isnull=True).order_by("-end")[
             :item_number
         ]
     )
-    items = tool_usage + area_access
+    if user.is_staff:
+        # Add all remote charges for staff to request for adjustment
+        items.extend(
+            UsageEvent.objects.filter(operator=user, end__isnull=False)
+            .exclude(user=F("operator"))
+            .order_by("-end")[:item_number]
+        )
+        items.extend(
+            AreaAccessRecord.objects.filter(end__isnull=False, staff_charge__staff_member=user)
+            .order_by("-end")[:item_number]
+        )
+        items.extend(StaffCharge.objects.filter(staff_member=user).order_by("-end")[:item_number])
     if current_item and current_item in items:
         items.remove(current_item)
-    items.sort(key=lambda x: x.end, reverse=True)
+    items.sort(key=lambda x: (x.get_end(), x.get_start()), reverse=True)
     return items[:item_number]

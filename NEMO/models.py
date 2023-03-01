@@ -1354,7 +1354,7 @@ class Configuration(BaseModel):
 		return str(self.tool.name) + ': ' + str(self.name)
 
 
-class TrainingSession(BaseModel):
+class TrainingSession(BaseModel, BillableItemMixin):
 	class Type(object):
 		INDIVIDUAL = 0
 		GROUP = 1
@@ -1379,7 +1379,7 @@ class TrainingSession(BaseModel):
 		return str(self.id)
 
 
-class StaffCharge(BaseModel, CalendarDisplayMixin):
+class StaffCharge(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	staff_member = models.ForeignKey(User, related_name='staff_charge_actor', on_delete=models.CASCADE)
 	customer = models.ForeignKey(User, related_name='staff_charge_customer', on_delete=models.CASCADE)
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
@@ -1663,7 +1663,7 @@ pre_delete.connect(pre_delete_entity, sender=Tool)
 pre_delete.connect(pre_delete_entity, sender=User)
 
 
-class Reservation(BaseModel, CalendarDisplayMixin):
+class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	user = models.ForeignKey(User, related_name="reservation_user", on_delete=models.CASCADE)
 	creator = models.ForeignKey(User, related_name="reservation_creator", on_delete=models.CASCADE)
 	creation_time = models.DateTimeField(default=timezone.now)
@@ -1843,7 +1843,7 @@ class ConsumableCategory(BaseModel):
 		return self.name
 
 
-class ConsumableWithdraw(BaseModel):
+class ConsumableWithdraw(BaseModel, BillableItemMixin):
 	customer = models.ForeignKey(User, related_name="consumable_user", help_text="The user who will use the consumable item.", on_delete=models.CASCADE)
 	merchant = models.ForeignKey(User, related_name="consumable_merchant", help_text="The staff member that performed the withdraw.", on_delete=models.CASCADE)
 	consumable = models.ForeignKey(Consumable, on_delete=models.CASCADE)

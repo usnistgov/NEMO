@@ -36,11 +36,11 @@
                         <select class="form-control" id="billable_item" name="item">
                             <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id %}{% else %}{% url 'create_adjustment_request' %}{% endif %}" selected value="">---</option>
                             {% if form.instance.item %}
-                                <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id form.item_type.value form.item_id.value %}{% else %}{% url 'create_adjustment_request' form.item_type.value form.item_id.value %}{% endif %}" value="{{ form.item_type.value }}|{{ form.item_id.value }}" selected>{{ form.instance.item.get_display }}</option>
+                                <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id form.item_type.value form.item_id.value %}{% else %}{% url 'create_adjustment_request' form.item_type.value form.item_id.value %}{% endif %}" value="{{ form.item_type.value }}|{{ form.item_id.value }}" selected>{{ form.instance.item|billable_display:user }}</option>
                             {% endif %}
                             {% for charge in eligible_items %}
                                 {% with charge_type=charge|content_type %}
-                                    <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id charge_type.id charge.id %}{% else %}{% url 'create_adjustment_request' charge_type.id charge.id %}{% endif %}" value="{{ charge_type.id }}|{{ charge.id }}" {% if form.item_type.value == charge_type and form.item_id.value|to_int == charge.id %}selected{% endif %}>{{ charge.get_display }}</option>
+                                    <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id charge_type.id charge.id %}{% else %}{% url 'create_adjustment_request' charge_type.id charge.id %}{% endif %}" value="{{ charge_type.id }}|{{ charge.id }}" {% if form.item_type.value == charge_type and form.item_id.value|to_int == charge.id %}selected{% endif %}>{{ charge|billable_display:user }}</option>
                                 {% endwith %}
                             {% endfor %}
                         </select>

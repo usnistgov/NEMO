@@ -13,6 +13,8 @@ from django.utils.formats import localize_input
 from django.utils.html import escape, escapejs, format_html
 from django.utils.safestring import mark_safe
 
+from NEMO.mixins import BillableItemMixin
+from NEMO.models import User
 from NEMO.views.customization import CustomizationBase, ProjectsAccountsCustomization
 
 register = template.Library()
@@ -107,7 +109,9 @@ def res_question_tbody(dictionary):
 
 	rows = []
 	for i, (index, d) in enumerate(dictionary.items()):
-		data_cells_html = "".join([format_html("<td>{}</td>", ", ".join(d[h]) if isinstance(d[h], list) else d[h]) for h in headers])
+		data_cells_html = "".join(
+			[format_html("<td>{}</td>", ", ".join(d[h]) if isinstance(d[h], list) else d[h]) for h in headers]
+		)
 		row_html = format_html("<tr><th>{}</th>{}</tr>", i + 1, mark_safe(data_cells_html))
 		rows.append(row_html)
 	body_html = format_html("<tbody>{}</tbody>", mark_safe("".join(rows)))
@@ -169,6 +173,11 @@ def app_installed(app_name):
 def content_type(obj):
 	if obj:
 		return ContentType.objects.get_for_model(obj)
+
+
+@register.filter
+def billable_display(item: BillableItemMixin, user: User):
+	return item.get_display(user) if item else ""
 
 
 @register.inclusion_tag("snippets/button.html")
