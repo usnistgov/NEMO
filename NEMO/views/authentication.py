@@ -4,7 +4,7 @@ from logging import getLogger
 
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, get_backends, login
-from django.contrib.auth.backends import ModelBackend
+from django.contrib.auth.backends import ModelBackend, RemoteUserBackend
 from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import redirect, render
@@ -101,13 +101,14 @@ def base_64_decode_basic_auth(remote_user: str):
 	return b64decode(pieces[1]).decode().split(":")
 
 
-class RemoteUserAuthenticationBackend(ModelBackend):
+class RemoteUserAuthenticationBackend(RemoteUserBackend):
 	""" The web server performs authentication and passes the username remotely. (header or env) """
+	create_unknown_user = False
 
-	def authenticate(self, request, username=None, password=None, **kwargs):
-		if not username:
+	def authenticate(self, request, remote_user):
+		if not remote_user:
 			return
-		username = self.clean_username(username)
+		username = self.clean_username(remote_user)
 		user = check_user_exists_and_active(self, username)
 		# All security checks passed so let the user in.
 		auth_logger.debug(
