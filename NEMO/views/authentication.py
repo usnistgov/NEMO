@@ -104,10 +104,10 @@ def base_64_decode_basic_auth(remote_user: str):
 class RemoteUserAuthenticationBackend(ModelBackend):
 	""" The web server performs authentication and passes the username remotely. (header or env) """
 
-	def authenticate(self, request, remote_user):
-		if not remote_user:
+	def authenticate(self, request, username=None, password=None, **kwargs):
+		if not username:
 			return
-		username = self.clean_username(remote_user)
+		username = self.clean_username(username)
 		user = check_user_exists_and_active(self, username)
 		# All security checks passed so let the user in.
 		auth_logger.debug(
