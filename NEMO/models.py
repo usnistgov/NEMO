@@ -2848,6 +2848,7 @@ class StaffAvailabilityCategory(BaseCategory):
 class StaffAvailability(BaseModel):
 	DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 	staff_member = models.ForeignKey("User", help_text="The staff member to display on the staff status page.", on_delete=models.CASCADE)
+	visible = models.BooleanField(default=True, help_text="Specifies whether this staff member should be displayed on the staff status page.")
 	category = models.ForeignKey(StaffAvailabilityCategory, null=True, blank=True, help_text="The category for this staff member.", on_delete=models.CASCADE)
 	start_time = models.TimeField(null=True, blank=True, help_text="The usual start time for this staff member.")
 	end_time = models.TimeField(null=True, blank=True, help_text="The usual end time for this staff member.")

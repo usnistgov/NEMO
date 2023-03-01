@@ -144,7 +144,7 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 		end = end - timedelta(days=2)
 	# Reset timestamp to be right in the middle of the period
 	timestamp = int((start + timedelta(days=(end - start).days / 2)).timestamp())
-	staffs = StaffAvailability.objects.all()
+	staffs = StaffAvailability.objects.filter(visible=True)
 	staffs.query.add_ordering(F("category__display_order").asc(nulls_last=True))
 	staffs.query.add_ordering(F("staff_member__first_name").asc())
 	days = rrule(DAILY, dtstart=start, until=end)
@@ -189,7 +189,7 @@ def create_staff_absence(request, absence_id=None):
 		return HttpResponse()
 	dictionary = {
 		"form": form,
-		"staff_members": StaffAvailability.objects.all(),
+		"staff_members": StaffAvailability.objects.filter(visible=True),
 		"page_timestamp": timestamp,
 		"page_view": view,
 	}
@@ -269,7 +269,7 @@ def show_staff_status(request):
 	if not settings.ALLOW_CONDITIONAL_URLS:
 		return False
 	dashboard_staff_status_staff_only = StatusDashboardCustomization.get("dashboard_staff_status_staff_only")
-	return StaffAvailability.objects.exists() and (not dashboard_staff_status_staff_only or request.user.is_any_part_of_staff)
+	return StaffAvailability.objects.filter(visible=True).exists() and (not dashboard_staff_status_staff_only or request.user.is_any_part_of_staff)
 
 
 def process_area_access_record_with_parents(user: User):
