@@ -161,6 +161,7 @@ class ApplicationCustomization(CustomizationBase):
 class ProjectsAccountsCustomization(CustomizationBase):
 	variables = {
 		"project_selection_template": "{{ project.name }}",
+		"project_application_identifier_name": "Application identifier",
 		"project_allow_document_upload": "",
 		"account_list_active_only": "",
 		"project_list_active_only": "",

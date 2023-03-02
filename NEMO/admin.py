@@ -102,6 +102,7 @@ from NEMO.models import (
 	record_remote_many_to_many_changes_and_save,
 )
 from NEMO.utilities import admin_get_item, format_daterange
+from NEMO.views.customization import ProjectsAccountsCustomization
 from NEMO.widgets.dynamic_form import (
 	DynamicForm,
 	PostUsageFloatFieldQuestion,
@@ -498,6 +499,7 @@ class ProjectAdminForm(forms.ModelForm):
 
 	def __init__(self, *args, **kwargs):
 		super(ProjectAdminForm, self).__init__(*args, **kwargs)
+		self.fields["application_identifier"].label = ProjectsAccountsCustomization.get("project_application_identifier_name")
 		if self.instance.pk:
 			self.fields["members"].initial = self.instance.user_set.all()
 			self.fields["principal_investigators"].initial = self.instance.manager_set.all()
@@ -510,12 +512,16 @@ class ProjectDocumentsInline(admin.TabularInline):
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-	list_display = ("name", "id", "application_identifier", "account", "active", "start_date")
+	list_display = ("name", "id", "get_application_identifier", "account", "active", "start_date")
 	filter_horizontal = ("only_allow_tools",)
 	search_fields = ("name", "application_identifier", "account__name")
 	list_filter = ("active", "account", "start_date")
 	inlines = [ProjectDocumentsInline]
 	form = ProjectAdminForm
+
+	@display(ordering="application_identifier")
+	def get_application_identifier(self, project: Project):
+		return project.application_identifier
 
 	def save_model(self, request, obj, form, change):
 		"""

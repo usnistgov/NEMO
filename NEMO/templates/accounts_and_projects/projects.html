@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Projects{% endblock %}
 {% block content %}
     <h1 style="margin-bottom: 30px">
@@ -19,7 +20,7 @@
                 <label class="control-label">Account:</label>
                 <span class="grey">{{ project.account }}</span>
                 <br>
-                <label class="control-label">Identifier:</label>
+                <label class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</label>
                 <span class="grey">{{ project.application_identifier }}</span>
 				{% if project.discipline %}
 					<br>
