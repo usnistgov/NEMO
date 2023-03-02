@@ -110,18 +110,18 @@
 			let complete_callback = ajax_complete_callback('Unable to remove document from project');
 			$("#project_" + project_id + "_documents").load(url, {'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
 		}
+        function reset_autocomplete()
+        {
+			$('.user_search').autocomplete('users', add_user_to_project, {{ users|json_search_base }});
+        }
 		function on_load()
 		{
 			$('#search').autocomplete('accounts_and_projects', get_account, {% json_search_base_with_extra_fields accounts_and_projects 'application_identifier' %});
-			$('.user_search').autocomplete('users', add_user_to_project, {{ users|json_search_base }});
+            reset_autocomplete();
 		}
 		window.addEventListener('load', on_load, true);
 	</script>
 	<style>
-        .set-pi .twitter-typeahead
-        {
-            display: inline-block !important;
-        }
 		#search_container .tt-dropdown-menu
 		{
 			min-width: 400px;
