@@ -452,6 +452,7 @@ def create_email_log(email: EmailMessage, email_category: EmailCategory):
 def create_email_attachment(stream, filename=None, maintype="application", subtype="octet-stream", **content_type_params) -> MIMEBase:
 	attachment = MIMEBase(maintype, subtype, **content_type_params)
 	attachment.set_payload(stream.read())
+	attachment.set_charset('utf-8')
 	encoders.encode_base64(attachment)
 	if filename:
 		attachment.add_header("Content-Disposition", f'attachment; filename="{filename}"')
