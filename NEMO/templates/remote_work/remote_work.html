@@ -92,7 +92,11 @@
 		<tbody>
 		{% for c in staff_charges %}
 			<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and  c.validated %}success-highlight{% endif %}">
-				<td>{{ c.id }}</td>
+				{% if "django.contrib.admin"|app_installed and perms.NEMO.change_staffcharge %}
+                    <td><a href="{% url 'admin:NEMO_staffcharge_change' c.id %}">{{ c.id }}</a></td>
+                {% else %}
+                    <td>{{ c.id }}</td>
+                {% endif %}
 				<td>{{ c.staff_member }}</td>
 				<td>{{ c.customer }}</td>
 				<td>{{ c.project }}</td>
@@ -115,7 +119,11 @@
             {% endif %}
 			{% for area_access_record in c.areaaccessrecord_set.all %}
 				<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}" style="font-size: smaller">
-					<td style="border-top: none"></td>
+					{% if "django.contrib.admin"|app_installed and perms.NEMO.change_areaaccessrecord %}
+                        <td><a href="{% url 'admin:NEMO_areaaccessrecord_change' area_access_record.id %}">{{ area_access_record.id }}</a></td>
+                    {% else %}
+                        <td>{{ area_access_record.id }}</td>
+                    {% endif %}
 					<td colspan="3" style="border-top-style: dotted">{{ area_access_record.area.name }} access</td>
 					<td style="border-top-style: dotted">{{ area_access_record.start }}</td>
 					<td style="border-top-style: dotted">{{ area_access_record.end|default_if_none:'' }}</td>
@@ -148,7 +156,11 @@
 		<tbody>
 		{% for u in usage %}
 			<tr {% if remote_work_validation and u.validated %}class="success-highlight"{% endif %} id="usage_event_row_{{ forloop.counter }}">
-				<td>{{ u.id }}</td>
+				{% if "django.contrib.admin"|app_installed and perms.NEMO.change_usageevent %}
+                    <td><a href="{% url 'admin:NEMO_usageevent_change' u.id %}">{{ u.id }}</a></td>
+                {% else %}
+                    <td>{{ u.id }}</td>
+                {% endif %}
 				<td>{{ u.operator }}</td>
 				<td>{{ u.user }}</td>
 				<td>{{ u.project }}</td>
