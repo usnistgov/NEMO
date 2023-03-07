@@ -24,7 +24,7 @@ from NEMO.tests.test_utilities import (
 from NEMO.views.customization import UserRequestsCustomization
 
 
-class AreaAccessGetTestCase(TestCase):
+class AdjustmentRequestTestCase(TestCase):
     def setUp(self) -> None:
         UserRequestsCustomization.set("adjustment_requests_enabled", "enabled")
 

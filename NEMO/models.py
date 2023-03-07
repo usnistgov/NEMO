@@ -123,6 +123,9 @@ class BaseCategory(BaseModel):
 		abstract = True
 		ordering = ["display_order", "name"]
 
+	def natural_key(self):
+		return (self.name,)
+
 	def __str__(self):
 		return str(self.name)
 
@@ -224,24 +227,12 @@ class UserPreferences(BaseModel):
 		verbose_name_plural = 'User preferences'
 
 
-class UserType(BaseModel):
-	name = models.CharField(max_length=50, unique=True)
-
-	def __str__(self):
-		return self.name
-
-	class Meta:
-		ordering = ["name"]
+class UserType(BaseCategory):
+	pass
 
 
-class ProjectDiscipline(BaseModel):
+class ProjectDiscipline(BaseCategory):
 	name = models.CharField(max_length=200, unique=True, help_text="The name of the discipline")
-
-	def __str__(self):
-		return self.name
-
-	class Meta:
-		ordering = ["name"]
 
 
 class PhysicalAccessLevel(BaseModel):
@@ -497,6 +488,9 @@ class User(BaseModel):
 	USERNAME_FIELD = 'username'
 	REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
 	objects = UserManager()
+
+	def natural_key(self):
+		return self.get_username(),
 
 	def clean(self):
 		username_pattern = getattr(settings, "USERNAME_REGEX", None)
@@ -783,6 +777,9 @@ class Tool(BaseModel):
 
 	class Meta:
 		ordering = ["name"]
+
+	def natural_key(self):
+		return (self.name,)
 
 	@property
 	def category(self):
@@ -1552,14 +1549,8 @@ class ConfigurationHistory(BaseModel):
 		return str(self.id)
 
 
-class AccountType(BaseModel):
-	name = models.CharField(max_length=100, unique=True)
-
-	class Meta:
-		ordering = ["name"]
-
-	def __str__(self):
-		return str(self.name)
+class AccountType(BaseCategory):
+	pass
 
 
 class Account(BaseModel):
@@ -1570,6 +1561,9 @@ class Account(BaseModel):
 
 	class Meta:
 		ordering = ["name"]
+
+	def natural_key(self):
+		return (self.name,)
 
 	def sorted_projects(self):
 		return self.project_set.all().order_by("-active", "name")
@@ -1590,6 +1584,9 @@ class Project(BaseModel):
 
 	class Meta:
 		ordering = ["name"]
+
+	def natural_key(self):
+		return (self.name,)
 
 	def __str__(self):
 		return str(self.name)
@@ -2208,6 +2205,9 @@ class TaskStatus(BaseModel):
 	notify_tool_notification_email = models.BooleanField(default=False, help_text="Send an email to the tool notification email address when a task transitions to this status")
 	custom_notification_email_address = models.EmailField(blank=True, help_text="Notify a custom email address when a task transitions to this status. Leave this blank if you don't need it.")
 	notification_message = models.TextField(blank=True)
+
+	def natural_key(self):
+		return (self.name,)
 
 	def __str__(self):
 		return self.name
