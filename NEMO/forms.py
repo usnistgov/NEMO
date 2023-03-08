@@ -188,6 +188,7 @@ class SafetyIssueCreationForm(ModelForm):
 	def __init__(self, user, *args, **kwargs):
 		super(SafetyIssueCreationForm, self).__init__(*args, **kwargs)
 		self.user = user
+		self.fields["location"].required = True
 
 	def clean_update(self):
 		return self.cleaned_data["concern"].strip()

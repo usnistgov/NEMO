@@ -102,7 +102,7 @@ from NEMO.models import (
 	record_remote_many_to_many_changes_and_save,
 )
 from NEMO.utilities import admin_get_item, format_daterange
-from NEMO.views.customization import ProjectsAccountsCustomization
+from NEMO.views.customization import ProjectsAccountsCustomization, ToolCustomization
 from NEMO.widgets.dynamic_form import (
 	DynamicForm,
 	PostUsageFloatFieldQuestion,
@@ -185,9 +185,9 @@ class ToolAdminForm(forms.ModelForm):
 		else:
 			if not category:
 				self.add_error("_category", "This field is required.")
-			if not location:
+			if not location and ToolCustomization.get_bool("tool_location_required"):
 				self.add_error("_location", "This field is required.")
-			if not phone_number:
+			if not phone_number and ToolCustomization.get_bool("tool_phone_number_required"):
 				self.add_error("_phone_number", "This field is required.")
 			if not primary_owner:
 				self.add_error("_primary_owner", "This field is required.")

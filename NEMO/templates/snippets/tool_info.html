@@ -27,5 +27,5 @@ Tool owner: <a href="{% url 'get_email_form_for_user' tool.primary_owner.id %}">
 {% if tool.notification_email_address %}
     Email: <a href="{% url 'get_email_form' %}?recipient={{ tool.notification_email_address }}" title="Email {{ tool.notification_email_address }}">{{ tool.notification_email_address }}</a><br/>
 {% endif %}
-Location: {{ tool.location }}<br/>
-Phone number: <a href="tel:{{ tool.phone_number }}">{{ tool.phone_number }}</a>
+{% if tool.location %}Location: {{ tool.location }}<br/>{% endif %}
+{% if tool.phone_number %}Phone number: <a href="tel:{{ tool.phone_number }}">{{ tool.phone_number }}</a>{% endif %}

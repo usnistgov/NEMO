@@ -2390,7 +2390,7 @@ class Door(BaseModel):
 
 class SafetyIssue(BaseModel):
 	reporter = models.ForeignKey(User, blank=True, null=True, related_name='reported_safety_issues', on_delete=models.SET_NULL)
-	location = models.CharField(max_length=200)
+	location = models.CharField(null=True, blank=True, max_length=200)
 	creation_time = models.DateTimeField(auto_now_add=True)
 	visible = models.BooleanField(default=True, help_text='Should this safety issue be visible to all users? When unchecked, the issue is only visible to staff.')
 	concern = models.TextField()

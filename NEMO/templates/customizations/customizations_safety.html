@@ -4,7 +4,7 @@
     <form method="POST" action="{% url 'customize' 'safety' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
-            <label class="control-label col-sm-4 col-md-3" >Main menu item</label>
+            <label class="control-label col-sm-4 col-md-3">Main menu item</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
                     <input type="hidden" name="safety_main_menu" value="off"/>
@@ -13,7 +13,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-sm-4 col-md-3" >Safety page items</label>
+            <label class="control-label col-sm-4 col-md-3">Safety page items</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
                     <div class="row col-sm-12">
@@ -32,7 +32,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-sm-4 col-md-3" >Safety items view</label>
+            <label class="control-label col-sm-4 col-md-3">Safety items view</label>
             <div class="col-sm-8 col-md-9">
                 <div class="radio">
                     <label><input type="radio" id="safety_items_expand_categories" name="safety_items_expand_categories" {% if not safety_items_expand_categories %}checked{% endif %} value=""> Side category panel</label>
@@ -41,7 +41,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-sm-4 col-md-3" >Safety data sheets</label>
+            <label class="control-label col-sm-4 col-md-3">Safety data sheets</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
                     <label for="safety_data_sheets_keywords_default"><input type="checkbox" id="safety_data_sheets_keywords_default" name="safety_data_sheets_keywords_default" {% if safety_data_sheets_keywords_default %}checked{% endif %} value="enabled"> Search with keywords by default</label>

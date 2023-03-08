@@ -1,16 +1,36 @@
 {% load custom_tags_and_filters %}
-<form method="POST" action="{% url 'customize' 'tool_qualification' %}" class="form-horizontal">
+<form method="POST" action="{% url 'customize' 'tool' %}" class="form-horizontal">
     <div class="panel-body">
         {% csrf_token %}
+        <h3 class="customization-section-title">Tool settings</h3>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Phone number</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="radio">
+                    <label><input type="radio" id="tool_phone_number_required" name="tool_phone_number_required" {% if tool_phone_number_required == "off" %}checked{% endif %} value="off"> Not required</label>
+                    <label><input type="radio" name="tool_phone_number_required" {% if tool_phone_number_required == "enabled" %}checked{% endif %} value="enabled"> Required</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Location</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="radio">
+                    <label><input type="radio" id="tool_location_required" name="tool_location_required" {% if tool_location_required == "off" %}checked{% endif %} value="off"> Not required</label>
+                    <label><input type="radio" name="tool_location_required" {% if tool_location_required == "enabled" %}checked{% endif %} value="enabled"> Required</label>
+                </div>
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool qualification expiration</h3>
         <p>If active, this feature will remove tool qualification from a user if the user has not used the tool after a while or never used it since qualified (configured separately).
         <p>The <a href="{% url 'customization' 'templates' %}?#tool_qualification_expiration_email_id">user tool qualification expiration email</a> need to be set to enable this feature.</p><br/>
         <div class="form-group {% if errors.tool_qualification_reminder_days %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="tool_qualification_reminder_days">Reminder days</label>
-            <div class="col-md-4">
+            <label class="control-label col-md-3" for="tool_qualification_reminder_days">Reminder days</label>
+            <div class="col-md-5">
                 <input type="text" id="tool_qualification_reminder_days" name="tool_qualification_reminder_days" class="form-control" value="{% if errors.tool_qualification_reminder_days %}{{ errors.tool_qualification_reminder_days.value }}{% else %}{{ tool_qualification_reminder_days }}{% endif %}"/>
             </div>
-            <div class="col-md-6 help-block light-grey">
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 {% if errors.tool_qualification_reminder_days %}
                     {{ errors.tool_qualification_reminder_days.error }}
                 {% else %}
@@ -19,11 +39,11 @@
             </div>
         </div>
         <div class="form-group {% if errors.tool_qualification_expiration_days %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="tool_qualification_expiration_days">Expiration days<br>(previous tool usage)</label>
-            <div class="col-md-4">
+            <label class="control-label col-md-3" for="tool_qualification_expiration_days">Expiration days (previous tool usage)</label>
+            <div class="col-md-5">
                 <input type="number" step="1" id="tool_qualification_expiration_days" name="tool_qualification_expiration_days" class="form-control" value="{% if errors.tool_qualification_expiration_days %}{{ errors.tool_qualification_expiration_days.value }}{% else %}{{ tool_qualification_expiration_days }}{% endif %}"/>
             </div>
-            <div class="col-md-6 help-block light-grey">
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 {% if errors.tool_qualification_expiration_days %}
                     {{ errors.tool_qualification_expiration_days.error }}
                 {% else %}
@@ -32,11 +52,11 @@
             </div>
         </div>
         <div class="form-group {% if errors.tool_qualification_expiration_never_used_days %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="tool_qualification_expiration_never_used_days">Expiration days<br>(no tool usage)</label>
-            <div class="col-md-4">
+            <label class="control-label col-md-3" for="tool_qualification_expiration_never_used_days">Expiration days (no tool usage)</label>
+            <div class="col-md-5">
                 <input type="number" step="1" id="tool_qualification_expiration_never_used_days" name="tool_qualification_expiration_never_used_days" class="form-control" value="{% if errors.tool_qualification_expiration_never_used_days %}{{ errors.tool_qualification_expiration_never_used_days.value }}{% else %}{{ tool_qualification_expiration_never_used_days }}{% endif %}"/>
             </div>
-            <div class="col-md-6 help-block light-grey">
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 {% if errors.tool_qualification_expiration_never_used_days %}
                     {{ errors.tool_qualification_expiration_never_used_days.error }}
                 {% else %}
@@ -45,11 +65,11 @@
             </div>
         </div>
         <div class="form-group {% if errors.tool_qualification_cc %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="tool_qualification_cc">Reminder/expiration CC</label>
-            <div class="col-md-4">
+            <label class="control-label col-md-3" for="tool_qualification_cc">Reminder/expiration CC</label>
+            <div class="col-md-5">
                 <input type="text" id="tool_qualification_cc" name="tool_qualification_cc" class="form-control" value="{% if errors.tool_qualification_cc %}{{ errors.tool_qualification_cc.value }}{% else %}{{ tool_qualification_cc }}{% endif %}" placeholder="information@example.org"/>
             </div>
-            <div class="col-md-6 help-block light-grey">
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 {% if errors.tool_qualification_cc %}
                     {{ errors.tool_qualification_cc.error }}
                 {% else %}

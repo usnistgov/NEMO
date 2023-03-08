@@ -67,7 +67,7 @@ from NEMO.views.customization import (
 	CalendarCustomization,
 	EmailsCustomization,
 	RecurringChargesCustomization,
-	ToolQualificationCustomization,
+	ToolCustomization,
 	UserCustomization,
 	get_media_file_contents,
 )
@@ -1319,9 +1319,9 @@ def manage_tool_qualifications(request):
 
 def do_manage_tool_qualifications(request=None):
 	user_office_email = EmailsCustomization.get("user_office_email_address")
-	qualification_reminder_days = ToolQualificationCustomization.get("tool_qualification_reminder_days")
-	qualification_expiration_days = ToolQualificationCustomization.get("tool_qualification_expiration_days")
-	qualification_expiration_never_used = ToolQualificationCustomization.get("tool_qualification_expiration_never_used_days")
+	qualification_reminder_days = ToolCustomization.get("tool_qualification_reminder_days")
+	qualification_expiration_days = ToolCustomization.get("tool_qualification_expiration_days")
+	qualification_expiration_never_used = ToolCustomization.get("tool_qualification_expiration_never_used_days")
 	template = get_media_file_contents("tool_qualification_expiration_email.html")
 	if user_office_email and template:
 		if qualification_expiration_days or qualification_expiration_never_used:
@@ -1352,7 +1352,7 @@ def send_tool_qualification_expiring_email(qualification: Qualification, last_to
 	user_office_email = EmailsCustomization.get("user_office_email_address")
 	template = get_media_file_contents("tool_qualification_expiration_email.html")
 	# Add extra cc emails
-	tool_qualification_cc = ToolQualificationCustomization.get("tool_qualification_cc")
+	tool_qualification_cc = ToolCustomization.get("tool_qualification_cc")
 	ccs = [e for e in tool_qualification_cc.split(",") if e]
 	if remaining_days:
 		subject_expiration = f" expires in {remaining_days} days!"

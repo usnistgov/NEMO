@@ -361,7 +361,7 @@ def kiosk(request, location=None):
 		}
 		return render(request, "kiosk/kiosk.html", dictionary)
 	else:
-		locations = sorted(list(set([tool.location for tool in Tool.objects.filter(visible=True)])))
+		locations = sorted(list(set([tool.location for tool in Tool.objects.filter(visible=True) if tool.location])))
 		dictionary = {
 			"locations": [
 				{"url": reverse("kiosk", kwargs={"location": location}), "name": location} for location in locations

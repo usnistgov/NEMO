@@ -312,9 +312,11 @@ class RecurringChargesCustomization(CustomizationBase):
 		return errors
 
 
-@customization(key="tool_qualification", title="Tool qualification")
-class ToolQualificationCustomization(CustomizationBase):
+@customization(key="tool", title="Tools")
+class ToolCustomization(CustomizationBase):
 	variables = {
+		"tool_phone_number_required": "enabled",
+		"tool_location_required": "enabled",
 		"tool_qualification_reminder_days": "",
 		"tool_qualification_expiration_days": "",
 		"tool_qualification_expiration_never_used_days": "",
