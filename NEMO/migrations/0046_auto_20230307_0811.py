@@ -50,4 +50,9 @@ class Migration(migrations.Migration):
             name='name',
             field=models.CharField(help_text='The unique name for this item', max_length=200, unique=True),
         ),
+        migrations.AlterField(
+            model_name='interlock',
+            name='unit_id',
+            field=models.PositiveIntegerField(blank=True, null=True, verbose_name='Multiplier/Unit id'),
+        ),
     ]

@@ -113,6 +113,11 @@ class NoOpInterlock(Interlock):
 
 
 class StanfordInterlock(Interlock):
+	MAX_ENABLE_VALUE = 3800
+	MIN_ENABLE_VALUE = 3200
+	MAX_DISABLE_VALUE = 1000
+	MIN_DISABLE_VALUE = 700
+
 	def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
 		even_port = interlock_card_form.cleaned_data["even_port"]
 		odd_port = interlock_card_form.cleaned_data["odd_port"]
@@ -129,9 +134,12 @@ class StanfordInterlock(Interlock):
 
 	def clean_interlock(self, interlock_form: InterlockAdminForm):
 		channel = interlock_form.cleaned_data["channel"]
+		num_interlocks = interlock_form.cleaned_data["unit_id"]
 		error = {}
 		if not channel:
 			error["channel"] = _("This field is required.")
+		if num_interlocks is not None and num_interlocks < 1:
+			error["unit_id"] = _("The multiplier must be greater or equal to 1.")
 		if error:
 			raise ValidationError(error)
 
@@ -139,12 +147,13 @@ class StanfordInterlock(Interlock):
 		# The string in this next function call identifies the format of the interlock message.
 		# '!' means use network byte order (big endian) for the contents of the message.
 		# '20s' means that the message begins with a 20 character string.
+		# Each 'I' is an unsigned integer field (4 bytes).
 		# Each 'i' is an integer field (4 bytes).
-		# Each 'b' is a byte field (1 byte).
-		# '18s' means that the message ends with a 18 character string.
+		# Each 'B' is an unsigned char field (1 byte).
+		# '18s' means that the message ends with an 18 character string.
 		# More information on Python structs can be found at:
 		# http://docs.python.org/library/struct.html
-		command_schema = struct.Struct("!20siiiiiiiiibbbbb18s")
+		command_schema = struct.Struct("!20sIIIIIIIIIBBBBi18s")
 		command_message = command_schema.pack(
 			b"EQCNTL_BEGIN_COMMAND",
 			1,  # Instruction count
@@ -172,32 +181,54 @@ class StanfordInterlock(Interlock):
 			sock.connect(server_address)
 			sock.send(command_message)
 			# The reply schema is the same as the command schema except there are no start and end strings.
-			reply_schema = struct.Struct("!iiiiiiiiibbbbb")
+			reply_schema = struct.Struct("!IIIIIIIIIBBBBi")
 			reply = sock.recv(reply_schema.size)
 			reply = reply_schema.unpack(reply)
 
-			# Update the state of the interlock in the database if the command succeeded.
-			if reply[5]:
-				interlock_state = command_type
-				return interlock_state
-			else:
+			num_interlocks = interlock.unit_id or 1
+
+			# Check for any interlock errors
+			error = ""
+			if not reply[5]:
+				error = "Stanford Interlock exception"
+			elif reply[9]:
+				error = "Signal driver overload"
+			elif reply[10]:
+				error = "Return driver overload"
+			elif not reply[11]:
+				error = "ADC not done"
+			elif reply[12]:
+				error = "Relay not ready"
+			elif not (
+				command_type == Interlock_model.State.UNLOCKED
+				and self.MIN_ENABLE_VALUE * num_interlocks <= reply[13] <= self.MAX_ENABLE_VALUE * num_interlocks
+				or command_type == Interlock_model.State.LOCKED
+				and self.MIN_DISABLE_VALUE * num_interlocks <= reply[13] <= self.MAX_DISABLE_VALUE * num_interlocks
+			):
+				error = "Enable return value exceeds limits"
+
+			if error:
 				# raise an exception if it failed
-				reply_message = "Stanford Interlock exception:\nResponse information: " +\
-								"Instruction count = " + str(reply[0]) + ", " +\
-								"card number = " + str(reply[1]) + ", " +\
-								"even port = " + str(reply[2]) + ", " +\
-								"odd port = " + str(reply[3]) + ", " +\
-								"channel = " + str(reply[4]) + ", " +\
-								"command return value = " + str(reply[5]) + ", " +\
-								"instruction type = " + str(reply[6]) + ", " +\
-								"instruction = " + str(reply[7]) + ", " +\
-								"delay = " + str(reply[8]) + ", " +\
-								"SD overload = " + str(reply[9]) + ", " +\
-								"RD overload = " + str(reply[10]) + ", " +\
-								"ADC done = " + str(reply[11]) + ", " +\
-								"busy = " + str(reply[12]) + ", " +\
+				reply_message = f"{error}:\nResponse information: " + \
+								"Instruction count = " + str(reply[0]) + ", " + \
+								"card number = " + str(reply[1]) + ", " + \
+								"even port = " + str(reply[2]) + ", " + \
+								"odd port = " + str(reply[3]) + ", " + \
+								"channel = " + str(reply[4]) + ", " + \
+								"command return value = " + str(reply[5]) + ", " + \
+								"instruction type = " + str(reply[6]) + ", " + \
+								"instruction = " + str(reply[7]) + ", " + \
+								"delay = " + str(reply[8]) + ", " + \
+								"SD overload = " + str(reply[9]) + ", " + \
+								"RD overload = " + str(reply[10]) + ", " + \
+								"ADC done = " + str(reply[11]) + ", " + \
+								"busy = " + str(reply[12]) + ", " + \
 								"instruction return value = " + str(reply[13]) + "."
 				raise InterlockError(interlock=interlock, msg=reply_message)
+			# Update the state of the interlock in the database if the command succeeded.
+			else:
+				interlock_state = command_type
+				return interlock_state
 
 		# Log any errors that occurred during the operation into the database.
 		except OSError as error:
