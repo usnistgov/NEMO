@@ -51,49 +51,56 @@
     "model": "NEMO.usertype",
     "pk": 1,
     "fields": {
-      "name": "Student"
+      "name": "Student",
+      "display_order": 0
     }
   },
   {
     "model": "NEMO.usertype",
     "pk": 2,
     "fields": {
-      "name": "Faculty"
+      "name": "Faculty",
+      "display_order": 1
     }
   },
   {
     "model": "NEMO.usertype",
     "pk": 3,
     "fields": {
-      "name": "Lab staff"
+      "name": "Lab staff",
+      "display_order": 2
     }
   },
   {
     "model": "NEMO.projectdiscipline",
     "pk": 1,
     "fields": {
-      "name": "Physics"
+      "name": "Physics",
+      "display_order": 0
     }
   },
   {
     "model": "NEMO.projectdiscipline",
     "pk": 2,
     "fields": {
-      "name": "Chemistry"
+      "name": "Chemistry",
+      "display_order": 1
     }
   },
   {
     "model": "NEMO.projectdiscipline",
     "pk": 3,
     "fields": {
-      "name": "Biology"
+      "name": "Biology",
+      "display_order": 3
     }
   },
   {
     "model": "NEMO.projectdiscipline",
     "pk": 4,
     "fields": {
-      "name": "Electronics"
+      "name": "Electronics",
+      "display_order": 4
     }
   },
   {
@@ -6245,14 +6252,16 @@
     "model": "NEMO.accounttype",
     "pk": 1,
     "fields": {
-      "name": "Internal"
+      "name": "Internal",
+      "display_order": 0
     }
   },
   {
     "model": "NEMO.accounttype",
     "pk": 2,
     "fields": {
-      "name": "Industry"
+      "name": "Industry",
+      "display_order": 1
     }
   },
   {
