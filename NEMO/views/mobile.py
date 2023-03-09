@@ -11,6 +11,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.models import Area, Project, Reservation, ReservationItemType, ScheduledOutage, Tool, User
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import beginning_of_the_day, end_of_the_day, localize
 from NEMO.views.calendar import (
 	extract_configuration,
@@ -18,7 +19,6 @@ from NEMO.views.calendar import (
 	render_reservation_questions,
 )
 from NEMO.views.customization import CalendarCustomization
-from NEMO.views.policy import check_billing_to_project, check_policy_to_save_reservation
 
 
 @login_required
@@ -109,7 +109,7 @@ def make_reservation(request):
 		reservation.short_notice = item.determine_insufficient_notice(start)
 	else:
 		reservation.short_notice = False
-	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=reservation, user_creating_reservation=request.user, explicit_policy_override=False)
+	policy_problems, overridable = policy.check_to_save_reservation(cancelled_reservation=None, new_reservation=reservation, user_creating_reservation=request.user, explicit_policy_override=False)
 
 	# If there was a problem in saving the reservation then return the error...
 	if policy_problems:
@@ -119,7 +119,7 @@ def make_reservation(request):
 	try:
 		reservation.project = Project.objects.get(id=request.POST['project_id'])
 		# Check if we are allowed to bill to project
-		check_billing_to_project(reservation.project, request.user, reservation.reservation_item)
+		policy.check_billing_to_project(reservation.project, request.user, reservation.reservation_item)
 	except ProjectChargeException as e:
 		return render(request, 'mobile/error.html', {'message': e.msg})
 	except:

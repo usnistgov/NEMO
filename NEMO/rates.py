@@ -1,4 +1,3 @@
-import importlib
 import json
 from abc import ABC, abstractmethod
 from logging import getLogger
@@ -7,8 +6,10 @@ from typing import Dict, List, Union
 from django.conf import settings
 
 from NEMO.models import Consumable, Tool
+from NEMO.utilities import get_class_from_settings
 
 rates_logger = getLogger(__name__)
+
 
 class Rates(ABC):
 
@@ -116,7 +117,6 @@ class NISTRates(Rates):
 		html_rate += "</tr></table></div></div></div>"
 		return html_rate
 
-
 	def _get_rate_by_table_id_and_class(self, item: Union[Consumable, Tool], table_id, rate_claz) -> float:
 		if self.rates:
 			matching_rates = list(filter(lambda rate: rate['table_id'] == table_id and rate['rate_class'] == rate_claz and rate['item_id'] == item.id, self.rates))
@@ -124,13 +124,5 @@ class NISTRates(Rates):
 				return matching_rates[0]['rate']
 
 
-def get_rate_class():
-	rates_class = getattr(settings, "RATES_CLASS", "NEMO.rates.NISTRates")
-	assert isinstance(rates_class, str)
-	pkg, attr = rates_class.rsplit(".", 1)
-	ret = getattr(importlib.import_module(pkg), attr)
-	return ret()
-
-
 # ONLY import this LOCALLY to avoid potential issues
-rate_class = get_rate_class()
+rate_class: Rates = get_class_from_settings("RATES_CLASS", "NEMO.rates.NISTRates")

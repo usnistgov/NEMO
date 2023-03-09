@@ -9,6 +9,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import staff_member_required
 from NEMO.exceptions import ProjectChargeException
 from NEMO.models import Area, AreaAccessRecord, Project, StaffCharge, UsageEvent, User
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
 	BasicDisplayTable,
 	export_format_datetime,
@@ -18,7 +19,6 @@ from NEMO.utilities import (
 )
 from NEMO.views.area_access import load_areas_for_use_in_template
 from NEMO.views.customization import ApplicationCustomization
-from NEMO.views.policy import check_billing_to_project
 
 
 @staff_member_required
@@ -226,7 +226,7 @@ def begin_staff_charge(request):
 	charge.project = Project.objects.get(id=request.POST["project"])
 	# Check if we are allowed to bill to project
 	try:
-		check_billing_to_project(charge.project, charge.customer, charge)
+		policy.check_billing_to_project(charge.project, charge.customer, charge)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
 	charge.staff_member = request.user
@@ -265,7 +265,7 @@ def begin_staff_area_charge(request):
 		return HttpResponseBadRequest("You cannot create an area access charge when one is already in progress.")
 	try:
 		area = Area.objects.get(id=request.POST["area"])
-		check_billing_to_project(charge.project, charge.customer, area)
+		policy.check_billing_to_project(charge.project, charge.customer, area)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
 	except:

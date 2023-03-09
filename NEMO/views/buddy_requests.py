@@ -16,6 +16,7 @@ from NEMO.exceptions import (
 )
 from NEMO.forms import BuddyRequestForm
 from NEMO.models import Area, BuddyRequest, Notification, RequestMessage, User
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import end_of_the_day, get_email_from_settings, get_full_url
 from NEMO.views.customization import UserRequestsCustomization
 from NEMO.views.notifications import (
@@ -24,7 +25,6 @@ from NEMO.views.notifications import (
 	delete_notification,
 	get_notifications,
 )
-from NEMO.views.policy import check_policy_to_enter_any_area
 
 
 @login_required
@@ -142,7 +142,7 @@ Please visit {reply_url} to reply"""
 def check_user_reply_error(buddy_request: BuddyRequest, user: User) -> Optional[str]:
 	error_message = None
 	try:
-		check_policy_to_enter_any_area(user)
+		policy.check_to_enter_any_area(user)
 	except InactiveUserError:
 		error_message = "You cannot reply to this request because your account has been deactivated"
 	except NoActiveProjectsForUserError:

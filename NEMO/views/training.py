@@ -12,7 +12,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import staff_member_or_tool_superuser_required
 from NEMO.exceptions import ProjectChargeException
 from NEMO.models import MembershipHistory, Project, Tool, TrainingSession, User
-from NEMO.views.policy import check_billing_to_project
+from NEMO.policy import policy_class as policy
 from NEMO.views.users import get_identity_service
 
 training_logger = getLogger(__name__)
@@ -70,7 +70,7 @@ def charge_training(request):
 					charges[index].qualified = (value == "on")
 		for c in charges.values():
 			c.full_clean()
-			check_billing_to_project(c.project, c.trainee, c.tool)
+			policy.check_billing_to_project(c.project, c.trainee, c.tool)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
 	except User.DoesNotExist:

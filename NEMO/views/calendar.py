@@ -42,6 +42,7 @@ from NEMO.models import (
 	UsageEvent,
 	User,
 )
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
 	EmailCategory,
 	RecurrenceFrequency,
@@ -71,14 +72,6 @@ from NEMO.views.customization import (
 	UserCustomization,
 	get_media_file_contents,
 )
-from NEMO.views.policy import (
-	check_billing_to_project,
-	check_policy_to_cancel_reservation,
-	check_policy_to_create_outage,
-	check_policy_to_save_reservation,
-	check_tool_reservation_requiring_area,
-	maximum_users_in_overlapping_reservations,
-)
 from NEMO.widgets.dynamic_form import DynamicForm, render_group_questions
 
 calendar_logger = getLogger(__name__)
@@ -88,7 +81,7 @@ calendar_logger = getLogger(__name__)
 @require_GET
 def calendar(request, item_type=None, item_id=None):
 	""" Present the calendar view to the user. """
-	user:User = request.user
+	user: User = request.user
 	if request.device == 'mobile':
 		if item_type and item_type == 'tool' and item_id:
 			return redirect('view_calendar', item_id)
@@ -104,7 +97,7 @@ def calendar(request, item_type=None, item_id=None):
 		areas = [area for area in areas if area in user.accessible_areas()]
 
 	from NEMO.widgets.item_tree import ItemTree
-	rendered_item_tree_html = ItemTree().render(None, {'tools': tools, 'areas':areas, 'user': request.user})
+	rendered_item_tree_html = ItemTree().render(None, {'tools': tools, 'areas': areas, 'user': request.user})
 
 	calendar_view = CalendarCustomization.get('calendar_view')
 	calendar_first_day_of_week = CalendarCustomization.get('calendar_first_day_of_week')
@@ -125,14 +118,14 @@ def calendar(request, item_type=None, item_id=None):
 		'areas': list(areas),
 		'auto_select_item_id': item_id,
 		'auto_select_item_type': item_type,
-		'calendar_view' : calendar_view,
-		'calendar_first_day_of_week' : calendar_first_day_of_week,
-		'calendar_time_format' : calendar_time_format,
-		'calendar_day_column_format' : calendar_day_column_format,
-		'calendar_week_column_format' : calendar_week_column_format,
-		'calendar_month_column_format' : calendar_month_column_format,
-		'calendar_start_of_the_day' : calendar_start_of_the_day,
-		'calendar_now_indicator' : calendar_now_indicator,
+		'calendar_view': calendar_view,
+		'calendar_first_day_of_week': calendar_first_day_of_week,
+		'calendar_time_format': calendar_time_format,
+		'calendar_day_column_format': calendar_day_column_format,
+		'calendar_week_column_format': calendar_week_column_format,
+		'calendar_month_column_format': calendar_month_column_format,
+		'calendar_start_of_the_day': calendar_start_of_the_day,
+		'calendar_now_indicator': calendar_now_indicator,
 		'calendar_all_tools': calendar_all_tools,
 		'calendar_all_areas': calendar_all_areas,
 		'calendar_all_areastools': calendar_all_areastools,
@@ -155,7 +148,7 @@ def calendar(request, item_type=None, item_id=None):
 @require_GET
 @disable_session_expiry_refresh
 def event_feed(request):
-	""" Get all reservations for a specific time-window. Optionally: filter by tool, area or user name. """
+	""" Get all reservations for a specific time-window. Optionally: filter by tool, area or user. """
 	try:
 		start, end = extract_calendar_dates(request.GET)
 	except Exception as e:
@@ -393,7 +386,7 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 	new_reservation.start = start
 	new_reservation.end = end
 	new_reservation.short_notice = item.determine_insufficient_notice(start) if item_type == ReservationItemType.TOOL else False
-	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
+	policy_problems, overridable = policy.check_to_save_reservation(cancelled_reservation=None, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 
 	# If there was a policy problem with the reservation then return the error...
 	if policy_problems:
@@ -422,7 +415,7 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 
 		# Check if we are allowed to bill to project
 		try:
-			check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item)
+			policy.check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item)
 		except ProjectChargeException as e:
 			policy_problems.append(e.msg)
 			return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': False, 'reservation_action': 'create'})
@@ -472,7 +465,7 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 
 def reservation_success(request, reservation: Reservation):
 	""" Checks area capacity and display warning message if capacity is high """
-	max_area_overlap, max_location_overlap = (0,0)
+	max_area_overlap, max_location_overlap = (0, 0)
 	max_area_time, max_location_time = (None, None)
 	area: Area = reservation.tool.requires_area_access if reservation.reservation_item_type == ReservationItemType.TOOL else reservation.area
 	location = reservation.tool.location if reservation.reservation_item_type == ReservationItemType.TOOL else None
@@ -482,10 +475,10 @@ def reservation_success(request, reservation: Reservation):
 			overlapping_reservations_in_same_area = overlapping_reservations_in_same_area.filter(tool__in=Tool.objects.filter(_requires_area_access=area))
 		elif reservation.reservation_item_type == ReservationItemType.AREA:
 			overlapping_reservations_in_same_area = overlapping_reservations_in_same_area.filter(area=area)
-		max_area_overlap, max_area_time = maximum_users_in_overlapping_reservations(overlapping_reservations_in_same_area)
+		max_area_overlap, max_area_time = policy.check_maximum_users_in_overlapping_reservations(overlapping_reservations_in_same_area)
 		if location:
 			overlapping_reservations_in_same_location = overlapping_reservations_in_same_area.filter(tool__in=Tool.objects.filter(_location=location))
-			max_location_overlap, max_location_time = maximum_users_in_overlapping_reservations(overlapping_reservations_in_same_location)
+			max_location_overlap, max_location_time = policy.check_maximum_users_in_overlapping_reservations(overlapping_reservations_in_same_location)
 	if max_area_overlap and max_area_overlap >= area.warning_capacity():
 		dictionary = {
 			'area': area,
@@ -550,7 +543,7 @@ def create_outage(request):
 	outage.end = end
 
 	# If there is a policy problem for the outage then return the error...
-	policy_problem = check_policy_to_create_outage(outage)
+	policy_problem = policy.check_to_create_outage(outage)
 	if policy_problem:
 		return HttpResponseBadRequest(policy_problem)
 
@@ -667,7 +660,7 @@ def modify_reservation(request, current_user, start_delta, end_delta):
 	new_reservation.creation_time = now
 	new_reservation.creator = current_user
 
-	response = check_policy_to_cancel_reservation(current_user, reservation_to_cancel, new_reservation)
+	response = policy.check_to_cancel_reservation(current_user, reservation_to_cancel, new_reservation)
 	# Do not move the reservation if the user was not authorized to cancel it.
 	if response.status_code != HTTPStatus.OK:
 		return response
@@ -677,7 +670,7 @@ def modify_reservation(request, current_user, start_delta, end_delta):
 	reservation_to_cancel.cancellation_time = now
 	reservation_to_cancel.cancelled_by = current_user
 
-	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=reservation_to_cancel, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
+	policy_problems, overridable = policy.check_to_save_reservation(cancelled_reservation=reservation_to_cancel, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 	if policy_problems:
 		reservation_action = "resize" if start_delta is None else "move"
 		return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': overridable and request.user.is_staff, 'reservation_action': reservation_action})
@@ -697,7 +690,7 @@ def modify_outage(request, start_delta, end_delta):
 	if start_delta:
 		outage.start += start_delta
 	outage.end += end_delta
-	policy_problem = check_policy_to_create_outage(outage)
+	policy_problem = policy.check_to_create_outage(outage)
 	if policy_problem:
 		return HttpResponseBadRequest(policy_problem)
 	else:
@@ -753,7 +746,7 @@ def change_reservation_project(request, reservation_id):
 	reservation = get_object_or_404(Reservation, id=reservation_id)
 	project = get_object_or_404(Project, id=request.POST['project_id'])
 	try:
-		check_billing_to_project(project, reservation.user, reservation.reservation_item)
+		policy.check_billing_to_project(project, reservation.user, reservation.reservation_item)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
 
@@ -992,7 +985,7 @@ def email_out_of_time_reservation_notification(request):
 
 def send_email_out_of_time_reservation_notification(request=None):
 	"""
-	Out of time reservation notification for areas is when a user is still logged in a area but his reservation expired.
+	Out of time reservation notification for areas is when a user is still logged in an area but his reservation expired.
 	"""
 	# Exit early if the out of time reservation email template has not been customized for the organization yet.
 	# This feature only sends emails, so if the template is not defined there nothing to do.
@@ -1090,7 +1083,7 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 
 def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation: User, reason: Optional[str], request=None):
 	# Check policy to cancel reservation contains rules common to cancelling and modifying
-	response = check_policy_to_cancel_reservation(user_cancelling_reservation, reservation)
+	response = policy.check_to_cancel_reservation(user_cancelling_reservation, reservation)
 
 	# The following rules apply only for proper cancellation, not for modification
 	# Staff must provide a reason when cancelling a reservation they do not own.
@@ -1098,7 +1091,7 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 		response = HttpResponseBadRequest("You must provide a reason when cancelling someone else's reservation.")
 
 	policy_problems = []
-	check_tool_reservation_requiring_area(policy_problems, user_cancelling_reservation, reservation, None)
+	policy.check_tool_reservation_requiring_area(policy_problems, user_cancelling_reservation, reservation, None)
 	if policy_problems:
 		return HttpResponseBadRequest(policy_problems[0])
 
@@ -1151,7 +1144,7 @@ def send_missed_reservation_notification(reservation, request=None):
 		calendar_logger.error("Missed reservation email couldn't be send because missed_reservation_email.html or user_office_email are not defined")
 
 
-def send_out_of_time_reservation_notification(reservation:Reservation, request=None):
+def send_out_of_time_reservation_notification(reservation: Reservation, request=None):
 	message = get_media_file_contents('out_of_time_reservation_email.html')
 	user_office_email = EmailsCustomization.get('user_office_email_address')
 	if message and user_office_email:

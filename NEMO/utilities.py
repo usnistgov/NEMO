@@ -1,4 +1,5 @@
 import csv
+import importlib
 import os
 from calendar import monthrange
 from datetime import date, datetime, time
@@ -85,7 +86,7 @@ class EmptyHttpRequest(HttpRequest):
 
 
 class BasicDisplayTable(object):
-	""" Utility table to make adding headers and rows easier, and export to csv """
+	"""Utility table to make adding headers and rows easier, and export to csv"""
 
 	def __init__(self):
 		# headers is a list of tuples (key, display)
@@ -333,7 +334,10 @@ def format_datetime(universal_time=None, df=None, as_current_timezone=True, use_
 
 
 def export_format_datetime(date_time=None, d_format=True, t_format=True, underscore=True, as_current_timezone=True) -> str:
-	""" This function returns a formatted date/time for export files. Default returns date + time format, with underscores """
+	"""
+	This function returns a formatted date/time for export files.
+	Default returns date + time format, with underscores
+	"""
 	this_time = date_time if date_time else timezone.now() if as_current_timezone else datetime.now()
 	export_date_format = getattr(settings, "EXPORT_DATE_FORMAT", "m_d_Y").replace("-", "_")
 	export_time_format = getattr(settings, "EXPORT_TIME_FORMAT", "h_i_s").replace("-", "_")
@@ -369,13 +373,13 @@ def naive_local_current_datetime():
 
 
 def beginning_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
-	""" Returns the BEGINNING of today's day (12:00:00.000000 AM of the current day) in LOCAL time. """
+	"""Returns the BEGINNING of today's day (12:00:00.000000 AM of the current day) in LOCAL time."""
 	zero = t.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
 	return localize(zero) if in_local_timezone else zero
 
 
 def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
-	""" Returns the END of today's day (11:59:59.999999 PM of the current day) in LOCAL time. """
+	"""Returns the END of today's day (11:59:59.999999 PM of the current day) in LOCAL time."""
 	midnight = t.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=None)
 	return localize(midnight) if in_local_timezone else midnight
 
@@ -531,7 +535,7 @@ def get_safety_document_filename(safety_documents, filename):
 
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
-	""" Returns a resized image based on the given maximum size """
+	"""Returns a resized image based on the given maximum size"""
 	with Image.open(image) as img:
 		width, height = img.size
 		# no need to resize if width or height is already less than the max
@@ -560,15 +564,15 @@ def distinct_qs_value_list(qs: QuerySet, field_name: str) -> Set:
 
 # Useful function to render and combine 2 separate django templates
 def render_combine_responses(request, original_response: HttpResponse, template_name, context):
-	""" Combines contents of an original http response with a new one """
+	"""Combines contents of an original http response with a new one"""
 	additional_content = render(request, template_name, context)
 	original_response.content += additional_content.content
 	return original_response
 
 
 def render_email_template(template, dictionary: dict, request=None):
-	""" Use Django's templating engine to render the email template
-		If we don't have a request, create a empty one so context_processors (messages, customizations etc.) can be used
+	"""Use Django's templating engine to render the email template
+	If we don't have a request, create a empty one so context_processors (messages, customizations etc.) can be used
 	"""
 	return Template(template).render(make_context(dictionary, request or EmptyHttpRequest()))
 
@@ -665,3 +669,11 @@ def get_email_from_settings() -> str:
 		if settings.DEFAULT_FROM_EMAIL != global_settings.DEFAULT_FROM_EMAIL
 		else settings.SERVER_EMAIL
 	)
+
+
+def get_class_from_settings(setting_name: str, default_value: str):
+	setting_class = getattr(settings, setting_name, default_value)
+	assert isinstance(setting_class, str)
+	pkg, attr = setting_class.rsplit(".", 1)
+	ret = getattr(importlib.import_module(pkg), attr)
+	return ret()

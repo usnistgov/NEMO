@@ -12,6 +12,7 @@ from NEMO.decorators import staff_member_or_user_office_required, user_office_or
 from NEMO.exceptions import ProjectChargeException
 from NEMO.forms import ConsumableWithdrawForm, RecurringConsumableChargeForm
 from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, User
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
 	BasicDisplayTable,
 	EmailCategory,
@@ -23,7 +24,6 @@ from NEMO.utilities import (
 )
 from NEMO.views.customization import EmailsCustomization, RecurringChargesCustomization, get_media_file_contents
 from NEMO.views.pagination import SortedPaginator
-from NEMO.views.policy import check_billing_to_project
 
 consumables_logger = getLogger(__name__)
 
@@ -47,7 +47,7 @@ def consumables(request):
 		if form.is_valid():
 			withdraw = form.save(commit=False)
 			try:
-				check_billing_to_project(withdraw.project, withdraw.customer, withdraw.consumable)
+				policy.check_billing_to_project(withdraw.project, withdraw.customer, withdraw.consumable)
 			except ProjectChargeException as e:
 				return HttpResponseBadRequest(e.msg)
 			add_withdraw_to_session(request, withdraw)

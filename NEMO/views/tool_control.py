@@ -34,6 +34,7 @@ from NEMO.models import (
 	UsageEvent,
 	User,
 )
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
 	BasicDisplayTable,
 	EmailCategory,
@@ -53,7 +54,6 @@ from NEMO.views.customization import (
 	InterlockCustomization,
 	get_media_file_contents,
 )
-from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageQuestion, render_group_questions
 from NEMO.widgets.item_tree import ItemTree
@@ -330,7 +330,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	project = get_object_or_404(Project, id=project_id)
 	staff_charge = staff_charge == "true"
 	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
-	response = check_policy_to_enable_tool(tool, operator, user, project, staff_charge)
+	response = policy.check_to_enable_tool(tool, operator, user, project, staff_charge)
 	if response.status_code != HTTPStatus.OK:
 		return response
 
@@ -381,7 +381,7 @@ def disable_tool(request, tool_id):
 	user: User = request.user
 	downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
 	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
-	response = check_policy_to_disable_tool(tool, user, downtime)
+	response = policy.check_to_disable_tool(tool, user, downtime)
 	if response.status_code != HTTPStatus.OK:
 		return response
 

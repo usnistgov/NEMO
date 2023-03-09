@@ -39,9 +39,9 @@ from NEMO.models import (
 	User,
 	UserPreferences,
 )
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import bootstrap_primary_color, format_datetime, quiet_int
 from NEMO.views.customization import UserRequestsCustomization
-from NEMO.views.policy import check_billing_to_project
 
 
 class UserForm(ModelForm):
@@ -296,7 +296,7 @@ class ConsumableWithdrawForm(ModelForm):
 		customer = cleaned_data["customer"]
 		project = cleaned_data["project"]
 		try:
-			check_billing_to_project(project, customer, consumable)
+			policy.check_billing_to_project(project, customer, consumable)
 		except ProjectChargeException as e:
 			raise ValidationError({"project": e.msg})
 		return cleaned_data
