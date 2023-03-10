@@ -7,7 +7,31 @@
             <label class="control-label col-md-4">Enable adjustment requests</label>
             <div class="col-md-8">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="adjustment_requests_enabled" {% if adjustment_requests_enabled %}checked{% endif %} value="enabled">Check this box to allow users to request adjustment for charges (at least one user with the facility manager role needs to exist).</label><br/>
+                    <label><input type="checkbox" name="adjustment_requests_enabled" {% if adjustment_requests_enabled %}checked{% endif %} value="enabled">Check this box to allow users to request adjustment for charges (at least one user with the facility manager role needs to exist for approval).</label><br/>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-4">Allowed charges for users</label>
+            <div class="col-md-8">
+                <div class="checkbox">
+                    <div class="row col-lg-3 col-md-4 col-sm-5">
+                        <input type="hidden" name="adjustment_requests_tool_usage_enabled" value="off"/>
+                        <label><input type="checkbox" name="adjustment_requests_tool_usage_enabled" {% if adjustment_requests_tool_usage_enabled == "enabled" %}checked{% endif %} value="enabled">Tool usage</label><br/>
+                    </div>
+                    <div class="row col-lg-3 col-md-4 col-sm-5">
+                        <input type="hidden" name="adjustment_requests_area_access_enabled" value="off"/>
+                        <label><input type="checkbox" name="adjustment_requests_area_access_enabled" {% if adjustment_requests_area_access_enabled == "enabled" %}checked{% endif %} value="enabled">Area access</label><br/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-4">Allowed charges for staff</label>
+            <div class="col-md-8">
+                <div class="checkbox">
+                    <input type="hidden" name="adjustment_requests_staff_staff_charges_enabled" value="off"/>
+                    <label><input type="checkbox" name="adjustment_requests_staff_staff_charges_enabled" {% if adjustment_requests_staff_staff_charges_enabled == "enabled" %}checked{% endif %} value="enabled">Remote work (Staff charges, Tool usage & Area access)</label><br/>
                 </div>
             </div>
         </div>
