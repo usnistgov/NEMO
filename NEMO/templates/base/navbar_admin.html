@@ -1,4 +1,5 @@
 {% load custom_tags_and_filters %}
+{% navigation_url 'admin:index' 'Detailed administration' user.is_superuser user.get_all_permissions %}
 {% if user.is_any_part_of_staff %}
     {% navigation_url 'abuse' 'Abuse' user.is_facility_manager user.is_superuser %}
     {% navigation_url 'accounts_and_projects' 'Accounts and projects' user.is_accounting_officer user.is_user_office user.is_facility_manager user.is_superuser %}
@@ -7,7 +8,6 @@
     {% if areas_exist %}{% navigation_url 'area_access' 'Area access' user.is_staff user.is_user_office user.is_superuser %}{% endif %}
     {% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' user.is_staff user.is_superuser %}{% endif %}
     {% navigation_url 'customization' 'Customization' user.is_superuser %}
-    {% navigation_url 'admin:index' 'Detailed administration' %}
     {% navigation_url 'email_broadcast' 'Email' %}
     {% navigation_url 'impersonate' 'Impersonate' user.is_superuser %}
     {% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' user.is_staff  user.is_superuser %}{% endif %}
@@ -20,7 +20,7 @@
     {% navigation_url 'consumables' 'Supplies' user.is_staff user.is_user_office user.is_superuser %}
     {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_staff user.is_superuser %}{% endif %}
     {% navigation_url 'users' 'Users' %}
-{% else %}
+{% elif user.is_tool_superuser or user.is_project_pi %}
     {% navigation_url 'projects' 'Projects' user.is_project_pi %}
     {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_tool_superuser %}{% endif %}
 {% endif %}

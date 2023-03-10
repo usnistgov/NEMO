@@ -15,7 +15,7 @@ from typing import List, Optional, Set, Union
 from dateutil import rrule
 from django.conf import settings
 from django.contrib import auth
-from django.contrib.auth.models import BaseUserManager, Group, Permission
+from django.contrib.auth.models import BaseUserManager, Group, Permission, PermissionsMixin
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -443,7 +443,7 @@ class OnboardingPhase(BaseCategory):
 	pass
 
 
-class User(BaseModel):
+class User(BaseModel, PermissionsMixin):
 	# Personal information:
 	username = models.CharField(max_length=100, unique=True)
 	first_name = models.CharField(max_length=100)

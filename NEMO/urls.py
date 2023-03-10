@@ -57,10 +57,6 @@ from NEMO.views import (
 
 logger = logging.getLogger(__name__)
 
-if apps.is_installed("django.contrib.admin"):
-	# Use our custom login page instead of Django's built-in one.
-	admin.site.login = login_required(admin.site.login)
-
 # REST API URLs
 router = routers.DefaultRouter()
 router.register(r"accounts", api.AccountViewSet)
@@ -337,9 +333,10 @@ urlpatterns += [
 ]
 
 if settings.ALLOW_CONDITIONAL_URLS:
-	urlpatterns += [
-		path("admin/", admin.site.urls),
+	if apps.is_installed("django.contrib.admin"):
+		urlpatterns += [path("admin/", admin.site.urls)]
 
+	urlpatterns += [
 		# REST API
 		path("api/", include(router.urls)),
 

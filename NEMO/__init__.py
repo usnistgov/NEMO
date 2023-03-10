@@ -1,6 +1,7 @@
 import sys
 
 from django.apps import AppConfig
+from django.contrib.auth.decorators import login_required
 
 
 def init_admin_site():
@@ -10,6 +11,7 @@ def init_admin_site():
 
 	# customize the site
 	site_title = ApplicationCustomization.get("site_title", raise_exception=False)
+	admin.site.login = login_required(admin.site.login)
 	admin.site.site_header = site_title
 	admin.site.site_title = site_title
 	admin.site.index_title = "Detailed administration"
