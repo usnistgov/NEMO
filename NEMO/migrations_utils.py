@@ -39,7 +39,7 @@ def create_news_for_version(apps, version, extra_content=None):
             Notification.objects.create(
                 user=u,
                 expiration=expiration,
-                notification_type=Notification.Types.NEWS,
+                notification_type="news",
                 content_type=news_content_type,
                 object_id=story.id,
             )
