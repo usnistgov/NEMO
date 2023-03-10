@@ -1,13 +1,28 @@
-from datetime import datetime
-
 from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
-from NEMO.models import InterlockCardCategory, InterlockCard, Interlock, Door, Area, PhysicalAccessLevel, \
-	Project, Account, AreaAccessRecord, User, Customization
-from NEMO.tests.test_utilities import login_as_staff, login_as_user, test_response_is_landing_page, \
-	login_as_user_with_permissions, test_response_is_failed_login
+from NEMO.models import (
+	Account,
+	Area,
+	AreaAccessRecord,
+	Customization,
+	Door,
+	Interlock,
+	InterlockCard,
+	InterlockCardCategory,
+	PhysicalAccessLevel,
+	Project,
+	User,
+)
+from NEMO.tests.test_utilities import (
+	login_as_staff,
+	login_as_user,
+	login_as_user_with_permissions,
+	test_response_is_failed_login,
+	test_response_is_landing_page,
+)
 
 
 class AreaAccessGetTestCase(TestCase):
@@ -102,7 +117,7 @@ class KioskAreaAccess(TestCase):
 		door.area.maximum_capacity = 1
 		door.area.save()
 		# add a logged in person so capacity is reached
-		AreaAccessRecord.objects.create(area=door.area, customer=User.objects.create(username='test_staff2', first_name='Test', last_name='Staff', is_staff=True, badge_number=2222), project=Project.objects.get(name="Project1"), start=datetime.now())
+		AreaAccessRecord.objects.create(area=door.area, customer=User.objects.create(username='test_staff2', first_name='Test', last_name='Staff', is_staff=True, badge_number=2222), project=Project.objects.get(name="Project1"), start=timezone.now())
 		staff = User.objects.create(username='test_staff1', first_name='Test', last_name='Staff', is_staff=True, badge_number=11111)
 		staff.projects.add(Project.objects.get(name="Project1"))
 		staff.physical_access_levels.add(PhysicalAccessLevel.objects.get(name="cleanroom access"))

@@ -529,12 +529,13 @@ def create_outage(request):
 	""" Create an outage. """
 	try:
 		start, end = extract_times(request.POST)
+		duration = end - start
 		item_type = ReservationItemType(request.POST['item_type'])
 		item_id = request.POST.get('item_id')
 	except Exception as e:
 		return HttpResponseBadRequest(str(e))
 	item = get_object_or_404(item_type.get_object_class(), id=item_id)
-	# Create the new reservation:
+	# Create the new outage:
 	outage = ScheduledOutage()
 	outage.creator = request.user
 	outage.category = request.POST.get('category', '')[:200]
@@ -568,12 +569,12 @@ def create_outage(request):
 
 		submitted_frequency = request.POST.get('recurrence_frequency')
 		submitted_date_until = request.POST.get('recurrence_until', None)
-		date_until = end.replace(hour=0, minute=0, second=0)
+		date_until_no_tz = end_no_tz.replace(hour=0, minute=0, second=0)
 		if submitted_date_until:
-			date_until = localize(datetime.strptime(submitted_date_until, date_input_format))
-		date_until += timedelta(days=1, seconds=-1)  # set at the end of the day
+			date_until_no_tz = datetime.strptime(submitted_date_until, date_input_format)
+		date_until_no_tz += timedelta(days=1, seconds=-1)  # set at the end of the day
 		frequency = RecurrenceFrequency(quiet_int(submitted_frequency, RecurrenceFrequency.DAILY.index))
-		rules = get_recurring_rule(start, frequency, date_until, int(request.POST.get('recurrence_interval', 1)))
+		rules = get_recurring_rule(start_no_tz, frequency, date_until_no_tz, int(request.POST.get('recurrence_interval', 1)))
 		for rule in list(rules):
 			recurring_outage = ScheduledOutage()
 			recurring_outage.creator = outage.creator
@@ -582,7 +583,7 @@ def create_outage(request):
 			recurring_outage.title = outage.title
 			recurring_outage.details = outage.details
 			recurring_outage.start = localize(start_no_tz.replace(year=rule.year, month=rule.month, day=rule.day))
-			recurring_outage.end = localize(end_no_tz.replace(year=rule.year, month=rule.month, day=rule.day))
+			recurring_outage.end = recurring_outage.start + duration
 			recurring_outage.save()
 	else:
 		outage.save()
