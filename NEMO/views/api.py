@@ -11,6 +11,7 @@ from NEMO.models import (
 	Area,
 	AreaAccessRecord,
 	Project,
+	ProjectDiscipline,
 	Reservation,
 	Resource,
 	ScheduledOutage,
@@ -27,6 +28,7 @@ from NEMO.serializers import (
 	AreaAccessRecordSerializer,
 	AreaSerializer,
 	BillableItemSerializer,
+	ProjectDisciplineSerializer,
 	ProjectSerializer,
 	ReservationSerializer,
 	ResourceSerializer,
@@ -58,10 +60,10 @@ class UserViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		"id": ["exact", "in"],
 		"type": ["exact", "in"],
 		"domain": ["exact", "in", "isempty"],
-		"username": ["exact", "in"],
-		"first_name": ["exact", "icontains"],
-		"last_name": ["exact", "icontains"],
-		"email": ["exact", "icontains"],
+		"username": ["iexact", "in"],
+		"first_name": ["iexact", "icontains"],
+		"last_name": ["iexact", "icontains"],
+		"email": ["iexact", "icontains"],
 		"badge_number": ["exact"],
 		"is_active": ["exact"],
 		"is_staff": ["exact"],
@@ -79,12 +81,21 @@ class UserViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 		return f"users-{export_format_datetime()}.xlsx"
 
 
+class ProjectDisciplineViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
+	queryset = ProjectDiscipline.objects.all()
+	serializer_class = ProjectDisciplineSerializer
+	filterset_fields = {"id": ["exact", "in"], "name": ["iexact"], "display_order": ["exact"]}
+
+	def get_filename(self, *args, **kwargs):
+		return f"project_disciplines-{export_format_datetime()}.xlsx"
+
+
 class ProjectViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = Project.objects.all()
 	serializer_class = ProjectSerializer
 	filterset_fields = {
 		"id": ["exact", "in"],
-		"name": ["exact"],
+		"name": ["iexact"],
 		"application_identifier": ["exact"],
 		"active": ["exact"],
 		"account_id": ["exact", "in"],
@@ -97,7 +108,7 @@ class ProjectViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 class AccountTypeViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = AccountType.objects.all()
 	serializer_class = AccountTypeSerializer
-	filterset_fields = {"id": ["exact", "in"], "name": ["exact"], "display_order": ["exact"]}
+	filterset_fields = {"id": ["exact", "in"], "name": ["iexact"], "display_order": ["exact"]}
 
 	def get_filename(self, *args, **kwargs):
 		return f"account_types-{export_format_datetime()}.xlsx"
@@ -106,7 +117,7 @@ class AccountTypeViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 class AccountViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 	queryset = Account.objects.all()
 	serializer_class = AccountSerializer
-	filterset_fields = {"id": ["exact", "in"], "name": ["exact"], "active": ["exact"]}
+	filterset_fields = {"id": ["exact", "in"], "name": ["iexact"], "active": ["exact"]}
 
 	def get_filename(self, *args, **kwargs):
 		return f"accounts-{export_format_datetime()}.xlsx"
