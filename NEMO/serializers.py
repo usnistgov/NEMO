@@ -9,6 +9,7 @@ from NEMO.models import (
 	Area,
 	AreaAccessRecord,
 	Project,
+	ProjectDiscipline,
 	Reservation,
 	Resource,
 	ScheduledOutage,
@@ -35,6 +36,12 @@ class UserSerializer(ModelSerializer):
 			"projects",
 			"managed_projects"
 		)
+
+
+class ProjectDisciplineSerializer(ModelSerializer):
+	class Meta:
+		model = ProjectDiscipline
+		fields = "__all__"
 
 
 class ProjectSerializer(FlexFieldsModelSerializer):
