@@ -166,6 +166,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
 		"account_list_active_only": "",
 		"project_list_active_only": "",
 		"account_list_collapse": "",
+		"project_allow_pi_manage_users": "",
 	}
 
 	def validate(self, name, value):
