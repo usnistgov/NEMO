@@ -7,6 +7,7 @@ from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
 
 from NEMO.models import (
 	Account,
+	AccountType,
 	Area,
 	AreaAccessRecord,
 	Project,
@@ -22,6 +23,7 @@ from NEMO.models import (
 )
 from NEMO.serializers import (
 	AccountSerializer,
+	AccountTypeSerializer,
 	AreaAccessRecordSerializer,
 	AreaSerializer,
 	BillableItemSerializer,
@@ -90,6 +92,15 @@ class ProjectViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
 
 	def get_filename(self, *args, **kwargs):
 		return f"projects-{export_format_datetime()}.xlsx"
+
+
+class AccountTypeViewSet(XLSXFileMixin, ReadOnlyModelViewSet):
+	queryset = AccountType.objects.all()
+	serializer_class = AccountTypeSerializer
+	filterset_fields = {"id": ["exact", "in"], "name": ["exact"], "display_order": ["exact"]}
+
+	def get_filename(self, *args, **kwargs):
+		return f"account_types-{export_format_datetime()}.xlsx"
 
 
 class AccountViewSet(XLSXFileMixin, ReadOnlyModelViewSet):

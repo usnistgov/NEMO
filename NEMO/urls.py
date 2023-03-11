@@ -59,6 +59,7 @@ logger = logging.getLogger(__name__)
 
 # REST API URLs
 router = routers.DefaultRouter()
+router.register(r"account_types", api.AccountTypeViewSet)
 router.register(r"accounts", api.AccountViewSet)
 router.register(r"area_access_records", api.AreaAccessRecordViewSet)
 router.register(r"areas", api.AreaViewSet)

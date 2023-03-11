@@ -5,6 +5,7 @@ from rest_framework.serializers import ModelSerializer, Serializer
 
 from NEMO.models import (
 	Account,
+	AccountType,
 	Area,
 	AreaAccessRecord,
 	Project,
@@ -44,6 +45,12 @@ class ProjectSerializer(FlexFieldsModelSerializer):
 			"account": "NEMO.serializers.AccountSerializer",
 			"only_allow_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
 		}
+
+
+class AccountTypeSerializer(ModelSerializer):
+	class Meta:
+		model = AccountType
+		fields = "__all__"
 
 
 class AccountSerializer(ModelSerializer):
