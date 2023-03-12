@@ -502,6 +502,13 @@ class User(BaseModel, PermissionsMixin):
 				username_taken = username_taken.exclude(pk=self.pk)
 			if username_taken.exists():
 				raise ValidationError({'username': 'This username has already been taken'})
+		if self.is_staff and self.is_service_personnel:
+			raise ValidationError(
+				{
+					"is_staff": "A user cannot be both staff and service personnel. Please choose one or the other.",
+					"is_service_personnel": "A user cannot be both staff and service personnel. Please choose one or the other.",
+				}
+			)
 
 	def has_perm(self, perm, obj=None):
 		"""
