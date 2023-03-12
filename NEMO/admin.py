@@ -915,20 +915,6 @@ class UserAdminForm(forms.ModelForm):
 			self.fields["backup_owner_on_tools"].initial = self.instance.backup_for_tools.all()
 			self.fields["superuser_on_tools"].initial = self.instance.superuser_for_tools.all()
 
-	def clean(self):
-		cleaned_data = super().clean()
-		staff_status = cleaned_data.get("is_staff")
-		service_personnel_status = cleaned_data.get("is_service_personnel")
-
-		if staff_status and service_personnel_status:
-			raise forms.ValidationError(
-				{
-					"is_staff": "A user cannot be both staff and service personnel. Please choose one or the other.",
-					"is_service_personnel": "A user cannot be both staff and service personnel. Please choose one or the other.",
-				}
-			)
-		return cleaned_data
-
 
 class UserDocumentsInline(admin.TabularInline):
 	model = UserDocuments
