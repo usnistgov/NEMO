@@ -1267,16 +1267,6 @@ class TemporaryPhysicalAccessAdminForm(forms.ModelForm):
 	class Media:
 		js = ("admin/time_options_override.js",)
 
-	def clean(self):
-		if any(self.errors):
-			return
-		cleaned_data = super().clean()
-		start_time = cleaned_data.get("start_time")
-		end_time = cleaned_data.get("end_time")
-		if end_time <= start_time:
-			self.add_error("end_time", "The end time must be later than the start time")
-		return cleaned_data
-
 
 @register(TemporaryPhysicalAccess)
 class TemporaryPhysicalAccessAdmin(admin.ModelAdmin):

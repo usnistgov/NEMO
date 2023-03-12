@@ -337,6 +337,10 @@ class TemporaryPhysicalAccess(BaseModel):
 	def display(self):
 		return f"Temporary physical access of the '{self.physical_access_level.name}' for {self.user.get_full_name()} {format_daterange(self.start_time, self.end_time)}"
 
+	def clean(self):
+		if self.end_time and self.start_time and self.end_time <= self.start_time:
+			raise ValidationError({"end_time": "The end time must be later than the start time"})
+
 	class Meta:
 		ordering = ['-end_time']
 		verbose_name_plural = "TemporaryPhysicalAccess"
