@@ -1379,6 +1379,7 @@ class TrainingSession(BaseModel, BillableItemMixin):
 	type = models.IntegerField(choices=Type.Choices)
 	date = models.DateTimeField(default=timezone.now)
 	qualified = models.BooleanField(default=False, help_text="Indicates that after this training session the user was qualified to use the tool.")
+	validated = models.BooleanField(default=False)
 
 	class Meta:
 		ordering = ['-date']
@@ -1535,6 +1536,7 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	start = models.DateTimeField(default=timezone.now)
 	end = models.DateTimeField(null=True, blank=True)
 	staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
+	validated = models.BooleanField(default=False)
 
 	class Meta:
 		indexes = [
@@ -1691,6 +1693,7 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	self_configuration = models.BooleanField(default=False, help_text="When checked, indicates that the user will perform their own tool configuration (instead of requesting that the staff configure it for them).")
 	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
 	question_data = models.TextField(null=True, blank=True)
+	validated = models.BooleanField(default=False)
 
 	@property
 	def reservation_item(self) -> Union[Tool, Area]:
@@ -1858,6 +1861,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 	quantity = models.PositiveIntegerField()
 	project = models.ForeignKey(Project, help_text="The withdraw will be billed to this project.", on_delete=models.CASCADE)
 	date = models.DateTimeField(default=timezone.now, help_text="The date and time when the user withdrew the consumable.")
+	validated = models.BooleanField(default=False)
 
 	class Meta:
 		ordering = ['-date']
