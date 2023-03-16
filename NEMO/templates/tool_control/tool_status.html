@@ -1,32 +1,34 @@
 {% load custom_tags_and_filters %}
 <div>
-	{% if device == 'mobile' %}
-		<h1>{{ tool.name_or_child_in_use_name }}</h1>
-		<ul class="nav nav-pills" id="tabs" style="margin-bottom:10px">
-			<li style="width:48%; text-align:center" class="active"><a href="#summary" style="padding: 10px 5px">Summary</a></li>
-			<li style="width:48%; text-align:center"><a href="#details" style="padding: 10px 5px">Details</a></li>
-			{% if configs %}<li style="width:48%; text-align:center"><a href="#config" style="padding: 10px 5px">Config History</a></li>{% endif %}
-			{% if tool.post_usage_questions %}<li><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
-			<li style="width:48%; text-align:center"><a href="#problem" style="padding: 10px 5px">Report a problem</a></li>
-			<li style="width:48%; text-align:center"><a href="#comment" style="padding: 10px 5px">Post a comment</a></li>
-		</ul>
-	{% else %}
-		<h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:10px">{{ tool.name_or_child_in_use_name }}</h1>
-		<ul class="nav nav-pills" id="tabs">
-			<li class="active"><a href="#summary">Summary</a></li>
-			<li><a href="#details">Details</a></li>
-			{% if configs %}<li><a href="#config">Config History</a></li>{% endif %}
-			{% if tool.post_usage_questions %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
-			<li><a href="#problem">Report a problem</a></li>
-			<li><a href="#comment">Post a comment</a></li>
-		</ul>
-	{% endif %}
+    {% with hide_data_history="tool"|customization:"tool_control_hide_data_history_users" %}
+        {% if device == 'mobile' %}
+            <h1>{{ tool.name_or_child_in_use_name }}</h1>
+            <ul class="nav nav-pills" id="tabs" style="margin-bottom:10px">
+                <li style="width:48%; text-align:center" class="active"><a href="#summary" style="padding: 10px 5px">Summary</a></li>
+                <li style="width:48%; text-align:center"><a href="#details" style="padding: 10px 5px">Details</a></li>
+                {% if configs %}<li style="width:48%; text-align:center"><a href="#config" style="padding: 10px 5px">Config History</a></li>{% endif %}
+                {% if tool.post_usage_questions and not hide_data_history or user.is_any_part_of_staff %}<li style="width: 48%; text-align: center"><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
+                <li style="width:48%; text-align:center"><a href="#problem" style="padding: 10px 5px">Report a problem</a></li>
+                <li style="width:48%; text-align:center"><a href="#comment" style="padding: 10px 5px">Post a comment</a></li>
+            </ul>
+        {% else %}
+            <h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:10px">{{ tool.name_or_child_in_use_name }}</h1>
+            <ul class="nav nav-pills" id="tabs">
+                <li class="active"><a href="#summary">Summary</a></li>
+                <li><a href="#details">Details</a></li>
+                {% if configs %}<li><a href="#config">Config History</a></li>{% endif %}
+                {% if tool.post_usage_questions and not hide_data_history or user.is_any_part_of_staff %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
+                <li><a href="#problem">Report a problem</a></li>
+                <li><a href="#comment">Post a comment</a></li>
+            </ul>
+        {% endif %}
+    {% endwith %}
 </div>
 
 <div class="tab-content">
 	<div class="tab-pane active" id="summary">
 		{% if tool.serial %}
-			<div style="float: right; font-size:x-small">s/n : {{tool.serial| safe }}</div>
+			<div style="float: right; font-size:x-small">s/n : {{ tool.serial| safe }}</div>
 		{% endif %}
 
 		{# Display tool status... #}

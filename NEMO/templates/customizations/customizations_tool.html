@@ -22,6 +22,16 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Tool control</h3>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Usage data history</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="tool_control_hide_data_history_users" name="tool_control_hide_data_history_users" {% if tool_control_hide_data_history_users %}checked{% endif %} value="enabled"> check to only show usage data history tab for staff members</label>
+                </div>
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool qualification expiration</h3>
         <p>If active, this feature will remove tool qualification from a user if the user has not used the tool after a while or never used it since qualified (configured separately).
         <p>The <a href="{% url 'customization' 'templates' %}?#tool_qualification_expiration_email_id">user tool qualification expiration email</a> need to be set to enable this feature.</p><br/>
