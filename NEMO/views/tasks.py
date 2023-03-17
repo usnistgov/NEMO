@@ -309,7 +309,7 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
 	return task_images
 
 
-def get_task_email_recipients(task: Task) -> List[User]:
+def get_task_email_recipients(task: Task) -> List[str]:
 	# Add all recipients, starting with primary owner
 	recipient_users: List[User] = [task.tool.primary_owner]
 	# Add backup owners
