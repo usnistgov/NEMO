@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.forms import (
@@ -16,7 +16,6 @@ from django.forms import (
 from django.forms.utils import ErrorDict, ErrorList
 from django.utils import timezone
 
-from NEMO.exceptions import ProjectChargeException
 from NEMO.models import (
 	Account,
 	AdjustmentRequest,
@@ -39,7 +38,6 @@ from NEMO.models import (
 	User,
 	UserPreferences,
 )
-from NEMO.policy import policy_class as policy
 from NEMO.utilities import bootstrap_primary_color, format_datetime, quiet_int
 from NEMO.views.customization import UserRequestsCustomization
 
@@ -250,56 +248,6 @@ class ConsumableWithdrawForm(ModelForm):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.fields["consumable"].queryset = Consumable.objects.filter(visible=True)
-
-	def clean_customer(self):
-		customer = self.cleaned_data["customer"]
-		if not customer.is_active:
-			raise ValidationError(
-				"A consumable withdraw was requested for an inactive user. Only active users may withdraw consumables."
-			)
-		if customer.access_expiration and customer.access_expiration < date.today():
-			raise ValidationError(f"This user's access expired on {format_datetime(customer.access_expiration)}")
-		return customer
-
-	def clean_project(self):
-		project = self.cleaned_data["project"]
-		if not project.active:
-			raise ValidationError(
-				"A consumable may only be billed to an active project. The user's project is inactive."
-			)
-		if not project.account.active:
-			raise ValidationError(
-				"A consumable may only be billed to a project that belongs to an active account. The user's account is inactive."
-			)
-		return project
-
-	def clean_quantity(self):
-		quantity = self.cleaned_data["quantity"]
-		if quantity < 1:
-			raise ValidationError("Please specify a valid quantity of items to withdraw.")
-		return quantity
-
-	def clean(self):
-		if any(self.errors):
-			return
-		cleaned_data = super().clean()
-		quantity = cleaned_data["quantity"]
-		consumable = cleaned_data["consumable"]
-		if not consumable.reusable and quantity > consumable.quantity:
-			raise ValidationError(
-				'There are not enough "'
-				+ consumable.name
-				+ '". (The current quantity in stock is '
-				+ str(consumable.quantity)
-				+ "). Please order more as soon as possible."
-			)
-		customer = cleaned_data["customer"]
-		project = cleaned_data["project"]
-		try:
-			policy.check_billing_to_project(project, customer, consumable)
-		except ProjectChargeException as e:
-			raise ValidationError({"project": e.msg})
-		return cleaned_data
 
 
 class RecurringConsumableChargeForm(ModelForm):
