@@ -7,6 +7,7 @@ from NEMO.tests.test_utilities import login_as_user
 
 request_content_type = "application/json"
 
+
 class RestCRUDTestCase(TestCase):
 	def test_user_list(self):
 		list_url = reverse("user-list")
@@ -33,9 +34,7 @@ class RestCRUDTestCase(TestCase):
 
 	def test_save_user(self):
 		save_url = reverse("user-list")
-		data = {
-			"first_name": "John"
-		}
+		data = {"first_name": "John"}
 		user = login_as_user(self.client)
 		response = self.client.post(save_url, data, follow=True)
 		self.assertEqual(response.status_code, 403)
@@ -60,12 +59,7 @@ class RestCRUDTestCase(TestCase):
 		user = login_as_user(self.client)
 		user.user_permissions.add(Permission.objects.get(codename="view_user"))
 		user.user_permissions.add(Permission.objects.get(codename="add_user"))
-		user_data = {
-			"first_name": "John",
-			"last_name": "Doe",
-			"username": "jdoe",
-			"email": "jdoe@doe.com"
-		}
+		user_data = {"first_name": "John", "last_name": "Doe", "username": "jdoe", "email": "jdoe@doe.com"}
 		data = self.client.post(reverse("user-list"), user_data).data
 		update_url = reverse("user-detail", args=[data["id"]])
 		response = self.client.put(update_url, data, follow=True)
@@ -89,12 +83,7 @@ class RestCRUDTestCase(TestCase):
 	def test_partial_update_user(self):
 		user = login_as_user(self.client)
 		user.user_permissions.add(Permission.objects.get(codename="add_user"))
-		user_data = {
-			"first_name": "John",
-			"last_name": "Doe",
-			"username": "jdoe",
-			"email": "jdoe@doe.com"
-		}
+		user_data = {"first_name": "John", "last_name": "Doe", "username": "jdoe", "email": "jdoe@doe.com"}
 		data = self.client.post(reverse("user-list"), user_data).data
 		update_url = reverse("user-detail", args=[data["id"]])
 		partial_data = {"username": "jdoe1"}
@@ -112,12 +101,7 @@ class RestCRUDTestCase(TestCase):
 	def test_delete_user(self):
 		user = login_as_user(self.client)
 		user.user_permissions.add(Permission.objects.get(codename="add_user"))
-		user_data = {
-			"first_name": "John",
-			"last_name": "Doe",
-			"username": "jdoe",
-			"email": "jdoe@doe.com"
-		}
+		user_data = {"first_name": "John", "last_name": "Doe", "username": "jdoe", "email": "jdoe@doe.com"}
 		data = self.client.post(reverse("user-list"), user_data).data
 		delete_url = reverse("user-detail", args=[data["id"]])
 		response = self.client.delete(delete_url, follow=True)
