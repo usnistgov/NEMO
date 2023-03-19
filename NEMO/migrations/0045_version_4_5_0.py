@@ -188,5 +188,25 @@ class Migration(migrations.Migration):
             name='location',
             field=models.CharField(blank=True, max_length=200, null=True),
         ),
+        migrations.AddField(
+            model_name='areaaccessrecord',
+            name='validated',
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name='consumablewithdraw',
+            name='validated',
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name='reservation',
+            name='validated',
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name='trainingsession',
+            name='validated',
+            field=models.BooleanField(default=False),
+        ),
     ]
 
