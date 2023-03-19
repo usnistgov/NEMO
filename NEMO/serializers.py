@@ -1,7 +1,11 @@
-from rest_flex_fields import FlexFieldsModelSerializer
+from copy import deepcopy
+
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.fields import CharField, ChoiceField, DateTimeField, DecimalField, IntegerField
-from rest_framework.serializers import ModelSerializer, Serializer
+from rest_framework.utils import model_meta
 
 from NEMO.models import (
 	Account,
@@ -10,6 +14,7 @@ from NEMO.models import (
 	AreaAccessRecord,
 	Project,
 	ProjectDiscipline,
+	Qualification,
 	Reservation,
 	Resource,
 	ScheduledOutage,
@@ -23,19 +28,42 @@ from NEMO.models import (
 )
 
 
-class UserSerializer(ModelSerializer):
-	type = CharField(source="type.name", default=None)
+# Overriding validate to call model full_clean
+class ModelSerializer(serializers.ModelSerializer):
+	def validate(self, attrs):
+		attributes_data = dict(attrs)
+		ModelClass = self.Meta.model
+		instance = deepcopy(self.instance) if self.instance else ModelClass()
+		# Remove many-to-many relationships from attributes_data, so we can properly validate.
+		info = model_meta.get_field_info(ModelClass)
+		for field_name, relation_info in info.relations.items():
+			if relation_info.to_many and (field_name in attributes_data):
+				attributes_data.pop(field_name)
+		for attr, value in attributes_data.items():
+			setattr(instance, attr, value)
+		self.full_clean(instance)
+		return attrs
 
+	def full_clean(self, instance, exclude=None, validate_unique=True):
+		instance.full_clean(exclude, validate_unique)
+
+
+class UserSerializer(ModelSerializer):
 	class Meta:
 		model = User
-		exclude = (
-			"user_permissions",
-			"qualifications",
-			"physical_access_levels",
-			"preferences",
-			"projects",
-			"managed_projects"
-		)
+		fields = "__all__"
+
+	# Special handling to exclude OneToOne user preferences here and add it in create
+	def full_clean(self, instance, exclude=None, validate_unique=True):
+		if not instance or not instance.id:
+			exclude = ["preferences"]
+		super().full_clean(instance, exclude, validate_unique)
+
+	def create(self, validated_data):
+		instance: User = super().create(validated_data)
+		instance.get_preferences()
+		return instance
+
 
 
 class ProjectDisciplineSerializer(ModelSerializer):
@@ -44,7 +72,7 @@ class ProjectDisciplineSerializer(ModelSerializer):
 		fields = "__all__"
 
 
-class ProjectSerializer(FlexFieldsModelSerializer):
+class ProjectSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = Project
 		fields = "__all__"
@@ -54,19 +82,29 @@ class ProjectSerializer(FlexFieldsModelSerializer):
 		}
 
 
-class AccountTypeSerializer(ModelSerializer):
+class AccountTypeSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = AccountType
 		fields = "__all__"
 
 
-class AccountSerializer(ModelSerializer):
+class AccountSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = Account
 		fields = "__all__"
 
 
-class ToolSerializer(FlexFieldsModelSerializer):
+class QualificationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+	class Meta:
+		model = Qualification
+		fields = "__all__"
+		expandable_fields = {
+			"user": "NEMO.serializers.UserSerializer",
+			"tool": "NEMO.serializers.ToolSerializer",
+		}
+
+
+class ToolSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = Tool
 		fields = "__all__"
@@ -81,14 +119,14 @@ class ToolSerializer(FlexFieldsModelSerializer):
 		}
 
 
-class AreaSerializer(FlexFieldsModelSerializer):
+class AreaSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = Area
 		fields = "__all__"
 		expandable_fields = {"parent_area": "NEMO.serializers.AreaSerializer"}
 
 
-class ReservationSerializer(FlexFieldsModelSerializer):
+class ReservationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	question_data = serializers.JSONField(source="question_data_json")
 
 	class Meta:
@@ -105,7 +143,7 @@ class ReservationSerializer(FlexFieldsModelSerializer):
 		}
 
 
-class UsageEventSerializer(FlexFieldsModelSerializer):
+class UsageEventSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = UsageEvent
 		fields = "__all__"
@@ -117,7 +155,7 @@ class UsageEventSerializer(FlexFieldsModelSerializer):
 		}
 
 
-class AreaAccessRecordSerializer(FlexFieldsModelSerializer):
+class AreaAccessRecordSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = AreaAccessRecord
 		fields = "__all__"
@@ -129,14 +167,14 @@ class AreaAccessRecordSerializer(FlexFieldsModelSerializer):
 		}
 
 
-class TaskHistorySerializer(FlexFieldsModelSerializer):
+class TaskHistorySerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = TaskHistory
 		fields = "__all__"
 		expandable_fields = {"user": "NEMO.serializers.UserSerializer", "task": "NEMO.serializers.TaskSerializer"}
 
 
-class TaskSerializer(FlexFieldsModelSerializer):
+class TaskSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	history = TaskHistorySerializer(many=True, read_only=True)
 
 	class Meta:
@@ -150,7 +188,7 @@ class TaskSerializer(FlexFieldsModelSerializer):
 		}
 
 
-class ScheduledOutageSerializer(FlexFieldsModelSerializer):
+class ScheduledOutageSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = ScheduledOutage
 		fields = "__all__"
@@ -162,7 +200,7 @@ class ScheduledOutageSerializer(FlexFieldsModelSerializer):
 		}
 
 
-class TrainingSessionSerializer(FlexFieldsModelSerializer):
+class TrainingSessionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = TrainingSession
 		fields = "__all__"
@@ -174,7 +212,7 @@ class TrainingSessionSerializer(FlexFieldsModelSerializer):
 		}
 
 
-class StaffChargeSerializer(FlexFieldsModelSerializer):
+class StaffChargeSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = StaffCharge
 		fields = "__all__"
@@ -185,7 +223,7 @@ class StaffChargeSerializer(FlexFieldsModelSerializer):
 		}
 
 
-class ResourceSerializer(FlexFieldsModelSerializer):
+class ResourceSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = Resource
 		fields = "__all__"
@@ -196,7 +234,31 @@ class ResourceSerializer(FlexFieldsModelSerializer):
 		}
 
 
-class BillableItemSerializer(Serializer):
+class ContentTypeSerializer(ModelSerializer):
+	class Meta:
+		model = ContentType
+		fields = "__all__"
+
+
+class PermissionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+	class Meta:
+		model = Permission
+		fields = "__all__"
+		expandable_fields = {
+			"content_type": "NEMO.serializers.ContentTypeSerializer",
+		}
+
+
+class GroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+	class Meta:
+		model = Group
+		fields = "__all__"
+		expandable_fields = {
+			"permissions": ("NEMO.serializers.PermissionSerializer", {"many": True}),
+		}
+
+
+class BillableItemSerializer(serializers.Serializer):
 	type = ChoiceField(
 		["missed_reservation", "tool_usage", "area_access", "consumable", "staff_charge", "training_session"]
 	)

@@ -1244,6 +1244,50 @@ class Tool(BaseModel):
 		content = escape(loader.render_to_string("snippets/tool_info.html", {"tool": self}))
 		return f'<a href="javascript:;" data-title="{content}" data-tooltip-id="tooltip-tool-{self.id}" data-placement="bottom" class="tool-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.name_or_child_in_use_name()}</a>'
 
+	def clean(self):
+		errors = {}
+		if self.parent_tool_id:
+			if self.parent_tool_id == self.id:
+				errors["parent_tool"] = "You cannot select the parent to be the tool itself."
+		else:
+			from NEMO.views.customization import ToolCustomization
+			from NEMO.widgets.dynamic_form import DynamicForm
+			if not self._category:
+				errors["_category"] = "This field is required."
+			if not self._location and ToolCustomization.get_bool("tool_location_required"):
+				errors["_location"] = "This field is required."
+			if not self._phone_number and ToolCustomization.get_bool("tool_phone_number_required"):
+				errors["_phone_number"] = "This field is required."
+			if not self._primary_owner_id:
+				errors["_primary_owner"] = "This field is required."
+
+			# Validate _post_usage_questions JSON format
+			if self._post_usage_questions:
+				try:
+					loads(self._post_usage_questions)
+				except ValueError:
+					errors["_post_usage_questions"] = "This field needs to be a valid JSON string"
+				try:
+					DynamicForm(self._post_usage_questions).validate("tool_usage_group_question", self.id)
+				except Exception:
+					error_info = sys.exc_info()
+					errors["_post_usage_questions"] = error_info[0].__name__ + ": " + str(error_info[1])
+
+			if self._policy_off_between_times and (not self._policy_off_start_time or not self._policy_off_end_time):
+				if not self._policy_off_start_time:
+					errors["_policy_off_start_time"] = "Start time must be specified"
+				if not self._policy_off_end_time:
+					errors["_policy_off_end_time"] = "End time must be specified"
+		if errors:
+			raise ValidationError(errors)
+
+	def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+		if self.parent_tool_id:
+			# in case of alternate tool, recreate a new tool with only parent_tool and name (never visible)
+			fresh_tool = Tool(id=self.id, parent_tool=self.parent_tool, name=self.name, visible=False)
+			self.__dict__.update(fresh_tool.__dict__)
+		super().save(force_insert, force_update, using, update_fields)
+
 
 class ToolDocuments(BaseModel):
 	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
@@ -1865,6 +1909,33 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 
 	class Meta:
 		ordering = ['-date']
+
+	def clean(self):
+		errors = {}
+		if self.customer_id:
+			if not self.customer.is_active:
+				errors["customer"] = "A consumable withdraw was requested for an inactive user. Only active users may withdraw consumables."
+			if self.customer.access_expiration and self.customer.access_expiration < datetime.date.today():
+				errors["customer"] = f"This user's access expired on {format_datetime(self.customer.access_expiration)}"
+		if self.project_id:
+			if not self.project.active:
+				errors["project"] = "A consumable may only be billed to an active project. The user's project is inactive."
+			if not self.project.account.active:
+				errors["project"] = "A consumable may only be billed to a project that belongs to an active account. The user's account is inactive."
+		if self.quantity is not None and self.quantity < 1:
+			errors["quantity"] = "Please specify a valid quantity of items to withdraw."
+		if self.consumable_id:
+			if not self.consumable.reusable and self.quantity > self.consumable.quantity:
+				errors[NON_FIELD_ERRORS] = f'There are not enough "{self.consumable.name}". (The current quantity in stock is {str(self.consumable.quantity)}). Please order more as soon as possible.'
+		if self.customer_id and self.consumable_id and self.project_id:
+			from NEMO.exceptions import ProjectChargeException
+			from NEMO.policy import policy_class as policy
+			try:
+				policy.check_billing_to_project(self.project, self.customer, self.consumable)
+			except ProjectChargeException as e:
+				errors["project"] = e.msg
+		if errors:
+			raise ValidationError(errors)
 
 	def __str__(self):
 		return str(self.id)
@@ -3008,6 +3079,7 @@ class EmailLog(BaseModel):
 
 def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):
 	"""
+	TODO: This should be done through pre/post save
 	Record the changes in a many-to-many field that the model does not own. Then, save the many-to-many field.
 	"""
 	# If the model object is being changed then we can get the list of previous members.
@@ -3059,6 +3131,7 @@ def record_remote_many_to_many_changes_and_save(request, obj, form, change, many
 
 def record_local_many_to_many_changes(request, obj, form, many_to_many_field, form_field=None):
 	"""
+	TODO: This should be done through pre/post save
 	Record the changes in a many-to-many field that the model owns.
 	"""
 	data_field = form_field or many_to_many_field
@@ -3086,6 +3159,7 @@ def record_local_many_to_many_changes(request, obj, form, many_to_many_field, fo
 def record_active_state(request, obj, form, field_name, is_initial_creation):
 	"""
 	Record whether the account, project, or user is active when the active state is changed.
+	TODO: this should be done in post_save rather than save_model
 	"""
 	if field_name in form.changed_data or is_initial_creation:
 		activity_entry = ActivityHistory()

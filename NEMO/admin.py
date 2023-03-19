@@ -102,7 +102,7 @@ from NEMO.models import (
 	record_remote_many_to_many_changes_and_save,
 )
 from NEMO.utilities import admin_get_item, format_daterange
-from NEMO.views.customization import ProjectsAccountsCustomization, ToolCustomization
+from NEMO.views.customization import ProjectsAccountsCustomization
 from NEMO.widgets.dynamic_form import (
 	DynamicForm,
 	PostUsageFloatFieldQuestion,
@@ -160,11 +160,6 @@ class ToolAdminForm(forms.ModelForm):
 
 	def clean(self):
 		cleaned_data = super().clean()
-		parent_tool = cleaned_data.get("parent_tool")
-		category = cleaned_data.get("_category")
-		location = cleaned_data.get("_location")
-		phone_number = cleaned_data.get("_phone_number")
-		primary_owner = cleaned_data.get("_primary_owner")
 		image = cleaned_data.get("_image")
 
 		# only resize if an image is present and has changed
@@ -174,45 +169,6 @@ class ToolAdminForm(forms.ModelForm):
 			# resize image to 500x500 maximum
 			cleaned_data["_image"] = resize_image(image, 500)
 
-		if parent_tool:
-			if parent_tool.id == self.instance.id:
-				self.add_error("parent_tool", "You cannot select the parent to be the tool itself.")
-			# in case of alternate tool, remove everything except parent_tool and name
-			data = dict([(k, v) for k, v in self.cleaned_data.items() if k == "parent_tool" or k == "name"])
-			# an alternate tool is never visible
-			data["visible"] = False
-			return data
-		else:
-			if not category:
-				self.add_error("_category", "This field is required.")
-			if not location and ToolCustomization.get_bool("tool_location_required"):
-				self.add_error("_location", "This field is required.")
-			if not phone_number and ToolCustomization.get_bool("tool_phone_number_required"):
-				self.add_error("_phone_number", "This field is required.")
-			if not primary_owner:
-				self.add_error("_primary_owner", "This field is required.")
-
-			post_usage_questions = cleaned_data.get("_post_usage_questions")
-			# Validate _post_usage_questions JSON format
-			if post_usage_questions:
-				try:
-					loads(post_usage_questions)
-				except ValueError:
-					self.add_error("_post_usage_questions", "This field needs to be a valid JSON string")
-				try:
-					DynamicForm(post_usage_questions).validate("tool_usage_group_question", self.instance.id)
-				except Exception:
-					error_info = sys.exc_info()
-					self.add_error("_post_usage_questions", error_info[0].__name__ + ": " + str(error_info[1]))
-
-			policy_off_between_times = cleaned_data.get("_policy_off_between_times")
-			policy_off_start_time = cleaned_data.get("_policy_off_start_time")
-			policy_off_end_time = cleaned_data.get("_policy_off_end_time")
-			if policy_off_between_times and (not policy_off_start_time or not policy_off_end_time):
-				if not policy_off_start_time:
-					self.add_error("_policy_off_start_time", "Start time must be specified")
-				if not policy_off_end_time:
-					self.add_error("_policy_off_end_time", "End time must be specified")
 		return cleaned_data
 
 
@@ -317,15 +273,9 @@ class ToolAdmin(admin.ModelAdmin):
 
 	def save_model(self, request, obj, form, change):
 		"""
-		Explicitly record any project membership changes.
+		Explicitly record any project membership changes on non-child tools.
 		"""
 		if obj.parent_tool:
-			if obj.pk:
-				# if this is an update (from regular to child tool), we want to make sure we are creating
-				# a clean version. In case the previous tool had fields that are now irrelevant
-				clean_alt_tool = Tool(**form.cleaned_data)
-				clean_alt_tool.pk = obj.pk
-				obj = clean_alt_tool
 			super(ToolAdmin, self).save_model(request, obj, form, change)
 		else:
 			record_remote_many_to_many_changes_and_save(
