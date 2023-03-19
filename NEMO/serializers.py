@@ -65,7 +65,6 @@ class UserSerializer(ModelSerializer):
 		return instance
 
 
-
 class ProjectDisciplineSerializer(ModelSerializer):
 	class Meta:
 		model = ProjectDiscipline
