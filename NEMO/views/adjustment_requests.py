@@ -19,6 +19,7 @@ from NEMO.models import (
     Notification,
     RequestMessage,
     RequestStatus,
+    Reservation,
     StaffCharge,
     UsageEvent,
     User,
@@ -274,6 +275,8 @@ Please visit {reply_url} to reply"""
 def adjustment_eligible_items(user: User, current_item=None) -> List[BillableItemMixin]:
     item_number = UserRequestsCustomization.get_int("adjustment_requests_charges_display_number")
     items: List[BillableItemMixin] = []
+    if UserRequestsCustomization.get_bool("adjustment_requests_missed_reservation_enabled"):
+        items.extend(Reservation.objects.filter(user=user, missed=True).order_by("-end")[:item_number])
     if UserRequestsCustomization.get_bool("adjustment_requests_tool_usage_enabled"):
         items.extend(UsageEvent.objects.filter(user=user, operator=user, end__isnull=False).order_by("-end")[:item_number])
     if UserRequestsCustomization.get_bool("adjustment_requests_area_access_enabled"):

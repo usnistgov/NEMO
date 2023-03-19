@@ -266,6 +266,7 @@ class UserRequestsCustomization(CustomizationBase):
 		"adjustment_requests_enabled": "",
 		"adjustment_requests_tool_usage_enabled": "enabled",
 		"adjustment_requests_area_access_enabled": "enabled",
+		"adjustment_requests_missed_reservation_enabled": "enabled",
 		"adjustment_requests_staff_staff_charges_enabled": "enabled",
 		"adjustment_requests_title": "Adjustment requests",
 		"adjustment_requests_description": "",
@@ -321,6 +322,7 @@ class ToolCustomization(CustomizationBase):
 	variables = {
 		"tool_phone_number_required": "enabled",
 		"tool_location_required": "enabled",
+		"tool_control_hide_data_history_users": "",
 		"tool_qualification_reminder_days": "",
 		"tool_qualification_expiration_days": "",
 		"tool_qualification_expiration_never_used_days": "",

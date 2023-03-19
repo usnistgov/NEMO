@@ -23,6 +23,10 @@
                         <input type="hidden" name="adjustment_requests_area_access_enabled" value="off"/>
                         <label><input type="checkbox" name="adjustment_requests_area_access_enabled" {% if adjustment_requests_area_access_enabled == "enabled" %}checked{% endif %} value="enabled">Area access</label><br/>
                     </div>
+                    <div class="row col-lg-3 col-md-4 col-sm-5">
+                        <input type="hidden" name="adjustment_requests_missed_reservation_enabled" value="off"/>
+                        <label><input type="checkbox" name="adjustment_requests_missed_reservation_enabled" {% if adjustment_requests_missed_reservation_enabled == "enabled" %}checked{% endif %} value="enabled">Missed reservation</label><br/>
+                    </div>
                 </div>
             </div>
         </div>
