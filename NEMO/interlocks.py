@@ -420,13 +420,14 @@ class ModbusTcpInterlock(Interlock):
 		kwargs = {"slave": interlock.unit_id} if interlock.unit_id is not None else {}
 		write_reply = client.write_coil(coil, state, **kwargs)
 		if write_reply.isError():
+			client.close()
 			raise Exception(str(write_reply))
 		sleep(0.3)
 		read_reply = client.read_coils(coil, 1, **kwargs)
+		client.close()
 		if read_reply.isError():
 			raise Exception(str(read_reply))
 		state = read_reply.bits[0]
-		client.close()
 		if state == cls.MODBUS_OFF:
 			return Interlock_model.State.LOCKED
 		elif state == cls.MODBUS_ON:
