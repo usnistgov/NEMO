@@ -7,8 +7,11 @@
             <label class="control-label col-md-4">Enable adjustment requests</label>
             <div class="col-md-8">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="adjustment_requests_enabled" {% if adjustment_requests_enabled %}checked{% endif %} value="enabled">Check this box to allow users to request adjustment for charges (at least one user with the facility manager role needs to exist for approval).</label><br/>
+                    <label><input type="checkbox" name="adjustment_requests_enabled" {% if adjustment_requests_enabled %}checked{% endif %} value="enabled">Check this box to allow users to request adjustment for charges.</label><br/>
                 </div>
+            </div>
+            <div class="col-md-offset-4 col-md-8 help-block light-grey">
+                At least one user with the facility manager role needs to exist for approval.
             </div>
         </div>
         <div class="form-group">
