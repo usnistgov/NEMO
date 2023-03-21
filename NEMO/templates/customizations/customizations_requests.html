@@ -15,18 +15,27 @@
             <label class="control-label col-md-4">Allowed charges for users</label>
             <div class="col-md-8">
                 <div class="checkbox">
-                    <div class="row col-lg-3 col-md-4 col-sm-5">
+                    <div class="row col-md-12">
                         <input type="hidden" name="adjustment_requests_tool_usage_enabled" value="off"/>
                         <label><input type="checkbox" name="adjustment_requests_tool_usage_enabled" {% if adjustment_requests_tool_usage_enabled == "enabled" %}checked{% endif %} value="enabled">Tool usage</label><br/>
                     </div>
-                    <div class="row col-lg-3 col-md-4 col-sm-5">
+                    <div class="row col-md-12">
                         <input type="hidden" name="adjustment_requests_area_access_enabled" value="off"/>
                         <label><input type="checkbox" name="adjustment_requests_area_access_enabled" {% if adjustment_requests_area_access_enabled == "enabled" %}checked{% endif %} value="enabled">Area access</label><br/>
                     </div>
-                    <div class="row col-lg-3 col-md-4 col-sm-5">
+                    <div class="row col-md-12">
                         <input type="hidden" name="adjustment_requests_missed_reservation_enabled" value="off"/>
-                        <label><input type="checkbox" name="adjustment_requests_missed_reservation_enabled" {% if adjustment_requests_missed_reservation_enabled == "enabled" %}checked{% endif %} value="enabled">Missed reservation</label><br/>
+                        <label><input type="checkbox" name="adjustment_requests_missed_reservation_enabled" {% if adjustment_requests_missed_reservation_enabled == "enabled" %}checked{% endif %} value="enabled">Missed reservation</label>
+                        <br/>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-4">Missed reservation times</label>
+            <div class="col-md-8">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="adjustment_requests_missed_reservation_times" {% if adjustment_requests_missed_reservation_times %}checked{% endif %} value="enabled">Allow users to adjust times</label>
                 </div>
             </div>
         </div>

@@ -20,18 +20,21 @@
 			{% if missed_reservations %}
 				<h3>Missed reservations</h3>
 				{% for m in missed_reservations %}
-					<div class="alert alert-danger">
+					<div class="alert alert-danger" style="position: relative">
 						<span style="font-weight:bold">{{ m.reservation_item }}</span><br>
 						{% if project_autocomplete or selected_project %}Missed by {{ m.user }}<br>{% endif %}
 						{{ m.start }}<br>
 						Charged to project {{ m.project }}
+                        {% if "requests"|customization:"adjustment_requests_missed_reservation_enabled" == "enabled" %}
+                            {% include "usage/adjustment_request_button.html" with charge=m %}
+                        {% endif %}
 					</div>
 				{% endfor %}
 			{% endif %}
 			{% if consumables %}
 				<h3>Supplies and consumables</h3>
 				{% for c in consumables %}
-					<div class="alert alert-info">
+					<div class="alert alert-info" style="position: relative">
 						<span style="font-weight:bold">{{ c.consumable }}</span><br>
 						{% if project_autocomplete or selected_project %}<span style="font-weight:bold">For {{ c.customer }}</span><br>{% endif %}
 						Quantity {{ c.quantity }}<br>
@@ -43,19 +46,22 @@
 			{% if staff_charges %}
 				<h3>Staff charges</h3>
 				{% for s in staff_charges %}
-					<div class="alert alert-info">
+					<div class="alert alert-info" style="position: relative">
 						<span style="font-weight:bold">Work performed by {{ s.staff_member }} {% if project_autocomplete or selected_project %}on behalf of {{ s.customer }}{% else %}on your behalf{% endif %}</span><br>
 						{% if s.note %}Charge note: {{ s.note|linebreaksbr }}<br>{% endif %}
 						{{ s.start }}<br>
 						{{ s.end }}<br>
 						Charged to project {{ s.project }}
+                        {% if user.is_staff and "requests"|customization:"adjustment_requests_staff_staff_charges_enabled" == "enabled" %}
+                            {% include "usage/adjustment_request_button.html" with charge=s %}
+                        {% endif %}
 					</div>
 				{% endfor %}
 			{% endif %}
 			{% if training_sessions %}
 				<h3>Training sessions</h3>
 				{% for t in training_sessions %}
-					<div class="alert alert-info">
+					<div class="alert alert-info" style="position: relative">
 						{{ t.get_type_display }} training {% if project_autocomplete or selected_project %}for {{ t.trainee }} {% endif %}for {{ t.duration }} minutes taught by <span style="font-weight:bold">{{ t.trainer }}</span>
 						for the <span style="font-weight:bold">{{ t.tool }}</span>. Charged to project {{ t.project }} on {{ t.date }}.
 					</div>
@@ -72,7 +78,7 @@
 						{{ a.start }}<br>
 						{{ a.end|default_if_none:"In progress" }}<br>
 						Charged to project {{ a.project }}
-                        {% if not a.staff_charge %}
+                        {% if not a.staff_charge and "requests"|customization:"adjustment_requests_area_access_enabled" == "enabled" or a.staff_charge and a.staff_charge.staff_member == user and user.is_staff and "requests"|customization:"adjustment_requests_staff_staff_charges_enabled" == "enabled" %}
                             {% include "usage/adjustment_request_button.html" with charge=a %}
                         {% endif %}
 					</div>
@@ -89,7 +95,7 @@
 						{{ u.start }}<br>
 						{{ u.end }}<br>
 						Charged to project {{ u.project }}
-                        {% if u.user == u.operator %}
+                        {% if u.user == u.operator and "requests"|customization:"adjustment_requests_tool_usage_enabled" == "enabled" or u.user != u.operator and u.operator == user and user.is_staff and "requests"|customization:"adjustment_requests_staff_staff_charges_enabled" == "enabled" %}
                             {% include "usage/adjustment_request_button.html" with charge=u %}
                         {% endif %}
 					</div>

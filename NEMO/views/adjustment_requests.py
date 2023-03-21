@@ -77,7 +77,7 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     user: User = request.user
-    dictionary = {}
+    dictionary = {"change_times_allowed": False}
 
     try:
         adjustment_request = AdjustmentRequest.objects.get(id=request_id)
@@ -87,8 +87,11 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
     try:
         item_type = ContentType.objects.get_for_id(item_type_id)
         adjustment_request.item = item_type.get_object_for_this_type(pk=item_id)
-        adjustment_request.new_start = adjustment_request.item.start
-        adjustment_request.new_end = adjustment_request.item.end
+        # Show times if not missed reservation or if missed reservation but customization is set to show times anyway
+        if not isinstance(adjustment_request.item, Reservation) or UserRequestsCustomization.get_bool("adjustment_requests_missed_reservation_times"):
+            dictionary["change_times_allowed"] = True
+            adjustment_request.new_start = adjustment_request.item.start
+            adjustment_request.new_end = adjustment_request.item.end
     except ContentType.DoesNotExist:
         pass
 
