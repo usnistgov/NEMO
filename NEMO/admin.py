@@ -374,7 +374,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 @register(TrainingSession)
 class TrainingSessionAdmin(admin.ModelAdmin):
 	list_display = ("id", "trainer", "trainee", "tool", "project", "type", "date", "duration", "qualified")
-	list_filter = ("qualified", "date", "type", "tool")
+	list_filter = ("qualified", "date", "type", ("tool", admin.RelatedOnlyFieldListFilter), ("project", admin.RelatedOnlyFieldListFilter), ("trainer", admin.RelatedOnlyFieldListFilter), ("trainee", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "date"
 
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):
@@ -387,7 +387,7 @@ class TrainingSessionAdmin(admin.ModelAdmin):
 @register(StaffCharge)
 class StaffChargeAdmin(admin.ModelAdmin):
 	list_display = ("id", "staff_member", "customer", "start", "end")
-	list_filter = ("start",)
+	list_filter = ("start", ("customer", admin.RelatedOnlyFieldListFilter), ("staff_member", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "start"
 
 
@@ -422,7 +422,7 @@ class ConfigurationHistoryAdmin(admin.ModelAdmin):
 class AccountAdmin(admin.ModelAdmin):
 	list_display = ("name", "id", "active", "type", "start_date")
 	search_fields = ("name",)
-	list_filter = ("active", "type", "start_date")
+	list_filter = ("active", ("type", admin.RelatedOnlyFieldListFilter), "start_date")
 
 	def save_model(self, request, obj, form, change):
 		""" Audit account and project active status. """
@@ -465,7 +465,7 @@ class ProjectAdmin(admin.ModelAdmin):
 	list_display = ("name", "id", "get_application_identifier", "account", "active", "start_date")
 	filter_horizontal = ("only_allow_tools",)
 	search_fields = ("name", "application_identifier", "account__name")
-	list_filter = ("active", "account", "start_date")
+	list_filter = ("active", ("account", admin.RelatedOnlyFieldListFilter), "start_date")
 	inlines = [ProjectDocumentsInline]
 	form = ProjectAdminForm
 
@@ -524,7 +524,7 @@ class ReservationAdmin(admin.ModelAdmin):
 		"shortened",
 	)
 	readonly_fields = ("descendant",)
-	list_filter = ("cancelled", "missed", "tool", "area")
+	list_filter = ("cancelled", "missed", ("tool", admin.RelatedOnlyFieldListFilter), ("area", TreeRelatedFieldListFilter), ("user", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "start"
 
 
@@ -614,14 +614,14 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 @register(UsageEvent)
 class UsageEventAdmin(admin.ModelAdmin):
 	list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration")
-	list_filter = ("start", "end", "tool")
+	list_filter = ("start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "start"
 
 
 @register(Consumable)
 class ConsumableAdmin(admin.ModelAdmin):
 	list_display = ("name", "quantity", "category", "visible", "reusable", "reminder_threshold", "reminder_email", "id")
-	list_filter = ("visible", "category", "reusable")
+	list_filter = ("visible", ("category", admin.RelatedOnlyFieldListFilter), "reusable")
 	search_fields = ("name",)
 	readonly_fields = ("reminder_threshold_reached",)
 
@@ -634,7 +634,7 @@ class ConsumableCategoryAdmin(admin.ModelAdmin):
 @register(ConsumableWithdraw)
 class ConsumableWithdrawAdmin(admin.ModelAdmin):
 	list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date")
-	list_filter = ("date", "consumable")
+	list_filter = ("date", ("consumable", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "date"
 
 
@@ -642,6 +642,7 @@ class ConsumableWithdrawAdmin(admin.ModelAdmin):
 class RecurringConsumableChargeAdmin(admin.ModelAdmin):
 	form = RecurringConsumableChargeForm
 	list_display = ("name", "customer", "project", "get_recurrence_display", "last_charge", "next_charge")
+	list_filter = (("customer", admin.RelatedOnlyFieldListFilter),)
 	readonly_fields = ("last_charge", "last_updated", "last_updated_by")
 
 	def save_model(self, request, obj: RecurringConsumableCharge, form, change):
@@ -701,7 +702,7 @@ class InterlockAdmin(admin.ModelAdmin):
 		"door",
 		"most_recent_reply_time"
 	)
-	list_filter = ("card__enabled", "card", "state")
+	list_filter = ("card__enabled", ("card", admin.RelatedOnlyFieldListFilter), "state", ("tool", admin.RelatedOnlyFieldListFilter), ("door", admin.RelatedOnlyFieldListFilter))
 	actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage]
 	readonly_fields = ["state", "most_recent_reply", "most_recent_reply_time"]
 
@@ -729,7 +730,7 @@ class TaskAdmin(admin.ModelAdmin):
 		"resolved",
 		"resolution_category",
 	)
-	list_filter = ("urgency", "resolved", "cancelled", "safety_hazard", "creation_time", "tool")
+	list_filter = ("urgency", "resolved", "cancelled", "safety_hazard", "creation_time", ("tool", admin.RelatedOnlyFieldListFilter), ("creator", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "creation_time"
 
 
@@ -778,7 +779,7 @@ class CommentAdmin(admin.ModelAdmin):
 		"hidden_by",
 		"hide_date",
 	)
-	list_filter = ("visible", "creation_date", "tool", "staff_only")
+	list_filter = ("visible", "creation_date", ("tool", admin.RelatedOnlyFieldListFilter), "staff_only")
 	date_hierarchy = "creation_date"
 	search_fields = ("content",)
 
@@ -992,7 +993,7 @@ class UserAdmin(admin.ModelAdmin):
 @register(PhysicalAccessLog)
 class PhysicalAccessLogAdmin(admin.ModelAdmin):
 	list_display = ("user", "door", "time", "result")
-	list_filter = ("door", "result")
+	list_filter = (("door", admin.RelatedOnlyFieldListFilter), "result")
 	search_fields = ("user__first_name", "user__last_name", "user__username", "door__name")
 	date_hierarchy = "time"
 
@@ -1009,7 +1010,7 @@ class PhysicalAccessLogAdmin(admin.ModelAdmin):
 @register(SafetyIssue)
 class SafetyIssueAdmin(admin.ModelAdmin):
 	list_display = ("id", "reporter", "creation_time", "visible", "resolved", "resolution_time", "resolver")
-	list_filter = ("resolved", "visible", "creation_time", "resolution_time")
+	list_filter = ("resolved", "visible", "creation_time", "resolution_time", ("reporter", admin.RelatedOnlyFieldListFilter))
 	readonly_fields = ("creation_time", "resolution_time")
 	search_fields = ("location", "concern", "progress", "resolution")
 
@@ -1028,7 +1029,7 @@ class SafetyItemDocumentsInline(admin.TabularInline):
 class SafetyItemAdmin(admin.ModelAdmin):
 	inlines = [SafetyItemDocumentsInline]
 	list_display = ("name", "category", "get_documents_number")
-	list_filter = ("category",)
+	list_filter = (("category", admin.RelatedOnlyFieldListFilter),)
 
 	@display(description='Documents')
 	def get_documents_number(self, obj: SafetyItem):
@@ -1175,7 +1176,7 @@ class ClosureAdmin(admin.ModelAdmin):
 	form = ClosureAdminForm
 	list_display = ("name", "alert_days_before", "get_times_display", "staff_absent", "notify_managers_last_occurrence")
 	filter_horizontal = ("physical_access_levels",)
-	list_filter = ("physical_access_levels__area", "staff_absent", "notify_managers_last_occurrence")
+	list_filter = (("physical_access_levels__area", TreeRelatedFieldListFilter), "staff_absent", "notify_managers_last_occurrence")
 	readonly_fields = ("alert_preview",)
 	fieldsets = (
 		(
@@ -1221,7 +1222,7 @@ class TemporaryPhysicalAccessAdminForm(forms.ModelForm):
 @register(TemporaryPhysicalAccess)
 class TemporaryPhysicalAccessAdmin(admin.ModelAdmin):
 	list_display = ("id", "user", "start_time", "end_time", "get_area_name", "get_schedule_display_with_times")
-	list_filter = ("physical_access_level", "physical_access_level__area", "end_time", "start_time")
+	list_filter = (("physical_access_level", admin.RelatedOnlyFieldListFilter), ("physical_access_level__area", TreeRelatedFieldListFilter), "end_time", "start_time", ("user", admin.RelatedOnlyFieldListFilter))
 	form = TemporaryPhysicalAccessAdminForm
 
 	@admin.display(ordering="physical_access_level__area", description="Area")
@@ -1253,7 +1254,7 @@ class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
 		"reviewer",
 		"deleted"
 	)
-	list_filter = ("status", "deleted")
+	list_filter = ("status", "deleted", ("creator", admin.RelatedOnlyFieldListFilter), ("physical_access_level", admin.RelatedOnlyFieldListFilter))
 	filter_horizontal = ("other_users",)
 
 	@admin.display(ordering="other_users", description="Buddies")
@@ -1302,6 +1303,7 @@ class ScheduledOutageCategoryAdmin(admin.ModelAdmin):
 @register(ScheduledOutage)
 class ScheduledOutageAdmin(admin.ModelAdmin):
 	list_display = ("id", "tool", "area", "resource", "creator", "title", "start", "end")
+	list_filter = (("tool", admin.RelatedOnlyFieldListFilter), ("area", TreeRelatedFieldListFilter), ("resource", admin.RelatedOnlyFieldListFilter), ("creator", admin.RelatedOnlyFieldListFilter))
 
 
 @register(News)
@@ -1370,7 +1372,7 @@ class CounterAdmin(admin.ModelAdmin):
 		"last_reset_by",
 		"is_active",
 	)
-	list_filter = ("tool",)
+	list_filter = (("tool", admin.RelatedOnlyFieldListFilter), "last_reset")
 	readonly_fields = ("warning_threshold_reached",)
 	form = CounterAdminForm
 
@@ -1385,7 +1387,7 @@ class BuddyRequestAdmin(admin.ModelAdmin):
 	inlines = [RequestMessageInlines]
 	form = BuddyRequestForm
 	list_display = ("user", "start", "end", "area", "reply_count", "expired", "deleted")
-	list_filter = ("expired", "deleted")
+	list_filter = ("expired", "deleted", ("user", admin.RelatedOnlyFieldListFilter), ("area", TreeRelatedFieldListFilter))
 
 	@admin.display(ordering="replies", description="Replies")
 	def reply_count(self, buddy_request: BuddyRequest):
@@ -1396,7 +1398,8 @@ class BuddyRequestAdmin(admin.ModelAdmin):
 class AdjustmentRequestAdmin(admin.ModelAdmin):
 	inlines = [RequestMessageInlines]
 	list_display = ("creator", "last_updated", "get_item", "get_time_difference", "get_status_display", "reply_count", "deleted")
-	list_filter = ("status", "deleted")
+	list_filter = ("status", "deleted", ("creator", admin.RelatedOnlyFieldListFilter), ("reviewer", admin.RelatedOnlyFieldListFilter))
+	date_hierarchy = "last_updated"
 
 	@admin.display(description="Diff")
 	def get_time_difference(self, adjustment_request: AdjustmentRequest):
@@ -1436,7 +1439,7 @@ class StaffAvailabilityAdmin(admin.ModelAdmin):
 @register(StaffAbsence)
 class StaffAbsenceAdmin(admin.ModelAdmin):
 	list_display = ("creation_time", "staff_member", "absence_type", "full_day", "start_date", "end_date")
-	list_filter = ("staff_member", "absence_type", "start_date", "end_date", "creation_time")
+	list_filter = (("staff_member", admin.RelatedOnlyFieldListFilter), "absence_type", "start_date", "end_date", "creation_time")
 
 
 class ChemicalHazardAdminForm(forms.ModelForm):
@@ -1481,6 +1484,7 @@ class ChemicalHazardAdmin(admin.ModelAdmin):
 @register(Chemical)
 class ChemicalAdmin(admin.ModelAdmin):
 	filter_horizontal = ("hazards",)
+	list_filter = ("hazards",)
 
 
 @register(SafetyTraining)

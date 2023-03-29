@@ -147,7 +147,7 @@ class SensorCategoryAdmin(admin.ModelAdmin):
 		)
 
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):
-		""" Filter list of potential parents """
+		"""Filter list of potential parents"""
 		if db_field.name == "parent":
 			kwargs["queryset"] = SensorCategory.objects.filter()
 		return super().formfield_for_foreignkey(db_field, request, **kwargs)
@@ -169,6 +169,12 @@ class SensorAdmin(admin.ModelAdmin):
 		"get_read_frequency",
 		"get_last_read",
 		"get_last_read_at",
+	)
+	list_filter = (
+		"visible",
+		"sensor_card__enabled",
+		("sensor_card", admin.RelatedOnlyFieldListFilter),
+		("sensor_category", admin.RelatedOnlyFieldListFilter),
 	)
 	actions = [duplicate_sensor_configuration, read_selected_sensors]
 
@@ -200,7 +206,10 @@ class SensorCardCategoryAdmin(admin.ModelAdmin):
 class SensorDataAdmin(admin.ModelAdmin):
 	list_display = ("created_date", "sensor", "value", "get_display_value")
 	date_hierarchy = "created_date"
-	list_filter = ("sensor", "sensor__sensor_category")
+	list_filter = (
+		("sensor", admin.RelatedOnlyFieldListFilter),
+		("sensor__sensor_category", admin.RelatedOnlyFieldListFilter),
+	)
 
 	@display(ordering="sensor__data_prefix", description="Display value")
 	def get_display_value(self, obj: SensorData):
@@ -216,7 +225,7 @@ class SensorAlertEmailAdmin(admin.ModelAdmin):
 @register(SensorAlertLog)
 class SensorAlertLogAdmin(admin.ModelAdmin):
 	list_display = ["id", "time", "sensor", "reset", "value"]
-	list_filter = ["sensor", "value", "reset"]
+	list_filter = [("sensor", admin.RelatedOnlyFieldListFilter), "value", "reset"]
 	date_hierarchy = "time"
 
 	def has_delete_permission(self, request, obj=None):
