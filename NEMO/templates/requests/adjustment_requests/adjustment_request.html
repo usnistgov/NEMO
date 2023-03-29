@@ -86,7 +86,7 @@
                         {% button type="save" submit=False name="approve_request" title="Approve request" icon="glyphicon-ok-circle" value="Approve" onclick="confirm_review_dialog(this);" %}
                         {% button type="delete" submit=False name="deny_request" title="Deny request" icon="glyphicon-ban-circle" value="Deny" onclick="confirm_review_dialog(this);" %}
                     {% endif %}
-                    {% if form.instance.creator == user %}
+                    {% if not instance_id or form.instance.creator == user %}
                         {% button type="save" value=instance_id|yesno:"Save changes,Create adjustment request" %}
                     {% endif %}
                 {% endif %}
