@@ -4,13 +4,14 @@ from typing import List
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
+from NEMO.decorators import accounting_or_user_office_or_manager_required
 from NEMO.forms import AdjustmentRequestForm
 from NEMO.mixins import BillableItemMixin
 from NEMO.models import (
@@ -25,9 +26,9 @@ from NEMO.models import (
     User,
 )
 from NEMO.utilities import (
-    EmailCategory,
+    BasicDisplayTable, EmailCategory,
     bootstrap_primary_color,
-    get_email_from_settings,
+    export_format_datetime, get_email_from_settings,
     get_full_url,
     quiet_int,
     render_email_template,
@@ -304,3 +305,42 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
         items.remove(current_item)
     items.sort(key=lambda x: (x.get_end(), x.get_start()), reverse=True)
     return items[:item_number]
+
+
+@accounting_or_user_office_or_manager_required
+@require_GET
+def csv_export(request):
+    return csv_export(AdjustmentRequest.objects.filter(deleted=False))
+
+
+def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpResponse:
+    table_result = BasicDisplayTable()
+    table_result.add_header(("status", "Status"))
+    table_result.add_header(("created_date", "Created date"))
+    table_result.add_header(("last_updated", "Last updated"))
+    table_result.add_header(("creator", "Creator"))
+    table_result.add_header(("item", "Item"))
+    table_result.add_header(("new_start", "New start"))
+    table_result.add_header(("new_end", "New end"))
+    table_result.add_header(("difference", "Difference"))
+    table_result.add_header(("reviewer", "Reviewer"))
+    for req in request_list:
+        req: AdjustmentRequest = req
+        table_result.add_row(
+            {
+                "status": req.get_status_display(),
+                "created_date": req.creation_time,
+                "last_updated": req.last_updated,
+                "creator": req.creator,
+                "item": req.item.get_display() if req.item else "",
+                "new_start": req.new_start,
+                "new_end": req.new_end,
+                "difference": req.get_time_difference(),
+                "reviewer": req.reviewer,
+            }
+        )
+
+    filename = f"adjustment_requests_{export_format_datetime()}.csv"
+    response = table_result.to_csv()
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response

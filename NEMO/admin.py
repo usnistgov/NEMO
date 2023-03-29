@@ -17,6 +17,7 @@ from django.utils.safestring import mark_safe
 from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFilter
 
 from NEMO.actions import (
+	adjustment_requests_export_csv,
 	duplicate_tool_configuration,
 	lock_selected_interlocks,
 	rebuild_area_tree,
@@ -1400,6 +1401,7 @@ class AdjustmentRequestAdmin(admin.ModelAdmin):
 	list_display = ("creator", "last_updated", "get_item", "get_time_difference", "get_status_display", "reply_count", "deleted")
 	list_filter = ("status", "deleted", ("creator", admin.RelatedOnlyFieldListFilter), ("reviewer", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "last_updated"
+	actions = [adjustment_requests_export_csv]
 
 	@admin.display(description="Diff")
 	def get_time_difference(self, adjustment_request: AdjustmentRequest):

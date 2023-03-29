@@ -1,8 +1,9 @@
-from django.contrib import messages
+from django.contrib import admin, messages
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
-from NEMO.models import User, Area, Tool
+from NEMO.models import Area, Tool, User
+from NEMO.views.adjustment_requests import adjustments_csv_export
 
 
 def lock_selected_interlocks(model_admin, request, queryset):
@@ -85,3 +86,8 @@ def duplicate_tool_configuration(model_admin, request, queryset):
 
 def rebuild_area_tree(model_admin, request, queryset):
 	Area.objects.rebuild()
+
+
+@admin.action(description="Export adjustment requests in CSV")
+def adjustment_requests_export_csv(modeladmin, request, queryset):
+	return adjustments_csv_export(queryset.all())
