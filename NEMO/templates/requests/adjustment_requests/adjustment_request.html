@@ -72,7 +72,7 @@
             {% endif %}
             <div class="form-group">
                 <label for="description" class="control-label">Description</label>{% if form.description.errors %} - <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
-                <textarea class="form-control" rows="3" name="description" id="description" placeholder="Explain the reason for this request">{{ form.description.value|default_if_none:"" }}</textarea>
+                <textarea class="form-control" rows="3" name="description" id="description" placeholder="Explain the reason for this request" required>{{ form.description.value|default_if_none:"" }}</textarea>
             </div>
             {% if form.instance.get_status_display == "Pending" and instance_id and user.is_facility_manager %}
                 <div class="form-group">

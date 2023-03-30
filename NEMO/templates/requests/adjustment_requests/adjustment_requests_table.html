@@ -7,10 +7,10 @@
                 <th>User</th>
             {% endif %}
             <th class="text-center">Charge</th>
-            <th class="text-center">New start</th>
-            <th class="text-center">New end</th>
+            <th class="text-center text-nowrap">New start</th>
+            <th class="text-center text-nowrap">New end</th>
             <th class="text-center">Difference</th>
-            <th class="text-right">
+            <th class="text-right text-nowrap">
                 {% if request_status == 'pending' and user.is_facility_manager %}
                     Action
                 {% elif request_status == 'approved' %}
@@ -49,8 +49,8 @@
                 </td>
             </tr>
             <tr>
-                <td colspan="{% if user.is_any_part_of_staff %}7{% else %}6{% endif %}" style="border: none">
-                    <div style="width: 70%; color: gray">
+                <td colspan="{% if user.is_any_part_of_staff %}3{% else %}2{% endif %}" style="border: none">
+                    <div style="color: gray">
                         {% if a_request.description %}
                             <div>
                                 <div class="adjustment-request-message">
@@ -93,6 +93,7 @@
                         {% endif %}
                     </div>
                 </td>
+                <td colspan="4" style="border: none"></td>
             </tr>
         {% endfor %}
     </tbody>

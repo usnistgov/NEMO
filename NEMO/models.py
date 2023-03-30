@@ -30,6 +30,7 @@ from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
@@ -2890,6 +2891,8 @@ class AdjustmentRequest(BaseModel):
 		return list(result)
 
 	def clean(self):
+		if not self.description:
+			raise ValidationError({"description": _("This field is required.")})
 		if not self.description and not self.item:
 			raise ValidationError({NON_FIELD_ERRORS: "You must enter a description or select a charge"})
 		if self.item:
