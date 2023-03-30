@@ -37,6 +37,7 @@ from NEMO.views.api_billing import (
 	billable_items_training_sessions,
 	billable_items_usage_events,
 )
+from NEMO.views.customization import UserRequestsCustomization
 
 logger = getLogger(__name__)
 
@@ -132,6 +133,7 @@ def usage(request):
 			'staff_charges': staff_charges,
 			'training_sessions': training_sessions,
 			'usage_events': usage_events,
+			'adjustment_time_limit': UserRequestsCustomization.get_date_limit(),
 			'can_export': True,
 		}
 		if user_managed_projects:
@@ -209,6 +211,7 @@ def project_usage(request):
 		'staff_charges': staff_charges,
 		'training_sessions': training_sessions,
 		'usage_events': usage_events,
+		'adjustment_time_limit': UserRequestsCustomization.get_date_limit(),
 		'project_autocomplete': True,
 		'selection': selection,
 		'can_export': True,

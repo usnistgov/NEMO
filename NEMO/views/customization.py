@@ -2,6 +2,7 @@ from abc import ABC
 from datetime import date, datetime
 from typing import Dict, Iterable
 
+from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.files.storage import get_storage_class
@@ -13,13 +14,14 @@ from django.core.validators import (
 from django.http import HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.template import Context, Template
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
 from NEMO.models import ConsumableCategory, Customization, Project, RecurringConsumableCharge
-from NEMO.utilities import date_input_format, datetime_input_format, quiet_int
+from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
 
 class CustomizationBase(ABC):
@@ -255,6 +257,7 @@ class InterlockCustomization(CustomizationBase):
 
 @customization(key="requests", title="User requests")
 class UserRequestsCustomization(CustomizationBase):
+	frequencies = [RecurrenceFrequency.DAILY, RecurrenceFrequency.WEEKLY, RecurrenceFrequency.MONTHLY]
 	variables = {
 		"buddy_requests_title": "Buddy requests board",
 		"buddy_board_description": "",
@@ -272,16 +275,46 @@ class UserRequestsCustomization(CustomizationBase):
 		"adjustment_requests_description": "",
 		"adjustment_requests_charges_display_number": "10",
 		"adjustment_requests_display_max": "",
+		"adjustment_requests_time_limit_interval": "2",
+		"adjustment_requests_time_limit_frequency": RecurrenceFrequency.WEEKLY.index,
 		"weekend_access_notification_emails": "",
 		"weekend_access_notification_cutoff_hour": "",
 		"weekend_access_notification_cutoff_day": "",
 	}
+
+	@classmethod
+	def get_date_limit(cls) -> datetime:
+		try:
+			interval = cls.get_int("adjustment_requests_time_limit_interval")
+			freq = RecurrenceFrequency(cls.get_int("adjustment_requests_time_limit_frequency"))
+			if interval and freq:
+				delta = (
+					relativedelta(months=interval)
+					if freq == RecurrenceFrequency.MONTHLY
+					else relativedelta(weeks=interval)
+					if freq == RecurrenceFrequency.WEEKLY
+					else relativedelta(days=interval)
+				)
+				return timezone.now() - delta
+		except:
+			pass
+
+	def context(self) -> Dict:
+		context_dict = super().context()
+		context_dict["frequency_choices"] = [(freq.index, freq.display_value) for freq in self.frequencies]
+		return context_dict
 
 	def validate(self, name, value):
 		if name == "weekend_access_notification_emails":
 			recipients = tuple([e for e in value.split(",") if e])
 			for email in recipients:
 				validate_email(email)
+		if value and name == "adjustment_requests_time_limit_frequency":
+			try:
+				if RecurrenceFrequency(int(value)) not in self.frequencies:
+					raise ValidationError(f"frequency must be one of {[freq.display_value for freq in self.frequencies]}")
+			except Exception as e:
+				raise ValidationError(str(e))
 
 
 @customization(key="recurring_charges", title="Recurring charges")

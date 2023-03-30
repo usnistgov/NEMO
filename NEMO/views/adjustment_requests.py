@@ -26,9 +26,11 @@ from NEMO.models import (
     User,
 )
 from NEMO.utilities import (
-    BasicDisplayTable, EmailCategory,
+    BasicDisplayTable,
+    EmailCategory,
     bootstrap_primary_color,
-    export_format_datetime, get_email_from_settings,
+    export_format_datetime,
+    get_email_from_settings,
     get_full_url,
     quiet_int,
     render_email_template,
@@ -89,7 +91,9 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
         item_type = ContentType.objects.get_for_id(item_type_id)
         adjustment_request.item = item_type.get_object_for_this_type(pk=item_id)
         # Show times if not missed reservation or if missed reservation but customization is set to show times anyway
-        if not isinstance(adjustment_request.item, Reservation) or UserRequestsCustomization.get_bool("adjustment_requests_missed_reservation_times"):
+        if not isinstance(adjustment_request.item, Reservation) or UserRequestsCustomization.get_bool(
+            "adjustment_requests_missed_reservation_times"
+        ):
             dictionary["change_times_allowed"] = True
             adjustment_request.new_start = adjustment_request.item.start
             adjustment_request.new_end = adjustment_request.item.end
@@ -278,29 +282,39 @@ Please visit {reply_url} to reply"""
 
 def adjustment_eligible_items(user: User, current_item=None) -> List[BillableItemMixin]:
     item_number = UserRequestsCustomization.get_int("adjustment_requests_charges_display_number")
+    date_limit = UserRequestsCustomization.get_date_limit()
+    end_filter = {"end__gte": date_limit} if date_limit else {}
     items: List[BillableItemMixin] = []
     if UserRequestsCustomization.get_bool("adjustment_requests_missed_reservation_enabled"):
-        items.extend(Reservation.objects.filter(user=user, missed=True).order_by("-end")[:item_number])
+        items.extend(
+            Reservation.objects.filter(user=user, missed=True).filter(**end_filter).order_by("-end")[:item_number]
+        )
     if UserRequestsCustomization.get_bool("adjustment_requests_tool_usage_enabled"):
-        items.extend(UsageEvent.objects.filter(user=user, operator=user, end__isnull=False).order_by("-end")[:item_number])
+        items.extend(
+            UsageEvent.objects.filter(user=user, operator=user, end__isnull=False)
+            .filter(**end_filter)
+            .order_by("-end")[:item_number]
+        )
     if UserRequestsCustomization.get_bool("adjustment_requests_area_access_enabled"):
         items.extend(
-            AreaAccessRecord.objects.filter(customer=user, end__isnull=False, staff_charge__isnull=True).order_by("-end")[
-                :item_number
-            ]
+            AreaAccessRecord.objects.filter(customer=user, end__isnull=False, staff_charge__isnull=True)
+            .filter(**end_filter)
+            .order_by("-end")[:item_number]
         )
     if user.is_staff and UserRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled"):
         # Add all remote charges for staff to request for adjustment
         items.extend(
             UsageEvent.objects.filter(operator=user, end__isnull=False)
+            .filter(**end_filter)
             .exclude(user=F("operator"))
             .order_by("-end")[:item_number]
         )
         items.extend(
             AreaAccessRecord.objects.filter(end__isnull=False, staff_charge__staff_member=user)
+            .filter(**end_filter)
             .order_by("-end")[:item_number]
         )
-        items.extend(StaffCharge.objects.filter(staff_member=user).order_by("-end")[:item_number])
+        items.extend(StaffCharge.objects.filter(staff_member=user).filter(**end_filter).order_by("-end")[:item_number])
     if current_item and current_item in items:
         items.remove(current_item)
     items.sort(key=lambda x: (x.get_end(), x.get_start()), reverse=True)

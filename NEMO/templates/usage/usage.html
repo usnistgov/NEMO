@@ -13,6 +13,9 @@
 			<br/>
 			<p>
 				Adjustment activities <b>are not included</b> in the usage information.
+                {% if "requests"|customization:"adjustment_requests_enabled" and adjustment_time_limit %}
+                    <br>Only charges ending after {{ adjustment_time_limit.date }} can be adjusted.
+                {% endif %}
 			</p>
 			{% if no_charges %}
 				<h3>There was no usage between {{ start_date|date }} and {{ end_date|date }}.</h3>
@@ -27,8 +30,10 @@
                             {{ m.start }}<br>
                             Charged to project {{ m.project }}
                             {% if adj_reservation == "enabled" %}
-                                {% if m.user == user or m.project in pi_projects %}
-                                    {% include "usage/adjustment_request_button.html" with charge=m %}
+                                {% if not adjustment_time_limit or adjustment_time_limit <= m.end %}
+                                    {% if m.user == user or m.project in pi_projects %}
+                                        {% include "usage/adjustment_request_button.html" with charge=m %}
+                                    {% endif %}
                                 {% endif %}
                             {% endif %}
                         </div>
@@ -56,7 +61,9 @@
                             {{ s.end }}<br>
                             Charged to project {{ s.project }}
                             {% if adj_staff_charge == "enabled" and s.staff_member == user and user.is_staff %}
-                                {% include "usage/adjustment_request_button.html" with charge=s %}
+                                {% if not adjustment_time_limit or adjustment_time_limit <= s.end %}
+                                    {% include "usage/adjustment_request_button.html" with charge=s %}
+                                {% endif %}
                             {% endif %}
                         </div>
                     {% endfor %}
@@ -84,12 +91,16 @@
                             {{ a.end|default_if_none:"In progress" }}<br>
                             Charged to project {{ a.project }}
                             {% if not a.staff_charge and adj_area_access == "enabled" %}
-                                {% if a.customer == user or a.project in pi_projects %}
-                                    {% include "usage/adjustment_request_button.html" with charge=a %}
+                                {% if not adjustment_time_limit or adjustment_time_limit <= a.end %}
+                                    {% if a.customer == user or a.project in pi_projects %}
+                                        {% include "usage/adjustment_request_button.html" with charge=a %}
+                                    {% endif %}
                                 {% endif %}
                             {% elif a.staff_charge and adj_staff_charge == "enabled" %}
-                                {% if a.staff_charge.staff_member == user and user.is_staff %}
-                                    {% include "usage/adjustment_request_button.html" with charge=a %}
+                                {% if not adjustment_time_limit or adjustment_time_limit <= a.end %}
+                                    {% if a.staff_charge.staff_member == user and user.is_staff %}
+                                        {% include "usage/adjustment_request_button.html" with charge=a %}
+                                    {% endif %}
                                 {% endif %}
                             {% endif %}
                         </div>
@@ -107,13 +118,17 @@
                             {{ u.end }}<br>
                             Charged to project {{ u.project }}
                             {% if adj_tool_usage == "enabled" %}
-                                {% if u.user == u.operator and u.user == user or u.project in pi_projects %}
-                                    {% include "usage/adjustment_request_button.html" with charge=u %}
+                                {% if not adjustment_time_limit or adjustment_time_limit <= u.end %}
+                                    {% if u.user == u.operator and u.user == user or u.project in pi_projects %}
+                                        {% include "usage/adjustment_request_button.html" with charge=u %}
+                                    {% endif %}
                                 {% endif %}
                             {% endif %}
                             {% if adj_staff_charge == "enabled" %}
-                                {% if u.user != u.operator and u.operator == user and user.is_staff %}
-                                    {% include "usage/adjustment_request_button.html" with charge=u %}
+                                {% if not adjustment_time_limit or adjustment_time_limit <= u.end %}
+                                    {% if u.user != u.operator and u.operator == user and user.is_staff %}
+                                        {% include "usage/adjustment_request_button.html" with charge=u %}
+                                    {% endif %}
                                 {% endif %}
                             {% endif %}
                         </div>
