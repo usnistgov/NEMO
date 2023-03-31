@@ -37,13 +37,14 @@ class AdjustmentRequestTestCase(TestCase):
     def test_create_request(self):
         user, project = create_user_and_project()
         adjustment_request = AdjustmentRequest()
-        validate_model_error(self, adjustment_request, [NON_FIELD_ERRORS, "creator"])
+        validate_model_error(self, adjustment_request, ["creator", "description"])
         adjustment_request.creator = user
-        # need either a description or a charge
+        # need a description
         adjustment_request.description = "some description"
         adjustment_request.full_clean()
         adjustment_request.description = ""
-        validate_model_error(self, adjustment_request, [NON_FIELD_ERRORS])
+        validate_model_error(self, adjustment_request, ["description"])
+        adjustment_request.description = "some description"
         # now try with a charge
         start = timezone.now() - timedelta(hours=1)
         usage_event = UsageEvent.objects.create(

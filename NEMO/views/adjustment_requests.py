@@ -324,7 +324,7 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
 @accounting_or_user_office_or_manager_required
 @require_GET
 def csv_export(request):
-    return csv_export(AdjustmentRequest.objects.filter(deleted=False))
+    return adjustments_csv_export(AdjustmentRequest.objects.filter(deleted=False))
 
 
 def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpResponse:
