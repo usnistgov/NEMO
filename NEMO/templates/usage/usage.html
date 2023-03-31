@@ -14,7 +14,7 @@
 			<p>
 				Adjustment activities <b>are not included</b> in the usage information.
                 {% if "requests"|customization:"adjustment_requests_enabled" and adjustment_time_limit %}
-                    <br>Only charges ending after {{ adjustment_time_limit.date }} can be adjusted.
+                    <br>Adjustment requests can be made for charges ending after {{ adjustment_time_limit.date }}.
                 {% endif %}
 			</p>
 			{% if no_charges %}

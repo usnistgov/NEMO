@@ -2893,8 +2893,6 @@ class AdjustmentRequest(BaseModel):
 	def clean(self):
 		if not self.description:
 			raise ValidationError({"description": _("This field is required.")})
-		if not self.description and not self.item:
-			raise ValidationError({NON_FIELD_ERRORS: "You must enter a description or select a charge"})
 		if self.item:
 			if self.new_start and self.new_end and self.new_start > self.new_end:
 				raise ValidationError({"new_end": "The end must be later than the start"})

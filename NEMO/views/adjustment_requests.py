@@ -80,7 +80,6 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
         return HttpResponseBadRequest("Adjustment requests are not enabled")
 
     user: User = request.user
-    dictionary = {"change_times_allowed": False}
 
     try:
         adjustment_request = AdjustmentRequest.objects.get(id=request_id)
@@ -90,17 +89,21 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
     try:
         item_type = ContentType.objects.get_for_id(item_type_id)
         adjustment_request.item = item_type.get_object_for_this_type(pk=item_id)
-        # Show times if not missed reservation or if missed reservation but customization is set to show times anyway
-        if not isinstance(adjustment_request.item, Reservation) or UserRequestsCustomization.get_bool(
-            "adjustment_requests_missed_reservation_times"
-        ):
-            dictionary["change_times_allowed"] = True
-            adjustment_request.new_start = adjustment_request.item.start
-            adjustment_request.new_end = adjustment_request.item.end
+    # Show times if not missed reservation or if missed reservation but customization is set to show times anyway
     except ContentType.DoesNotExist:
         pass
 
-    dictionary["eligible_items"] = adjustment_eligible_items(user, adjustment_request.item)
+    change_times_allowed = can_change_times(adjustment_request.item)
+
+    # only change the times if we are provided with a charge and it's allowed
+    if item_type_id and adjustment_request.item and change_times_allowed:
+        adjustment_request.new_start = adjustment_request.item.start
+        adjustment_request.new_end = adjustment_request.item.end
+
+    dictionary = {
+        "change_times_allowed": change_times_allowed,
+        "eligible_items": adjustment_eligible_items(user, adjustment_request.item),
+    }
 
     if request.method == "POST":
         # some extra validation needs to be done here because it depends on the user
@@ -148,6 +151,10 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
             send_request_received_email(request, new_adjustment_request, edit)
             return redirect("user_requests", "adjustment")
         else:
+            item_type = form.cleaned_data.get("item_type")
+            item_id = form.cleaned_data.get("item_id")
+            if item_type and item_id:
+                dictionary["change_times_allowed"] = can_change_times(item_type.get_object_for_this_type(pk=item_id))
             dictionary["form"] = form
             return render(request, "requests/adjustment_requests/adjustment_request.html", dictionary)
     else:
@@ -278,6 +285,11 @@ Please visit {reply_url} to reply"""
                 email_notification=email_notification,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
+
+
+def can_change_times(item):
+    can_change_reservation_times = UserRequestsCustomization.get_bool("adjustment_requests_missed_reservation_times")
+    return item and (not isinstance(item, Reservation) or can_change_reservation_times)
 
 
 def adjustment_eligible_items(user: User, current_item=None) -> List[BillableItemMixin]:
