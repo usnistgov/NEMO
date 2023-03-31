@@ -2126,11 +2126,11 @@ class Interlock(BaseModel):
 	most_recent_reply = models.TextField(default="None")
 	most_recent_reply_time = models.DateTimeField(null=True, blank=True)
 
-	def unlock(self):
+	def unlock(self) -> bool:
 		from NEMO import interlocks
 		return interlocks.get(self.card.category).unlock(self)
 
-	def lock(self):
+	def lock(self) -> bool:
 		from NEMO import interlocks
 		return interlocks.get(self.card.category).lock(self)
 
@@ -2139,7 +2139,7 @@ class Interlock(BaseModel):
 		ordering = ['card__server', 'card__number', 'channel']
 
 	def __str__(self):
-		return str(self.card) + ", channel " + str(self.channel)
+		return str(self.card) + (", channel " + str(self.channel) if self.channel else "")
 
 
 class InterlockCardCategory(BaseModel):

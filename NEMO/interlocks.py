@@ -38,13 +38,13 @@ class Interlock(ABC):
 	def clean_interlock(self, interlock_form: InterlockAdminForm):
 		pass
 
-	def lock(self, interlock: Interlock_model) -> {True, False}:
+	def lock(self, interlock: Interlock_model) -> bool:
 		return self.__issue_command(interlock, Interlock_model.State.LOCKED)
 
-	def unlock(self, interlock: Interlock_model) -> {True, False}:
+	def unlock(self, interlock: Interlock_model) -> bool:
 		return self.__issue_command(interlock, Interlock_model.State.UNLOCKED)
 
-	def __issue_command(self, interlock: Interlock_model, command_type: Interlock_model.State):
+	def __issue_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> bool:
 		interlocks_enabled = getattr(settings, "INTERLOCKS_ENABLED", False)
 		now = timezone.now()
 		if not interlocks_enabled or not interlock.card.enabled:
