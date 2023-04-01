@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from NEMO.models import Area, Tool, User
+from NEMO.views.access_requests import access_csv_export
 from NEMO.views.adjustment_requests import adjustments_csv_export
 
 
@@ -97,3 +98,8 @@ def rebuild_area_tree(model_admin, request, queryset):
 @admin.action(description="Export adjustment requests in CSV")
 def adjustment_requests_export_csv(modeladmin, request, queryset):
 	return adjustments_csv_export(queryset.all())
+
+
+@admin.action(description="Export access requests in CSV")
+def access_requests_export_csv(modeladmin, request, queryset):
+	return access_csv_export(queryset.all())

@@ -17,6 +17,7 @@ from django.utils.safestring import mark_safe
 from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFilter
 
 from NEMO.actions import (
+	access_requests_export_csv,
 	adjustment_requests_export_csv,
 	duplicate_tool_configuration,
 	lock_selected_interlocks,
@@ -1257,6 +1258,7 @@ class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
 	)
 	list_filter = ("status", "deleted", ("creator", admin.RelatedOnlyFieldListFilter), ("physical_access_level", admin.RelatedOnlyFieldListFilter))
 	filter_horizontal = ("other_users",)
+	actions = [access_requests_export_csv]
 
 	@admin.display(ordering="other_users", description="Buddies")
 	def other_users_display(self, access_request: TemporaryPhysicalAccessRequest):

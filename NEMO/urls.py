@@ -146,6 +146,7 @@ urlpatterns += [
 	path("access_requests/", access_requests.access_requests, name="access_requests"),
 	path("create_access_request/", access_requests.create_access_request, name="create_access_request"),
 	path("edit_access_request/<int:request_id>/", access_requests.create_access_request, name="edit_access_request"),
+	path("export_access_requests/", access_requests.csv_export, name="export_access_requests"),
 	path("delete_access_request/<int:request_id>/", access_requests.delete_access_request, name="delete_access_request"),
 
 	# Buddy System
@@ -162,8 +163,8 @@ urlpatterns += [
 	path("edit_adjustment_request/<int:request_id>/", adjustment_requests.create_adjustment_request, name="edit_adjustment_request"),
 	path("edit_adjustment_request/<int:request_id>/<int:item_type_id>/<int:item_id>/", adjustment_requests.create_adjustment_request, name="edit_adjustment_request"),
 	path("adjustment_request_reply/<int:request_id>/", adjustment_requests.adjustment_request_reply, name="adjustment_request_reply"),
-	path("delete_adjustment_request/<int:request_id>/", adjustment_requests.delete_adjustment_request, name="delete_adjustment_request"),
 	path("export_adjustment_requests/", adjustment_requests.csv_export, name="export_adjustment_requests"),
+	path("delete_adjustment_request/<int:request_id>/", adjustment_requests.delete_adjustment_request, name="delete_adjustment_request"),
 
 	# Tasks:
 	path("create_task/", tasks.create, name="create_task"),

@@ -9,8 +9,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_http_methods
 
+from NEMO.decorators import user_office_or_manager_required
 from NEMO.forms import TemporaryPhysicalAccessRequestForm
 from NEMO.models import (
 	Notification,
@@ -21,9 +23,11 @@ from NEMO.models import (
 	User,
 )
 from NEMO.utilities import (
+	BasicDisplayTable,
 	EmailCategory,
 	beginning_of_the_day,
 	bootstrap_primary_color,
+	export_format_datetime,
 	format_datetime,
 	get_full_url,
 	quiet_int,
@@ -53,7 +57,9 @@ def access_requests(request):
 	if not user.is_facility_manager and not user.is_staff and not user.is_user_office:
 		# For some reason doing an "or" filtering with manytomany field returns duplicates, and using distinct() returns nothing...
 		other_user_physical_access_requests = physical_access_requests.filter(other_users__in=[user]).distinct()
-		physical_access_requests = physical_access_requests.filter(Q(creator=user) | Q(id__in=other_user_physical_access_requests))
+		physical_access_requests = physical_access_requests.filter(
+			Q(creator=user) | Q(id__in=other_user_physical_access_requests)
+		)
 	dictionary = {
 		"pending_access_requests": physical_access_requests.filter(status=RequestStatus.PENDING).order_by("start_time"),
 		"approved_access_requests": physical_access_requests.filter(status=RequestStatus.APPROVED)[:max_requests],
@@ -227,9 +233,9 @@ def email_weekend_access_notification(request):
 
 def send_email_weekend_access_notification():
 	"""
-		Sends a weekend access email to the addresses set in customization with the template provided.
-		The email is sent when the first request (each week) that includes weekend access is approved.
-		If no weekend access requests are made by the given time on the cutoff day (if set), a no access email is sent.
+	Sends a weekend access email to the addresses set in customization with the template provided.
+	The email is sent when the first request (each week) that includes weekend access is approved.
+	If no weekend access requests are made by the given time on the cutoff day (if set), a no access email is sent.
 	"""
 	try:
 		user_office_email = EmailsCustomization.get("user_office_email_address")
@@ -302,3 +308,45 @@ def send_weekend_email_access(access, user_office_email, email_to, contents, beg
 		cc=ccs,
 		email_category=EmailCategory.ACCESS_REQUESTS,
 	)
+
+
+@user_office_or_manager_required
+@require_GET
+def csv_export(request):
+	return access_csv_export(TemporaryPhysicalAccessRequest.objects.filter(deleted=False))
+
+
+def access_csv_export(request_list: List[TemporaryPhysicalAccessRequest]) -> HttpResponse:
+	table_result = BasicDisplayTable()
+	table_result.add_header(("status", "Status"))
+	table_result.add_header(("created_date", "Created date"))
+	table_result.add_header(("last_updated", "Last updated"))
+	table_result.add_header(("creator", "Creator"))
+	table_result.add_header(("other_users", "Buddies"))
+	table_result.add_header(("area", "Area"))
+	table_result.add_header(("access_level", "Access level"))
+	table_result.add_header(("start", "Start"))
+	table_result.add_header(("end", "End"))
+	table_result.add_header(("reviewer", "Reviewer"))
+	for req in request_list:
+		req: TemporaryPhysicalAccessRequest = req
+		table_result.add_row(
+			{
+				"status": req.get_status_display(),
+				"created_date": req.creation_time,
+				"last_updated": req.last_updated,
+				"creator": req.creator,
+				"other_users": ", ".join([str(user) for user in req.other_users.all()]),
+				"area": req.physical_access_level.area,
+				"access_level": req.physical_access_level,
+				"start": req.start_time,
+				"end": req.end_time,
+				"reviewer": req.reviewer,
+			}
+		)
+
+	name = slugify(UserRequestsCustomization.get("access_requests_title")).replace("-", "_")
+	filename = f"{name}_{export_format_datetime()}.csv"
+	response = table_result.to_csv()
+	response["Content-Disposition"] = f'attachment; filename="{filename}"'
+	return response
