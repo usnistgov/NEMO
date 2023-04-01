@@ -9,7 +9,8 @@ from NEMO.views.adjustment_requests import adjustments_csv_export
 def lock_selected_interlocks(model_admin, request, queryset):
 	for interlock in queryset:
 		try:
-			if interlock.lock():
+			command_succeeded = interlock.lock()
+			if command_succeeded:
 				messages.success(request, f"{interlock} has been successfully locked")
 			else:
 				messages.error(request, f"{interlock} could not be locked. {interlock.most_recent_reply}")
@@ -20,7 +21,8 @@ def lock_selected_interlocks(model_admin, request, queryset):
 def unlock_selected_interlocks(model_admin, request, queryset):
 	for interlock in queryset:
 		try:
-			if interlock.unlock():
+			command_succeeded = interlock.unlock()
+			if command_succeeded:
 				messages.success(request, f"{interlock} has been successfully unlocked")
 			else:
 				messages.error(request, f"{interlock} could not be unlocked. {interlock.most_recent_reply}")
