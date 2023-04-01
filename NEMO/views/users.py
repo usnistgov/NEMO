@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.decorators import any_staff_required, user_office_or_facility_manager_required
+from NEMO.decorators import any_staff_required, user_office_or_manager_required
 from NEMO.forms import UserForm, UserPreferencesForm
 from NEMO.models import (
 	ActivityHistory,
@@ -224,7 +224,7 @@ def create_or_modify_user(request, user_id):
 		return HttpResponseBadRequest('Invalid method')
 
 
-@user_office_or_facility_manager_required
+@user_office_or_manager_required
 @require_http_methods(['GET', 'POST'])
 def deactivate(request, user_id):
 	dictionary = {
@@ -311,7 +311,7 @@ def deactivate(request, user_id):
 		return redirect('users')
 
 
-@user_office_or_facility_manager_required
+@user_office_or_manager_required
 @require_POST
 def reset_password(request, user_id):
 	try:
@@ -346,7 +346,7 @@ def reset_password(request, user_id):
 	return render(request, 'acknowledgement.html', dictionary)
 
 
-@user_office_or_facility_manager_required
+@user_office_or_manager_required
 @require_POST
 def unlock_account(request, user_id):
 	try:
