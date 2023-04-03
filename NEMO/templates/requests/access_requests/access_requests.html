@@ -10,12 +10,12 @@
     </div>
     <div class="text-right" style="display: table-cell; vertical-align: top">{% button type="add" url="create_access_request" value="New request" %}</div>
 </div>
-{% if user.is_superuser or user.is_facility_manager or user.is_user_office %}
-    <div class="text-right">
-        {% button type="export" value="Export" url="export_access_requests" target="_blank" %}
-    </div>
-{% endif %}
 {% if pending_access_requests or approved_access_requests or denied_access_requests or expired_access_requests %}
+    {% if user.is_superuser or user.is_facility_manager or user.is_user_office %}
+        <div class="text-right" style="margin-bottom: -20px">
+            {% button type="export" value="Export" url="export_access_requests" target="_blank" %}
+        </div>
+    {% endif %}
     <div>
         {% if pending_access_requests %}
             <h3><a onclick="toggle_details(this)" data-toggle="collapse" data-target="#pending_access_requests" class="pointer">
