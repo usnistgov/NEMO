@@ -2,7 +2,6 @@
 {% block title %}Requests{% endblock %}
 {% block content %}
     <div class="clearfix" style="margin-top: 0;">
-        <h1 class="pull-left" style="margin-top: 0;margin-right: 20px">{% if tab == 'access' %}{{ access_requests_title }}{% elif tab == 'buddy' %}{{ buddy_requests_title }}{% elif tab == 'adjustment' %}{{ adjustment_requests_title }}{% else %}Requests{% endif %}</h1>
         <ul class="nav nav-pills nav-pills-spacer" id="tabs" style="display: inline-block;float: right; margin-bottom: 15px">
             {% if access_user_request_allowed_exist and facility_managers_exist %}
                 <li class="{% if tab == 'access' %}active{% endif %}">
@@ -32,6 +31,7 @@
                 </li>
             {% endif %}
         </ul>
+        <h1 class="pull-left" style="margin-top: 0;margin-right: 20px">{% if tab == 'access' %}{{ access_requests_title }}{% elif tab == 'buddy' %}{{ buddy_requests_title }}{% elif tab == 'adjustment' %}{{ adjustment_requests_title }}{% else %}Requests{% endif %}</h1>
     </div>
     <div class="tab-content">
         {% if access_user_request_allowed_exist and facility_managers_exist %}
