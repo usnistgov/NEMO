@@ -32,7 +32,7 @@
                 <td class="text-center" style="vertical-align: middle">{{ a_request.get_new_start|date:'SHORT_DATETIME_FORMAT' }}</td>
                 <td class="text-center" style="vertical-align: middle">{{ a_request.get_new_end|date:'SHORT_DATETIME_FORMAT' }}</td>
                 <td class="text-center" style="vertical-align: middle">{{ a_request.get_time_difference|default_if_none:"" }}</td>
-                <td class="text-right" style="vertical-align: middle">
+                <td class="text-right text-nowrap" style="vertical-align: middle">
                     {% if request_status == 'approved' or request_status == 'denied' %}
                         {{ a_request.reviewer.get_name }}
                     {% else %}
