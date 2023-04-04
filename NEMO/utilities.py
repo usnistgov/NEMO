@@ -612,15 +612,18 @@ def get_recurring_rule(start: date, frequency: RecurrenceFrequency, until=None, 
 
 
 def get_full_url(location, request=None):
+	"""
+	Function used mainly in emails and places where the request might or might not be available.
+	If the request is available, use django's built in way to build the absolute URL, otherwise
+	use the SERVER_DOMAIN variable from settings, which defaults to the first ALLOWED_HOSTS value.
+	"""
 	# For lazy locations
 	location = str(location)
-	main_url = getattr(settings, "MAIN_URL", None)
-	if main_url:
-		return urljoin(main_url, location)
-	elif request:
+	if request:
 		return request.build_absolute_uri(location)
 	else:
-		return location
+		domain = getattr(settings, "SERVER_DOMAIN", "https://{}".format(settings.ALLOWED_HOSTS[0]))
+		return urljoin(domain, location)
 
 
 def capitalize(string: Optional[str]) -> str:
