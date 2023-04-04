@@ -4,47 +4,47 @@
         {% csrf_token %}
         <h3 class="customization-section-title">General</h3>
         <div class="form-group">
-            <label class="control-label col-md-2" for="default_user_training_not_required">New user facility tutorial</label>
-            <div class="col-md-4">
+            <label class="control-label col-md-4 col-lg-3" for="default_user_training_not_required">New user facility tutorial</label>
+            <div class="col-md-8 col-lg-9">
                 <div class="radio">
                     <label><input type="radio" id="default_user_training_not_required" name="default_user_training_not_required" {% if not default_user_training_not_required %}checked{% endif %} value=""> Required</label>
                     <label><input type="radio" name="default_user_training_not_required" {% if default_user_training_not_required %}checked{% endif %} value="enabled"> Not required</label>
                 </div>
             </div>
-            <div class="col-md-6 help-block light-grey">
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
                 Whether the facility rules tutorial is required for new users by default.
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2" for="user_list_active_only">User list</label>
-            <div class="col-md-4">
+            <label class="control-label col-md-4 col-lg-3" for="user_list_active_only">User list</label>
+            <div class="col-md-8 col-lg-9">
                 <div class="checkbox">
                     <label><input type="checkbox" id="user_list_active_only" name="user_list_active_only" {% if user_list_active_only %}checked{% endif %} value="enabled"> Hide inactive</label>
                 </div>
             </div>
-            <div class="col-md-6 help-block light-grey">
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
                 Check this box to only show active users in the user list.
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2" for="user_list_active_only">User document upload</label>
-            <div class="col-md-4">
+            <label class="control-label col-md-4 col-lg-3" for="user_list_active_only">User document upload</label>
+            <div class="col-md-8 col-lg-9">
                 <div class="checkbox">
 					<label><input type="checkbox" name="user_allow_document_upload" {% if user_allow_document_upload %}checked{% endif %} value="enabled">Enable</label>
 				</div>
             </div>
-            <div class="col-md-6 help-block light-grey">
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
                 Check this box to allow uploading documents to users.
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Access expiration reminder</h3>
 		<div class="form-group {% if errors.user_access_expiration_reminder_days %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="user_access_expiration_reminder_days">Reminder days</label>
-            <div class="col-md-4">
+            <label class="control-label col-md-4 col-lg-3" for="user_access_expiration_reminder_days">Reminder days</label>
+            <div class="col-md-8 col-lg-9">
                 <input type="text" id="user_access_expiration_reminder_days" name="user_access_expiration_reminder_days" class="form-control" value="{% if errors.user_access_expiration_reminder_days %}{{ errors.user_access_expiration_reminder_days.value }}{% else %}{{ user_access_expiration_reminder_days }}{% endif %}"/>
             </div>
-            <div class="col-md-6 help-block light-grey">
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
                 {% if errors.user_access_expiration_reminder_days %}
                     {{ errors.user_access_expiration_reminder_days.error }}
                 {% else %}
@@ -54,11 +54,11 @@
             </div>
         </div>
 		<div class="form-group {% if errors.user_access_expiration_reminder_cc %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="user_access_expiration_reminder_cc">Reminder email CC</label>
-            <div class="col-md-4">
+            <label class="control-label col-md-4 col-lg-3" for="user_access_expiration_reminder_cc">Reminder email CC</label>
+            <div class="col-md-8 col-lg-9">
                 <input type="text" id="user_access_expiration_reminder_cc" name="user_access_expiration_reminder_cc" class="form-control" value="{% if errors.user_access_expiration_reminder_cc %}{{ errors.user_access_expiration_reminder_cc.value }}{% else %}{{ user_access_expiration_reminder_cc }}{% endif %}" placeholder="information@example.org"/>
             </div>
-            <div class="col-md-6 help-block light-grey">
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
                 {% if errors.user_access_expiration_reminder_cc %}
                     {{ errors.user_access_expiration_reminder_cc.error }}
                 {% else %}

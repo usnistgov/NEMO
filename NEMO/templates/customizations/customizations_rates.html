@@ -1,5 +1,5 @@
 {% load custom_tags_and_filters %}
-<div class="panel-body">
+<div class="panel-body" style="padding-bottom: 0">
     <h3 class="customization-section-title" id="rate">Rates settings</h3>
     <form method="POST" action="{% url 'customize' 'rates' %}" class="form-horizontal">
         {% csrf_token %}
