@@ -8,7 +8,7 @@ from django.contrib.admin import register
 from django.contrib.admin.decorators import display
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.admin import GenericTabularInline
+from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import Q
 from django.db.models.fields.files import FieldFile
 from django.forms import BaseInlineFormSet
@@ -1380,7 +1380,7 @@ class CounterAdmin(admin.ModelAdmin):
 	form = CounterAdminForm
 
 
-class RequestMessageInlines(GenericTabularInline):
+class RequestMessageInlines(GenericStackedInline):
 	model = RequestMessage
 	extra = 1
 
