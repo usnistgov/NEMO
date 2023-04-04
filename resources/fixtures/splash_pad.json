@@ -7,11 +7,13 @@
       "attach_cancelled_reservation": false,
       "display_new_buddy_request_notification": true,
       "email_new_buddy_request_reply": true,
+      "email_new_adjustment_request_reply": true,
       "staff_status_view": "day",
       "email_alternate": null,
       "email_send_reservation_emails": 1,
       "email_send_buddy_request_replies": 1,
       "email_send_access_request_updates": 1,
+      "email_send_adjustment_request_updates": 1,
       "email_send_broadcast_emails": 1,
       "email_send_task_updates": 1,
       "email_send_access_expiration_emails": 1,
@@ -31,11 +33,13 @@
       "attach_cancelled_reservation": false,
       "display_new_buddy_request_notification": true,
       "email_new_buddy_request_reply": true,
+      "email_new_adjustment_request_reply": true,
       "staff_status_view": "day",
       "email_alternate": null,
       "email_send_reservation_emails": 1,
       "email_send_buddy_request_replies": 1,
       "email_send_access_request_updates": 1,
+      "email_send_adjustment_request_updates": 1,
       "email_send_broadcast_emails": 1,
       "email_send_task_updates": 1,
       "email_send_access_expiration_emails": 1,
@@ -75,32 +79,32 @@
     "model": "NEMO.projectdiscipline",
     "pk": 1,
     "fields": {
-      "name": "Physics",
-      "display_order": 0
+      "display_order": 0,
+      "name": "Physics"
     }
   },
   {
     "model": "NEMO.projectdiscipline",
     "pk": 2,
     "fields": {
-      "name": "Chemistry",
-      "display_order": 1
+      "display_order": 1,
+      "name": "Chemistry"
     }
   },
   {
     "model": "NEMO.projectdiscipline",
     "pk": 3,
     "fields": {
-      "name": "Biology",
-      "display_order": 3
+      "display_order": 3,
+      "name": "Biology"
     }
   },
   {
     "model": "NEMO.projectdiscipline",
     "pk": 4,
     "fields": {
-      "name": "Electronics",
-      "display_order": 4
+      "display_order": 4,
+      "name": "Electronics"
     }
   },
   {
@@ -138,7 +142,7 @@
       "last_updated": "2021-02-23T17:28:47.930Z",
       "last_updated_by": null,
       "physical_access_level": 1,
-      "description": "I am looking for somebody to come in on a weekend.\r\nDates are flexible.\r\nLet me know",
+      "description": null,
       "start_time": "2021-02-23T17:28:47.930Z",
       "end_time": "2099-02-23T17:28:47.930Z",
       "status": 0,
@@ -293,7 +297,7 @@
       "end_time": "2025-06-20T03:59:00Z"
     }
   },
-   {
+  {
     "model": "NEMO.safetycategory",
     "pk": 1,
     "fields": {
@@ -6337,6 +6341,22 @@
     }
   },
   {
+    "model": "NEMO.requestmessage",
+    "pk": 1,
+    "fields": {
+      "content_type": [
+        "NEMO",
+        "adjustmentrequest"
+      ],
+      "object_id": 1,
+      "author": [
+        "captain"
+      ],
+      "creation_date": "2023-03-06T17:41:00.733Z",
+      "content": "Can you provide more information?\r\nThank you"
+    }
+  },
+  {
     "model": "NEMO.reservation",
     "pk": 1,
     "fields": {
@@ -6387,6 +6407,48 @@
       "end": null,
       "validated": false,
       "run_data": null
+    }
+  },
+  {
+    "model": "NEMO.usageevent",
+    "pk": 2,
+    "fields": {
+      "user": 3,
+      "operator": 3,
+      "project": 2,
+      "tool": 1021,
+      "start": "2023-03-04T15:54:00Z",
+      "end": "2023-03-05T16:00:00Z",
+      "validated": false,
+      "run_data": ""
+    }
+  },
+  {
+    "model": "NEMO.usageevent",
+    "pk": 3,
+    "fields": {
+      "user": 3,
+      "operator": 3,
+      "project": 2,
+      "tool": 1021,
+      "start": "2023-02-10T10:54:00Z",
+      "end": "2023-02-11T15:00:00Z",
+      "validated": false,
+      "run_data": ""
+    }
+  },
+  {
+    "model": "NEMO.usageevent",
+    "pk": 4,
+    "fields": {
+      "user": 3,
+      "operator": 3,
+      "project": 2,
+      "tool": 1021,
+      "start": "2023-01-20T23:54:00Z",
+      "end": "2023-01-21T19:00:00Z",
+      "validated": false,
+      "run_data": ""
     }
   },
   {
@@ -6708,6 +6770,63 @@
     }
   },
   {
+    "model": "NEMO.adjustmentrequest",
+    "pk": 1,
+    "fields": {
+      "creation_time": "2023-03-06T15:46:25.311Z",
+      "creator": 3,
+      "last_updated": "2023-03-06T15:46:25.311Z",
+      "last_updated_by": 3,
+      "item_type": 38,
+      "item_id": 2,
+      "description": "I forgot to logoff the tool",
+      "manager_note": "",
+      "new_start": "2023-03-04T15:54:00Z",
+      "new_end": "2023-03-05T11:00:00Z",
+      "status": 0,
+      "reviewer": null,
+      "deleted": false
+    }
+  },
+  {
+    "model": "NEMO.adjustmentrequest",
+    "pk": 2,
+    "fields": {
+      "creation_time": "2023-01-22T17:35:44.232Z",
+      "creator": 3,
+      "last_updated": "2023-01-22T17:37:39.366Z",
+      "last_updated_by": 1,
+      "item_type": 38,
+      "item_id": 4,
+      "description": "I forgot to logoff the tool",
+      "manager_note": "Please enter this in the billing system with the note \"Approved by Captain NEMO\"",
+      "new_start": "2023-01-20T23:54:00Z",
+      "new_end": "2023-01-21T18:00:00Z",
+      "status": 1,
+      "reviewer": 1,
+      "deleted": false
+    }
+  },
+  {
+    "model": "NEMO.adjustmentrequest",
+    "pk": 3,
+    "fields": {
+      "creation_time": "2023-02-13T17:36:20.938Z",
+      "creator": 3,
+      "last_updated": "2023-02-13T17:39:03.473Z",
+      "last_updated_by": 1,
+      "item_type": 38,
+      "item_id": 3,
+      "description": "I forgot to logoff the tool",
+      "manager_note": "This is the second time in just a few weeks, so I cannot approve it.",
+      "new_start": "2023-02-10T10:54:00Z",
+      "new_end": "2023-02-11T09:00:00Z",
+      "status": 2,
+      "reviewer": 1,
+      "deleted": false
+    }
+  },
+  {
     "model": "NEMO.alert",
     "pk": 1,
     "fields": {
@@ -6791,6 +6910,7 @@
     "fields": {
       "user": 1,
       "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "buddyrequest",
       "content_type": [
         "NEMO",
         "buddyrequest"
@@ -6804,6 +6924,7 @@
     "fields": {
       "user": 2,
       "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "buddyrequest",
       "content_type": [
         "NEMO",
         "buddyrequest"
@@ -6817,6 +6938,7 @@
     "fields": {
       "user": 2,
       "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "temporaryphysicalaccessrequest",
       "content_type": [
         "NEMO",
         "temporaryphysicalaccessrequest"
@@ -6830,9 +6952,40 @@
     "fields": {
       "user": 1,
       "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "temporaryphysicalaccessrequest",
       "content_type": [
         "NEMO",
         "temporaryphysicalaccessrequest"
+      ],
+      "object_id": 1
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 5,
+    "fields": {
+      "user": 1,
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "adjustmentrequest",
+      "content_type": [
+        "NEMO",
+        "adjustmentrequest"
+      ],
+      "object_id": 1
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 7,
+    "fields": {
+      "user": [
+        "ned"
+      ],
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "adjustmentrequestmessage",
+      "content_type": [
+        "NEMO",
+        "requestmessage"
       ],
       "object_id": 1
     }
@@ -7051,6 +7204,20 @@
     "pk": "user_allow_document_upload",
     "fields": {
       "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "adjustment_requests_enabled",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "adjustment_requests_time_limit_interval",
+    "fields": {
+      "value": "0"
     }
   },
   {
