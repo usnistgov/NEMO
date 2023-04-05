@@ -63,7 +63,7 @@
                             {% for message in a_request.replies %}
                                 <div>
                                     <div class="adjustment-request-message">
-                                        {% if message.id in reply_notifications %}<span class="label label-success">New reply</span>{% endif %}
+                                        {% if message.id in reply_notifications %}<span class="label label-success request-item-message-new-reply">New reply</span>{% endif %}
                                         {{ message.content|linebreaksbr }}
                                         <div class="request-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
                                     </div>

@@ -804,6 +804,12 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	font-size: x-small;
 }
 
+.request-item-message-new-reply
+{
+	position: absolute;
+	top: 5px;
+}
+
 .buddy-list-item-reply-buttons
 {
 	margin: 15px 0;
