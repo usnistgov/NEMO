@@ -52,6 +52,7 @@ from NEMO.views.customization import (
 	CalendarCustomization,
 	EmailsCustomization,
 	InterlockCustomization,
+	RemoteWorkCustomization,
 	get_media_file_contents,
 )
 from NEMO.widgets.configuration_editor import ConfigurationEditor
@@ -341,15 +342,24 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 		else:
 			return interlock_error("Enable", user)
 
+	# Figure out if the tool usage is part of remote work
+	# 1: Staff charge means it's always remote work
+	# 2: Always remote if operator is different from the user
+	# 3: Unless customization is set to ask explicitly
+	remote_work = (user != operator and operator.is_staff)
+	if RemoteWorkCustomization.get_bool("remote_work_ask_explicitly"):
+		remote_work = remote_work and bool(request.POST.get("remote_work", False))
 	# Start staff charge before tool usage
 	if staff_charge:
+		# Staff charge means always a remote
+		remote_work = True
 		new_staff_charge = StaffCharge()
 		new_staff_charge.staff_member = request.user
 		new_staff_charge.customer = user
 		new_staff_charge.project = project
 		new_staff_charge.save()
 		# If the tool requires area access, start charging area access time
-		if tool.requires_area_access:
+		if tool.requires_area_access and RemoteWorkCustomization.get_bool("remote_work_start_area_access_automatically"):
 			area_access = AreaAccessRecord()
 			area_access.area = tool.requires_area_access
 			area_access.staff_charge = new_staff_charge
@@ -363,6 +373,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	new_usage_event.user = user
 	new_usage_event.project = project
 	new_usage_event.tool = tool
+	new_usage_event.remote_work = remote_work
 	new_usage_event.save()
 
 	return response

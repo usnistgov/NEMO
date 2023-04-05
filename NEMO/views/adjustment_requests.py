@@ -3,7 +3,6 @@ from typing import List
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import F
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
@@ -316,9 +315,8 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
     if user.is_staff and UserRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled"):
         # Add all remote charges for staff to request for adjustment
         items.extend(
-            UsageEvent.objects.filter(operator=user, end__isnull=False)
+            UsageEvent.objects.filter(remote_work=True, operator=user, end__isnull=False)
             .filter(**end_filter)
-            .exclude(user=F("operator"))
             .order_by("-end")[:item_number]
         )
         items.extend(

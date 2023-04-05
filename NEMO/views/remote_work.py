@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.db.models import F, Q
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -18,7 +18,7 @@ from NEMO.utilities import (
 	month_list,
 )
 from NEMO.views.area_access import load_areas_for_use_in_template
-from NEMO.views.customization import ApplicationCustomization
+from NEMO.views.customization import RemoteWorkCustomization
 
 
 @staff_member_required
@@ -43,7 +43,7 @@ def remote_work(request):
 		project = get_object_or_404(Project, id=project)
 	else:
 		project = None
-	usage_events = UsageEvent.objects.filter(operator__is_staff=True).exclude(operator=F("user"))
+	usage_events = UsageEvent.objects.filter(remote_work=True)
 	s_charges = StaffCharge.objects.filter()
 	if start_date:
 		usage_events = usage_events.filter(start__gte=start_date)
@@ -134,7 +134,7 @@ def remote_work(request):
 		"month_list": month_list(),
 		"selected_staff": operator.id if operator else "all staff",
 		"selected_project": project.id if project else "all projects",
-		"remote_work_validation": ApplicationCustomization.get_bool("remote_work_validation"),
+		"remote_work_validation": RemoteWorkCustomization.get_bool("remote_work_validation"),
 	}
 	return render(request, "remote_work/remote_work.html", dictionary)
 
@@ -178,7 +178,7 @@ def staff_charges(request):
 					}
 				)
 			for tool_charge in UsageEvent.objects.filter(
-					operator=staff_member, user=staff_charge.customer, start__gt=staff_charge.start
+				operator=staff_member, user=staff_charge.customer, remote_work=True, start__gt=staff_charge.start
 			):
 				charges.append(
 					{

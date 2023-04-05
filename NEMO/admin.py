@@ -615,8 +615,8 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 
 @register(UsageEvent)
 class UsageEventAdmin(admin.ModelAdmin):
-	list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration")
-	list_filter = ("start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
+	list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work")
+	list_filter = ("remote_work", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "start"
 
 

@@ -1831,6 +1831,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	start = models.DateTimeField(default=timezone.now)
 	end = models.DateTimeField(null=True, blank=True)
 	validated = models.BooleanField(default=False)
+	remote_work = models.BooleanField(default=False)
 	run_data = models.TextField(null=True, blank=True)
 
 	def duration(self):

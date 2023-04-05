@@ -151,7 +151,7 @@ class BillableItemMixin:
 				return BillableItemMixin.REMOTE_WORK
 			return BillableItemMixin.AREA_ACCESS
 		elif isinstance(self, UsageEvent):
-			if self.user != self.operator:
+			if self.remote_work:
 				return BillableItemMixin.REMOTE_WORK
 			return BillableItemMixin.TOOL_USAGE
 		else:

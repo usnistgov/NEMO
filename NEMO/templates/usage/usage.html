@@ -126,7 +126,7 @@
                             {% endif %}
                             {% if adj_staff_charge == "enabled" %}
                                 {% if not adjustment_time_limit or adjustment_time_limit <= u.end %}
-                                    {% if u.user != u.operator and u.operator == user and user.is_staff %}
+                                    {% if u.operator == user and user.is_staff and u.remote_work %}
                                         {% include "usage/adjustment_request_button.html" with charge=u %}
                                     {% endif %}
                                 {% endif %}

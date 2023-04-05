@@ -150,7 +150,6 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_in": "",
 		"self_log_out": "",
 		"calendar_login_logout": "",
-		"remote_work_validation": "",
 	}
 
 	def save(self, request, element=None):
@@ -383,6 +382,15 @@ class SafetyCustomization(CustomizationBase):
 		"safety_show_safety_data_sheets": "enabled",
 		"safety_data_sheets_keywords_default": "",
 		"safety_items_expand_categories": "",
+	}
+
+
+@customization(key="remote_work", title="Remote work")
+class RemoteWorkCustomization(CustomizationBase):
+	variables = {
+		"remote_work_validation": "",
+		"remote_work_start_area_access_automatically": "enabled",
+		"remote_work_ask_explicitly": "",
 	}
 
 

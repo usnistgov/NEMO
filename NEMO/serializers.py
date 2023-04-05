@@ -12,6 +12,9 @@ from NEMO.models import (
 	AccountType,
 	Area,
 	AreaAccessRecord,
+	Consumable,
+	ConsumableCategory,
+	ConsumableWithdraw,
 	Project,
 	ProjectDiscipline,
 	Qualification,
@@ -230,6 +233,33 @@ class ResourceSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 			"fully_dependent_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
 			"partially_dependent_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
 			"dependent_areas": ("NEMO.serializers.AreaSerializer", {"many": True}),
+		}
+
+
+class ConsumableCategorySerializer(FlexFieldsSerializerMixin, ModelSerializer):
+	class Meta:
+		model = ConsumableCategory
+		fields = "__all__"
+
+
+class ConsumableSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+	class Meta:
+		model = Consumable
+		fields = "__all__"
+		expandable_fields = {
+			"category": "NEMO.serializers.ConsumableCategorySerializer",
+		}
+
+
+class ConsumableWithdrawSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+	class Meta:
+		model = ConsumableWithdraw
+		fields = "__all__"
+		expandable_fields = {
+			"customer": "NEMO.serializers.UserSerializer",
+			"merchant": "NEMO.serializers.UserSerializer",
+			"consumable": "NEMO.serializers.ConsumableSerializer",
+			"project": "NEMO.serializers.ProjectSerializer",
 		}
 
 
