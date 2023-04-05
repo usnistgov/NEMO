@@ -11,6 +11,9 @@ from NEMO.models import (
 	AccountType,
 	Area,
 	AreaAccessRecord,
+	Consumable,
+	ConsumableCategory,
+	ConsumableWithdraw,
 	Project,
 	ProjectDiscipline,
 	Qualification,
@@ -30,6 +33,9 @@ from NEMO.serializers import (
 	AreaAccessRecordSerializer,
 	AreaSerializer,
 	BillableItemSerializer,
+	ConsumableCategorySerializer,
+	ConsumableSerializer,
+	ConsumableWithdrawSerializer,
 	ContentTypeSerializer,
 	GroupSerializer,
 	PermissionSerializer,
@@ -211,6 +217,7 @@ class ReservationViewSet(ModelViewSet):
 		"area_id": ["exact", "in", "isnull"],
 		"cancelled": ["exact"],
 		"missed": ["exact"],
+		"validated": ["exact"],
 		"question_data": ["isempty"],
 	}
 
@@ -227,6 +234,7 @@ class UsageEventViewSet(ModelViewSet):
 		"user_id": ["exact", "in"],
 		"operator_id": ["exact", "in"],
 		"tool_id": ["exact", "in"],
+		"validated": ["exact"],
 	}
 
 
@@ -242,6 +250,7 @@ class AreaAccessRecordViewSet(ModelViewSet):
 		"customer_id": ["exact", "in"],
 		"area_id": ["exact", "in"],
 		"staff_charge_id": ["exact", "isnull", "in"],
+		"validated": ["exact"],
 	}
 
 
@@ -313,6 +322,45 @@ class TrainingSessionViewSet(ModelViewSet):
 		"type": ["exact", "in"],
 		"date": ["month", "year", "day", "gte", "gt", "lte", "lt"],
 		"qualified": ["exact"],
+		"validated": ["exact"],
+	}
+
+
+class ConsumableCategoryViewSet(ModelViewSet):
+	filename = "consumable_categories"
+	queryset = ConsumableCategory.objects.all()
+	serializer_class = ConsumableCategorySerializer
+	filterset_fields = {"id": ["exact", "in"], "name": ["iexact"]}
+
+
+class ConsumableViewSet(ModelViewSet):
+	filename = "consumables"
+	queryset = Consumable.objects.all()
+	serializer_class = ConsumableSerializer
+	filterset_fields = {
+		"id": ["exact", "in"],
+		"category_id": ["exact", "in"],
+		"quantity": ["exact", "gte", "lte", "gt", "lt"],
+		"reminder_threshold": ["exact", "gte", "lte", "gt", "lt"],
+		"visible": ["exact"],
+		"reusable": ["exact"],
+		"reminder_threshold_reached": ["exact"],
+	}
+
+
+class ConsumableWithdrawViewSet(ModelViewSet):
+	filename = "consumable_withdrawals"
+	queryset = ConsumableWithdraw.objects.all()
+	serializer_class = ConsumableWithdrawSerializer
+	filterset_fields = {
+		"id": ["exact", "in"],
+		"customer_id": ["exact", "in"],
+		"merchant_id": ["exact", "in"],
+		"consumable_id": ["exact", "in"],
+		"project_id": ["exact", "in"],
+		"quantity": ["exact", "gte", "lte", "gt", "lt"],
+		"date": ["month", "year", "day", "gte", "gt", "lte", "lt"],
+		"validated": ["exact"],
 	}
 
 
