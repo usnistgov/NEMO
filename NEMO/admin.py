@@ -1430,7 +1430,7 @@ class StaffAvailabilityCategoryAdmin(admin.ModelAdmin):
 
 @register(StaffAvailability)
 class StaffAvailabilityAdmin(admin.ModelAdmin):
-	list_display = ("staff_member", "category", "start_time", "end_time", *StaffAvailability.DAYS)
+	list_display = ("staff_member", "category", "visible", "start_time", "end_time", *StaffAvailability.DAYS)
 	list_filter = ("category", *StaffAvailability.DAYS)
 
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):
