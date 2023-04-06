@@ -105,11 +105,7 @@ from NEMO.models import (
 )
 from NEMO.utilities import admin_get_item, format_daterange
 from NEMO.views.customization import ProjectsAccountsCustomization
-from NEMO.widgets.dynamic_form import (
-	DynamicForm,
-	PostUsageFloatFieldQuestion,
-	PostUsageNumberFieldQuestion,
-)
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageFloatFieldQuestion, PostUsageNumberFieldQuestion
 
 
 # Formset to require at least one inline form
@@ -189,6 +185,7 @@ class ToolAdmin(admin.ModelAdmin):
 		"operational_display",
 		"problematic",
 		"is_configurable",
+		"has_post_usage_questions",
 		"id",
 	)
 	filter_horizontal = ("_backup_owners", "_superusers")
@@ -257,6 +254,10 @@ class ToolAdmin(admin.ModelAdmin):
 		),
 		("Dependencies", {"fields": ("required_resources", "nonrequired_resources")}),
 	)
+
+	@admin.display(description="Questions", ordering="post_usage_questions", boolean=True)
+	def has_post_usage_questions(self, obj: Tool):
+		return True if obj.post_usage_questions else False
 
 	def _post_usage_preview(self, obj):
 		if obj.id:

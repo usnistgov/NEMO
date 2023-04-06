@@ -144,7 +144,7 @@ div.questions_preview:empty
     cursor: pointer;
 }
 
-.questions_preview .form-group .radio input[type="radio"], .questions_preview .form-group .radio-inline input[type="radio"], .post_usage_preview .form-group .checkbox input[type="checkbox"], .post_usage_preview .form-group .checkbox-inline input[type="checkbox"]
+.questions_preview .form-group .radio input[type="radio"], .questions_preview .form-group .radio-inline input[type="radio"], .questions_preview .form-group .checkbox input[type="checkbox"], .questions_preview .form-group .checkbox-inline input[type="checkbox"]
 {
     position: absolute;
     margin-top: 4px \9;

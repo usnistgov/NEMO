@@ -89,6 +89,7 @@ class BasicDisplayTable(object):
 	"""Utility table to make adding headers and rows easier, and export to csv"""
 
 	def __init__(self):
+		self.list_delimiter = ", "
 		# headers is a list of tuples (key, display)
 		self.headers: List[Tuple[str, str]] = []
 		# rows is a list of dictionaries. Each dictionary is a row, with keys corresponding to header keys
@@ -118,6 +119,8 @@ class BasicDisplayTable(object):
 				return format_datetime(value, "SHORT_DATETIME_FORMAT")
 			elif isinstance(value, date):
 				return format_datetime(value, "SHORT_DATE_FORMAT")
+			elif isinstance(value, list):
+				return self.list_delimiter.join(value)
 		return value
 
 	def to_csv(self) -> HttpResponse:

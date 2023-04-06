@@ -79,7 +79,7 @@
 			{% for row in usage_data_table.flat_rows %}
 				<tr>
 					{% for item in row %}
-						<td>{{ item }}</td>
+						<td>{% if item|class_name == "list" %}{{ item|join:", " }}{% else %}{{ item }}{% endif %}</td>
 					{% endfor %}
 				</tr>
 			{% endfor %}

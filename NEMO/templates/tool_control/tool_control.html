@@ -188,7 +188,7 @@
 		function disable_tool(url)
 		{
 			$("#stop").prop("disabled", true);
-			let contents = serialize("#tool_control");
+			let contents = $("#tool_control").serialize();
 			let enable_stop_button = function() { $("#stop").prop("disabled", false); };
 			try_post_catch_interlock_error(url, contents, [refresh_tool_status, ajax_success_callback], enable_stop_button);
 		}

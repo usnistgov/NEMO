@@ -126,6 +126,45 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 		return result
 
 
+class PostUsageCheckboxQuestion(PostUsageQuestion):
+	question_type = "Question of type checkbox"
+
+	def validate(self):
+		super().validate()
+		self.validate_property_exists("choices")
+
+	def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+		title = self.title_html or self.title
+		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
+		result += f'<input aria-label="hidden field used for required answer" id="required_{ self.form_name }" type="checkbox" value="" style="display: none" { "required" if self.required else "" }/>'
+		for choice in self.choices:
+			result += '<div class="checkbox">'
+			required = f"""onclick="checkbox_required('{self.form_name}')" """ if self.required else ""
+			is_default_choice = "checked" if self.default_value and self.default_value == choice else ""
+			result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
+			result += "</div>"
+		result += "</div>"
+		return result
+
+	def render_script(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+		result = "<script>"
+		result += "function checkbox_required(form_name) {"
+		result += "if ($('input[name=' + form_name + ']:checkbox:checked').length > 0) {"
+		result += "$('#required_' + form_name).prop('checked', true).change();"
+		result += "} else {"
+		result += "$('#required_'+ form_name).prop('checked', false).change();"
+		result += "} }"
+		result += "</script>"
+		return result
+
+	def extract(self, request, index=None) -> Dict:
+		answered_question = copy(self.properties)
+		user_input = request.POST.getlist(f"{self.form_name}_{index}" if index else self.form_name)
+		if user_input:
+			answered_question["user_input"] = user_input
+		return answered_question
+
+
 class PostUsageDropdownQuestion(PostUsageQuestion):
 	question_type = "Question of type dropdown"
 
@@ -554,6 +593,7 @@ question_types : Dict[str, Type[PostUsageQuestion]] = {
 	"textbox": PostUsageTextFieldQuestion,
 	"textarea": PostUsageTextAreaFieldQuestion,
 	"radio": PostUsageRadioQuestion,
+	"checkbox": PostUsageCheckboxQuestion,
 	"dropdown": PostUsageDropdownQuestion,
 	"group": PostUsageGroupQuestion,
 }
