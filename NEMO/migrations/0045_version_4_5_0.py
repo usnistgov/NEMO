@@ -3,6 +3,7 @@
 import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
+from django.db.models import F
 
 from NEMO.migrations_utils import create_news_for_version
 
@@ -30,6 +31,14 @@ class Migration(migrations.Migration):
             request_message.content_type = request_type
             request_message.object_id = request_message.buddy_request.id
             request_message.save(update_fields=["content_type", "object_id"])
+
+    def set_remote_work_flag(apps, schema_editor):
+        UsageEvent = apps.get_model("NEMO", "UsageEvent")
+        # go through all previous tool usage and set them to be remote work if operator is different from user
+        for tool_usage in UsageEvent.objects.exclude(user=F("operator")):
+            if tool_usage.user != tool_usage.operator:
+                tool_usage.remote_work = True
+                tool_usage.save(update_fields=["remote_work"])
 
     operations = [
         migrations.AddField(
@@ -208,5 +217,11 @@ class Migration(migrations.Migration):
             name='validated',
             field=models.BooleanField(default=False),
         ),
+        migrations.AddField(
+            model_name='usageevent',
+            name='remote_work',
+            field=models.BooleanField(default=False),
+        ),
+        migrations.RunPython(set_remote_work_flag),
     ]
 
