@@ -1,4 +1,5 @@
 from django.forms import Widget
+from django.template import Context, Template
 from django.urls import reverse
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -34,7 +35,7 @@ class ConfigurationEditor(Widget):
 				result += ">" + escape(option) + "</option>"
 			result += "</select>"
 		else:
-			result += escape(current_setting)
+			result += self.display_setting(current_setting)
 		result += "</label></p>"
 		return result
 
@@ -52,6 +53,16 @@ class ConfigurationEditor(Widget):
 					result += ">" + escape(option) + "</option>"
 				result += "</select></label>"
 			else:
-				result += config.configurable_item_name + " #" + str(setting_index + 1) + ": " + escape(current_setting)
+				result += config.configurable_item_name + " #" + str(setting_index + 1) + ": " + self.display_setting(current_setting)
 		result += "</ul></p>"
 		return result
+
+	def display_setting(self, current_setting):
+		from NEMO.views.customization import ToolCustomization
+		template = ToolCustomization.get("tool_control_configuration_setting_template")
+		contents = "{{ current_setting }}"
+		try:
+			contents = Template(template).render(Context({"current_setting": escape(current_setting)}))
+		except:
+			pass
+		return contents

@@ -23,6 +23,19 @@
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool control</h3>
+        <div class="form-group {% if errors.tool_control_configuration_setting_template %}has-error{% endif %}">
+            <label class="control-label col-md-3" for="tool_control_configuration_setting_template">Configuration template</label>
+            <div class="col-md-7">
+                <textarea oninput="auto_size_textarea(this);" id="tool_control_configuration_setting_template" name="tool_control_configuration_setting_template" class="form-control">{% if errors.tool_control_configuration_setting_template %}{{ errors.tool_control_configuration_setting_template.value }}{% else %}{{ tool_control_configuration_setting_template }}{% endif %}</textarea>
+            </div>
+            <div class="col-md-offset-3 col-md-8 help-block light-grey">
+                {% if errors.tool_control_configuration_setting_template %}
+                    {{ errors.tool_control_configuration_setting_template.error }}
+                {% else %}
+                    The django template used for rendering current configuration setting. The context variable <b>current_setting</b> is provided.
+                {% endif %}
+            </div>
+        </div>
         <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">Usage data history</label>
             <div class="col-sm-8 col-md-9">
@@ -92,4 +105,12 @@
             {% button type="save" value="Save settings" %}
         </div>
     </div>
+    <script type="text/javascript">
+        $("#tool-tab-link").click(function() {setTimeout(on_tool_tab_show, 50)});
+        function on_tool_tab_show()
+        {
+            auto_size_textarea(document.getElementById('tool_control_configuration_setting_template'))
+        }
+        on_tool_tab_show();
+    </script>
 </form>

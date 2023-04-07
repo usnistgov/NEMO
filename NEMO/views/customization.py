@@ -355,6 +355,7 @@ class ToolCustomization(CustomizationBase):
 		"tool_phone_number_required": "enabled",
 		"tool_location_required": "enabled",
 		"tool_control_hide_data_history_users": "",
+		"tool_control_configuration_setting_template": "{{ current_setting }}",
 		"tool_qualification_reminder_days": "",
 		"tool_qualification_expiration_days": "",
 		"tool_qualification_expiration_never_used_days": "",
@@ -371,6 +372,11 @@ class ToolCustomization(CustomizationBase):
 			recipients = tuple([e for e in value.split(",") if e])
 			for email in recipients:
 				validate_email(email)
+		if name == "tool_control_configuration_setting_template" and value:
+			try:
+				Template(value).render(Context({"current_setting": "setting"}))
+			except Exception as e:
+				raise ValidationError(str(e))
 
 
 @customization(key="safety", title="Safety")
