@@ -190,7 +190,7 @@ class ToolAdmin(admin.ModelAdmin):
 	)
 	filter_horizontal = ("_backup_owners", "_superusers")
 	search_fields = ("name", "_description", "_serial")
-	list_filter = ("visible", "_operational", "_category", "_location")
+	list_filter = ("visible", "_operational", "_category", "_location", ("_requires_area_access", admin.RelatedOnlyFieldListFilter))
 	readonly_fields = ("_post_usage_preview",)
 	actions = [duplicate_tool_configuration]
 	form = ToolAdminForm
