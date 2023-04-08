@@ -4,7 +4,9 @@ from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from drf_excel.mixins import XLSXFileMixin
 from rest_framework import status, viewsets
+from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
+from rest_framework.serializers import ListSerializer
 
 from NEMO.models import (
 	Account,
@@ -65,12 +67,26 @@ from NEMO.views.api_billing import (
 )
 
 
+class SingleInstanceHTMLFormBrowsableAPIRenderer(BrowsableAPIRenderer):
+	"""
+	This implementation of the BrowsableAPIRenderer prevents it from throwing
+	errors while a list of data is sent to bulk create items
+	"""
+
+	def render_form_for_serializer(self, serializer):
+		if isinstance(serializer, ListSerializer):
+			return "<p>Form rendering is not available when creating more than one item at a time</p>"
+		else:
+			return super().render_form_for_serializer(serializer)
+
+
 class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
 	"""
 	An extension of the model view set, which accepts a json list of objects
 	to create multiple instances at once.
 	Also allows XLSX retrieval
 	"""
+
 	def create(self, request, *args, **kwargs):
 		many = isinstance(request.data, list)
 		serializer = self.get_serializer(data=request.data, many=many)
@@ -78,6 +94,16 @@ class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
 		self.perform_create(serializer)
 		headers = self.get_success_headers(serializer.data)
 		return Response(serializer.data, headers=headers)
+
+	def get_renderers(self):
+		# we need to disable the HTML form renderer when using Serializer with many=True
+		new_renderers = []
+		for renderer in self.renderer_classes:
+			if isinstance(renderer(), BrowsableAPIRenderer):
+				new_renderers.append(SingleInstanceHTMLFormBrowsableAPIRenderer())
+			else:
+				new_renderers.append(renderer())
+		return new_renderers
 
 	def get_filename(self, *args, **kwargs):
 		return f"{self.filename}-{export_format_datetime()}.xlsx"
@@ -414,7 +440,7 @@ class BillingViewSet(XLSXFileMixin, viewsets.GenericViewSet):
 		return Response(serializer.data)
 
 	def check_permissions(self, request):
-		if not request or not request.user.has_perm('NEMO.use_billing_api'):
+		if not request or not request.user.has_perm("NEMO.use_billing_api"):
 			self.permission_denied(request)
 
 	def get_queryset(self):
