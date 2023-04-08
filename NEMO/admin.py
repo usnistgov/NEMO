@@ -835,6 +835,7 @@ class UserTypeAdmin(admin.ModelAdmin):
 @register(UserPreferences)
 class UserPreferencesAdmin(admin.ModelAdmin):
 	list_display = ("user",)
+	search_fields = ["user_preferences__user__first_name", "user_preferences__user__last_name", "user_preferences__user__username"]
 	form = UserPreferencesForm
 
 
