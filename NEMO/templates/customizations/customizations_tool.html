@@ -28,7 +28,7 @@
             <div class="col-md-7">
                 <textarea oninput="auto_size_textarea(this);" id="tool_control_configuration_setting_template" name="tool_control_configuration_setting_template" class="form-control">{% if errors.tool_control_configuration_setting_template %}{{ errors.tool_control_configuration_setting_template.value }}{% else %}{{ tool_control_configuration_setting_template }}{% endif %}</textarea>
             </div>
-            <div class="col-md-offset-3 col-md-8 help-block light-grey">
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 {% if errors.tool_control_configuration_setting_template %}
                     {{ errors.tool_control_configuration_setting_template.error }}
                 {% else %}
