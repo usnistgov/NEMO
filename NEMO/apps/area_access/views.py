@@ -202,13 +202,14 @@ def login_to_area(request, door_id):
 			log_out_user(user)
 
 		# All policy checks passed so open the door for the user.
-		if not door.interlock.unlock():
-			if bypass_interlock and interlock_bypass_allowed(user):
-				pass
-			else:
-				return interlock_error("Login", user)
+		if door.interlock:
+			if not door.interlock.unlock():
+				if bypass_interlock and interlock_bypass_allowed(user):
+					pass
+				else:
+					return interlock_error("Login", user)
 
-		delay_lock_door(door.id)
+			delay_lock_door(door.id)
 
 		log_in_user_to_area(door.area, user, project)
 
@@ -280,10 +281,12 @@ def open_door(request, door_id):
 			details="The user was permitted to enter this area, and already had an active area access record for this area.",
 		)
 		log.save()
-		# If we cannot open the door, display message and let them try again or exit since there is nothing else to do (user is already logged in).
-		if not door.interlock.unlock():
-			return interlock_error(bypass_allowed=False)
-		delay_lock_door(door.id)
+		# If we cannot open the door, display message and let them try again,
+		# or exit since there is nothing else to do (user is already logged in).
+		if door.interlock:
+			if not door.interlock.unlock():
+				return interlock_error(bypass_allowed=False)
+			delay_lock_door(door.id)
 		return render(request, "area_access/door_is_open.html")
 	return render(request, "area_access/not_logged_in.html", {"area": door.area})
 

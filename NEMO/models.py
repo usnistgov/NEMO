@@ -630,7 +630,7 @@ class User(BaseModel, PermissionsMixin):
 	def in_area(self) -> bool:
 		return AreaAccessRecord.objects.filter(customer=self, staff_charge=None, end=None).exists()
 
-	def area_access_record(self):
+	def area_access_record(self) -> Optional[AreaAccessRecord]:
 		try:
 			return AreaAccessRecord.objects.get(customer=self, staff_charge=None, end=None)
 		except AreaAccessRecord.DoesNotExist:
@@ -2465,7 +2465,7 @@ def calculate_duration(start, end, unfinished_reason):
 class Door(BaseModel):
 	name = models.CharField(max_length=100)
 	area = TreeForeignKey(Area, related_name='doors', on_delete=models.PROTECT)
-	interlock = models.OneToOneField(Interlock, on_delete=models.PROTECT)
+	interlock = models.OneToOneField(Interlock, null=True, blank=True, on_delete=models.PROTECT)
 
 	def __str__(self):
 		return str(self.name)
