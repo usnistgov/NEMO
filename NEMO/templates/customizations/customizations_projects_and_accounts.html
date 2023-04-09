@@ -34,6 +34,17 @@
                 Check this box to collapse account projects by default.
             </div>
         </div>
+		<div class="form-group">
+			<label class="control-label col-md-3" for="project_allow_pi_manage_users">Project PIs</label>
+            <div class="col-md-8">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="project_allow_pi_manage_users" name="project_allow_pi_manage_users" {% if project_allow_pi_manage_users %}checked{% endif %} value="enabled"> Allow project PIs to manage users</label>
+                </div>
+            </div>
+            <div class="col-md-offset-3 col-md-8 help-block light-grey">
+                Check this box to allow project PIs to add/remove users to/from projects.
+            </div>
+        </div>
         <div class="form-group {% if errors.project_application_identifier_name %}has-error{% endif %}">
             <label class="control-label col-md-3" for="project_application_identifier_name">Project identifier name</label>
             <div class="col-md-8">
@@ -45,17 +56,6 @@
                 {% else %}
                     The name of the project identifier property (Application, ID, Reference, PO etc.).
                 {% endif %}
-            </div>
-        </div>
-		<div class="form-group">
-			<label class="control-label col-md-3" for="project_allow_pi_manage_users">Project PIs</label>
-            <div class="col-md-8">
-                <div class="checkbox">
-                    <label><input type="checkbox" id="project_allow_pi_manage_users" name="project_allow_pi_manage_users" {% if project_allow_pi_manage_users %}checked{% endif %} value="enabled"> Allow project PIs to manage users</label>
-                </div>
-            </div>
-            <div class="col-md-offset-3 col-md-8 help-block light-grey">
-                Check this box to allow project PIs to add/remove users to/from projects.
             </div>
         </div>
         <div class="form-group {% if errors.project_selection_template %}has-error{% endif %}">
