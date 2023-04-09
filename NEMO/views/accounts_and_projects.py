@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
@@ -125,11 +125,12 @@ def create_account(request):
 	return redirect("account", account.id)
 
 
-@accounting_or_user_office_or_manager_required
 @require_POST
 def remove_user_from_project(request):
 	user = get_object_or_404(User, id=request.POST["user_id"])
 	project = get_object_or_404(Project, id=request.POST["project_id"])
+	if not is_user_allowed(request.user, project):
+		return HttpResponseForbidden()
 	if project.user_set.filter(id=user.id).exists():
 		history = MembershipHistory()
 		history.action = MembershipHistory.Action.REMOVED
@@ -142,11 +143,12 @@ def remove_user_from_project(request):
 	return render(request, "accounts_and_projects/users_for_project.html", dictionary)
 
 
-@accounting_or_user_office_or_manager_required
 @require_POST
 def add_user_to_project(request):
 	user = get_object_or_404(User, id=request.POST["user_id"])
 	project = get_object_or_404(Project, id=request.POST["project_id"])
+	if not is_user_allowed(request.user, project):
+		return HttpResponseForbidden()
 	if user not in project.user_set.all():
 		history = MembershipHistory()
 		history.action = MembershipHistory.Action.ADDED
@@ -191,5 +193,16 @@ def add_document_to_project(request, project_id:int):
 @require_GET
 def projects(request):
 	user: User = request.user
-	dictionary = {"managed_projects": user.managed_projects.all()}
+	dictionary = {"managed_projects": user.managed_projects.all(), "users": User.objects.all()}
 	return render(request, "accounts_and_projects/projects.html", dictionary)
+
+
+def is_user_allowed(user: User, project):
+	is_active = user.is_active
+	accounting_or_user_office_or_manager = user.is_accounting_officer or user.is_user_office or user.is_facility_manager or user.is_superuser
+	allow_pi_manage = ProjectsAccountsCustomization.get_bool("project_allow_pi_manage_users")
+	if not allow_pi_manage:
+		return is_active and accounting_or_user_office_or_manager
+	else:
+		project_manager = user in project.manager_set.all()
+		return is_active and (project_manager or accounting_or_user_office_or_manager)
