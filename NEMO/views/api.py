@@ -2,6 +2,7 @@ from typing import List
 
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.utils.safestring import mark_safe
 from drf_excel.mixins import XLSXFileMixin
 from rest_framework import status, viewsets
 from rest_framework.renderers import BrowsableAPIRenderer
@@ -75,7 +76,7 @@ class SingleInstanceHTMLFormBrowsableAPIRenderer(BrowsableAPIRenderer):
 
 	def render_form_for_serializer(self, serializer):
 		if isinstance(serializer, ListSerializer):
-			return "<p>Form rendering is not available when creating more than one item at a time</p>"
+			return mark_safe("<p>Form rendering is not available when creating more than one item at a time</p>")
 		else:
 			return super().render_form_for_serializer(serializer)
 
