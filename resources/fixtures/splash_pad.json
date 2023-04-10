@@ -6150,6 +6150,36 @@
     }
   },
   {
+    "model": "NEMO.toolqualificationgroup",
+    "pk": 1,
+    "fields": {
+      "name": "PDMS Group",
+      "tools": [
+        484,
+        488,
+        482,
+        483,
+        485,
+        481
+      ]
+    }
+  },
+  {
+    "model": "NEMO.toolqualificationgroup",
+    "pk": 2,
+    "fields": {
+      "name": "Spinner Group",
+      "tools": [
+        883,
+        881,
+        882,
+        885,
+        887,
+        888
+      ]
+    }
+  },
+  {
     "model": "NEMO.configuration",
     "pk": 1,
     "fields": {
