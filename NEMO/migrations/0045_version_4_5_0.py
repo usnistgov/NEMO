@@ -223,5 +223,21 @@ class Migration(migrations.Migration):
             field=models.BooleanField(default=False),
         ),
         migrations.RunPython(set_remote_work_flag),
+        migrations.AlterField(
+            model_name='door',
+            name='interlock',
+            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='NEMO.interlock'),
+        ),
+        migrations.CreateModel(
+            name='ToolQualificationGroup',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(help_text='The name of this tool group', max_length=200, unique=True)),
+                ('tools', models.ManyToManyField(to='NEMO.Tool')),
+            ],
+            options={
+                'abstract': False,
+            },
+        ),
     ]
 
