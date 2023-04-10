@@ -1343,6 +1343,14 @@ def auto_delete_file_on_tool_document_change(sender, instance: ToolDocuments, **
 			os.remove(old_file.path)
 
 
+class ToolQualificationGroup(BaseModel):
+	name = models.CharField(max_length=200, unique=True, help_text="The name of this tool group")
+	tools = models.ManyToManyField(Tool, blank=False)
+
+	def __str__(self):
+		return self.name
+
+
 class Qualification(BaseModel):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)

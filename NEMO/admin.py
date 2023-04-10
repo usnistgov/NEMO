@@ -92,6 +92,7 @@ from NEMO.models import (
 	TemporaryPhysicalAccessRequest,
 	Tool,
 	ToolDocuments,
+	ToolQualificationGroup,
 	ToolUsageCounter,
 	TrainingSession,
 	UsageEvent,
@@ -288,6 +289,16 @@ class ToolAdmin(admin.ModelAdmin):
 				obj.required_resource_set.set(form.cleaned_data["required_resources"])
 			if "nonrequired_resources" in form.changed_data:
 				obj.nonrequired_resource_set.set(form.cleaned_data["nonrequired_resources"])
+
+
+@register(ToolQualificationGroup)
+class ToolQualificationGroup(admin.ModelAdmin):
+	list_display = ["name", "get_tools"]
+	filter_horizontal = ["tools"]
+
+	@admin.display(description="Tools", ordering="tools")
+	def get_tools(self, obj: ToolQualificationGroup):
+		return mark_safe("<br>".join([str(tool) for tool in obj.tools.all()]))
 
 
 class AreaAdminForm(MPTTAdminForm):

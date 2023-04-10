@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
+from django.db.models import Count
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
@@ -11,7 +12,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_or_tool_superuser_required
 from NEMO.exceptions import ProjectChargeException
-from NEMO.models import MembershipHistory, Project, Tool, TrainingSession, User
+from NEMO.models import MembershipHistory, Project, Tool, ToolQualificationGroup, TrainingSession, User
 from NEMO.policy import policy_class as policy
 from NEMO.views.users import get_identity_service
 
@@ -25,9 +26,12 @@ def training(request):
 	user: User = request.user
 	users = User.objects.filter(is_active=True).exclude(id=user.id)
 	tools = Tool.objects.filter(visible=True)
+	tool_groups = ToolQualificationGroup.objects.all()
 	if not user.is_staff and user.is_tool_superuser:
 		tools = tools.filter(_superusers__in=[user])
-	return render(request, 'training/training.html', {'users': users, 'tools': tools, 'charge_types': TrainingSession.Type.Choices})
+		# Superusers can only use groups if they are superusers for all those
+		tool_groups = tool_groups.annotate(num_tools=Count("tools")).filter(tools__in=tools).filter(num_tools=len(tools))
+	return render(request, 'training/training.html', {'users': users, 'tools': list(tools), 'tool_groups': list(tool_groups), 'charge_types': TrainingSession.Type.Choices})
 
 
 @staff_member_or_tool_superuser_required
@@ -57,9 +61,14 @@ def charge_training(request):
 				if attribute == "chosen_user":
 					charges[index].trainee = User.objects.get(id=to_int_or_negative(value))
 				if attribute == "chosen_tool":
-					charges[index].tool = Tool.objects.get(id=to_int_or_negative(value))
-					if not trainer.is_staff and trainer.is_tool_superuser and charges[index].tool not in trainer.superuser_for_tools.all():
-						raise Exception("The trainer is not authorized to train on this tool")
+					chosen_type = request.POST.get(f"chosen_type{separator}{index}", "tool")
+					identifier = to_int_or_negative(value)
+					setattr(charges[index], "qualify_tools", [Tool.objects.get(id=identifier)] if chosen_type == "tool" else ToolQualificationGroup.objects.get(id=identifier).tools.all())
+					# Even with a group of tools, we only charge training on the first one
+					charges[index].tool = next(iter(charges[index].qualify_tools))
+					if not trainer.is_staff and trainer.is_tool_superuser:
+						if not set(charges[index].qualify_tools).issubset(trainer.superuser_for_tools.all()):
+							return HttpResponseBadRequest("The trainer is not authorized to train on this tool")
 				if attribute == "chosen_project":
 					charges[index].project = Project.objects.get(id=to_int_or_negative(value))
 				if attribute == "duration":
@@ -85,7 +94,8 @@ def charge_training(request):
 	else:
 		for c in charges.values():
 			if c.qualified:
-				qualify(c.trainer, c.trainee, c.tool)
+				for tool in c.qualify_tools:
+					qualify(c.trainer, c.trainee, tool)
 			c.save()
 		dictionary = {
 			'title': 'Success!',

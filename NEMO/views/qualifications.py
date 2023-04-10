@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_required
-from NEMO.models import MembershipHistory, Tool, User
+from NEMO.models import MembershipHistory, Tool, ToolQualificationGroup, User
 from NEMO.views.users import get_identity_service
 
 
@@ -18,7 +18,8 @@ def qualifications(request):
 	""" Present a web page to allow staff to qualify or disqualify users on particular tools. """
 	users = User.objects.filter(is_active=True)
 	tools = Tool.objects.filter(visible=True)
-	return render(request, 'qualifications.html', {'users': users, 'tools': tools})
+	tool_groups = ToolQualificationGroup.objects.all()
+	return render(request, 'qualifications.html', {'users': users, 'tools': list(tools), 'tool_groups': list(tool_groups)})
 
 
 @staff_member_required
@@ -33,6 +34,8 @@ def modify_qualifications(request):
 	if users == {}:
 		return HttpResponseBadRequest("You must specify at least one user.")
 	tools = request.POST.getlist('chosen_tool[]') or request.POST.get('chosen_tool') or []
+	tool_groups = request.POST.getlist('chosen_toolqualificationgroup[]') or request.POST.getlist('chosen_toolqualificationgroup') or []
+	tools.extend([tool.id for tool_group in ToolQualificationGroup.objects.filter(id__in=tool_groups) for tool in tool_group.tools.all()])
 	tools = Tool.objects.in_bulk(tools)
 	if tools == {}:
 		return HttpResponseBadRequest("You must specify at least one tool.")
