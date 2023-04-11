@@ -1,14 +1,14 @@
-{% extends 'base.html' %}
+{% extends 'remote_work/remote_work_base.html' %}
 {% load static %}
 {% load custom_tags_and_filters %}
-{% block title %}Remote work{% endblock %}
+{% block title %}Previous work{% endblock %}
+{% block remote_work_title %}Previous work{% endblock %}
+{% block remote_work_tab_class %}active{% endblock %}
 {% block extrahead %}
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
 	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
 {% endblock %}
-{% block content %}
-	<h1>Remote work</h1>
-
+{% block tab_content %}
 	<p>This page displays remote work done by {{ facility_name }} staff on behalf of users. You can filter by which staff member performed the work, and
 	when, by using the dropdown boxes below.</p>
 
@@ -23,7 +23,7 @@
 		<input type="hidden" name="csv" id="hidden_data_csv"/>
 		<div class="form-group">
 			<label class="control-label col-md-2" for="operator">View charges for</label>
-			<div class="col-md-3">
+			<div class="col-md-4">
 				<select id="operator" name="operator" class="form-control">
 					<option {% if selected_staff == "all staff" %}selected{% endif %}>all staff</option>
 					{% for s in staff_list %}
@@ -34,7 +34,7 @@
 			<div class="control-label col-md-2">
 				<label class="text-center" style="width: 100%" for="project">and for</label>
 			</div>
-			<div class="col-md-3">
+			<div class="col-md-4">
 				<select id="project" name="project" class="form-control">
 					<option {% if selected_project == "all projects" %}selected{% endif %}>all projects</option>
 					{% for p in project_list %}
@@ -45,7 +45,7 @@
 		</div>
 		<div class="form-group">
 			<label for="month_list" class="control-label col-md-2">during</label>
-			<div class="col-md-2">
+			<div class="col-md-3">
 				<select id="month_list" class="form-control" style="margin-right: 5px;" onchange="set_dates_from_month(this.value)">
 					<option selected></option>
 					{% for month in month_list %}
@@ -53,7 +53,7 @@
 					{% endfor %}
 				</select>
 			</div>
-			<div class="control-label col-md-1" style="padding-left: 0;padding-right: 0">
+			<div class="control-label col-md-2" style="padding-left: 0;padding-right: 0">
 				<label for="start_date" class="text-center" style="width: 100%">or between</label>
 			</div>
 			<div class="col-md-2">
@@ -67,8 +67,10 @@
 			</div>
 		</div>
 		<div class="form-group" style="margin-top: 25px">
-			<div class="col-sm-12 text-center">
+			<div class="col-md-offset-2 col-md-5 col-xs-6">
                 {% button type="save" submit=False value="Update" icon="glyphicon-refresh" onclick="$('#hidden_data_csv').val('');$('#remote_work_form').submit();" %}
+            </div>
+			<div class="col-md-5 col-xs-6 text-right">
                 {% button type="export" submit=False value="Export" onclick="$('#hidden_data_csv').val('true');$('#remote_work_form').submit();" %}
 			</div>
 		</div>
@@ -84,34 +86,44 @@
 			<th>Project</th>
 			<th>Start</th>
 			<th>End</th>
-			<th>Validate</th>
+			{% if remote_work_validation %}<th>Validate</th>{% endif %}
 		</tr>
 		</thead>
 		<tbody>
 		{% for c in staff_charges %}
-			<tr class="staff_charge_row_{{ c.id }} {% if c.validated %}success-highlight{% endif %}">
-				<td>{{ c.id }}</td>
+			<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and  c.validated %}success-highlight{% endif %}">
+				{% if "django.contrib.admin"|app_installed and perms.NEMO.change_staffcharge %}
+                    <td><a href="{% url 'admin:NEMO_staffcharge_change' c.id %}">{{ c.id }}</a></td>
+                {% else %}
+                    <td>{{ c.id }}</td>
+                {% endif %}
 				<td>{{ c.staff_member }}</td>
 				<td>{{ c.customer }}</td>
 				<td>{{ c.project }}</td>
 				<td>{{ c.start }}</td>
 				<td>{{ c.end|default_if_none:'' }}</td>
-				<td {% if c.note and c.areaaccessrecord_set.exists %}rowspan="3" {% elif c.note or c.areaaccessrecord_set.exists %}rowspan="2"{% endif %} style="vertical-align: middle">
-                    {% url 'validate_staff_charge' c.id as validate_staff_charge_url %}
-                    {% if not c.validated %}
-                        {% button type="save" submit=False onclick="validate_charge('"|concat:validate_staff_charge_url|concat:"', this, '.staff_charge_row_"|concat:c.id|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
-                    {% endif %}
-                </td>
+				{% if remote_work_validation %}
+                    <td {% if c.note and c.areaaccessrecord_set.exists %}rowspan="3" {% elif c.note or c.areaaccessrecord_set.exists %}rowspan="2"{% endif %} style="vertical-align: middle">
+                        {% url 'validate_staff_charge' c.id as validate_staff_charge_url %}
+                        {% if not c.validated %}
+                            {% button type="save" submit=False onclick="validate_charge('"|concat:validate_staff_charge_url|concat:"', this, '.staff_charge_row_"|concat:c.id|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
+                        {% endif %}
+                    </td>
+                {% endif %}
 			</tr>
             {% if c.note %}
-                <tr class="staff_charge_row_{{ c.id }} {% if c.validated %}success-highlight{% endif %}">
+                <tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}">
                     <td style="border: none; padding-top: 0"></td>
                     <td colspan="5" style="border:none; padding-top: 0">Charge note: {{ c.note|linebreaksbr }}<br></td>
                 </tr>
             {% endif %}
 			{% for area_access_record in c.areaaccessrecord_set.all %}
-				<tr class="staff_charge_row_{{ c.id }} {% if c.validated %}success-highlight{% endif %}" style="font-size: smaller">
-					<td style="border-top: none"></td>
+				<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}" style="font-size: smaller">
+					{% if "django.contrib.admin"|app_installed and perms.NEMO.change_areaaccessrecord %}
+                        <td><a href="{% url 'admin:NEMO_areaaccessrecord_change' area_access_record.id %}">{{ area_access_record.id }}</a></td>
+                    {% else %}
+                        <td>{{ area_access_record.id }}</td>
+                    {% endif %}
 					<td colspan="3" style="border-top-style: dotted">{{ area_access_record.area.name }} access</td>
 					<td style="border-top-style: dotted">{{ area_access_record.start }}</td>
 					<td style="border-top-style: dotted">{{ area_access_record.end|default_if_none:'' }}</td>
@@ -138,25 +150,31 @@
 			<th>Start</th>
 			<th>End</th>
 			<th>Tool</th>
-			<th>Validate</th>
+			{% if remote_work_validation %}<th>Validate</th>{% endif %}
 		</tr>
 		</thead>
 		<tbody>
 		{% for u in usage %}
-			<tr {% if u.validated %}class="success-highlight"{% endif %} id="usage_event_row_{{ forloop.counter }}">
-				<td>{{ u.id }}</td>
+			<tr {% if remote_work_validation and u.validated %}class="success-highlight"{% endif %} id="usage_event_row_{{ forloop.counter }}">
+				{% if "django.contrib.admin"|app_installed and perms.NEMO.change_usageevent %}
+                    <td><a href="{% url 'admin:NEMO_usageevent_change' u.id %}">{{ u.id }}</a></td>
+                {% else %}
+                    <td>{{ u.id }}</td>
+                {% endif %}
 				<td>{{ u.operator }}</td>
 				<td>{{ u.user }}</td>
 				<td>{{ u.project }}</td>
 				<td>{{ u.start }}</td>
 				<td>{{ u.end|default_if_none:'' }}</td>
 				<td>{{ u.tool }}</td>
-				<td>
-                    {% url 'validate_usage_event' u.id as validate_usage_url %}
-                    {% if not u.validated %}
-                        {% button type="save" submit=False onclick="validate_charge('"|concat:validate_usage_url|concat:"', this, '#usage_event_row_"|concat:forloop.counter|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
-                    {% endif %}
-                </td>
+				{% if remote_work_validation %}
+                    <td>
+                        {% url 'validate_usage_event' u.id as validate_usage_url %}
+                        {% if not u.validated %}
+                            {% button type="save" submit=False onclick="validate_charge('"|concat:validate_usage_url|concat:"', this, '#usage_event_row_"|concat:forloop.counter|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
+                        {% endif %}
+                    </td>
+                {% endif %}
 			</tr>
         {% empty %}
             <tr><td colspan="8">

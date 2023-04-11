@@ -4,16 +4,6 @@
     <form method="POST" action="{% url 'customize' 'application' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
-            <label class="control-label col-md-2">Area login/logout</label>
-            <div class="col-md-10">
-                <div class="checkbox">
-                    <label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas from the landing page</label><br/>
-                    <label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas from the landing page</label><br/>
-                    <label><input type="checkbox" name="calendar_login_logout" {% if calendar_login_logout %}checked{% endif %} value="enabled">Show access controlled area login/logout button on calendar view (requires login and/or logout feature enabled above)</label>
-                </div>
-            </div>
-        </div>
-        <div class="form-group">
             <label class="control-label col-md-2" for="facility_name">Facility name</label>
             <div class="col-md-5">
                 <input type="text" id="facility_name" name="facility_name" class="form-control" value="{{ facility_name }}">
@@ -31,16 +21,19 @@
                 The name of the site to use in all templates/headers.
             </div>
         </div>
-        <div class="col-md-offset-2">
+        <div class="form-group">
+            <label class="control-label col-md-2">Area login/logout</label>
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas from the landing page</label><br/>
+                    <label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas from the landing page</label><br/>
+                    <label><input type="checkbox" name="calendar_login_logout" {% if calendar_login_logout %}checked{% endif %} value="enabled">Show access controlled area login/logout button on calendar view (requires login and/or logout feature enabled above)</label>
+                </div>
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <div class="text-center">
             {% button type="save" value="Save settings" %}
         </div>
     </form>
-    <script type="text/javascript">
-        $("#application-tab-link").click(function() {setTimeout(on_application_tab_show, 50)});
-        function on_application_tab_show()
-        {
-            auto_size_textarea(document.getElementById('project_selection_template'))
-        }
-        on_application_tab_show();
-    </script>
 </div>

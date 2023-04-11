@@ -1,7 +1,6 @@
-from datetime import datetime
-
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import staff_member_required
@@ -21,7 +20,7 @@ def resource_details(request, resource_id):
 	resource = get_object_or_404(Resource, id=resource_id)
 	dictionary = {
 		'resource': resource,
-		'outages': ScheduledOutage.objects.filter(resource__id=resource_id, end__gt=datetime.now()),
+		'outages': ScheduledOutage.objects.filter(resource__id=resource_id, end__gt=timezone.now()),
 	}
 	return render(request, 'resources/resource_details.html', dictionary)
 

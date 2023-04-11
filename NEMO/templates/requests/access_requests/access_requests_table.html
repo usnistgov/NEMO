@@ -33,7 +33,7 @@
                         {% endfor %}
                     </ul>
                 </td>
-                <td class="text-center" style="vertical-align: middle">
+                <td class="text-center text-nowrap" style="vertical-align: middle">
                     {% if request_status == 'pending' and user.is_facility_manager %}
                         <a class="btn btn-sm btn-default" title="Approve/Deny" href="{% url 'edit_access_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
                     {% elif request_status == 'pending' and a_request.creator == user %}
@@ -48,7 +48,7 @@
             </tr>
             <tr>
                 {% if a_request.description %}
-                    <td colspan="{% if user.is_facility_manager %}7{% else %}6{% endif %}" style="border: none">{% if a_request.description %}<u>Description:</u><br>{{ a_request.description|linebreaksbr }}{% endif %}</td>
+                    <td colspan="6" style="border: none">{% if a_request.description %}<u>Description:</u><br>{{ a_request.description|linebreaksbr }}{% endif %}</td>
                 {% endif %}
             </tr>
         {% endfor %}

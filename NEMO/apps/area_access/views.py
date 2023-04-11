@@ -22,9 +22,9 @@ from NEMO.exceptions import (
 	UnavailableResourcesUserError,
 )
 from NEMO.models import (BadgeReader, Door, PhysicalAccessLog, PhysicalAccessType, Project, UsageEvent, User)
+from NEMO.policy import policy_class as policy
 from NEMO.views.area_access import log_in_user_to_area, log_out_user
 from NEMO.views.customization import ApplicationCustomization, InterlockCustomization
-from NEMO.views.policy import check_billing_to_project, check_policy_to_enter_any_area, check_policy_to_enter_this_area
 from NEMO.views.tool_control import interlock_bypass_allowed
 
 
@@ -77,7 +77,7 @@ def login_to_area(request, door_id):
 
 	# Check policy for entering an area
 	try:
-		check_policy_to_enter_any_area(user=user)
+		policy.check_to_enter_any_area(user=user)
 	except InactiveUserError:
 		log.details = "This user is not active, preventing them from entering any access controlled areas."
 		log.save()
@@ -105,7 +105,7 @@ def login_to_area(request, door_id):
 	scheduled_outage_in_progress = False
 	# Check policy to enter this area
 	try:
-		check_policy_to_enter_this_area(area=door.area, user=user)
+		policy.check_to_enter_area(area=door.area, user=user)
 	except NoAccessiblePhysicalAccessUserError as error:
 		if error.closure_time:
 			log.details = (
@@ -186,7 +186,7 @@ def login_to_area(request, door_id):
 			else:
 				project = get_object_or_404(Project, id=project_id)
 				try:
-					check_billing_to_project(project, user, door.area)
+					policy.check_billing_to_project(project, user, door.area)
 				except ProjectChargeException as e:
 					log.details = "The user attempted to bill the project named {} but got error: {}".format(project.name, e.msg)
 					log.save()
@@ -202,13 +202,14 @@ def login_to_area(request, door_id):
 			log_out_user(user)
 
 		# All policy checks passed so open the door for the user.
-		if not door.interlock.unlock():
-			if bypass_interlock and interlock_bypass_allowed(user):
-				pass
-			else:
-				return interlock_error("Login", user)
+		if door.interlock:
+			if not door.interlock.unlock():
+				if bypass_interlock and interlock_bypass_allowed(user):
+					pass
+				else:
+					return interlock_error("Login", user)
 
-		delay_lock_door(door.id)
+			delay_lock_door(door.id)
 
 		log_in_user_to_area(door.area, user, project)
 
@@ -280,10 +281,12 @@ def open_door(request, door_id):
 			details="The user was permitted to enter this area, and already had an active area access record for this area.",
 		)
 		log.save()
-		# If we cannot open the door, display message and let them try again or exit since there is nothing else to do (user is already logged in).
-		if not door.interlock.unlock():
-			return interlock_error(bypass_allowed=False)
-		delay_lock_door(door.id)
+		# If we cannot open the door, display message and let them try again,
+		# or exit since there is nothing else to do (user is already logged in).
+		if door.interlock:
+			if not door.interlock.unlock():
+				return interlock_error(bypass_allowed=False)
+			delay_lock_door(door.id)
 		return render(request, "area_access/door_is_open.html")
 	return render(request, "area_access/not_logged_in.html", {"area": door.area})
 

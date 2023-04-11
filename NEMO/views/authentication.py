@@ -103,7 +103,9 @@ def base_64_decode_basic_auth(remote_user: str):
 
 class RemoteUserAuthenticationBackend(ModelBackend):
 	""" The web server performs authentication and passes the username remotely. (header or env) """
+	create_unknown_user = False
 
+	# This override not matching is intended
 	def authenticate(self, request, remote_user):
 		if not remote_user:
 			return

@@ -16,10 +16,10 @@
 </ul>
 
 <div id="content" class="tab-content" style="padding-top:10px">
-	<div class="tab-pane {% if areas_exist and tab == 'occupancy' %}active{% endif %}" id="occupancy">
+	<div class="tab-pane{% if areas_exist and tab == 'occupancy' %} active{% endif %}" id="occupancy">
 		{% include 'status_dashboard/occupancy.html' %}
 	</div>
-	<div class="tab-pane {% if tools_exist and tab == 'tools' %}active{% endif %} info-tooltip-container" id="tools">
+	<div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container" id="tools">
 		<div class="btn-group sidebar-item">
 			<button id="filter" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" {% if no_header %}style="display:none;"{% endif %}>
 				Showing tools in use
@@ -39,7 +39,7 @@
 		</div>
 	</div>
     {% if show_staff_status %}
-        <div class="tab-pane {% if tab == 'staff' %}active{% endif %}" id="staff">
+        <div class="tab-pane{% if tab == 'staff' %} active{% endif %}" id="staff">
             {% include 'status_dashboard/staff.html' %}
         </div>
     {% endif %}

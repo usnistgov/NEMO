@@ -1,0 +1,14 @@
+<div style="display: none">
+    <span id="error_message" class="str">
+        {{ error }}
+    </span>
+</div>
+<script>
+    {# Remove all option code #}
+    $(function (){
+        let span_no_code = $("span.meta.nocode");
+        span_no_code.html(span_no_code.html().replace("HTTP 200 OK","HTTP {{ status_code }} {{ status_text }}"));
+        span_no_code.nextAll().remove();
+        $('#error_message').insertAfter(span_no_code);
+    })
+</script>

@@ -36,6 +36,7 @@
 					<input id='tool_search' class="form-control"/>
 				</div>
 				<div id="chosen_tools" class="form-group"></div>
+				<div id="chosen_toolqualificationgroups" class="form-group"></div>
 			</div>
 		</div>
 	</form>
@@ -45,14 +46,16 @@
 		{
 			$('#user_search').typeahead('val', '');
 			$('#tool_search').typeahead('val', '');
-			let id = dataset_name + "_" + search_selection.id;
+            {# Use type if provided otherwise the name of the dataset #}
+            let input_name = search_selection.type || dataset_name;
+			let id = input_name + "_" + search_selection.id;
 			if($("#" + id).length)
 				return;
-			$("#chosen_" + dataset_name + "s").append
+			$("#chosen_" + input_name + "s").append
 			(
 					"<div class='form-group'>" +
 					"<button class='btn btn-default' onclick='$(this).closest(\"div\").remove()'>" + search_selection.name + "</button>" +
-					"<input type='hidden' name='chosen_" + dataset_name + "[]' value='" + search_selection.id + "' id='" + dataset_name + "_" + search_selection.id + "'>" +
+					"<input type='hidden' name='chosen_" + input_name + "[]' value='" + search_selection.id + "' id='" + input_name + "_" + search_selection.id + "'>" +
 					"</div>"
 			);
 		}
@@ -60,7 +63,7 @@
 		function on_load()
 		{
 			$('#user_search').autocomplete('user', create_entry, {{ users|json_search_base }}).focus();
-			$('#tool_search').autocomplete('tool', create_entry, {{ tools|json_search_base }});
+			$('#tool_search').autocomplete('tool', create_entry, {% json_search_base_with_extra_fields tools|add:tool_groups %}, {% if tool_groups %}false{% else %}true{% endif %});
 		}
 
 		$(on_load);

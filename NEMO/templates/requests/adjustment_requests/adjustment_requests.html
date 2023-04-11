@@ -1,0 +1,71 @@
+{% load custom_tags_and_filters %}
+<div style="margin: 15px 0">
+    <div style="display: table-cell; width: 100%">
+        {% if adjustment_requests_description %}
+            <div class="well" style="display: table; margin-right: 15px">
+                <span class="requests-description-info glyphicon glyphicon-info-sign primary-highlight"></span>
+                <div class="requests-description">{{ adjustment_requests_description|safe|linebreaksbr }}</div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="text-right" style="display: table-cell; vertical-align: top">{% button type="add" url="create_adjustment_request" value="New request" %}</div>
+</div>
+{% if pending_adjustment_requests or approved_adjustment_requests or denied_adjustment_requests %}
+    {% if user.is_superuser or user.is_facility_manager or user.is_user_office or user.is_accounting_officer %}
+        <div class="text-right" style="margin-bottom: -20px">
+            {% button type="export" value="Export" url="export_adjustment_requests" target="_blank" %}
+        </div>
+    {% endif %}
+    <div>
+        {% if pending_adjustment_requests %}
+            <h3><a onclick="toggle_details(this)" data-toggle="collapse" data-target="#pending_adjustment_requests" class="pointer">
+                <span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>Pending ({{ pending_adjustment_requests|length }})
+            </a></h3>
+            <div id="pending_adjustment_requests" class="collapse in">
+                {% include 'requests/adjustment_requests/adjustment_requests_table.html' with request_status='pending' adjustment_request_list=pending_adjustment_requests %}
+            </div>
+        {% endif %}
+        {% if approved_adjustment_requests %}
+            <h3><a onclick="toggle_details(this)" data-toggle="collapse" data-target="#approved_adjustment_requests" class="pointer">
+                <span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>Approved
+            </a></h3>
+            <div id="approved_adjustment_requests" class="collapse in">
+                {% include 'requests/adjustment_requests/adjustment_requests_table.html' with request_status='approved' adjustment_request_list=approved_adjustment_requests %}
+            </div>
+        {% endif %}
+        {% if denied_adjustment_requests %}
+            <h3><a onclick="toggle_details(this)" data-toggle="collapse" data-target="#denied_adjustment_requests" class="pointer">
+                <span class="glyphicon glyphicon-chevron-down pull-left chevron"></span>Denied
+            </a></h3>
+            <div id="denied_adjustment_requests" class="collapse in">
+                {% include 'requests/adjustment_requests/adjustment_requests_table.html' with request_status='denied' adjustment_request_list=denied_adjustment_requests %}
+            </div>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="italic" style="margin-top: 20px">You do not have any current active adjustment requests</div>
+{% endif %}
+<script>
+    function show_or_send_reply(button_element, form_selector)
+    {
+        let form_element = $('#'+form_selector)
+        if (form_element.is(":visible"))
+        {
+            form_element.submit();
+        }
+        else
+        {
+            form_element.parents('div').fadeIn('50');
+            form_element.children('textarea').focus();
+            $(button_element).html('<i class="glyphicon glyphicon-send"></i> Send');
+        }
+    }
+    $(function ()
+    {
+        {# Scroll to msg id if available #}
+        let msg_id = window.location.hash.substr(1);
+        if (msg_id) document.getElementById(msg_id).scrollIntoView();
+
+        $('[data-toggle="tooltip"]').tooltip();
+    })
+</script>

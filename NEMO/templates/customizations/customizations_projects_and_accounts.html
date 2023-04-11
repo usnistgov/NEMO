@@ -4,42 +4,66 @@
     <form method="POST" action="{% url 'customize' 'projects_and_accounts' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group" style="margin-bottom: 0">
-            <label class="control-label col-md-2" for="account_list_active_only">Account list</label>
-            <div class="col-md-3">
+            <label class="control-label col-md-3" for="account_list_active_only">Account list</label>
+            <div class="col-md-9">
                 <div class="checkbox">
                     <label><input type="checkbox" id="account_list_active_only" name="account_list_active_only" {% if account_list_active_only %}checked{% endif %} value="enabled"> Hide inactive accounts</label>
                 </div>
             </div>
-            <div class="col-md-7 help-block light-grey">
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 Check this box to only show active accounts in the user list.
             </div>
         </div>
         <div class="form-group" style="margin-bottom: 0">
-            <div class="col-md-offset-2 col-md-3">
+            <div class="col-md-offset-3 col-md-9">
                 <div class="checkbox">
                     <label><input type="checkbox" id="project_list_active_only" name="project_list_active_only" {% if project_list_active_only %}checked{% endif %} value="enabled"> Hide inactive projects</label>
                 </div>
             </div>
-            <div class="col-md-7 help-block light-grey">
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 Check this box to only show active projects in the user list.
             </div>
         </div>
         <div class="form-group">
-            <div class="col-md-offset-2 col-md-4">
+            <div class="col-md-offset-3 col-md-9">
                 <div class="checkbox">
                     <label><input type="checkbox" id="account_list_collapse" name="account_list_collapse" {% if account_list_collapse %}checked{% endif %} value="enabled"> Collapse project list by default</label>
                 </div>
             </div>
-            <div class="col-md-6 help-block light-grey">
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 Check this box to collapse account projects by default.
             </div>
         </div>
+		<div class="form-group">
+			<label class="control-label col-md-3" for="project_allow_pi_manage_users">Project PIs</label>
+            <div class="col-md-8">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="project_allow_pi_manage_users" name="project_allow_pi_manage_users" {% if project_allow_pi_manage_users %}checked{% endif %} value="enabled"> Allow project PIs to manage users</label>
+                </div>
+            </div>
+            <div class="col-md-offset-3 col-md-8 help-block light-grey">
+                Check this box to allow project PIs to add/remove users to/from projects.
+            </div>
+        </div>
+        <div class="form-group {% if errors.project_application_identifier_name %}has-error{% endif %}">
+            <label class="control-label col-md-3" for="project_application_identifier_name">Project identifier name</label>
+            <div class="col-md-8">
+                <input type="text" id="project_application_identifier_name" name="project_application_identifier_name" class="form-control" value="{{ project_application_identifier_name }}">
+            </div>
+            <div class="col-md-offset-3 col-md-8 help-block light-grey">
+                {% if errors.project_application_identifier_name %}
+                    {{ errors.project_application_identifier_name.error }}
+                {% else %}
+                    The name of the project identifier property (Application, ID, Reference, PO etc.).
+                {% endif %}
+            </div>
+        </div>
         <div class="form-group {% if errors.project_selection_template %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="project_selection_template">Project selection template</label>
-            <div class="col-md-5">
+            <label class="control-label col-md-3" for="project_selection_template">Project selection template</label>
+            <div class="col-md-8">
                 <textarea oninput="auto_size_textarea(this);" id="project_selection_template" name="project_selection_template" class="form-control">{% if errors.project_selection_template %}{{ errors.project_selection_template.value }}{% else %}{{ project_selection_template }}{% endif %}</textarea>
             </div>
-            <div class="col-md-5 help-block light-grey">
+            <div class="col-md-offset-3 col-md-8 help-block light-grey">
                 {% if errors.project_selection_template %}
                     {{ errors.project_selection_template.error }}
                 {% else %}
@@ -48,23 +72,24 @@
             </div>
         </div>
 		<div class="form-group">
-			<label class="control-label col-md-2">Document upload</label>
+			<label class="control-label col-md-3">Document upload</label>
 			<div class="col-md-5">
 				<div class="checkbox">
 					<label><input type="checkbox" name="project_allow_document_upload" {% if project_allow_document_upload %}checked{% endif %} value="enabled">Enable project document upload</label>
 				</div>
 			</div>
 		</div>
-        <div class="col-md-offset-2">
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <div class="text-center">
             {% button type="save" value="Save settings" %}
         </div>
     </form>
     <script type="text/javascript">
-        $("#application-tab-link").click(function() {setTimeout(on_application_tab_show, 50)});
-        function on_application_tab_show()
+        $("#projects_and_accounts-tab-link").click(function() {setTimeout(on_project_tab_show, 50)});
+        function on_project_tab_show()
         {
             auto_size_textarea(document.getElementById('project_selection_template'))
         }
-        on_application_tab_show();
+        on_project_tab_show();
     </script>
 </div>

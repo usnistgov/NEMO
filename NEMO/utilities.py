@@ -1,4 +1,5 @@
 import csv
+import importlib
 import os
 from calendar import monthrange
 from datetime import date, datetime, time
@@ -13,8 +14,10 @@ from urllib.parse import urljoin
 from PIL import Image
 from dateutil import rrule
 from dateutil.parser import parse
-from django.conf import settings
+from django.apps import apps
+from django.conf import global_settings, settings
 from django.contrib.admin import ModelAdmin
+from django.contrib.contenttypes.models import ContentType
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
@@ -23,8 +26,10 @@ from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import render
 from django.template import Template
 from django.template.context import make_context
+from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.formats import date_format, get_format, time_format
+from django.utils.html import format_html
 from django.utils.timezone import is_naive, localtime
 
 utilities_logger = getLogger(__name__)
@@ -81,9 +86,10 @@ class EmptyHttpRequest(HttpRequest):
 
 
 class BasicDisplayTable(object):
-	""" Utility table to make adding headers and rows easier, and export to csv """
+	"""Utility table to make adding headers and rows easier, and export to csv"""
 
 	def __init__(self):
+		self.list_delimiter = ", "
 		# headers is a list of tuples (key, display)
 		self.headers: List[Tuple[str, str]] = []
 		# rows is a list of dictionaries. Each dictionary is a row, with keys corresponding to header keys
@@ -113,6 +119,8 @@ class BasicDisplayTable(object):
 				return format_datetime(value, "SHORT_DATETIME_FORMAT")
 			elif isinstance(value, date):
 				return format_datetime(value, "SHORT_DATE_FORMAT")
+			elif isinstance(value, list):
+				return self.list_delimiter.join(value)
 		return value
 
 	def to_csv(self) -> HttpResponse:
@@ -148,6 +156,7 @@ class EmailCategory(object):
 	TASKS = 8
 	ACCESS_REQUESTS = 9
 	SENSORS = 10
+	ADJUSTMENT_REQUESTS = 11
 	Choices = (
 		(GENERAL, "General"),
 		(SYSTEM, "System"),
@@ -160,6 +169,7 @@ class EmailCategory(object):
 		(TASKS, "Tasks"),
 		(ACCESS_REQUESTS, "Access Requests"),
 		(SENSORS, "Sensors"),
+		(ADJUSTMENT_REQUESTS, "Adjustment Requests"),
 	)
 
 
@@ -327,7 +337,10 @@ def format_datetime(universal_time=None, df=None, as_current_timezone=True, use_
 
 
 def export_format_datetime(date_time=None, d_format=True, t_format=True, underscore=True, as_current_timezone=True) -> str:
-	""" This function returns a formatted date/time for export files. Default returns date + time format, with underscores """
+	"""
+	This function returns a formatted date/time for export files.
+	Default returns date + time format, with underscores
+	"""
 	this_time = date_time if date_time else timezone.now() if as_current_timezone else datetime.now()
 	export_date_format = getattr(settings, "EXPORT_DATE_FORMAT", "m_d_Y").replace("-", "_")
 	export_time_format = getattr(settings, "EXPORT_TIME_FORMAT", "h_i_s").replace("-", "_")
@@ -363,13 +376,13 @@ def naive_local_current_datetime():
 
 
 def beginning_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
-	""" Returns the BEGINNING of today's day (12:00:00.000000 AM of the current day) in LOCAL time. """
+	"""Returns the BEGINNING of today's day (12:00:00.000000 AM of the current day) in LOCAL time."""
 	zero = t.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
 	return localize(zero) if in_local_timezone else zero
 
 
 def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
-	""" Returns the END of today's day (11:59:59.999999 PM of the current day) in LOCAL time. """
+	"""Returns the END of today's day (11:59:59.999999 PM of the current day) in LOCAL time."""
 	midnight = t.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=None)
 	return localize(midnight) if in_local_timezone else midnight
 
@@ -446,6 +459,8 @@ def create_email_log(email: EmailMessage, email_category: EmailCategory):
 def create_email_attachment(stream, filename=None, maintype="application", subtype="octet-stream", **content_type_params) -> MIMEBase:
 	attachment = MIMEBase(maintype, subtype, **content_type_params)
 	attachment.set_payload(stream.read())
+	if maintype == "text":
+		attachment.set_charset('utf-8')
 	encoders.encode_base64(attachment)
 	if filename:
 		attachment.add_header("Content-Disposition", f'attachment; filename="{filename}"')
@@ -462,7 +477,10 @@ def get_task_image_filename(task_images, filename):
 	date = export_format_datetime(now, t_format=False, as_current_timezone=False)
 	year = now.strftime("%Y")
 	number = "{:02d}".format(
-		TaskImages.objects.filter(task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day).count()	+ 1
+		TaskImages.objects.filter(
+			task__tool=task.tool, uploaded_at__year=now.year, uploaded_at__month=now.month, uploaded_at__day=now.day
+		).count()
+		+ 1
 	)
 	ext = os.path.splitext(filename)[1]
 	return f"task_images/{year}/{tool_name}/{date}_{tool_name}_{number}{ext}"
@@ -520,7 +538,7 @@ def get_safety_document_filename(safety_documents, filename):
 
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
-	""" Returns a resized image based on the given maximum size """
+	"""Returns a resized image based on the given maximum size"""
 	with Image.open(image) as img:
 		width, height = img.size
 		# no need to resize if width or height is already less than the max
@@ -549,15 +567,15 @@ def distinct_qs_value_list(qs: QuerySet, field_name: str) -> Set:
 
 # Useful function to render and combine 2 separate django templates
 def render_combine_responses(request, original_response: HttpResponse, template_name, context):
-	""" Combines contents of an original http response with a new one """
+	"""Combines contents of an original http response with a new one"""
 	additional_content = render(request, template_name, context)
 	original_response.content += additional_content.content
 	return original_response
 
 
 def render_email_template(template, dictionary: dict, request=None):
-	""" Use Django's templating engine to render the email template
-		If we don't have a request, create a empty one so context_processors (messages, customizations etc.) can be used
+	"""Use Django's templating engine to render the email template
+	If we don't have a request, create a empty one so context_processors (messages, customizations etc.) can be used
 	"""
 	return Template(template).render(make_context(dictionary, request or EmptyHttpRequest()))
 
@@ -576,6 +594,7 @@ def queryset_search_filter(query_set: QuerySet, search_fields: Sequence, request
 		if search_use_distinct:
 			search_qs = search_qs.distinct()
 		from NEMO.templatetags.custom_tags_and_filters import json_search_base_with_extra_fields
+
 		data = json_search_base_with_extra_fields(search_qs, *search_fields, display=display)
 	else:
 		data = "This request can only be made as an ajax call"
@@ -596,15 +615,18 @@ def get_recurring_rule(start: date, frequency: RecurrenceFrequency, until=None, 
 
 
 def get_full_url(location, request=None):
+	"""
+	Function used mainly in emails and places where the request might or might not be available.
+	If the request is available, use django's built in way to build the absolute URL, otherwise
+	use the SERVER_DOMAIN variable from settings, which defaults to the first ALLOWED_HOSTS value.
+	"""
 	# For lazy locations
 	location = str(location)
-	main_url = getattr(settings, "MAIN_URL", None)
-	if main_url:
-		return urljoin(main_url, location)
-	elif request:
+	if request:
 		return request.build_absolute_uri(location)
 	else:
-		return location
+		domain = getattr(settings, "SERVER_DOMAIN", "https://{}".format(settings.ALLOWED_HOSTS[0]))
+		return urljoin(domain, location)
 
 
 def capitalize(string: Optional[str]) -> str:
@@ -615,3 +637,49 @@ def capitalize(string: Optional[str]) -> str:
 	if not string:
 		return string
 	return string[0].upper() + string[1:]
+
+
+def admin_get_item(content_type, object_id):
+	"""
+	This function can be used in django admin to display the item of a generic foreign key with a link
+	"""
+	if not content_type or not object_id:
+		return "-"
+	app_label, model = content_type.app_label, content_type.model
+	viewname = f"admin:{app_label}_{model}_change"
+	try:
+		args = [object_id]
+		link = reverse(viewname, args=args)
+	except NoReverseMatch:
+		return "-"
+	else:
+		return format_html('<a href="{}">{} - #{}</a>', link, get_model_name(content_type), object_id)
+
+
+def get_model_name(content_type: ContentType):
+	try:
+		model = apps.get_model(content_type.app_label, content_type.model)
+		return model._meta.verbose_name.capitalize()
+	except (LookupError, AttributeError):
+		return ""
+
+
+def get_email_from_settings() -> str:
+	"""
+	Return the default from email if it has been overriden, otherwise the server email
+	This allows admins to specify a different default from email (used for communication)
+	from the server email which is more meant for errors and such.
+	"""
+	return (
+		settings.DEFAULT_FROM_EMAIL
+		if settings.DEFAULT_FROM_EMAIL != global_settings.DEFAULT_FROM_EMAIL
+		else settings.SERVER_EMAIL
+	)
+
+
+def get_class_from_settings(setting_name: str, default_value: str):
+	setting_class = getattr(settings, setting_name, default_value)
+	assert isinstance(setting_class, str)
+	pkg, attr = setting_class.rsplit(".", 1)
+	ret = getattr(importlib.import_module(pkg), attr)
+	return ret()

@@ -1,10 +1,15 @@
-from django.db.models import F, Q
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.contrib import messages
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_required
-from NEMO.models import Project, StaffCharge, UsageEvent, User
+from NEMO.exceptions import ProjectChargeException
+from NEMO.models import Area, AreaAccessRecord, Project, StaffCharge, UsageEvent, User
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
 	BasicDisplayTable,
 	export_format_datetime,
@@ -12,6 +17,8 @@ from NEMO.utilities import (
 	get_month_timeframe,
 	month_list,
 )
+from NEMO.views.area_access import load_areas_for_use_in_template
+from NEMO.views.customization import RemoteWorkCustomization
 
 
 @staff_member_required
@@ -36,20 +43,20 @@ def remote_work(request):
 		project = get_object_or_404(Project, id=project)
 	else:
 		project = None
-	usage_events = UsageEvent.objects.filter(operator__is_staff=True).exclude(operator=F("user"))
-	staff_charges = StaffCharge.objects.filter()
+	usage_events = UsageEvent.objects.filter(remote_work=True)
+	s_charges = StaffCharge.objects.filter()
 	if start_date:
 		usage_events = usage_events.filter(start__gte=start_date)
-		staff_charges = staff_charges.filter(start__gte=start_date)
+		s_charges = s_charges.filter(start__gte=start_date)
 	if end_date:
 		usage_events = usage_events.filter(start__lte=end_date)
-		staff_charges = staff_charges.filter(start__lte=end_date)
+		s_charges = s_charges.filter(start__lte=end_date)
 	if operator:
 		usage_events = usage_events.exclude(~Q(operator_id=operator.id))
-		staff_charges = staff_charges.exclude(~Q(staff_member_id=operator.id))
+		s_charges = s_charges.exclude(~Q(staff_member_id=operator.id))
 	if project:
 		usage_events = usage_events.filter(project=project)
-		staff_charges = staff_charges.filter(project=project)
+		s_charges = s_charges.filter(project=project)
 
 	csv_export = bool(request.GET.get("csv", False))
 	if csv_export:
@@ -87,7 +94,7 @@ def remote_work(request):
 					PROJECT: usage.project,
 				}
 			)
-		for staff_charge in staff_charges:
+		for staff_charge in s_charges:
 			for access in staff_charge.areaaccessrecord_set.all():
 				table_result.add_row(
 					{
@@ -119,7 +126,7 @@ def remote_work(request):
 		return response
 	dictionary = {
 		"usage": usage_events,
-		"staff_charges": staff_charges,
+		"staff_charges": s_charges,
 		"staff_list": User.objects.filter(is_staff=True),
 		"project_list": Project.objects.filter(active=True),
 		"start_date": start_date,
@@ -127,8 +134,9 @@ def remote_work(request):
 		"month_list": month_list(),
 		"selected_staff": operator.id if operator else "all staff",
 		"selected_project": project.id if project else "all projects",
+		"remote_work_validation": RemoteWorkCustomization.get_bool("remote_work_validation"),
 	}
-	return render(request, "remote_work.html", dictionary)
+	return render(request, "remote_work/remote_work.html", dictionary)
 
 
 @staff_member_required
@@ -146,4 +154,152 @@ def validate_usage_event(request, usage_event_id):
 	usage_event = get_object_or_404(UsageEvent, id=usage_event_id)
 	usage_event.validated = True
 	usage_event.save()
+	return HttpResponse()
+
+
+@staff_member_required
+@require_GET
+def staff_charges(request):
+	staff_member: User = request.user
+	staff_charge: StaffCharge = staff_member.get_staff_charge()
+	dictionary = dict()
+	if staff_charge:
+		try:
+			dictionary["staff_charge"] = staff_charge
+			# Create dictionary of charges for time, tool and areas
+			charges = [{"type": "Start time charge", "start": staff_charge.start, "end": staff_charge.end}]
+			for area_charge in AreaAccessRecord.objects.filter(staff_charge_id=staff_charge.id):
+				charges.append(
+					{
+						"type": area_charge.area.name + " access",
+						"start": area_charge.start,
+						"end": area_charge.end,
+						"class": "primary-highlight",
+					}
+				)
+			for tool_charge in UsageEvent.objects.filter(
+				operator=staff_member, user=staff_charge.customer, remote_work=True, start__gt=staff_charge.start
+			):
+				charges.append(
+					{
+						"type": tool_charge.tool.name + " usage",
+						"start": tool_charge.start,
+						"end": tool_charge.end,
+						"class": "warning-highlight",
+					}
+				)
+			charges.sort(key=lambda x: x["start"], reverse=True)
+			dictionary["charges"] = charges
+
+			area_access_record = AreaAccessRecord.objects.get(staff_charge=staff_charge.id, end=None)
+			dictionary["area"] = area_access_record.area
+			return render(request, "staff_charges/end_area_charge.html", dictionary)
+		except AreaAccessRecord.DoesNotExist:
+			dictionary["user_accessible_areas"], dictionary["areas"] = load_areas_for_use_in_template(staff_member)
+			return render(request, "staff_charges/change_status.html", dictionary)
+	error = None
+	customer = None
+	try:
+		customer = User.objects.get(id=request.GET["customer"])
+	except:
+		pass
+	if customer:
+		if customer.active_project_count() > 0:
+			dictionary["customer"] = customer
+			return render(request, "staff_charges/choose_project.html", dictionary)
+		else:
+			error = str(customer) + " does not have any active projects. You cannot bill staff time to this user."
+	users = User.objects.filter(is_active=True).exclude(id=request.user.id)
+	dictionary["users"] = users
+	dictionary["error"] = error
+	return render(request, "staff_charges/new_staff_charge.html", dictionary)
+
+
+@staff_member_required
+@require_POST
+def begin_staff_charge(request):
+	user: User = request.user
+	if user.charging_staff_time():
+		return HttpResponseBadRequest("You cannot create a new staff charge when one is already in progress.")
+	charge = StaffCharge()
+	charge.customer = User.objects.get(id=request.POST["customer"])
+	charge.project = Project.objects.get(id=request.POST["project"])
+	# Check if we are allowed to bill to project
+	try:
+		policy.check_billing_to_project(charge.project, charge.customer, charge)
+	except ProjectChargeException as e:
+		return HttpResponseBadRequest(e.msg)
+	charge.staff_member = request.user
+	charge.save()
+	return redirect(reverse("staff_charges"))
+
+
+@staff_member_required
+@require_POST
+def end_staff_charge(request):
+	user: User = request.user
+	if not user.charging_staff_time():
+		return HttpResponseBadRequest("You do not have a staff charge in progress, so you cannot end it.")
+	charge = user.get_staff_charge()
+	charge.end = timezone.now()
+	charge.save()
+	try:
+		area_access = AreaAccessRecord.objects.get(staff_charge=charge, end=None)
+		area_access.end = timezone.now()
+		area_access.save()
+	except AreaAccessRecord.DoesNotExist:
+		pass
+	return redirect(reverse("staff_charges"))
+
+
+@staff_member_required
+@require_POST
+def begin_staff_area_charge(request):
+	user: User = request.user
+	charge = user.get_staff_charge()
+	if not charge:
+		return HttpResponseBadRequest(
+			"You do not have a staff charge in progress, so you cannot begin an area access charge."
+		)
+	if AreaAccessRecord.objects.filter(staff_charge=charge, end=None).count() > 0:
+		return HttpResponseBadRequest("You cannot create an area access charge when one is already in progress.")
+	try:
+		area = Area.objects.get(id=request.POST["area"])
+		policy.check_billing_to_project(charge.project, charge.customer, area)
+	except ProjectChargeException as e:
+		return HttpResponseBadRequest(e.msg)
+	except:
+		return HttpResponseBadRequest("Invalid area")
+	area_access = AreaAccessRecord()
+	area_access.area = area
+	area_access.staff_charge = charge
+	area_access.customer = charge.customer
+	area_access.project = charge.project
+	area_access.save()
+	return redirect(reverse("staff_charges"))
+
+
+@staff_member_required
+@require_POST
+def end_staff_area_charge(request):
+	user: User = request.user
+	charge = user.get_staff_charge()
+	if not charge:
+		return HttpResponseBadRequest("You do not have a staff charge in progress, so you cannot end area access.")
+	area_access = AreaAccessRecord.objects.get(staff_charge=charge, end=None)
+	area_access.end = timezone.now()
+	area_access.save()
+	return redirect(reverse("staff_charges"))
+
+
+@staff_member_required
+@require_POST
+def edit_staff_charge_note(request):
+	user: User = request.user
+	charge: StaffCharge = user.get_staff_charge()
+	if charge:
+		message = f"The charge note was {'updated' if charge.note else 'saved'}"
+		charge.note = request.POST.get("staff_charge_note")
+		charge.save(update_fields=["note"])
+		messages.success(request, message)
 	return HttpResponse()

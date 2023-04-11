@@ -61,12 +61,14 @@ class OutageTestCase(TestCase):
 		self.assertEqual(response.content.decode(), "The request parameters have an end time that precedes the start time.")
 
 		# fix time
+		start_reservation = start.astimezone()
 		end = (start + timedelta(hours=1))
+		end_reservation = end.astimezone()
 		# Create a reservation and try to schedule an outage at the same time
 		if item_type == ReservationItemType.TOOL:
-			Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start, end=end, short_notice=False)
+			Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start_reservation, end=end_reservation, short_notice=False)
 		elif item_type == ReservationItemType.AREA:
-			Reservation.objects.create(user=owner, creator=owner, area=area, start=start, end=end, short_notice=False)
+			Reservation.objects.create(user=owner, creator=owner, area=area, start=start_reservation, end=end_reservation, short_notice=False)
 		data = self.get_outage_data(start=start, end=end, item_id=item_id, item_type=item_type)
 		response = self.client.post(reverse('create_outage'), data, follow=True)
 		self.assertEqual(response.status_code, 400)
@@ -152,7 +154,7 @@ class OutageTestCase(TestCase):
 		self.assertTrue('must be before the end time' in response.content.decode())
 
 		# create a reservation and try to resize outage to overlap reservation
-		start_reservation = end + timedelta(hours=1)
+		start_reservation = (end + timedelta(hours=1)).astimezone()
 		end_reservation = start_reservation + timedelta(hours=1)
 
 		if item_type == ReservationItemType.TOOL:
@@ -210,7 +212,7 @@ class OutageTestCase(TestCase):
 		self.assertEqual(response.content.decode(), "The outage that you wish to modify doesn't exist!")
 
 		# create a reservation and try to move outage to overlap reservation
-		start_reservation = end + timedelta(hours=1)
+		start_reservation = (end + timedelta(hours=1)).astimezone()
 		end_reservation = start_reservation + timedelta(hours=1)
 		if item_type == ReservationItemType.TOOL:
 			Reservation.objects.create(user=owner, creator=owner, tool=tool, start=start_reservation, end=end_reservation, short_notice=False)
@@ -318,7 +320,7 @@ class OutageTestCase(TestCase):
 	def every_day_for_a_week(self, item_id: int, item_type: ReservationItemType):
 		start = datetime.now()
 		end = start + timedelta(hours=1)
-		until = datetime.now() + timedelta(days=6)
+		until = start + timedelta(days=6)
 
 		data = self.get_outage_data(title='every day outage week', start=start, end=end, item_id=item_id, item_type=item_type, outage=True, frequency=RecurrenceFrequency.DAILY, interval=1, until=until)
 
@@ -328,6 +330,12 @@ class OutageTestCase(TestCase):
 		self.assertEqual(response.status_code, 200)
 		outages = ScheduledOutage.objects.filter(title='every day outage week', tool=tool)
 		self.assertEqual(len(outages), 7)
+		duration = end - start
+		for outage in outages:
+			# Make sure they all start at the same hour, end at the same hour and the duration is the same
+			self.assertEqual(outage.start.astimezone().hour, start.astimezone().hour)
+			self.assertEqual(outage.end.astimezone().hour, end.astimezone().hour)
+			self.assertEqual(duration, outage.end - outage.start)
 
 	def test_every_week_for_a_year(self):
 		self.every_week_for_a_year(item_id=tool.id, item_type=ReservationItemType.TOOL)

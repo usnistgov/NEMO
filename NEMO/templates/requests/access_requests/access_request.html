@@ -47,6 +47,12 @@
                     {% endif %}
                     </select>
                 </div>
+                {% if form.instance.id and user.is_facility_manager %}
+                    <div class="col-sm-6">
+                        <label for="creator_readonly" class="control-label">Creator</label>
+                        <input id="creator_readonly" class="form-control" style="min-width: 250px;" disabled value="{{ form.instance.creator }}">
+                    </div>
+                {% endif %}
             </div>
 		</div>
 		<div class="form-group">
@@ -56,7 +62,7 @@
                     <input id="search_other_users" type="text" class="form-control" placeholder="Search for other users to add as your buddies" style="min-width: 250px;">
                 </div>
                 <div class="col-sm-6" id="other_users_label" style="display: none">
-                    <div style="margin-bottom: 5px;">Selected users</div>
+                    <div style="margin-bottom: 5px;">Selected buddies</div>
                     <ul id="other_users" class="form-control form-control-static" style="height: 100%">
                     </ul>
                 </div>
@@ -72,7 +78,7 @@
 			<textarea class="form-control" rows="3" name="description" id="description" maxlength="{{ form.fields.description.max_length }}" placeholder="Provide additional details if needed">{{ form.description.value|default_if_none:"" }}</textarea>
 		</div>
 		<div class="text-right">
-            {% if form.instance.status == form.instance.Status.PENDING %}
+            {% if form.instance.get_status_display == "Pending" %}
                 {% if form.instance.id and user.is_facility_manager %}
                     {% button type="save" submit=False name="approve_request" title="Approve request" icon="glyphicon-ok-circle" value="Approve" onclick="if (confirm('Are you sure you want to approve this request?')) {submit_and_disable(this)}" %}
                     {% button type="delete" submit=False name="deny_request" title="Deny request" icon="glyphicon-ban-circle" value="Deny" onclick="if (confirm('Are you sure you want to deny this request?')) {submit_and_disable(this)}" %}

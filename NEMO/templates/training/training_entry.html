@@ -6,6 +6,7 @@
 	</td>
 	<td>
 		<input type="text" class="form-control" id="tool_textbox__{{ entry_number }}" name="chosen_tool__{{ entry_number }}" data-row="{{ entry_number }}">
+		<input type="hidden" id="tool_textbox_type__{{ entry_number }}" name="chosen_type__{{ entry_number }}" data-row="{{ entry_number }}">
 		<input type="button" class="btn btn-default" style="display:none" id="tool_button__{{ entry_number }}" onclick="purge_tool({{ entry_number }})">
 	</td>
 	<td id="project__{{ entry_number }}" style="vertical-align: middle">

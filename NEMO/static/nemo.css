@@ -369,6 +369,93 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 	margin-right: -170px;
 }
 
+/* Navbar customization, mainly size when switching */
+@media (max-width: 991px)
+{
+	.navbar-header
+	{
+		float: none;
+	}
+	.navbar-left,.navbar-right
+	{
+		float: none !important;
+	}
+	.navbar-toggle
+	{
+		display: block;
+	}
+	.navbar-collapse
+	{
+		border-top: 1px solid transparent;
+		box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+	}
+	.navbar-fixed-top
+	{
+		top: 0;
+		border-width: 0 0 1px;
+	}
+	.navbar-collapse.collapse
+	{
+		display: none!important;
+	}
+	.navbar-nav
+	{
+		float: none!important;
+		margin: 7.5px -15px;
+	}
+	.navbar-nav>li
+	{
+		float: none;
+	}
+	.navbar-nav>li>a
+	{
+		padding-top: 10px;
+		padding-bottom: 10px;
+	}
+	.collapse.in
+	{
+		display:block !important;
+	}
+	/* sub-menu */
+	.navbar-nav .open .dropdown-menu
+	{
+		position: static;
+		float: none;
+		width: auto;
+		margin-top: 0;
+		background-color: transparent;
+		border: 0;
+		-webkit-box-shadow: none;
+		box-shadow: none;
+	}
+	.navbar-nav .open .dropdown-menu > li > a,
+	.navbar-nav .open .dropdown-menu .dropdown-header
+	{
+		padding: 5px 15px 5px 25px;
+	}
+	.navbar-nav .open .dropdown-menu > li > a
+	{
+		line-height: 20px;
+	}
+	.navbar-nav .open .dropdown-menu > li > a:hover,
+	.navbar-nav .open .dropdown-menu > li > a:focus
+	{
+		background-image: none;
+	}
+	.navbar-default .navbar-nav .open .dropdown-menu > li > a
+	{
+		color: #777;
+	}
+}
+
+@media (min-width: 768px)
+{
+	.navbar-toggle
+	{
+		margin-right: 0;
+	}
+}
+
 .navbar-preferences > a
 {
 	padding-left: 0 !important;
@@ -709,12 +796,18 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	width: 90%;
 }
 
-.buddy-list-item-message-user
+.request-item-message-user
 {
 	position: absolute;
 	top: 5px;
 	right: 5px;
 	font-size: x-small;
+}
+
+.request-item-message-new-reply
+{
+	position: absolute;
+	top: 5px;
 }
 
 .buddy-list-item-reply-buttons
@@ -894,6 +987,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
     border-width: 1px 0;
 }
 
+/* Media queries for popups in safety and other media items */
 @media (max-width: 768px)
 {
 	.modal-lg .media-popup
@@ -928,4 +1022,20 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	{
 		max-width: 870px;
 	}
+}
+
+.adjustment-request-message, .adjustment-request-reply-textarea
+{
+	border-top: 1px solid #eae9e9 !important;
+}
+
+.adjustment-request-message
+{
+	position: relative;
+	padding-top: 20px;
+}
+
+.adjustment-request-reply-textarea
+{
+	padding-top: 5px;
 }

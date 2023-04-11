@@ -412,8 +412,12 @@ function ajax_post(url, contents, success_callback, failure_callback, always_cal
 	{
 		contents = {};
 	}
+	if (contents.constructor === Object)
+    {
+        contents = $.param(contents)
+    }
 	//noinspection JSUnresolvedFunction
-	contents.csrfmiddlewaretoken = csrf_token();
+	contents += "&csrfmiddlewaretoken=" + csrf_token();
 	ajax_message(url, "POST", contents, success_callback, failure_callback, always_callback, traditional_serialization)
 }
 

@@ -34,12 +34,14 @@ from NEMO.models import (
 	UsageEvent,
 	User,
 )
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
 	BasicDisplayTable,
 	EmailCategory,
 	export_format_datetime,
 	extract_optional_beginning_and_end_times,
 	format_datetime,
+	get_email_from_settings,
 	quiet_int,
 	render_email_template,
 	send_mail,
@@ -50,9 +52,9 @@ from NEMO.views.customization import (
 	CalendarCustomization,
 	EmailsCustomization,
 	InterlockCustomization,
+	RemoteWorkCustomization,
 	get_media_file_contents,
 )
-from NEMO.views.policy import check_policy_to_disable_tool, check_policy_to_enable_tool
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageQuestion, render_group_questions
 from NEMO.widgets.item_tree import ItemTree
@@ -329,7 +331,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	project = get_object_or_404(Project, id=project_id)
 	staff_charge = staff_charge == "true"
 	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
-	response = check_policy_to_enable_tool(tool, operator, user, project, staff_charge)
+	response = policy.check_to_enable_tool(tool, operator, user, project, staff_charge)
 	if response.status_code != HTTPStatus.OK:
 		return response
 
@@ -340,15 +342,24 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 		else:
 			return interlock_error("Enable", user)
 
+	# Figure out if the tool usage is part of remote work
+	# 1: Staff charge means it's always remote work
+	# 2: Always remote if operator is different from the user
+	# 3: Unless customization is set to ask explicitly
+	remote_work = (user != operator and operator.is_staff)
+	if RemoteWorkCustomization.get_bool("remote_work_ask_explicitly"):
+		remote_work = remote_work and bool(request.POST.get("remote_work", False))
 	# Start staff charge before tool usage
 	if staff_charge:
+		# Staff charge means always a remote
+		remote_work = True
 		new_staff_charge = StaffCharge()
 		new_staff_charge.staff_member = request.user
 		new_staff_charge.customer = user
 		new_staff_charge.project = project
 		new_staff_charge.save()
 		# If the tool requires area access, start charging area access time
-		if tool.requires_area_access:
+		if tool.requires_area_access and RemoteWorkCustomization.get_bool("remote_work_start_area_access_automatically"):
 			area_access = AreaAccessRecord()
 			area_access.area = tool.requires_area_access
 			area_access.staff_charge = new_staff_charge
@@ -362,6 +373,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	new_usage_event.user = user
 	new_usage_event.project = project
 	new_usage_event.tool = tool
+	new_usage_event.remote_work = remote_work
 	new_usage_event.save()
 
 	return response
@@ -380,7 +392,7 @@ def disable_tool(request, tool_id):
 	user: User = request.user
 	downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
 	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
-	response = check_policy_to_disable_tool(tool, user, downtime)
+	response = policy.check_to_disable_tool(tool, user, downtime)
 	if response.status_code != HTTPStatus.OK:
 		return response
 
@@ -542,7 +554,7 @@ Its last value was {counter.last_reset_value}."""
 		send_mail(
 			subject=f"{counter.tool.name} counter reset",
 			content=message,
-			from_email=settings.SERVER_EMAIL,
+			from_email=get_email_from_settings(),
 			to=facility_managers,
 			email_category=EmailCategory.SYSTEM,
 		)

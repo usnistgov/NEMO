@@ -26,10 +26,17 @@
 							<label><input name="display_new_buddy_request_notification" type="checkbox" {% if user_preferences.display_new_buddy_request_notification %}checked{% endif %}>Check this box to see notification badges for new buddy requests</label>
 						</div>
 						<div class="checkbox">
-							<label><input name="display_new_buddy_request_reply_notification" type="checkbox" {% if user_preferences.display_new_buddy_request_reply_notification %}checked{% endif %}>Check this box to see notification badges when users reply to buddy requests you replied to</label>
-						</div>
-						<div class="checkbox">
 							<label><input name="email_new_buddy_request_reply" type="checkbox" {% if user_preferences.email_new_buddy_request_reply %}checked{% endif %}>Check this box to receive an email notification when users reply to buddy requests you replied to</label>
+						</div>
+					</div>
+				</div>
+			</div>
+            <div class="panel panel-default">
+				<div class="panel-body">
+					<h3>Adjustment Requests</h3>
+					<div class="form-group col-sm-12">
+						<div class="checkbox">
+							<label><input name="email_new_adjustment_request_reply" type="checkbox" {% if user_preferences.email_new_adjustment_request_reply %}checked{% endif %}>Check this box to receive an email notification for replies to your adjustment requests</label>
 						</div>
 					</div>
 				</div>

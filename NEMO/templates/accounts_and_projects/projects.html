@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags_and_filters %}
 {% block title %}Projects{% endblock %}
 {% block content %}
     <h1 style="margin-bottom: 30px">
@@ -19,7 +20,7 @@
                 <label class="control-label">Account:</label>
                 <span class="grey">{{ project.account }}</span>
                 <br>
-                <label class="control-label">Identifier:</label>
+                <label class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</label>
                 <span class="grey">{{ project.application_identifier }}</span>
 				{% if project.discipline %}
 					<br>
@@ -31,22 +32,47 @@
                     <label class="control-label">Start date:</label>
                     <span class="grey">{{ project.start_date }}</span>
                 {% endif %}
-                <div style="height:10px"></div>
-                <div>
-                    <label class="control-label">Users:</label>
-                </div>
-                <div>
-                    {% if project.user_set.all %}
-                        <ul>
-                        {% for u in project.user_set.all %}
-                            <li class="{% if not u.is_active %}light-grey{% endif %}">{{ u }}</li>
-                        {% endfor %}
-                        </ul>
-                    {% else %}
-                        <span class="grey">This project does not have any members.</span>
-                    {% endif %}
-                </div>
+				{% if "projects_and_accounts"|customization:"project_allow_pi_manage_users" %}
+					<div style="height:10px"></div>
+					<div id="project_{{ project.id }}_users">
+						{% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
+					</div>
+				{% else %}
+					<div>
+						<label class="control-label">Users:</label>
+					</div>
+					<div>
+						{% if project.user_set.all %}
+							<ul>
+							{% for u in project.user_set.all %}
+								<li class="{% if not u.is_active %}light-grey{% endif %}">{{ u }}</li>
+							{% endfor %}
+							</ul>
+						{% else %}
+							<span class="grey">This project does not have any members.</span>
+						{% endif %}
+					</div>
+				{% endif %}
             </div>
         </div>
     {% endfor %}
+	<script>
+		function add_user_to_project(jquery_event, search_selection, dataset_name)
+		{
+			let project_id = $(this).data('project-id');
+			$(this).typeahead('val', '').focus();
+			let complete_callback = ajax_complete_callback('Unable to add user to project');
+			$("#project_" + project_id + "_users").load("{% url 'add_user_to_project' %}", {'user_id': search_selection.id, 'project_id': project_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
+		}
+		function remove_user_from_project(user_id, project_id)
+		{
+			let complete_callback = ajax_complete_callback('Unable to remove user from project');
+			$("#project_" + project_id + "_users").load("{% url 'remove_user_from_project' %}", {'user_id': user_id, 'project_id': project_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'}, complete_callback);
+		}
+		function reset_autocomplete()
+		{
+			$('.user_search').autocomplete('users', add_user_to_project, {{ users|json_search_base }});
+		}
+		window.addEventListener('load', reset_autocomplete, true);
+	</script>
 {% endblock %}

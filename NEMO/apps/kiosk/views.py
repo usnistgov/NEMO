@@ -11,6 +11,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import BadgeReader, Project, Reservation, ReservationItemType, Tool, UsageEvent, User
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int
 from NEMO.views.calendar import (
 	cancel_the_reservation,
@@ -18,11 +19,6 @@ from NEMO.views.calendar import (
 	extract_reservation_questions,
 	render_reservation_questions,
 	shorten_reservation,
-)
-from NEMO.views.policy import (
-	check_policy_to_disable_tool,
-	check_policy_to_enable_tool,
-	check_policy_to_save_reservation,
 )
 from NEMO.views.status_dashboard import create_tool_summary
 from NEMO.views.tool_control import (
@@ -47,7 +43,7 @@ def do_enable_tool(request, tool_id):
 	project = Project.objects.get(id=request.POST["project_id"])
 	bypass_interlock = request.POST.get("bypass", "False") == "True"
 
-	response = check_policy_to_enable_tool(tool, operator=customer, user=customer, project=project, staff_charge=False)
+	response = policy.check_to_enable_tool(tool, operator=customer, user=customer, project=project, staff_charge=False)
 	if response.status_code != HTTPStatus.OK:
 		dictionary = {
 			"message": "You are not authorized to enable this tool. {}".format(response.content.decode()),
@@ -87,7 +83,7 @@ def do_disable_tool(request, tool_id):
 	customer = User.objects.get(id=request.POST["customer_id"])
 	downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
 	bypass_interlock = request.POST.get("bypass", "False") == "True"
-	response = check_policy_to_disable_tool(tool, customer, downtime)
+	response = policy.check_to_disable_tool(tool, customer, downtime)
 	if response.status_code != HTTPStatus.OK:
 		dictionary = {"message": response.content, "delay": 10}
 		return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -162,7 +158,7 @@ def reserve_tool(request):
 	reservation.start = start
 	reservation.end = end
 	reservation.short_notice = tool.determine_insufficient_notice(start)
-	policy_problems, overridable = check_policy_to_save_reservation(
+	policy_problems, overridable = policy.check_to_save_reservation(
 		cancelled_reservation=None,
 		new_reservation=reservation,
 		user_creating_reservation=customer,
@@ -361,7 +357,7 @@ def kiosk(request, location=None):
 		}
 		return render(request, "kiosk/kiosk.html", dictionary)
 	else:
-		locations = sorted(list(set([tool.location for tool in Tool.objects.filter(visible=True)])))
+		locations = sorted(list(set([tool.location for tool in Tool.objects.filter(visible=True) if tool.location])))
 		dictionary = {
 			"locations": [
 				{"url": reverse("kiosk", kwargs={"location": location}), "name": location} for location in locations

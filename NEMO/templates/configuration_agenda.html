@@ -47,6 +47,11 @@
 									{% if not reservation.tool.in_use and reservation.project %}
                                         {% url 'enable_tool' tool_id=reservation.tool.id user_id=reservation.user.id project_id=reservation.project.id staff_charge='false' as enable_tool_for_user_url %}
                                         {% button type="info" icon="glyphicon-play" value="Enable the tool on behalf of "|concat:reservation.user.first_name onclick="enable_tool('"|concat:enable_tool_for_user_url|concat:"');" %}
+                                        {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
+                                            <div style="margin-top: 5px">
+                                                {% button type="info" icon="glyphicon-play" value="Enable the tool on behalf of "|concat:reservation.user.first_name|concat:" for remote work" onclick="enable_tool('"|concat:enable_tool_for_user_url|concat:"', true);" %}
+                                            </div>
+                                        {% endif %}
 									{% endif %}
 								</td>
 								{% if forloop.first %}
@@ -88,10 +93,10 @@
 			</table>
 		{% endfor %}
 		<script>
-			function enable_tool(url)
+			function enable_tool(url, remote_work)
 			{
 				let failure_dialog = ajax_failure_callback("Unable to enable tool");
-				ajax_post(url, undefined, reload_page, failure_dialog);
+				ajax_post(url, {"remote_work": remote_work || ""}, reload_page, failure_dialog);
 			}
 
 			function disable_tool(url)

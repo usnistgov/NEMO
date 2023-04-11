@@ -16,7 +16,7 @@ from django.urls.resolvers import RegexPattern
 from NEMO.models import User
 from NEMO.tests.test_utilities import login_as, login_as_staff, login_as_user, login_as_user_with_permissions
 from NEMO.utilities import get_full_url
-from NEMO.views.customization import ApplicationCustomization, EmailsCustomization
+from NEMO.views.customization import ApplicationCustomization, EmailsCustomization, UserRequestsCustomization
 
 url_test_logger = getLogger(__name__)
 
@@ -118,6 +118,11 @@ urls_to_skip = [
 	"update_safety_issue",
 	"new_reservation",
 	"remove_document_from_project",
+	# TODO: remove those when data is added to splash pad
+	"edit_adjustment_request",
+	"create_adjustment_request",
+	"delete_adjustment_request",
+	"adjustment_request_reply",
 ]
 
 
@@ -129,19 +134,41 @@ class URLsTestCase(TestCase):
 		EmailsCustomization.set("user_office_email_address", "email@example.org")
 		EmailsCustomization.set("safety_email_address", "email@example.org")
 		EmailsCustomization.set("abuse_email_address", "email@example.org")
+		UserRequestsCustomization.set("adjustment_requests_enabled", "enabled")
 
 	def test_get_full_url(self):
 		request = RequestFactory().get("/")
 		location = reverse("create_or_modify_user", args=[1])
 		# Test client request defaults to http://testserver
 		self.assertEqual(get_full_url(location, request), "http://testserver/user/1/")
-		self.assertEqual(get_full_url(location), "/user/1/")
-		settings.MAIN_URL = "https://nemo.nist.gov"
+		# Without a request, it uses https by default with first allowed host
+		self.assertEqual(get_full_url(location), "https://testserver/user/1/")
+		# Set first allowed host
+		settings.ALLOWED_HOSTS = ["nemo.nist.gov"] + settings.ALLOWED_HOSTS
 		self.assertEqual(get_full_url(location), "https://nemo.nist.gov/user/1/")
-		settings.MAIN_URL = "https://nemo.nist.gov/"
-		self.assertEqual(get_full_url(location), "https://nemo.nist.gov/user/1/")
-		settings.MAIN_URL = "https://nemo.nist.gov:8000"
-		self.assertEqual(get_full_url(location), "https://nemo.nist.gov:8000/user/1/")
+		# Override server domain
+		settings.SERVER_DOMAIN = "http://nemo.nist.gov"
+		self.assertEqual(get_full_url(location), "http://nemo.nist.gov/user/1/")
+		self.assertEqual(get_full_url(location, request), "http://testserver/user/1/")
+		# Reset request since host is otherwise cached
+		request = RequestFactory().get("/")
+		request.META["HTTP_HOST"] = "nemo.nist.gov"
+		self.assertEqual(get_full_url(location, request), "http://nemo.nist.gov/user/1/")
+		request = RequestFactory().get("/")
+		# Forwarded header (if enabled) takes precedence
+		settings.USE_X_FORWARDED_HOST = True
+		request.META["HTTP_HOST"] = "nemo2.nist.gov"
+		# If USE_X_FORWARDED_HOST is enabled, HTTP_HOST is skipped
+		request.META["HTTP_X_FORWARDED_HOST"] = "nemo.nist.gov"
+		self.assertEqual(get_full_url(location, request), "http://nemo.nist.gov/user/1/")
+		request = RequestFactory().get("/")
+		request.META["HTTP_X_FORWARDED_PROTO"] = "https"
+		request.META["HTTP_X_FORWARDED_HOST"] = "nemo.nist.gov:8000"
+		self.assertEqual(get_full_url(location, request), "http://nemo.nist.gov:8000/user/1/")
+		settings.USE_X_FORWARDED_PORT = True
+		request = RequestFactory().get("/")
+		request.META["HTTP_X_FORWARDED_PORT"] = "8001"
+		self.assertEqual(get_full_url(location, request), "http://testserver:8001/user/1/")
 
 	def test_urls(self):
 		module = importlib.import_module(settings.ROOT_URLCONF)

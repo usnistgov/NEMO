@@ -3,7 +3,6 @@ import random
 from logging import getLogger
 from typing import List, Optional
 
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -16,7 +15,7 @@ from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.apps.sensors.evaluators import evaluate_boolean_expression
 from NEMO.fields import MultiEmailField
 from NEMO.models import BaseModel, InterlockCard
-from NEMO.utilities import EmailCategory, format_datetime, send_mail
+from NEMO.utilities import EmailCategory, format_datetime, get_email_from_settings, send_mail
 
 models_logger = getLogger(__name__)
 
@@ -338,7 +337,7 @@ class SensorAlertEmail(SensorAlert):
 			send_mail(
 				subject=subject,
 				content=message,
-				from_email=settings.SERVER_EMAIL,
+				from_email=get_email_from_settings(),
 				to=recipients,
 				email_category=EmailCategory.SENSORS,
 			)

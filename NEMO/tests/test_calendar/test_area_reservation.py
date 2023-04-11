@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from NEMO.exceptions import NotAllowedToChargeProjectException
 from NEMO.models import (
@@ -93,8 +94,8 @@ class AreaReservationTestCase(TestCase):
 
 		# fix time
 		end = (base_start + timedelta(hours=1))
-		# Create a outage and try to schedule a reservation at the same time
-		outage = ScheduledOutage.objects.create(title="Outage", area=area, start=base_start, end=end, creator=staff)
+		# Create an outage and try to schedule a reservation at the same time
+		outage = ScheduledOutage.objects.create(title="Outage", area=area, start=base_start.astimezone(), end=end.astimezone(), creator=staff)
 		data = self.get_reservation_data(base_start, end, area)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
 		self.assertEqual(response.status_code, 200)
@@ -149,7 +150,7 @@ class AreaReservationTestCase(TestCase):
 		self.assertEqual(Reservation.objects.filter(area=area).count(), 0)
 
 		# max reservations per day
-		first_of_the_day = Reservation.objects.create(area=area, start=start, end=end, creator=consumer, user=consumer, short_notice=False)
+		first_of_the_day = Reservation.objects.create(area=area, start=start.astimezone(), end=end.astimezone(), creator=consumer, user=consumer, short_notice=False)
 		area.maximum_reservations_per_day = 1
 		area.minimum_usage_block_time = None
 		area._maximum_usage_block_time = None
@@ -282,17 +283,17 @@ class AreaReservationTestCase(TestCase):
 		self.assertContains(response, 'must be before the end time')
 
 		# test resize to end before now
-		old_resa = Reservation.objects.create(area=area, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), creator=consumer, user=consumer, short_notice=False)
+		old_resa = Reservation.objects.create(area=area, start=timezone.now() - timedelta(hours=1), end=timezone.now() + timedelta(hours=1), creator=consumer, user=consumer, short_notice=False)
 		response = self.client.post(reverse('resize_reservation'), {'delta': -65, 'id': old_resa.id}, follow=True)
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, 'Reservation end time')
 		self.assertContains(response, 'is earlier than the current time')
 		old_resa.delete()
 
-		# create a outage and try to resize reservation to overlap outage
-		start_reservation = end + timedelta(hours=1)
-		end_reservation = start_reservation + timedelta(hours=1)
-		ScheduledOutage.objects.create(area=area, start=start_reservation, end=end_reservation, creator=staff)
+		# create an outage and try to resize reservation to overlap outage
+		start_outage = (end + timedelta(hours=1)).astimezone()
+		end_outage = start_outage + timedelta(hours=1)
+		ScheduledOutage.objects.create(area=area, start=start_outage, end=end_outage, creator=staff)
 		response = self.client.post(reverse('resize_reservation'), {'delta': 61, 'id': reservation.id}, follow=True)
 		self.assertEquals(response.status_code, 200)
 		self.assertContains(response, "Your reservation coincides with a scheduled outage. Please choose a different time.")
@@ -324,8 +325,8 @@ class AreaReservationTestCase(TestCase):
 		new_reservation.delete()
 
 		# test increase reservation time by 10 min while logged in
-		older_resa_still_ongoing = Reservation.objects.create(area=area, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
-		AreaAccessRecord.objects.create(area=area, customer=consumer, start=datetime.now(), project=project)
+		older_resa_still_ongoing = Reservation.objects.create(area=area, start=timezone.now() - timedelta(hours=1), end=timezone.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
+		AreaAccessRecord.objects.create(area=area, customer=consumer, start=timezone.now(), project=project)
 		response = self.client.post(reverse('resize_reservation'), {'delta': 10, 'id': older_resa_still_ongoing.id}, follow=True)
 		self.assertEquals(response.status_code, 200)
 		old_reservation = Reservation.objects.get(pk=older_resa_still_ongoing.id)
@@ -338,8 +339,8 @@ class AreaReservationTestCase(TestCase):
 		new_reservation.delete()
 
 		# test decrease reservation time by 10 min while logged in
-		older_resa_still_ongoing = Reservation.objects.create(area=area, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
-		AreaAccessRecord.objects.create(area=area, customer=consumer, start=datetime.now(), project=project)
+		older_resa_still_ongoing = Reservation.objects.create(area=area, start=timezone.now() - timedelta(hours=1), end=timezone.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
+		AreaAccessRecord.objects.create(area=area, customer=consumer, start=timezone.now(), project=project)
 		response = self.client.post(reverse('resize_reservation'), {'delta': -10, 'id': older_resa_still_ongoing.id}, follow=True)
 		self.assertEquals(response.status_code, 200)
 		old_reservation = Reservation.objects.get(pk=older_resa_still_ongoing.id)
@@ -372,17 +373,17 @@ class AreaReservationTestCase(TestCase):
 		self.assertEquals(response.status_code, 404)
 		self.assertEquals(response.content.decode(), "The reservation that you wish to modify doesn't exist!")
 
-		# create a outage and try to move reservation to overlap outage
-		start_reservation = end + timedelta(hours=1)
-		end_reservation = start_reservation + timedelta(hours=1)
-		ScheduledOutage.objects.create(area=area, start=start_reservation, end=end_reservation, creator=staff)
+		# create an outage and try to move reservation to overlap outage
+		start_outage = (end + timedelta(hours=1)).astimezone()
+		end_outage = start_outage + timedelta(hours=1)
+		ScheduledOutage.objects.create(area=area, start=start_outage, end=end_outage, creator=staff)
 		response = self.client.post(reverse('move_reservation'), {'delta': 61, 'id': reservation.id}, follow=True)
 		self.assertEquals(response.status_code, 200)
 		self.assertContains(response, "Your reservation coincides with a scheduled outage. Please choose a different time.")
 
 		# test move reservation while logged in area
-		older_resa_still_ongoing = Reservation.objects.create(area=area, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
-		area_access_record = AreaAccessRecord.objects.create(area=area, customer=consumer, start=datetime.now(), project=project)
+		older_resa_still_ongoing = Reservation.objects.create(area=area, start=timezone.now() - timedelta(hours=1), end=timezone.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
+		area_access_record = AreaAccessRecord.objects.create(area=area, customer=consumer, start=timezone.now(), project=project)
 		response = self.client.post(reverse('move_reservation'), {'delta': -10, 'id': older_resa_still_ongoing.id}, follow=True)
 		self.assertEquals(response.status_code, 400)
 		self.assertEquals(response.content.decode(), "You may only resize an area reservation while logged in that area.")
@@ -449,20 +450,20 @@ class AreaReservationTestCase(TestCase):
 		login_as(self.client, consumer)
 
 		# test cancel missed reservation
-		missed_resa = Reservation.objects.create(area=area, start=start+timedelta(days=1), end=end+timedelta(days=1), user=consumer, creator=consumer, missed=True, short_notice=False)
+		missed_resa = Reservation.objects.create(area=area, start=(start+timedelta(days=1)).astimezone(), end=(end+timedelta(days=1)).astimezone(), user=consumer, creator=consumer, missed=True, short_notice=False)
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': missed_resa.id}), {}, follow=True)
 		self.assertEquals(response.status_code, 400)
 		self.assertEquals(response.content.decode(), "This reservation was missed and cannot be modified.")
 
 		# test cancel already ended reservation
-		already_ended_resa = Reservation.objects.create(area=area, start=start - timedelta(days=1), end=end - timedelta(days=1), user=consumer, creator=consumer, missed=False, short_notice=False)
+		already_ended_resa = Reservation.objects.create(area=area, start=(start - timedelta(days=1)).astimezone(), end=(end - timedelta(days=1)).astimezone(), user=consumer, creator=consumer, missed=False, short_notice=False)
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': already_ended_resa.id}), {}, follow=True)
 		self.assertEquals(response.status_code, 400)
 		self.assertEquals(response.content.decode(), "You may not cancel reservations that have already ended.")
 
 		# test cancel reservation while logged in area
-		older_resa_still_ongoing = Reservation.objects.create(area=area, start=datetime.now() - timedelta(hours=1), end=datetime.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
-		AreaAccessRecord.objects.create(area=area, customer=consumer, start=datetime.now(), project=project)
+		older_resa_still_ongoing = Reservation.objects.create(area=area, start=timezone.now() - timedelta(hours=1), end=timezone.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
+		AreaAccessRecord.objects.create(area=area, customer=consumer, start=timezone.now(), project=project)
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': older_resa_still_ongoing.id}), {}, follow=True)
 		self.assertEquals(response.status_code, 400)
 		self.assertEquals(response.content.decode(), "You may not cancel an area reservation while logged in that area.")
@@ -478,7 +479,7 @@ class AreaReservationTestCase(TestCase):
 		self.assertContains(response, "This reservation has already been cancelled by ", status_code=400)
 
 		# test staff cancelling somebody else's reservation
-		other_resa = Reservation.objects.create(area=area, start=start - timedelta(days=1),	end=end - timedelta(days=1), user=consumer, creator=consumer, short_notice=False)
+		other_resa = Reservation.objects.create(area=area, start=(start - timedelta(days=1)).astimezone(),end=(end - timedelta(days=1)).astimezone(), user=consumer, creator=consumer, short_notice=False)
 		login_as(self.client, staff)
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': other_resa.id}), {}, follow=True)
 		self.assertContains(response, "You must provide a reason when cancelling someone else's reservation.", status_code=400)

@@ -51,7 +51,7 @@
 			let id = "#user_textbox__" + entry_number;
 			$(id).autocomplete('user', on_autocomplete_selection, {{ users|json_search_base }}).prop('required', true).focus();
 			id = "#tool_textbox__" + entry_number;
-			$(id).autocomplete('tool', on_autocomplete_selection, {{ tools|json_search_base }}).prop('required', true);
+			$(id).autocomplete('tool', on_autocomplete_selection, {% json_search_base_with_extra_fields tools|add:tool_groups %}, {% if tool_groups %}false{% else %}true{% endif %}).prop('required', true);
 		}
 
 		function remove_row(number)
@@ -65,7 +65,9 @@
 			let row = $(this).data('row');
 			let button_id = "#" + dataset_name + "_button__" + row;
 			let textbox_id = "#" + dataset_name + "_textbox__" + row;
+			let textbox_type_id = "#" + dataset_name + "_textbox_type__" + row;
 			$(textbox_id).prop('required', false);
+			$(textbox_type_id).val(search_selection.type);
 			$(button_id).val(search_selection.name).show();
 
 			if(dataset_name === "user")
@@ -120,6 +122,7 @@
 		{
 			$("#tool_button__" + row).hide();
 			$("#tool_textbox__" + row).typeahead('val', '').prop('required', true).show().focus();
+			$("#tool_textbox_type__" + row).typeahead('val', '');
 		}
 
 		function on_submit()

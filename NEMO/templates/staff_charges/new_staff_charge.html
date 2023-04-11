@@ -1,5 +1,6 @@
 {% extends 'staff_charges/staff_charges_base.html' %}
 {% load custom_tags_and_filters %}
+{% block remote_work_title %}New staff charge{% endblock %}
 {% block staff_charges_content %}
 	<p>Use this form to charge a user for staff time and area access time when you are working on a project on their behalf. You may only work on one user project at a time for a customer.</p>
 	{% if error %}
@@ -9,7 +10,7 @@
 	{% endif %}
 	<form id="new_staff_charge" action="{% url 'staff_charges' %}" class="form-horizontal" method="get">
 		<div class="form-group">
-			<label for="customer_search" class="control-label col-sm-1">Customer</label>
+			<label for="customer_search" class="control-label col-sm-1" style="margin-right: 5px">Customer</label>
 			<div class="col-sm-4">
 				<input id="customer_search" type="text" class="form-control" placeholder="Search for a customer">
 				<input id="customer" name="customer" type="hidden">

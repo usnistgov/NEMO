@@ -18,8 +18,10 @@ from NEMO.views import (
 	abuse,
 	access_requests,
 	accounts_and_projects,
+	adjustment_requests,
 	alerts,
 	api,
+	api_file_import,
 	area_access,
 	authentication,
 	buddy_requests,
@@ -44,7 +46,6 @@ from NEMO.views import (
 	resources,
 	safety,
 	sidebar,
-	staff_charges,
 	status_dashboard,
 	tasks,
 	tool_control,
@@ -57,17 +58,22 @@ from NEMO.views import (
 
 logger = logging.getLogger(__name__)
 
-if apps.is_installed("django.contrib.admin"):
-	# Use our custom login page instead of Django's built-in one.
-	admin.site.login = login_required(admin.site.login)
-
 # REST API URLs
 router = routers.DefaultRouter()
+router.register(r"auth_groups", api.GroupViewSet)
+router.register(r"auth_permissions", api.PermissionViewSet)
+router.register(r"account_types", api.AccountTypeViewSet)
 router.register(r"accounts", api.AccountViewSet)
 router.register(r"area_access_records", api.AreaAccessRecordViewSet)
 router.register(r"areas", api.AreaViewSet)
 router.register(r"billing", api.BillingViewSet, basename="billing")
+router.register(r"consumable_categories", api.ConsumableCategoryViewSet)
+router.register(r"consumable_withdrawals", api.ConsumableWithdrawViewSet)
+router.register(r"consumables", api.ConsumableViewSet)
+router.register(r"content_types", api.ContentTypeViewSet)
+router.register(r"project_disciplines", api.ProjectDisciplineViewSet)
 router.register(r"projects", api.ProjectViewSet)
+router.register(r"qualifications", api.QualificationViewSet)
 router.register(r"reservations", api.ReservationViewSet)
 router.register(r"resources", api.ResourceViewSet)
 router.register(r"scheduled_outages", api.ScheduledOutageViewSet)
@@ -94,7 +100,7 @@ for app in apps.get_app_configs():
 			logger.warning(f"no urls found for NEMO plugin: {app_name}")
 			pass
 		except Exception as e:
-			logger.warning(f"could not import urls for NEMO plugin: {app_name} {str(e)}")
+			logger.exception(f"could not import urls for NEMO plugin: {app_name}")
 			pass
 		else:
 			urlpatterns += [path("", include("%s.urls" % app_name))]
@@ -138,12 +144,13 @@ urlpatterns += [
 
 	# User requests
 	path("user_requests/", user_requests.user_requests, name="user_requests"),
-	re_path(r"^user_requests/(?P<tab>buddy|access)/$", user_requests.user_requests, name="user_requests"),
+	re_path(r"^user_requests/(?P<tab>buddy|access|adjustment)/$", user_requests.user_requests, name="user_requests"),
 
 	# Access requests
 	path("access_requests/", access_requests.access_requests, name="access_requests"),
 	path("create_access_request/", access_requests.create_access_request, name="create_access_request"),
 	path("edit_access_request/<int:request_id>/", access_requests.create_access_request, name="edit_access_request"),
+	path("export_access_requests/", access_requests.csv_export, name="export_access_requests"),
 	path("delete_access_request/<int:request_id>/", access_requests.delete_access_request, name="delete_access_request"),
 
 	# Buddy System
@@ -152,6 +159,16 @@ urlpatterns += [
 	path("edit_buddy_request/<int:request_id>/", buddy_requests.create_buddy_request, name="edit_buddy_request"),
 	path("delete_buddy_request/<int:request_id>/", buddy_requests.delete_buddy_request, name="delete_buddy_request"),
 	path("buddy_request_reply/<int:request_id>/", buddy_requests.buddy_request_reply, name="buddy_request_reply"),
+
+	# Adjustment requests
+	path("adjustment_requests/", adjustment_requests.adjustment_requests, name="adjustment_requests"),
+	path("create_adjustment_request/", adjustment_requests.create_adjustment_request, name="create_adjustment_request"),
+	path("create_adjustment_request/<int:item_type_id>/<int:item_id>/", adjustment_requests.create_adjustment_request, name="create_adjustment_request"),
+	path("edit_adjustment_request/<int:request_id>/", adjustment_requests.create_adjustment_request, name="edit_adjustment_request"),
+	path("edit_adjustment_request/<int:request_id>/<int:item_type_id>/<int:item_id>/", adjustment_requests.create_adjustment_request, name="edit_adjustment_request"),
+	path("adjustment_request_reply/<int:request_id>/", adjustment_requests.adjustment_request_reply, name="adjustment_request_reply"),
+	path("export_adjustment_requests/", adjustment_requests.csv_export, name="export_adjustment_requests"),
+	path("delete_adjustment_request/<int:request_id>/", adjustment_requests.delete_adjustment_request, name="delete_adjustment_request"),
 
 	# Tasks:
 	path("create_task/", tasks.create, name="create_task"),
@@ -188,13 +205,16 @@ urlpatterns += [
 	path("modify_qualifications/", qualifications.modify_qualifications, name="modify_qualifications"),
 	path("get_qualified_users/", qualifications.get_qualified_users, name="get_qualified_users"),
 
-	# Staff charges:
-	path("staff_charges/", staff_charges.staff_charges, name="staff_charges"),
-	path("begin_staff_charge/", staff_charges.begin_staff_charge, name="begin_staff_charge"),
-	path("begin_staff_area_charge/", staff_charges.begin_staff_area_charge, name="begin_staff_area_charge"),
-	path("end_staff_area_charge/", staff_charges.end_staff_area_charge, name="end_staff_area_charge"),
-	path("end_staff_charge/", staff_charges.end_staff_charge, name="end_staff_charge"),
-	path("edit_staff_charge_note/", staff_charges.edit_staff_charge_note, name="edit_staff_charge_note"),
+	# Remote work:
+	path("remote_work/", remote_work.remote_work, name="remote_work"),
+	path("staff_charges/", remote_work.staff_charges, name="staff_charges"),
+	path("begin_staff_charge/", remote_work.begin_staff_charge, name="begin_staff_charge"),
+	path("begin_staff_area_charge/", remote_work.begin_staff_area_charge, name="begin_staff_area_charge"),
+	path("end_staff_area_charge/", remote_work.end_staff_area_charge, name="end_staff_area_charge"),
+	path("end_staff_charge/", remote_work.end_staff_charge, name="end_staff_charge"),
+	path("edit_staff_charge_note/", remote_work.edit_staff_charge_note, name="edit_staff_charge_note"),
+	path("validate_staff_charge/<int:staff_charge_id>/", remote_work.validate_staff_charge, name="validate_staff_charge"),
+	path("validate_usage_event/<int:usage_event_id>/", remote_work.validate_usage_event, name="validate_usage_event"),
 
 	# Status dashboard:
 	path("status_dashboard/", status_dashboard.status_dashboard, name="status_dashboard"),
@@ -325,11 +345,13 @@ urlpatterns += [
 ]
 
 if settings.ALLOW_CONDITIONAL_URLS:
-	urlpatterns += [
-		path("admin/", admin.site.urls),
+	if apps.is_installed("django.contrib.admin"):
+		urlpatterns += [path("admin/", admin.site.urls)]
 
+	urlpatterns += [
 		# REST API
 		path("api/", include(router.urls)),
+		path("api/file_import/", api_file_import.file_import, name="api_file_import"),
 
 		# Area access
 		path("area_access/", area_access.area_access, name="area_access"),
@@ -374,11 +396,6 @@ if settings.ALLOW_CONDITIONAL_URLS:
 
 		# Account, project, and user history
 		re_path(r"^history/(?P<item_type>account|project|user)/(?P<item_id>\d+)/$", history.history, name="history"),
-
-		# Remote work:
-		path("remote_work/", remote_work.remote_work, name="remote_work"),
-		path("validate_staff_charge/<int:staff_charge_id>/", remote_work.validate_staff_charge, name="validate_staff_charge"),
-		path("validate_usage_event/<int:usage_event_id>/", remote_work.validate_usage_event, name="validate_usage_event"),
 
 		# Site customization:
 		path("customization/", customization.customization, name="customization"),

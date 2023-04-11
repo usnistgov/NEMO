@@ -186,7 +186,7 @@
                     <div class="input-group">
                         <input type="text" id="reason" class="form-control" placeholder="Reason for cancellation (required)" aria-label="Reason for cancellation (required)" maxlength="3000">
                         <span class="input-group-btn">
-                            <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}', $('#reason').val()) {% if popup_view %} }) {% endif %}" title="Cancel this reservation"><i class="glyphicon glyphicon-trash"></i>Cancel this reservation</button>
+                            <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}', $('#reason').val()) {% if popup_view %} }) {% endif %}" title="Cancel this reservation"><i class="glyphicon glyphicon-trash"></i> Cancel this reservation</button>
                         </span>
                     </div>
                     <script>

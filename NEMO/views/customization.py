@@ -2,6 +2,7 @@ from abc import ABC
 from datetime import date, datetime
 from typing import Dict, Iterable
 
+from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.files.storage import get_storage_class
@@ -13,13 +14,14 @@ from django.core.validators import (
 from django.http import HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.template import Context, Template
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
 from NEMO.models import ConsumableCategory, Customization, Project, RecurringConsumableCharge
-from NEMO.utilities import date_input_format, datetime_input_format, quiet_int
+from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
 
 class CustomizationBase(ABC):
@@ -160,10 +162,12 @@ class ApplicationCustomization(CustomizationBase):
 class ProjectsAccountsCustomization(CustomizationBase):
 	variables = {
 		"project_selection_template": "{{ project.name }}",
+		"project_application_identifier_name": "Application identifier",
 		"project_allow_document_upload": "",
 		"account_list_active_only": "",
 		"project_list_active_only": "",
 		"account_list_collapse": "",
+		"project_allow_pi_manage_users": "",
 	}
 
 	def validate(self, name, value):
@@ -253,6 +257,7 @@ class InterlockCustomization(CustomizationBase):
 
 @customization(key="requests", title="User requests")
 class UserRequestsCustomization(CustomizationBase):
+	frequencies = [RecurrenceFrequency.DAILY, RecurrenceFrequency.WEEKLY, RecurrenceFrequency.MONTHLY]
 	variables = {
 		"buddy_requests_title": "Buddy requests board",
 		"buddy_board_description": "",
@@ -260,16 +265,56 @@ class UserRequestsCustomization(CustomizationBase):
 		"access_requests_description": "",
 		"access_requests_minimum_users": "2",
 		"access_requests_display_max": "",
+		"adjustment_requests_enabled": "",
+		"adjustment_requests_tool_usage_enabled": "enabled",
+		"adjustment_requests_area_access_enabled": "enabled",
+		"adjustment_requests_missed_reservation_enabled": "enabled",
+		"adjustment_requests_missed_reservation_times": "",
+		"adjustment_requests_staff_staff_charges_enabled": "enabled",
+		"adjustment_requests_title": "Adjustment requests",
+		"adjustment_requests_description": "",
+		"adjustment_requests_charges_display_number": "10",
+		"adjustment_requests_display_max": "",
+		"adjustment_requests_time_limit_interval": "2",
+		"adjustment_requests_time_limit_frequency": RecurrenceFrequency.WEEKLY.index,
 		"weekend_access_notification_emails": "",
 		"weekend_access_notification_cutoff_hour": "",
 		"weekend_access_notification_cutoff_day": "",
 	}
+
+	@classmethod
+	def get_date_limit(cls) -> datetime:
+		try:
+			interval = cls.get_int("adjustment_requests_time_limit_interval")
+			freq = RecurrenceFrequency(cls.get_int("adjustment_requests_time_limit_frequency"))
+			if interval and freq:
+				delta = (
+					relativedelta(months=interval)
+					if freq == RecurrenceFrequency.MONTHLY
+					else relativedelta(weeks=interval)
+					if freq == RecurrenceFrequency.WEEKLY
+					else relativedelta(days=interval)
+				)
+				return timezone.now() - delta
+		except:
+			pass
+
+	def context(self) -> Dict:
+		context_dict = super().context()
+		context_dict["frequency_choices"] = [(freq.index, freq.display_value) for freq in self.frequencies]
+		return context_dict
 
 	def validate(self, name, value):
 		if name == "weekend_access_notification_emails":
 			recipients = tuple([e for e in value.split(",") if e])
 			for email in recipients:
 				validate_email(email)
+		if value and name == "adjustment_requests_time_limit_frequency":
+			try:
+				if RecurrenceFrequency(int(value)) not in self.frequencies:
+					raise ValidationError(f"frequency must be one of {[freq.display_value for freq in self.frequencies]}")
+			except Exception as e:
+				raise ValidationError(str(e))
 
 
 @customization(key="recurring_charges", title="Recurring charges")
@@ -305,9 +350,13 @@ class RecurringChargesCustomization(CustomizationBase):
 		return errors
 
 
-@customization(key="tool_qualification", title="Tool qualification")
-class ToolQualificationCustomization(CustomizationBase):
+@customization(key="tool", title="Tools")
+class ToolCustomization(CustomizationBase):
 	variables = {
+		"tool_phone_number_required": "enabled",
+		"tool_location_required": "enabled",
+		"tool_control_hide_data_history_users": "",
+		"tool_control_configuration_setting_template": "{{ current_setting }}",
 		"tool_qualification_reminder_days": "",
 		"tool_qualification_expiration_days": "",
 		"tool_qualification_expiration_never_used_days": "",
@@ -324,6 +373,11 @@ class ToolQualificationCustomization(CustomizationBase):
 			recipients = tuple([e for e in value.split(",") if e])
 			for email in recipients:
 				validate_email(email)
+		if name == "tool_control_configuration_setting_template" and value:
+			try:
+				Template(value).render(Context({"current_setting": "setting"}))
+			except Exception as e:
+				raise ValidationError(str(e))
 
 
 @customization(key="safety", title="Safety")
@@ -338,6 +392,15 @@ class SafetyCustomization(CustomizationBase):
 	}
 
 
+@customization(key="remote_work", title="Remote work")
+class RemoteWorkCustomization(CustomizationBase):
+	variables = {
+		"remote_work_validation": "",
+		"remote_work_start_area_access_automatically": "enabled",
+		"remote_work_ask_explicitly": "",
+	}
+
+
 @customization(key="templates", title="File & email templates")
 class TemplatesCustomization(CustomizationBase):
 	files = [
@@ -347,6 +410,7 @@ class TemplatesCustomization(CustomizationBase):
 		("facility_rules_tutorial", ".html"),
 		("jumbotron_watermark", ".png"),
 		("access_request_notification_email", ".html"),
+		("adjustment_request_notification_email", ".html"),
 		("cancellation_email", ".html"),
 		("counter_threshold_reached_email", ".html"),
 		("feedback_email", ".html"),

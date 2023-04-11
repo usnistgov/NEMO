@@ -1,5 +1,6 @@
 {% extends 'staff_charges/staff_charges_base.html' %}
 {% load custom_tags_and_filters %}
+{% block remote_work_title %}Project selection{% endblock %}
 {% block staff_charges_content %}
 	<div class="col-sm-12">
 		<form action="{% url 'begin_staff_charge' %}" class="form-horizontal" method="post">

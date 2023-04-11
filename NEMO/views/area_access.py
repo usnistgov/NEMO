@@ -27,6 +27,7 @@ from NEMO.exceptions import (
 	UnavailableResourcesUserError,
 )
 from NEMO.models import Area, AreaAccessRecord, Project, User
+from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
 	beginning_of_the_day,
 	date_input_format,
@@ -36,7 +37,6 @@ from NEMO.utilities import (
 )
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import ApplicationCustomization
-from NEMO.views.policy import check_billing_to_project, check_policy_to_enter_any_area, check_policy_to_enter_this_area
 
 area_access_logger = getLogger(__name__)
 
@@ -136,8 +136,8 @@ def new_area_access_record(request):
 			if error_message:
 				dictionary['error_message'] = error_message
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
-			check_billing_to_project(project, user, area)
-			check_policy_to_enter_this_area(area=area, user=user)
+			policy.check_billing_to_project(project, user, area)
+			policy.check_to_enter_area(area=area, user=user)
 		except ProjectChargeException as e:
 			dictionary['error_message'] = e.msg
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
@@ -177,7 +177,7 @@ def new_area_access_record(request):
 def check_policy_for_user(customer: User):
 	error_message = None
 	try:
-		check_policy_to_enter_any_area(user=customer)
+		policy.check_to_enter_any_area(user=customer)
 	except InactiveUserError:
 		error_message = '{} is inactive'.format(customer)
 	except NoActiveProjectsForUserError:
@@ -218,7 +218,7 @@ def change_project(request, new_project=None):
 		return redirect(reverse('landing'))
 	new_project = get_object_or_404(Project, id=new_project)
 	try:
-		check_billing_to_project(new_project, user, user.area_access_record().area)
+		policy.check_billing_to_project(new_project, user, user.area_access_record().area)
 	except ProjectChargeException as e:
 		dictionary = {
 			'error': e.msg
@@ -281,7 +281,7 @@ def self_log_in(request, load_areas=True):
 
 	facility_name = ApplicationCustomization.get('facility_name')
 	try:
-		check_policy_to_enter_any_area(user)
+		policy.check_to_enter_any_area(user)
 	except InactiveUserError:
 		dictionary['error_message'] = f'Your account has been deactivated. Please visit the {facility_name} staff to resolve the problem.'
 		return render(request, 'area_access/self_login.html', dictionary)
@@ -307,8 +307,8 @@ def self_log_in(request, load_areas=True):
 		try:
 			a = Area.objects.get(id=request.POST['area'])
 			p = Project.objects.get(id=request.POST['project'])
-			check_policy_to_enter_this_area(a, request.user)
-			check_billing_to_project(p, user, a)
+			policy.check_to_enter_area(a, request.user)
+			policy.check_billing_to_project(p, user, a)
 			log_in_user_to_area(a, request.user, p)
 		except ProjectChargeException as e:
 			dictionary['area_error_message'] = e.msg

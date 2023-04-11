@@ -182,13 +182,13 @@
 			else
 				success_callbacks = [refresh_tool_status, ajax_success_callback];
 			let enable_start_button = function() { $("#start button").prop("disabled", false); };
-			try_post_catch_interlock_error(url, undefined, success_callbacks, enable_start_button);
+			try_post_catch_interlock_error(url, {"remote_work": $("#remote_work").val()}, success_callbacks, enable_start_button);
 		}
 
 		function disable_tool(url)
 		{
 			$("#stop").prop("disabled", true);
-			let contents = serialize("#tool_control");
+			let contents = $("#tool_control").serialize();
 			let enable_stop_button = function() { $("#stop").prop("disabled", false); };
 			try_post_catch_interlock_error(url, contents, [refresh_tool_status, ajax_success_callback], enable_stop_button);
 		}
@@ -197,8 +197,9 @@
 
 			{# Only staff can perform the functions in this if-block. #}
 
-			function use_tool_for_other()
+			function use_tool_for_other(remote_work)
 			{
+                $("#remote_work").val(remote_work || "");
 				$("#start").hide();
 				$("#project_choice").html("Fetching user list...").show().load("{% url 'use_tool_for_other' %}", undefined, load_projects_completion_callback);
 			}

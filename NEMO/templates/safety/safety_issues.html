@@ -29,7 +29,7 @@
 					</div>
 					<div class="form-group">
 						{% if not ticket.visible %}<span class="glyphicon glyphicon-eye-close"></span> This issue is hidden from users<br>{% endif %}
-						Location: {{ ticket.location }}<br>
+						{% if ticket.location %}Location: {{ ticket.location }}<br>{% endif %}
 						{% if ticket.reporter %}
 							Reported on {{ ticket.creation_time }}{% if user.is_staff %} by {{ ticket.reporter }}{% endif %}<br>
 						{% else %}

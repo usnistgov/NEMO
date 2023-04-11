@@ -1,7 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,16 +15,16 @@ from NEMO.exceptions import (
 	PhysicalAccessExpiredUserError,
 )
 from NEMO.forms import BuddyRequestForm
-from NEMO.models import Area, BuddyRequest, BuddyRequestMessage, User
-from NEMO.utilities import get_full_url
+from NEMO.models import Area, BuddyRequest, Notification, RequestMessage, User
+from NEMO.policy import policy_class as policy
+from NEMO.utilities import end_of_the_day, get_email_from_settings, get_full_url
 from NEMO.views.customization import UserRequestsCustomization
 from NEMO.views.notifications import (
-	create_buddy_reply_notification,
 	create_buddy_request_notification,
+	create_request_message_notification,
 	delete_notification,
 	get_notifications,
 )
-from NEMO.views.policy import check_policy_to_enter_any_area
 
 
 @login_required
@@ -41,8 +40,8 @@ def buddy_requests(request):
 	dictionary = {
 		"buddy_requests": buddy_requests,
 		"buddy_board_description": UserRequestsCustomization.get("buddy_board_description"),
-		"request_notifications": get_notifications(request.user, BuddyRequest),
-		"reply_notifications": get_notifications(request.user, BuddyRequestMessage),
+		"request_notifications": get_notifications(request.user, Notification.Types.BUDDY_REQUEST),
+		"reply_notifications": get_notifications(request.user, Notification.Types.BUDDY_REQUEST_REPLY),
 	}
 	return render(request, "requests/buddy_requests/buddy_requests.html", dictionary)
 
@@ -94,7 +93,7 @@ def delete_buddy_request(request, request_id):
 
 	buddy_request.deleted = True
 	buddy_request.save(update_fields=["deleted"])
-	delete_notification(BuddyRequest, buddy_request.id)
+	delete_notification(Notification.Types.BUDDY_REQUEST, buddy_request.id)
 	return redirect("user_requests", "buddy")
 
 
@@ -109,21 +108,24 @@ def buddy_request_reply(request, request_id):
 	if error_message:
 		return HttpResponseBadRequest(error_message)
 	elif message_content:
-		reply = BuddyRequestMessage()
-		reply.buddy_request = buddy_request
+		reply = RequestMessage()
+		reply.content_object = buddy_request
 		reply.content = message_content
 		reply.author = user
 		reply.save()
-		create_buddy_reply_notification(reply)
+		request_end = buddy_request.end
+		# Unread buddy request reply notifications expire after the request ends
+		expiration = end_of_the_day(datetime(request_end.year, request_end.month, request_end.day))
+		create_request_message_notification(reply, Notification.Types.BUDDY_REQUEST_REPLY, expiration)
 		email_interested_parties(
 			reply, get_full_url(f"{reverse('user_requests', kwargs={'tab': 'buddy'})}?#{reply.id}", request)
 		)
 	return redirect("user_requests", "buddy")
 
 
-def email_interested_parties(reply: BuddyRequestMessage, reply_url):
-	creator: User = reply.buddy_request.user
-	for user in reply.buddy_request.creator_and_reply_users():
+def email_interested_parties(reply: RequestMessage, reply_url):
+	creator: User = reply.content_object.user
+	for user in reply.content_object.creator_and_reply_users():
 		if user != reply.author and (user == creator or user.get_preferences().email_new_buddy_request_reply):
 			creator_display = f"{creator.get_name()}'s" if creator != user else "your"
 			creator_display_his = creator_display if creator != reply.author else "his"
@@ -134,13 +136,13 @@ def email_interested_parties(reply: BuddyRequestMessage, reply_url):
 <br><br>
 Please visit {reply_url} to reply"""
 			email_notification = user.get_preferences().email_send_buddy_request_replies
-			user.email_user(subject=subject, message=message, from_email=settings.SERVER_EMAIL, email_notification=email_notification)
+			user.email_user(subject=subject, message=message, from_email=get_email_from_settings(), email_notification=email_notification)
 
 
 def check_user_reply_error(buddy_request: BuddyRequest, user: User) -> Optional[str]:
 	error_message = None
 	try:
-		check_policy_to_enter_any_area(user)
+		policy.check_to_enter_any_area(user)
 	except InactiveUserError:
 		error_message = "You cannot reply to this request because your account has been deactivated"
 	except NoActiveProjectsForUserError:

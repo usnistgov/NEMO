@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.decorators import any_staff_required, user_office_or_facility_manager_required
+from NEMO.decorators import any_staff_required, user_office_or_manager_required
 from NEMO.forms import UserForm, UserPreferencesForm
 from NEMO.models import (
 	ActivityHistory,
@@ -224,7 +224,7 @@ def create_or_modify_user(request, user_id):
 		return HttpResponseBadRequest('Invalid method')
 
 
-@user_office_or_facility_manager_required
+@user_office_or_manager_required
 @require_http_methods(['GET', 'POST'])
 def deactivate(request, user_id):
 	dictionary = {
@@ -311,24 +311,31 @@ def deactivate(request, user_id):
 		return redirect('users')
 
 
-@user_office_or_facility_manager_required
+@user_office_or_manager_required
 @require_POST
 def reset_password(request, user_id):
 	try:
 		identity_service = get_identity_service()
-		user = get_object_or_404(User, id=user_id)
-		timeout = identity_service.get('timeout', 3)
-		result = requests.post(urljoin(identity_service['url'], '/reset_password/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
-		if result.status_code == HTTPStatus.OK:
-			dictionary = {
-				'title': 'Password reset',
-				'heading': 'The account password was set to the default',
-			}
+		if identity_service.get("available", False):
+			user = get_object_or_404(User, id=user_id)
+			timeout = identity_service.get('timeout', 3)
+			result = requests.post(urljoin(identity_service['url'], '/reset_password/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
+			if result.status_code == HTTPStatus.OK:
+				dictionary = {
+					'title': 'Password reset',
+					'heading': 'The account password was set to the default',
+				}
+			else:
+				dictionary = {
+					'title': 'Oops',
+					'heading': 'There was a problem resetting the password',
+					'content': 'The identity service returned HTTP error code {}. {}'.format(result.status_code, result.text),
+				}
 		else:
 			dictionary = {
-				'title': 'Oops',
+				'title': 'Identity service not available',
 				'heading': 'There was a problem resetting the password',
-				'content': 'The identity service returned HTTP error code {}. {}'.format(result.status_code, result.text),
+				'content': 'The identity service is not set or not available'
 			}
 	except Exception as e:
 		dictionary = {
@@ -339,24 +346,31 @@ def reset_password(request, user_id):
 	return render(request, 'acknowledgement.html', dictionary)
 
 
-@user_office_or_facility_manager_required
+@user_office_or_manager_required
 @require_POST
 def unlock_account(request, user_id):
 	try:
 		identity_service = get_identity_service()
-		user = get_object_or_404(User, id=user_id)
-		timeout = identity_service.get('timeout', 3)
-		result = requests.post(urljoin(identity_service['url'], '/unlock_account/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
-		if result.status_code == HTTPStatus.OK:
-			dictionary = {
-				'title': 'Account unlocked',
-				'heading': 'The account is now unlocked',
-			}
+		if identity_service.get("available", False):
+			user = get_object_or_404(User, id=user_id)
+			timeout = identity_service.get('timeout', 3)
+			result = requests.post(urljoin(identity_service['url'], '/unlock_account/'), {'username': user.username, 'domain': user.domain}, timeout=timeout)
+			if result.status_code == HTTPStatus.OK:
+				dictionary = {
+					'title': 'Account unlocked',
+					'heading': 'The account is now unlocked',
+				}
+			else:
+				dictionary = {
+					'title': 'Oops',
+					'heading': 'There was a problem unlocking the account',
+					'content': 'The identity service returned HTTP error code {}. {}'.format(result.status_code, result.text),
+				}
 		else:
 			dictionary = {
-				'title': 'Oops',
+				'title': 'Identity service not available',
 				'heading': 'There was a problem unlocking the account',
-				'content': 'The identity service returned HTTP error code {}. {}'.format(result.status_code, result.text),
+				'content': 'The identity service is not set or not available'
 			}
 	except Exception as e:
 		dictionary = {

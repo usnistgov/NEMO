@@ -95,14 +95,17 @@ class ModbusTcpSensor(Sensor):
 
 	def do_read_values(self, sensor: Sensor_model) -> List:
 		client = ModbusTcpClient(sensor.card.server, port=sensor.card.port)
-		valid_connection = client.connect()
-		if not valid_connection:
-			raise Exception(f"Connection to server {sensor.card.server}:{sensor.card.port} could not be established")
-		kwargs = {"slave": sensor.unit_id} if sensor.unit_id is not None else {}
-		read_response = client.read_holding_registers(sensor.read_address, sensor.number_of_values, **kwargs)
-		if read_response.isError():
-			raise Exception(str(read_response))
-		return read_response.registers
+		try:
+			valid_connection = client.connect()
+			if not valid_connection:
+				raise Exception(f"Connection to server {sensor.card.server}:{sensor.card.port} could not be established")
+			kwargs = {"slave": sensor.unit_id} if sensor.unit_id is not None else {}
+			read_response = client.read_holding_registers(sensor.read_address, sensor.number_of_values, **kwargs)
+			if read_response.isError():
+				raise Exception(f"Error with sensor {sensor.name}: {str(read_response)}")
+			return read_response.registers
+		finally:
+			client.close()
 
 	def evaluate_expression(self, formula, registers):
 		# Here we are using an expanded evaluator which includes modbus specific functions

@@ -1,6 +1,11 @@
 from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.utilities import date_input_js_format, datetime_input_js_format, time_input_js_format
-from NEMO.views.customization import ApplicationCustomization, RecurringChargesCustomization, SafetyCustomization
+from NEMO.views.customization import (
+	ApplicationCustomization,
+	RecurringChargesCustomization,
+	SafetyCustomization,
+	UserRequestsCustomization,
+)
 from NEMO.views.notifications import get_notification_counts
 
 
@@ -50,6 +55,10 @@ def base_context(request):
 	except:
 		access_user_request_allowed_exist = False
 	try:
+		adjustment_request_allowed = UserRequestsCustomization.get_bool("adjustment_requests_enabled")
+	except:
+		adjustment_request_allowed = False
+	try:
 		notification_counts = get_notification_counts(request.user)
 	except:
 		notification_counts = {}
@@ -62,6 +71,11 @@ def base_context(request):
 		temporary_access_notification_count = notification_counts.get(Notification.Types.TEMPORARY_ACCESS_REQUEST, 0)
 	except:
 		temporary_access_notification_count = 0
+	try:
+		adjustment_notification_count = notification_counts.get(Notification.Types.ADJUSTMENT_REQUEST, 0)
+		adjustment_notification_count += notification_counts.get(Notification.Types.ADJUSTMENT_REQUEST_REPLY, 0)
+	except:
+		adjustment_notification_count = 0
 	try:
 		safety_notification_count = notification_counts.get(Notification.Types.SAFETY, 0)
 	except:
@@ -83,9 +97,11 @@ def base_context(request):
 		"areas_exist": areas_exist,
 		"buddy_system_areas_exist": buddy_system_areas_exist,
 		"access_user_request_allowed_exist": access_user_request_allowed_exist,
+		"adjustment_request_allowed": adjustment_request_allowed,
 		"notification_counts": notification_counts,
 		"buddy_notification_count": buddy_notification_count,
 		"temporary_access_notification_count": temporary_access_notification_count,
+		"adjustment_notification_count": adjustment_notification_count,
 		"safety_notification_count": safety_notification_count,
 		"facility_managers_exist": facility_managers_exist,
 		"time_input_js_format": time_input_js_format,

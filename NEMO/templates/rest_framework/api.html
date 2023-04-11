@@ -1,0 +1,48 @@
+{% extends "rest_framework/base.html" %}
+    {% block content %}
+        {{ block.super }}
+        {% if "POST" in allowed_methods and raw_data_post_form %}
+            <div style="display:none">
+                <li id="file-import-nav-tab">
+                    <a id='file-import-tab' href="#file-import-form" data-toggle="tab">File import</a>
+                </li>
+
+                <div class="tab-pane" id="file-import-form">
+                    <form action="{% url 'api_file_import' %}" enctype="multipart/form-data" class="form-horizontal" method="POST" novalidate>
+                        <fieldset>
+                            {% csrf_token %}
+                            <input type="hidden" name="request_url" value="{{ request.get_full_path }}"/>
+                            <div class="form-group">
+                                <label for="file_formats" class="col-lg-2 col-sm-3 control-label">Accepted file formats</label>
+                                <div class="col-lg-10 col-sm-9">
+                                    <div class="form-control-static">
+                                        {% for parser in api_settings.DEFAULT_PARSER_CLASSES %}
+                                            {% if parser.media_type != "multipart/form-data" %}
+                                                {{ parser.media_type }}{% if not forloop.last %}, {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="import_file" class="col-lg-2 col-sm-3 control-label">File to import</label>
+                                <div class="col-lg-10 col-sm-9">
+                                    <input type="file" id="import_file" name="import_file" class="form-control-static" style="border: none; box-shadow: none; background-color: transparent">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary js-tooltip" title="Make a POST request on the {{ name }} resource">POST</button>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    {% endblock %}
+    {% block script %}
+        {{ block.super }}
+        <script>
+            $("ul.nav.nav-tabs.form-switcher").prepend($("#file-import-nav-tab"))
+            $("div.well.tab-content").append($("#file-import-form"))
+        </script>
+    {% endblock %}

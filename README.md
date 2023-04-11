@@ -1,3 +1,8 @@
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/NEMO?label=python)](https://www.python.org/downloads/release/python-380/)
+[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/nanofab/nemo?label=NEMO%20docker%20version)](https://hub.docker.com/r/nanofab/nemo)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/usnistgov/nemo?label=NEMO%20github%20version)](https://github.com/usnistgov/NEMO/releases)
+[![PyPI](https://img.shields.io/pypi/v/nemo?label=NEMO%20pypi%20version)](https://pypi.org/project/NEMO/)
+
 The NEMO web application is laboratory logistics software that strives to be intuitive and easy to use, making life easier in the lab. NEMO manages tool reservations, control access to tools, and streamline logistics and communication. The code is open source and free so that other labs can benefit.
 
 # Online demo

@@ -11,5 +11,9 @@
 </div>
 
 <script>
-	$("#search_user_for_project_" + "{{ project.id }}").focus();
+    $(function()
+    {
+        reset_autocomplete();
+	    $("#search_user_for_project_" + "{{ project.id }}").focus();
+    });
 </script>
