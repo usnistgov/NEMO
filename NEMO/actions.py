@@ -1,12 +1,14 @@
 from django.contrib import admin, messages
+from django.db.models import Max
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
-from NEMO.models import Area, Tool, User
+from NEMO.models import Area, Interlock, Tool, User
 from NEMO.views.access_requests import access_csv_export
 from NEMO.views.adjustment_requests import adjustments_csv_export
 
 
+@admin.action(description="Lock selected interlocks")
 def lock_selected_interlocks(model_admin, request, queryset):
 	for interlock in queryset:
 		try:
@@ -19,6 +21,7 @@ def lock_selected_interlocks(model_admin, request, queryset):
 			messages.error(request, f"{interlock} could not be locked due to the following error: {str(error)}")
 
 
+@admin.action(description="Unlock selected interlocks")
 def unlock_selected_interlocks(model_admin, request, queryset):
 	for interlock in queryset:
 		try:
@@ -31,6 +34,7 @@ def unlock_selected_interlocks(model_admin, request, queryset):
 			messages.error(request, f"{interlock} could not be unlocked due to the following error: {str(error)}")
 
 
+@admin.action(description="Synchronize selected interlocks with tool usage")
 def synchronize_with_tool_usage(model_admin, request, queryset):
 	for interlock in queryset:
 		# Ignore interlocks with no tool assigned, and ignore interlocks connected to doors
@@ -42,6 +46,18 @@ def synchronize_with_tool_usage(model_admin, request, queryset):
 			interlock.lock()
 
 
+@admin.action(description="Create next interlock")
+def create_next_interlock(model_admin, request, queryset):
+	for interlock in queryset:
+		new_interlock = Interlock()
+		new_interlock.card = interlock.card
+		new_interlock.unit_id = interlock.unit_id
+		max_channel = Interlock.objects.filter(card=interlock.card).aggregate(Max("channel"))["channel__max"]
+		new_interlock.channel = max_channel + 1 if max_channel is not None else None
+		new_interlock.save()
+
+
+@admin.action(description="Duplicate selected tool configuration")
 def duplicate_tool_configuration(model_admin, request, queryset):
 	for tool in queryset:
 		original_name = tool.name
@@ -91,15 +107,16 @@ def duplicate_tool_configuration(model_admin, request, queryset):
 			)
 
 
+@admin.action(description="Rebuild area tree")
 def rebuild_area_tree(model_admin, request, queryset):
 	Area.objects.rebuild()
 
 
-@admin.action(description="Export adjustment requests in CSV")
+@admin.action(description="Export selected adjustment requests in CSV")
 def adjustment_requests_export_csv(modeladmin, request, queryset):
 	return adjustments_csv_export(queryset.all())
 
 
-@admin.action(description="Export access requests in CSV")
+@admin.action(description="Export selected access requests in CSV")
 def access_requests_export_csv(modeladmin, request, queryset):
 	return access_csv_export(queryset.all())

@@ -19,6 +19,7 @@ from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFi
 from NEMO.actions import (
 	access_requests_export_csv,
 	adjustment_requests_export_csv,
+	create_next_interlock,
 	duplicate_tool_configuration,
 	lock_selected_interlocks,
 	rebuild_area_tree,
@@ -273,6 +274,9 @@ class ToolAdmin(admin.ModelAdmin):
 		""" We only want non children tool to be eligible as parents """
 		if db_field.name == "parent_tool":
 			kwargs["queryset"] = Tool.objects.filter(parent_tool__isnull=True)
+		# Limit interlock selection to ones not already linked
+		if db_field.name == "_interlock":
+			kwargs["queryset"] = Interlock.objects.filter(tool__isnull=True, door__isnull=True)
 		return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 	def save_model(self, request, obj, form, change):
@@ -717,7 +721,7 @@ class InterlockAdmin(admin.ModelAdmin):
 		"most_recent_reply_time"
 	)
 	list_filter = ("card__enabled", ("card", admin.RelatedOnlyFieldListFilter), "state", ("tool", admin.RelatedOnlyFieldListFilter), ("door", admin.RelatedOnlyFieldListFilter))
-	actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage]
+	actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage, create_next_interlock]
 	readonly_fields = ["state", "most_recent_reply", "most_recent_reply_time"]
 
 	@display(boolean=True, ordering='card__enabled', description='Card Enabled')
@@ -1054,6 +1058,12 @@ class SafetyItemAdmin(admin.ModelAdmin):
 @register(Door)
 class DoorAdmin(admin.ModelAdmin):
 	list_display = ("name", "area", "interlock", "get_absolute_url", "id")
+
+	def formfield_for_foreignkey(self, db_field, request, **kwargs):
+		# Limit interlock selection to ones not already linked
+		if db_field.name == "interlock":
+			kwargs["queryset"] = Interlock.objects.filter(tool__isnull=True, door__isnull=True)
+		return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @register(AlertCategory)
