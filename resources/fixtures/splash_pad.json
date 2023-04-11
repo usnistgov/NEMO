@@ -1807,172 +1807,6 @@
     }
   },
   {
-    "model": "NEMO.staffavailability",
-    "pk": 1,
-    "fields": {
-      "staff_member": [
-        "captain"
-      ],
-      "visible": true,
-      "category": [
-        "Staff"
-      ],
-      "start_time": "08:00:00",
-      "end_time": "17:00:00",
-      "monday": true,
-      "tuesday": true,
-      "wednesday": true,
-      "thursday": true,
-      "friday": true,
-      "saturday": false,
-      "sunday": false
-    }
-  },
-  {
-    "model": "NEMO.staffavailability",
-    "pk": 2,
-    "fields": {
-      "staff_member": [
-        "professor"
-      ],
-      "visible": true,
-      "category": [
-        "Night shift"
-      ],
-      "start_time": "20:00:00",
-      "end_time": "04:00:00",
-      "monday": true,
-      "tuesday": true,
-      "wednesday": true,
-      "thursday": true,
-      "friday": true,
-      "saturday": false,
-      "sunday": false
-    }
-  },
-  {
-    "model": "NEMO.temporaryphysicalaccessrequest",
-    "pk": 1,
-    "fields": {
-      "creation_time": "2021-02-23T17:28:47.930Z",
-      "creator": [
-        "ned"
-      ],
-      "last_updated": "2021-02-23T17:28:47.930Z",
-      "last_updated_by": null,
-      "physical_access_level": 1,
-      "description": null,
-      "start_time": "2021-02-23T17:28:47.930Z",
-      "end_time": "2099-02-23T17:28:47.930Z",
-      "status": 0,
-      "reviewer": null,
-      "deleted": false,
-      "other_users": [
-        [
-          "professor"
-        ]
-      ]
-    }
-  },
-  {
-    "model": "NEMO.requestmessage",
-    "pk": 1,
-    "fields": {
-      "content_type": [
-        "NEMO",
-        "adjustmentrequest"
-      ],
-      "object_id": 1,
-      "author": [
-        "captain"
-      ],
-      "creation_date": "2023-03-06T17:41:00.733Z",
-      "content": "Can you provide more information?\r\nThank you"
-    }
-  },
-  {
-    "model": "NEMO.adjustmentrequest",
-    "pk": 1,
-    "fields": {
-      "creation_time": "2023-03-06T15:46:25.311Z",
-      "creator": [
-        "ned"
-      ],
-      "last_updated": "2023-03-06T15:46:25.311Z",
-      "last_updated_by": [
-        "ned"
-      ],
-      "item_type": [
-        "NEMO",
-        "usageevent"
-      ],
-      "item_id": 2,
-      "description": "I forgot to logoff the tool",
-      "manager_note": "",
-      "new_start": "2023-03-04T15:54:00Z",
-      "new_end": "2023-03-05T11:00:00Z",
-      "status": 0,
-      "reviewer": null,
-      "deleted": false
-    }
-  },
-  {
-    "model": "NEMO.adjustmentrequest",
-    "pk": 2,
-    "fields": {
-      "creation_time": "2023-01-22T17:35:44.232Z",
-      "creator": [
-        "ned"
-      ],
-      "last_updated": "2023-01-22T17:37:39.366Z",
-      "last_updated_by": [
-        "captain"
-      ],
-      "item_type": [
-        "NEMO",
-        "usageevent"
-      ],
-      "item_id": 4,
-      "description": "I forgot to logoff the tool",
-      "manager_note": "Please enter this in the billing system with the note \"Approved by Captain NEMO\"",
-      "new_start": "2023-01-20T23:54:00Z",
-      "new_end": "2023-01-21T18:00:00Z",
-      "status": 1,
-      "reviewer": [
-        "captain"
-      ],
-      "deleted": false
-    }
-  },
-  {
-    "model": "NEMO.adjustmentrequest",
-    "pk": 3,
-    "fields": {
-      "creation_time": "2023-02-13T17:36:20.938Z",
-      "creator": [
-        "ned"
-      ],
-      "last_updated": "2023-02-13T17:39:03.473Z",
-      "last_updated_by": [
-        "captain"
-      ],
-      "item_type": [
-        "NEMO",
-        "usageevent"
-      ],
-      "item_id": 3,
-      "description": "I forgot to logoff the tool",
-      "manager_note": "This is the second time in just a few weeks, so I cannot approve it.",
-      "new_start": "2023-02-10T10:54:00Z",
-      "new_end": "2023-02-11T09:00:00Z",
-      "status": 2,
-      "reviewer": [
-        "captain"
-      ],
-      "deleted": false
-    }
-  },
-  {
     "model": "NEMO.user",
     "fields": {
       "username": "captain",
@@ -2247,6 +2081,172 @@
         ]
       ],
       "managed_projects": []
+    }
+  },
+    {
+    "model": "NEMO.staffavailability",
+    "pk": 1,
+    "fields": {
+      "staff_member": [
+        "captain"
+      ],
+      "visible": true,
+      "category": [
+        "Staff"
+      ],
+      "start_time": "08:00:00",
+      "end_time": "17:00:00",
+      "monday": true,
+      "tuesday": true,
+      "wednesday": true,
+      "thursday": true,
+      "friday": true,
+      "saturday": false,
+      "sunday": false
+    }
+  },
+  {
+    "model": "NEMO.staffavailability",
+    "pk": 2,
+    "fields": {
+      "staff_member": [
+        "professor"
+      ],
+      "visible": true,
+      "category": [
+        "Night shift"
+      ],
+      "start_time": "20:00:00",
+      "end_time": "04:00:00",
+      "monday": true,
+      "tuesday": true,
+      "wednesday": true,
+      "thursday": true,
+      "friday": true,
+      "saturday": false,
+      "sunday": false
+    }
+  },
+  {
+    "model": "NEMO.temporaryphysicalaccessrequest",
+    "pk": 1,
+    "fields": {
+      "creation_time": "2021-02-23T17:28:47.930Z",
+      "creator": [
+        "ned"
+      ],
+      "last_updated": "2021-02-23T17:28:47.930Z",
+      "last_updated_by": null,
+      "physical_access_level": 1,
+      "description": null,
+      "start_time": "2021-02-23T17:28:47.930Z",
+      "end_time": "2099-02-23T17:28:47.930Z",
+      "status": 0,
+      "reviewer": null,
+      "deleted": false,
+      "other_users": [
+        [
+          "professor"
+        ]
+      ]
+    }
+  },
+  {
+    "model": "NEMO.requestmessage",
+    "pk": 1,
+    "fields": {
+      "content_type": [
+        "NEMO",
+        "adjustmentrequest"
+      ],
+      "object_id": 1,
+      "author": [
+        "captain"
+      ],
+      "creation_date": "2023-03-06T17:41:00.733Z",
+      "content": "Can you provide more information?\r\nThank you"
+    }
+  },
+  {
+    "model": "NEMO.adjustmentrequest",
+    "pk": 1,
+    "fields": {
+      "creation_time": "2023-03-06T15:46:25.311Z",
+      "creator": [
+        "ned"
+      ],
+      "last_updated": "2023-03-06T15:46:25.311Z",
+      "last_updated_by": [
+        "ned"
+      ],
+      "item_type": [
+        "NEMO",
+        "usageevent"
+      ],
+      "item_id": 2,
+      "description": "I forgot to logoff the tool",
+      "manager_note": "",
+      "new_start": "2023-03-04T15:54:00Z",
+      "new_end": "2023-03-05T11:00:00Z",
+      "status": 0,
+      "reviewer": null,
+      "deleted": false
+    }
+  },
+  {
+    "model": "NEMO.adjustmentrequest",
+    "pk": 2,
+    "fields": {
+      "creation_time": "2023-01-22T17:35:44.232Z",
+      "creator": [
+        "ned"
+      ],
+      "last_updated": "2023-01-22T17:37:39.366Z",
+      "last_updated_by": [
+        "captain"
+      ],
+      "item_type": [
+        "NEMO",
+        "usageevent"
+      ],
+      "item_id": 4,
+      "description": "I forgot to logoff the tool",
+      "manager_note": "Please enter this in the billing system with the note \"Approved by Captain NEMO\"",
+      "new_start": "2023-01-20T23:54:00Z",
+      "new_end": "2023-01-21T18:00:00Z",
+      "status": 1,
+      "reviewer": [
+        "captain"
+      ],
+      "deleted": false
+    }
+  },
+  {
+    "model": "NEMO.adjustmentrequest",
+    "pk": 3,
+    "fields": {
+      "creation_time": "2023-02-13T17:36:20.938Z",
+      "creator": [
+        "ned"
+      ],
+      "last_updated": "2023-02-13T17:39:03.473Z",
+      "last_updated_by": [
+        "captain"
+      ],
+      "item_type": [
+        "NEMO",
+        "usageevent"
+      ],
+      "item_id": 3,
+      "description": "I forgot to logoff the tool",
+      "manager_note": "This is the second time in just a few weeks, so I cannot approve it.",
+      "new_start": "2023-02-10T10:54:00Z",
+      "new_end": "2023-02-11T09:00:00Z",
+      "status": 2,
+      "reviewer": [
+        "captain"
+      ],
+      "deleted": false
     }
   },
   {

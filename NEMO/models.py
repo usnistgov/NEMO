@@ -88,6 +88,13 @@ class BaseManager(Manager.from_queryset(BaseQuerySet)):
 	pass
 
 
+class DeserializationByNameManager(BaseManager):
+	""" Deserialization manager using name field """
+
+	def get_by_natural_key(self, name):
+		return self.get(name=name)
+
+
 class UserManager(BaseUserManager.from_queryset(BaseQuerySet)):
 
 	def create_user(self, username, first_name, last_name, email):
@@ -116,16 +123,25 @@ class BaseModel(models.Model):
 		abstract = True
 
 
-class BaseCategory(BaseModel):
+class SerializationByNameModel(BaseModel):
+	""" Serialization model using name field """
+
+	objects = DeserializationByNameManager()
+
+	class Meta:
+		abstract = True
+
+	def natural_key(self):
+		return (self.name,)
+
+
+class BaseCategory(SerializationByNameModel):
 	name = models.CharField(max_length=200, unique=True, help_text="The unique name for this item")
 	display_order = models.IntegerField(help_text="The display order is used to sort these items. The lowest value category is displayed first.")
 
 	class Meta:
 		abstract = True
 		ordering = ["display_order", "name"]
-
-	def natural_key(self):
-		return (self.name,)
 
 	def __str__(self):
 		return str(self.name)
@@ -752,7 +768,7 @@ def auto_delete_file_on_user_document_change(sender, instance: UserDocuments, **
 			os.remove(old_file.path)
 
 
-class Tool(BaseModel):
+class Tool(SerializationByNameModel):
 	name = models.CharField(max_length=100, unique=True)
 	parent_tool = models.ForeignKey('Tool', related_name="tool_children_set", null=True, blank=True, help_text='Select a parent tool to allow alternate usage', on_delete=models.CASCADE)
 	visible = models.BooleanField(default=True, help_text="Specifies whether this tool is visible to users.")
@@ -789,9 +805,6 @@ class Tool(BaseModel):
 
 	class Meta:
 		ordering = ["name"]
-
-	def natural_key(self):
-		return (self.name,)
 
 	@property
 	def category(self):
@@ -1619,7 +1632,7 @@ class AccountType(BaseCategory):
 	pass
 
 
-class Account(BaseModel):
+class Account(SerializationByNameModel):
 	name = models.CharField(max_length=100, unique=True)
 	type = models.ForeignKey(AccountType, null=True, blank=True, on_delete=models.SET_NULL)
 	start_date = models.DateField(null=True, blank=True)
@@ -1628,9 +1641,6 @@ class Account(BaseModel):
 	class Meta:
 		ordering = ["name"]
 
-	def natural_key(self):
-		return (self.name,)
-
 	def sorted_projects(self):
 		return self.project_set.all().order_by("-active", "name")
 
@@ -1638,7 +1648,7 @@ class Account(BaseModel):
 		return str(self.name)
 
 
-class Project(BaseModel):
+class Project(SerializationByNameModel):
 	name = models.CharField(max_length=100, unique=True)
 	application_identifier = models.CharField(max_length=100)
 	start_date = models.DateField(null=True, blank=True)
@@ -1650,9 +1660,6 @@ class Project(BaseModel):
 
 	class Meta:
 		ordering = ["name"]
-
-	def natural_key(self):
-		return (self.name,)
 
 	def __str__(self):
 		return str(self.name)
@@ -2294,16 +2301,13 @@ class TaskCategory(BaseModel):
 		return str(self.name)
 
 
-class TaskStatus(BaseModel):
+class TaskStatus(SerializationByNameModel):
 	name = models.CharField(max_length=200, unique=True)
 	notify_primary_tool_owner = models.BooleanField(default=False, help_text="Notify the primary tool owner when a task transitions to this status")
 	notify_backup_tool_owners = models.BooleanField(default=False, help_text="Notify the backup tool owners when a task transitions to this status")
 	notify_tool_notification_email = models.BooleanField(default=False, help_text="Send an email to the tool notification email address when a task transitions to this status")
 	custom_notification_email_address = models.EmailField(blank=True, help_text="Notify a custom email address when a task transitions to this status. Leave this blank if you don't need it.")
 	notification_message = models.TextField(blank=True)
-
-	def natural_key(self):
-		return (self.name,)
 
 	def __str__(self):
 		return self.name
