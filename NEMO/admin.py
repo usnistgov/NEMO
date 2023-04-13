@@ -153,6 +153,9 @@ class ToolAdminForm(forms.ModelForm):
 
 	def __init__(self, *args, **kwargs):
 		super(ToolAdminForm, self).__init__(*args, **kwargs)
+		# Limit interlock selection to ones not already linked (make sure to include current one)
+		self.fields["_interlock"].queryset = Interlock.objects.filter(
+			Q(id=self.instance._interlock_id) | Q(tool__isnull=True, door__isnull=True))
 		if self.instance.pk:
 			self.fields["qualified_users"].initial = self.instance.user_set.all()
 			self.fields["required_resources"].initial = self.instance.required_resource_set.all()
@@ -274,9 +277,6 @@ class ToolAdmin(admin.ModelAdmin):
 		""" We only want non children tool to be eligible as parents """
 		if db_field.name == "parent_tool":
 			kwargs["queryset"] = Tool.objects.filter(parent_tool__isnull=True)
-		# Limit interlock selection to ones not already linked
-		if db_field.name == "_interlock":
-			kwargs["queryset"] = Interlock.objects.filter(tool__isnull=True, door__isnull=True)
 		return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 	def save_model(self, request, obj, form, change):
@@ -1055,15 +1055,18 @@ class SafetyItemAdmin(admin.ModelAdmin):
 		return SafetyItemDocuments.objects.filter(safety_item=obj).count()
 
 
+class DoorAdminForm(forms.ModelForm):
+	def __init__(self, *args, **kwargs):
+		super(DoorAdminForm, self).__init__(*args, **kwargs)
+		# Limit interlock selection to ones not already linked (and exclude current one)
+		self.fields["interlock"].queryset = Interlock.objects.filter(
+			Q(id=self.instance.interlock_id) | Q(tool__isnull=True, door__isnull=True))
+
+
 @register(Door)
 class DoorAdmin(admin.ModelAdmin):
 	list_display = ("name", "area", "interlock", "get_absolute_url", "id")
-
-	def formfield_for_foreignkey(self, db_field, request, **kwargs):
-		# Limit interlock selection to ones not already linked
-		if db_field.name == "interlock":
-			kwargs["queryset"] = Interlock.objects.filter(tool__isnull=True, door__isnull=True)
-		return super().formfield_for_foreignkey(db_field, request, **kwargs)
+	form = DoorAdminForm
 
 
 @register(AlertCategory)

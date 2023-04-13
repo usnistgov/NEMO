@@ -191,21 +191,22 @@ class StanfordInterlock(Interlock):
 			error = ""
 			if not reply[5]:
 				error = "Stanford Interlock exception"
-			elif reply[9]:
-				error = "Signal driver overload"
-			elif reply[10]:
-				error = "Return driver overload"
-			elif not reply[11]:
-				error = "ADC not done"
-			elif reply[12]:
-				error = "Relay not ready"
-			elif not (
-				command_type == Interlock_model.State.UNLOCKED
-				and self.MIN_ENABLE_VALUE * num_interlocks <= reply[13] <= self.MAX_ENABLE_VALUE * num_interlocks
-				or command_type == Interlock_model.State.LOCKED
-				and self.MIN_DISABLE_VALUE * num_interlocks <= reply[13] <= self.MAX_DISABLE_VALUE * num_interlocks
-			):
-				error = "Enable return value exceeds limits"
+			elif getattr(settings, "STANFORD_INTERLOCKS_VALIDATE_REPLY", True):
+				if reply[9]:
+					error = "Signal driver overload"
+				elif reply[10]:
+					error = "Return driver overload"
+				elif not reply[11]:
+					error = "ADC not done"
+				elif reply[12]:
+					error = "Relay not ready"
+				elif not (
+					command_type == Interlock_model.State.UNLOCKED
+					and self.MIN_ENABLE_VALUE * num_interlocks <= reply[13] <= self.MAX_ENABLE_VALUE * num_interlocks
+					or command_type == Interlock_model.State.LOCKED
+					and self.MIN_DISABLE_VALUE * num_interlocks <= reply[13] <= self.MAX_DISABLE_VALUE * num_interlocks
+				):
+					error = "Enable return value exceeds limits"
 
 			if error:
 				# raise an exception if it failed
