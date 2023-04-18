@@ -9,8 +9,8 @@ from NEMO.views.customization import UserRequestsCustomization
 @login_required
 @require_GET
 def user_requests(request, tab: str = None):
-	active_tab = (
-		tab or "access"
+	active_tab = tab or (
+		"access"
 		if PhysicalAccessLevel.objects.filter(allow_user_request=True).exists()
 		and User.objects.filter(is_active=True, is_facility_manager=True).exists()
 		else "buddy"

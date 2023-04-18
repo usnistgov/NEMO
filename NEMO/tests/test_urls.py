@@ -100,6 +100,8 @@ url_kwargs_get_post = {
 	"customization": {"kwargs": {"key": "application"}},
 	"customize": {"kwargs": {"key": "application"}, "post": {"facility_name": "test facility"}},
 	"media_view": {"kwargs": {"popup": "true", "document_type": "safety_document", "document_id": 1}},
+	"create_adjustment_request": {"kwargs": {}},
+	"edit_adjustment_request": {"kwargs": {"request_id": 1}},
 }
 
 urls_to_skip = [
@@ -118,11 +120,8 @@ urls_to_skip = [
 	"update_safety_issue",
 	"new_reservation",
 	"remove_document_from_project",
-	# TODO: remove those when data is added to splash pad
-	"edit_adjustment_request",
-	"create_adjustment_request",
-	"delete_adjustment_request",
 	"adjustment_request_reply",
+	"delete_adjustment_request",
 ]
 
 
@@ -273,7 +272,7 @@ def test_urls(test_case, url_patterns, url_params, url_skip, prefix=""):
 					"NEMO.decorators.synchronized",
 					"django.contrib.admin.sites",
 					"django.contrib.admin.options",
-				]:
+				] or prefix == "admin":
 					continue
 				pkg_mod = importlib.import_module(pkg)
 				view_function = getattr(pkg_mod, fun_name)
