@@ -110,7 +110,7 @@ def res_question_tbody(dictionary):
 	rows = []
 	for i, (index, d) in enumerate(dictionary.items()):
 		data_cells_html = "".join(
-			[format_html("<td>{}</td>", ", ".join(d[h]) if isinstance(d[h], list) else d[h]) for h in headers]
+			[format_html("<td>{}</td>", ", ".join(d[h]) if isinstance(d.get(h), list) else d.get(h, "")) for h in headers]
 		)
 		row_html = format_html("<tr><th>{}</th>{}</tr>", i + 1, mark_safe(data_cells_html))
 		rows.append(row_html)
