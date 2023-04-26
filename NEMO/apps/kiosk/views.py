@@ -3,7 +3,6 @@ from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
-from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
@@ -239,8 +238,8 @@ def choices(request):
 		customer = User.objects.get(badge_number=request.GET["badge_number"])
 		usage_events = (
 			UsageEvent.objects.filter(operator=customer.id, end=None)
-				.order_by("tool__name")
-				.prefetch_related("tool", "project")
+			.order_by("tool__name")
+			.prefetch_related("tool", "project")
 		)
 		tools_in_use = [u.tool.tool_or_parent_id() for u in usage_events]
 		fifteen_minutes_from_now = timezone.now() + timedelta(minutes=15)
@@ -253,9 +252,9 @@ def choices(request):
 				cancelled=False,
 				shortened=False,
 			)
-				.exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now)
-				.exclude(ancestor__shortened=True)
-				.order_by("start")
+			.exclude(tool_id__in=tools_in_use, start__lte=fifteen_minutes_from_now)
+			.exclude(ancestor__shortened=True)
+			.order_by("start")
 		)
 	except:
 		dictionary = {
@@ -269,8 +268,7 @@ def choices(request):
 	unqualified_categories = [
 		category
 		for category in categories
-		if not customer.is_staff
-		   and not Tool.objects.filter(
+		if not customer.is_staff and not Tool.objects.filter(
 			visible=True, _category=category, id__in=customer.qualifications.all().values_list("id")
 		).exists()
 	]
@@ -349,18 +347,8 @@ def tool_information(request, tool_id, user_id, back):
 @permission_required("NEMO.kiosk")
 @require_GET
 def kiosk(request, location=None):
-	if location and Tool.objects.filter(_location=location, visible=True).exists():
-		reader_id = request.GET.get("reader_id")
-		dictionary = {
-			"location": location,
-			"badge_reader": BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default(),
-		}
-		return render(request, "kiosk/kiosk.html", dictionary)
-	else:
-		locations = sorted(list(set([tool.location for tool in Tool.objects.filter(visible=True) if tool.location])))
-		dictionary = {
-			"locations": [
-				{"url": reverse("kiosk", kwargs={"location": location}), "name": location} for location in locations
-			]
-		}
-		return render(request, "kiosk/location_directory.html", dictionary)
+	reader_id = request.GET.get("reader_id")
+	dictionary = {
+		"badge_reader": BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default(),
+	}
+	return render(request, "kiosk/kiosk.html", dictionary)
