@@ -1356,7 +1356,7 @@ def auto_delete_file_on_tool_document_change(sender, instance: ToolDocuments, **
 			os.remove(old_file.path)
 
 
-class ToolQualificationGroup(BaseModel):
+class ToolQualificationGroup(SerializationByNameModel):
 	name = models.CharField(max_length=200, unique=True, help_text="The name of this tool group")
 	tools = models.ManyToManyField(Tool, blank=False)
 
