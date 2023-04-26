@@ -23,7 +23,7 @@ def create_news_for_version(apps, version, extra_content=None):
             content += extra_content + "\n"
         content += (
             f"\nClick on the following links to consult the <a href='https://github.com/usnistgov/NEMO/releases/tag/{version}' target='_blank'>Release Notes</a> "
-            f"and the <a href='https://github.com/usnistgov/NEMO/raw/{version}/documentation/NEMO_Feature_Manual.pdf' target='_blank'>Feature manual</a>"
+            f"and the <a href='https://www.nist.gov/document/nemofeaturemanualpdf' target='_blank'>Feature manual</a>"
         )
         content = f"Originally published on {migration_format_datetime(now)} by NEMO:\n" + content.strip()
         story.original_content = content
