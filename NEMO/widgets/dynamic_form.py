@@ -409,7 +409,9 @@ class DynamicForm:
 			self.questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(self.untreated_questions)
 
 	def render(self, group_question_url: str, group_item_id: int, virtual_inputs: bool = False):
-		result = "<script>if (!$) { $ = django.jQuery; }</script>"
+		result = ""
+		if self.questions:
+			result += "<script>if (!$) { $ = django.jQuery; }</script>"
 		for question in self.questions:
 			result += question.render(virtual_inputs, group_question_url, group_item_id)
 		return mark_safe(result)
