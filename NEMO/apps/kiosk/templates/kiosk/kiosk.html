@@ -232,10 +232,10 @@
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
-			let data = serialize('#tool_control');
+			let data = $('#tool_control').serialize();
 			if (tool_id)
 			{
-				data['tool_id'] = tool_id;
+				data += '&tool_id=' + tool_id;
 			}
 			status_element.html("<h1>Enabling tool...</h1>").show();
 			try_post_catch_interlock_error('{% url 'enable_tool_from_kiosk' %}', data);
@@ -245,7 +245,7 @@
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
-			let data = serialize('#tool_control');
+			let data = $('#tool_control').serialize();
 			status_element.html("<h1>Disabling tool...</h1>").show();
 			try_post_catch_interlock_error('{% url 'disable_tool_from_kiosk' %}', data);
 		}
@@ -273,7 +273,7 @@
                     bypass_button.show();
                     bypass_button.one('click', function ()
                     {
-                        data["bypass"] = 'True';
+                        data += "&bypass=True";
                         try_post_catch_interlock_error(url, data);
                     });
                 }
@@ -294,7 +294,8 @@
                 inter_back_button.off("click");
                 inter_back_button.one('click', function ()
                 {
-                    tool_information("{% url 'kiosk_tool_information' '11111111111' '999999999999' 'back_to_start' %}".replace('11111111111', data.tool_id).replace('999999999999', data.customer_id).replace('back_to_start', data.back));
+                    let urlParams = new URLSearchParams(data);
+                    tool_information("{% url 'kiosk_tool_information' '11111111111' '999999999999' 'back_to_start' %}".replace('11111111111', urlParams.get("tool_id")).replace('999999999999', urlParams.get("customer_id")).replace('back_to_start', urlParams.get("back")));
                 });
             }
             else
