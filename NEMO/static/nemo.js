@@ -685,15 +685,17 @@ function auto_size_textarea(textarea)
 	}
 }
 
-function set_start_end_datetime_pickers(start_jq, end_jq, properties, end_before_start)
+function set_start_end_datetime_pickers(start_jq, end_jq, properties, set_end_date)
 {
 	start_jq.datetimepicker(properties);
 	end_jq.datetimepicker(properties);
-	if (end_before_start == null || end_before_start)
-	{
-		let end_date_picker = end_jq.data("DateTimePicker");
-		start_jq.on("dp.change", function (e) { end_date_picker.minDate(e.date); });
-	}
+	let end_date_picker = end_jq.data("DateTimePicker");
+	start_jq.on("dp.change", function (e)
+		{
+			if (set_end_date == null || !set_end_date) end_date_picker.minDate(e.date);
+			else end_date_picker.date(e.date);
+		}
+	);
 }
 
 function sort_compare(element)
