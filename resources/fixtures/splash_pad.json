@@ -9087,7 +9087,7 @@
       "cancelled": false,
       "cancellation_time": null,
       "cancelled_by": null,
-      "missed": false,
+      "missed": true,
       "shortened": false,
       "descendant": null,
       "additional_information": null,
@@ -9608,6 +9608,36 @@
       "end": null,
       "staff_charge": null,
       "validated": false
+    }
+  },
+  {
+    "model": "NEMO.trainingsession",
+    "pk": 1,
+    "fields": {
+      "trainer": 1,
+      "trainee": 3,
+      "tool": 3,
+      "project": 2,
+      "duration": 60,
+      "type": 0,
+      "date": "2023-05-12T23:29:00Z",
+      "qualified": false,
+      "validated": false,
+      "validated_by": null
+    }
+  },
+  {
+    "model": "NEMO.consumablewithdraw",
+    "pk": 1,
+    "fields": {
+      "customer": 3,
+      "merchant": 1,
+      "consumable": 2,
+      "quantity": 1,
+      "project": 2,
+      "date": "2023-05-12T23:32:50.300Z",
+      "validated": false,
+      "validated_by": null
     }
   }
 ]
