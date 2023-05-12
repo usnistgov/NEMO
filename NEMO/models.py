@@ -1446,6 +1446,7 @@ class TrainingSession(BaseModel, BillableItemMixin):
 	date = models.DateTimeField(default=timezone.now)
 	qualified = models.BooleanField(default=False, help_text="Indicates that after this training session the user was qualified to use the tool.")
 	validated = models.BooleanField(default=False)
+	validated_by = models.ForeignKey(User, null=True, blank=True, related_name="training_validated_set", on_delete=models.CASCADE)
 
 	class Meta:
 		ordering = ['-date']
@@ -1462,6 +1463,7 @@ class StaffCharge(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	end = models.DateTimeField(null=True, blank=True)
 	note = models.TextField(null=True, blank=True)
 	validated = models.BooleanField(default=False)
+	validated_by = models.ForeignKey(User, null=True, blank=True, related_name="staff_charge_validated_set", on_delete=models.CASCADE)
 
 	class Meta:
 		ordering = ['-start']
@@ -1603,6 +1605,7 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	end = models.DateTimeField(null=True, blank=True)
 	staff_charge = models.ForeignKey(StaffCharge, blank=True, null=True, on_delete=models.CASCADE)
 	validated = models.BooleanField(default=False)
+	validated_by = models.ForeignKey(User, null=True, blank=True, related_name="area_access_validated_set", on_delete=models.CASCADE)
 
 	class Meta:
 		indexes = [
@@ -1754,6 +1757,7 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
 	question_data = models.TextField(null=True, blank=True)
 	validated = models.BooleanField(default=False)
+	validated_by = models.ForeignKey(User, null=True, blank=True, related_name="reservation_validated_set", on_delete=models.CASCADE)
 
 	@property
 	def reservation_item(self) -> Union[Tool, Area]:
@@ -1846,6 +1850,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 	start = models.DateTimeField(default=timezone.now)
 	end = models.DateTimeField(null=True, blank=True)
 	validated = models.BooleanField(default=False)
+	validated_by = models.ForeignKey(User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE)
 	remote_work = models.BooleanField(default=False)
 	run_data = models.TextField(null=True, blank=True)
 
@@ -1923,6 +1928,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 	project = models.ForeignKey(Project, help_text="The withdraw will be billed to this project.", on_delete=models.CASCADE)
 	date = models.DateTimeField(default=timezone.now, help_text="The date and time when the user withdrew the consumable.")
 	validated = models.BooleanField(default=False)
+	validated_by = models.ForeignKey(User, null=True, blank=True, related_name="consumable_withdrawal_validated_set", on_delete=models.CASCADE)
 
 	class Meta:
 		ordering = ['-date']

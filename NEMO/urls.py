@@ -26,6 +26,7 @@ from NEMO.views import (
 	authentication,
 	buddy_requests,
 	calendar,
+	charge_validation,
 	configuration_agenda,
 	consumables,
 	contact_staff,
@@ -213,8 +214,13 @@ urlpatterns += [
 	path("end_staff_area_charge/", remote_work.end_staff_area_charge, name="end_staff_area_charge"),
 	path("end_staff_charge/", remote_work.end_staff_charge, name="end_staff_charge"),
 	path("edit_staff_charge_note/", remote_work.edit_staff_charge_note, name="edit_staff_charge_note"),
-	path("validate_staff_charge/<int:staff_charge_id>/", remote_work.validate_staff_charge, name="validate_staff_charge"),
-	path("validate_usage_event/<int:usage_event_id>/", remote_work.validate_usage_event, name="validate_usage_event"),
+
+	path("validate_staff_charge/<int:staff_charge_id>/", charge_validation.validate_staff_charge, name="validate_staff_charge"),
+	path("validate_usage_event/<int:usage_event_id>/", charge_validation.validate_usage_event, name="validate_usage_event"),
+	path("validate_area_access_record/<int:area_access_record_id>/", charge_validation.validate_area_access_record, name="validate_area_access_record"),
+	path("validate_missed_reservation/<int:reservation_id>/", charge_validation.validate_missed_reservation, name="validate_missed_reservation"),
+	path("validate_training_session/<int:training_session_id>/", charge_validation.validate_training_session, name="validate_training_session"),
+	path("validate_consumable_withdraw/<int:consumable_withdraw_id>/", charge_validation.validate_consumable_withdrawal, name="validate_consumable_withdrawal"),
 
 	# Status dashboard:
 	path("status_dashboard/", status_dashboard.status_dashboard, name="status_dashboard"),
