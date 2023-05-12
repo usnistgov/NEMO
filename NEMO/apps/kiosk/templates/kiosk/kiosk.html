@@ -130,6 +130,10 @@
 				error_element.show();
 				revert(15);
 			}
+            else
+            {
+                status_element.html(response).show();
+            }
 			$("#badge_number").html("");
 			show_alerts();
 		}
@@ -183,45 +187,51 @@
 			default_content_element.hide();
 			error_interlock_element.hide();
 			error_element.hide();
-			status_element.html("<h1>Loading choices...</h1>").show().load('{% url 'kiosk_choices' %}?' + $.param(data), undefined, load_complete);
+			status_element.html("<h1>Loading choices...</h1>").show();
+            ajax_get('{% url 'kiosk_choices' %}?' + $.param(data), undefined, load_complete);
 		}
 		function tool_information(url)
 		{
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
-			status_element.html("<h1>Loading tool information...</h1>").show().load(url, undefined, load_complete);
+			status_element.html("<h1>Loading tool information...</h1>").show();
+            ajax_get(url, undefined, load_complete);
 		}
 		function view_category(url)
 		{
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
-			status_element.html("<h1>Loading category...</h1>").show().load(url, undefined, load_complete);
+			status_element.html("<h1>Loading category...</h1>").show();
+            ajax_get(url, undefined, load_complete);
 		}
 		function tool_reservation(url)
 		{
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
-			let data = serialize('#tool_control');
-			status_element.html("<h1>Loading tool reservation...</h1>").show().load(url, data, load_complete);
+			let data = $('#tool_control').serialize();
+			status_element.html("<h1>Loading tool reservation...</h1>").show();
+            ajax_post(url, data, load_complete);
 		}
 		function cancel_reservation(url, reservation_id)
 		{
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
-            let data = serialize('#cancel_reservation_' + reservation_id);
-			status_element.html("<h1>Cancelling reservation...</h1>").show().load(url, data, load_complete);
+            let data = $('#cancel_reservation_' + reservation_id).serialize();
+			status_element.html("<h1>Cancelling reservation...</h1>").show();
+            ajax_post(url, data, load_complete);
 		}
 		function reserve_tool()
 		{
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
-			let data = serialize('#tool_reservation');
-			status_element.html("<h1>Reserving tool...</h1>").show().load('{% url 'reserve_tool_from_kiosk' %}', data, load_complete);
+			let data = $('#tool_reservation').serialize();
+			status_element.html("<h1>Reserving tool...</h1>").show();
+            ajax_post('{% url 'reserve_tool_from_kiosk' %}', data, load_complete);
 		}
 		function try_post_catch_interlock_error(url, data)
         {
