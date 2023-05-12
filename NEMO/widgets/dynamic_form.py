@@ -579,7 +579,7 @@ def withdraw_consumable_for_question(question, input_data, customer, merchant, p
 def get_counter_increment_for_question(question, input_data, counter_question):
 	additional_value = 0
 	if isinstance(question, PostUsageNumberFieldQuestion) or isinstance(question, PostUsageFloatFieldQuestion):
-		if question.name == counter_question and "user_input" in input_data:
+		if question.name == counter_question and "user_input" in input_data and input_data["user_input"]:
 			if isinstance(input_data["user_input"], dict):
 				for user_input in input_data["user_input"].values():
 					if question.name in user_input and user_input[question.name]:
@@ -589,7 +589,7 @@ def get_counter_increment_for_question(question, input_data, counter_question):
 	return additional_value
 
 
-question_types : Dict[str, Type[PostUsageQuestion]] = {
+question_types: Dict[str, Type[PostUsageQuestion]] = {
 	"number": PostUsageNumberFieldQuestion,
 	"float": PostUsageFloatFieldQuestion,
 	"textbox": PostUsageTextFieldQuestion,
