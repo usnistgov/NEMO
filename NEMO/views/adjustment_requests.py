@@ -324,7 +324,7 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
             .filter(**end_filter)
             .order_by("-end")[:item_number]
         )
-        items.extend(StaffCharge.objects.filter(staff_member=user).filter(**end_filter).order_by("-end")[:item_number])
+        items.extend(StaffCharge.objects.filter(end__isnull=False, staff_member=user).filter(**end_filter).order_by("-end")[:item_number])
     if current_item and current_item in items:
         items.remove(current_item)
     items.sort(key=lambda x: (x.get_end(), x.get_start()), reverse=True)
