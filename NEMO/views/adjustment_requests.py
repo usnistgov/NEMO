@@ -327,6 +327,11 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
         items.extend(StaffCharge.objects.filter(end__isnull=False, staff_member=user).filter(**end_filter).order_by("-end")[:item_number])
     if current_item and current_item in items:
         items.remove(current_item)
+    # Remove already adjusted charges. filter by id first
+    for previously_adjusted in AdjustmentRequest.objects.filter(deleted=False, item_id__in=[item.id for item in items]):
+        # Then confirm it's the correct item
+        if previously_adjusted.item in items:
+            items.remove(previously_adjusted.item)
     items.sort(key=lambda x: (x.get_end(), x.get_start()), reverse=True)
     return items[:item_number]
 

@@ -116,6 +116,17 @@
                 {% endif %}
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-md-4">Approved charges</label>
+            <div class="col-md-8">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="adjustment_requests_edit_charge_button" {% if adjustment_requests_edit_charge_button %}checked{% endif %} value="enabled">Check this box to show a link to edit the original charge after approval</label><br/>
+                </div>
+            </div>
+            <div class="col-md-offset-4 col-md-8 help-block light-grey">
+                This does not apply to general charges.
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Access requests settings</h3>
         <div class="form-group">

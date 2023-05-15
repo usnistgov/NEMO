@@ -176,6 +176,19 @@ def content_type(obj):
 		return ContentType.objects.get_for_model(obj)
 
 
+@register.simple_tag(takes_context=True)
+def admin_edit_url(context, obj):
+	user = context["request"].user
+	try:
+		obj_type = content_type(obj)
+		permission = user.has_perm(f"{obj_type.app_label}.change_{obj_type.model}")
+		if permission:
+			url = reverse(f"admin:{obj_type.app_label}_{obj_type.model}_change", args=[obj.id])
+			return url
+	except:
+		pass
+
+
 @register.filter
 def billable_display(item: BillableItemMixin, user: User):
 	return item.get_display(user) if item else ""

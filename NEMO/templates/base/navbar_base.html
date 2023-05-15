@@ -1,6 +1,6 @@
 {% load static %}
 {% load custom_tags_and_filters %}
-<nav class="navbar navbar-default navbar-static-top">
+<nav class="navbar navbar-default navbar-static-top" role="navigation">
 	<div class="container">
 		<div class="navbar-header">
 			<a class="navbar-brand" href="{% url 'landing' %}">{{ site_title }}</a>
@@ -84,7 +84,7 @@
 				{% if user.is_staff and user.charging_staff_time %}
 					<li>
 						<p class="navbar-text">
-							<a id="staff_charge_link" href="{% url 'staff_charges' %}" style="color:red; text-decoration: none" data-toggle="tooltip" data-placement="bottom" title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">
+							<a id="staff_charge_link" href="{% url 'staff_charges' %}" style="color:red; text-decoration: none" data-container="body" data-toggle="tooltip" data-placement="bottom" title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">
 								Charging staff time
 							</a>
 						</p>

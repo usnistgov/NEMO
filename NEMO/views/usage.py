@@ -1,3 +1,4 @@
+from collections import defaultdict
 from logging import getLogger
 from typing import List, Set
 
@@ -12,6 +13,7 @@ from requests import get
 from NEMO.decorators import accounting_or_user_office_or_manager_required
 from NEMO.models import (
 	Account,
+	AdjustmentRequest,
 	AreaAccessRecord,
 	ConsumableWithdraw,
 	Project,
@@ -126,6 +128,9 @@ def usage(request):
 	if csv_export:
 		return csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations)
 	else:
+		existing_adjustments = defaultdict(list)
+		for values in AdjustmentRequest.objects.filter(deleted=False, creator=user).values("item_type", "item_id").distinct():
+			existing_adjustments[values["item_type"]].append(values["item_id"])
 		dictionary = {
 			'area_access': area_access,
 			'consumables': consumables,
@@ -134,6 +139,7 @@ def usage(request):
 			'training_sessions': training_sessions,
 			'usage_events': usage_events,
 			'adjustment_time_limit': UserRequestsCustomization.get_date_limit(),
+			'existing_adjustments': existing_adjustments,
 			'can_export': True,
 		}
 		if user_managed_projects:
@@ -203,6 +209,9 @@ def project_usage(request):
 				return csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations)
 	except:
 		pass
+	existing_adjustments = defaultdict(list)
+	for values in AdjustmentRequest.objects.filter(deleted=False, creator=request.user).values("item_type", "item_id").distinct():
+		existing_adjustments[values["item_type"]].append(values["item_id"])
 	dictionary = {
 		'search_items': set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()) | set(User.objects.filter(is_active=True)),
 		'area_access': area_access,
@@ -212,6 +221,7 @@ def project_usage(request):
 		'training_sessions': training_sessions,
 		'usage_events': usage_events,
 		'adjustment_time_limit': UserRequestsCustomization.get_date_limit(),
+		'existing_adjustments': existing_adjustments,
 		'project_autocomplete': True,
 		'selection': selection,
 		'can_export': True,
