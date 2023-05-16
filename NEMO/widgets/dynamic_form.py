@@ -409,7 +409,9 @@ class DynamicForm:
 			self.questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(self.untreated_questions)
 
 	def render(self, group_question_url: str, group_item_id: int, virtual_inputs: bool = False):
-		result = "<script>if (!$) { $ = django.jQuery; }</script>"
+		result = ""
+		if self.questions:
+			result += "<script>if (!$) { $ = django.jQuery; }</script>"
 		for question in self.questions:
 			result += question.render(virtual_inputs, group_question_url, group_item_id)
 		return mark_safe(result)
@@ -577,7 +579,7 @@ def withdraw_consumable_for_question(question, input_data, customer, merchant, p
 def get_counter_increment_for_question(question, input_data, counter_question):
 	additional_value = 0
 	if isinstance(question, PostUsageNumberFieldQuestion) or isinstance(question, PostUsageFloatFieldQuestion):
-		if question.name == counter_question and "user_input" in input_data:
+		if question.name == counter_question and "user_input" in input_data and input_data["user_input"]:
 			if isinstance(input_data["user_input"], dict):
 				for user_input in input_data["user_input"].values():
 					if question.name in user_input and user_input[question.name]:
@@ -587,7 +589,7 @@ def get_counter_increment_for_question(question, input_data, counter_question):
 	return additional_value
 
 
-question_types : Dict[str, Type[PostUsageQuestion]] = {
+question_types: Dict[str, Type[PostUsageQuestion]] = {
 	"number": PostUsageNumberFieldQuestion,
 	"float": PostUsageFloatFieldQuestion,
 	"textbox": PostUsageTextFieldQuestion,

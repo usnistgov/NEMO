@@ -94,6 +94,9 @@ class AccountSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = Account
 		fields = "__all__"
+		expandable_fields = {
+			"type": "NEMO.serializers.AccountTypeSerializer",
+		}
 
 
 class QualificationSerializer(FlexFieldsSerializerMixin, ModelSerializer):

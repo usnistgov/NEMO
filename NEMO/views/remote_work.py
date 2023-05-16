@@ -140,24 +140,6 @@ def remote_work(request):
 
 
 @staff_member_required
-@require_POST
-def validate_staff_charge(request, staff_charge_id):
-	staff_charge = get_object_or_404(StaffCharge, id=staff_charge_id)
-	staff_charge.validated = True
-	staff_charge.save()
-	return HttpResponse()
-
-
-@staff_member_required
-@require_POST
-def validate_usage_event(request, usage_event_id):
-	usage_event = get_object_or_404(UsageEvent, id=usage_event_id)
-	usage_event.validated = True
-	usage_event.save()
-	return HttpResponse()
-
-
-@staff_member_required
 @require_GET
 def staff_charges(request):
 	staff_member: User = request.user

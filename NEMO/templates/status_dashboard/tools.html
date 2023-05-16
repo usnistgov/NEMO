@@ -40,7 +40,7 @@
 			{% if tool.in_use %}
 				{# Output the operator & user of the tool. If the person viewing this page is a staff member, then also allow them to force the operator off the tool. #}
 				<td>
-					{% if user.is_staff %}
+					{% if user.is_staff or user.is_user_office %}
 						<span class="glyphicon glyphicon-remove-circle grey pointer" onclick="force_user_off_of_tool('{% url 'disable_tool' tool.id %}')" title="Force {{ tool.operator }} to stop using the {{ tool.name }}"></span>
 					{% endif %}
 					{{ tool.user }}

@@ -117,7 +117,7 @@
         {
             if(data === undefined)
             {
-                data = {};
+                data = "";
             }
             {# Specific case here where we have an error but it could be bypassed #}
             if (status === 'error' && response.status === 501)
@@ -139,7 +139,7 @@
                     {
                         modal_dialog.on('hidden.bs.modal', function ()
                         {
-                            data["bypass"] = 'True';
+                            data += "&bypass=True";
                             try_post_catch_interlock_error(url, data, success_callback, always_callback);
                             modal_dialog.off();
                         });
@@ -182,15 +182,16 @@
 			else
 				success_callbacks = [refresh_tool_status, ajax_success_callback];
 			let enable_start_button = function() { $("#start button").prop("disabled", false); };
-			try_post_catch_interlock_error(url, {"remote_work": $("#remote_work").val()}, success_callbacks, enable_start_button);
+            let data = "remote_work=" + $("#remote_work").val();
+			try_post_catch_interlock_error(url, data, success_callbacks, enable_start_button);
 		}
 
 		function disable_tool(url)
 		{
 			$("#stop").prop("disabled", true);
-			let contents = $("#tool_control").serialize();
+			let data = $("#tool_control").serialize();
 			let enable_stop_button = function() { $("#stop").prop("disabled", false); };
-			try_post_catch_interlock_error(url, contents, [refresh_tool_status, ajax_success_callback], enable_stop_button);
+			try_post_catch_interlock_error(url, data, [refresh_tool_status, ajax_success_callback], enable_stop_button);
 		}
 
 		{% if user.is_staff %}

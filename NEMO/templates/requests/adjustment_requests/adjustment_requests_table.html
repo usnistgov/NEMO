@@ -35,6 +35,12 @@
                 <td class="text-right text-nowrap" style="vertical-align: middle">
                     {% if request_status == 'approved' or request_status == 'denied' %}
                         {{ a_request.reviewer.get_name }}
+                        {% if request_status == 'approved' and a_request.editable_charge and "django.contrib.admin"|app_installed and "requests"|customization:"adjustment_requests_edit_charge_button" == "enabled" %}
+                            {% admin_edit_url a_request.item as edit_url %}
+                            {% if edit_url %}
+                                <br>{% button type="edit" size="small" value="Edit charge" url=edit_url %}
+                            {% endif %}
+                        {% endif %}
                     {% else %}
                         {% if request_status == 'pending' and user.is_facility_manager %}
                             <a class="btn btn-sm btn-default" title="Approve/Deny" href="{% url 'edit_adjustment_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>

@@ -15,6 +15,7 @@ from django.utils.safestring import mark_safe
 
 from NEMO.mixins import BillableItemMixin
 from NEMO.models import User
+from NEMO.utilities import get_full_url
 from NEMO.views.customization import CustomizationBase, ProjectsAccountsCustomization
 
 register = template.Library()
@@ -175,6 +176,19 @@ def content_type(obj):
 		return ContentType.objects.get_for_model(obj)
 
 
+@register.simple_tag(takes_context=True)
+def admin_edit_url(context, obj):
+	user = context["request"].user
+	try:
+		obj_type = content_type(obj)
+		permission = user.has_perm(f"{obj_type.app_label}.change_{obj_type.model}")
+		if permission:
+			url = reverse(f"admin:{obj_type.app_label}_{obj_type.model}_change", args=[obj.id])
+			return url
+	except:
+		pass
+
+
 @register.filter
 def billable_display(item: BillableItemMixin, user: User):
 	return item.get_display(user) if item else ""
@@ -229,3 +243,9 @@ def button(value, type="default", size="", icon=None, onclick=None, dismiss="", 
 		"btn_dismiss": dismiss,
 		"kwargs": kwargs,  # pass the rest of the kwargs directly to the button to be used as attributes
 	}
+
+
+@register.simple_tag(takes_context=True)
+def absolute_url(context, view_name, *args, **kwargs):
+	url = reverse(view_name, args=args, kwargs=kwargs)
+	return get_full_url(url, request=context['request'])

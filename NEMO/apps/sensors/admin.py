@@ -196,6 +196,13 @@ class SensorAdmin(admin.ModelAdmin):
 	def get_read_frequency(self, obj: Sensor):
 		return obj.read_frequency if obj.read_frequency != 0 else display_for_value(False, "", boolean=True)
 
+	def get_deleted_objects(self, objs, request):
+		deleted_objects = [str(obj) for obj in objs]
+		model_count = {Sensor._meta.verbose_name_plural: len(deleted_objects)}
+		perms_needed = []
+		protected = []
+		return deleted_objects, model_count, perms_needed, protected
+
 
 @register(SensorCardCategory)
 class SensorCardCategoryAdmin(admin.ModelAdmin):
@@ -227,9 +234,6 @@ class SensorAlertLogAdmin(admin.ModelAdmin):
 	list_display = ["id", "time", "sensor", "reset", "value"]
 	list_filter = [("sensor", admin.RelatedOnlyFieldListFilter), "value", "reset"]
 	date_hierarchy = "time"
-
-	def has_delete_permission(self, request, obj=None):
-		return False
 
 	def has_add_permission(self, request):
 		return False

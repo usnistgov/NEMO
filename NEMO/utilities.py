@@ -622,7 +622,7 @@ def get_full_url(location, request=None):
 	"""
 	# For lazy locations
 	location = str(location)
-	if request:
+	if request and not isinstance(request, EmptyHttpRequest):
 		return request.build_absolute_uri(location)
 	else:
 		domain = getattr(settings, "SERVER_DOMAIN", "https://{}".format(settings.ALLOWED_HOSTS[0]))

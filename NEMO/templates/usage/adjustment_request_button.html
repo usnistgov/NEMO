@@ -1,9 +1,15 @@
 {% load custom_tags_and_filters %}
 {% if "requests"|customization:"adjustment_requests_enabled" %}
-    <span style="position: absolute; top: 15px; right: 15px">
-        {% with content_type=charge|content_type %}
-            {% url 'create_adjustment_request' content_type.id charge.id as create_adjustment_request %}
-            {% button size="small" type="warn" url=create_adjustment_request value="Request an adjustment" icon="glyphicon-flag" %}
-        {% endwith %}
-    </span>
+    {% with content_type=charge|content_type %}
+        {% url 'create_adjustment_request' content_type.id charge.id as create_adjustment_request %}
+        {% if not existing_adjustments or content_type.id not in existing_adjustments or charge.id not in existing_adjustments|get_item:content_type.id %}
+            <span style="position: absolute; top: 15px; right: 15px">
+                {% button size="small" type="warn" url=create_adjustment_request value="Request an adjustment" icon="glyphicon-flag" %}
+            </span>
+        {% else %}
+            <span style="position: absolute; top: 15px; right: 15px" title="An adjustment request already exists for this charge">
+                {% button size="small" type="warn" url=create_adjustment_request value="Request an adjustment" icon="glyphicon-flag" disabled="true" %}
+            </span>
+        {% endif %}
+    {% endwith %}
 {% endif %}

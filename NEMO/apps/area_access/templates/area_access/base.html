@@ -145,11 +145,7 @@
         }
 		function just_open_the_door(badge_number)
 		{
-			let data = {
-				'door_id': {{ door.id }},
-				'badge_number': badge_number,
-				'csrfmiddlewaretoken': '{{ csrf_token }}'
-			};
+			let data = 'door_id={{ door.id }}&csrfmiddlewaretoken={{ csrf_token }}&badge_number=' + badge_number;
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
@@ -158,13 +154,8 @@
 		}
 		function enter_area(badge_number, project_id)
 		{
-			let data = {
-				'door_id': {{ door.id }},
-				'badge_number': badge_number,
-				'csrfmiddlewaretoken': '{{ csrf_token }}'
-			};
-			if(project_id)
-				data.project_id = project_id;
+            let data = 'door_id={{ door.id }}&csrfmiddlewaretoken={{ csrf_token }}&badge_number=' + badge_number;
+			if(project_id) data += '&project_id=' + project_id;
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
@@ -173,11 +164,7 @@
 		}
 		function exit_area(badge_number)
 		{
-			let data = {
-				'door_id': {{ door.id }},
-				'badge_number': badge_number,
-				'csrfmiddlewaretoken': '{{ csrf_token }}'
-			};
+            let data = 'door_id={{ door.id }}&csrfmiddlewaretoken={{ csrf_token }}&badge_number=' + badge_number;
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
@@ -219,7 +206,7 @@
                     bypass_button.show();
                     bypass_button.one('click', function ()
                     {
-                        data["bypass"] = 'True';
+                        data += "&bypass=True";
                         try_post_catch_interlock_error(url, data);
                     });
                 }
