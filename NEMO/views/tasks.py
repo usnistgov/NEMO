@@ -177,6 +177,7 @@ def send_task_updated_email(task, url, task_images: List[TaskImages] = None):
 			task_status = 'updated'
 		message = f"""
 A task for the {task.tool} was just modified by {task_user}.
+{('<br><br>Estimated resolution:' + format_datetime(task.estimated_resolution_time)) if task.estimated_resolution_time else ''}
 <br/><br/>
 The latest update is at the bottom of the description. The entirety of the task status follows: 
 <br/><br/>
