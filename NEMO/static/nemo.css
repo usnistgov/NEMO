@@ -877,6 +877,11 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 }
 
 /* Badge display on top right corner */
+.badge
+{
+	background-color: #6e6e6e;
+}
+
 .badge.badge-tab-top
 {
 	z-index: 5;
@@ -885,10 +890,15 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	right: -0.5em;
 }
 
-.active > a > .badge.badge-tab-top
+.badge.active
+{
+	vertical-align: top;
+}
+
+.active > a > .badge.badge-tab-top, .badge.active
 {
 	color: #fff !important;
-	background-color: red !important;
+	background-color: #ee0000 !important;
 }
 
 .nav-pills.nav-pills-spacer > li + li

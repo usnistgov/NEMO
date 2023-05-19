@@ -26,7 +26,7 @@
                         <li><a href="{% url 'user_requests' %}">
                             Requests
                             {% if buddy_notification_count or temporary_access_notification_count or adjustment_notification_count %}
-                                <span class="badge" style="vertical-align:middle; background-color:red">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count }}</span>
+                                <span class="badge active">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count }}</span>
                             {% endif %}
                         </a></li>
                     {% endif %}
@@ -34,7 +34,7 @@
                         <li><a href="{% url 'safety' %}">
                             Safety
                             {% if safety_notification_count %}
-                                <span class="badge" style="vertical-align:middle; background-color:red">{{ safety_notification_count }}</span>
+                                <span class="badge active">{{ safety_notification_count }}</span>
                             {% endif %}
                         </a></li>
                     {% endif %}
