@@ -1,25 +1,30 @@
 <tr id="row_{{ entry_number }}">
 	<td style="vertical-align: middle"><span class="glyphicon glyphicon-remove-circle grey pointer" onclick="remove_row({{ entry_number }})"></span></td>
 	<td>
-		<input type="text" class="form-control" id="user_textbox__{{ entry_number }}" name="chosen_user__{{ entry_number }}" data-row="{{ entry_number }}">
-		<input type="button" class="btn btn-default" style="display:none" id="user_button__{{ entry_number }}" onclick="purge_trainee({{ entry_number }})">
+		<input aria-label="training user #{{ entry_number }}"  type="text" class="form-control" id="user_textbox__{{ entry_number }}" name="chosen_user__{{ entry_number }}" data-row="{{ entry_number }}">
+		<input type="button" class="btn btn-default" style="display:none" id="user_button__{{ entry_number }}" onclick="purge_trainee({{ entry_number }})" value="user">
 	</td>
 	<td>
-		<input type="text" class="form-control" id="tool_textbox__{{ entry_number }}" name="chosen_tool__{{ entry_number }}" data-row="{{ entry_number }}">
+		<input aria-label="training tool #{{ entry_number }}" type="text" class="form-control" id="tool_textbox__{{ entry_number }}" name="chosen_tool__{{ entry_number }}" data-row="{{ entry_number }}">
 		<input type="hidden" id="tool_textbox_type__{{ entry_number }}" name="chosen_type__{{ entry_number }}" data-row="{{ entry_number }}">
-		<input type="button" class="btn btn-default" style="display:none" id="tool_button__{{ entry_number }}" onclick="purge_tool({{ entry_number }})">
+		<input type="button" class="btn btn-default" style="display:none" id="tool_button__{{ entry_number }}" onclick="purge_tool({{ entry_number }})" value="tool">
 	</td>
 	<td id="project__{{ entry_number }}" style="vertical-align: middle">
 
 	</td>
-	<td><input type="number" class="form-control" name="duration__{{ entry_number }}" id="duration__{{ entry_number }}" min="1" inputmode="numeric" pattern="[0-9]*" required></td>
 	<td>
-		<select class="form-control" name="charge_type__{{ entry_number }}" required>
+		<div class="input-group">
+			<input aria-label="training duration #{{ entry_number }}" type="number" class="form-control" name="duration__{{ entry_number }}" id="duration__{{ entry_number }}" min="1" inputmode="numeric" pattern="[0-9]*" required>
+			<div class="input-group-addon">min</div>
+		</div>
+    </td>
+	<td>
+		<select aria-label="training type #{{ entry_number }}" class="form-control" name="charge_type__{{ entry_number }}" required>
 			<option disabled selected value="">&nbsp;</option>
 			{% for charge_type in charge_types %}
 				<option value="{{ charge_type.0 }}">{{ charge_type.1 }}</option>
 			{% endfor %}
 		</select>
 	</td>
-	<td style="vertical-align: middle"><input type="checkbox" name="qualify__{{ entry_number }}" checked></td>
+	<td style="vertical-align: middle"><input aria-label="training qualification #{{ entry_number }}"  type="checkbox" name="qualify__{{ entry_number }}" checked></td>
 </tr>
