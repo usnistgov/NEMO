@@ -12,7 +12,6 @@ from logging import getLogger
 from re import match
 from typing import List, Optional, Set, Union
 
-from dateutil import rrule
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission, PermissionsMixin
@@ -35,7 +34,7 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from NEMO import fields
-from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin
+from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, RecurrenceMixin
 from NEMO.utilities import (
 	EmailCategory,
 	RecurrenceFrequency,
@@ -57,7 +56,7 @@ from NEMO.utilities import (
 	render_email_template,
 	send_mail,
 )
-from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
+from NEMO.views.constants import CHAR_FIELD_MAXIMUM_LENGTH, ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.documents import supported_embedded_extensions
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -391,7 +390,7 @@ class TemporaryPhysicalAccessRequest(BaseModel):
 
 
 class Closure(BaseModel):
-	name = models.CharField(max_length=255, help_text="The name of this closure, that will be displayed as the policy problem and alert (if applicable).")
+	name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The name of this closure, that will be displayed as the policy problem and alert (if applicable).")
 	alert_days_before = models.PositiveIntegerField(null=True, blank=True, help_text="Enter the number of days before the closure when an alert should automatically be created. Leave blank for no alert.")
 	alert_template = models.TextField(null=True, blank=True, help_text=mark_safe("The template to create the alert with. The following variables are provided (when applicable): <b>name</b>, <b>start_time</b>, <b>end_time</b>, <b>areas</b>."))
 	notify_managers_last_occurrence = models.BooleanField(default=True, help_text="Check this box to notify facility managers on the last occurrence of this closure.")
@@ -1964,7 +1963,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 		return str(self.id)
 
 
-class RecurringConsumableCharge(BaseModel):
+class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
 	name = models.CharField(max_length=200, help_text="The name/identifier for this recurring charge.")
 	customer = models.ForeignKey(User, null=True, blank=True, related_name="recurring_charge_customer", help_text="The user who will be charged.", on_delete=models.CASCADE)
 	consumable = models.ForeignKey(Consumable, on_delete=models.CASCADE)
@@ -1984,14 +1983,8 @@ class RecurringConsumableCharge(BaseModel):
 	class Meta:
 		ordering = ["name"]
 
-	@property
-	def get_rec_frequency_enum(self):
-		return RecurrenceFrequency(self.rec_frequency)
-
 	def next_charge(self, inc=False) -> datetime:
-		today = beginning_of_the_day(datetime.datetime.now(), in_local_timezone=False)
-		recurrence = self.get_recurrence()
-		return recurrence.after(today, inc=inc) if recurrence else None
+		return self.next_recurrence(inc)
 
 	def invalid_customer(self):
 		from NEMO.views.customization import RecurringChargesCustomization
@@ -2013,34 +2006,6 @@ class RecurringConsumableCharge(BaseModel):
 		if self.customer and self.project:
 			if self.project not in self.customer.active_projects():
 				return "The user does not belong to this project"
-
-	def get_recurrence(self) -> rrule:
-		if self.rec_start and self.rec_frequency:
-			return get_recurring_rule(self.rec_start, self.get_rec_frequency_enum, self.rec_until, self.rec_interval, self.rec_count)
-
-	def get_recurrence_interval_display(self) -> str:
-		if not self.rec_start or not self.rec_frequency:
-			return ""
-		interval = f"{self.rec_interval} " if self.rec_interval != 1 else ""
-		f_enum = self.get_rec_frequency_enum
-		frequency = f"{f_enum.display_text}s" if self.rec_interval != 1 else f_enum.display_text
-		return f"Every {interval}{frequency}"
-
-	def get_recurrence_display(self) -> str:
-		rec_display = ""
-		if self.rec_start and self.rec_frequency:
-			start = f", starting {format_datetime(self.rec_start, 'SHORT_DATE_FORMAT')}"
-			end = ""
-			if self.rec_until or self.rec_count:
-				end = f" and ending "
-				if self.rec_until:
-					end += f"on {format_datetime(self.rec_until, 'SHORT_DATE_FORMAT')}"
-				elif self.rec_count:
-					end += f"after {self.rec_count} iterations" if self.rec_count != 1 else f"after one time"
-					if self.get_recurrence():
-						end += f" on {format_datetime(list(self.get_recurrence())[-1], 'SHORT_DATE_FORMAT')}"
-			return f"{self.get_recurrence_interval_display()}{start}{end}"
-		return rec_display
 
 	def charge(self):
 		# Cannot charge twice the same day
@@ -2069,12 +2034,7 @@ class RecurringConsumableCharge(BaseModel):
 				errors["customer"] = "This field is required."
 			if not self.project:
 				errors["project"] = "This field is required."
-			if not self.rec_start:
-				errors["rec_start"] = "This field is required."
-			if not self.rec_frequency:
-				errors["rec_frequency"] = "This field is required."
-			if self.rec_until and self.rec_count:
-				errors[NON_FIELD_ERRORS] = "'count' and 'until' cannot be used at the same time."
+			errors = self.clean_recurrence()
 			# Validate needed fields are present
 			if errors:
 				raise ValidationError(errors)
@@ -2944,8 +2904,8 @@ class RequestMessage(BaseModel):
 
 
 class StaffAbsenceType(BaseModel):
-	name = models.CharField(max_length=255, help_text="The name of this absence type.")
-	description = models.CharField(max_length=255, help_text="The description for this absence type.")
+	name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The name of this absence type.")
+	description = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The description for this absence type.")
 
 	def __str__(self):
 		description = f" ({self.description})" if self.description else ''
