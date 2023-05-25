@@ -295,6 +295,7 @@ class BillableItemSerializer(serializers.Serializer):
 		["missed_reservation", "tool_usage", "area_access", "consumable", "staff_charge", "training_session"]
 	)
 	name = CharField(max_length=200, read_only=True)
+	item_id = IntegerField(read_only=True)
 	details = CharField(max_length=500, read_only=True)
 	account = CharField(max_length=200, read_only=True)
 	account_id = IntegerField(read_only=True)

@@ -193,6 +193,7 @@ def billable_items_usage_events(usage_events: QuerySet) -> List[BillableItem]:
 	for usage_event in usage_events:
 		item = BillableItem("tool_usage", usage_event.project, usage_event.user)
 		item.name = usage_event.tool.name
+		item.item_id = usage_event.id
 		item.details = (
 			f"Work performed by {usage_event.operator} on user's behalf"
 			if usage_event.operator != usage_event.user
@@ -211,6 +212,7 @@ def billable_items_area_access_records(area_access_records: QuerySet) -> List[Bi
 	for area_access_record in area_access_records:
 		item = BillableItem("area_access", area_access_record.project, area_access_record.customer)
 		item.name = area_access_record.area.name
+		item.item_id = area_access_record.id
 		item.details = (
 			f"Area accessed by {area_access_record.staff_charge.staff_member} on user's behalf"
 			if area_access_record.staff_charge
@@ -229,6 +231,7 @@ def billable_items_consumable_withdrawals(withdrawals: QuerySet) -> List[Billabl
 	for consumable_withdrawal in withdrawals:
 		item = BillableItem("consumable", consumable_withdrawal.project, consumable_withdrawal.customer)
 		item.name = consumable_withdrawal.consumable.name
+		item.item_id = consumable_withdrawal.id
 		item.start = consumable_withdrawal.date
 		item.end = consumable_withdrawal.date
 		item.quantity = consumable_withdrawal.quantity
@@ -242,6 +245,7 @@ def billable_items_missed_reservations(missed_reservations: QuerySet) -> List[Bi
 	for missed_reservation in missed_reservations:
 		item = BillableItem("missed_reservation", missed_reservation.project, missed_reservation.user)
 		item.name = missed_reservation.reservation_item.name
+		item.item_id = missed_reservation.id
 		item.start = missed_reservation.start
 		item.end = missed_reservation.end
 		item.quantity = 1
@@ -254,6 +258,7 @@ def billable_items_staff_charges(staff_charges: QuerySet) -> List[BillableItem]:
 	staff_charge: StaffCharge
 	for staff_charge in staff_charges:
 		item = BillableItem("staff_charge", staff_charge.project, staff_charge.customer)
+		item.item_id = staff_charge.id
 		item.details = staff_charge.note
 		item.name = f"Work performed by {staff_charge.staff_member}"
 		item.start = staff_charge.start
@@ -269,6 +274,7 @@ def billable_items_training_sessions(training_sessions: QuerySet) -> List[Billab
 	for training_session in training_sessions:
 		item = BillableItem("training_session", training_session.project, training_session.trainee)
 		item.name = training_session.tool.name
+		item.item_id = training_session.id
 		item.details = f"{training_session.get_type_display()} training provided by {training_session.trainer}"
 		item.start = training_session.date
 		item.end = training_session.date
