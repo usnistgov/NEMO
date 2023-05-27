@@ -39,7 +39,7 @@
                 </div>
             </div>
             <div class="col-md-offset-2 col-md-10 help-block light-grey">
-                Add a landing page option with url <b>/consumables/</b> so users can have a way to get to the page.
+                If enabled, you need to add a {% if "django.contrib.admin"|app_installed %}<a href="{% url 'admin:NEMO_landingpagechoice_changelist' %}">landing page choice</a>{% else %}landing page option{% endif %} with url <b>/consumables/</b> so users can have a way to get to the page.
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
