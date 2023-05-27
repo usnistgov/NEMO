@@ -2,6 +2,7 @@ from copy import deepcopy
 
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core import validators
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.fields import CharField, ChoiceField, DateTimeField, DecimalField, IntegerField
@@ -44,8 +45,43 @@ class ModelSerializer(serializers.ModelSerializer):
 				attributes_data.pop(field_name)
 		for attr, value in attributes_data.items():
 			setattr(instance, attr, value)
-		self.full_clean(instance)
+		exclude = self.get_validation_exclusions(instance, attributes_data)
+		self.full_clean(instance, exclude)
 		return attrs
+
+	def get_validation_exclusions(self, instance, attributes_data):
+		exclude = []
+		# Build up a list of fields that should be excluded from model field
+		# validation and unique checks.
+		for f in instance._meta.fields:
+			field = f.name
+			meta_fields = getattr(self.Meta, 'fields', None)
+			meta_exclude = getattr(self.Meta, 'exclude', None)
+
+			# Exclude fields that aren't on the serializer.
+			if field not in self.fields:
+				exclude.append(f.name)
+
+			# Don't perform model validation on fields that were defined
+			# manually on the form and excluded via the Serializer's Meta
+			# class.
+			elif meta_fields and field not in meta_fields:
+				exclude.append(f.name)
+			elif meta_exclude and field in meta_exclude:
+				exclude.append(f.name)
+
+			# Exclude empty fields that are not required by the serializer, if
+			# the underlying model field is required. This keeps the model field
+			# from raising a required error. Note: don't exclude the field from
+			# validation if the model field allows blanks. If it does, the blank
+			# value may be included in a unique check, so cannot be excluded
+			# from validation.
+			else:
+				form_field = self.fields[field]
+				field_value = attributes_data.get(field)
+				if not f.blank and not form_field.required and field_value in list(validators.EMPTY_VALUES):
+					exclude.append(f.name)
+		return exclude
 
 	def full_clean(self, instance, exclude=None, validate_unique=True):
 		instance.full_clean(exclude, validate_unique)
@@ -54,18 +90,15 @@ class ModelSerializer(serializers.ModelSerializer):
 class UserSerializer(ModelSerializer):
 	class Meta:
 		model = User
-		fields = "__all__"
+		exclude = ["preferences"]
 
-	# Special handling to exclude OneToOne user preferences here and add it in create
-	def full_clean(self, instance, exclude=None, validate_unique=True):
-		if not instance or not instance.id:
-			exclude = ["preferences"]
-		super().full_clean(instance, exclude, validate_unique)
-
-	def create(self, validated_data):
-		instance: User = super().create(validated_data)
-		instance.get_preferences()
-		return instance
+	def to_internal_value(self, data):
+		# Unique and nullable field conflict if passed the empty string so set
+		# it to None instead. Very specific case for nullable unique CharField
+		if data.get("badge_number", None) == "":
+			data = data.copy()
+			data["badge_number"] = None
+		return super().to_internal_value(data)
 
 
 class ProjectDisciplineSerializer(ModelSerializer):
