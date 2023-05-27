@@ -150,6 +150,7 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_in": "",
 		"self_log_out": "",
 		"calendar_login_logout": "",
+		"consumable_user_self_checkout": "",
 	}
 
 	def save(self, request, element=None):

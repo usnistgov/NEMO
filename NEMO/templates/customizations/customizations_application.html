@@ -31,6 +31,17 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-md-2">Consumables</label>
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="consumable_user_self_checkout" {% if consumable_user_self_checkout %}checked{% endif %} value="enabled">Allow users to self-checkout consumables</label>
+                </div>
+            </div>
+            <div class="col-md-offset-2 col-md-10 help-block light-grey">
+                Add a landing page option with url <b>/consumables/</b> so users can have a way to get to the page.
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">
             {% button type="save" value="Save settings" %}

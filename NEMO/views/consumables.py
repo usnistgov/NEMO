@@ -3,12 +3,13 @@ from logging import getLogger
 from typing import List
 
 from django.contrib import messages
+from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.decorators import staff_member_or_user_office_required, user_office_or_manager_required
+from NEMO.decorators import user_office_or_manager_required
 from NEMO.exceptions import ProjectChargeException
 from NEMO.forms import ConsumableWithdrawForm, RecurringConsumableChargeForm
 from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, User
@@ -22,15 +23,30 @@ from NEMO.utilities import (
 	queryset_search_filter, render_email_template,
 	send_mail,
 )
-from NEMO.views.customization import EmailsCustomization, RecurringChargesCustomization, get_media_file_contents
+from NEMO.views.customization import (
+	ApplicationCustomization,
+	EmailsCustomization,
+	RecurringChargesCustomization,
+	get_media_file_contents,
+)
 from NEMO.views.pagination import SortedPaginator
 
 consumables_logger = getLogger(__name__)
 
 
-@staff_member_or_user_office_required
+def consumable_permissions(user):
+	user_allowed = ApplicationCustomization.get_bool("consumable_user_self_checkout")
+	return user.is_active and (user_allowed or user.is_staff or user.is_user_office or user.is_superuser)
+
+
+def self_checkout(user) -> bool:
+	return user.is_active and not (user.is_staff or user.is_user_office or user.is_superuser)
+
+
+@user_passes_test(consumable_permissions)
 @require_http_methods(["GET", "POST"])
 def consumables(request):
+	user: User = request.user
 	if request.method == "GET":
 		from NEMO.rates import rate_class
 
@@ -40,10 +56,16 @@ def consumables(request):
 			"users": User.objects.filter(is_active=True),
 			"consumables": Consumable.objects.filter(visible=True).order_by("category", "name"),
 			"rates": rate_dict,
+			"self_checkout": self_checkout(user),
 		}
+		if self_checkout(user):
+			dictionary["projects"] = user.active_projects()
 		return render(request, "consumables/consumables.html", dictionary)
 	elif request.method == "POST":
-		form = ConsumableWithdrawForm(request.POST)
+		updated_post_data = request.POST.copy()
+		if self_checkout(user):
+			updated_post_data.update({'customer': user.id})
+		form = ConsumableWithdrawForm(updated_post_data)
 		if form.is_valid():
 			withdraw = form.save(commit=False)
 			try:
@@ -73,7 +95,7 @@ def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
 	request.session["withdrawals"] = withdrawals
 
 
-@staff_member_or_user_office_required
+@user_passes_test(consumable_permissions)
 @require_GET
 def remove_withdraw_at_index(request, index: str):
 	try:
@@ -87,7 +109,7 @@ def remove_withdraw_at_index(request, index: str):
 	return render(request, "consumables/consumables_order.html")
 
 
-@staff_member_or_user_office_required
+@user_passes_test(consumable_permissions)
 @require_GET
 def clear_withdrawals(request):
 	if "withdrawals" in request.session:
@@ -95,15 +117,17 @@ def clear_withdrawals(request):
 	return render(request, "consumables/consumables_order.html")
 
 
-@staff_member_or_user_office_required
+@user_passes_test(consumable_permissions)
 @require_POST
 def make_withdrawals(request):
+	user: User = request.user
 	withdrawals: List = request.session.setdefault("withdrawals", [])
+	force_customer = user.id if self_checkout(user) else None
 	for withdraw in withdrawals:
 		make_withdrawal(
 			consumable_id=withdraw["consumable_id"],
 			merchant=request.user,
-			customer_id=withdraw["customer_id"],
+			customer_id=force_customer or withdraw["customer_id"],
 			quantity=withdraw["quantity"],
 			project_id=withdraw["project_id"],
 			request=request,

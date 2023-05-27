@@ -5,18 +5,19 @@
 	<h1>Withdraw consumables</h1>
     <div style="height: 15px"></div>
     <div class="col-md-5">
-        <p>Use this form to charge users for consumable items & supplies.</p>
+        <p>Use this form to {% if self_checkout %}checkout{% else %}charge users for{% endif %} consumable items & supplies.</p>
         <form id="withdrawal_form_order" action="{% url 'consumables' %}" class="form-horizontal" method="post">
             {% csrf_token %}
-
-            <div class="form-group">
-                <label class="control-label col-md-3" for="customer_search">Customer</label>
-                <div class="col-md-9">
-                    <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer" required>
-                    <input type="button" id="chosen_customer" class="btn btn-default" style="display:none" onclick="clear_selected_customer()">
-                    <input type="hidden" id="customer" name="customer">
+            {% if not self_checkout %}
+                <div class="form-group">
+                    <label class="control-label col-md-3" for="customer_search">Customer</label>
+                    <div class="col-md-9">
+                        <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer" required>
+                        <input type="button" id="chosen_customer" class="btn btn-default" style="display:none" onclick="clear_selected_customer()">
+                        <input type="hidden" id="customer" name="customer">
+                    </div>
                 </div>
-            </div>
+            {% endif %}
 
             <div class="form-group">
                 <label class="control-label col-md-3" for="project">Project</label>
