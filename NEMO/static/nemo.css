@@ -1049,3 +1049,15 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 {
 	padding-top: 5px;
 }
+
+.usage-charge
+{
+	position: relative;
+}
+
+.usage-charge-adjustment-button
+{
+	position: absolute;
+	top: 15px;
+	right: 15px;
+}

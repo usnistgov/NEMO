@@ -24,7 +24,7 @@
                 {% if missed_reservations %}
                     <h3>Missed reservations</h3>
                     {% for m in missed_reservations %}
-                        <div class="alert alert-danger" style="position: relative">
+                        <div class="usage-charge alert alert-danger">
                             <span style="font-weight:bold">{{ m.reservation_item }}</span><br>
                             {% if project_autocomplete or selected_project %}Missed by {{ m.user }}<br>{% endif %}
                             {{ m.start }}<br>
@@ -42,7 +42,7 @@
                 {% if consumables %}
                     <h3>Supplies and consumables</h3>
                     {% for c in consumables %}
-                        <div class="alert alert-info" style="position: relative">
+                        <div class="usage-charge alert alert-info">
                             <span style="font-weight:bold">{{ c.consumable }}</span><br>
                             {% if project_autocomplete or selected_project %}<span style="font-weight:bold">For {{ c.customer }}</span><br>{% endif %}
                             Quantity {{ c.quantity }}<br>
@@ -54,7 +54,7 @@
                 {% if staff_charges %}
                     <h3>Staff charges</h3>
                     {% for s in staff_charges %}
-                        <div class="alert alert-info" style="position: relative">
+                        <div class="usage-charge alert alert-info">
                             <span style="font-weight:bold">Work performed by {{ s.staff_member }} {% if project_autocomplete or selected_project %}on behalf of {{ s.customer }}{% else %}on your behalf{% endif %}</span><br>
                             {% if s.note %}Charge note: {{ s.note|linebreaksbr }}<br>{% endif %}
                             {{ s.start }}<br>
@@ -71,7 +71,7 @@
                 {% if training_sessions %}
                     <h3>Training sessions</h3>
                     {% for t in training_sessions %}
-                        <div class="alert alert-info" style="position: relative">
+                        <div class="usage-charge alert alert-info">
                             <span style="font-weight:bold">{{ t.tool }}</span> {{ t.get_type_display }} training {% if project_autocomplete or selected_project %}for {{ t.trainee }} {% endif %}<br>
                             Trained by <span style="font-weight:bold">{{ t.trainer }}</span><br>
                             {{ t.date }} ({{ t.duration }} minutes)<br>
@@ -82,7 +82,7 @@
                 {% if area_access %}
                     <h3>Area access</h3>
                     {% for a in area_access %}
-                        <div class="alert {% if not a.staff_charge %}alert-info{% else %}alert-warning{% endif %}" style="position: relative">
+                        <div class="usage-charge alert {% if not a.staff_charge %}alert-info{% else %}alert-warning{% endif %}">
                             <span style="font-weight:bold">{{ a.area }}</span><br>
                             {% if a.staff_charge %}<span style="font-weight:bold">Area accessed by {{ a.staff_charge.staff_member }} {% if project_autocomplete or selected_project %}on behalf of {{ a.customer }}{% else %}on your behalf{% endif %}</span><br>
                             {% else %}{% if project_autocomplete or selected_project %}<span style="font-weight:bold">Area accessed by {{ a.customer }}</span><br>{% endif %}
@@ -109,7 +109,7 @@
                 {% if usage_events %}
                     <h3>Tool usage</h3>
                     {% for u in usage_events %}
-                        <div class="alert {% if u.user == u.operator %}alert-info{% else %}alert-warning{% endif %}" style="position: relative">
+                        <div class="usage-charge alert {% if u.user == u.operator %}alert-info{% else %}alert-warning{% endif %}">
                             <span style="font-weight:bold">{{ u.tool }}</span><br>
                             {% if u.user != u.operator %}<span style="font-weight:bold">Operated by {{ u.operator }} {% if project_autocomplete or selected_project %}on behalf of {{ u.user }}{% else %}on your behalf{% endif %}</span><br>
                             {% else %}{% if project_autocomplete or selected_project %}<span style="font-weight:bold">Operated by {{ u.user }}</span><br>{% endif %}

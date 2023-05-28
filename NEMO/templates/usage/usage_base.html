@@ -58,10 +58,8 @@
 				<div class="hidden-lg hidden-md hidden-sm">&nbsp;</div>
 				<div class="col-md-3">
                     {% button type="save" submit=False onclick="$('#csv_export').val('');this.form.submit();" value="Update" icon="glyphicon-refresh" %}
-                    {% if can_export %}
-                        <input id="csv_export" type="hidden" name="csv" value="">
-                        {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
-                    {% endif %}
+                    <input id="csv_export" type="hidden" name="csv" value="">
+                    {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
 				</div>
 			{% endif %}
 		</div>
