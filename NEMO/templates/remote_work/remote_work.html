@@ -107,7 +107,7 @@
 				{% if remote_work_validation %}
                     <td {% if c.note and c.areaaccessrecord_set.exists %}rowspan="3" {% elif c.note or c.areaaccessrecord_set.exists %}rowspan="2"{% endif %} style="vertical-align: middle">
                         {% url 'validate_staff_charge' c.id as validate_staff_charge_url %}
-                        {% if not c.validated %}
+                        {% if c.end and not c.validated %}
                             {% button type="save" submit=False onclick="validate_charge('"|concat:validate_staff_charge_url|concat:"', this, '.staff_charge_row_"|concat:c.id|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
                         {% endif %}
                     </td>
@@ -172,7 +172,7 @@
 				{% if remote_work_validation %}
                     <td>
                         {% url 'validate_usage_event' u.id as validate_usage_url %}
-                        {% if not u.validated %}
+                        {% if u.end and not u.validated %}
                             {% button type="save" submit=False onclick="validate_charge('"|concat:validate_usage_url|concat:"', this, '#usage_event_row_"|concat:forloop.counter|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
                         {% endif %}
                     </td>

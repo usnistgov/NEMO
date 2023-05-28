@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST
 
 from NEMO.decorators import staff_member_required
-from NEMO.models import StaffCharge, UsageEvent, AreaAccessRecord, Reservation, TrainingSession, ConsumableWithdraw
+from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, StaffCharge, TrainingSession, UsageEvent
 
 
 @staff_member_required
@@ -13,6 +13,9 @@ def validate_staff_charge(request, staff_charge_id):
     staff_charge.validated = True
     staff_charge.validated_by = request.user
     staff_charge.save()
+    # Validate associated area access records
+    for area_access_record in staff_charge.areaaccessrecord_set.all():
+        validate_area_access_record(request, area_access_record.id)
     return HttpResponse()
 
 
