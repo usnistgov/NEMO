@@ -67,6 +67,9 @@ from NEMO.models import (
 	Project,
 	ProjectDiscipline,
 	ProjectDocuments,
+	record_active_state,
+	record_local_many_to_many_changes,
+	record_remote_many_to_many_changes_and_save,
 	RecurringConsumableCharge,
 	RequestMessage,
 	Reservation,
@@ -102,9 +105,6 @@ from NEMO.models import (
 	UserDocuments,
 	UserPreferences,
 	UserType,
-	record_active_state,
-	record_local_many_to_many_changes,
-	record_remote_many_to_many_changes_and_save,
 )
 from NEMO.utilities import admin_get_item, format_daterange
 from NEMO.views.customization import ProjectsAccountsCustomization
@@ -116,18 +116,18 @@ class ModelAdminRedirect(admin.ModelAdmin):
 	NEXT_PARAMETER_NAME = "next"
 
 	def response_post_save_add(self, request, obj):
-		return self.response_redirect(super().response_post_save_add, request, obj)
+		return self.response_redirect(request, super().response_post_save_add(request, obj))
 
 	def response_post_save_change(self, request, obj):
-		return self.response_redirect(super().response_post_save_change, request, obj)
+		return self.response_redirect(request, super().response_post_save_change(request, obj))
 
 	def response_delete(self, request, obj_display, obj_id):
-		return self.response_redirect(super().response_delete, request, obj_display, obj_id)
+		return self.response_redirect(request, super().response_delete(request, obj_display, obj_id))
 
-	def response_redirect(self, method, request, *args, **kwargs):
+	def response_redirect(self, request, original_response):
 		if self.NEXT_PARAMETER_NAME in request.GET:
 			return redirect(request.GET[self.NEXT_PARAMETER_NAME])
-		return method(request, *args, **kwargs)
+		return original_response
 
 
 # Formset to require at least one inline form
