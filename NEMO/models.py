@@ -2034,7 +2034,7 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
 				errors["customer"] = "This field is required."
 			if not self.project:
 				errors["project"] = "This field is required."
-			errors = self.clean_recurrence()
+			errors.update(self.clean_recurrence())
 			# Validate needed fields are present
 			if errors:
 				raise ValidationError(errors)

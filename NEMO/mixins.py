@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 from datetime import timedelta
-from typing import List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 from dateutil import rrule
 from django.core.exceptions import NON_FIELD_ERRORS
@@ -216,8 +216,8 @@ class RecurrenceMixin:
 			return f"{self.get_recurrence_interval_display()}{start}{end}"
 		return rec_display
 
-	def clean_recurrence(self) -> List[str]:
-		errors = []
+	def clean_recurrence(self) -> Dict:
+		errors = {}
 		if not self.rec_start:
 			errors["rec_start"] = "This field is required."
 		if not self.rec_frequency:
