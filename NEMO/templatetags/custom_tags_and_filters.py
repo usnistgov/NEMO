@@ -1,6 +1,7 @@
 import datetime
 from datetime import timedelta
 from importlib.metadata import PackageNotFoundError, version
+from urllib.parse import quote
 
 from django import template
 from django.contrib.contenttypes.models import ContentType
@@ -16,6 +17,7 @@ from django.utils.safestring import mark_safe
 from NEMO.mixins import BillableItemMixin
 from NEMO.models import User
 from NEMO.utilities import get_full_url
+from NEMO.views.constants import NEXT_PARAMETER_NAME
 from NEMO.views.customization import CustomizationBase, ProjectsAccountsCustomization
 
 register = template.Library()
@@ -177,13 +179,29 @@ def content_type(obj):
 
 
 @register.simple_tag(takes_context=True)
-def admin_edit_url(context, obj):
+def admin_edit_url(context, obj, next_url=None):
 	user = context["request"].user
 	try:
 		obj_type = content_type(obj)
 		permission = user.has_perm(f"{obj_type.app_label}.change_{obj_type.model}")
 		if permission:
 			url = reverse(f"admin:{obj_type.app_label}_{obj_type.model}_change", args=[obj.id])
+			if next_url:
+				url += f"?{NEXT_PARAMETER_NAME}={quote(next_url)}"
+			return url
+	except:
+		pass
+
+
+@register.simple_tag(takes_context=True)
+def admin_add_url(context, app_label, model_name, next_url=None):
+	user = context["request"].user
+	try:
+		permission = user.has_perm(f"{app_label}.add_{model_name}")
+		if permission:
+			url = reverse(f"admin:{app_label}_{model_name}_add")
+			if next_url:
+				url += f"?{NEXT_PARAMETER_NAME}={quote(next_url)}"
 			return url
 	except:
 		pass

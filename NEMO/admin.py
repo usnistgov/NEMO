@@ -12,6 +12,7 @@ from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import Q
 from django.db.models.fields.files import FieldFile
 from django.forms import BaseInlineFormSet
+from django.shortcuts import redirect
 from django.template.defaultfilters import linebreaksbr, urlencode
 from django.utils.safestring import mark_safe
 from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFilter
@@ -108,6 +109,25 @@ from NEMO.models import (
 from NEMO.utilities import admin_get_item, format_daterange
 from NEMO.views.customization import ProjectsAccountsCustomization
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageFloatFieldQuestion, PostUsageNumberFieldQuestion
+
+
+# Admin class to allow redirect after add or change
+class ModelAdminRedirect(admin.ModelAdmin):
+	NEXT_PARAMETER_NAME = "next"
+
+	def response_post_save_add(self, request, obj):
+		return self.response_redirect(super().response_post_save_add, request, obj)
+
+	def response_post_save_change(self, request, obj):
+		return self.response_redirect(super().response_post_save_change, request, obj)
+
+	def response_delete(self, request, obj_display, obj_id):
+		return self.response_redirect(super().response_delete, request, obj_display, obj_id)
+
+	def response_redirect(self, method, request, *args, **kwargs):
+		if self.NEXT_PARAMETER_NAME in request.GET:
+			return redirect(request.GET[self.NEXT_PARAMETER_NAME])
+		return method(request, *args, **kwargs)
 
 
 # Formset to require at least one inline form
