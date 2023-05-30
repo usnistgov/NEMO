@@ -22,6 +22,7 @@ from NEMO.models import (
 	TemporaryPhysicalAccessRequest,
 	User,
 )
+from NEMO.typing import QuerySetType
 from NEMO.utilities import (
 	BasicDisplayTable,
 	EmailCategory,
@@ -316,7 +317,7 @@ def csv_export(request):
 	return access_csv_export(TemporaryPhysicalAccessRequest.objects.filter(deleted=False))
 
 
-def access_csv_export(request_list: List[TemporaryPhysicalAccessRequest]) -> HttpResponse:
+def access_csv_export(request_qs: QuerySetType[TemporaryPhysicalAccessRequest]) -> HttpResponse:
 	table_result = BasicDisplayTable()
 	table_result.add_header(("status", "Status"))
 	table_result.add_header(("created_date", "Created date"))
@@ -328,8 +329,7 @@ def access_csv_export(request_list: List[TemporaryPhysicalAccessRequest]) -> Htt
 	table_result.add_header(("start", "Start"))
 	table_result.add_header(("end", "End"))
 	table_result.add_header(("reviewer", "Reviewer"))
-	for req in request_list:
-		req: TemporaryPhysicalAccessRequest = req
+	for req in request_qs:
 		table_result.add_row(
 			{
 				"status": req.get_status_display(),
