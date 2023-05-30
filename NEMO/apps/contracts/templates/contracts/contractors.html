@@ -1,0 +1,42 @@
+{% extends 'contracts/contracts_and_procurements.html' %}
+{% load custom_tags_and_filters %}
+{% block add_button %}
+    {% admin_add_url 'contracts' 'contractoragreement' request.path as add_contractors_url %}
+    {% if add_contractors_url %}
+        {% button type="add" value="Add" url=add_contractors_url %}
+    {% endif %}
+{% endblock %}
+{% block pagination_content %}
+    <table class="table table-bordered table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
+        <thead>
+            <tr>
+                <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Contractor' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='contract__name' name='Contract' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='contract__contract_number' name='Contract number' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='start' name='Start' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='end' name='End' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='notes' name='Notes' %}</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contractor_agreement in page %}
+                <tr {% if contractor_agreement.is_expired %}class="alert-danger"{% endif %}>
+                    <td>{{ contractor_agreement.name }}</td>
+                    <td>{{ contractor_agreement.contract_name }}</td>
+                    <td>{{ contractor_agreement.contract_number|default_if_none:"" }}</td>
+                    <td>{{ contractor_agreement.start|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ contractor_agreement.end|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ contractor_agreement.notes|linebreaksbr }}</td>
+                    <td class="text-center">
+                        {% admin_edit_url contractor_agreement request.path as change_contractors_url %}
+                        {% if change_contractors_url %}
+                            {% button size="small" type="edit" value="Edit" url=change_contractors_url %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+{% block table_empty_content %}You do not have any contractor agreements.{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'contracts/contracts_and_procurements.html' %}
+{% load custom_tags_and_filters %}
+{% block add_button %}
+    {% admin_add_url 'contracts' 'servicecontract' request.path as add_service_contract_url %}
+    {% if add_service_contract_url %}
+        {% button type="add" value="Add" url=add_service_contract_url %}
+    {% endif %}
+{% endblock %}
+{% block pagination_content %}
+    <table class="table table-bordered table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
+        <thead>
+            <tr>
+                <th>{% include 'pagination/pagination_column.html' with order_by='name' name='General info' %}</th>
+                <th class="text-center">Year</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='submitted_date' name='Submitted' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='award_date' name='Awarded' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract number' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='requisition_number' name='Requisition number' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='renewal_date' name='Renewal' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='cost' name='Cost' %}</th>
+                <th>Notes</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for service_contract in page %}
+                <tr {% if service_contract.is_expired %}class="alert-danger"{% endif %}>
+                    <td>{{ service_contract.display_name }}</td>
+                    <td class="text-center">{{ service_contract.display_current_year }}</td>
+                    <td>{{ service_contract.submitted_date|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ service_contract.award_date|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ service_contract.contract_number|default_if_none:"" }}</td>
+                    <td>{{ service_contract.requisition_number|default_if_none:"" }}</td>
+                    <td>{{ service_contract.renewal_date|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ service_contract.display_cost|default_if_none:"" }}</td>
+                    <td>{{ service_contract.notes|linebreaksbr }}</td>
+                    <td class="text-center">
+                        {% admin_edit_url service_contract request.path as change_servicecontract_url %}
+                        {% if change_servicecontract_url %}
+                            {% button size="small" type="edit" value="Edit" url=change_servicecontract_url %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+{% block table_empty_content %}You do not have any service contracts.{% endblock %}

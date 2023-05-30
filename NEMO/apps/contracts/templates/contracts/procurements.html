@@ -1,0 +1,44 @@
+{% extends 'contracts/contracts_and_procurements.html' %}
+{% load custom_tags_and_filters %}
+{% block add_button %}
+    {% admin_add_url 'contracts' 'procurement' request.path as add_procurement_url %}
+    {% if add_procurement_url %}
+        {% button type="add" value="Add" url=add_procurement_url %}
+    {% endif %}
+{% endblock %}
+{% block pagination_content %}
+    <table class="table table-bordered table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
+        <thead>
+            <tr>
+                <th>{% include 'pagination/pagination_column.html' with order_by='name' name='General info' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='submitted_date' name='Submitted date' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='award_date' name='Award date' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract number' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='requisition_number' name='Requisition number' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='cost' name='Cost' %}</th>
+                <th>Notes</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for procurement in page %}
+                <tr>
+                    <td>{{ procurement.display_name }}</td>
+                    <td>{{ procurement.submitted_date|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ procurement.award_date|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ procurement.contract_number|default_if_none:"" }}</td>
+                    <td>{{ procurement.requisition_number|default_if_none:"" }}</td>
+                    <td>{{ procurement.display_cost|default_if_none:"" }}</td>
+                    <td>{{ procurement.notes|linebreaksbr }}</td>
+                    <td class="text-center">
+                        {% admin_edit_url procurement request.path as change_procurement_url %}
+                        {% if change_procurement_url %}
+                            {% button size="small" type="edit" value="Edit" url=change_procurement_url %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+{% block table_empty_content %}You do not have any procurements.{% endblock %}
