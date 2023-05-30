@@ -1,6 +1,6 @@
 from abc import ABC
 from datetime import date, datetime
-from typing import Dict, Iterable
+from typing import Dict, Iterable, List
 
 from dateutil.relativedelta import relativedelta
 from django.contrib import messages
@@ -21,7 +21,7 @@ from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
 from NEMO.models import ConsumableCategory, Customization, Project, RecurringConsumableCharge
-from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
+from NEMO.utilities import date_input_format, datetime_input_format, quiet_int, RecurrenceFrequency
 
 
 class CustomizationBase(ABC):
@@ -128,6 +128,20 @@ class CustomizationBase(ABC):
 		str_datetime = cls.get(name, raise_exception)
 		if str_datetime:
 			return datetime.strptime(str_datetime, datetime_input_format)
+
+	@classmethod
+	def get_list(cls, name: str, raise_exception=True) -> List[str]:
+		return [item.strip() for item in cls.get(name, raise_exception).split(",") if item]
+
+	@classmethod
+	def get_list_int(cls, name: str, raise_exception=True) -> List[int]:
+		result = []
+		for item in cls.get_list(name, raise_exception):
+			if item:
+				integer = quiet_int(item.strip(), None)
+				if integer:
+					result.append(integer)
+		return result
 
 	@classmethod
 	def set(cls, name: str, value):
