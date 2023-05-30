@@ -3,7 +3,7 @@ from logging import getLogger
 from typing import List
 
 from django.contrib import messages
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
@@ -43,6 +43,7 @@ def self_checkout(user) -> bool:
 	return user.is_active and not (user.is_staff or user.is_user_office or user.is_superuser)
 
 
+@login_required
 @user_passes_test(consumable_permissions)
 @require_http_methods(["GET", "POST"])
 def consumables(request):
@@ -95,6 +96,7 @@ def add_withdraw_to_session(request, withdrawal: ConsumableWithdraw):
 	request.session["withdrawals"] = withdrawals
 
 
+@login_required
 @user_passes_test(consumable_permissions)
 @require_GET
 def remove_withdraw_at_index(request, index: str):
@@ -109,6 +111,7 @@ def remove_withdraw_at_index(request, index: str):
 	return render(request, "consumables/consumables_order.html")
 
 
+@login_required
 @user_passes_test(consumable_permissions)
 @require_GET
 def clear_withdrawals(request):
@@ -117,6 +120,7 @@ def clear_withdrawals(request):
 	return render(request, "consumables/consumables_order.html")
 
 
+@login_required
 @user_passes_test(consumable_permissions)
 @require_POST
 def make_withdrawals(request):
