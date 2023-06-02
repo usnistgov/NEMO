@@ -494,13 +494,6 @@ def get_tool_image_filename(tool, filename):
 	return f"tool_images/{tool_name}{ext}"
 
 
-def get_tool_document_filename(tool_documents, filename):
-	from django.template.defaultfilters import slugify
-
-	tool_name = slugify(tool_documents.tool.name)
-	return f"tool_documents/{tool_name}/{filename}"
-
-
 def get_hazard_logo_filename(category, filename):
 	from django.template.defaultfilters import slugify
 
@@ -516,25 +509,8 @@ def get_chemical_document_filename(chemical, filename):
 	return f"chemical_documents/{chemical_name}/{filename}"
 
 
-def get_project_document_filename(project_documents, filename):
-	from django.template.defaultfilters import slugify
-
-	project_name = slugify(project_documents.project.name)
-	return f"project_documents/{project_name}/{filename}"
-
-
-def get_user_document_filename(user_documents, filename):
-	from django.template.defaultfilters import slugify
-
-	username = slugify(user_documents.user.username)
-	return f"user_documents/{username}/{filename}"
-
-
-def get_safety_document_filename(safety_documents, filename):
-	from django.template.defaultfilters import slugify
-
-	item_name = slugify(safety_documents.safety_item.name)
-	return f"safety_item/{item_name}/{filename}"
+def document_filename_upload(instance, filename):
+	return instance.get_filename_upload(filename)
 
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:

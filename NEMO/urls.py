@@ -1,4 +1,5 @@
 import logging
+import os
 from importlib import import_module
 
 from django.apps import apps
@@ -13,6 +14,7 @@ from django.views.generic import RedirectView
 from django.views.static import serve
 from rest_framework import routers
 
+from NEMO.decorators import any_staff_required
 from NEMO.models import ReservationItemType
 from NEMO.views import (
 	abuse,
@@ -344,6 +346,7 @@ urlpatterns += [
 
 	# Media
 	re_path(r"^media/(?P<path>.*)$", login_required(xframe_options_sameorigin(serve)), {"document_root": settings.MEDIA_ROOT}, name="media"),
+	re_path(r"^media/protected/(?P<path>.*)$", any_staff_required(xframe_options_sameorigin(serve)), {"document_root": os.path.join(settings.MEDIA_ROOT, "/protected")}, name="media"),
 	re_path(r"^media_view/(?P<popup>(true|false))/(?P<document_type>\w+)/(?P<document_id>\d+)/$", documents.media_view, name="media_view"),
 
 	# User Preferences
@@ -409,7 +412,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		path("customize/<str:key>/", customization.customize, name="customize"),
 		path("customize/<str:key>/<str:element>/", customization.customize, name="customize"),
 
-		# Project Usage:
+		# Project usage:
 		path("project_usage/", usage.project_usage, name="project_usage"),
 		path("project_billing/", usage.project_billing, name="project_billing"),
 

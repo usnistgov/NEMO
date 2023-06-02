@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 from datetime import timedelta
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, Optional, TYPE_CHECKING
 
 from dateutil import rrule
 from django.core.exceptions import NON_FIELD_ERRORS
