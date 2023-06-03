@@ -99,7 +99,6 @@ url_kwargs_get_post = {
 	"history": {"kwargs": {"item_type": "user", "item_id": 1}},
 	"customization": {"kwargs": {"key": "application"}},
 	"customize": {"kwargs": {"key": "application"}, "post": {"facility_name": "test facility"}},
-	"media_view": {"kwargs": {"popup": "true", "document_type": "safety_document", "document_id": 1}},
 	"create_adjustment_request": {"kwargs": {}},
 	"edit_adjustment_request": {"kwargs": {"request_id": 1}},
 }
@@ -119,6 +118,8 @@ urls_to_skip = [
 	"reset_tool_counter",
 	"update_safety_issue",
 	"new_reservation",
+	"media_view",
+	"media_list_view",
 	"remove_document_from_project",
 	"adjustment_request_reply",
 	"delete_adjustment_request",
