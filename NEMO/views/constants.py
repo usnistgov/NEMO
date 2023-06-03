@@ -9,3 +9,6 @@ CHAR_FIELD_MAXIMUM_LENGTH = 255
 
 # Name of the parameter to indicate which view to redirect to
 NEXT_PARAMETER_NAME = "next"
+
+# Name of the media folder under which only staff can see files
+MEDIA_PROTECTED = "protected"

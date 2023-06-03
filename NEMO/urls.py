@@ -58,6 +58,7 @@ from NEMO.views import (
 	user_requests,
 	users,
 )
+from NEMO.views.constants import MEDIA_PROTECTED
 
 logger = logging.getLogger(__name__)
 
@@ -345,7 +346,7 @@ urlpatterns += [
 	path("news/publish/<int:story_id>/", news.publish, name="publish_news_update"),
 
 	# Media
-	re_path(r"^media/protected/(?P<path>.*)$", any_staff_required(xframe_options_sameorigin(serve)), {"document_root": os.path.join(settings.MEDIA_ROOT, "protected")}, name="media_protected"),
+	re_path(r"^media/" + MEDIA_PROTECTED + "/(?P<path>.*)$", any_staff_required(xframe_options_sameorigin(serve)), {"document_root": os.path.join(settings.MEDIA_ROOT, MEDIA_PROTECTED)}, name="media_protected"),
 	re_path(r"^media/(?P<path>.*)$", login_required(xframe_options_sameorigin(serve)), {"document_root": settings.MEDIA_ROOT}, name="media"),
 	re_path(r"^media_view/(?P<popup>(true|false))/(?P<content_type_id>\d+)/(?P<document_id>\d+)/$", documents.media_view, name="media_view"),
 	re_path(r"^media_list_view/(?P<popup>(true|false))/(?P<allow_zip>(true|false))/$", documents.media_list_view, name="media_list_view"),
