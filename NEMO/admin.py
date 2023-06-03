@@ -423,14 +423,14 @@ class TrainingSessionAdmin(admin.ModelAdmin):
 
 
 @register(StaffCharge)
-class StaffChargeAdmin(admin.ModelAdmin):
+class StaffChargeAdmin(ModelAdminRedirect):
 	list_display = ("id", "staff_member", "customer", "start", "end")
 	list_filter = ("start", ("customer", admin.RelatedOnlyFieldListFilter), ("staff_member", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "start"
 
 
 @register(AreaAccessRecord)
-class AreaAccessRecordAdmin(admin.ModelAdmin):
+class AreaAccessRecordAdmin(ModelAdminRedirect):
 	list_display = ("id", "customer", "area", "project", "start", "end")
 	list_filter = (("area", TreeRelatedFieldListFilter), "start")
 	date_hierarchy = "start"
@@ -546,7 +546,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
 
 @register(Reservation)
-class ReservationAdmin(admin.ModelAdmin):
+class ReservationAdmin(ModelAdminRedirect):
 	list_display = (
 		"id",
 		"user",
@@ -650,7 +650,7 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 
 
 @register(UsageEvent)
-class UsageEventAdmin(admin.ModelAdmin):
+class UsageEventAdmin(ModelAdminRedirect):
 	list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work")
 	list_filter = ("remote_work", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "start"
