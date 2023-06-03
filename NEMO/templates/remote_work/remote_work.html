@@ -94,8 +94,9 @@
 		<tbody>
 		{% for c in staff_charges %}
 			<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and  c.validated %}success-highlight{% endif %}">
-				{% if "django.contrib.admin"|app_installed and perms.NEMO.change_staffcharge %}
-                    <td><a href="{% url 'admin:NEMO_staffcharge_change' c.id %}">{{ c.id }}</a></td>
+				{% admin_edit_url c request.build_absolute_uri as edit_url %}
+                {% if edit_url %}
+                    <td><a href="{{ edit_url }}">{{ c.id }}</a></td>
                 {% else %}
                     <td>{{ c.id }}</td>
                 {% endif %}
@@ -121,8 +122,9 @@
             {% endif %}
 			{% for area_access_record in c.areaaccessrecord_set.all %}
 				<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}" style="font-size: smaller">
-					{% if "django.contrib.admin"|app_installed and perms.NEMO.change_areaaccessrecord %}
-                        <td><a href="{% url 'admin:NEMO_areaaccessrecord_change' area_access_record.id %}">{{ area_access_record.id }}</a></td>
+					{% admin_edit_url area_access_record request.build_absolute_uri as edit_url %}
+                    {% if edit_url %}
+                        <td><a href="{{ edit_url }}">{{ area_access_record.id }}</a></td>
                     {% else %}
                         <td>{{ area_access_record.id }}</td>
                     {% endif %}
@@ -158,8 +160,9 @@
 		<tbody>
 		{% for u in usage %}
 			<tr {% if remote_work_validation and u.validated %}class="success-highlight"{% endif %} id="usage_event_row_{{ forloop.counter }}">
-				{% if "django.contrib.admin"|app_installed and perms.NEMO.change_usageevent %}
-                    <td><a href="{% url 'admin:NEMO_usageevent_change' u.id %}">{{ u.id }}</a></td>
+				{% admin_edit_url u request.build_absolute_uri as edit_url %}
+                {% if edit_url %}
+                    <td><a href="{{ edit_url }}">{{ u.id }}</a></td>
                 {% else %}
                     <td>{{ u.id }}</td>
                 {% endif %}
