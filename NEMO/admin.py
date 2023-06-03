@@ -107,13 +107,13 @@ from NEMO.models import (
 	UserType,
 )
 from NEMO.utilities import admin_get_item, format_daterange
+from NEMO.views.constants import NEXT_PARAMETER_NAME
 from NEMO.views.customization import ProjectsAccountsCustomization
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageFloatFieldQuestion, PostUsageNumberFieldQuestion
 
 
 # Admin class to allow redirect after add or change
 class ModelAdminRedirect(admin.ModelAdmin):
-	NEXT_PARAMETER_NAME = "next"
 
 	def response_post_save_add(self, request, obj):
 		return self.response_redirect(request, super().response_post_save_add(request, obj))
@@ -125,8 +125,8 @@ class ModelAdminRedirect(admin.ModelAdmin):
 		return self.response_redirect(request, super().response_delete(request, obj_display, obj_id))
 
 	def response_redirect(self, request, original_response):
-		if self.NEXT_PARAMETER_NAME in request.GET:
-			return redirect(request.GET[self.NEXT_PARAMETER_NAME])
+		if NEXT_PARAMETER_NAME in request.GET:
+			return redirect(request.GET[NEXT_PARAMETER_NAME])
 		return original_response
 
 
