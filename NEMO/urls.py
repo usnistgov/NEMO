@@ -345,9 +345,11 @@ urlpatterns += [
 	path("news/publish/<int:story_id>/", news.publish, name="publish_news_update"),
 
 	# Media
+	re_path(r"^media/protected/(?P<path>.*)$", any_staff_required(xframe_options_sameorigin(serve)), {"document_root": os.path.join(settings.MEDIA_ROOT, "protected")}, name="media_protected"),
 	re_path(r"^media/(?P<path>.*)$", login_required(xframe_options_sameorigin(serve)), {"document_root": settings.MEDIA_ROOT}, name="media"),
-	re_path(r"^media/protected/(?P<path>.*)$", any_staff_required(xframe_options_sameorigin(serve)), {"document_root": os.path.join(settings.MEDIA_ROOT, "/protected")}, name="media"),
-	re_path(r"^media_view/(?P<popup>(true|false))/(?P<document_type>\w+)/(?P<document_id>\d+)/$", documents.media_view, name="media_view"),
+	re_path(r"^media_view/(?P<popup>(true|false))/(?P<content_type_id>\d+)/(?P<document_id>\d+)/$", documents.media_view, name="media_view"),
+	re_path(r"^media_list_view/(?P<popup>(true|false))/(?P<allow_zip>(true|false))/$", documents.media_list_view, name="media_list_view"),
+	path("media_zip/", documents.media_zip, name="media_zip"),
 
 	# User Preferences
 	path("user_preferences/", users.user_preferences, name="user_preferences"),

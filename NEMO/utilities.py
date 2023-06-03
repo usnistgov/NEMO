@@ -78,6 +78,11 @@ date_input_js_format = convert_py_format_to_js(date_input_format)
 datetime_input_js_format = convert_py_format_to_js(datetime_input_format)
 
 
+supported_embedded_video_extensions = [".mp4", ".ogv", ".webm", ".3gp"]
+supported_embedded_pdf_extensions = [".pdf"]
+supported_embedded_extensions = supported_embedded_pdf_extensions + supported_embedded_video_extensions
+
+
 class EmptyHttpRequest(HttpRequest):
 	def __init__(self):
 		super().__init__()

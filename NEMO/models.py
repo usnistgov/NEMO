@@ -50,9 +50,9 @@ from NEMO.utilities import (
 	RecurrenceFrequency,
 	render_email_template,
 	send_mail,
+	supported_embedded_extensions,
 )
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH, CHAR_FIELD_MAXIMUM_LENGTH
-from NEMO.views.documents import supported_embedded_extensions
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
 models_logger = getLogger(__name__)
