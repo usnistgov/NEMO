@@ -62,4 +62,12 @@
             {% endblock %}
 		</div>
 	</div>
+    <script>
+        function document_view(form)
+        {
+            let data = $(form).serialize();
+            console.log(data);
+            ajax_post('{% url "media_list_view" allow_zip="true" popup="true" %}', data, ajax_success_callback);
+        }
+    </script>
 {% endblock %}

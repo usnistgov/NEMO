@@ -36,6 +36,7 @@ def contract_permission(user):
 	)
 
 
+@login_required
 @user_passes_test(contract_permission)
 @require_GET
 def service_contracts(request):
@@ -48,6 +49,7 @@ def service_contracts(request):
 	return render(request, "contracts/service_contracts.html", {"page": page})
 
 
+@login_required
 @user_passes_test(contract_permission)
 @require_GET
 def procurements(request):
@@ -60,6 +62,7 @@ def procurements(request):
 	return render(request, "contracts/procurements.html", {"page": page})
 
 
+@login_required
 @user_passes_test(contract_permission)
 @require_GET
 def contractors(request):

@@ -1,12 +1,13 @@
 from datetime import date
 
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from NEMO.apps.contracts.customization import ContractsCustomization
-from NEMO.models import BaseModel, User
-from NEMO.views.constants import CHAR_FIELD_MAXIMUM_LENGTH
+from NEMO.models import BaseDocumentModel, BaseModel, User
+from NEMO.views.constants import CHAR_FIELD_MAXIMUM_LENGTH, MEDIA_PROTECTED
 
 
 class Procurement(BaseModel):
@@ -63,6 +64,10 @@ class ServiceContract(Procurement):
     def is_expired(self):
         return date.today() >= self.renewal_date if self.renewal_date else False
 
+    def clean(self):
+        if self.current_year > self.total_years:
+            raise ValidationError({"current_year": "The current year must be less or equal to the total number of years"})
+
 
 class ContractorAgreement(BaseModel):
     name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text=_("The name of the contractor"))
@@ -97,3 +102,30 @@ class ContractorAgreement(BaseModel):
 
     class Meta:
         ordering = ["contract", "-start"]
+
+
+class ProcurementDocuments(BaseDocumentModel):
+    procurement = models.ForeignKey(Procurement, on_delete=models.CASCADE)
+
+    def get_filename_upload(self, filename):
+        from django.template.defaultfilters import slugify
+
+        name = slugify(self.procurement.name)
+        type_name = "service_contracts" if isinstance(self.procurement, ServiceContract) else "procurements"
+        return f"{MEDIA_PROTECTED}/{type_name}/{name}/{filename}"
+
+    class Meta(BaseDocumentModel.Meta):
+        verbose_name_plural = "Procurement documents"
+
+
+class ContractorAgreementDocuments(BaseDocumentModel):
+    contractor_agreement = models.ForeignKey(ContractorAgreement, on_delete=models.CASCADE)
+
+    def get_filename_upload(self, filename):
+        from django.template.defaultfilters import slugify
+
+        name = slugify(self.contractor_agreement.name)
+        return f"{MEDIA_PROTECTED}/contractor_agreements/{name}/{filename}"
+
+    class Meta(BaseDocumentModel.Meta):
+        verbose_name_plural = "Contractor agreement documents"

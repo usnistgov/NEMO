@@ -28,7 +28,19 @@
                     <td>{{ contractor_agreement.start|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ contractor_agreement.end|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ contractor_agreement.notes|linebreaksbr }}</td>
-                    <td class="text-center">
+                    <td class="text-center text-nowrap">
+                        {% if contractor_agreement.contractoragreementdocuments_set.all %}
+                            <form method="post" style="display: inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="title" value="{{ contractor_agreement.name }} contractor documents">
+                                {% for document in contractor_agreement.contractoragreementdocuments_set.all %}
+                                    {% with content_type=document|content_type %}
+                                        <input type="hidden" name="document_info" value="{{ content_type.id }}__{{ document.id }}">
+                                    {% endwith %}
+                                {% endfor %}
+                                {% button icon="glyphicon-list-alt" size="small" type="export" value="Docs" onclick="document_view(this.form);" %}
+                            </form>
+                        {% endif %}
                         {% admin_edit_url contractor_agreement request.path as change_contractors_url %}
                         {% if change_contractors_url %}
                             {% button size="small" type="edit" value="Edit" url=change_contractors_url %}

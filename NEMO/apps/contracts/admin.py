@@ -3,7 +3,13 @@ from django.contrib import admin
 
 from NEMO.admin import ModelAdminRedirect
 from NEMO.apps.contracts.customization import ContractsCustomization
-from NEMO.apps.contracts.models import ContractorAgreement, Procurement, ServiceContract
+from NEMO.apps.contracts.models import (
+	ContractorAgreement,
+	ContractorAgreementDocuments,
+	Procurement,
+	ProcurementDocuments,
+	ServiceContract,
+)
 from NEMO.apps.contracts.views.contracts import export_contractor_agreements, export_procurements
 
 
@@ -22,11 +28,17 @@ def contractor_agreements_export_csv(modeladmin, request, queryset):
 	return export_contractor_agreements(queryset.all())
 
 
+class ProcurementDocumentsInline(admin.TabularInline):
+	model = ProcurementDocuments
+	extra = 1
+
+
 @admin.register(Procurement)
 class ProcurementAdmin(ModelAdminRedirect):
 	list_display = ["name", "submitted_date", "award_date", "contract_number", "requisition_number", "cost"]
 	list_filter = ["submitted_date", "award_date", "cost"]
 	actions = [procurements_export_csv]
+	inlines = [ProcurementDocumentsInline]
 
 	def get_queryset(self, request):
 		return super().get_queryset(request).filter(servicecontract__isnull=True)
@@ -46,6 +58,7 @@ class ServiceContractAdmin(ModelAdminRedirect):
 	]
 	list_filter = ["submitted_date", "award_date", "renewal_date", "cost"]
 	actions = [service_contracts_export_csv]
+	inlines = [ProcurementDocumentsInline]
 
 	@admin.display(description="Name", ordering="name")
 	def get_display_name(self, service_contract: ServiceContract):
@@ -63,6 +76,11 @@ class ServiceContractAdmin(ModelAdminRedirect):
 		return fields
 
 
+class ContractorAgreementDocumentsInline(admin.TabularInline):
+	model = ContractorAgreementDocuments
+	extra = 1
+
+
 class ContractorAgreementAdminForm(forms.ModelForm):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -74,6 +92,7 @@ class ContractorAgreementAdmin(ModelAdminRedirect):
 	list_display = ["name", "get_contract_name", "get_contract_number", "start", "end"]
 	list_filter = ["start", "end", "contract"]
 	actions = [contractor_agreements_export_csv]
+	inlines = [ContractorAgreementDocumentsInline]
 	form = ContractorAgreementAdminForm
 
 	@admin.display(description="Contract name", ordering="contract__name")

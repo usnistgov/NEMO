@@ -26,7 +26,7 @@
             {% for service_contract in page %}
                 <tr {% if service_contract.is_expired %}class="alert-danger"{% endif %}>
                     <td>{{ service_contract.display_name }}</td>
-                    <td class="text-center">{{ service_contract.display_current_year }}</td>
+                    <td class="text-center text-nowrap">{{ service_contract.display_current_year }}</td>
                     <td>{{ service_contract.submitted_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.award_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.contract_number|default_if_none:"" }}</td>
@@ -34,7 +34,19 @@
                     <td>{{ service_contract.renewal_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.display_cost|default_if_none:"" }}</td>
                     <td>{{ service_contract.notes|linebreaksbr }}</td>
-                    <td class="text-center">
+                    <td class="text-center text-nowrap">
+                        {% if service_contract.procurementdocuments_set.all %}
+                            <form method="post" style="display: inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="title" value="{{ service_contract.name }} service contract documents">
+                                {% for document in service_contract.procurementdocuments_set.all %}
+                                    {% with content_type=document|content_type %}
+                                        <input type="hidden" name="document_info" value="{{ content_type.id }}__{{ document.id }}">
+                                    {% endwith %}
+                                {% endfor %}
+                                {% button icon="glyphicon-list-alt" size="small" type="export" value="Docs" onclick="document_view(this.form);" %}
+                            </form>
+                        {% endif %}
                         {% admin_edit_url service_contract request.path as change_servicecontract_url %}
                         {% if change_servicecontract_url %}
                             {% button size="small" type="edit" value="Edit" url=change_servicecontract_url %}

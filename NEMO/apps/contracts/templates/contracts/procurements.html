@@ -30,7 +30,19 @@
                     <td>{{ procurement.requisition_number|default_if_none:"" }}</td>
                     <td>{{ procurement.display_cost|default_if_none:"" }}</td>
                     <td>{{ procurement.notes|linebreaksbr }}</td>
-                    <td class="text-center">
+                    <td class="text-center text-nowrap">
+                        {% if procurement.procurementdocuments_set.all %}
+                            <form method="post" style="display: inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="title" value="{{ procurement.name }} procurement documents">
+                                {% for document in procurement.procurementdocuments_set.all %}
+                                    {% with content_type=document|content_type %}
+                                        <input type="hidden" name="document_info" value="{{ content_type.id }}__{{ document.id }}">
+                                    {% endwith %}
+                                {% endfor %}
+                                {% button icon="glyphicon-list-alt" size="small" type="export" value="Docs" onclick="document_view(this.form);" %}
+                            </form>
+                        {% endif %}
                         {% admin_edit_url procurement request.path as change_procurement_url %}
                         {% if change_procurement_url %}
                             {% button size="small" type="edit" value="Edit" url=change_procurement_url %}
