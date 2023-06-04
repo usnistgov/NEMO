@@ -2,7 +2,7 @@ import datetime
 
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.db.models import CharField, F, Value
-from django.db.models.functions import Coalesce, Concat
+from django.db.models.functions import Cast, Coalesce, Concat, TruncSecond
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -46,7 +46,7 @@ def contract_permission(user):
 def service_contracts(request):
 	service_contract_list = ServiceContract.objects.annotate(
 		natural_renewal_date=Concat(
-			Coalesce(F("renewal_date"), Value("9"), output_field=CharField()),
+			Coalesce(Cast("renewal_date", CharField()), Value("9"), output_field=CharField()),
 			F("name"),
 			F("current_year"),
 			output_field=CharField(),
@@ -79,7 +79,7 @@ def procurements(request):
 def contractors(request):
 	contractor_list = ContractorAgreement.objects.annotate(
 		natural_end=Concat(
-			Coalesce(F("end"), Value("9"), output_field=CharField()),
+			Coalesce(Cast("end", CharField()), Value("9"), output_field=CharField()),
 			F("name"),
 			output_field=CharField(),
 		)
