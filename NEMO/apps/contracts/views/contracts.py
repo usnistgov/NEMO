@@ -1,8 +1,8 @@
 import datetime
 
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
-from django.db.models import CharField, F, Value
-from django.db.models.functions import Cast, Coalesce, Concat, TruncSecond
+from django.db.models import CharField
+from django.db.models.functions import Cast, Concat
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -29,14 +29,14 @@ def contract_permission(user):
 	user_office = ContractsCustomization.get_bool("contracts_view_user_office")
 	accounting = ContractsCustomization.get_bool("contracts_view_accounting_officer")
 	return user.is_active and (
-			staff
-			and user.is_staff
-			or user_office
-			and user.is_user_office
-			or accounting
-			and user.is_accounting_officer
-			or user.is_facility_manager
-			or user.is_superuser
+		staff
+		and user.is_staff
+		or user_office
+		and user.is_user_office
+		or accounting
+		and user.is_accounting_officer
+		or user.is_facility_manager
+		or user.is_superuser
 	)
 
 
@@ -46,9 +46,9 @@ def contract_permission(user):
 def service_contracts(request):
 	service_contract_list = ServiceContract.objects.annotate(
 		natural_renewal_date=Concat(
-			Coalesce(Cast("renewal_date", CharField()), Value("9"), output_field=CharField()),
-			F("name"),
-			F("current_year"),
+			Cast("renewal_date", CharField()),
+			"name",
+			"current_year",
 			output_field=CharField(),
 		)
 	)
@@ -79,8 +79,8 @@ def procurements(request):
 def contractors(request):
 	contractor_list = ContractorAgreement.objects.annotate(
 		natural_end=Concat(
-			Coalesce(Cast("end", CharField()), Value("9"), output_field=CharField()),
-			F("name"),
+			Cast("end", CharField()),
+			"name",
 			output_field=CharField(),
 		)
 	)
