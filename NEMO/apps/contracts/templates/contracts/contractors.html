@@ -14,9 +14,9 @@
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract__name' name='Contract' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract__contract_number' name='Contract number' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='start' name='Start' %}</th>
-                <th>{% include 'pagination/pagination_column.html' with order_by='end' name='End' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='natural_end' name='End' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='notes' name='Notes' %}</th>
-                <th class="text-center">Actions</th>
+                <th class="text-right button-column-minimum">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -27,8 +27,8 @@
                     <td>{{ contractor_agreement.contract_number|default_if_none:"" }}</td>
                     <td>{{ contractor_agreement.start|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ contractor_agreement.end|date:"SHORT_DATE_FORMAT" }}</td>
-                    <td>{{ contractor_agreement.notes|linebreaksbr }}</td>
-                    <td class="text-center text-nowrap">
+                    <td>{{ contractor_agreement.notes|default_if_none:""|linebreaksbr }}</td>
+                    <td class="text-right text-nowrap">
                         {% if contractor_agreement.contractoragreementdocuments_set.all %}
                             <form method="post" style="display: inline">
                                 {% csrf_token %}
@@ -40,6 +40,10 @@
                                 {% endfor %}
                                 {% button icon="glyphicon-list-alt" size="small" type="export" value="Docs" onclick="document_view(this.form);" %}
                             </form>
+                        {% endif %}
+                        {% if perms.contracts.change_contractoragreement %}
+                            {% url "contractor_agreement_renew" contractor_agreement.id as renew_contractor_agreement_url %}
+                            {% button icon="glyphicon-refresh" size="small" type="default" value="Renew" url=renew_contractor_agreement_url %}
                         {% endif %}
                         {% admin_edit_url contractor_agreement request.path as change_contractors_url %}
                         {% if change_contractors_url %}

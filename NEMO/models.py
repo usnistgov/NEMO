@@ -44,6 +44,7 @@ from NEMO.utilities import (
 	format_daterange,
 	format_datetime,
 	get_chemical_document_filename,
+	get_full_url,
 	get_hazard_logo_filename,
 	get_task_image_filename,
 	get_tool_image_filename,
@@ -155,6 +156,9 @@ class BaseDocumentModel(BaseModel):
 
 	def link(self):
 		return self.document.url if self.document else self.url
+
+	def full_link(self, request=None):
+		return get_full_url(self.document.url, request) if self.document else self.url
 
 	def can_be_embedded(self):
 		return any([self.link().lower().endswith(ext) for ext in supported_embedded_extensions])

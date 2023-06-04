@@ -1,13 +1,17 @@
 import datetime
 
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
+from django.db.models import CharField, F, Value
+from django.db.models.functions import Coalesce, Concat
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_GET
 
 from NEMO.apps.contracts.customization import ContractsCustomization
 from NEMO.apps.contracts.models import ContractorAgreement, Procurement, ServiceContract
 from NEMO.models import EmailNotificationType, User
+from NEMO.templatetags.custom_tags_and_filters import admin_edit_url
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
 	BasicDisplayTable,
@@ -25,14 +29,14 @@ def contract_permission(user):
 	user_office = ContractsCustomization.get_bool("contracts_view_user_office")
 	accounting = ContractsCustomization.get_bool("contracts_view_accounting_officer")
 	return user.is_active and (
-		staff
-		and user.is_staff
-		or user_office
-		and user.is_user_office
-		or accounting
-		and user.is_accounting_officer
-		or user.is_facility_manager
-		or user.is_superuser
+			staff
+			and user.is_staff
+			or user_office
+			and user.is_user_office
+			or accounting
+			and user.is_accounting_officer
+			or user.is_facility_manager
+			or user.is_superuser
 	)
 
 
@@ -40,8 +44,15 @@ def contract_permission(user):
 @user_passes_test(contract_permission)
 @require_GET
 def service_contracts(request):
-	service_contract_list = ServiceContract.objects.all()
-	page = SortedPaginator(service_contract_list, request, order_by="name").get_current_page()
+	service_contract_list = ServiceContract.objects.annotate(
+		natural_renewal_date=Concat(
+			Coalesce(F("renewal_date"), Value("9")),
+			F("name"),
+			F("current_year"),
+			output_field=CharField(),
+		)
+	)
+	page = SortedPaginator(service_contract_list, request, order_by="-natural_renewal_date").get_current_page()
 
 	if bool(request.GET.get("csv", False)):
 		return export_procurements(service_contract_list, procurement_only=False)
@@ -54,7 +65,7 @@ def service_contracts(request):
 @require_GET
 def procurements(request):
 	procurement_list = Procurement.objects.filter(servicecontract__isnull=True)
-	page = SortedPaginator(procurement_list, request, order_by="name").get_current_page()
+	page = SortedPaginator(procurement_list, request, order_by="-submitted_date").get_current_page()
 
 	if bool(request.GET.get("csv", False)):
 		return export_procurements(procurement_list, procurement_only=True)
@@ -66,13 +77,43 @@ def procurements(request):
 @user_passes_test(contract_permission)
 @require_GET
 def contractors(request):
-	contractor_list = ContractorAgreement.objects.filter()
-	page = SortedPaginator(contractor_list, request, order_by="name").get_current_page()
+	contractor_list = ContractorAgreement.objects.annotate(
+		natural_end=Concat(
+			Coalesce(F("end"), Value("9")),
+			F("name"),
+			output_field=CharField(),
+		)
+	)
+	page = SortedPaginator(contractor_list, request, order_by="-natural_end").get_current_page()
 
 	if bool(request.GET.get("csv", False)):
 		return export_contractor_agreements(contractor_list)
 
 	return render(request, "contracts/contractors.html", {"page": page})
+
+
+@login_required
+@user_passes_test(lambda u: u.is_active and u.has_perm(f"contract.change_servicecontract"))
+def service_contract_renew(request, service_contract_id):
+	service_contract = get_object_or_404(ServiceContract, pk=service_contract_id)
+	current_year = service_contract.current_year
+	new_current_year = current_year + 1 if current_year != service_contract.total_years else 1
+	new_service_contract = ServiceContract.objects.create(
+		name=service_contract.name,
+		current_year=new_current_year,
+		total_years=service_contract.total_years,
+	)
+	redirect_url = reverse("service_contracts")
+	return redirect(admin_edit_url({"request": request}, new_service_contract, redirect_url=redirect_url))
+
+
+@login_required
+@user_passes_test(lambda u: u.is_active and u.has_perm(f"contract.change_contractoragreement"))
+def contractor_agreement_renew(request, contractor_agreement_id):
+	contractor = get_object_or_404(ContractorAgreement, pk=contractor_agreement_id)
+	new_contractor = ContractorAgreement.objects.create(name=contractor.name, start=contractor.end)
+	redirect_url = reverse("contractor_agreements")
+	return redirect(admin_edit_url({"request": request}, new_contractor, redirect_url=redirect_url))
 
 
 def export_procurements(procurement_list: QuerySetType[Procurement], procurement_only=True):
@@ -113,13 +154,15 @@ def get_procurements_table_display(
 	table.add_header(("requisition_number", "Requisition number")),
 	table.add_header(("cost", "Cost")),
 	table.add_header(("notes", "Notes")),
+	table.add_header(("documents", "Documents")),
 	for procurement in procurement_list:
 		row = {
 			"name": procurement.display_name(),
 			"contract_number": procurement.contract_number,
 			"requisition_number": procurement.requisition_number,
 			"cost": procurement.display_cost(),
-			"notes": procurement.notes,
+			"notes": procurement.notes or "",
+			"documents": "\n".join([doc.full_link() for doc in procurements.proc.all()]),
 		}
 		if procurement.submitted_date:
 			row["submitted_date"] = format_datetime(procurement.submitted_date)
@@ -142,6 +185,7 @@ def get_contractors_table_display(contractor_agreement_list: QuerySetType[Contra
 		("start", "Start"),
 		("end", "End"),
 		("notes", "Notes"),
+		("documents", "Documents"),
 	]
 	for contractor_agreement in contractor_agreement_list:
 		table.add_row(
@@ -151,7 +195,10 @@ def get_contractors_table_display(contractor_agreement_list: QuerySetType[Contra
 				"contract_number": contractor_agreement.contract_number,
 				"start": format_datetime(contractor_agreement.start) if contractor_agreement.start else "",
 				"end": format_datetime(contractor_agreement.end) if contractor_agreement.end else "",
-				"notes": contractor_agreement.notes or '',
+				"notes": contractor_agreement.notes or "",
+				"documents": "\n".join(
+					[doc.full_link() for doc in contractor_agreement.contractoragreementdocuments_set.all()]
+				),
 			}
 		)
 	return table

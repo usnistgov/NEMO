@@ -56,7 +56,7 @@ class ServiceContract(Procurement):
     )
 
     def display_name(self):
-        return f"{self.name}{' (base + ' + str(self.total_years - 1) + ')'}"
+        return f"{self.name}"
 
     def display_current_year(self):
         return f"{self.current_year} of {self.total_years}"

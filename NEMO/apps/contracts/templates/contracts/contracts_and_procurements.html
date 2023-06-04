@@ -17,7 +17,7 @@
         <li class="nav-item{% if procurements_url in request.path %} active{% endif %}">
             <a class="nav-link" href="{{ procurements_url }}">Procurements</a>
         </li>
-        {% url 'contractors' as contractors_url %}
+        {% url 'contractor_agreements' as contractors_url %}
         <li class="nav-item{% if contractors_url in request.path %} active{% endif %}">
             <a class="nav-link" href="{{ contractors_url }}">Contractors</a>
         </li>

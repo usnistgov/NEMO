@@ -7,7 +7,7 @@
     {% endif %}
 {% endblock %}
 {% block pagination_content %}
-    <table class="table table-bordered table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
+    <table class="table table-bordered table-condensed table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
         <thead>
             <tr>
                 <th>{% include 'pagination/pagination_column.html' with order_by='name' name='General info' %}</th>
@@ -16,10 +16,10 @@
                 <th>{% include 'pagination/pagination_column.html' with order_by='award_date' name='Awarded' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract number' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='requisition_number' name='Requisition number' %}</th>
-                <th>{% include 'pagination/pagination_column.html' with order_by='renewal_date' name='Renewal' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='natural_renewal_date' name='Renewal' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='cost' name='Cost' %}</th>
                 <th>Notes</th>
-                <th class="text-center">Actions</th>
+                <th class="text-right button-column-minimum">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -33,8 +33,8 @@
                     <td>{{ service_contract.requisition_number|default_if_none:"" }}</td>
                     <td>{{ service_contract.renewal_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.display_cost|default_if_none:"" }}</td>
-                    <td>{{ service_contract.notes|linebreaksbr }}</td>
-                    <td class="text-center text-nowrap">
+                    <td>{{ service_contract.notes|default_if_none:""|linebreaksbr }}</td>
+                    <td class="text-right text-nowrap">
                         {% if service_contract.procurementdocuments_set.all %}
                             <form method="post" style="display: inline">
                                 {% csrf_token %}
@@ -46,6 +46,10 @@
                                 {% endfor %}
                                 {% button icon="glyphicon-list-alt" size="small" type="export" value="Docs" onclick="document_view(this.form);" %}
                             </form>
+                        {% endif %}
+                        {% if perms.contracts.change_servicecontract %}
+                            {% url "service_contract_renew" service_contract.id as renew_service_contract_url %}
+                            {% button icon="glyphicon-refresh" size="small" type="default" value="Renew" url=renew_service_contract_url %}
                         {% endif %}
                         {% admin_edit_url service_contract request.path as change_servicecontract_url %}
                         {% if change_servicecontract_url %}
