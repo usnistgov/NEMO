@@ -46,7 +46,7 @@ def contract_permission(user):
 def service_contracts(request):
 	service_contract_list = ServiceContract.objects.annotate(
 		natural_renewal_date=Concat(
-			Coalesce(F("renewal_date"), Value("9")),
+			Coalesce(F("renewal_date"), Value("9"), output_field=CharField()),
 			F("name"),
 			F("current_year"),
 			output_field=CharField(),
@@ -79,7 +79,7 @@ def procurements(request):
 def contractors(request):
 	contractor_list = ContractorAgreement.objects.annotate(
 		natural_end=Concat(
-			Coalesce(F("end"), Value("9")),
+			Coalesce(F("end"), Value("9"), output_field=CharField()),
 			F("name"),
 			output_field=CharField(),
 		)
