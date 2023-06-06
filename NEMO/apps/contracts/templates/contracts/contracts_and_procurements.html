@@ -54,19 +54,16 @@
                 {% else %}
                     <div class="pull-left form-control-static"><i>{% block table_empty_content %}{% endblock %}</i></div>
                 {% endif %}
-                {% block after_pagination %}
-                    <script>
-                        $('[data-toggle="tooltip"]').tooltip();
-                    </script>
-                {% endblock %}
+                {% block after_pagination %}{% endblock %}
             {% endblock %}
 		</div>
 	</div>
     <script>
+        $('[data-toggle="tooltip"]').tooltip({html: 'true', trigger: 'click'});
+
         function document_view(form)
         {
             let data = $(form).serialize();
-            console.log(data);
             ajax_post('{% url "media_list_view" allow_zip="true" popup="true" %}', data, ajax_success_callback);
         }
     </script>

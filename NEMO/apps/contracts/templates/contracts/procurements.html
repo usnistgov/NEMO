@@ -16,7 +16,6 @@
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract number' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='requisition_number' name='Requisition number' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='cost' name='Cost' %}</th>
-                <th>Notes</th>
                 <th class="text-right button-column-minimum">Actions</th>
             </tr>
         </thead>
@@ -29,8 +28,10 @@
                     <td>{{ procurement.contract_number|default_if_none:"" }}</td>
                     <td>{{ procurement.requisition_number|default_if_none:"" }}</td>
                     <td>{{ procurement.display_cost|default_if_none:"" }}</td>
-                    <td>{{ procurement.notes|default_if_none:""|linebreaksbr }}</td>
                     <td class="text-right text-nowrap">
+                        {% if procurement.notes %}
+                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=procurement.notes|default_if_none:""|linebreaksbr data_toggle="tooltip" %}
+                        {% endif %}
                         {% if procurement.procurementdocuments_set.all %}
                             <form method="post" style="display: inline">
                                 {% csrf_token %}
