@@ -259,7 +259,7 @@ def button(value, type="default", size="", icon=None, onclick=None, dismiss="", 
 		"btn_type": None if url else "submit" if submit else "button",
 		"btn_url": resolve_url(url) if url else None,
 		"btn_dismiss": dismiss,
-		"kwargs": kwargs,  # pass the rest of the kwargs directly to the button to be used as attributes
+		"kwargs": {key.replace("_", "-"): value for key, value in kwargs.items()},  # pass the rest of the kwargs directly to the button to be used as attributes
 	}
 
 
