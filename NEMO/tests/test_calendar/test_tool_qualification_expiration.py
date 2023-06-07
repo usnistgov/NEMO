@@ -123,6 +123,23 @@ class ToolQualificationTestCase(TestCase):
 		# Email was sent
 		self.assertTrue(EmailLog.objects.filter(sender="user_office@example.com", to__contains=self.user.email).exists())
 
+	def test_qualification_retrain_not_expired(self, mock_open, mock_exist):
+		mock_exist.return_value = True
+		mock_open.return_value = ContentFile(b'Email template', name="template")
+		qualification_date = date.today() - timedelta(days=2)
+		Qualification.objects.create(tool=self.tool, user=self.user, qualified_on=qualification_date)
+		usage_date = timezone.now() - timedelta(days=3)
+		UsageEvent.objects.create(user=self.user, operator=self.user, tool=self.tool, project=self.project, start=usage_date)
+
+		ToolCustomization.set("tool_qualification_expiration_days", 3)
+		EmailsCustomization.set("user_office_email_address", "user_office@example.com")
+		# Trigger the expiration timed service
+		do_manage_tool_qualifications()
+		# Qualification was not removed (qualified later than usage)
+		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
+		# Email was not sent
+		self.assertFalse(EmailLog.objects.filter(sender="user_office@example.com", to__contains=self.user.email).exists())
+
 	def test_qualification_expired_never_used(self, mock_open, mock_exist):
 		mock_exist.return_value = True
 		mock_open.return_value = ContentFile(b'Email template', name="template")

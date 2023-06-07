@@ -1326,7 +1326,8 @@ def do_manage_tool_qualifications(request=None):
 				tool = qualification.tool
 				last_tool_use = None
 				try:
-					last_tool_use = as_timezone(UsageEvent.objects.filter(user=user, tool=tool).latest("start").start).date()
+					# Last tool use cannot be before the last time they qualified
+					last_tool_use = max(as_timezone(UsageEvent.objects.filter(user=user, tool=tool).latest("start").start).date(), qualification.qualified_on)
 					expiration_date: date = last_tool_use + timedelta(days=qualification_expiration_days) if qualification_expiration_days else None
 				except UsageEvent.DoesNotExist:
 					# User never used the tool, use the qualification date
