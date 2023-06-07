@@ -25,7 +25,7 @@
         </thead>
         <tbody>
             {% for service_contract in page %}
-                <tr class="{% if service_contract.is_expired %}alert-danger{% elif service_contract.is_reminder_close %}alert-warning{% elif service_contract.is_active %}alert-success{% endif %}">
+                <tr class="{% if service_contract.is_expired %}alert-danger{% elif service_contract.is_warning %}alert-warning{% endif %}">
                     <td>{{ service_contract.display_name }}</td>
                     <td class="text-center text-nowrap">{{ service_contract.display_current_year }}</td>
                     <td>{{ service_contract.submitted_date|date:"SHORT_DATE_FORMAT" }}</td>

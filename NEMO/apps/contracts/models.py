@@ -62,9 +62,8 @@ class ServiceContract(Procurement):
     def is_expired(self):
         return self.end and date.today() >= self.end
 
-    def is_reminder_close(self):
-        warning_reminder = ContractsCustomization.get_int("contracts_reminder_warning_days")
-        return warning_reminder and self.reminder_date and ((self.reminder_date - date.today()).days < warning_reminder)
+    def is_warning(self):
+        return self.reminder_date and self.end and self.reminder_date <= date.today() < self.end
 
     def is_active(self):
         return self.start and self.end and self.start <= date.today() <= self.end
@@ -105,11 +104,10 @@ class ContractorAgreement(BaseModel):
             return self.contract.contract_number
 
     def is_expired(self):
-        return date.today() >= self.end if self.end else False
+        return self.end and date.today() >= self.end
 
-    def is_reminder_close(self):
-        warning_reminder = ContractsCustomization.get_int("contracts_reminder_warning_days")
-        return warning_reminder and self.reminder_date and ((self.reminder_date - date.today()).days < warning_reminder)
+    def is_warning(self):
+        return self.reminder_date and self.end and self.reminder_date <= date.today() < self.end
 
     def is_active(self):
         return self.start and self.end and self.start <= date.today() <= self.end

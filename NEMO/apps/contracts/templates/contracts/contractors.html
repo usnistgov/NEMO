@@ -21,7 +21,7 @@
         </thead>
         <tbody>
             {% for contractor_agreement in page %}
-                <tr class="{% if contractor_agreement.is_expired %}alert-danger{% elif contractor_agreement.is_reminder_close %}alert-warning{% elif contractor_agreement.is_active %}alert-success{% endif %}">
+                <tr class="{% if contractor_agreement.is_expired %}alert-danger{% elif contractor_agreement.is_warning %}alert-warning{% endif %}">
                     <td>{{ contractor_agreement.name }}</td>
                     <td>{{ contractor_agreement.contract_name }}</td>
                     <td>{{ contractor_agreement.contract_number|default_if_none:"" }}</td>
