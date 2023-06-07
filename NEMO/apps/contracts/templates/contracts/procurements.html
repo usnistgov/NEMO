@@ -16,8 +16,7 @@
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract number' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='requisition_number' name='Requisition number' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='cost' name='Cost' %}</th>
-                <th>Notes</th>
-                <th>Actions</th>
+                <th class="text-right button-column-minimum">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -29,8 +28,22 @@
                     <td>{{ procurement.contract_number|default_if_none:"" }}</td>
                     <td>{{ procurement.requisition_number|default_if_none:"" }}</td>
                     <td>{{ procurement.display_cost|default_if_none:"" }}</td>
-                    <td>{{ procurement.notes|linebreaksbr }}</td>
-                    <td class="text-center">
+                    <td class="text-right text-nowrap">
+                        {% if procurement.notes %}
+                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=procurement.notes|default_if_none:""|linebreaksbr data_toggle="tooltip" %}
+                        {% endif %}
+                        {% if procurement.procurementdocuments_set.all %}
+                            <form method="post" style="display: inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="title" value="{{ procurement.name }} procurement documents">
+                                {% for document in procurement.procurementdocuments_set.all %}
+                                    {% with content_type=document|content_type %}
+                                        <input type="hidden" name="document_info" value="{{ content_type.id }}__{{ document.id }}">
+                                    {% endwith %}
+                                {% endfor %}
+                                {% button icon="glyphicon-list-alt" size="small" type="export" value="Docs" onclick="document_view(this.form);" %}
+                            </form>
+                        {% endif %}
                         {% admin_edit_url procurement request.path as change_procurement_url %}
                         {% if change_procurement_url %}
                             {% button size="small" type="edit" value="Edit" url=change_procurement_url %}

@@ -1,0 +1,23 @@
+{% extends popup_view|yesno:"base/popup.html,base.html" %}
+{% load custom_tags_and_filters %}
+{% block title %}{{ title|default_if_none:"Document list" }}{% endblock %}
+{% block content %}
+    <ul>
+        {% for document in document_list %}
+            <li><a href="{{ document.link }}" target="_blank">{{ document.filename }}</a></li>
+        {% endfor %}
+    </ul>
+    {% if allow_zip %}
+        <form action="{% url 'media_zip' %}" method="post">
+            {% csrf_token %}
+            {% for document in document_list %}
+                {% with content_type=document|content_type %}
+                    <input type="hidden" name="document_info" value="{{ content_type.id }}__{{ document.id }}">
+                {% endwith %}
+            {% endfor %}
+            <div class="text-center" style="margin-top: 25px">
+                {% button type="save" value="Download as zip" onclick="" %}
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
             name='ToolDocuments',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('document', models.FileField(null=True, blank=True, upload_to=NEMO.utilities.get_tool_document_filename, verbose_name='Document')),
+                ('document', models.FileField(null=True, blank=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document')),
                 ('uploaded_at', models.DateTimeField(auto_now_add=True)),
                 ('name', models.CharField(blank=True, help_text='The optional name to display for this document', max_length=200, null=True)),
                 ('url', models.CharField(blank=True, max_length=200, null=True, verbose_name='URL')),

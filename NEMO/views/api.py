@@ -122,7 +122,7 @@ class UserViewSet(ModelViewSet):
 		"first_name": ["iexact", "icontains"],
 		"last_name": ["iexact", "icontains"],
 		"email": ["iexact", "icontains"],
-		"badge_number": ["exact"],
+		"badge_number": ["iexact", "isempty"],
 		"is_active": ["exact"],
 		"is_staff": ["exact"],
 		"is_facility_manager": ["exact"],
@@ -133,6 +133,7 @@ class UserViewSet(ModelViewSet):
 		"date_joined": ["month", "year", "day", "gte", "gt", "lte", "lt"],
 		"last_login": ["month", "year", "day", "gte", "gt", "lte", "lt", "isnull"],
 		"access_expiration": ["month", "year", "day", "gte", "gt", "lte", "lt", "isnull"],
+		"physical_access_levels": ["exact"],
 	}
 
 

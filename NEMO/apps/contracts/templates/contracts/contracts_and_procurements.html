@@ -17,12 +17,12 @@
         <li class="nav-item{% if procurements_url in request.path %} active{% endif %}">
             <a class="nav-link" href="{{ procurements_url }}">Procurements</a>
         </li>
-        {% url 'contractors' as contractors_url %}
+        {% url 'contractor_agreements' as contractors_url %}
         <li class="nav-item{% if contractors_url in request.path %} active{% endif %}">
             <a class="nav-link" href="{{ contractors_url }}">Contractors</a>
         </li>
 	</ul>
-	<div class="tab-content panel panel-default panel-tab-content">
+	<div id="contract-panel-content" class="tab-content panel panel-default panel-tab-content info-tooltip-container">
 		<div class="panel-body">
 			{% block tab_content %}
                 {# we cannot extend pagination page directly since we are already extending training_base #}
@@ -54,12 +54,17 @@
                 {% else %}
                     <div class="pull-left form-control-static"><i>{% block table_empty_content %}{% endblock %}</i></div>
                 {% endif %}
-                {% block after_pagination %}
-                    <script>
-                        $('[data-toggle="tooltip"]').tooltip();
-                    </script>
-                {% endblock %}
+                {% block after_pagination %}{% endblock %}
             {% endblock %}
 		</div>
 	</div>
+    <script>
+        $('[data-toggle="tooltip"]').tooltip({html: 'true', trigger: 'click', container: '#contract-panel-content'});
+
+        function document_view(form)
+        {
+            let data = $(form).serialize();
+            ajax_post('{% url "media_list_view" allow_zip="true" popup="true" %}', data, ajax_success_callback);
+        }
+    </script>
 {% endblock %}

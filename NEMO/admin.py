@@ -107,13 +107,13 @@ from NEMO.models import (
 	UserType,
 )
 from NEMO.utilities import admin_get_item, format_daterange
+from NEMO.views.constants import NEXT_PARAMETER_NAME
 from NEMO.views.customization import ProjectsAccountsCustomization
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageFloatFieldQuestion, PostUsageNumberFieldQuestion
 
 
 # Admin class to allow redirect after add or change
 class ModelAdminRedirect(admin.ModelAdmin):
-	NEXT_PARAMETER_NAME = "next"
 
 	def response_post_save_add(self, request, obj):
 		return self.response_redirect(request, super().response_post_save_add(request, obj))
@@ -125,8 +125,8 @@ class ModelAdminRedirect(admin.ModelAdmin):
 		return self.response_redirect(request, super().response_delete(request, obj_display, obj_id))
 
 	def response_redirect(self, request, original_response):
-		if self.NEXT_PARAMETER_NAME in request.GET:
-			return redirect(request.GET[self.NEXT_PARAMETER_NAME])
+		if NEXT_PARAMETER_NAME in request.GET:
+			return redirect(request.GET[NEXT_PARAMETER_NAME])
 		return original_response
 
 
@@ -423,14 +423,14 @@ class TrainingSessionAdmin(admin.ModelAdmin):
 
 
 @register(StaffCharge)
-class StaffChargeAdmin(admin.ModelAdmin):
+class StaffChargeAdmin(ModelAdminRedirect):
 	list_display = ("id", "staff_member", "customer", "start", "end")
 	list_filter = ("start", ("customer", admin.RelatedOnlyFieldListFilter), ("staff_member", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "start"
 
 
 @register(AreaAccessRecord)
-class AreaAccessRecordAdmin(admin.ModelAdmin):
+class AreaAccessRecordAdmin(ModelAdminRedirect):
 	list_display = ("id", "customer", "area", "project", "start", "end")
 	list_filter = (("area", TreeRelatedFieldListFilter), "start")
 	date_hierarchy = "start"
@@ -546,7 +546,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
 
 @register(Reservation)
-class ReservationAdmin(admin.ModelAdmin):
+class ReservationAdmin(ModelAdminRedirect):
 	list_display = (
 		"id",
 		"user",
@@ -650,7 +650,7 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 
 
 @register(UsageEvent)
-class UsageEventAdmin(admin.ModelAdmin):
+class UsageEventAdmin(ModelAdminRedirect):
 	list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work")
 	list_filter = ("remote_work", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "start"

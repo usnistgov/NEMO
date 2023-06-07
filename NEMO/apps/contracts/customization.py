@@ -11,8 +11,6 @@ class ContractsCustomization(CustomizationBase):
         "contracts_view_user_office": "",
         "contracts_view_accounting_officer": "",
         "contracts_contractors_default_empty_label": "Credit card order",
-        "contracts_renewal_reminder_days": "",
-        "contracts_contractors_reminder_days": "",
     }
 
     def validate(self, name, value):

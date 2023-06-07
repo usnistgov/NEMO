@@ -179,15 +179,15 @@ def content_type(obj):
 
 
 @register.simple_tag(takes_context=True)
-def admin_edit_url(context, obj, next_url=None):
+def admin_edit_url(context, obj, redirect_url=None):
 	user = context["request"].user
 	try:
 		obj_type = content_type(obj)
 		permission = user.has_perm(f"{obj_type.app_label}.change_{obj_type.model}")
 		if permission:
 			url = reverse(f"admin:{obj_type.app_label}_{obj_type.model}_change", args=[obj.id])
-			if next_url:
-				url += f"?{NEXT_PARAMETER_NAME}={quote(next_url)}"
+			if redirect_url:
+				url += f"?{NEXT_PARAMETER_NAME}={quote(redirect_url)}"
 			return url
 	except:
 		pass
@@ -259,7 +259,7 @@ def button(value, type="default", size="", icon=None, onclick=None, dismiss="", 
 		"btn_type": None if url else "submit" if submit else "button",
 		"btn_url": resolve_url(url) if url else None,
 		"btn_dismiss": dismiss,
-		"kwargs": kwargs,  # pass the rest of the kwargs directly to the button to be used as attributes
+		"kwargs": {key.replace("_", "-"): value for key, value in kwargs.items()},  # pass the rest of the kwargs directly to the button to be used as attributes
 	}
 
 

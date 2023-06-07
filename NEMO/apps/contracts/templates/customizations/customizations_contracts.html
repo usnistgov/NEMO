@@ -40,34 +40,6 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <h3 class="customization-section-title">Email reminders</h3>
-        <div class="form-group {% if errors.contracts_renewal_reminder_days %}has-error{% endif %}">
-            <label class="control-label col-lg-4" for="contracts_renewal_reminder_days">Service contracts reminder days</label>
-            <div class="col-lg-8">
-                <input type="text" id="contracts_renewal_reminder_days" name="contracts_renewal_reminder_days" class="form-control" value="{% if errors.contracts_renewal_reminder_days %}{{ errors.contracts_renewal_reminder_days.value }}{% else %}{{ contracts_renewal_reminder_days }}{% endif %}"/>
-            </div>
-            <div class="col-lg-offset-4 col-lg-8 help-block light-grey">
-                {% if errors.contracts_renewal_reminder_days %}
-                    {{ errors.contracts_renewal_reminder_days.error }}
-                {% else %}
-                    The number of days to send a reminder prior to a service contract's expiration. A comma-separated list can be used for multiple reminders.
-                {% endif %}
-            </div>
-        </div>
-        <div class="form-group {% if errors.contracts_contractors_reminder_days %}has-error{% endif %}">
-            <label class="control-label col-lg-4" for="contracts_contractors_reminder_days">Contractor agreements reminder days</label>
-            <div class="col-lg-8">
-                <input type="text" id="contracts_contractors_reminder_days" name="contracts_contractors_reminder_days" class="form-control" value="{% if errors.contracts_contractors_reminder_days %}{{ errors.contracts_contractors_reminder_days.value }}{% else %}{{ contracts_contractors_reminder_days }}{% endif %}"/>
-            </div>
-            <div class="col-lg-offset-4 col-lg-8 help-block light-grey">
-                {% if errors.contracts_contractors_reminder_days %}
-                    {{ errors.contracts_contractors_reminder_days.error }}
-                {% else %}
-                    The number of days to send a reminder prior to a contractor agreement's expiration. A comma-separated list can be used for multiple reminders.
-                {% endif %}
-            </div>
-        </div>
-        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">
             {% button type="save" value="Save settings" %}
         </div>

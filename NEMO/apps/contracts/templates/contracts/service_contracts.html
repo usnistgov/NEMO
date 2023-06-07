@@ -7,7 +7,7 @@
     {% endif %}
 {% endblock %}
 {% block pagination_content %}
-    <table class="table table-bordered table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
+    <table class="table table-bordered table-condensed table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
         <thead>
             <tr>
                 <th>{% include 'pagination/pagination_column.html' with order_by='name' name='General info' %}</th>
@@ -16,25 +16,46 @@
                 <th>{% include 'pagination/pagination_column.html' with order_by='award_date' name='Awarded' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract number' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='requisition_number' name='Requisition number' %}</th>
-                <th>{% include 'pagination/pagination_column.html' with order_by='renewal_date' name='Renewal' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='start' name='Start' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='natural_end' name='End' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='reminder_date' name='Reminder' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='cost' name='Cost' %}</th>
-                <th>Notes</th>
-                <th class="text-center">Actions</th>
+                <th class="text-right button-column-minimum">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for service_contract in page %}
-                <tr {% if service_contract.is_expired %}class="alert-danger"{% endif %}>
+                <tr class="{% if service_contract.is_expired %}alert-danger{% elif service_contract.is_warning %}alert-warning{% endif %}">
                     <td>{{ service_contract.display_name }}</td>
-                    <td class="text-center">{{ service_contract.display_current_year }}</td>
+                    <td class="text-center text-nowrap">{{ service_contract.display_current_year }}</td>
                     <td>{{ service_contract.submitted_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.award_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.contract_number|default_if_none:"" }}</td>
                     <td>{{ service_contract.requisition_number|default_if_none:"" }}</td>
-                    <td>{{ service_contract.renewal_date|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ service_contract.start|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ service_contract.end|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ service_contract.reminder_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.display_cost|default_if_none:"" }}</td>
-                    <td>{{ service_contract.notes|linebreaksbr }}</td>
-                    <td class="text-center">
+                    <td class="text-right text-nowrap">
+                        {% if service_contract.notes %}
+                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=service_contract.notes|default_if_none:""|linebreaksbr data_toggle="tooltip" %}
+                        {% endif %}
+                        {% if service_contract.procurementdocuments_set.all %}
+                            <form method="post" style="display: inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="title" value="{{ service_contract.name }} service contract documents">
+                                {% for document in service_contract.procurementdocuments_set.all %}
+                                    {% with content_type=document|content_type %}
+                                        <input type="hidden" name="document_info" value="{{ content_type.id }}__{{ document.id }}">
+                                    {% endwith %}
+                                {% endfor %}
+                                {% button icon="glyphicon-list-alt" size="small" type="export" value="Docs" onclick="document_view(this.form);" %}
+                            </form>
+                        {% endif %}
+                        {% if perms.contracts.change_servicecontract %}
+                            {% url "service_contract_renew" service_contract.id as renew_service_contract_url %}
+                            {% button icon="glyphicon-refresh" size="small" type="default" value="Renew" url=renew_service_contract_url %}
+                        {% endif %}
                         {% admin_edit_url service_contract request.path as change_servicecontract_url %}
                         {% if change_servicecontract_url %}
                             {% button size="small" type="edit" value="Edit" url=change_servicecontract_url %}

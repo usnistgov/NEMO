@@ -14,21 +14,40 @@
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract__name' name='Contract' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract__contract_number' name='Contract number' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='start' name='Start' %}</th>
-                <th>{% include 'pagination/pagination_column.html' with order_by='end' name='End' %}</th>
-                <th>{% include 'pagination/pagination_column.html' with order_by='notes' name='Notes' %}</th>
-                <th class="text-center">Actions</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='natural_end' name='End' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='reminder_date' name='Reminder' %}</th>
+                <th class="text-right button-column-minimum">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for contractor_agreement in page %}
-                <tr {% if contractor_agreement.is_expired %}class="alert-danger"{% endif %}>
+                <tr class="{% if contractor_agreement.is_expired %}alert-danger{% elif contractor_agreement.is_warning %}alert-warning{% endif %}">
                     <td>{{ contractor_agreement.name }}</td>
                     <td>{{ contractor_agreement.contract_name }}</td>
                     <td>{{ contractor_agreement.contract_number|default_if_none:"" }}</td>
                     <td>{{ contractor_agreement.start|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ contractor_agreement.end|date:"SHORT_DATE_FORMAT" }}</td>
-                    <td>{{ contractor_agreement.notes|linebreaksbr }}</td>
-                    <td class="text-center">
+                    <td>{{ contractor_agreement.reminder_date|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td class="text-right text-nowrap">
+                        {% if contractor_agreement.notes %}
+                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=contractor_agreement.notes|default_if_none:""|linebreaksbr data_toggle="tooltip" %}
+                        {% endif %}
+                        {% if contractor_agreement.contractoragreementdocuments_set.all %}
+                            <form method="post" style="display: inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="title" value="{{ contractor_agreement.name }} contractor documents">
+                                {% for document in contractor_agreement.contractoragreementdocuments_set.all %}
+                                    {% with content_type=document|content_type %}
+                                        <input type="hidden" name="document_info" value="{{ content_type.id }}__{{ document.id }}">
+                                    {% endwith %}
+                                {% endfor %}
+                                {% button icon="glyphicon-list-alt" size="small" type="export" value="Docs" onclick="document_view(this.form);" %}
+                            </form>
+                        {% endif %}
+                        {% if perms.contracts.change_contractoragreement %}
+                            {% url "contractor_agreement_renew" contractor_agreement.id as renew_contractor_agreement_url %}
+                            {% button icon="glyphicon-refresh" size="small" type="default" value="Renew" url=renew_contractor_agreement_url %}
+                        {% endif %}
                         {% admin_edit_url contractor_agreement request.path as change_contractors_url %}
                         {% if change_contractors_url %}
                             {% button size="small" type="edit" value="Edit" url=change_contractors_url %}
