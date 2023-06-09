@@ -10,7 +10,7 @@
     <table class="table table-bordered table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
         <thead>
             <tr>
-                <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Contractor' %}</th>
+                <th class="sticky">{% include 'pagination/pagination_column.html' with order_by='name' name='Contractor' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract__name' name='Contract' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract__contract_number' name='Contract number' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='start' name='Start' %}</th>
@@ -22,7 +22,7 @@
         <tbody>
             {% for contractor_agreement in page %}
                 <tr class="{% if contractor_agreement.is_expired %}alert-danger{% elif contractor_agreement.is_warning %}alert-warning{% endif %}">
-                    <td>{{ contractor_agreement.name }}</td>
+                    <td class="sticky {% if contractor_agreement.is_expired %}alert-danger{% elif contractor_agreement.is_warning %}alert-warning{% endif %}">{{ contractor_agreement.name }}</td>
                     <td>{{ contractor_agreement.contract_name }}</td>
                     <td>{{ contractor_agreement.contract_number|default_if_none:"" }}</td>
                     <td>{{ contractor_agreement.start|date:"SHORT_DATE_FORMAT" }}</td>

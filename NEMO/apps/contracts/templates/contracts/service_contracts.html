@@ -10,7 +10,7 @@
     <table class="table table-bordered table-condensed table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
         <thead>
             <tr>
-                <th>{% include 'pagination/pagination_column.html' with order_by='name' name='General info' %}</th>
+                <th class="sticky">{% include 'pagination/pagination_column.html' with order_by='name' name='General info' %}</th>
                 <th class="text-center">Year</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='submitted_date' name='Submitted' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='award_date' name='Awarded' %}</th>
@@ -26,7 +26,7 @@
         <tbody>
             {% for service_contract in page %}
                 <tr class="{% if service_contract.is_expired %}alert-danger{% elif service_contract.is_warning %}alert-warning{% endif %}">
-                    <td>{{ service_contract.display_name }}</td>
+                    <td class="sticky {% if service_contract.is_expired %}alert-danger{% elif service_contract.is_warning %}alert-warning{% endif %}">{{ service_contract.display_name }}</td>
                     <td class="text-center text-nowrap">{{ service_contract.display_current_year }}</td>
                     <td>{{ service_contract.submitted_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.award_date|date:"SHORT_DATE_FORMAT" }}</td>

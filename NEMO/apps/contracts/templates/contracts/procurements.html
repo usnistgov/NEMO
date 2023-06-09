@@ -10,7 +10,7 @@
     <table class="table table-bordered table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
         <thead>
             <tr>
-                <th>{% include 'pagination/pagination_column.html' with order_by='name' name='General info' %}</th>
+                <th class="sticky">{% include 'pagination/pagination_column.html' with order_by='name' name='General info' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='submitted_date' name='Submitted date' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='award_date' name='Award date' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract number' %}</th>
@@ -22,7 +22,7 @@
         <tbody>
             {% for procurement in page %}
                 <tr>
-                    <td>{{ procurement.display_name }}</td>
+                    <td class="sticky">{{ procurement.display_name }}</td>
                     <td>{{ procurement.submitted_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ procurement.award_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ procurement.contract_number|default_if_none:"" }}</td>
