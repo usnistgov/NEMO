@@ -86,7 +86,7 @@ class ModbusTcpSensor(Sensor):
 		read_address = sensor_form.cleaned_data["read_address"]
 		number_of_values = sensor_form.cleaned_data["number_of_values"]
 		error = {}
-		if not read_address:
+		if read_address is None:
 			error["read_address"] = _("This field is required.")
 		if not number_of_values:
 			error["number_of_values"] = _("This field is required.")
