@@ -42,7 +42,7 @@ def do_enable_tool(request, tool_id):
 	project = Project.objects.get(id=request.POST["project_id"])
 	bypass_interlock = request.POST.get("bypass", "False") == "True"
 
-	response = policy.check_to_enable_tool(tool, operator=customer, user=customer, project=project, staff_charge=False)
+	response = policy.check_to_enable_tool(tool, operator=customer, user=customer, project=project, staff_charge=False, remote_work=False)
 	if response.status_code != HTTPStatus.OK:
 		dictionary = {
 			"message": "You are not authorized to enable this tool. {}".format(response.content.decode()),

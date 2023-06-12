@@ -47,7 +47,7 @@ from NEMO.views.customization import ApplicationCustomization, EmailsCustomizati
 
 
 class NEMOPolicy:
-    def check_to_enable_tool(self, tool: Tool, operator: User, user: User, project: Project, staff_charge: bool):
+    def check_to_enable_tool(self, tool: Tool, operator: User, user: User, project: Project, staff_charge: bool, remote_work=False):
         """
         Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
         """
@@ -139,7 +139,7 @@ class NEMOPolicy:
             )
 
         # Staff may not bill staff time to themselves.
-        if staff_charge and operator == user:
+        if (staff_charge or remote_work) and operator == user:
             return HttpResponseBadRequest("You cannot charge staff time to yourself.")
 
         # Check if we are allowed to bill to project

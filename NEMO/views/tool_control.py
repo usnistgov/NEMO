@@ -331,7 +331,14 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	project = get_object_or_404(Project, id=project_id)
 	staff_charge = staff_charge == "true"
 	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
-	response = policy.check_to_enable_tool(tool, operator, user, project, staff_charge)
+	# Figure out if the tool usage is part of remote work
+	# 1: Staff charge means it's always remote work
+	# 2: Always remote if operator is different from the user
+	# 3: Unless customization is set to ask explicitly
+	remote_work = (user != operator and operator.is_staff)
+	if RemoteWorkCustomization.get_bool("remote_work_ask_explicitly"):
+		remote_work = remote_work and bool(request.POST.get("remote_work", False))
+	response = policy.check_to_enable_tool(tool, operator, user, project, staff_charge, remote_work)
 	if response.status_code != HTTPStatus.OK:
 		return response
 
@@ -342,13 +349,6 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 		else:
 			return interlock_error("Enable", user)
 
-	# Figure out if the tool usage is part of remote work
-	# 1: Staff charge means it's always remote work
-	# 2: Always remote if operator is different from the user
-	# 3: Unless customization is set to ask explicitly
-	remote_work = (user != operator and operator.is_staff)
-	if RemoteWorkCustomization.get_bool("remote_work_ask_explicitly"):
-		remote_work = remote_work and bool(request.POST.get("remote_work", False))
 	# Start staff charge before tool usage
 	if staff_charge:
 		# Staff charge means always a remote
