@@ -12,17 +12,20 @@
 {% endif %}
 <h2>Please visit the {{ facility_name}} staff if you believe this is an error.</h2>
 {% if not reservation_requirement_failed and not max_capacity_reached and not scheduled_outage_in_progress %}
-<h2>What would you like to do?</h2>
-<p>
-	<a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="revert_to_default_content()">
-		Do nothing and keep me logged in
-	</a>
-</p>
-<p>
-	<a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="just_open_the_door('{{ badge_number }}')">
-		Open the door and keep me logged in
-	</a>
-</p>
+    <h2>What would you like to do?</h2>
+    <p>
+        <a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="revert_to_default_content()">
+            Do nothing and keep me logged in
+        </a>
+    </p>
+    {# Don't offer to open the door if there is no interlock #}
+    {% if door.interlock %}
+        <p>
+            <a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="just_open_the_door('{{ badge_number }}')">
+                Open the door and keep me logged in
+            </a>
+        </p>
+    {% endif %}
 {% endif %}
 <p>
 	<a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="exit_area('{{ badge_number }}')">

@@ -139,12 +139,15 @@ def login_to_area(request, door_id):
 
 	current_area_access_record = user.area_access_record()
 	if current_area_access_record and current_area_access_record.area == door.area:
+		if ApplicationCustomization.get_bool("area_logout_already_logged_in"):
+			return logout_of_area(request, door_id)
 		# No log entry necessary here because all validation checks passed.
 		# The log entry is captured when the subsequent choice is made by the user.
 		return render(
 			request,
 			"area_access/already_logged_in.html",
 			{
+				"door": door,
 				"area": door.area,
 				"project": current_area_access_record.project,
 				"badge_number": user.badge_number,
@@ -216,7 +219,7 @@ def login_to_area(request, door_id):
 		return render(
 			request,
 			"area_access/login_success.html",
-			{"area": door.area, "name": user.first_name, "project": project, "previous_area": previous_area},
+			{"door": door, "area": door.area, "name": user.first_name, "project": project, "previous_area": previous_area},
 		)
 
 

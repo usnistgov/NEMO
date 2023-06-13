@@ -21,7 +21,7 @@ from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
 from NEMO.models import ConsumableCategory, Customization, Project, RecurringConsumableCharge
-from NEMO.utilities import date_input_format, datetime_input_format, quiet_int, RecurrenceFrequency
+from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
 
 class CustomizationBase(ABC):
@@ -164,6 +164,7 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_in": "",
 		"self_log_out": "",
 		"calendar_login_logout": "",
+		"area_logout_already_logged_in": "",
 		"consumable_user_self_checkout": "",
 	}
 

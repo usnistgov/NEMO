@@ -28,6 +28,7 @@
                     <label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas from the landing page</label><br/>
                     <label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas from the landing page</label><br/>
                     <label><input type="checkbox" name="calendar_login_logout" {% if calendar_login_logout %}checked{% endif %} value="enabled">Show access controlled area login/logout button on calendar view (requires login and/or logout feature enabled above)</label>
+                    {% if "NEMO.apps.area_access"|app_installed %}<label><input type="checkbox" name="area_logout_already_logged_in" {% if area_logout_already_logged_in %}checked{% endif %} value="enabled">Automatically log users out when they try to log in to an area they are already logged in (single tablet/page mode)</label>{% endif %}
                 </div>
             </div>
         </div>
