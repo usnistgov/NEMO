@@ -1,6 +1,7 @@
 from _ssl import CERT_REQUIRED, PROTOCOL_TLSv1_2
 from base64 import b64decode
 from logging import getLogger
+from urllib.parse import urljoin, urlparse
 
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, get_backends, login
@@ -265,7 +266,7 @@ def login_user(request):
 			login(request, user)
 			try:
 				next_page = request.GET[REDIRECT_FIELD_NAME]
-				resolve(next_page)  # Make sure the next page is a legitimate URL for NEMO
+				resolve(urljoin(next_page, urlparse(next_page).path))  # Make sure the next page is a legitimate URL for NEMO
 			except:
 				next_page = reverse("landing")
 			return HttpResponseRedirect(next_page)
