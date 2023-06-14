@@ -9,8 +9,7 @@ BadgeReader = function (on_success, send_key, record_key)
 
     function on_keypress(event)
     {
-        let skip_recording_key = event.key === send_key && send_key !== record_key;
-        if (!skip_recording_key && (record_key && record_badge_number || !record_key))
+        if (event.key !== send_key  && (record_key && record_badge_number || !record_key))
         {
             badge_number += String.fromCharCode(event.which);
             $("#badge_number").html(badge_number);
