@@ -4,8 +4,8 @@
     <form method="POST" action="{% url 'customize' 'application' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
-            <label class="control-label col-md-2" for="facility_name">Facility name</label>
-            <div class="col-md-5">
+            <label class="control-label col-md-3" for="facility_name">Facility name</label>
+            <div class="col-md-4">
                 <input type="text" id="facility_name" name="facility_name" class="form-control" value="{{ facility_name }}">
             </div>
             <div class="col-md-5 help-block light-grey">
@@ -13,8 +13,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2" for="site_title">Site title</label>
-            <div class="col-md-5">
+            <label class="control-label col-md-3" for="site_title">Site title</label>
+            <div class="col-md-4">
                 <input type="text" id="site_title" name="site_title" class="form-control" value="{{ site_title }}">
             </div>
             <div class="col-md-5 help-block light-grey">
@@ -22,8 +22,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">Area login/logout</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">Area login/logout</label>
+            <div class="col-md-9">
                 <div class="checkbox">
                     <label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas from the landing page</label><br/>
                     <label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas from the landing page</label><br/>
@@ -43,6 +43,22 @@
                 If enabled, you need to add a {% if "django.contrib.admin"|app_installed %}<a href="{% url 'admin:NEMO_landingpagechoice_changelist' %}">landing page choice</a>{% else %}landing page option{% endif %} with url <b>/consumables/</b> so users can have a way to get to the page.
             </div>
         </div>
+		{% if "NEMO.apps.area_access"|app_installed or "NEMO.apps.kiosk"|app_installed and badge_readers %}
+			<div class="form-group">
+				<label class="control-label col-md-3" for="default_badge_reader_id">Default badge reader</label>
+				<div class="col-md-4">
+					<select id="default_badge_reader_id" name="default_badge_reader_id" class="form-control">
+						<option value="" label="Default badge reader"></option>
+						{% for badge_reader in badge_readers %}
+							<option value="{{ badge_reader.id }}" label="{{ badge_reader.name }}" {% if default_badge_reader_id|to_int == badge_reader.id %}selected{% endif %}></option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-md-5 help-block light-grey">
+					The default badge reader to use for the area access and kiosk tablets.
+				</div>
+			</div>
+		{% endif %}
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">
             {% button type="save" value="Save settings" %}

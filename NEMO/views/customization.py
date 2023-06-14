@@ -20,7 +20,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
-from NEMO.models import ConsumableCategory, Customization, Project, RecurringConsumableCharge
+from NEMO.models import BadgeReader, ConsumableCategory, Customization, Project, RecurringConsumableCharge
 from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
 
@@ -124,7 +124,7 @@ class CustomizationBase(ABC):
 			return datetime.strptime(str_date, date_input_format).date()
 
 	@classmethod
-	def get_datetime(cls, name:str, raise_exception=True) -> datetime:
+	def get_datetime(cls, name: str, raise_exception=True) -> datetime:
 		str_datetime = cls.get(name, raise_exception)
 		if str_datetime:
 			return datetime.strptime(str_datetime, datetime_input_format)
@@ -165,8 +165,14 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_out": "",
 		"calendar_login_logout": "",
 		"area_logout_already_logged_in": "",
+		"default_badge_reader_id": "",
 		"consumable_user_self_checkout": "",
 	}
+
+	def context(self) -> Dict:
+		context_dict = super().context()
+		context_dict["badge_readers"] = BadgeReader.objects.all()
+		return context_dict
 
 	def save(self, request, element=None):
 		errors = super().save(request, element)
@@ -243,7 +249,7 @@ class CalendarCustomization(CustomizationBase):
 		"calendar_all_areas": "",
 		"calendar_all_areastools": "",
 		"calendar_outage_recurrence_limit": "90",
-		"calendar_qualified_tools": ""
+		"calendar_qualified_tools": "",
 	}
 
 
@@ -329,7 +335,9 @@ class UserRequestsCustomization(CustomizationBase):
 		if value and name == "adjustment_requests_time_limit_frequency":
 			try:
 				if RecurrenceFrequency(int(value)) not in self.frequencies:
-					raise ValidationError(f"frequency must be one of {[freq.display_value for freq in self.frequencies]}")
+					raise ValidationError(
+						f"frequency must be one of {[freq.display_value for freq in self.frequencies]}"
+					)
 			except Exception as e:
 				raise ValidationError(str(e))
 
@@ -341,7 +349,7 @@ class RecurringChargesCustomization(CustomizationBase):
 		"recurring_charges_lock": "",
 		"recurring_charges_category": "",
 		"recurring_charges_force_quantity": "",
-		"recurring_charges_skip_customer_validation": ""
+		"recurring_charges_skip_customer_validation": "",
 	}
 
 	def __init__(self, key, title):
@@ -469,7 +477,7 @@ class RatesCustomization(CustomizationBase):
 
 
 def get_media_file_contents(file_name):
-	""" Get the contents of a media file if it exists. Return a blank string if it does not exist. """
+	"""Get the contents of a media file if it exists. Return a blank string if it does not exist."""
 	storage = get_storage_class()()
 	if not storage.exists(file_name):
 		return ""

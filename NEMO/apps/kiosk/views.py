@@ -19,6 +19,7 @@ from NEMO.views.calendar import (
 	render_reservation_questions,
 	shorten_reservation,
 )
+from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.status_dashboard import create_tool_summary
 from NEMO.views.tool_control import (
 	email_managers_required_questions_disable_tool,
@@ -181,7 +182,9 @@ def reserve_tool(request):
 
 	# Reservation questions if applicable
 	try:
-		reservation.question_data = extract_reservation_questions(request, ReservationItemType.TOOL, tool.id, reservation.project)
+		reservation.question_data = extract_reservation_questions(
+			request, ReservationItemType.TOOL, tool.id, reservation.project
+		)
 	except RequiredUnansweredQuestionsException as e:
 		error_dictionary["message"] = str(e)
 		return render(request, "kiosk/error.html", error_dictionary)
@@ -194,7 +197,7 @@ def reserve_tool(request):
 @permission_required("NEMO.kiosk")
 @require_POST
 def cancel_reservation(request, reservation_id):
-	""" Cancel a reservation for a user. """
+	"""Cancel a reservation for a user."""
 	reservation = Reservation.objects.get(id=reservation_id)
 	customer = User.objects.get(id=request.POST["customer_id"])
 
@@ -268,7 +271,8 @@ def choices(request):
 	unqualified_categories = [
 		category
 		for category in categories
-		if not customer.is_staff and not Tool.objects.filter(
+		if not customer.is_staff
+		   and not Tool.objects.filter(
 			visible=True, _category=category, id__in=customer.qualifications.all().values_list("id")
 		).exists()
 	]
@@ -347,8 +351,10 @@ def tool_information(request, tool_id, user_id, back):
 @permission_required("NEMO.kiosk")
 @require_GET
 def kiosk(request, location=None):
-	reader_id = request.GET.get("reader_id")
-	dictionary = {
-		"badge_reader": BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default(),
-	}
-	return render(request, "kiosk/kiosk.html", dictionary)
+	return render(request, "kiosk/kiosk.html", {"badge_reader": get_badge_reader(request)})
+
+
+def get_badge_reader(request) -> BadgeReader:
+	reader_id = request.GET.get("reader_id") or ApplicationCustomization.get_int("default_badge_reader_id")
+	badge_reader = BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default()
+	return badge_reader
