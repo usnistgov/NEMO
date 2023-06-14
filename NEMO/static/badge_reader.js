@@ -9,7 +9,8 @@ BadgeReader = function (on_success, send_key, record_key)
 
     function on_keypress(event)
     {
-        if (event.key !== send_key  && (record_key && record_badge_number || !record_key))
+        // Don't write send and record keys
+        if (event.key !== send_key && event.key !== record_key && (record_key && record_badge_number || !record_key))
         {
             badge_number += String.fromCharCode(event.which);
             $("#badge_number").html(badge_number);
@@ -18,17 +19,19 @@ BadgeReader = function (on_success, send_key, record_key)
 
     function on_keydown(event)
     {
-        if (event.key === record_key)
-        {
-            // Activate badge number recording
-            record_badge_number = !record_badge_number;
-        }
-        if (event.key === send_key && !record_badge_number)
+        // First priority is sending the badge number if send key is pressed
+        if (event.key === send_key && (record_key && record_badge_number || !record_key))
         {
             // Sending badge number
             on_success(badge_number);
             $("#badge_number").html(badge_number + ", sent");
             badge_number = "";
+            record_badge_number = false;
+        }
+        else if (event.key === record_key)
+        {
+            // Activate badge number recording
+            record_badge_number = true;
         }
     }
 };
