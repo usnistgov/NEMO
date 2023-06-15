@@ -356,5 +356,8 @@ def kiosk(request, location=None):
 
 def get_badge_reader(request) -> BadgeReader:
 	reader_id = request.GET.get("reader_id") or ApplicationCustomization.get_int("default_badge_reader_id")
-	badge_reader = BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default()
+	try:
+		badge_reader = BadgeReader.objects.get(id=reader_id)
+	except BadgeReader.DoesNotExist:
+		badge_reader = BadgeReader.default()
 	return badge_reader
