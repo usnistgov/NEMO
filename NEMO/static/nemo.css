@@ -876,6 +876,12 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	vertical-align: middle;
 }
 
+/* No bottom margin when using pagination inside a panel */
+.panel-body .pagination:last-of-type
+{
+	margin-bottom: 0;
+}
+
 /* Badge display on top right corner */
 .badge
 {
