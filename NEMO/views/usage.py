@@ -114,13 +114,16 @@ def usage(request):
 	customer_filter = Q(customer=user) | Q(project__in=user_managed_projects)
 	user_filter = Q(user=user) | Q(project__in=user_managed_projects)
 	trainee_filter = Q(trainee=user) | Q(project__in=user_managed_projects)
-	project_id = request.GET.get("pi_project")
+	project_id = request.GET.get("project") or request.GET.get("pi_project")
 	csv_export = bool(request.GET.get("csv", False))
 	if user_managed_projects:
 		base_dictionary['selected_project'] = "all"
 	if project_id:
 		project = get_object_or_404(Project, id=project_id)
-		base_dictionary['selected_project'] = project
+		if request.GET.get("project"):
+			base_dictionary['selected_user_project'] = project
+		else:
+			base_dictionary['selected_project'] = project
 		customer_filter = customer_filter & Q(project=project)
 		user_filter = user_filter & Q(project=project)
 		trainee_filter = trainee_filter & Q(project=project)
