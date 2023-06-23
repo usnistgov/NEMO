@@ -70,8 +70,8 @@
                     </div>
             {% endif %}
 			{% if not project_autocomplete %}
-				<div class="hidden-lg hidden-md hidden-sm">&nbsp;</div>
-				<div class="col-md-3">
+				<div class="hidden-lg hidden-md {% if user.active_projects or pi_projects %}hidden-sm{% else %}col-sm-12{% endif %}">&nbsp;</div>
+				<div class="col-sm-4 col-lg-3 {% if user.active_projects or pi_projects %}text-right{% else %}col-md-3{% endif %}">
                     {% button type="save" submit=False onclick="$('#csv_export').val('');this.form.submit();" value="Update" icon="glyphicon-refresh" %}
                     <input id="csv_export" type="hidden" name="csv" value="">
                     {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
