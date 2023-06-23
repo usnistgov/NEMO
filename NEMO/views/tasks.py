@@ -112,8 +112,6 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
 		message = render_email_template(message, dictionary, request)
 		recipients = get_task_email_recipients(task)
-		if task.tool.notification_email_address:
-			recipients.append(task.tool.notification_email_address)
 		send_mail(subject=subject, content=message, from_email=request.user.email, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
 
 	# Email any user (excluding staff) with a future reservation on the tool:
@@ -318,4 +316,6 @@ def get_task_email_recipients(task: Task) -> List[str]:
 	# Add facility managers
 	recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
 	recipients = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
+	if task.tool.notification_email_address:
+		recipients.append(task.tool.notification_email_address)
 	return recipients
