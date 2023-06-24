@@ -1,5 +1,6 @@
 import csv
 import importlib
+import io
 import os
 from calendar import monthrange
 from datetime import date, datetime, time
@@ -11,6 +12,7 @@ from logging import getLogger
 from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
 from urllib.parse import urljoin
 
+import pytz
 from PIL import Image
 from dateutil import rrule
 from dateutil.parser import parse
@@ -31,6 +33,8 @@ from django.utils import timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
 from django.utils.timezone import is_naive, localtime
+
+from NEMO.views.customization import ApplicationCustomization
 
 utilities_logger = getLogger(__name__)
 
@@ -664,3 +668,43 @@ def get_class_from_settings(setting_name: str, default_value: str):
 	pkg, attr = setting_class.rsplit(".", 1)
 	ret = getattr(importlib.import_module(pkg), attr)
 	return ret()
+
+
+def create_ics(identifier, event_name, start: datetime, end: datetime, user, organizer=None, cancelled: bool = False):
+	site_title = ApplicationCustomization.get("site_title")
+	if organizer:
+		organizer_email = organizer.email
+		organizer = organizer.get_name()
+	else:
+		organizer_email = getattr(settings, "RESERVATION_ORGANIZER_EMAIL", "no_reply")
+		organizer = getattr(settings, "RESERVATION_ORGANIZER", site_title)
+	method_name = "CANCEL" if cancelled else "REQUEST"
+	sequence = "SEQUENCE:2\n" if cancelled else "SEQUENCE:0\n"
+	priority = "PRIORITY:5\n" if cancelled else "PRIORITY:0\n"
+	now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+	start = start.astimezone(pytz.utc).strftime("%Y%m%dT%H%M%SZ")
+	end = end.astimezone(pytz.utc).strftime("%Y%m%dT%H%M%SZ")
+	lines = [
+		"BEGIN:VCALENDAR\n",
+		"VERSION:2.0\n",
+		f"METHOD:{method_name}\n",
+		"BEGIN:VEVENT\n",
+		f"UID:{str(identifier)}\n",
+		sequence,
+		priority,
+		f"DTSTAMP:{now}\n",
+		f"DTSTART:{start}\n",
+		f"DTEND:{end}\n",
+		f'ATTENDEE;CN="{user.get_name()}";RSVP=TRUE:mailto:{user.email}\n',
+		f'ORGANIZER;CN="{organizer}":mailto:{organizer_email}\n',
+		f"SUMMARY:[{site_title}] {event_name}\n",
+		f"STATUS:{'CANCELLED' if cancelled else 'CONFIRMED'}\n",
+		"END:VEVENT\n",
+		"END:VCALENDAR\n"
+	]
+	ics = io.StringIO("")
+	ics.writelines(lines)
+	ics.seek(0)
+
+	attachment = create_email_attachment(ics, maintype="text", subtype="calendar", method=method_name)
+	return attachment
