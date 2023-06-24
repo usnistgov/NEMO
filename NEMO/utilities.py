@@ -1,13 +1,12 @@
 import csv
 import importlib
-import io
 import os
 from calendar import monthrange
 from datetime import date, datetime, time
 from email import encoders
 from email.mime.base import MIMEBase
 from enum import Enum
-from io import BytesIO
+from io import BytesIO, StringIO
 from logging import getLogger
 from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
 from urllib.parse import urljoin
@@ -33,8 +32,6 @@ from django.utils import timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
 from django.utils.timezone import is_naive, localtime
-
-from NEMO.views.customization import ApplicationCustomization
 
 utilities_logger = getLogger(__name__)
 
@@ -671,6 +668,8 @@ def get_class_from_settings(setting_name: str, default_value: str):
 
 
 def create_ics(identifier, event_name, start: datetime, end: datetime, user, organizer=None, cancelled: bool = False):
+	from NEMO.views.customization import ApplicationCustomization
+
 	site_title = ApplicationCustomization.get("site_title")
 	if organizer:
 		organizer_email = organizer.email
@@ -702,7 +701,7 @@ def create_ics(identifier, event_name, start: datetime, end: datetime, user, org
 		"END:VEVENT\n",
 		"END:VCALENDAR\n"
 	]
-	ics = io.StringIO("")
+	ics = StringIO("")
 	ics.writelines(lines)
 	ics.seek(0)
 
