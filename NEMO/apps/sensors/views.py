@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from math import floor
+from typing import Set
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import QuerySet
@@ -29,11 +30,14 @@ def sensors(request, category_id=None):
 		selected_category = get_object_or_404(SensorCategory, pk=category_id)
 	categories = SensorCategory.objects.filter(parent=category_id)
 	sensor_list = Sensor.objects.filter(visible=True, sensor_category_id=category_id).order_by("name")
-	return render(
-		request,
-		"sensors/sensors.html",
-		{"selected_category": selected_category, "categories": categories, "sensors": sensor_list},
-	)
+	alert_logs = SensorAlertLog.objects.filter(sensor__in=recursive_sensors(category_id))[:30]
+	dictionary = {
+		"selected_category": selected_category,
+		"categories": categories,
+		"sensors": sensor_list,
+		"alert_logs": alert_logs
+	}
+	return render(request, "sensors/sensors.html", dictionary)
 
 
 @login_required
@@ -120,6 +124,15 @@ def get_sensor_data(request, sensor) -> (QuerySet, datetime, datetime):
 		else:
 			start = now - timedelta(days=1)
 	return sensor_data.filter(created_date__gte=start, created_date__lte=(end or now)), start, end
+
+
+def recursive_sensors(category_id, sensor_list: Set[Sensor] = None) -> Set[Sensor]:
+	if sensor_list is None:
+		sensor_list = set()
+	sensor_list.update([sensor for sensor in Sensor.objects.filter(visible=True, sensor_category_id=category_id)])
+	for category in SensorCategory.objects.filter(parent=category_id):
+		sensor_list.update(recursive_sensors(category.id, sensor_list))
+	return sensor_list
 
 
 @login_required
