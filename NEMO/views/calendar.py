@@ -1,4 +1,3 @@
-import io
 from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from json import dumps, loads
@@ -6,8 +5,6 @@ from logging import getLogger
 from re import match
 from typing import Dict, Iterable, List, Optional, Union
 
-import pytz
-from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
 from django.db.models import Q
@@ -18,7 +15,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
+from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.forms import nice_errors
 from NEMO.models import (
@@ -40,7 +37,7 @@ from NEMO.models import (
 	StaffCharge,
 	Tool,
 	UsageEvent,
-	User,
+	User, UserPreferences,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
@@ -49,9 +46,9 @@ from NEMO.utilities import (
 	as_timezone,
 	beginning_of_the_day,
 	bootstrap_primary_color,
-	create_email_attachment,
+	create_ics,
 	date_input_format,
-	extract_times,
+	distinct_qs_value_list, extract_times,
 	format_datetime,
 	get_email_from_settings,
 	get_full_url,
@@ -1118,7 +1115,10 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 				if reservation.area:
 					recipients.extend(reservation.area.reservation_email_list())
 				if reservation.user.get_preferences().attach_cancelled_reservation:
-					attachment = create_ics_for_reservation(reservation, cancelled=True)
+					event_name = f"{reservation.reservation_item.name} Reservation"
+					attachment = create_ics(reservation.id, event_name, reservation.start, reservation.end,
+											reservation.user,
+											cancelled=True)
 					send_mail(subject='Your reservation was cancelled', content=cancellation_email, from_email=user_cancelling_reservation.email, to=recipients, attachments=[attachment])
 				else:
 					send_mail(subject='Your reservation was cancelled', content=cancellation_email, from_email=user_cancelling_reservation.email, to=recipients)
@@ -1171,7 +1171,8 @@ def send_user_created_reservation_notification(reservation: Reservation):
 		user_office_email = EmailsCustomization.get('user_office_email_address')
 		# We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
-			attachment = create_ics_for_reservation(reservation)
+			event_name = f"{reservation.reservation_item.name} Reservation"
+			attachment = create_ics(reservation.id, event_name, reservation.start, reservation.end, reservation.user)
 			send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment])
 		else:
 			calendar_logger.error("User created reservation notification could not be send because user_office_email_address is not defined")
@@ -1190,33 +1191,12 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
 		user_office_email = EmailsCustomization.get('user_office_email_address')
 		# We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
-			attachment = create_ics_for_reservation(reservation, cancelled=True)
+			event_name = f"{reservation.reservation_item.name} Reservation"
+			attachment = create_ics(reservation.id, event_name, reservation.start, reservation.end, reservation.user,
+							  cancelled=True)
 			send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment])
 		else:
 			calendar_logger.error("User cancelled reservation notification could not be send because user_office_email_address is not defined")
-
-
-def create_ics_for_reservation(reservation: Reservation, cancelled=False):
-	site_title = ApplicationCustomization.get('site_title')
-	reservation_organizer_email = getattr(settings, "RESERVATION_ORGANIZER_EMAIL", "no_reply")
-	reservation_organizer = getattr(settings, "RESERVATION_ORGANIZER", site_title)
-	method_name = 'CANCEL' if cancelled else 'REQUEST'
-	method = f'METHOD:{method_name}\n'
-	status = 'STATUS:CANCELLED\n' if cancelled else 'STATUS:CONFIRMED\n'
-	uid = 'UID:'+str(reservation.id)+'\n'
-	sequence = 'SEQUENCE:2\n' if cancelled else 'SEQUENCE:0\n'
-	priority = 'PRIORITY:5\n' if cancelled else 'PRIORITY:0\n'
-	now = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
-	start = reservation.start.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
-	end = reservation.end.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
-	reservation_name = reservation.reservation_item.name
-	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'ATTENDEE;CN="{reservation.user.get_name()}";RSVP=TRUE:mailto:{reservation.user.email}\n', f'ORGANIZER;CN="{reservation_organizer}":mailto:{reservation_organizer_email}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
-	ics = io.StringIO('')
-	ics.writelines(lines)
-	ics.seek(0)
-
-	attachment = create_email_attachment(ics, maintype='text', subtype='calendar', method=method_name)
-	return attachment
 
 
 @login_required
