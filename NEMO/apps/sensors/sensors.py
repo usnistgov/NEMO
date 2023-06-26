@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from pymodbus.client import ModbusTcpClient
 
 from NEMO.apps.sensors.admin import SensorAdminForm, SensorCardAdminForm
+from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.apps.sensors.evaluators import evaluate_expression, evaluate_modbus_expression
 from NEMO.apps.sensors.models import Sensor as Sensor_model, SensorAlert, SensorCardCategory, SensorData
 
@@ -37,7 +38,18 @@ class Sensor(ABC):
 
 		data = None
 		try:
-			registers = self.do_read_values(sensor)
+			retries = SensorCustomization.get_int("sensor_read_retries")
+			total_tries = 1 + retries
+			# Handle retries
+			for attempt_number in range(total_tries):
+				try:
+					registers = self.do_read_values(sensor)
+					break
+				except:
+					if attempt_number == total_tries - 1:
+						raise
+					else:
+						continue
 			data_value = self.evaluate_sensor(sensor, registers=registers)
 			if data_value:
 				data = SensorData.objects.create(sensor=sensor, value=data_value)

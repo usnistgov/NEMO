@@ -3,12 +3,28 @@
     <h3 class="customization-section-title">Sensor data settings</h3>
     <form method="POST" action="{% url 'customize' 'sensors' %}" class="form-horizontal">
         {% csrf_token %}
+        <div class="form-group {% if errors.sensor_read_retries %}has-error{% endif %}">
+            <label class="control-label col-md-3" for="sensor_read_retries">Retry reading data</label>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <input type="number" min="0" id="sensor_read_retries" name="sensor_read_retries" class="form-control text-right" value="{% if errors.sensor_read_retries %}{{ errors.sensor_read_retries.value }}{% else %}{{ sensor_read_retries }}{% endif %}"/>
+                    <span class="input-group-addon">time(s)</span>
+                </div>
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                {% if errors.sensor_read_retries %}
+                    {{ errors.sensor_read_retries.error }}
+                {% else %}
+                    The number of times to retry reading data from sensors before raising an error. Set to 0 to never retry.
+                {% endif %}
+            </div>
+        </div>
         <div class="form-group {% if errors.sensor_alert_emails %}has-error{% endif %}">
-            <label class="control-label col-md-2" for="sensor_alert_emails">Sensor alert email(s)</label>
+            <label class="control-label col-md-3" for="sensor_alert_emails">Sensor alert email(s)</label>
             <div class="col-md-5">
                 <input type="text" id="sensor_alert_emails" name="sensor_alert_emails" class="form-control" value="{% if errors.sensor_alert_emails %}{{ errors.sensor_alert_emails.value }}{% else %}{{ sensor_alert_emails }}{% endif %}" placeholder="sensor_alerts@example.org"/>
             </div>
-            <div class="col-md-5 help-block light-grey">
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 {% if errors.sensor_alert_emails %}
                     {{ errors.sensor_alert_emails.error }}
                 {% else %}
@@ -17,8 +33,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2 col-sm-2" for="sensor_default_daterange">Default daterange</label>
-            <div class="col-md-10 col-sm-10">
+            <label class="control-label col-md-3" for="sensor_default_daterange">Default daterange</label>
+            <div class="col-md-9">
                 <div class="radio">
                     <label><input type="radio" id="sensor_default_daterange" name="sensor_default_daterange" {% if not sensor_default_daterange %}checked{% endif %} value=""> Last 24 hrs</label>
                     <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_72hrs' %}checked{% endif %} value="last_72hrs"> Last 72 hrs</label>
@@ -29,8 +45,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2 col-sm-2" for="refresh-rate">Default refresh rate:</label>
-            <div class="col-md-3 col-sm-4">
+            <label class="control-label col-md-3" for="refresh-rate">Default refresh rate:</label>
+            <div class="col-md-3">
                 <select class="form-control" name="sensor_default_refresh_rate" id="refresh-rate">
                     <option value="" {% if not sensor_default_refresh_rate %}selected{% endif %}>no refresh</option>
                     <option value="1000" {% if sensor_default_refresh_rate == "1000" %}selected{% endif %}>every second</option>

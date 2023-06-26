@@ -6,7 +6,7 @@ from NEMO.views.customization import CustomizationBase
 
 @customization(key="sensors", title="Sensor data")
 class SensorCustomization(CustomizationBase):
-	variables = {"sensor_default_daterange": "", "sensor_default_refresh_rate": "0", "sensor_alert_emails": ""}
+	variables = {"sensor_default_daterange": "", "sensor_default_refresh_rate": "0", "sensor_alert_emails": "", "sensor_read_retries": "1"}
 
 	def validate(self, name, value):
 		if name == "sensor_alert_emails":
