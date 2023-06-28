@@ -55,7 +55,7 @@ def service_contracts(request):
     page = SortedPaginator(service_contract_list, request, order_by="-natural_end").get_current_page()
 
     if bool(request.GET.get("csv", False)):
-        return export_procurements(service_contract_list, procurement_only=False)
+        return export_procurements(service_contract_list.order_by("-natural_end"), procurement_only=False)
 
     return render(request, "contracts/service_contracts.html", {"page": page})
 
@@ -68,7 +68,7 @@ def procurements(request):
     page = SortedPaginator(procurement_list, request, order_by="-submitted_date").get_current_page()
 
     if bool(request.GET.get("csv", False)):
-        return export_procurements(procurement_list, procurement_only=True)
+        return export_procurements(procurement_list.order_by("-submitted_date"), procurement_only=True)
 
     return render(request, "contracts/procurements.html", {"page": page})
 
@@ -87,7 +87,7 @@ def contractors(request):
     page = SortedPaginator(contractor_list, request, order_by="-natural_end").get_current_page()
 
     if bool(request.GET.get("csv", False)):
-        return export_contractor_agreements(contractor_list)
+        return export_contractor_agreements(contractor_list.order_by("-natural_end"))
 
     return render(request, "contracts/contractors.html", {"page": page})
 
@@ -167,15 +167,17 @@ def get_procurements_table_display(
             "documents": "\n".join([doc.full_link() for doc in procurement.procurementdocuments_set.all()]),
         }
         if procurement.submitted_date:
-            row["submitted_date"] = format_datetime(procurement.submitted_date)
+            row["submitted_date"] = format_datetime(procurement.submitted_date, "SHORT_DATE_FORMAT")
         if procurement.award_date:
-            row["award_date"] = format_datetime(procurement.award_date)
+            row["award_date"] = format_datetime(procurement.award_date, "SHORT_DATE_FORMAT")
         if not procurement_only and isinstance(procurement, ServiceContract):
             row["current_year"] = procurement.display_current_year()
             if procurement.end:
-                row["start"] = format_datetime(procurement.start)
-                row["end"] = format_datetime(procurement.end)
-                row["reminder_date"] = format_datetime(procurement.reminder_date)
+                row["end"] = format_datetime(procurement.end, "SHORT_DATE_FORMAT")
+            if procurement.start:
+                row["start"] = format_datetime(procurement.start, "SHORT_DATE_FORMAT")
+            if procurement.reminder_date:
+                row["reminder_date"] = format_datetime(procurement.reminder_date, "SHORT_DATE_FORMAT")
         table.add_row(row)
     return table
 
@@ -198,9 +200,9 @@ def get_contractors_table_display(contractor_agreement_list: QuerySetType[Contra
                 "name": contractor_agreement.name,
                 "contract_name": contractor_agreement.contract_name,
                 "contract_number": contractor_agreement.contract_number,
-                "start": format_datetime(contractor_agreement.start) if contractor_agreement.start else "",
-                "end": format_datetime(contractor_agreement.end) if contractor_agreement.end else "",
-                "reminder_date": format_datetime(contractor_agreement.reminder_date)
+                "start": format_datetime(contractor_agreement.start, "SHORT_DATE_FORMAT") if contractor_agreement.start else "",
+                "end": format_datetime(contractor_agreement.end, "SHORT_DATE_FORMAT") if contractor_agreement.end else "",
+                "reminder_date": format_datetime(contractor_agreement.reminder_date, "SHORT_DATE_FORMAT")
                 if contractor_agreement.reminder_date
                 else "",
                 "notes": contractor_agreement.notes or "",
