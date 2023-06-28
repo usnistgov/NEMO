@@ -35,7 +35,12 @@ from NEMO.utilities import (
 	resize_image,
 	send_mail,
 )
-from NEMO.views.customization import ApplicationCustomization, EmailsCustomization, get_media_file_contents
+from NEMO.views.customization import (
+	ApplicationCustomization,
+	EmailsCustomization,
+	ToolCustomization,
+	get_media_file_contents,
+)
 from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.tool_control import determine_tool_status
 
@@ -314,7 +319,8 @@ def get_task_email_recipients(task: Task) -> List[str]:
 	# Add backup owners
 	recipient_users.extend(task.tool.backup_owners.all())
 	# Add facility managers
-	recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
+	if ToolCustomization.get_bool("tool_task_updates_facility_managers"):
+		recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
 	recipients = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
 	if task.tool.notification_email_address:
 		recipients.append(task.tool.notification_email_address)
