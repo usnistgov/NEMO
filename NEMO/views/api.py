@@ -161,14 +161,14 @@ class AccountTypeViewSet(ModelViewSet):
 	filename = "account_types"
 	queryset = AccountType.objects.all()
 	serializer_class = AccountTypeSerializer
-	filterset_fields = {"id": ["exact", "in"], "name": ["iexact"], "display_order": ["exact"]}
+	filterset_fields = {"id": ["exact", "in"], "name": ["exact", "iexact"], "display_order": ["exact"]}
 
 
 class AccountViewSet(ModelViewSet):
 	filename = "accounts"
 	queryset = Account.objects.all()
 	serializer_class = AccountSerializer
-	filterset_fields = {"id": ["exact", "in"], "name": ["iexact"], "active": ["exact"]}
+	filterset_fields = {"id": ["exact", "in"], "name": ["exact", "iexact"], "active": ["exact"]}
 
 
 class ToolViewSet(ModelViewSet):
