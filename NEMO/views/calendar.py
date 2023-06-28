@@ -677,6 +677,7 @@ def modify_reservation(request, current_user, start_delta, end_delta):
 		new_reservation.save_and_notify()
 		reservation_to_cancel.descendant = new_reservation
 		reservation_to_cancel.save_and_notify()
+		send_tool_free_time_notification(request, reservation_to_cancel, new_reservation)
 	return reservation_success(request, new_reservation)
 
 
@@ -705,7 +706,7 @@ def cancel_reservation(request, reservation_id):
 
 	reason = parse_parameter_string(request.POST, 'reason')
 	response = cancel_the_reservation(reservation=reservation, user_cancelling_reservation=request.user, reason=reason, request=request)
-
+	send_tool_free_time_notification(request, reservation)
 	if request.device == 'desktop':
 		return response
 	if request.device == 'mobile':
@@ -1410,3 +1411,44 @@ def send_recurring_charge_reminders(request, reminders: Iterable[Dict]):
 			rendered_message = render_email_template(message, user_reminders, request)
 			email_notification = user_instance.get_preferences().email_send_recurring_charges_reminder_emails
 			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
+
+
+@postpone
+def send_tool_free_time_notification(request, cancelled_reservation: Reservation, new_reservation: Optional[Reservation] = None):
+	tool = cancelled_reservation.tool
+	if tool and cancelled_reservation.start > timezone.now():
+		max_duration = cancelled_reservation.duration().total_seconds() / 60
+		freed_time = None
+		start_time = None
+		days_in_the_future = (cancelled_reservation.start - timezone.now()).total_seconds() / 3600 / 24
+		if not new_reservation:
+			# this is a cancel action, we only have to take into account the cancelled time
+			freed_time = max_duration
+			start_time = cancelled_reservation.start
+		else:
+			# this is a modification (move or resize)
+			end_diff = (cancelled_reservation.end - new_reservation.end).total_seconds() / 60
+			if cancelled_reservation.start == new_reservation.start and end_diff > 0:
+				# reservation was shrunk
+				freed_time = end_diff
+				start_time = cancelled_reservation.end - timedelta(minutes=end_diff)
+			elif cancelled_reservation.start != new_reservation.start:
+				# reservation was moved
+				freed_time = min(max_duration, abs(end_diff))
+				start_time = (cancelled_reservation.end - timedelta(minutes=freed_time)) if end_diff > 0 else cancelled_reservation.start
+		if freed_time and start_time:
+			tool_notifications = UserPreferences.objects.filter(tool_freed_time_notifications__in=[tool], tool_freed_time_notifications_min_time__lte=freed_time, tool_freed_time_notifications_max_future_days__gte=days_in_the_future)
+			formatted_start = format_datetime(start_time)
+			formatted_time = f"{freed_time:0.0f}"
+			link = get_full_url(reverse("calendar"), request)
+			user_ids = distinct_qs_value_list(tool_notifications, "user")
+			for user in User.objects.in_bulk(user_ids).values():
+				if user != cancelled_reservation.user:
+					subject = f"[{tool.name}] {formatted_time} minutes freed starting {formatted_start}"
+					message = f"Dear {user.first_name},<br>\n"
+					message += f"The following time slot has been freed for the {tool.name}:<br><br>\n\n"
+					message += f"Start: {formatted_start}<br>\n"
+					message += f"End: {format_datetime(start_time + timedelta(minutes=freed_time))}<br>\n"
+					message += f"Duration: {formatted_time} minutes<br><br>\n\n"
+					message += f'Go to the <a href={link} target="_blank">calendar</a> to make a reservation.<br>\n'
+					user.email_user(subject=subject, message=message, from_email=get_email_from_settings(), email_notification=user.get_preferences().email_send_reservation_emails)

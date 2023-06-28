@@ -36,11 +36,12 @@ from mptt.models import MPTTModel
 from NEMO import fields
 from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, RecurrenceMixin
 from NEMO.utilities import (
+	EmailCategory,
+	RecurrenceFrequency,
 	as_timezone,
 	bootstrap_primary_color,
 	distinct_qs_value_list,
 	document_filename_upload,
-	EmailCategory,
 	format_daterange,
 	format_datetime,
 	get_chemical_document_filename,
@@ -48,7 +49,6 @@ from NEMO.utilities import (
 	get_hazard_logo_filename,
 	get_task_image_filename,
 	get_tool_image_filename,
-	RecurrenceFrequency,
 	render_email_template,
 	send_mail,
 	supported_embedded_extensions,
@@ -294,6 +294,9 @@ class UserPreferences(BaseModel):
 	email_send_reservation_ending_reminders = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Reservation ending reminders")
 	recurring_charges_reminder_days = models.CharField(null=True, blank=True, default="60,7", max_length=200, help_text="The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.")
 	email_send_recurring_charges_reminder_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Recurring charges reminders")
+	tool_freed_time_notifications = models.ManyToManyField("Tool", blank=True, help_text="Tools to receive notification when reservation time is freed.")
+	tool_freed_time_notifications_min_time = models.PositiveIntegerField(default=120, help_text="Minimum amount of minutes freed to receive a notification.")
+	tool_freed_time_notifications_max_future_days = models.PositiveIntegerField(default=7, help_text="Maximum number of days in the future to receive a notification for.")
 
 	def get_recurring_charges_days(self) -> List[int]:
 		return [int(days) for days in self.recurring_charges_reminder_days.split(",") if self.recurring_charges_reminder_days]
