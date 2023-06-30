@@ -33,13 +33,13 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">Consumables</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">Consumables</label>
+            <div class="col-md-9">
                 <div class="checkbox">
                     <label><input type="checkbox" name="consumable_user_self_checkout" {% if consumable_user_self_checkout %}checked{% endif %} value="enabled">Allow users to self-checkout consumables</label>
                 </div>
             </div>
-            <div class="col-md-offset-2 col-md-10 help-block light-grey">
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 If enabled, you need to add a {% if "django.contrib.admin"|app_installed %}<a href="{% url 'admin:NEMO_landingpagechoice_changelist' %}">landing page choice</a>{% else %}landing page option{% endif %} with url <b>/consumables/</b> so users can have a way to get to the page.
             </div>
         </div>
