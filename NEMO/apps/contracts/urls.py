@@ -10,5 +10,5 @@ urlpatterns = [
     path("contractors/", contracts.contractors, name="contractor_agreements"),
     path("contractors/<int:contractor_agreement_id>/renew/", contracts.contractor_agreement_renew, name="contractor_agreement_renew"),
     # Reminders and periodic events
-    path("send_email_contract_reminders/", contracts.email_contract_reminders, name="send_email_contract_reminders"),
+    path("email_contract_reminders/", contracts.email_contract_reminders, name="email_contract_reminders"),
 ]
