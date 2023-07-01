@@ -68,7 +68,7 @@
                     {% if next or days_length != 1 %}<th colspan="{% if next %}{{ days_length|add:'1' }}{% else %}{{ days_length }}{% endif %}"></th>{% endif %}
                 </tr>
                 {% for staff in category.list %}
-                    <tr>
+                    <tr class="default">
                         <td style="vertical-align: middle;" class="sticky">
                             <div class="text-nowrap staff-status-contact">{{ staff.staff_member.get_contact_info_html|safe }}</div>
                             <div class="staff-status-add">{% if user.is_facility_manager %}<span class="glyphicon glyphicon-plus-sign success-highlight" onclick="ajax_get('{% url "create_staff_absence" %}?staff_id={{ staff.id }}&timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)" title="Add staff absence"></span>{% endif %}</div>

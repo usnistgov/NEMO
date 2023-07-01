@@ -21,8 +21,8 @@
         </thead>
         <tbody>
             {% for contractor_agreement in page %}
-                <tr class="{% if contractor_agreement.is_expired %}alert-danger{% elif contractor_agreement.is_warning %}alert-warning{% endif %}">
-                    <td class="sticky {% if contractor_agreement.is_expired %}alert-danger{% elif contractor_agreement.is_warning %}alert-warning{% endif %}">{{ contractor_agreement.name }}</td>
+                <tr class="{% if contractor_agreement.is_expired %}danger{% elif contractor_agreement.is_warning %}warning{% else %}default{% endif %}">
+                    <td class="sticky">{{ contractor_agreement.name }}</td>
                     <td>{{ contractor_agreement.contract_name }}</td>
                     <td>{{ contractor_agreement.contract_number|default_if_none:"" }}</td>
                     <td>{{ contractor_agreement.start|date:"SHORT_DATE_FORMAT" }}</td>

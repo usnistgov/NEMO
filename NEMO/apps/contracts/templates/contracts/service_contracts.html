@@ -25,8 +25,8 @@
         </thead>
         <tbody>
             {% for service_contract in page %}
-                <tr class="{% if service_contract.is_expired %}alert-danger{% elif service_contract.is_warning %}alert-warning{% endif %}">
-                    <td class="sticky {% if service_contract.is_expired %}alert-danger{% elif service_contract.is_warning %}alert-warning{% endif %}">{{ service_contract.display_name }}</td>
+                <tr class="{% if service_contract.is_expired %}danger{% elif service_contract.is_warning %}warning{% else %}default{% endif %}">
+                    <td class="sticky">{{ service_contract.display_name }}</td>
                     <td class="text-center text-nowrap">{{ service_contract.display_current_year }}</td>
                     <td>{{ service_contract.submitted_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.award_date|date:"SHORT_DATE_FORMAT" }}</td>

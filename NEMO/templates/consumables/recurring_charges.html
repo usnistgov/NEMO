@@ -38,12 +38,12 @@
         <tbody>
             {% now "Y-m-d" as today_date %}
             {% for recurring_charge in page %}
-                <tr {% if not recurring_charge.is_empty and not recurring_charge.next_charge %}class="alert-danger" data-toggle="tooltip" data-title="This item expired"{% endif %}>
+                <tr {% if not recurring_charge.is_empty and not recurring_charge.next_charge %}class="danger" data-toggle="tooltip" data-title="This item expired"{% endif %}>
                     <td>{{ recurring_charge.name }}</td>
                     {% if different_quantities|length != 1 or page.0.quantity != 1 %}<td>{{ recurring_charge.quantity }}</td>{% endif %}
                     <td>{{ recurring_charge.consumable }}</td>
-                    <td {% if recurring_charge.invalid_customer %}class="alert-danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_customer|default:'' }}"{% endif %}>{{ recurring_charge.customer|default_if_none:"" }}</td>
-                    <td {% if recurring_charge.invalid_project %}class="alert-danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project|default:'' }}"{% endif %}>{{ recurring_charge.project|default_if_none:"" }}</td>
+                    <td {% if recurring_charge.invalid_customer %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_customer|default:'' }}"{% endif %}>{{ recurring_charge.customer|default_if_none:"" }}</td>
+                    <td {% if recurring_charge.invalid_project %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project|default:'' }}"{% endif %}>{{ recurring_charge.project|default_if_none:"" }}</td>
                     <td style="white-space: nowrap;">{% if recurring_charge.get_recurrence_interval_display %}{{ recurring_charge.get_recurrence_interval_display }} <span class="glyphicon glyphicon-info-sign primary-highlight" style="vertical-align: text-bottom" data-toggle="tooltip" data-title="{{ recurring_charge.get_recurrence_display|default_if_none:'' }}"></span>{% endif %}</td>
                     <td>{{ recurring_charge.last_charge|date:'SHORT_DATE_FORMAT' }}</td>
                     <td>{{ recurring_charge.next_charge|date:'SHORT_DATE_FORMAT' }}</td>

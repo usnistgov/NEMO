@@ -1,3 +1,8 @@
+a
+{
+	color: #1067b4;
+}
+
 label
 {
 	font-weight: normal !important;
@@ -938,7 +943,6 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	position: -webkit-sticky;
 	left: 0;
 	top:0;
-	background-color: #fff;
 	z-index: 5;
 }
 
@@ -1066,4 +1070,46 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	position: absolute;
 	top: 15px;
 	right: 15px;
+}
+
+/* Table default color enforcing (useful when using sticky columns) */
+.table > thead > tr > td.default,
+.table > tbody > tr > td.default,
+.table > tfoot > tr > td.default,
+.table > thead > tr > th.default,
+.table > tbody > tr > th.default,
+.table > tfoot > tr > th.default,
+.table > thead > tr.default > td,
+.table > tbody > tr.default > td,
+.table > tfoot > tr.default > td,
+.table > thead > tr.default > th,
+.table > tbody > tr.default > th,
+.table > tfoot > tr.default > th
+{
+  background-color: #ffffff;
+}
+
+.table-striped > thead > tr:nth-of-type(odd) > td.default,
+.table-striped > tbody > tr:nth-of-type(odd) > td.default,
+.table-striped > tfoot > tr:nth-of-type(odd) > td.default,
+.table-striped > thead > tr:nth-of-type(odd) > th.default,
+.table-striped > tbody > tr:nth-of-type(odd) > th.default,
+.table-striped > tfoot > tr:nth-of-type(odd) > th.default,
+.table-striped > thead > tr.default:nth-of-type(odd) > td,
+.table-striped > tbody > tr.default:nth-of-type(odd) > td,
+.table-striped > tfoot > tr.default:nth-of-type(odd) > td,
+.table-striped > thead > tr.default:nth-of-type(odd) > th,
+.table-striped > tbody > tr.default:nth-of-type(odd) > th,
+.table-striped > tfoot > tr.default:nth-of-type(odd) > th
+{
+  background-color: #f9f9f9;
+}
+
+.table-hover > tbody > tr > td.default:hover,
+.table-hover > tbody > tr > th.default:hover,
+.table-hover > tbody > tr.default:hover > td,
+.table-hover > tbody > tr:hover > .default,
+.table-hover > tbody > tr.default:hover > th
+{
+  background-color: #f5f5f5;
 }
