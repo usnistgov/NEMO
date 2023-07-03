@@ -349,7 +349,7 @@ function ajax_failure_callback(title, preface)
 	{
 		let dialog_contents =
 			"<div class='modal-header'>" +
-			"<button type='button' class='close' data-dismiss='modal'>&times;</button>" +
+			"<button type='button' class='close' data-dismiss='modal' aria-label='Modal close button'>&times;</button>" +
 			"<h4 class='modal-title'>" + title + "</h4>" +
 			"</div>" +
 			"<div class='modal-body'>" +
@@ -373,7 +373,7 @@ function ajax_complete_callback(title, preface)
 		}
 		let dialog_contents =
 			"<div class='modal-header'>" +
-			"<button type='button' class='close' data-dismiss='modal'>&times;</button>" +
+			"<button type='button' class='close' data-dismiss='modal' aria-label='Modal close button'>&times;</button>" +
 			"<h4 class='modal-title'>" + title + "</h4>" +
 			"</div>" +
 			"<div class='modal-body'>" +

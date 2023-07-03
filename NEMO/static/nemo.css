@@ -1119,3 +1119,21 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 {
 	text-decoration: line-through;
 }
+
+#safety-tabs
+{
+	margin-top: 0;
+	margin-bottom: 15px;
+}
+
+.safety-title
+{
+	margin-top: 0;
+	margin-right: 20px;
+}
+
+.safety-tabs-nav
+{
+	display: inline-block;
+	float: right;
+}

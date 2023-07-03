@@ -116,7 +116,7 @@
 
         function resize_container()
         {
-            const safety_height = $(".navbar.navbar-default").outerHeight(true) + $("#safety_tabs").outerHeight(true) + $("#data_sheets_header").outerHeight(true) + 20;
+            const safety_height = $(".navbar.navbar-default").outerHeight(true) + $("#safety-tabs").outerHeight(true) + $("#data_sheets_header").outerHeight(true) + 20;
             $("#safety_data_sheets_container").css("top", safety_height + "px");
         }
         $(window).on("resize", resize_container);

@@ -57,6 +57,7 @@
 	<title>{% block title %}{% endblock %}</title>
 </head>
 <body class="{% if request.session.impersonate_id %}impersonating{% endif %}">
+<a class="sr-only sr-only-focusable" href="#main-content">Skip to main content</a>
 {% if request.session.impersonate_id %}
 	{% include 'base/impersonate_header.html' %}
 {% endif %}
@@ -70,11 +71,11 @@
         <div id="loading-div-page" class="spinner-full-page spinner-container" style="display: none">
             <div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
         </div>
-        <div class="container">
+        <div class="container" id="main-content">
 			{% if messages %}
 				{% for message in messages %}
 					<div class="alert alert-{% if message.level_tag == 'error' %}danger{% else %}{{ message.level_tag }}{% endif %} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
-						<button type="button" class="close" data-dismiss="alert">&times;</button>
+						<button type="button" class="close" data-dismiss="alert" aria-label="Modal close button">&times;</button>
 						{{ message }}
 					</div>
 				{% endfor %}
