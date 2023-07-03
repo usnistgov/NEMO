@@ -14,7 +14,7 @@
                         <div class="col-sm-6 h3">Recipients</div>
                         <div class="col-sm-6 h3">{% if user_emails %}{% button type="export" size="small" value="Export user list" onclick="export_user_emails();" %}{% endif %}</div>
                     </div>
-					Active users are listed below in black. Inactive users are <span style="color:lightgrey">gray</span>.
+					Active users are listed below in black. Inactive users are <span class="light-grey strikethrough">crossed out</span>.
 					<div class="checkbox">
 						<label><input type="checkbox" name="only_active_users" onclick="updated_email_link()" checked> Only send this email to active users</label>
 					</div>
@@ -22,7 +22,7 @@
 						<label><input type="checkbox" name="copy_me" onclick="updated_email_link()" checked> Send a copy of this email to myself</label>
 					</div>
 					{% for u in users %}
-						<span {% if not u.is_active %}style="color:lightgrey"{% endif %}>{{ u }} - {{ u.email }}</span><br>
+						<span {% if not u.is_active %}class="light-grey strikethrough"{% endif %}>{{ u }} - {{ u.email }}</span><br>
 					{% endfor %}
 				</div>
 				<div class="col-sm-6">

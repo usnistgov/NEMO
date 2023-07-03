@@ -154,24 +154,24 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	margin-right: 5px;
 }
 
-.primary-highlight
+.primary-highlight, .label-primary
 {
-	color: #428bca;
+	color: #3477b4;
 }
 
-.success-highlight
+.success-highlight, .label-success
 {
-	color: #22b14c;
+	color: #008000;
 }
 
-.warning-highlight
+.warning-highlight, .label-warning
 {
-	color: #f0ad4e;
+	color: #eb9316;
 }
 
-.danger-highlight
+.danger-highlight, .label-danger
 {
-	color: red;
+	color: #dc143c;
 }
 
 .grey
@@ -181,7 +181,7 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 
 .light-grey
 {
-	color: lightgrey;
+	color: #6F6F6F;
 }
 
 .hover-black:hover
@@ -1115,13 +1115,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
   	background-color: #f5f5f5;
 }
 
-/* Better contrast for labels */
-.label-success
+.strikethrough
 {
-  	background-color: #008000;
-}
-
-.label-danger
-{
-	background-color: #dc143c;
+	text-decoration: line-through;
 }

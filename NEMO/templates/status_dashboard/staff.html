@@ -37,10 +37,10 @@
     <table class="table table-responsive table-hover-first" style="margin: 0;border-collapse: collapse">
         <thead>
             <tr class="no-border">
-                <th class="sticky" {% if days_length == 1 %}style="width:33%"{% endif %}></th>
+                <th class="sticky" {% if days_length == 1 %}style="width:33%"{% endif %} aria-label="Blank corner cell"></th>
                 {% if prev %}
-                    <th class="button-column-minimum" style="vertical-align: middle;">
-                        <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ prev }}&view={{ page_view }}">
+                    <th class="button-column-minimum" style="vertical-align: middle;" aria-label="Previous page cell">
+                        <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ prev }}&view={{ page_view }}" aria-label="Previous page button">
                             <i class="glyphicon glyphicon-chevron-left chevron" style="padding: 0"></i>
                         </a>
                     </th>
@@ -52,8 +52,8 @@
                     </th>
                 {% endfor %}
                 {% if next %}
-                    <th class="button-column-minimum" style="vertical-align: middle;">
-                        <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ next }}&view={{ page_view }}">
+                    <th class="button-column-minimum" style="vertical-align: middle;" aria-label="Next page cell">
+                        <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ next }}&view={{ page_view }}" aria-label="Next page button">
                             <i class="glyphicon glyphicon-chevron-right chevron" style="padding: 0"></i>
                         </a>
                     </th>
@@ -65,7 +65,7 @@
             {% for category in category_staff %}
                 <tr>
                     <th colspan="{% if prev %}3{% else %}2{% endif %}" class="sticky">{{ category.grouper|default_if_none:'Other' }}</th>
-                    {% if next or days_length != 1 %}<th colspan="{% if next %}{{ days_length|add:'1' }}{% else %}{{ days_length }}{% endif %}"></th>{% endif %}
+                    {% if next or days_length != 1 %}<th aria-label="Staff category empty cells" colspan="{% if next %}{{ days_length|add:'1' }}{% else %}{{ days_length }}{% endif %}"></th>{% endif %}
                 </tr>
                 {% for staff in category.list %}
                     <tr class="default">

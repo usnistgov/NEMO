@@ -316,7 +316,7 @@
 						{% if user.charging_staff_time %}
 							{% with user.get_staff_charge as staff_charge %}
 								<div class="radio disabled">
-									<label id="staff_charge_tooltip_container" class="light-grey" data-toggle="tooltip" data-placement="right" title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
+									<label id="staff_charge_tooltip_container" class="strikethrough light-grey" data-toggle="tooltip" data-placement="right" title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
 										<input type="radio" onchange="use_tool_for_other()" disabled>
 										<span id="staff_charge_tooltip_location">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</span>
 									</label>
@@ -606,7 +606,7 @@
 				<div class="checkbox"><label><input name="force_shutdown" type="checkbox"/>Shut down the tool so that it may not be used until this problem is resolved.</label></div>
 			</div>
 			<div class="form-group">
-				<input id="fileupload" type="file" name="image" multiple>
+				<input aria-label="File upload" id="fileupload" type="file" name="image" multiple>
 			</div>
 			<div class="form-group">
                 {% button type="delete" submit=True icon="glyphicon-send" value="Report problem" %}
