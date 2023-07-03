@@ -82,7 +82,14 @@ function expand_to_item(id, type)
 {
 	$("#sidebar a").removeClass('selected');
 	$("#"+type+"-"+id).addClass('selected').click().parents('ul.tree').show();
+	$("#sidebar").attr("aria-expanded", true);
 	save_sidebar_state();
+}
+
+function toggle_categories()
+{
+	let sidebar_expanded = $("#sidebar").attr("aria-expanded") || "false";
+	sidebar_expanded === "true" ? collapse_all_categories(): expand_all_categories();
 }
 
 // This function expands all tool category branches for the sidebar in the calendar & tool control pages.
@@ -91,6 +98,8 @@ function expand_all_categories()
 	$(".item_tree ul.tree.area-list").show();
 	$(".item_tree ul.tree.tool-list").show();
 	$("#search").focus();
+	$("#sidebar").attr("aria-expanded", true);
+	$("#expand_collapse_icon").removeClass("glyphicon-resize-full").removeClass("glyphicon-resize-small").addClass("glyphicon-resize-small");
 	save_sidebar_state();
 }
 
@@ -100,6 +109,8 @@ function collapse_all_categories()
 	$(".item_tree ul.tree.tool-list").hide();
 	$(".item_tree ul.tree.area-list").hide();
 	$("#search").focus();
+	$("#sidebar").attr("aria-expanded", false);
+	$("#expand_collapse_icon").removeClass("glyphicon-resize-full").removeClass("glyphicon-resize-small").addClass("glyphicon-resize-full");
 	save_sidebar_state();
 }
 
@@ -264,6 +275,7 @@ function save_sidebar_state()
 	let showQualifiedTools = localStorage.getItem("showQualifiedTools");
 
 	localStorage.clear();
+	localStorage["sidebarExpanded"] = $("#sidebar").attr("aria-expanded") || "false";
 	let categories = $(".item_tree ul.tree");
 	for(let c = 0; c < categories.length; c++)
 	{
@@ -283,6 +295,16 @@ function save_sidebar_state()
 
 function load_sidebar_state()
 {
+	let sidebar_expanded = localStorage.getItem("sidebarExpanded");
+	if (sidebar_expanded === "true")
+	{
+		$("#expand_collapse_icon").addClass("glyphicon-resize-small");
+	}
+	else
+	{
+		$("#expand_collapse_icon").addClass("glyphicon-resize-full");
+	}
+	$("#sidebar").attr("aria-expanded", sidebar_expanded);
 	let categories = $(".item_tree ul.tree");
 	for(let c = 0; c < categories.length; c++)
 	{

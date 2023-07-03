@@ -7,7 +7,7 @@
 	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
 {% endblock %}
 {% block body %}
-
+<div id="main-content">
 	<style>
 		h3
 		{
@@ -21,15 +21,13 @@
 		<div id="sidebar" class="application-sidebar">
 			<div id="expand-collapse" class="btn-group sidebar-item">
                 {% if calendar_qualified_tools and not user.is_staff %}
-                    <button type="button" class="btn btn-default" style="width:33%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon glyphicon-resize-full"></span></button>
-                    <button type="button" class="btn btn-default" style="width:33%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon glyphicon-resize-small"></span></button>
-                    <button type="button" class="btn btn-default" id="qualified_tools_btn" style="width:34%" onclick="toggle_qualified_tools(retrieve_user_qualifications())" title="Only show qualified tools"><span class="glyphicon glyphicon-check"></span></button>
+                    <button type="button" class="btn btn-default" style="width:50%" onclick="toggle_categories()" title="Expand/collapse all categories"><span id="expand_collapse_icon" class="glyphicon glyphicon"></span></button>
+                    <button type="button" class="btn btn-default" id="qualified_tools_btn" style="width:50%" onclick="toggle_qualified_tools(retrieve_user_qualifications())" title="Only show qualified tools"><span class="glyphicon glyphicon-check"></span></button>
                 {% else %}
-                    <button type="button" class="btn btn-default" style="width:50%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon glyphicon-resize-full"></span></button>
-                    <button type="button" class="btn btn-default" style="width:50%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon glyphicon-resize-small"></span></button>
+                    <button type="button" class="btn btn-default" style="width:100%" onclick="toggle_categories()" title="Expand/collapse all categories"><span id="expand_collapse_icon" class="glyphicon glyphicon"></span></button>
                 {% endif %}
 			</div>
-			<input aria-label="Search for a tool" type="text" id="item_search" placeholder="Search for a tool" class="form-control sidebar-item">
+			<input aria-label="Search for a tool" type="search" id="item_search" placeholder="Search for a tool" class="form-control sidebar-item">
 			{{ rendered_item_tree_html }}
 			<div style="height:50px"></div>
 		</div>
@@ -356,5 +354,5 @@
 		$(on_load);
 
 	</script>
-
+</div>
 {% endblock %}

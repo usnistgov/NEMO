@@ -7,7 +7,7 @@
 	<script type="text/javascript" src="{% static "fullcalendar/fullcalendar.min.js" %}"></script>
 {% endblock %}
 {% block body %}
-
+<div id="main-content">
 <div id="sidebar" class="application-sidebar">
 	<div class="btn-group sidebar-item">
 		<button type="button" class="btn btn-default dropdown-toggle" style="width:100%" data-toggle="dropdown">
@@ -24,17 +24,15 @@
 		</ul>
 	</div>
 	<div id="expand-collapse" class="btn-group sidebar-item">
-        {% if calendar_qualified_tools and not user.is_staff  %}
-            <button type="button" class="btn btn-default" style="width:33%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon-resize-full"></span></button>
-            <button type="button" class="btn btn-default" style="width:33%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon-resize-small"></span></button>
-            <button type="button" class="btn btn-default" id="qualified_tools_btn" style="width:34%" onclick="toggle_qualified_tools(retrieve_user_qualifications())" title="Only show qualified tools"><span class="glyphicon glyphicon-check"></span></button>
+        {% if calendar_qualified_tools and not user.is_staff %}
+            <button type="button" class="btn btn-default" style="width:50%" onclick="toggle_categories()" title="Expand/collapse all categories"><span id="expand_collapse_icon" class="glyphicon glyphicon"></span></button>
+            <button type="button" class="btn btn-default" id="qualified_tools_btn" style="width:50%" onclick="toggle_qualified_tools(retrieve_user_qualifications())" title="Only show qualified tools"><span class="glyphicon glyphicon-check"></span></button>
         {% else %}
-            <button type="button" class="btn btn-default" style="width:50%" onclick="expand_all_categories()" title="Expand all categories"><span class="glyphicon glyphicon-resize-full"></span></button>
-            <button type="button" class="btn btn-default" style="width:50%" onclick="collapse_all_categories()" title="Collapse all categories"><span class="glyphicon glyphicon-resize-small"></span></button>
+            <button type="button" class="btn btn-default" style="width:100%" onclick="toggle_categories()" title="Expand/collapse all categories"><span id="expand_collapse_icon" class="glyphicon glyphicon"></span></button>
         {% endif %}
 	</div>
-	<input type="text" id="item_search" placeholder="Search for{% if tools %} a tool{% endif %}{% if tools and areas %} or{% endif %}{% if areas %} an area{% endif %}" class="form-control sidebar-item" autocomplete="off">
-	<input type="text" id="user_search" placeholder="Search for a user" class="form-control sidebar-item" autocomplete="off" style="display:none">
+	<input aria-label="Search for a tool or area" type="search" id="item_search" placeholder="Search for{% if tools %} a tool{% endif %}{% if tools and areas %} or{% endif %}{% if areas %} an area{% endif %}" class="form-control sidebar-item" autocomplete="off">
+	<input aria-label="Search for a user" type="search" id="user_search" placeholder="Search for a user" class="form-control sidebar-item" autocomplete="off" style="display:none">
 	<button id="chosen_user_button" type="button" class="btn btn-default" style="width:100%; display:none" onclick="clear_specific_user()"></button>
 
 	{# The following menu tree code was take from an example at http://www.bootply.com/120625 #}
@@ -674,5 +672,5 @@ function on_load()
 $(on_load);
 
 </script>
-
+</div>
 {% endblock %}
