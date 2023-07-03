@@ -30,4 +30,9 @@ class Migration(migrations.Migration):
             name='tool_freed_time_notifications_min_time',
             field=models.PositiveIntegerField(default=120, help_text='Minimum amount of minutes freed to receive a notification.'),
         ),
+        migrations.AddField(
+            model_name='tool',
+            name='_qualifications_never_expire',
+            field=models.BooleanField(db_column='qualifications_never_expire', default=False, help_text='Check this box if qualifications for this tool should never expire (even if the tool qualification expiration feature is enabled).'),
+        ),
     ]
