@@ -810,6 +810,7 @@ class Tool(SerializationByNameModel):
 	_phone_number = models.CharField(db_column="phone_number", null=True, blank=True, max_length=100)
 	_notification_email_address = models.EmailField(db_column="notification_email_address", blank=True, null=True, help_text="Messages that relate to this tool (such as comments, problems, and shutdowns) will be forwarded to this email address. This can be a normal email address or a mailing list address.")
 	_interlock = models.OneToOneField('Interlock', db_column="interlock_id", blank=True, null=True, on_delete=models.SET_NULL)
+	_qualifications_never_expire = models.BooleanField(default=False, db_column="qualifications_never_expire", help_text="Check this box if qualifications for this tool should never expire (even if the tool qualification expiration feature is enabled).")
 	# Policy fields:
 	_requires_area_access = TreeForeignKey('Area', db_column="requires_area_access_id", null=True, blank=True, help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.", on_delete=models.PROTECT)
 	_grant_physical_access_level_upon_qualification = models.ForeignKey('PhysicalAccessLevel', db_column="grant_physical_access_level_upon_qualification_id", null=True, blank=True, help_text="The designated physical access level is granted to the user upon qualification for this tool.", on_delete=models.PROTECT)
@@ -839,6 +840,15 @@ class Tool(SerializationByNameModel):
 	def category(self, value):
 		self.raise_setter_error_if_child_tool("category")
 		self._category = value
+
+	@property
+	def qualifications_never_expire(self):
+		return self.parent_tool.qualifications_never_expire if self.is_child_tool() else self._qualifications_never_expire
+
+	@qualifications_never_expire.setter
+	def qualifications_never_expire(self, value):
+		self.raise_setter_error_if_child_tool("qualifications_never_expire")
+		self._qualifications_never_expire = value
 
 	@property
 	def description(self):

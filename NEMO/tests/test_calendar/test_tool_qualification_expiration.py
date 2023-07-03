@@ -78,6 +78,25 @@ class ToolQualificationTestCase(TestCase):
 		# Qualification was NOT removed
 		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
 
+	def test_qualification_expiration_tool_exempt(self, mock_open, mock_exist):
+		mock_exist.return_value = True
+		mock_open.return_value = ContentFile(b'Email template', name="template")
+
+		# Tool is exempt
+		self.tool._qualifications_never_expire = True
+		self.tool.save()
+
+		qualification_date = datetime.today() - timedelta(days=3)
+		Qualification.objects.create(tool=self.tool, user=self.user, qualified_on=qualification_date)
+
+		ToolCustomization.set("tool_qualification_expiration_never_used_days", 3)
+		ToolCustomization.set("tool_qualification_expiration_days", 3)
+		EmailsCustomization.set("user_office_email_address", "user_office@example.com")
+		# Trigger the expiration timed service
+		do_manage_tool_qualifications()
+		# Qualification was NOT removed
+		self.assertTrue(Qualification.objects.filter(tool=self.tool, user=self.user).exists())
+
 	def test_qualification_not_expired(self, mock_open, mock_exist):
 		mock_exist.return_value = True
 		mock_open.return_value = ContentFile(b'Email template', name="template")
