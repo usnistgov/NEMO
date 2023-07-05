@@ -890,6 +890,23 @@
     }
   },
   {
+    "model": "NEMO.landingpagechoice",
+    "pk": 11,
+    "fields": {
+      "image": "sensors.png",
+      "name": "Sensor data",
+      "url": "/sensors/",
+      "display_order": 10,
+      "open_in_new_tab": false,
+      "secure_referral": false,
+      "hide_from_mobile_devices": false,
+      "hide_from_desktop_computers": false,
+      "hide_from_users": false,
+      "hide_from_staff": false,
+      "notifications": "null"
+    }
+  },
+  {
     "model": "NEMO.customization",
     "pk": "adjustment_requests_enabled",
     "fields": {
