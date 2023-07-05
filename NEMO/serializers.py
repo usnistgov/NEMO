@@ -87,10 +87,16 @@ class ModelSerializer(serializers.ModelSerializer):
 		instance.full_clean(exclude, validate_unique)
 
 
-class UserSerializer(ModelSerializer):
+class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 	class Meta:
 		model = User
 		exclude = ["preferences"]
+		expandable_fields = {
+			"projects": ("NEMO.serializers.ProjectSerializer", {'many': True}),
+			"managed_projects": ("NEMO.serializers.ProjectSerializer", {'many': True}),
+			"groups": ("NEMO.serializers.GroupSerializer", {'many': True}),
+			"user_permissions": ("NEMO.serializers.PermissionSerializer", {'many': True}),
+		}
 
 	def to_internal_value(self, data):
 		# Unique and nullable field conflict if passed the empty string so set
