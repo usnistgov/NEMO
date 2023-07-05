@@ -38,7 +38,7 @@
                     <td>{{ service_contract.display_cost|default_if_none:"" }}</td>
                     <td class="text-right text-nowrap">
                         {% if service_contract.notes %}
-                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=service_contract.notes|default_if_none:""|linebreaksbr data_toggle="tooltip" %}
+                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=service_contract.notes|default_if_none:""|linebreaksbr data_toggle="tooltip-notes" %}
                         {% endif %}
                         {% if service_contract.procurementdocuments_set.all %}
                             <form method="post" style="display: inline">

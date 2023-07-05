@@ -59,7 +59,24 @@
 		</div>
 	</div>
     <script>
-        $('[data-toggle="tooltip"]').tooltip({html: 'true', trigger: 'click', container: '#contract-panel-content'});
+        {# Set a global click handler to dismiss manual tooltips #}
+        $('html').on('click', function(e)
+        {
+            {# Only dimiss tooltips when clicking outside of them #}
+            let target_id = $(e.target).parents('.tooltip').attr('id');
+            if (typeof $(e.target).data('original-title') == 'undefined')
+            {
+                $(".tooltip").not('#'+target_id).remove();
+            }
+        });
+        $("[data-toggle='tooltip-notes']").on('click', function ()
+        {
+            {# Remove associated data to prevent toggling issues #}
+            $(this).removeData('bs.tooltip');
+            $(".tooltip").remove();
+            $(this).tooltip({trigger: 'manual', html: 'true', container: '#contract-panel-content'}).tooltip('toggle');
+        });
+        $("[data-toggle='tooltip']").tooltip({html: 'true'});
 
         function document_view(form)
         {

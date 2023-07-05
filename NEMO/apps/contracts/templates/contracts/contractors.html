@@ -30,7 +30,7 @@
                     <td>{{ contractor_agreement.reminder_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td class="text-right text-nowrap">
                         {% if contractor_agreement.notes %}
-                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=contractor_agreement.notes|default_if_none:""|linebreaksbr data_toggle="tooltip" %}
+                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=contractor_agreement.notes|default_if_none:""|linebreaksbr data_toggle="tooltip-notes" %}
                         {% endif %}
                         {% if contractor_agreement.contractoragreementdocuments_set.all %}
                             <form method="post" style="display: inline">
