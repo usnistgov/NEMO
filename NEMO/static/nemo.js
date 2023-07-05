@@ -372,7 +372,7 @@ function ajax_failure_callback(title, preface)
 		let dialog_contents =
 			"<div class='modal-header'>" +
 			"<button type='button' class='close' data-dismiss='modal' aria-label='Modal close button'>&times;</button>" +
-			"<h4 class='modal-title'>" + title + "</h4>" +
+			"<h4 id='modal-description-label' class='modal-title'>" + title + "</h4>" +
 			"</div>" +
 			"<div class='modal-body'>" +
 			[preface, xml_http_request.responseText].join(" ") +
@@ -396,7 +396,7 @@ function ajax_complete_callback(title, preface)
 		let dialog_contents =
 			"<div class='modal-header'>" +
 			"<button type='button' class='close' data-dismiss='modal' aria-label='Modal close button'>&times;</button>" +
-			"<h4 class='modal-title'>" + title + "</h4>" +
+			"<h4 id='modal-description-label' class='modal-title'>" + title + "</h4>" +
 			"</div>" +
 			"<div class='modal-body'>" +
 			[preface, xml_header_request.responseText].join(" ") +

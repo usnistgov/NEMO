@@ -7,7 +7,7 @@
 
 <div class="modal-header">
 	<button type="button" class="close" data-dismiss="modal" aria-label="Modal close button">&times;</button>
-	<h4 class="modal-title">Schedule an outage</h4>
+	<h4 id="modal-description-label" class="modal-title">Schedule an outage</h4>
 </div>
 
 <div class="modal-body clearfix">
@@ -19,22 +19,25 @@
 		<input type="hidden" id="configured" name="configured" value="true">
 		<div class="form-group col-sm-12">
 			<label for="title">Title</label>
-			<input id="title" name="title" type="text" maxlength="100" class="form-control" autocomplete="off" placeholder="You must provide a title to create a scheduled outage">
+			<input aria-labelledby="outage_title_help" id="title" name="title" type="text" maxlength="100" class="form-control" autocomplete="off">
+            <div id="outage_title_help" class="light-grey">You must provide a title to create a scheduled outage</div>
 		</div>
 		{% if categories %}
 			<div class="form-group col-sm-12">
-				<label for="category">Category</label><span class="light-grey"> - is there a category for this outage? This is useful for data and trend analysis</span>
-				<select class="form-control" name="category" id="category">
+				<label for="category">Category</label>
+				<select aria-labelledby="outage_category_help" class="form-control" name="category" id="category">
 					<option></option>
 					{% for c in categories %}
 						<option>{{ c }}</option>
 					{% endfor %}
 				</select>
+                <div id="outage_category_help" class="light-grey">Is there a category for this outage? This is useful for data and trend analysis</div>
 			</div>
 		{% endif %}
 		<div class="form-group col-sm-12">
 			<label for="details">Details</label>
-			<textarea name="details" id="details" rows="7" maxlength="3000" class="form-control" placeholder="Please provide any additional details for the scheduled outage. Be descriptive so that users understand why there is a scheduled outage."></textarea>
+			<textarea aria-labelledby="outage_details_help" name="details" id="details" rows="7" maxlength="3000" class="form-control"></textarea>
+            <div id="outage_details_help" class="light-grey">Please provide any additional details for the scheduled outage. Be descriptive so that users understand why there is a scheduled outage.</div>
 		</div>
 		<div class="col-sm-12">
 			<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#recurrence" class="pointer" style="text-decoration: none">
