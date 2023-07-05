@@ -5,7 +5,7 @@
 </div>
 
 <div class="modal-body">
-	<p>
+	<p id="proxy-reservation-description">
 		You can make reservations for another user by searching for and selecting the user below. Any reservations you make after that will be made for the selected user.
 		When you are done making reservations for another user, click the button that says &quot;Reserving as [user]&quot; at the top of the calendar.
 	</p>
@@ -13,7 +13,7 @@
 		While you are making reservations for someone else, all validation checks apply as if you are that user.
 		Likewise, error messages are displayed as if you are that person.
 	</p>
-	<input id="proxy_reservation" type="text" class="form-control" placeholder="Search for a user">
+	<input aria-label="Search for a user" aria-describedby="proxy-reservation-description" id="proxy_reservation" type="search" class="form-control" placeholder="Search for a user">
 </div>
 
 <script>

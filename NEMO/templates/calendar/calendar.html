@@ -95,7 +95,7 @@ function update_event_sources()
 	{
 		let item = get_selected_item();
 		let scheduled_outage_button = $(".fc-scheduledOutage-button")[0];
-		$(scheduled_outage_button).addClass('fc-state-disabled');
+		$(scheduled_outage_button).attr("disabled", "true").addClass('fc-state-disabled');
 		if(item === 'personal_schedule')
 		{
 			item_event_source.data.personal_schedule = true;
@@ -117,7 +117,7 @@ function update_event_sources()
 			item = JSON.parse(item)
 			item_event_source.data.item_id = item.id;
 			item_event_source.data.item_type = item.type;
-			$(scheduled_outage_button).removeClass('fc-state-disabled');
+			$(scheduled_outage_button).removeAttr("disabled").removeClass('fc-state-disabled');
 		}
 	}
 	else if(event_type === 'specific user')

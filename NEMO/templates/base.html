@@ -92,7 +92,7 @@
 
 {# This division is used to display dialog messages via Bootstrap. #}
 <div class="modal fade" id="dialog" tabindex="-1">
-	<div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-description-label">
+	<div class="modal-dialog" role="dialog" aria-modal="true">
 		<div class="modal-content">
 		</div>
 	</div>
@@ -149,7 +149,11 @@
 
         {# Remove all size classes from the modal on close, to revert to default medium size #}
         $("#dialog").on("hidden.bs.modal", function () {
-            $('#dialog .modal-dialog').removeClass('modal-lg', 'modal-sm');
+            $("#dialog .modal-dialog").removeClass("modal-lg", "modal-sm");
+        });
+        {# Set described by on when showing modal #}
+        $("#dialog").on("shown.bs.modal", function () {
+            $("#dialog .modal-dialog").attr("aria-labelledby", "modal-description-label");
         });
     }, false);
 
