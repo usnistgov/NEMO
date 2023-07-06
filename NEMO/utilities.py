@@ -413,6 +413,9 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 	if user_reply_to:
 		reply_to = [from_email]
 		from_email = None
+	email_prefix = getattr(settings, "NEMO_EMAIL_SUBJECT_PREFIX", None)
+	if email_prefix and not subject.startswith(email_prefix):
+		subject = email_prefix + subject
 	mail = EmailMessage(
 		subject=subject,
 		body=content,
