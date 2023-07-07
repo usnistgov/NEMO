@@ -49,17 +49,18 @@ def status_dashboard(request, tab=None):
 	"""
 	interest = request.GET.get("interest")
 	if interest is None:
-		csv_export = bool(request.GET.get("csv", False))
-		if tab == "staff" and csv_export:
-			return get_staff_status(request, csv_export)
 		dictionary = {
 			"tab": tab if tab else "occupancy",
 			"show_staff_status": show_staff_status(request),
-			**get_tools_dictionary(),
-			**get_occupancy_dictionary(request),
-			**get_staff_status(request),
 		}
+		csv_export = bool(request.GET.get("csv", False))
+		if tab == "staff":
+			if csv_export:
+				return get_staff_status(request, csv_export)
+			dictionary.update(get_staff_status(request))
 		return render(request, "status_dashboard/status_dashboard.html", dictionary)
+	elif interest == "staff":
+		return render(request, "status_dashboard/staff.html", get_staff_status(request))
 	elif interest == "tools":
 		return render(request, "status_dashboard/tools.html", get_tools_dictionary())
 	elif interest == "occupancy":
@@ -144,7 +145,7 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
 		end = end - timedelta(days=2)
 	# Reset timestamp to be right in the middle of the period
 	timestamp = int((start + timedelta(days=(end - start).days / 2)).timestamp())
-	staffs = StaffAvailability.objects.filter(visible=True)
+	staffs = StaffAvailability.objects.filter(visible=True).prefetch_related("staff_member", "category")
 	staffs.query.add_ordering(F("category__display_order").asc(nulls_last=True))
 	staffs.query.add_ordering(F("staff_member__first_name").asc())
 	days = rrule(DAILY, dtstart=start, until=end)
@@ -209,7 +210,7 @@ def delete_staff_absence(request, absence_id):
 
 def staff_absences_dict(staffs, days, start, end):
 	dictionary = {staff.id: {} for staff in staffs}
-	absences = StaffAbsence.objects.filter(start_date__lte=end, end_date__gte=start).order_by("creation_time")
+	absences = StaffAbsence.objects.filter(start_date__lte=end, end_date__gte=start).order_by("creation_time").prefetch_related("staff_member")
 	for staff_absence in absences:
 		for day in days:
 			# comparing dates here so no timezone issues (dates don't have timezones)
@@ -320,7 +321,10 @@ def area_tree_helper(filtered_area: List[TreeItem], records: QuerySet, areas: Op
 
 def create_tool_summary(tooltip_info=False):
 	tools = Tool.objects.filter(visible=True).prefetch_related(
-		Prefetch("_requires_area_access", queryset=Area.objects.all().only("name"))
+		"_primary_owner",
+		"_backup_owners",
+		"_superusers",
+		Prefetch("_requires_area_access", queryset=Area.objects.all().only("name")),
 	)
 	tasks = Task.objects.filter(cancelled=False, resolved=False, tool__visible=True).prefetch_related("tool")
 	unavailable_resources = Resource.objects.filter(available=False).prefetch_related(

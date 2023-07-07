@@ -47,7 +47,7 @@ function set_interval_when_visible(doc, function_to_repeat, time)
 function switch_tab(element)
 {
 	element.preventDefault();
-	$(this).tab('show')
+	$(this).tab('show');
 }
 
 function set_item_link_callback(callback)

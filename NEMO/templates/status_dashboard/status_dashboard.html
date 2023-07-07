@@ -12,7 +12,7 @@
 <ul class="nav nav-pills" id="tabs" {% if no_header %}style="display:none"{% endif %}>
     {% if areas_exist %}<li {% if tab == 'occupancy' %}class="active"{% endif %}><a href="#occupancy">Area occupancy</a></li>{% endif %}
     {% if tools_exist %}<li {% if tab == 'tools' %}class="active"{% endif %}><a href="#tools">Tool status & usage</a></li>{% endif %}
-    {% if show_staff_status %}<li {% if tab == 'staff' %}class="active"{% endif %}><a href="#staff">Staff status</a></li>{% endif %}
+    {% if show_staff_status %}<li {% if tab == 'staff' %}class="active"{% endif %}><a id="staff_link" href="#staff">Staff status</a></li>{% endif %}
 </ul>
 
 <div id="content" class="tab-content" style="padding-top:10px">
@@ -46,13 +46,20 @@
 </div>
 
 <script>
+    let staff_status_parameters = "timestamp={{ page_timestamp }}&view={{ page_view }}";
 	function on_load()
 	{
+        {# load everything asynchronously. especially tools tab since it takes a bit longer to load #}
+        $("#tool_status_table").load("{% url 'status_dashboard' %}?interest=tools", hide_spinner);
+        refresh_staff_status_dashboard();
+        refresh_status_dashboard();
 		filter('tools in use');
         let tab_jq = $("#tabs a");
+        tab_jq.click(function () {show_spinner()});
 		tab_jq.click(switch_tab);
 		tab_jq.click(refresh_status_dashboard);
 		tab_jq.click(update_url);
+        $("#staff_link").click(refresh_staff_status_dashboard);
 		set_interval_when_visible(document, refresh_status_dashboard, 10000);
         {# Set a global click handler to dismiss manual tooltips #}
         $('html').on('click', function(e)
@@ -80,7 +87,7 @@
         else if ($("#staff").hasClass("active"))
         {
             title = "Staff status";
-            new_url = "{% url 'status_dashboard_tab' 'staff' %}";
+            new_url = "{% url 'status_dashboard_tab' 'staff' %}?" + staff_status_parameters;
         }
         history.pushState('', title, new_url);
     }
@@ -88,12 +95,16 @@
 	function refresh_status_dashboard()
 	{
 		let occupancy_tab = $("#occupancy");
-		if(occupancy_tab.hasClass("active"))
-			occupancy_tab.load("{% url 'status_dashboard' %}?interest=occupancy");
-
-		if($("#tools").hasClass("active"))
-			$("#tool_status_table").load("{% url 'status_dashboard' %}?interest=tools");
+		if(occupancy_tab.hasClass("active")) occupancy_tab.load("{% url 'status_dashboard' %}?interest=occupancy", hide_spinner);
+		if($("#tools").hasClass("active")) $("#tool_status_table").load("{% url 'status_dashboard' %}?interest=tools", hide_spinner);
 	}
+
+    function refresh_staff_status_dashboard(parameters)
+    {
+        if (parameters && typeof parameters === 'string' ) staff_status_parameters = parameters;
+        $("#staff").load("{% url 'status_dashboard' %}?interest=staff&" + staff_status_parameters, hide_spinner);
+        update_url();
+    }
 
 	function force_user_out_of_the_area(url)
 	{
