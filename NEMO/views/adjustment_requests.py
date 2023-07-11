@@ -29,7 +29,6 @@ from NEMO.utilities import (
     EmailCategory,
     bootstrap_primary_color,
     export_format_datetime,
-    get_email_from_settings,
     get_full_url,
     quiet_int,
     render_email_template,
@@ -215,7 +214,7 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
     if user_office_email and adjustment_request_notification_email:
         # cc facility managers
         facility_managers: List[User] = list(User.objects.filter(is_active=True, is_facility_manager=True))
-        ccs = [
+        manager_emails = [
             email
             for user in facility_managers
             for email in user.get_emails(user.get_preferences().email_send_adjustment_request_updates)
@@ -240,15 +239,26 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             "user_office": False,
         }
         message = render_email_template(adjustment_request_notification_email, dictionary)
-        email_notification = adjustment_request.creator.get_preferences().email_send_adjustment_request_updates
-        send_mail(
-            subject=f"Your adjustment request has been {status}",
-            content=message,
-            from_email=user_office_email,
-            to=adjustment_request.creator.get_emails(email_notification),
-            cc=ccs,
-            email_category=EmailCategory.ADJUSTMENT_REQUESTS,
-        )
+        creator_notification = adjustment_request.creator.get_preferences().email_send_adjustment_request_updates
+        if status == "received":
+            send_mail(
+                subject=f"A new adjustment request has been {status}",
+                content=message,
+                from_email=adjustment_request.creator.email,
+                to=manager_emails,
+                cc=adjustment_request.creator.get_emails(creator_notification),
+                email_category=EmailCategory.ADJUSTMENT_REQUESTS,
+            )
+        else:
+            send_mail(
+                subject=f"Your adjustment request has been {status}",
+                content=message,
+                from_email=adjustment_request.reviewer.email,
+                to=adjustment_request.creator.get_emails(creator_notification),
+                cc=manager_emails,
+                email_category=EmailCategory.ADJUSTMENT_REQUESTS,
+            )
+
         # Send separate email to the user office (with the extra note) when a request is approved
         if adjustment_request.status == RequestStatus.APPROVED:
             dictionary["manager_note"] = adjustment_request.manager_note
@@ -257,9 +267,9 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             send_mail(
                 subject=f"{adjustment_request.creator.get_name()}'s adjustment request has been {status}",
                 content=message,
-                from_email=get_email_from_settings(),
+                from_email=adjustment_request.reviewer.email,
                 to=[user_office_email],
-                cc=ccs,
+                cc=manager_emails,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
 
@@ -280,7 +290,7 @@ Please visit {reply_url} to reply"""
             user.email_user(
                 subject=subject,
                 message=message,
-                from_email=get_email_from_settings(),
+                from_email=reply.author.email,
                 email_notification=email_notification,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
