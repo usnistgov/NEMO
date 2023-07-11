@@ -154,24 +154,44 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	margin-right: 5px;
 }
 
-.primary-highlight, .label-primary
+.primary-highlight
 {
 	color: #3477b4;
 }
 
-.success-highlight, .label-success
+.label-primary
+{
+	background-color: #3477b4;
+}
+
+.success-highlight
 {
 	color: #008000;
 }
 
-.warning-highlight, .label-warning
+.label-success
+{
+	background-color: #008000;
+}
+
+.warning-highlight
 {
 	color: #eb9316;
 }
 
-.danger-highlight, .label-danger
+.label-warning
+{
+	background-color: #eb9316;
+}
+
+.danger-highlight
 {
 	color: #dc143c;
+}
+
+.label-danger
+{
+	background-color: #dc143c;
 }
 
 .grey

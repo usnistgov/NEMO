@@ -38,7 +38,7 @@
     <table class="table table-responsive table-hover-first" style="margin: 0;border-collapse: collapse">
         <thead>
             <tr class="no-border">
-                <th class="sticky" {% if days_length == 1 %}style="width:33%"{% endif %} aria-label="Blank corner cell"></th>
+                <th class="sticky" style="background-color: white; {% if days_length == 1 %}width:33%{% endif %}" aria-label="Blank corner cell"></th>
                 {% if prev %}
                     <th class="button-column-minimum" style="vertical-align: middle;" aria-label="Previous page cell">
                         <a style="cursor: pointer" onclick="refresh_staff_status_dashboard('timestamp={{ page_timestamp }}&view=week');" aria-label="Previous page button">
