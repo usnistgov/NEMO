@@ -67,9 +67,6 @@ from NEMO.models import (
 	Project,
 	ProjectDiscipline,
 	ProjectDocuments,
-	record_active_state,
-	record_local_many_to_many_changes,
-	record_remote_many_to_many_changes_and_save,
 	RecurringConsumableCharge,
 	RequestMessage,
 	Reservation,
@@ -105,6 +102,9 @@ from NEMO.models import (
 	UserDocuments,
 	UserPreferences,
 	UserType,
+	record_active_state,
+	record_local_many_to_many_changes,
+	record_remote_many_to_many_changes_and_save,
 )
 from NEMO.utilities import admin_get_item, format_daterange
 from NEMO.views.constants import NEXT_PARAMETER_NAME
@@ -872,6 +872,7 @@ class UserTypeAdmin(admin.ModelAdmin):
 class UserPreferencesAdmin(admin.ModelAdmin):
 	list_display = ("user",)
 	search_fields = ["user_preferences__user__first_name", "user_preferences__user__last_name", "user_preferences__user__username"]
+	filter_horizontal = ["tool_freed_time_notifications", "tool_adjustment_notifications"]
 	form = UserPreferencesForm
 
 

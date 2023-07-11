@@ -297,6 +297,7 @@ class UserPreferences(BaseModel):
 	tool_freed_time_notifications = models.ManyToManyField("Tool", blank=True, help_text="Tools to receive notification when reservation time is freed.")
 	tool_freed_time_notifications_min_time = models.PositiveIntegerField(default=120, help_text="Minimum amount of minutes freed to receive a notification.")
 	tool_freed_time_notifications_max_future_days = models.PositiveIntegerField(default=7, help_text="Maximum number of days in the future to receive a notification for.")
+	tool_adjustment_notifications = models.ManyToManyField("Tool", related_name="+", blank=True, help_text="Tools to receive adjustment notifications for. If empty all notifications will be received.")
 
 	def get_recurring_charges_days(self) -> List[int]:
 		return [int(days) for days in self.recurring_charges_reminder_days.split(",") if self.recurring_charges_reminder_days]
@@ -553,7 +554,7 @@ class User(BaseModel, PermissionsMixin):
 	is_accounting_officer = models.BooleanField('accounting officer', default=False, help_text='Designates this user as Accounting officer. Accounting officers can manage projects, view user details, and check usage/billing.')
 	is_service_personnel = models.BooleanField('service personnel', default=False, help_text='Designates this user as service personnel. Service personnel can operate qualified tools without a reservation even when they are shutdown or during an outage and can access authorized areas without a reservation.')
 	is_technician = models.BooleanField('technician', default=False, help_text='Specifies how to bill staff time for this user. When checked, customers are billed at technician rates.')
-	is_facility_manager = models.BooleanField('facility manager', default=False, help_text='Designates this user as facility manager. Facility managers receive updates on all reported problems in the facility and can also review access requests.')
+	is_facility_manager = models.BooleanField('facility manager', default=False, help_text='Designates this user as facility manager. Facility managers receive updates on all reported problems in the facility and also review access and adjustment requests.')
 	is_superuser = models.BooleanField('administrator', default=False, help_text='Designates that this user has all permissions without explicitly assigning them.')
 	training_required = models.BooleanField('facility rules tutorial required', default=True, help_text='When selected, the user is blocked from all reservation and tool usage capabilities.')
 	groups = models.ManyToManyField(Group, blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of his/her group.')

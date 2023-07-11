@@ -37,6 +37,7 @@ from NEMO.models import (
 	TaskCategory,
 	TaskImages,
 	TemporaryPhysicalAccessRequest,
+	Tool,
 	User,
 	UserPreferences,
 )
@@ -381,6 +382,11 @@ class UserPreferencesForm(ModelForm):
 	class Meta:
 		model = UserPreferences
 		fields = "__all__"
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.fields["tool_freed_time_notifications"].queryset = Tool.objects.filter(visible=True, parent_tool__isnull=True)
+		self.fields["tool_adjustment_notifications"].queryset = Tool.objects.filter(visible=True, parent_tool__isnull=True)
 
 	def clean_recurring_charges_reminder_days(self):
 		recurring_charges_reminder_days = self.cleaned_data["recurring_charges_reminder_days"]
