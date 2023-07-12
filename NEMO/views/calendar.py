@@ -1062,7 +1062,7 @@ def extract_reservation_questions(request, item_type: ReservationItemType, item_
 	return DynamicForm(dumps(reservation_questions_json)).extract(request) if len(reservation_questions_json) else ""
 
 
-def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime = None):
+def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime = None, force=False):
 	try:
 		if new_end is None:
 			new_end = timezone.now()
@@ -1070,7 +1070,7 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 															cancelled=False, missed=False, shortened=False, user=user)
 		current_reservation = current_reservation_qs.get(**{ReservationItemType.from_item(item).value: item})
 		# Staff are exempt from mandatory reservation shortening.
-		if user.is_staff is False:
+		if user.is_staff is False or force:
 			new_reservation = current_reservation.copy(new_end=new_end)
 			new_reservation.save()
 			current_reservation.shortened = True

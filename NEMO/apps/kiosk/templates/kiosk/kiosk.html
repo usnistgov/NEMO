@@ -250,12 +250,13 @@
 			status_element.html("<h1>Enabling tool...</h1>").show();
 			try_post_catch_interlock_error('{% url 'enable_tool_from_kiosk' %}', data);
 		}
-		function disable_tool()
+		function disable_tool(shorten)
 		{
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
 			let data = $('#tool_control').serialize();
+            if (shorten !== undefined && shorten) data += '&shorten=True';
 			status_element.html("<h1>Disabling tool...</h1>").show();
 			try_post_catch_interlock_error('{% url 'disable_tool_from_kiosk' %}', data);
 		}
