@@ -1160,13 +1160,12 @@ def send_out_of_time_reservation_notification(reservation: Reservation, request=
 
 
 def send_user_created_reservation_notification(reservation: Reservation):
-	site_title = ApplicationCustomization.get('site_title')
 	user = reservation.user
 	recipients = user.get_emails(user.get_preferences().email_send_reservation_emails) if user.get_preferences().attach_created_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
-		subject = f"[{site_title}] Reservation for the " + str(reservation.reservation_item)
+		subject = f"Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_created_user_email.html')
 		message = render_email_template(message, {'reservation': reservation})
 		user_office_email = EmailsCustomization.get('user_office_email_address')
@@ -1180,13 +1179,12 @@ def send_user_created_reservation_notification(reservation: Reservation):
 
 
 def send_user_cancelled_reservation_notification(reservation: Reservation):
-	site_title = ApplicationCustomization.get('site_title')
 	user = reservation.user
 	recipients = user.get_emails(user.get_preferences().email_send_reservation_emails) if user.get_preferences().attach_cancelled_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
-		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.reservation_item)
+		subject = f"Cancelled Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
 		message = render_email_template(message, {'reservation': reservation})
 		user_office_email = EmailsCustomization.get('user_office_email_address')
