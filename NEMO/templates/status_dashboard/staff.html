@@ -84,7 +84,11 @@
                                         {% endwith %}
                                     {% elif staff_absent %}
                                         {% if not user.is_facility_manager %}
-                                            <div data-toggle="tooltip" title="{{ staff_absent.description|linebreaksbr }}">&nbsp;</div>
+                                            {% if "dashboard"|customization:"dashboard_staff_status_absence_view_staff" and user.is_staff or "dashboard"|customization:"dashboard_staff_status_absence_view_user_office" and user.is_user_office or "dashboard"|customization:"dashboard_staff_status_absence_view_accounting_officer" and user.is_accounting_officer %}
+                                                <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span>{{ staff_absent.absence_type.name }}</span></div>
+                                            {% else %}
+                                                <div data-toggle="tooltip" title="{{ staff_absent.description|linebreaksbr }}">&nbsp;</div>
+                                            {% endif %}
                                         {% else %}
                                             <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span style="cursor: pointer" onclick="ajax_get('{% url "edit_staff_absence" staff_absent.id %}?timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)">{{ staff_absent.absence_type.name }}</span></div>
                                         {% endif %}

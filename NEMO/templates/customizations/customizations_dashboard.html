@@ -9,8 +9,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">Qualified areas</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">Qualified areas</label>
+            <div class="col-md-9">
                 <div class="checkbox">
                     <label><input type="checkbox" name="dashboard_display_not_qualified_areas" {% if dashboard_display_not_qualified_areas %}checked{% endif %} value="enabled">Show areas the user doesn't have access to</label><br/>
                 </div>
@@ -22,8 +22,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">Display</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">Display</label>
+            <div class="col-md-9">
                 <div class="checkbox">
                     <label><input type="checkbox" name="dashboard_staff_status_staff_only" {% if dashboard_staff_status_staff_only %}checked{% endif %} value="enabled">Only show staff status to staff members</label><br/>
                     <label><input type="checkbox" name="dashboard_staff_status_weekdays_only" {% if dashboard_staff_status_weekdays_only %}checked{% endif %} value="enabled">Only show weekdays (no weekend) - only applies to week view</label><br/>
@@ -31,8 +31,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">First day of the week</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">First day of the week</label>
+            <div class="col-md-9">
                 <div class="radio">
                     <label><input type="radio" name="dashboard_staff_status_first_day_of_week" {% if not dashboard_staff_status_first_day_of_week or dashboard_staff_status_first_day_of_week == '1' %}checked{% endif %} value="1"> Monday</label>
                     <label><input type="radio" name="dashboard_staff_status_first_day_of_week" {% if dashboard_staff_status_first_day_of_week == '0' %}checked{% endif %} value="0"> Sunday</label>
@@ -40,7 +40,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2" for="dashboard_staff_status_date_format">Date format</label>
+            <label class="control-label col-md-3" for="dashboard_staff_status_date_format">Date format</label>
             <div class="col-md-3">
                 <input type="text" id="dashboard_staff_status_date_format" name="dashboard_staff_status_date_format" class="form-control" value="{{ dashboard_staff_status_date_format }}">
             </div>
@@ -49,8 +49,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">Check past availability</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">Check past availability</label>
+            <div class="col-md-9">
                 <div class="radio">
                     <label><input type="radio" name="dashboard_staff_status_check_past_status" {% if not dashboard_staff_status_check_past_status %}checked{% endif %} value=""> Everyone</label>
                     <label><input type="radio" name="dashboard_staff_status_check_past_status" {% if dashboard_staff_status_check_past_status == 'staffs' %}checked{% endif %} value="staffs"> Staff only</label>
@@ -59,8 +59,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">Check future availability</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">Check future availability</label>
+            <div class="col-md-9">
                 <div class="radio">
                     <label><input type="radio" name="dashboard_staff_status_check_future_status" {% if not dashboard_staff_status_check_future_status %}checked{% endif %} value=""> Everyone</label>
                     <label><input type="radio" name="dashboard_staff_status_check_future_status" {% if dashboard_staff_status_check_future_status == 'staffs' %}checked{% endif %} value="staffs"> Staff only</label>
@@ -69,8 +69,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">User view options</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">User view options</label>
+            <div class="col-md-9">
                 <div class="radio">
                     <label><input type="radio" name="dashboard_staff_status_user_view" {% if not dashboard_staff_status_user_view %}checked{% endif %} value=""> Day/Week/Month</label>
                     <label><input type="radio" name="dashboard_staff_status_user_view" {% if dashboard_staff_status_user_view == 'week' %}checked{% endif %} value="week"> Day/Week</label>
@@ -79,14 +79,25 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-2">Staff view options</label>
-            <div class="col-md-10">
+            <label class="control-label col-md-3">Staff view options</label>
+            <div class="col-md-9">
                 <div class="radio">
                     <label><input type="radio" name="dashboard_staff_status_staff_view" {% if not dashboard_staff_status_staff_view %}checked{% endif %} value=""> Day/Week/Month</label>
                     <label><input type="radio" name="dashboard_staff_status_staff_view" {% if dashboard_staff_status_staff_view == 'week' %}checked{% endif %} value="week"> Day/Week</label>
                     <label><input type="radio" name="dashboard_staff_status_staff_view" {% if dashboard_staff_status_staff_view == 'day' %}checked{% endif %} value="day"> Day</label>
                 </div>
             </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3">View absence details</label>
+            <div class="col-md-9">
+				<div class="checkbox">
+					<label><input type="checkbox" name="dashboard_staff_status_absence_view_staff" {% if dashboard_staff_status_absence_view_staff %}checked{% endif %} value="enabled">Technical staff</label><br/>
+					<label><input type="checkbox" name="dashboard_staff_status_absence_view_user_office" {% if dashboard_staff_status_absence_view_user_office %}checked{% endif %} value="enabled">User office</label><br/>
+					<label><input type="checkbox" name="dashboard_staff_status_absence_view_accounting_officer" {% if dashboard_staff_status_absence_view_accounting_officer %}checked{% endif %} value="enabled">Accounting staff</label><br/>
+					<label><input type="checkbox" checked disabled>Facility managers</label><br/>
+				</div>
+			</div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">

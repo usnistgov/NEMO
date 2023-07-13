@@ -265,6 +265,9 @@ class StatusDashboardCustomization(CustomizationBase):
 		"dashboard_staff_status_check_future_status": "",
 		"dashboard_staff_status_user_view": "",
 		"dashboard_staff_status_staff_view": "",
+		"dashboard_staff_status_absence_view_staff": "",
+		"dashboard_staff_status_absence_view_user_office": "",
+		"dashboard_staff_status_absence_view_accounting_officer": "",
 	}
 
 
