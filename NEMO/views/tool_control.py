@@ -577,10 +577,12 @@ def interlock_error(action:str, user:User):
 
 
 def email_managers_required_questions_disable_tool(tool_user:User, staff_member:User, tool:Tool, questions:List[PostUsageQuestion]):
+	user_office_email = EmailsCustomization.get('user_office_email_address')
 	abuse_email_address = EmailsCustomization.get('abuse_email_address')
 	cc_users: List[User] = [staff_member, tool.primary_owner]
 	cc_users.extend(tool.backup_owners.all())
 	cc_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
+	cc_users.append(abuse_email_address)
 	facility_name = ApplicationCustomization.get('facility_name')
 	ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
 	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
@@ -595,7 +597,7 @@ Regards,<br/>
 {facility_name} Management<br/>
 """
 	tos = tool_user.get_emails(EmailNotificationType.BOTH_EMAILS)
-	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=tos, cc=ccs, email_category=EmailCategory.ABUSE)
+	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=user_office_email, to=tos, cc=ccs, email_category=EmailCategory.ABUSE)
 
 
 def send_tool_usage_counter_email(counter: ToolUsageCounter):
