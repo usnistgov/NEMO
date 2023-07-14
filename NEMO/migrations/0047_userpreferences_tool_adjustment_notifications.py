@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='userpreferences',
             name='tool_adjustment_notifications',
-            field=models.ManyToManyField(blank=True, help_text='Tools to receive adjustment notifications for. If empty all notifications will be received.', related_name='_NEMO_userpreferences_tool_adjustment_notifications_+', to='NEMO.Tool'),
+            field=models.ManyToManyField(blank=True, help_text='Tools to see/receive adjustment notifications for. If empty all notifications will be received.', related_name='_NEMO_userpreferences_tool_adjustment_notifications_+', to='NEMO.Tool'),
         ),
         migrations.AlterField(
             model_name='user',

@@ -7,6 +7,7 @@ from typing import Dict, List
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
@@ -576,15 +577,16 @@ def interlock_error(action:str, user:User):
 	return JsonResponse(dictionary, status=501)
 
 
-def email_managers_required_questions_disable_tool(tool_user:User, staff_member:User, tool:Tool, questions:List[PostUsageQuestion]):
+def email_managers_required_questions_disable_tool(tool_user: User, staff_member: User, tool: Tool, questions: List[PostUsageQuestion]):
 	user_office_email = EmailsCustomization.get('user_office_email_address')
 	abuse_email_address = EmailsCustomization.get('abuse_email_address')
 	cc_users: List[User] = [staff_member, tool.primary_owner]
-	cc_users.extend(tool.backup_owners.all())
-	cc_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
-	cc_users.append(abuse_email_address)
+	# Add facility managers as CC based on their tool notification preferences if any
+	cc_users.extend(User.objects.filter(is_active=True, is_facility_manager=True).filter(
+		Q(preferences__tool_task_notifications__isnull=True) | Q(preferences__tool_task_notifications__in=[tool])))
 	facility_name = ApplicationCustomization.get('facility_name')
 	ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
+	ccs.append(abuse_email_address)
 	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
 	message = f"""
 Dear {tool_user.get_name()},<br/>

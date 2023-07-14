@@ -96,8 +96,26 @@
                             </div>
                         </div>
                     {% endif %}
-				</div>
-			</div>
+                </div>
+            </div>
+            {% if user.is_staff or user.is_facility_manager or user.is_service_personnel %}
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <h3 id="adjustment_requests_label">Tool maintenance & notifications</h3>
+                        <div class="form-group">
+                            <label class="col-sm-5 col-md-4 col-lg-3 form-control-static" for="tool_task_notification_search">Only view/receive tasks for tools</label>
+                            <div class="col-sm-6 col-lg-4">
+                                <input id="tool_task_notification_search" type="text" autocomplete="off" class="form-control" placeholder="Add a tool">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div id="task-notification-list" class="col-sm-offset-5 col-md-offset-4 col-lg-offset-3 col-sm-7">
+                                You are not currently limiting the task notifications you are viewing/receiving.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
             {% if not form.fields.staff_status_view.disabled %}
                 <div class="panel panel-default">
                     <div class="panel-body">
@@ -176,6 +194,15 @@
             {% button type="save" value="Update preferences" %}
 		</form>
         <script>
+            function add_tool_task_notification(jquery_event, search_selection, dataset_name)
+            {
+                add_to_list("#task-notification-list", "remove_tool_task_notification", search_selection.id, search_selection.name, "Remove the " + search_selection.name, "tool_task_notifications");
+                $("#tool_task_notification_search").typeahead('val', '').focus();
+            }
+            function remove_tool_task_notification(tool_id)
+            {
+                remove_from_list("#task-notification-list", "#tool_task_notifications_" + tool_id, "You are currently receiving adjustment request notifications for all tools.");
+            }
             function add_tool_adjustment_notification(jquery_event, search_selection, dataset_name)
             {
                 add_to_list("#adjustment-notification-list", "remove_tool_adjustment_notification", search_selection.id, search_selection.name, "Remove the " + search_selection.name, "tool_adjustment_notifications");
@@ -183,7 +210,7 @@
             }
             function remove_tool_adjustment_notification(tool_id)
             {
-                remove_from_list("#adjustment-notification-list", "#tool_adjustment_notifications_" + tool_id, "You are currently receiving adjustment request notifications for all tools.");
+                remove_from_list("#adjustment-notification-list", "#tool_adjustment_notifications_" + tool_id, "You are not currently limiting the task notifications you are viewing/receiving.");
             }
             function add_tool_notification(jquery_event, search_selection, dataset_name)
             {
@@ -212,6 +239,16 @@
                         {% for tool in form.fields.tool_adjustment_notifications.queryset %}
                             {% if tool.id == tool_id|to_int %}
                                 add_tool_adjustment_notification(null, {'name': '{{ tool.name }}', 'id': {{ tool.id }} });
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                {% endif %}
+                $('#tool_task_notification_search').autocomplete('tools', add_tool_task_notification, {{ form.fields.tool_task_notifications.queryset|json_search_base }});
+                {% if form.instance.id %}
+                    {% for tool_id in form.tool_task_notifications.value %}
+                        {% for tool in form.fields.tool_task_notifications.queryset %}
+                            {% if tool.id == tool_id|to_int %}
+                                add_tool_task_notification(null, {'name': '{{ tool.name }}', 'id': {{ tool.id }} });
                             {% endif %}
                         {% endfor %}
                     {% endfor %}

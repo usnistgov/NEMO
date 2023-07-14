@@ -4,6 +4,7 @@ from typing import List
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.utils import timezone
@@ -29,7 +30,6 @@ from NEMO.utilities import (
 	bootstrap_primary_color,
 	create_email_attachment,
 	format_datetime,
-	get_email_from_settings,
 	get_full_url,
 	render_email_template,
 	resize_image,
@@ -195,7 +195,7 @@ Task resolution description:<br/>
 <br/><br/>
 Visit {url} to view the tool control page for the task.<br/>
 """
-		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=get_email_from_settings(), to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
+		send_mail(subject=f'{task.tool} task {task_status}', content=message, from_email=task_user.email, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
 	except Exception as error:
 		site_title = ApplicationCustomization.get('site_title')
 		error_message = f"{site_title} was unable to send the task updated email. The error message that was received is: " + str(error)
@@ -318,9 +318,9 @@ def get_task_email_recipients(task: Task) -> List[str]:
 	recipient_users: List[User] = [task.tool.primary_owner]
 	# Add backup owners
 	recipient_users.extend(task.tool.backup_owners.all())
-	# Add facility managers
+	# Add facility managers and take into account their preferences
 	if ToolCustomization.get_bool("tool_task_updates_facility_managers"):
-		recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
+		recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True).filter(Q(preferences__tool_task_notifications__isnull=True)|Q(preferences__tool_task_notifications__in=[task.tool])))
 	recipients = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
 	if task.tool.notification_email_address:
 		recipients.append(task.tool.notification_email_address)
