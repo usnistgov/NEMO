@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.timezone import make_aware
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required, synchronized
@@ -48,7 +49,9 @@ from NEMO.utilities import (
 	bootstrap_primary_color,
 	create_ics,
 	date_input_format,
-	distinct_qs_value_list, extract_times,
+	datetime_input_format,
+	distinct_qs_value_list,
+	extract_times,
 	format_datetime,
 	get_email_from_settings,
 	get_full_url,
@@ -736,6 +739,36 @@ def set_reservation_title(request, reservation_id):
 	reservation.title = request.POST.get('title', '')[:reservation._meta.get_field('title').max_length]
 	reservation.save()
 	return HttpResponse()
+
+
+@login_required
+@require_POST
+def change_reservation_date(request):
+	""" Change a reservation's start or end date for a user. """
+	reservation = get_object_or_404(Reservation, id=request.POST['id'])
+	start_delta, end_delta = None, None
+	new_start = request.POST.get('new_start', None)
+	if new_start:
+		try:
+			new_start = make_aware(datetime.strptime(new_start, datetime_input_format))
+			if new_start.time().minute not in [0, 15, 30, 45]:
+				return HttpResponseBadRequest("Reservation time only works with 15 min increments")
+		except ValueError:
+			return HttpResponseBadRequest("Invalid date format for start date")
+		start_delta = (new_start - reservation.start)
+	new_end = request.POST.get('new_end', None)
+	if new_end:
+		try:
+			new_end = make_aware(datetime.strptime(new_end, datetime_input_format))
+			if new_end.time().minute not in [0, 15, 30, 45]:
+				return HttpResponseBadRequest("Reservation time only works with 15 min increments")
+		except ValueError:
+			return HttpResponseBadRequest("Invalid date format for end date")
+		end_delta = (new_end - reservation.end) if new_end else None
+	if start_delta or end_delta:
+		return modify_reservation(request, request.user, start_delta, end_delta)
+	else:
+		return HttpResponseBadRequest('Invalid delta')
 
 
 @login_required

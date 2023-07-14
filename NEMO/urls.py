@@ -194,6 +194,7 @@ urlpatterns += [
 	path("cancel_reservation/<int:reservation_id>/", calendar.cancel_reservation, name="cancel_reservation"),
 	path("cancel_outage/<int:outage_id>/", calendar.cancel_outage, name="cancel_outage"),
 	path("set_reservation_title/<int:reservation_id>/", calendar.set_reservation_title, name="set_reservation_title"),
+	path("change_reservation_date/", calendar.change_reservation_date, name="change_reservation_date"),
 	path("change_reservation_project/<int:reservation_id>/", calendar.change_reservation_project, name="change_reservation_project"),
 	path("proxy_reservation/", calendar.proxy_reservation, name="proxy_reservation"),
 	path("reservation_group_question/<int:reservation_question_id>/<str:group_name>/", calendar.reservation_group_question, name="reservation_group_question"),

@@ -356,6 +356,20 @@ function set_reservation_title(url, reservation_id, title)
 	ajax_post(url, {'title': title}, refresh_calendar_and_sidebar, [failure_dialog, refresh_calendar_and_sidebar]);
 }
 
+function change_reservation_date(url, reservation_id, param, value)
+{
+    let data = {'id': reservation_id};
+    data[param] = value;
+    let post_data =
+    {
+        "url": url,
+        "data": data,
+        "type": "POST",
+        "dataType": "html"
+    };
+    ajax_post(url, data, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [ajax_failure_callback("Reservation date changed failed")], refresh_calendar_and_sidebar)
+}
+
 function change_reservation_project(url, project_id)
 {
 	let failure_dialog = ajax_failure_callback("Unable to change reservation project");
