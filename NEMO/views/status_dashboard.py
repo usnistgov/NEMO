@@ -5,7 +5,7 @@ from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, rrule
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.db.models import F, Prefetch, Q, QuerySet
+from django.db.models import F, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -14,7 +14,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import disable_session_expiry_refresh, facility_manager_required
 from NEMO.forms import StaffAbsenceForm
-from NEMO.model_tree import ModelTreeHelper, TreeItem, get_area_model_tree
+from NEMO.model_tree import get_area_model_tree, ModelTreeHelper, TreeItem
 from NEMO.models import (
 	Area,
 	AreaAccessRecord,
@@ -28,9 +28,10 @@ from NEMO.models import (
 	UsageEvent,
 	User,
 )
+from NEMO.typing import QuerySetType
 from NEMO.utilities import (
-	BasicDisplayTable,
 	as_timezone,
+	BasicDisplayTable,
 	beginning_of_the_day,
 	export_format_datetime,
 	format_datetime,
@@ -298,7 +299,7 @@ def process_area_access_record_with_parents(user: User):
 	return area_items, no_occupants
 
 
-def area_tree_helper(filtered_area: List[TreeItem], records: QuerySet, areas: Optional[List[TreeItem]] = None):
+def area_tree_helper(filtered_area: List[TreeItem], records: QuerySetType[AreaAccessRecord], areas: Optional[List[TreeItem]] = None):
 	""" Recursively build a list of areas. The resulting list is meant to be iterated over in a view """
 	if areas is None:
 		# Get the root areas

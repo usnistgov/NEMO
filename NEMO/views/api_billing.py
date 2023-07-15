@@ -3,7 +3,6 @@ from decimal import Decimal
 from typing import List, Optional
 
 from django import forms
-from django.db.models import QuerySet
 
 from NEMO.models import (
 	AreaAccessRecord,
@@ -15,6 +14,7 @@ from NEMO.models import (
 	UsageEvent,
 	User,
 )
+from NEMO.typing import QuerySetType
 from NEMO.utilities import localize
 
 
@@ -187,9 +187,8 @@ def get_training_sessions_for_billing(billing_form: BillingFilterForm) -> List[B
 	return billable_items_training_sessions(queryset)
 
 
-def billable_items_usage_events(usage_events: QuerySet) -> List[BillableItem]:
+def billable_items_usage_events(usage_events: QuerySetType[UsageEvent]) -> List[BillableItem]:
 	billable_items: List[BillableItem] = []
-	usage_event: UsageEvent
 	for usage_event in usage_events:
 		item = BillableItem("tool_usage", usage_event.project, usage_event.user)
 		item.name = usage_event.tool.name
@@ -206,9 +205,8 @@ def billable_items_usage_events(usage_events: QuerySet) -> List[BillableItem]:
 	return billable_items
 
 
-def billable_items_area_access_records(area_access_records: QuerySet) -> List[BillableItem]:
+def billable_items_area_access_records(area_access_records: QuerySetType[AreaAccessRecord]) -> List[BillableItem]:
 	billable_items: List[BillableItem] = []
-	area_access_record: AreaAccessRecord
 	for area_access_record in area_access_records:
 		item = BillableItem("area_access", area_access_record.project, area_access_record.customer)
 		item.name = area_access_record.area.name
@@ -225,9 +223,8 @@ def billable_items_area_access_records(area_access_records: QuerySet) -> List[Bi
 	return billable_items
 
 
-def billable_items_consumable_withdrawals(withdrawals: QuerySet) -> List[BillableItem]:
+def billable_items_consumable_withdrawals(withdrawals: QuerySetType[ConsumableWithdraw]) -> List[BillableItem]:
 	billable_items: List[BillableItem] = []
-	consumable_withdrawal: ConsumableWithdraw
 	for consumable_withdrawal in withdrawals:
 		item = BillableItem("consumable", consumable_withdrawal.project, consumable_withdrawal.customer)
 		item.name = consumable_withdrawal.consumable.name
@@ -239,9 +236,8 @@ def billable_items_consumable_withdrawals(withdrawals: QuerySet) -> List[Billabl
 	return billable_items
 
 
-def billable_items_missed_reservations(missed_reservations: QuerySet) -> List[BillableItem]:
+def billable_items_missed_reservations(missed_reservations: QuerySetType[Reservation]) -> List[BillableItem]:
 	billable_items: List[BillableItem] = []
-	missed_reservation: Reservation
 	for missed_reservation in missed_reservations:
 		item = BillableItem("missed_reservation", missed_reservation.project, missed_reservation.user)
 		item.name = missed_reservation.reservation_item.name
@@ -253,9 +249,8 @@ def billable_items_missed_reservations(missed_reservations: QuerySet) -> List[Bi
 	return billable_items
 
 
-def billable_items_staff_charges(staff_charges: QuerySet) -> List[BillableItem]:
+def billable_items_staff_charges(staff_charges: QuerySetType[StaffCharge]) -> List[BillableItem]:
 	billable_items: List[BillableItem] = []
-	staff_charge: StaffCharge
 	for staff_charge in staff_charges:
 		item = BillableItem("staff_charge", staff_charge.project, staff_charge.customer)
 		item.item_id = staff_charge.id
@@ -268,9 +263,8 @@ def billable_items_staff_charges(staff_charges: QuerySet) -> List[BillableItem]:
 	return billable_items
 
 
-def billable_items_training_sessions(training_sessions: QuerySet) -> List[BillableItem]:
+def billable_items_training_sessions(training_sessions: QuerySetType[TrainingSession]) -> List[BillableItem]:
 	billable_items: List[BillableItem] = []
-	training_session: TrainingSession
 	for training_session in training_sessions:
 		item = BillableItem("training_session", training_session.project, training_session.trainee)
 		item.name = training_session.tool.name

@@ -3,7 +3,6 @@ from math import floor
 from typing import Set
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.db.models import QuerySet
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
@@ -13,6 +12,7 @@ from django.views.decorators.http import require_GET
 from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.apps.sensors.models import Sensor, SensorAlertLog, SensorCategory, SensorData
 from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required
+from NEMO.typing import QuerySetType
 from NEMO.utilities import (
 	BasicDisplayTable,
 	beginning_of_the_day,
@@ -107,7 +107,7 @@ def sensor_alert_log(request, sensor_id):
 	return render(request, "sensors/sensor_alerts.html", {"alerts": alert_log_entries})
 
 
-def get_sensor_data(request, sensor) -> (QuerySet, datetime, datetime):
+def get_sensor_data(request, sensor) -> (QuerySetType[SensorData], datetime, datetime):
 	start, end = extract_times(request.GET, start_required=False, end_required=False)
 	sensor_data = SensorData.objects.filter(sensor=sensor)
 	now = timezone.now().replace(second=0, microsecond=0).astimezone()

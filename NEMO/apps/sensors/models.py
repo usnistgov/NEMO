@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import random
 from logging import getLogger
@@ -7,7 +9,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import QuerySet
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
@@ -15,6 +16,7 @@ from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.apps.sensors.evaluators import evaluate_boolean_expression
 from NEMO.fields import MultiEmailField
 from NEMO.models import BaseModel, InterlockCard
+from NEMO.typing import QuerySetType
 from NEMO.utilities import EmailCategory, format_datetime, get_email_from_settings, send_mail
 
 models_logger = getLogger(__name__)
@@ -299,7 +301,7 @@ class SensorAlert(BaseModel):
 		pass
 
 	@classmethod
-	def sensor_alert_filter(cls, enabled=True, sensor=None) -> List[QuerySet]:
+	def sensor_alert_filter(cls, enabled=True, sensor=None) -> List[QuerySetType[SensorAlert]]:
 		sensor_alert_qs = []
 		for sub_class in cls.__subclasses__():
 			sub_filter = sub_class.objects.all()

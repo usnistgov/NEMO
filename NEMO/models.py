@@ -35,6 +35,7 @@ from mptt.models import MPTTModel
 
 from NEMO import fields
 from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, RecurrenceMixin
+from NEMO.typing import QuerySetType
 from NEMO.utilities import (
 	EmailCategory,
 	RecurrenceFrequency,
@@ -898,7 +899,7 @@ class Tool(SerializationByNameModel):
 		self._primary_owner = value
 
 	@property
-	def backup_owners(self) -> QuerySet:
+	def backup_owners(self) -> QuerySetType[User]:
 		return self.parent_tool.backup_owners if self.is_child_tool() else self._backup_owners
 
 	@backup_owners.setter
@@ -907,7 +908,7 @@ class Tool(SerializationByNameModel):
 		self._backup_owners = value
 
 	@property
-	def superusers(self) -> QuerySet:
+	def superusers(self) -> QuerySetType[User]:
 		return self.parent_tool.superusers if self.is_child_tool() else self._superusers
 
 	@superusers.setter
@@ -2729,7 +2730,7 @@ class BuddyRequest(BaseModel):
 		return self.user
 
 	@property
-	def replies(self) -> QuerySet:
+	def replies(self) -> QuerySetType[RequestMessage]:
 		return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
 
 	def creator_and_reply_users(self) -> List[User]:
@@ -2759,7 +2760,7 @@ class AdjustmentRequest(BaseModel):
 	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
 
 	@property
-	def replies(self) -> QuerySet:
+	def replies(self) -> QuerySetType[RequestMessage]:
 		return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
 
 	def get_new_start(self) -> Optional[datetime]:
