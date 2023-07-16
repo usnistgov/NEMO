@@ -2,7 +2,7 @@
 <div class="panel-body">
     <form method="POST" action="{% url 'customize' 'contracts' %}" class="form-horizontal">
         {% csrf_token %}
-        <h3 class="customization-section-title">General</h3>
+        <h3 class="customization-section-title">Contracts & procurements</h3>
         <div class="form-group">
             <label class="control-label col-md-4 col-sm-5">View permissions</label>
             <div class="col-md-8 col-sm-7">
@@ -27,7 +27,7 @@
 			</div>
         </div>
         <div class="form-group{% if errors.contracts_contractors_default_empty_label %}has-error{% endif %}">
-            <label class="control-label col-md-4 col-sm-5" for="contracts_contractors_default_empty_label">Contractor agreement default</label>
+            <label class="control-label col-md-4 col-sm-5" for="contracts_contractors_default_empty_label">Contractor contract default</label>
 			<div class="col-md-5 col-sm-7">
                 <input class="form-control" name="contracts_contractors_default_empty_label" id="contracts_contractors_default_empty_label" type="text" value="{{ contracts_contractors_default_empty_label|default_if_none:'' }}">
 			</div>
