@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import List
+from typing import List, Set
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -315,12 +315,14 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
 
 def get_task_email_recipients(task: Task) -> List[str]:
 	# Add all recipients, starting with primary owner
-	recipient_users: List[User] = [task.tool.primary_owner]
+	recipient_users: Set[User] = {task.tool.primary_owner}
 	# Add backup owners
-	recipient_users.extend(task.tool.backup_owners.all())
+	recipient_users.update(task.tool.backup_owners.all())
 	# Add facility managers and take into account their preferences
 	if ToolCustomization.get_bool("tool_task_updates_facility_managers"):
-		recipient_users.extend(User.objects.filter(is_active=True, is_facility_manager=True).filter(Q(preferences__tool_task_notifications__isnull=True)|Q(preferences__tool_task_notifications__in=[task.tool])))
+		recipient_users.update(User.objects.filter(is_active=True, is_facility_manager=True).filter(Q(preferences__tool_task_notifications__isnull=True)|Q(preferences__tool_task_notifications__in=[task.tool])))
+	# Add staff with preferences set to receive notifications for this tool
+	recipient_users.update(User.objects.filter(is_active=True, is_staff=True).filter(Q(preferences__tool_task_notifications__in=[task.tool])))
 	recipients = [email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)]
 	if task.tool.notification_email_address:
 		recipients.append(task.tool.notification_email_address)
