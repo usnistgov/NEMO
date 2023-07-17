@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     "NEMO.apps.kiosk",  # Comment out if you are not planning on using the Kiosk tablet pages
     "NEMO.apps.area_access",  # Comment out if you are not planning on using the Area Access tablets screen
     "NEMO.apps.sensors",  # Comment out if you are not planning on using the Sensors feature
+    "NEMO.apps.contracts",  # Comment out if you are not planning on using the Contracts feature
     "NEMO",
     "rest_framework",
     "rest_framework.authtoken",
