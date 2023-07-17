@@ -103,14 +103,14 @@
                     <div class="panel-body">
                         <h3 id="adjustment_requests_label">Tool maintenance & notifications</h3>
                         <div class="form-group">
-                            <label class="col-sm-5 col-md-4 col-lg-3 form-control-static" for="tool_task_notification_search">Only view/receive tasks for tools</label>
+                            <label class="col-sm-5 col-md-4 col-lg-3 form-control-static" for="tool_task_notification_search">{% if user.is_facility_manager and "tool"|customization:"tool_task_updates_facility_managers" == "enabled" %}Limit{% else %}View/receive{% endif %} maintenance notifications</label>
                             <div class="col-sm-6 col-lg-4">
                                 <input id="tool_task_notification_search" type="text" autocomplete="off" class="form-control" placeholder="Add a tool">
                             </div>
                         </div>
                         <div class="form-group">
                             <div id="task-notification-list" class="col-sm-offset-5 col-md-offset-4 col-lg-offset-3 col-sm-7">
-                                You are not currently limiting the task notifications you are viewing/receiving.
+                                You are currently viewing/receiving maintenance notifications for all tools{% if not user.is_facility_manager or not "tool"|customization:"tool_task_updates_facility_managers" == "enabled" %} you are an owner or backup owners of{% endif %}.
                             </div>
                         </div>
                     </div>
@@ -210,7 +210,7 @@
             }
             function remove_tool_adjustment_notification(tool_id)
             {
-                remove_from_list("#adjustment-notification-list", "#tool_adjustment_notifications_" + tool_id, "You are not currently limiting the task notifications you are viewing/receiving.");
+                remove_from_list("#adjustment-notification-list", "#tool_adjustment_notifications_" + tool_id, "You are currently viewing/receiving maintenance notifications for all tools{% if not user.is_facility_manager or not 'tool'|customization:'tool_task_updates_facility_managers' == 'enabled' %} you are an owner or backup owners of{% endif %}.");
             }
             function add_tool_notification(jquery_event, search_selection, dataset_name)
             {
