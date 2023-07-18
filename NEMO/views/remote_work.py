@@ -206,12 +206,12 @@ def begin_staff_charge(request):
 	charge = StaffCharge()
 	charge.customer = User.objects.get(id=request.POST["customer"])
 	charge.project = Project.objects.get(id=request.POST["project"])
+	charge.staff_member = request.user
 	# Check if we are allowed to bill to project
 	try:
-		policy.check_billing_to_project(charge.project, charge.customer, charge)
+		policy.check_billing_to_project(charge.project, charge.customer, charge, charge)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
-	charge.staff_member = request.user
 	charge.save()
 	return redirect(reverse("staff_charges"))
 
@@ -239,6 +239,10 @@ def end_staff_charge(request):
 def begin_staff_area_charge(request):
 	user: User = request.user
 	charge = user.get_staff_charge()
+	record = AreaAccessRecord()
+	record.staff_charge = charge
+	record.customer = charge.customer
+	record.project = charge.project
 	if not charge:
 		return HttpResponseBadRequest(
 			"You do not have a staff charge in progress, so you cannot begin an area access charge."
@@ -246,18 +250,14 @@ def begin_staff_area_charge(request):
 	if AreaAccessRecord.objects.filter(staff_charge=charge, end=None).count() > 0:
 		return HttpResponseBadRequest("You cannot create an area access charge when one is already in progress.")
 	try:
-		area = Area.objects.get(id=request.POST["area"])
-		policy.check_billing_to_project(charge.project, charge.customer, area)
+		record.area = Area.objects.get(id=request.POST["area"])
+		policy.check_billing_to_project(charge.project, charge.customer, record.area, record)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
 	except:
 		return HttpResponseBadRequest("Invalid area")
-	area_access = AreaAccessRecord()
-	area_access.area = area
-	area_access.staff_charge = charge
-	area_access.customer = charge.customer
-	area_access.project = charge.project
-	area_access.save()
+	# No errors, save it
+	record.save()
 	return redirect(reverse("staff_charges"))
 
 

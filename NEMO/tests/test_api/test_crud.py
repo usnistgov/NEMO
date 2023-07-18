@@ -53,7 +53,6 @@ class RestCRUDTestCase(TestCase):
 		self.assertEqual(response.data["last_name"], "Doe")
 		self.assertEqual(response.data["username"], "jdoe")
 		self.assertEqual(response.data["email"], "jdoe@doe.com")
-		self.assertTrue(response.data["preferences"])
 
 	def test_update_user(self):
 		user = login_as_user(self.client)

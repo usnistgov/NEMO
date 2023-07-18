@@ -44,7 +44,8 @@
 		{% endif %}
 		<div class="form-group">
 			<label for="details">Details</label>{% if form.details.errors %} - <span style="color:red">{{ form.details.errors|striptags }}</span>{% endif %}
-			<textarea class="form-control" rows="3" name="details" id="details" maxlength="{{ form.fields.details.max_length }}" placeholder="What is the reason for the outage? What other details will be relevant for users to know?">{{ form.details.value|default_if_none:"" }}</textarea>
+			<textarea aria-labelledby="outage_details_help" class="form-control" rows="3" name="details" id="details" maxlength="{{ form.fields.details.max_length }}">{{ form.details.value|default_if_none:"" }}</textarea>
+            <div class="light-grey" id="outage_details_help">What is the reason for the outage? What other details will be relevant for users to know?</div>
 		</div>
 		<div class="form-group">
 			<div class="row">

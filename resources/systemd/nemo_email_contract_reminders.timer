@@ -1,0 +1,8 @@
+[Unit]
+Description=Email contract reminders every day in NEMO
+
+[Timer]
+OnCalendar=daily
+
+[Install]
+WantedBy=multi-user.target

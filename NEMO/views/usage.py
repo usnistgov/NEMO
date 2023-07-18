@@ -88,14 +88,19 @@ def date_parameters_dictionary(request):
 		start_date, end_date = get_month_timeframe()
 	kind = request.GET.get("type")
 	identifier = request.GET.get("id")
+	existing_adjustments = defaultdict(list)
+	for values in AdjustmentRequest.objects.filter(deleted=False, creator=request.user).values("item_type", "item_id").distinct():
+		existing_adjustments[values["item_type"]].append(values["item_id"])
 	dictionary = {
 		'month_list': month_list(),
 		'start_date': start_date,
 		'end_date': end_date,
 		'kind': kind,
 		'identifier': identifier,
-		'tab_url': get_url_for_other_tab(request) if  get_billing_service().get('available', False) else '',
+		'tab_url': get_url_for_other_tab(request) if get_billing_service().get('available', False) else '',
 		'billing_service': get_billing_service().get('available', False),
+		'adjustment_time_limit': UserRequestsCustomization.get_date_limit(),
+		'existing_adjustments': existing_adjustments,
 	}
 	return dictionary, start_date, end_date, kind, identifier
 
@@ -109,13 +114,16 @@ def usage(request):
 	customer_filter = Q(customer=user) | Q(project__in=user_managed_projects)
 	user_filter = Q(user=user) | Q(project__in=user_managed_projects)
 	trainee_filter = Q(trainee=user) | Q(project__in=user_managed_projects)
-	project_id = request.GET.get("pi_project")
+	project_id = request.GET.get("project") or request.GET.get("pi_project")
 	csv_export = bool(request.GET.get("csv", False))
 	if user_managed_projects:
 		base_dictionary['selected_project'] = "all"
 	if project_id:
 		project = get_object_or_404(Project, id=project_id)
-		base_dictionary['selected_project'] = project
+		if request.GET.get("project"):
+			base_dictionary['selected_user_project'] = project
+		else:
+			base_dictionary['selected_project'] = project
 		customer_filter = customer_filter & Q(project=project)
 		user_filter = user_filter & Q(project=project)
 		trainee_filter = trainee_filter & Q(project=project)
@@ -128,9 +136,6 @@ def usage(request):
 	if csv_export:
 		return csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations)
 	else:
-		existing_adjustments = defaultdict(list)
-		for values in AdjustmentRequest.objects.filter(deleted=False, creator=user).values("item_type", "item_id").distinct():
-			existing_adjustments[values["item_type"]].append(values["item_id"])
 		dictionary = {
 			'area_access': area_access,
 			'consumables': consumables,
@@ -138,9 +143,6 @@ def usage(request):
 			'staff_charges': staff_charges,
 			'training_sessions': training_sessions,
 			'usage_events': usage_events,
-			'adjustment_time_limit': UserRequestsCustomization.get_date_limit(),
-			'existing_adjustments': existing_adjustments,
-			'can_export': True,
 		}
 		if user_managed_projects:
 			dictionary['pi_projects'] = user_managed_projects
@@ -209,9 +211,6 @@ def project_usage(request):
 				return csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations)
 	except:
 		pass
-	existing_adjustments = defaultdict(list)
-	for values in AdjustmentRequest.objects.filter(deleted=False, creator=request.user).values("item_type", "item_id").distinct():
-		existing_adjustments[values["item_type"]].append(values["item_id"])
 	dictionary = {
 		'search_items': set(Account.objects.all()) | set(Project.objects.all()) | set(get_project_applications()) | set(User.objects.filter(is_active=True)),
 		'area_access': area_access,
@@ -220,11 +219,8 @@ def project_usage(request):
 		'staff_charges': staff_charges,
 		'training_sessions': training_sessions,
 		'usage_events': usage_events,
-		'adjustment_time_limit': UserRequestsCustomization.get_date_limit(),
-		'existing_adjustments': existing_adjustments,
 		'project_autocomplete': True,
 		'selection': selection,
-		'can_export': True,
 	}
 	dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
 	return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})

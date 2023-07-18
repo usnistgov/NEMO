@@ -50,7 +50,7 @@
 						</h2>
 					{% endwith %}
 				</div>
-				{% if time_left %}
+				{% if time_left and not user.is_staff %}
 					<div>
 						Your reservation for this tool will end at {{ time_left|time }}. The remainder of your reservation will be relinquished when you stop using this tool.
 					</div>
@@ -296,39 +296,47 @@
 							<a id="delayed_logoff_help" class="pointer" tabindex="0" data-toggle="popover" data-placement="bottom" data-trigger="focus" data-content="Some tools may require downtime after you finish using them. (For example, to perform automated cleaning or pump-down). Once you click &quot;Stop using the {{ tool.name_or_child_in_use_name }}&quot; the tool interlock will immediately disable the tool and it will remain unusable for the specified duration. Leave the duration blank to indicate that no post-usage downtime is required.">What's this?</a>
 						</div>
 					{% endif %}
-					<div id="stop_wrapper" style="display:inline-block" data-toggle="tooltip" data-placement="bottom" title="Please answer the required questions (above) to proceed">
-                        {% url 'disable_tool' tool.get_current_usage_event.tool.id as disable_tool_url %}
-                        {% button type="delete" id="stop" icon="glyphicon-stop" onclick="disable_tool('"|concat:disable_tool_url|concat:"'); return false;" value="Stop using the "|concat:tool.name_or_child_in_use_name %}
+					<div id="stop_wrapper">
+                        <div style="display:inline-block" data-toggle="tooltip" data-placement="bottom" title="Please answer the required questions (above) to proceed">
+                            {% url 'disable_tool' tool.get_current_usage_event.tool.id as disable_tool_url %}
+                            {% button type="delete" id="stop" icon="glyphicon-stop" onclick="disable_tool('"|concat:disable_tool_url|concat:"'); return false;" value="Stop using the "|concat:tool.name_or_child_in_use_name %}
+                        </div>
+                        {% if time_left and user.is_staff %}
+                            <div style="display:inline-block" data-toggle="tooltip" data-placement="bottom" title="Please answer the required questions (above) to proceed">
+                                {% url 'disable_tool' tool.get_current_usage_event.tool.id as disable_tool_url %}
+                                {% with left_until=time_left|timeuntil %}
+                                    {% button type="delete" id="stop" icon="glyphicon-stop" onclick="disable_tool('"|concat:disable_tool_url|concat:"', true); return false;" value="Stop using the "|concat:tool.name_or_child_in_use_name|concat:" and relinquish the remaining "|concat:left_until|concat:" of your reservation" %}
+                                {% endwith %}
+                            </div>
+                        {% endif %}
                     </div>
 				{% endif %}
 			{% else %}
 				{% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all %}
-					<h4>What would you like to do?</h4>
+					<h4 id="what_to_do_label">What would you like to do?</h4>
                     <input type="hidden" id="remote_work" name="remote_work" value="">
-					<div class="radio"><label><input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">Use this tool for my own project</label></div>
-					{% if user.is_staff %}
-						<div class="radio"><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="false">Use this tool on behalf of another user{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (no remote){% endif %}</label></div>
-                        {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
-						    <div class="radio">
-                                <label><input type="radio" onchange="use_tool_for_other(true)" name="staff_charge" value="false">Use this tool for a remote project</label>
-                            </div>
+					<div class="radio" role="group" aria-labelledby="what_to_do_label">
+                        <label><input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">Use this tool for my own project</label>
+                        {% if user.is_staff %}
+                            <br><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="false">Use this tool on behalf of another user{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (no remote){% endif %}</label>
+                            {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
+                                <br><label><input type="radio" onchange="use_tool_for_other(true)" name="staff_charge" value="false">Use this tool for a remote project</label>
+                            {% endif %}
+                            {% if user.charging_staff_time %}
+                                {% with user.get_staff_charge as staff_charge %}
+                                    <br><label id="staff_charge_tooltip_container" class="strikethrough light-grey" data-toggle="tooltip" data-placement="right" title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
+                                        <input type="radio" onchange="use_tool_for_other()" disabled>
+                                        <span id="staff_charge_tooltip_location">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</span>
+                                    </label>
+                                    <script>
+                                        $("#staff_charge_tooltip_container").tooltip();
+                                    </script>
+                                {% endwith %}
+                            {% else %}
+                                <br><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</label>
+                            {% endif %}
                         {% endif %}
-						{% if user.charging_staff_time %}
-							{% with user.get_staff_charge as staff_charge %}
-								<div class="radio disabled">
-									<label id="staff_charge_tooltip_container" class="light-grey" data-toggle="tooltip" data-placement="right" title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
-										<input type="radio" onchange="use_tool_for_other()" disabled>
-										<span id="staff_charge_tooltip_location">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</span>
-									</label>
-								</div>
-								<script>
-									$("#staff_charge_tooltip_container").tooltip();
-								</script>
-							{% endwith %}
-						{% else %}
-							<div class="radio"><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</label></div>
-						{% endif %}
-					{% endif %}
+                    </div>
 					<div id="project_choice"></div>
 				{% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
 					{% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
@@ -355,7 +363,7 @@
         {% if messages %}
             {% for message in messages %}
                 <div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
-                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Modal close button">&times;</button>
                     {{message}}
                 </div>
             {% endfor %}
@@ -606,7 +614,7 @@
 				<div class="checkbox"><label><input name="force_shutdown" type="checkbox"/>Shut down the tool so that it may not be used until this problem is resolved.</label></div>
 			</div>
 			<div class="form-group">
-				<input id="fileupload" type="file" name="image" multiple>
+				<input aria-label="File upload" id="fileupload" type="file" name="image" multiple>
 			</div>
 			<div class="form-group">
                 {% button type="delete" submit=True icon="glyphicon-send" value="Report problem" %}
@@ -639,8 +647,8 @@
 				</label>
 			</div>
 			<div class="form-group">
-				<label for="content">What would you like to say?</label>
-				<textarea name="content" id="content" class="form-control" rows="6" required></textarea>
+				<label for="content-area">What would you like to say?</label>
+				<textarea name="content" id="content-area" class="form-control" rows="6" required></textarea>
 			</div>
 			{% if user.is_staff %}
 				<div class="form-group">
@@ -671,12 +679,12 @@
 		if(document.querySelector('#tool_control').checkValidity())
 		{
 			$('#stop_wrapper').tooltip('disable');
-			$("#stop").prop("disabled", false);
+			$("#stop_wrapper button").prop("disabled", false);
 		}
 		else
 		{
 			$('#stop_wrapper').tooltip('enable');
-			$("#stop").prop("disabled", true);
+			$("#stop_wrapper button").prop("disabled", true);
 		}
 	}
 

@@ -102,7 +102,8 @@
         }
         else
         {
-            window.location = '{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ page_timestamp }}';
+            $("#dialog").modal('hide');
+            refresh_staff_status_dashboard();
         }
     }
 

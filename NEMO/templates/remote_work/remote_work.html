@@ -94,8 +94,9 @@
 		<tbody>
 		{% for c in staff_charges %}
 			<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and  c.validated %}success-highlight{% endif %}">
-				{% if "django.contrib.admin"|app_installed and perms.NEMO.change_staffcharge %}
-                    <td><a href="{% url 'admin:NEMO_staffcharge_change' c.id %}">{{ c.id }}</a></td>
+				{% admin_edit_url c request.build_absolute_uri as edit_url %}
+                {% if edit_url %}
+                    <td><a href="{{ edit_url }}">{{ c.id }}</a></td>
                 {% else %}
                     <td>{{ c.id }}</td>
                 {% endif %}
@@ -107,7 +108,7 @@
 				{% if remote_work_validation %}
                     <td {% if c.note and c.areaaccessrecord_set.exists %}rowspan="3" {% elif c.note or c.areaaccessrecord_set.exists %}rowspan="2"{% endif %} style="vertical-align: middle">
                         {% url 'validate_staff_charge' c.id as validate_staff_charge_url %}
-                        {% if not c.validated %}
+                        {% if c.end and not c.validated %}
                             {% button type="save" submit=False onclick="validate_charge('"|concat:validate_staff_charge_url|concat:"', this, '.staff_charge_row_"|concat:c.id|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
                         {% endif %}
                     </td>
@@ -121,8 +122,9 @@
             {% endif %}
 			{% for area_access_record in c.areaaccessrecord_set.all %}
 				<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}" style="font-size: smaller">
-					{% if "django.contrib.admin"|app_installed and perms.NEMO.change_areaaccessrecord %}
-                        <td><a href="{% url 'admin:NEMO_areaaccessrecord_change' area_access_record.id %}">{{ area_access_record.id }}</a></td>
+					{% admin_edit_url area_access_record request.build_absolute_uri as edit_url %}
+                    {% if edit_url %}
+                        <td><a href="{{ edit_url }}">{{ area_access_record.id }}</a></td>
                     {% else %}
                         <td>{{ area_access_record.id }}</td>
                     {% endif %}
@@ -158,8 +160,9 @@
 		<tbody>
 		{% for u in usage %}
 			<tr {% if remote_work_validation and u.validated %}class="success-highlight"{% endif %} id="usage_event_row_{{ forloop.counter }}">
-				{% if "django.contrib.admin"|app_installed and perms.NEMO.change_usageevent %}
-                    <td><a href="{% url 'admin:NEMO_usageevent_change' u.id %}">{{ u.id }}</a></td>
+				{% admin_edit_url u request.build_absolute_uri as edit_url %}
+                {% if edit_url %}
+                    <td><a href="{{ edit_url }}">{{ u.id }}</a></td>
                 {% else %}
                     <td>{{ u.id }}</td>
                 {% endif %}
@@ -172,7 +175,7 @@
 				{% if remote_work_validation %}
                     <td>
                         {% url 'validate_usage_event' u.id as validate_usage_url %}
-                        {% if not u.validated %}
+                        {% if u.end and not u.validated %}
                             {% button type="save" submit=False onclick="validate_charge('"|concat:validate_usage_url|concat:"', this, '#usage_event_row_"|concat:forloop.counter|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
                         {% endif %}
                     </td>

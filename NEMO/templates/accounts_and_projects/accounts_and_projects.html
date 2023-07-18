@@ -23,7 +23,7 @@
 					{% if account_types %}<th>{% include 'pagination/pagination_column.html' with order_by='type' name='Account type' %}</th>{% endif %}
 					<th>{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}</th>
 					<th class="button-column-minimum">{% include 'pagination/pagination_column.html' with order_by='active' name='Active' %}</th>
-					<th class="button-column-minimum"></th>
+					<th class="button-column-minimum" aria-label="Action"></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -54,7 +54,7 @@
                     {% if active_inactive_projects|length_is:1 and not active_inactive_projects.0.grouper and project_list_active_only %}
                         <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
 							<td colspan="4" style="padding-left: 28px">
-								<span class="grey">This account does not have any active projects</span>
+								<span>This account does not have any active projects</span>
 							</td>
 						</tr>
                     {% endif %}
@@ -85,7 +85,7 @@
                     {% empty %}
 						<tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
 							<td colspan="4" style="padding-left: 28px">
-								<span class="grey">This account does not have any projects</span>
+								<span>This account does not have any projects</span>
 							</td>
 						</tr>
                     {% endfor %}

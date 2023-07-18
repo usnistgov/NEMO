@@ -57,6 +57,7 @@
 	<title>{% block title %}{% endblock %}</title>
 </head>
 <body class="{% if request.session.impersonate_id %}impersonating{% endif %}">
+<a class="sr-only sr-only-focusable" href="#main-content">Skip to main content</a>
 {% if request.session.impersonate_id %}
 	{% include 'base/impersonate_header.html' %}
 {% endif %}
@@ -70,11 +71,11 @@
         <div id="loading-div-page" class="spinner-full-page spinner-container" style="display: none">
             <div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
         </div>
-        <div class="container">
+        <div class="container" id="main-content">
 			{% if messages %}
 				{% for message in messages %}
 					<div class="alert alert-{% if message.level_tag == 'error' %}danger{% else %}{{ message.level_tag }}{% endif %} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
-						<button type="button" class="close" data-dismiss="alert">&times;</button>
+						<button type="button" class="close" data-dismiss="alert" aria-label="Modal close button">&times;</button>
 						{{ message }}
 					</div>
 				{% endfor %}
@@ -90,8 +91,8 @@
 {% endblock %}
 
 {# This division is used to display dialog messages via Bootstrap. #}
-<div class="modal fade" id="dialog" tabindex="-1" role="dialog">
-	<div class="modal-dialog">
+<div class="modal fade" id="dialog" tabindex="-1">
+	<div class="modal-dialog" role="dialog" aria-modal="true">
 		<div class="modal-content">
 		</div>
 	</div>
@@ -148,7 +149,11 @@
 
         {# Remove all size classes from the modal on close, to revert to default medium size #}
         $("#dialog").on("hidden.bs.modal", function () {
-            $('#dialog .modal-dialog').removeClass('modal-lg', 'modal-sm');
+            $("#dialog .modal-dialog").removeClass("modal-lg", "modal-sm");
+        });
+        {# Set described by on when showing modal #}
+        $("#dialog").on("shown.bs.modal", function () {
+            $("#dialog .modal-dialog").attr("aria-labelledby", "modal-description-label");
         });
     }, false);
 

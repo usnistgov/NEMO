@@ -47,5 +47,29 @@
                 </div>
             {% endif %}
         </ul>
+        {% if sensors or categories %}
+            {%if selected_category or alert_logs %}
+                <div class="panel-body">
+                    <ul class="nav nav-tabs" id="tabs">
+                        <li class="active">
+                            <a>Alert log</a>
+                        </li>
+                    </ul>
+                    <div id="no-sensor-data" class="tab-content panel panel-default panel-tab-content" style="margin-bottom: 0">
+                        <div class="panel-body">
+                            {% if alert_logs %}
+                                <ul style="margin-top: 10px;">
+                                    {% for alert in alert_logs %}
+                                        <li class="{% if alert.reset %}success-highlight{% else %}danger-highlight{% endif %}">[{{ alert.sensor.name }}] {{ alert.description }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <i>There are no alerts for sensors in the {{ selected_category }}.</i>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
     </div>
 {% endblock %}

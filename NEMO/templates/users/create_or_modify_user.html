@@ -338,7 +338,7 @@
 					{% endfor %}
                     {% if not readonly and allow_document_upload %}
                         <div style="padding-top: 10px">
-                            <input id="fileupload" type="file" name="user_documents" multiple>
+                            <input aria-label="File upload" id="fileupload" type="file" name="user_documents" multiple>
                         </div>
                     {% endif %}
 				</div>

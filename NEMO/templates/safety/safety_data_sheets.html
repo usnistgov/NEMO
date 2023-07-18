@@ -33,11 +33,11 @@
             <table class="table table-align-middle table-responsive table-bordered table-condensed table-hover thead-light" style="overflow: auto; height: 1px;table-layout: fixed;">
                 <thead class="sticky">
                     <tr>
-                        <th class="sds-box-shadow-bottom" style="border-left-style: hidden !important; border-top-style: hidden!important;background-color: white"></th>
+                        <th class="sds-box-shadow-bottom" style="border-left-style: hidden !important; border-top-style: hidden!important;background-color: white" aria-label="Empty cell"></th>
                         {% for hazard in hazards %}
                             <th class="text-center sds-box-shadow-bottom" style="width: calc(75%/{{ hazards|length }})"><img style="display:block; width: 100%;" alt="{{ hazard.name }} logo" src="{% get_media_prefix %}{{ hazard.logo }}"/></th>
                         {% endfor %}
-                        <th class="sds-box-shadow-bottom" style="display: none;border-right-style: hidden!important; border-top-style: hidden!important;background-color: white">
+                        <th class="sds-box-shadow-bottom" style="display: none;border-right-style: hidden!important; border-top-style: hidden!important;background-color: white" aria-label="Empty cell"></th>
                     </tr>
                     <tr>
                         <th class="text-center sds-box-shadow-top" style="overflow: hidden;vertical-align: middle">
@@ -116,7 +116,7 @@
 
         function resize_container()
         {
-            const safety_height = $(".navbar.navbar-default").outerHeight(true) + $("#safety_tabs").outerHeight(true) + $("#data_sheets_header").outerHeight(true) + 20;
+            const safety_height = $(".navbar.navbar-default").outerHeight(true) + $("#safety-tabs").outerHeight(true) + $("#data_sheets_header").outerHeight(true) + 20;
             $("#safety_data_sheets_container").css("top", safety_height + "px");
         }
         $(window).on("resize", resize_container);

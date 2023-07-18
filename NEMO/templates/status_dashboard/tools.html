@@ -47,8 +47,8 @@
 				</td>
 				<td>{{ tool.in_use_since|date:"l @ "}} {{ tool.in_use_since|time }}</td>
 			{% else %}
-				<td></td>
-				<td></td>
+				<td aria-label="No user"></td>
+				<td aria-label="Not in use"></td>
 			{% endif %}
 		</tr>
 	{% endfor %}

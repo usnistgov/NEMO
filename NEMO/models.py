@@ -12,7 +12,6 @@ from logging import getLogger
 from re import match
 from typing import List, Optional, Set, Union
 
-from dateutil import rrule
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission, PermissionsMixin
@@ -35,30 +34,27 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from NEMO import fields
-from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin
+from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, RecurrenceMixin
+from NEMO.typing import QuerySetType
 from NEMO.utilities import (
 	EmailCategory,
 	RecurrenceFrequency,
 	as_timezone,
-	beginning_of_the_day,
 	bootstrap_primary_color,
 	distinct_qs_value_list,
+	document_filename_upload,
 	format_daterange,
 	format_datetime,
 	get_chemical_document_filename,
+	get_full_url,
 	get_hazard_logo_filename,
-	get_project_document_filename,
-	get_recurring_rule,
-	get_safety_document_filename,
 	get_task_image_filename,
-	get_tool_document_filename,
 	get_tool_image_filename,
-	get_user_document_filename,
 	render_email_template,
 	send_mail,
+	supported_embedded_extensions,
 )
-from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
-from NEMO.views.documents import supported_embedded_extensions
+from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH, CHAR_FIELD_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
 models_logger = getLogger(__name__)
@@ -147,6 +143,73 @@ class BaseCategory(SerializationByNameModel):
 		return str(self.name)
 
 
+class BaseDocumentModel(BaseModel):
+	document = models.FileField(null=True, blank=True, upload_to=document_filename_upload, verbose_name='Document')
+	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
+	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	def get_filename_upload(self, filename):
+		raise NotImplementedError("subclasses must provide a filename for upload")
+
+	def filename(self):
+		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1] if self.url else ""
+
+	def link(self):
+		return self.document.url if self.document else self.url
+
+	def full_link(self, request=None):
+		return get_full_url(self.document.url, request) if self.document else self.url
+
+	def can_be_embedded(self):
+		return any([self.link().lower().endswith(ext) for ext in supported_embedded_extensions])
+
+	def __str__(self):
+		return self.filename()
+
+	def clean(self):
+		if not self.document and not self.url:
+			raise ValidationError({'document': 'Either document or URL should be provided.'})
+		elif self.document and self.url:
+			raise ValidationError({'document': 'Choose either document or URL but not both.'})
+
+	class Meta:
+		ordering = ['-uploaded_at']
+		abstract = True
+
+
+# These two auto-delete documents from filesystem when they are unneeded:
+@receiver(models.signals.post_delete)
+def auto_delete_file_on_document_delete(sender, instance: BaseDocumentModel, **kwargs):
+	if not issubclass(sender, BaseDocumentModel):
+		return
+	"""	Deletes file from filesystem when corresponding `SafetyItemDocuments` object is deleted.	"""
+	if instance.document:
+		if os.path.isfile(instance.document.path):
+			os.remove(instance.document.path)
+
+
+@receiver(models.signals.pre_save)
+def auto_delete_file_on_document_change(sender, instance: BaseDocumentModel, **kwargs):
+	if not issubclass(sender, BaseDocumentModel):
+		return
+	"""	Deletes old file from filesystem when corresponding `SafetyItemDocuments` object is updated with new file. """
+	if not instance.pk:
+		return False
+
+	model_class = type(instance)
+
+	try:
+		old_file = model_class.objects.get(pk=instance.pk).document
+	except model_class.DoesNotExist:
+		return False
+
+	new_file = instance.document
+	if old_file and not old_file == new_file:
+		if os.path.isfile(old_file.path):
+			os.remove(old_file.path)
+
+
 class ReservationItemType(Enum):
 	TOOL = 'tool'
 	AREA = 'area'
@@ -232,6 +295,11 @@ class UserPreferences(BaseModel):
 	email_send_reservation_ending_reminders = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Reservation ending reminders")
 	recurring_charges_reminder_days = models.CharField(null=True, blank=True, default="60,7", max_length=200, help_text="The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.")
 	email_send_recurring_charges_reminder_emails = models.PositiveIntegerField(default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Recurring charges reminders")
+	tool_freed_time_notifications = models.ManyToManyField("Tool", blank=True, help_text="Tools to receive notification when reservation time is freed.")
+	tool_freed_time_notifications_min_time = models.PositiveIntegerField(default=120, help_text="Minimum amount of minutes freed to receive a notification.")
+	tool_freed_time_notifications_max_future_days = models.PositiveIntegerField(default=7, help_text="Maximum number of days in the future to receive a notification for.")
+	tool_adjustment_notifications = models.ManyToManyField("Tool", related_name="+", blank=True, help_text="Tools to see/receive adjustment notifications for. If empty all notifications will be received.")
+	tool_task_notifications = models.ManyToManyField("Tool", related_name="+", blank=True, help_text="Tools to see maintenance records and receive task notifications for. If empty all notifications will be received.")
 
 	def get_recurring_charges_days(self) -> List[int]:
 		return [int(days) for days in self.recurring_charges_reminder_days.split(",") if self.recurring_charges_reminder_days]
@@ -391,7 +459,7 @@ class TemporaryPhysicalAccessRequest(BaseModel):
 
 
 class Closure(BaseModel):
-	name = models.CharField(max_length=255, help_text="The name of this closure, that will be displayed as the policy problem and alert (if applicable).")
+	name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The name of this closure, that will be displayed as the policy problem and alert (if applicable).")
 	alert_days_before = models.PositiveIntegerField(null=True, blank=True, help_text="Enter the number of days before the closure when an alert should automatically be created. Leave blank for no alert.")
 	alert_template = models.TextField(null=True, blank=True, help_text=mark_safe("The template to create the alert with. The following variables are provided (when applicable): <b>name</b>, <b>start_time</b>, <b>end_time</b>, <b>areas</b>."))
 	notify_managers_last_occurrence = models.BooleanField(default=True, help_text="Check this box to notify facility managers on the last occurrence of this closure.")
@@ -488,7 +556,7 @@ class User(BaseModel, PermissionsMixin):
 	is_accounting_officer = models.BooleanField('accounting officer', default=False, help_text='Designates this user as Accounting officer. Accounting officers can manage projects, view user details, and check usage/billing.')
 	is_service_personnel = models.BooleanField('service personnel', default=False, help_text='Designates this user as service personnel. Service personnel can operate qualified tools without a reservation even when they are shutdown or during an outage and can access authorized areas without a reservation.')
 	is_technician = models.BooleanField('technician', default=False, help_text='Specifies how to bill staff time for this user. When checked, customers are billed at technician rates.')
-	is_facility_manager = models.BooleanField('facility manager', default=False, help_text='Designates this user as facility manager. Facility managers receive updates on all reported problems in the facility and can also review access requests.')
+	is_facility_manager = models.BooleanField('facility manager', default=False, help_text='Designates this user as facility manager. Facility managers receive updates on all reported problems in the facility and also review access and adjustment requests.')
 	is_superuser = models.BooleanField('administrator', default=False, help_text='Designates that this user has all permissions without explicitly assigning them.')
 	training_required = models.BooleanField('facility rules tutorial required', default=True, help_text='When selected, the user is blocked from all reservation and tool usage capabilities.')
 	groups = models.ManyToManyField(Group, blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of his/her group.')
@@ -715,57 +783,17 @@ class User(BaseModel, PermissionsMixin):
 		return self.get_full_name()
 
 
-class UserDocuments(BaseModel):
+class UserDocuments(BaseDocumentModel):
 	user = models.ForeignKey(User, related_name="user_documents", on_delete=models.CASCADE)
-	document = models.FileField(null=True, blank=True, upload_to=get_user_document_filename, verbose_name='Document')
-	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
-	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
-	uploaded_at = models.DateTimeField(auto_now_add=True)
 
-	def filename(self):
-		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1]
+	def get_filename_upload(self, filename):
+		from django.template.defaultfilters import slugify
 
-	def link(self):
-		return self.document.url if self.document else self.url
+		username = slugify(self.user.username)
+		return f"user_documents/{username}/{filename}"
 
-	def __str__(self):
-		return self.filename()
-
-	def clean(self):
-		if not self.document and not self.url:
-			raise ValidationError({'document': 'Either document or URL should be provided.'})
-		elif self.document and self.url:
-			raise ValidationError({'document': 'Choose either document or URL but not both.'})
-
-	class Meta:
+	class Meta(BaseDocumentModel.Meta):
 		verbose_name_plural = "User documents"
-		ordering = ['-uploaded_at']
-
-
-# These two auto-delete project documents from filesystem when they are unneeded:
-@receiver(models.signals.post_delete, sender=UserDocuments)
-def auto_delete_file_on_user_document_delete(sender, instance: UserDocuments, **kwargs):
-	"""	Deletes file from filesystem when corresponding `UserDocuments` object is deleted.	"""
-	if instance.document:
-		if os.path.isfile(instance.document.path):
-			os.remove(instance.document.path)
-
-
-@receiver(models.signals.pre_save, sender=UserDocuments)
-def auto_delete_file_on_user_document_change(sender, instance: UserDocuments, **kwargs):
-	"""	Deletes old file from filesystem when corresponding `UserDocuments` object is updated with new file. """
-	if not instance.pk:
-		return False
-
-	try:
-		old_file = UserDocuments.objects.get(pk=instance.pk).document
-	except UserDocuments.DoesNotExist:
-		return False
-
-	new_file = instance.document
-	if not old_file == new_file:
-		if os.path.isfile(old_file.path):
-			os.remove(old_file.path)
 
 
 class Tool(SerializationByNameModel):
@@ -785,6 +813,7 @@ class Tool(SerializationByNameModel):
 	_phone_number = models.CharField(db_column="phone_number", null=True, blank=True, max_length=100)
 	_notification_email_address = models.EmailField(db_column="notification_email_address", blank=True, null=True, help_text="Messages that relate to this tool (such as comments, problems, and shutdowns) will be forwarded to this email address. This can be a normal email address or a mailing list address.")
 	_interlock = models.OneToOneField('Interlock', db_column="interlock_id", blank=True, null=True, on_delete=models.SET_NULL)
+	_qualifications_never_expire = models.BooleanField(default=False, db_column="qualifications_never_expire", help_text="Check this box if qualifications for this tool should never expire (even if the tool qualification expiration feature is enabled).")
 	# Policy fields:
 	_requires_area_access = TreeForeignKey('Area', db_column="requires_area_access_id", null=True, blank=True, help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.", on_delete=models.PROTECT)
 	_grant_physical_access_level_upon_qualification = models.ForeignKey('PhysicalAccessLevel', db_column="grant_physical_access_level_upon_qualification_id", null=True, blank=True, help_text="The designated physical access level is granted to the user upon qualification for this tool.", on_delete=models.PROTECT)
@@ -814,6 +843,15 @@ class Tool(SerializationByNameModel):
 	def category(self, value):
 		self.raise_setter_error_if_child_tool("category")
 		self._category = value
+
+	@property
+	def qualifications_never_expire(self):
+		return self.parent_tool.qualifications_never_expire if self.is_child_tool() else self._qualifications_never_expire
+
+	@qualifications_never_expire.setter
+	def qualifications_never_expire(self, value):
+		self.raise_setter_error_if_child_tool("qualifications_never_expire")
+		self._qualifications_never_expire = value
 
 	@property
 	def description(self):
@@ -861,7 +899,7 @@ class Tool(SerializationByNameModel):
 		self._primary_owner = value
 
 	@property
-	def backup_owners(self) -> QuerySet:
+	def backup_owners(self) -> QuerySetType[User]:
 		return self.parent_tool.backup_owners if self.is_child_tool() else self._backup_owners
 
 	@backup_owners.setter
@@ -870,7 +908,7 @@ class Tool(SerializationByNameModel):
 		self._backup_owners = value
 
 	@property
-	def superusers(self) -> QuerySet:
+	def superusers(self) -> QuerySetType[User]:
 		return self.parent_tool.superusers if self.is_child_tool() else self._superusers
 
 	@superusers.setter
@@ -1303,57 +1341,17 @@ class Tool(SerializationByNameModel):
 		super().save(force_insert, force_update, using, update_fields)
 
 
-class ToolDocuments(BaseModel):
+class ToolDocuments(BaseDocumentModel):
 	tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
-	document = models.FileField(null=True, blank=True, upload_to=get_tool_document_filename, verbose_name='Document')
-	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
-	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
-	uploaded_at = models.DateTimeField(auto_now_add=True)
 
-	def filename(self):
-		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1]
+	def get_filename_upload(self, filename):
+		from django.template.defaultfilters import slugify
 
-	def link(self):
-		return self.document.url if self.document else self.url
+		tool_name = slugify(self.tool.name)
+		return f"tool_documents/{tool_name}/{filename}"
 
-	def __str__(self):
-		return self.filename()
-
-	def clean(self):
-		if not self.document and not self.url:
-			raise ValidationError({'document': 'Either document or URL should be provided.'})
-		elif self.document and self.url:
-			raise ValidationError({'document': 'Choose either document or URL but not both.'})
-
-	class Meta:
+	class Meta(BaseDocumentModel.Meta):
 		verbose_name_plural = "Tool documents"
-		ordering = ['-uploaded_at']
-
-
-# These two auto-delete tool documents from filesystem when they are unneeded:
-@receiver(models.signals.post_delete, sender=ToolDocuments)
-def auto_delete_file_on_tool_document_delete(sender, instance: ToolDocuments, **kwargs):
-	"""	Deletes file from filesystem when corresponding `ToolDocuments` object is deleted.	"""
-	if instance.document:
-		if os.path.isfile(instance.document.path):
-			os.remove(instance.document.path)
-
-
-@receiver(models.signals.pre_save, sender=ToolDocuments)
-def auto_delete_file_on_tool_document_change(sender, instance: ToolDocuments, **kwargs):
-	"""	Deletes old file from filesystem when corresponding `ToolDocuments` object is updated with new file. """
-	if not instance.pk:
-		return False
-
-	try:
-		old_file = ToolDocuments.objects.get(pk=instance.pk).document
-	except ToolDocuments.DoesNotExist:
-		return False
-
-	new_file = instance.document
-	if not old_file == new_file:
-		if os.path.isfile(old_file.path):
-			os.remove(old_file.path)
 
 
 class ToolQualificationGroup(SerializationByNameModel):
@@ -1668,57 +1666,17 @@ class Project(SerializationByNameModel):
 		return str(self.name)
 
 
-class ProjectDocuments(BaseModel):
+class ProjectDocuments(BaseDocumentModel):
 	project = models.ForeignKey(Project, related_name="project_documents", on_delete=models.CASCADE)
-	document = models.FileField(null=True, blank=True, upload_to=get_project_document_filename, verbose_name='Document')
-	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
-	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
-	uploaded_at = models.DateTimeField(auto_now_add=True)
 
-	def filename(self):
-		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1]
+	def get_filename_upload(self, filename):
+		from django.template.defaultfilters import slugify
 
-	def link(self):
-		return self.document.url if self.document else self.url
+		project_name = slugify(self.project.name)
+		return f"project_documents/{project_name}/{filename}"
 
-	def __str__(self):
-		return self.filename()
-
-	def clean(self):
-		if not self.document and not self.url:
-			raise ValidationError({'document': 'Either document or URL should be provided.'})
-		elif self.document and self.url:
-			raise ValidationError({'document': 'Choose either document or URL but not both.'})
-
-	class Meta:
+	class Meta(BaseDocumentModel.Meta):
 		verbose_name_plural = "Project documents"
-		ordering = ['-uploaded_at']
-
-
-# These two auto-delete project documents from filesystem when they are unneeded:
-@receiver(models.signals.post_delete, sender=ProjectDocuments)
-def auto_delete_file_on_project_document_delete(sender, instance: ProjectDocuments, **kwargs):
-	"""	Deletes file from filesystem when corresponding `ProjectDocuments` object is deleted.	"""
-	if instance.document:
-		if os.path.isfile(instance.document.path):
-			os.remove(instance.document.path)
-
-
-@receiver(models.signals.pre_save, sender=ProjectDocuments)
-def auto_delete_file_on_project_document_change(sender, instance: ProjectDocuments, **kwargs):
-	"""	Deletes old file from filesystem when corresponding `ProjectDocuments` object is updated with new file. """
-	if not instance.pk:
-		return False
-
-	try:
-		old_file = ProjectDocuments.objects.get(pk=instance.pk).document
-	except ProjectDocuments.DoesNotExist:
-		return False
-
-	new_file = instance.document
-	if not old_file == new_file:
-		if os.path.isfile(old_file.path):
-			os.remove(old_file.path)
 
 
 def pre_delete_entity(sender, instance, using, **kwargs):
@@ -1927,6 +1885,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 	quantity = models.PositiveIntegerField()
 	project = models.ForeignKey(Project, help_text="The withdraw will be billed to this project.", on_delete=models.CASCADE)
 	date = models.DateTimeField(default=timezone.now, help_text="The date and time when the user withdrew the consumable.")
+	tool_usage = models.BooleanField(default=False, help_text="Whether this withdraw is from tool usage")
 	validated = models.BooleanField(default=False)
 	validated_by = models.ForeignKey(User, null=True, blank=True, related_name="consumable_withdrawal_validated_set", on_delete=models.CASCADE)
 
@@ -1954,7 +1913,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 			from NEMO.exceptions import ProjectChargeException
 			from NEMO.policy import policy_class as policy
 			try:
-				policy.check_billing_to_project(self.project, self.customer, self.consumable)
+				policy.check_billing_to_project(self.project, self.customer, self.consumable, self)
 			except ProjectChargeException as e:
 				errors["project"] = e.msg
 		if errors:
@@ -1964,7 +1923,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 		return str(self.id)
 
 
-class RecurringConsumableCharge(BaseModel):
+class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
 	name = models.CharField(max_length=200, help_text="The name/identifier for this recurring charge.")
 	customer = models.ForeignKey(User, null=True, blank=True, related_name="recurring_charge_customer", help_text="The user who will be charged.", on_delete=models.CASCADE)
 	consumable = models.ForeignKey(Consumable, on_delete=models.CASCADE)
@@ -1984,14 +1943,8 @@ class RecurringConsumableCharge(BaseModel):
 	class Meta:
 		ordering = ["name"]
 
-	@property
-	def get_rec_frequency_enum(self):
-		return RecurrenceFrequency(self.rec_frequency)
-
 	def next_charge(self, inc=False) -> datetime:
-		today = beginning_of_the_day(datetime.datetime.now(), in_local_timezone=False)
-		recurrence = self.get_recurrence()
-		return recurrence.after(today, inc=inc) if recurrence else None
+		return self.next_recurrence(inc)
 
 	def invalid_customer(self):
 		from NEMO.views.customization import RecurringChargesCustomization
@@ -2013,34 +1966,6 @@ class RecurringConsumableCharge(BaseModel):
 		if self.customer and self.project:
 			if self.project not in self.customer.active_projects():
 				return "The user does not belong to this project"
-
-	def get_recurrence(self) -> rrule:
-		if self.rec_start and self.rec_frequency:
-			return get_recurring_rule(self.rec_start, self.get_rec_frequency_enum, self.rec_until, self.rec_interval, self.rec_count)
-
-	def get_recurrence_interval_display(self) -> str:
-		if not self.rec_start or not self.rec_frequency:
-			return ""
-		interval = f"{self.rec_interval} " if self.rec_interval != 1 else ""
-		f_enum = self.get_rec_frequency_enum
-		frequency = f"{f_enum.display_text}s" if self.rec_interval != 1 else f_enum.display_text
-		return f"Every {interval}{frequency}"
-
-	def get_recurrence_display(self) -> str:
-		rec_display = ""
-		if self.rec_start and self.rec_frequency:
-			start = f", starting {format_datetime(self.rec_start, 'SHORT_DATE_FORMAT')}"
-			end = ""
-			if self.rec_until or self.rec_count:
-				end = f" and ending "
-				if self.rec_until:
-					end += f"on {format_datetime(self.rec_until, 'SHORT_DATE_FORMAT')}"
-				elif self.rec_count:
-					end += f"after {self.rec_count} iterations" if self.rec_count != 1 else f"after one time"
-					if self.get_recurrence():
-						end += f" on {format_datetime(list(self.get_recurrence())[-1], 'SHORT_DATE_FORMAT')}"
-			return f"{self.get_recurrence_interval_display()}{start}{end}"
-		return rec_display
 
 	def charge(self):
 		# Cannot charge twice the same day
@@ -2069,12 +1994,7 @@ class RecurringConsumableCharge(BaseModel):
 				errors["customer"] = "This field is required."
 			if not self.project:
 				errors["project"] = "This field is required."
-			if not self.rec_start:
-				errors["rec_start"] = "This field is required."
-			if not self.rec_frequency:
-				errors["rec_frequency"] = "This field is required."
-			if self.rec_until and self.rec_count:
-				errors[NON_FIELD_ERRORS] = "'count' and 'until' cannot be used at the same time."
+			errors.update(self.clean_recurrence())
 			# Validate needed fields are present
 			if errors:
 				raise ValidationError(errors)
@@ -2531,60 +2451,17 @@ class SafetyItem(BaseModel):
 		return self.name
 
 
-class SafetyItemDocuments(BaseModel):
+class SafetyItemDocuments(BaseDocumentModel):
 	safety_item = models.ForeignKey(SafetyItem, on_delete=models.CASCADE)
-	document = models.FileField(null=True, blank=True, upload_to=get_safety_document_filename, verbose_name='Document')
-	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
-	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
-	uploaded_at = models.DateTimeField(auto_now_add=True)
 
-	def filename(self):
-		return self.name if self.name else os.path.basename(self.document.name) if self.document else self.url.rsplit('/', 1)[-1] if self.url else ""
+	def get_filename_upload(self, filename):
+		from django.template.defaultfilters import slugify
 
-	def link(self):
-		return self.document.url if self.document else self.url
+		item_name = slugify(self.safety_item.name)
+		return f"safety_item/{item_name}/{filename}"
 
-	def can_be_embedded(self):
-		return any([self.link().lower().endswith(ext) for ext in supported_embedded_extensions])
-
-	def __str__(self):
-		return self.filename()
-
-	def clean(self):
-		if not self.document and not self.url:
-			raise ValidationError({'document': 'Either document or URL should be provided.'})
-		elif self.document and self.url:
-			raise ValidationError({'document': 'Choose either document or URL but not both.'})
-
-	class Meta:
+	class Meta(BaseDocumentModel.Meta):
 		verbose_name_plural = "Safety item documents"
-		ordering = ['-uploaded_at']
-
-
-# These two auto-delete safety item documents from filesystem when they are unneeded:
-@receiver(models.signals.post_delete, sender=SafetyItemDocuments)
-def auto_delete_file_on_safety_item_document_delete(sender, instance: SafetyItemDocuments, **kwargs):
-	"""	Deletes file from filesystem when corresponding `SafetyItemDocuments` object is deleted.	"""
-	if instance.document:
-		if os.path.isfile(instance.document.path):
-			os.remove(instance.document.path)
-
-
-@receiver(models.signals.pre_save, sender=SafetyItemDocuments)
-def auto_delete_file_on_safety_item_document_change(sender, instance: SafetyItemDocuments, **kwargs):
-	"""	Deletes old file from filesystem when corresponding `SafetyItemDocuments` object is updated with new file. """
-	if not instance.pk:
-		return False
-
-	try:
-		old_file = SafetyItemDocuments.objects.get(pk=instance.pk).document
-	except SafetyItemDocuments.DoesNotExist:
-		return False
-
-	new_file = instance.document
-	if not old_file == new_file:
-		if os.path.isfile(old_file.path):
-			os.remove(old_file.path)
 
 
 class AlertCategory(BaseModel):
@@ -2854,7 +2731,7 @@ class BuddyRequest(BaseModel):
 		return self.user
 
 	@property
-	def replies(self) -> QuerySet:
+	def replies(self) -> QuerySetType[RequestMessage]:
 		return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
 
 	def creator_and_reply_users(self) -> List[User]:
@@ -2884,7 +2761,7 @@ class AdjustmentRequest(BaseModel):
 	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
 
 	@property
-	def replies(self) -> QuerySet:
+	def replies(self) -> QuerySetType[RequestMessage]:
 		return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
 
 	def get_new_start(self) -> Optional[datetime]:
@@ -2944,8 +2821,8 @@ class RequestMessage(BaseModel):
 
 
 class StaffAbsenceType(BaseModel):
-	name = models.CharField(max_length=255, help_text="The name of this absence type.")
-	description = models.CharField(max_length=255, help_text="The description for this absence type.")
+	name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The name of this absence type.")
+	description = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The description for this absence type.")
 
 	def __str__(self):
 		description = f" ({self.description})" if self.description else ''

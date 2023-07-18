@@ -8,7 +8,7 @@
 {% endblock %}
 {% block content %}
 	<h1>Usage{% if billing_service %} and billing information{% endif %}
-		<small> between {{ start_date|date }} and {{ end_date|date }}</small>
+		<small class="light-grey"> between {{ start_date|date }} and {{ end_date|date }}</small>
 	</h1>
 	<p>
 		This page presents a monthly report of your {{ facility_name }} usage{% if billing_service %} and billing information{% endif %}. Approved adjustments are{% if not billing_service %} not{% endif %} reflected{% if billing_service %} in the billing information data but not{% endif %} in the usage data.
@@ -54,14 +54,27 @@
                         </select>
                     </div>
             {% endif %}
+			{% if user.active_projects %}
+                </div>
+                <div class="form-group">
+                    <div class="control-label col-sm-2">
+                        <label for="project">Project</label>
+                    </div>
+                    <div class="col-sm-3 col-md-3 col-lg-2">
+                        <select name="project" id="project" class="form-control" style="text-align-last:center" title="Select a project to see usage for only that project">
+                            <option selected value="">All</option>
+                            {% for project in user.active_projects %}
+                                <option value="{{ project.id }}" {% if selected_user_project and selected_user_project.id == project.id %}selected{% endif %}>{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+            {% endif %}
 			{% if not project_autocomplete %}
-				<div class="hidden-lg hidden-md hidden-sm">&nbsp;</div>
-				<div class="col-md-3">
+				<div class="hidden-lg hidden-md {% if user.active_projects or pi_projects %}hidden-sm{% else %}col-sm-12{% endif %}">&nbsp;</div>
+				<div class="col-sm-4 col-lg-3 {% if user.active_projects or pi_projects %}text-right{% else %}col-md-3{% endif %}">
                     {% button type="save" submit=False onclick="$('#csv_export').val('');this.form.submit();" value="Update" icon="glyphicon-refresh" %}
-                    {% if can_export %}
-                        <input id="csv_export" type="hidden" name="csv" value="">
-                        {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
-                    {% endif %}
+                    <input id="csv_export" type="hidden" name="csv" value="">
+                    {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
 				</div>
 			{% endif %}
 		</div>

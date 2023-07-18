@@ -1,4 +1,3 @@
-import io
 from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from json import dumps, loads
@@ -6,8 +5,6 @@ from logging import getLogger
 from re import match
 from typing import Dict, Iterable, List, Optional, Union
 
-import pytz
-from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
 from django.db.models import Q
@@ -16,9 +13,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.timezone import make_aware
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import disable_session_expiry_refresh, staff_member_required, synchronized
+from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.forms import nice_errors
 from NEMO.models import (
@@ -40,7 +38,7 @@ from NEMO.models import (
 	StaffCharge,
 	Tool,
 	UsageEvent,
-	User,
+	User, UserPreferences,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
@@ -49,8 +47,10 @@ from NEMO.utilities import (
 	as_timezone,
 	beginning_of_the_day,
 	bootstrap_primary_color,
-	create_email_attachment,
+	create_ics,
 	date_input_format,
+	datetime_input_format,
+	distinct_qs_value_list,
 	extract_times,
 	format_datetime,
 	get_email_from_settings,
@@ -415,7 +415,7 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 
 		# Check if we are allowed to bill to project
 		try:
-			policy.check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item)
+			policy.check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item, new_reservation)
 		except ProjectChargeException as e:
 			policy_problems.append(e.msg)
 			return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': False, 'reservation_action': 'create'})
@@ -680,6 +680,7 @@ def modify_reservation(request, current_user, start_delta, end_delta):
 		new_reservation.save_and_notify()
 		reservation_to_cancel.descendant = new_reservation
 		reservation_to_cancel.save_and_notify()
+		send_tool_free_time_notification(request, reservation_to_cancel, new_reservation)
 	return reservation_success(request, new_reservation)
 
 
@@ -708,7 +709,7 @@ def cancel_reservation(request, reservation_id):
 
 	reason = parse_parameter_string(request.POST, 'reason')
 	response = cancel_the_reservation(reservation=reservation, user_cancelling_reservation=request.user, reason=reason, request=request)
-
+	send_tool_free_time_notification(request, reservation)
 	if request.device == 'desktop':
 		return response
 	if request.device == 'mobile':
@@ -742,12 +743,42 @@ def set_reservation_title(request, reservation_id):
 
 @login_required
 @require_POST
+def change_reservation_date(request):
+	""" Change a reservation's start or end date for a user. """
+	reservation = get_object_or_404(Reservation, id=request.POST['id'])
+	start_delta, end_delta = None, None
+	new_start = request.POST.get('new_start', None)
+	if new_start:
+		try:
+			new_start = make_aware(datetime.strptime(new_start, datetime_input_format))
+			if new_start.time().minute not in [0, 15, 30, 45]:
+				return HttpResponseBadRequest("Reservation time only works with 15 min increments")
+		except ValueError:
+			return HttpResponseBadRequest("Invalid date format for start date")
+		start_delta = (new_start - reservation.start)
+	new_end = request.POST.get('new_end', None)
+	if new_end:
+		try:
+			new_end = make_aware(datetime.strptime(new_end, datetime_input_format))
+			if new_end.time().minute not in [0, 15, 30, 45]:
+				return HttpResponseBadRequest("Reservation time only works with 15 min increments")
+		except ValueError:
+			return HttpResponseBadRequest("Invalid date format for end date")
+		end_delta = (new_end - reservation.end) if new_end else None
+	if start_delta or end_delta:
+		return modify_reservation(request, request.user, start_delta, end_delta)
+	else:
+		return HttpResponseBadRequest('Invalid delta')
+
+
+@login_required
+@require_POST
 def change_reservation_project(request, reservation_id):
 	""" Change reservation project for a user. """
 	reservation = get_object_or_404(Reservation, id=reservation_id)
 	project = get_object_or_404(Project, id=request.POST['project_id'])
 	try:
-		policy.check_billing_to_project(project, reservation.user, reservation.reservation_item)
+		policy.check_billing_to_project(project, reservation.user, reservation.reservation_item, reservation)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
 
@@ -1064,7 +1095,7 @@ def extract_reservation_questions(request, item_type: ReservationItemType, item_
 	return DynamicForm(dumps(reservation_questions_json)).extract(request) if len(reservation_questions_json) else ""
 
 
-def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime = None):
+def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime = None, force=False):
 	try:
 		if new_end is None:
 			new_end = timezone.now()
@@ -1072,7 +1103,7 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 															cancelled=False, missed=False, shortened=False, user=user)
 		current_reservation = current_reservation_qs.get(**{ReservationItemType.from_item(item).value: item})
 		# Staff are exempt from mandatory reservation shortening.
-		if user.is_staff is False:
+		if user.is_staff is False or force:
 			new_reservation = current_reservation.copy(new_end=new_end)
 			new_reservation.save()
 			current_reservation.shortened = True
@@ -1118,7 +1149,10 @@ def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation
 				if reservation.area:
 					recipients.extend(reservation.area.reservation_email_list())
 				if reservation.user.get_preferences().attach_cancelled_reservation:
-					attachment = create_ics_for_reservation(reservation, cancelled=True)
+					event_name = f"{reservation.reservation_item.name} Reservation"
+					attachment = create_ics(reservation.id, event_name, reservation.start, reservation.end,
+											reservation.user,
+											cancelled=True)
 					send_mail(subject='Your reservation was cancelled', content=cancellation_email, from_email=user_cancelling_reservation.email, to=recipients, attachments=[attachment])
 				else:
 					send_mail(subject='Your reservation was cancelled', content=cancellation_email, from_email=user_cancelling_reservation.email, to=recipients)
@@ -1159,64 +1193,42 @@ def send_out_of_time_reservation_notification(reservation: Reservation, request=
 
 
 def send_user_created_reservation_notification(reservation: Reservation):
-	site_title = ApplicationCustomization.get('site_title')
 	user = reservation.user
 	recipients = user.get_emails(user.get_preferences().email_send_reservation_emails) if user.get_preferences().attach_created_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
-		subject = f"[{site_title}] Reservation for the " + str(reservation.reservation_item)
+		subject = f"Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_created_user_email.html')
 		message = render_email_template(message, {'reservation': reservation})
 		user_office_email = EmailsCustomization.get('user_office_email_address')
 		# We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
-			attachment = create_ics_for_reservation(reservation)
+			event_name = f"{reservation.reservation_item.name} Reservation"
+			attachment = create_ics(reservation.id, event_name, reservation.start, reservation.end, reservation.user)
 			send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment])
 		else:
 			calendar_logger.error("User created reservation notification could not be send because user_office_email_address is not defined")
 
 
 def send_user_cancelled_reservation_notification(reservation: Reservation):
-	site_title = ApplicationCustomization.get('site_title')
 	user = reservation.user
 	recipients = user.get_emails(user.get_preferences().email_send_reservation_emails) if user.get_preferences().attach_cancelled_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
-		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.reservation_item)
+		subject = f"Cancelled Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
 		message = render_email_template(message, {'reservation': reservation})
 		user_office_email = EmailsCustomization.get('user_office_email_address')
 		# We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
-			attachment = create_ics_for_reservation(reservation, cancelled=True)
+			event_name = f"{reservation.reservation_item.name} Reservation"
+			attachment = create_ics(reservation.id, event_name, reservation.start, reservation.end, reservation.user,
+							  cancelled=True)
 			send_mail(subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment])
 		else:
 			calendar_logger.error("User cancelled reservation notification could not be send because user_office_email_address is not defined")
-
-
-def create_ics_for_reservation(reservation: Reservation, cancelled=False):
-	site_title = ApplicationCustomization.get('site_title')
-	reservation_organizer_email = getattr(settings, "RESERVATION_ORGANIZER_EMAIL", "no_reply")
-	reservation_organizer = getattr(settings, "RESERVATION_ORGANIZER", site_title)
-	method_name = 'CANCEL' if cancelled else 'REQUEST'
-	method = f'METHOD:{method_name}\n'
-	status = 'STATUS:CANCELLED\n' if cancelled else 'STATUS:CONFIRMED\n'
-	uid = 'UID:'+str(reservation.id)+'\n'
-	sequence = 'SEQUENCE:2\n' if cancelled else 'SEQUENCE:0\n'
-	priority = 'PRIORITY:5\n' if cancelled else 'PRIORITY:0\n'
-	now = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
-	start = reservation.start.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
-	end = reservation.end.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
-	reservation_name = reservation.reservation_item.name
-	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'ATTENDEE;CN="{reservation.user.get_name()}";RSVP=TRUE:mailto:{reservation.user.email}\n', f'ORGANIZER;CN="{reservation_organizer}":mailto:{reservation_organizer_email}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
-	ics = io.StringIO('')
-	ics.writelines(lines)
-	ics.seek(0)
-
-	attachment = create_email_attachment(ics, maintype='text', subtype='calendar', method=method_name)
-	return attachment
 
 
 @login_required
@@ -1321,12 +1333,13 @@ def do_manage_tool_qualifications(request=None):
 		if qualification_expiration_days or qualification_expiration_never_used:
 			qualification_expiration_days = quiet_int(qualification_expiration_days, None)
 			qualification_expiration_never_used = quiet_int(qualification_expiration_never_used, None)
-			for qualification in Qualification.objects.filter(user__is_active=True, user__is_staff=False):
+			for qualification in Qualification.objects.filter(user__is_active=True, user__is_staff=False, tool___qualifications_never_expire=False).prefetch_related("tool", "user"):
 				user = qualification.user
 				tool = qualification.tool
 				last_tool_use = None
 				try:
-					last_tool_use = as_timezone(UsageEvent.objects.filter(user=user, tool=tool).latest("start").start).date()
+					# Last tool use cannot be before the last time they qualified
+					last_tool_use = max(as_timezone(UsageEvent.objects.filter(user=user, tool=tool).latest("start").start).date(), qualification.qualified_on)
 					expiration_date: date = last_tool_use + timedelta(days=qualification_expiration_days) if qualification_expiration_days else None
 				except UsageEvent.DoesNotExist:
 					# User never used the tool, use the qualification date
@@ -1429,3 +1442,44 @@ def send_recurring_charge_reminders(request, reminders: Iterable[Dict]):
 			rendered_message = render_email_template(message, user_reminders, request)
 			email_notification = user_instance.get_preferences().email_send_recurring_charges_reminder_emails
 			user_instance.email_user(subject=subject, message=rendered_message, from_email=user_office_email, email_category=EmailCategory.TIMED_SERVICES, email_notification=email_notification)
+
+
+@postpone
+def send_tool_free_time_notification(request, cancelled_reservation: Reservation, new_reservation: Optional[Reservation] = None):
+	tool = cancelled_reservation.tool
+	if tool and cancelled_reservation.start > timezone.now():
+		max_duration = cancelled_reservation.duration().total_seconds() / 60
+		freed_time = None
+		start_time = None
+		days_in_the_future = (cancelled_reservation.start - timezone.now()).total_seconds() / 3600 / 24
+		if not new_reservation:
+			# this is a cancel action, we only have to take into account the cancelled time
+			freed_time = max_duration
+			start_time = cancelled_reservation.start
+		else:
+			# this is a modification (move or resize)
+			end_diff = (cancelled_reservation.end - new_reservation.end).total_seconds() / 60
+			if cancelled_reservation.start == new_reservation.start and end_diff > 0:
+				# reservation was shrunk
+				freed_time = end_diff
+				start_time = cancelled_reservation.end - timedelta(minutes=end_diff)
+			elif cancelled_reservation.start != new_reservation.start:
+				# reservation was moved
+				freed_time = min(max_duration, abs(end_diff))
+				start_time = (cancelled_reservation.end - timedelta(minutes=freed_time)) if end_diff > 0 else cancelled_reservation.start
+		if freed_time and start_time:
+			tool_notifications = UserPreferences.objects.filter(tool_freed_time_notifications__in=[tool], tool_freed_time_notifications_min_time__lte=freed_time, tool_freed_time_notifications_max_future_days__gte=days_in_the_future)
+			formatted_start = format_datetime(start_time)
+			formatted_time = f"{freed_time:0.0f}"
+			link = get_full_url(reverse("calendar"), request)
+			user_ids = distinct_qs_value_list(tool_notifications, "user")
+			for user in User.objects.in_bulk(user_ids).values():
+				if user != cancelled_reservation.user:
+					subject = f"[{tool.name}] {formatted_time} minutes freed starting {formatted_start}"
+					message = f"Dear {user.first_name},<br>\n"
+					message += f"The following time slot has been freed for the {tool.name}:<br><br>\n\n"
+					message += f"Start: {formatted_start}<br>\n"
+					message += f"End: {format_datetime(start_time + timedelta(minutes=freed_time))}<br>\n"
+					message += f"Duration: {formatted_time} minutes<br><br>\n\n"
+					message += f'Go to the <a href={link} target="_blank">calendar</a> to make a reservation.<br>\n'
+					user.email_user(subject=subject, message=message, from_email=get_email_from_settings(), email_notification=user.get_preferences().email_send_reservation_emails)

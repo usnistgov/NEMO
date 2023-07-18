@@ -46,21 +46,27 @@
                         </div>
                         <div style="margin-left:34px">
                             {% if selected_project %}<label class="control-label">Account:</label> <a href="{% url 'account' project.account.id %}">{{ project.account }}</a>{% endif %}
+                            {% if project.manager_set.all %}
+                                <div>
+                                    <span class="control-label">PIs:</span>
+                                    <span>{{ project.manager_set.all|join:", " }}</span>
+                                </div>
+                            {% endif %}
                             <div id="project_{{ project.id }}_details" class="collapse {% if selected_project %}in{% endif %}">
                                 <div>
-                                    <label class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</label>
-                                    <span class="grey">{{ project.application_identifier }}</span>
+                                    <span class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</span>
+                                    <span>{{ project.application_identifier }}</span>
                                 </div>
 								{% if project.discipline %}
 									<div>
-										<label class="control-label">Discipline:</label>
-										<span class="grey">{{ project.discipline }}</span>
+										<span class="control-label">Discipline:</span>
+										<span>{{ project.discipline }}</span>
 									</div>
 								{% endif %}
                                 {% if project.start_date %}
                                     <div>
-                                        <label class="control-label">Start Date:</label>
-                                        <span class="grey">{{ project.start_date }}</span>
+                                        <span class="control-label">Start Date:</span>
+                                        <span>{{ project.start_date }}</span>
                                     </div>
                                 {% endif %}
                                 <div id="project_{{ project.id }}_users">
@@ -75,7 +81,7 @@
                         </div>
                     {% endif %}
 				{% empty %}
-					<h4 class="grey">This account does not have any projects</h4>
+					<h4>This account does not have any projects</h4>
 				{% endfor %}
 			</div>
 		</div>

@@ -1,5 +1,6 @@
 {% extends popup_view|yesno:"base/popup.html,base.html" %}
 {% load custom_tags_and_filters %}
+{% load tz %}
 
 {% if not popup_view %}
 {% block extrahead %}
@@ -25,6 +26,14 @@
     {
         let failure_dialog = ajax_failure_callback("Unable to set reservation title");
         ajax_post(url, {'title': title}, callback_success, [failure_dialog]);
+    }
+
+    function change_reservation_date(url, reservation_id, param, value)
+    {
+        let failure_dialog = ajax_failure_callback("Unable to change reservation date");
+        let data = {'id': reservation_id};
+        data[param] = value;
+        ajax_post(url, data, callback_success, [failure_dialog]);
     }
 
     function change_reservation_project(url, project_id)
@@ -57,10 +66,10 @@
 
 	{% if user.is_staff %}
     <tr>
-        <td style="vertical-align: middle">Title:</td>
+        <td style="vertical-align: middle"><label for="title">Title:</label></td>
         <td>
             <div class="input-group">
-                <input type="text" id="title" aria-label="Reservation title" class="form-control" placeholder="{{ reservation.user }}" maxlength="200" value="{{ reservation.title }}">
+                <input type="text" id="title"  class="form-control" placeholder="{{ reservation.user }}" maxlength="200" value="{{ reservation.title }}">
                 <span class="input-group-btn">
                     <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}set_reservation_title('{% url 'set_reservation_title' reservation.id %}', {{ reservation.id }}, $('#title').val()) {% if popup_view %}}){% endif %}">Set title</button>
                 </span>
@@ -107,7 +116,7 @@
         </tr>
         {% if reservation_project_can_be_changed %}
             <tr id="reservation_change_project" style="display: none;">
-                <td style="vertical-align: middle;">Project:</td>
+                <td style="vertical-align: middle;"><label for="change_project">Project:</label></td>
                 <td>
                     <div class="input-group">
                         <select id="change_project" name="project" aria-label="Reservation project" class="form-control">
@@ -124,12 +133,40 @@
         {% endif %}
 	{% endif %}
     <tr>
-        <td>Start:</td>
-        <td>{{ reservation.start }}</td>
+        {% if request.user == reservation.user and reservation.has_not_ended and reservation.has_not_started %}
+            <td style="vertical-align: middle"><label for="reservation_start" style="margin-bottom: 0">Start:</label></td>
+            <td id="reservation_display_start">
+                {{ reservation.start }}
+                <span class="glyphicon glyphicon-pencil pull-right" title="Change the start date" onclick="$('#reservation_display_start').hide();$('#reservation_change_start').show();"></span>
+            </td>
+            <td id="reservation_change_start" style="display: none">
+                <div class="input-group">
+                    <input type="text" id="reservation_start" class="form-control" value="{{ reservation.start|localtime|input_date_format }}">
+                    <span class="input-group-btn">
+                        <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}change_reservation_date('{% url 'change_reservation_date' %}', {{ reservation.id }}, 'new_start', $('#reservation_start').val()) {% if popup_view %}}){% endif %}">Change start</button>
+                    </span>
+                </div>
+            </td>
+        {% else %}
+            <td>Start:</td>
+            <td>{{ reservation.start }}</td>
+        {% endif %}
     </tr>
     <tr>
-        <td>End:</td>
-        <td>{{ reservation.end }}</td>
+        {% if request.user == reservation.user and reservation.has_not_ended and reservation.has_not_started %}
+            <td style="vertical-align: middle"><label for="reservation_end">End:</label></td>
+            <td>
+                <div class="input-group">
+                    <input type="text" id="reservation_end" class="form-control" value="{{ reservation.end|localtime|input_date_format }}">
+                    <span class="input-group-btn">
+                        <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}change_reservation_date('{% url 'change_reservation_date' %}', {{ reservation.id }}, 'new_end', $('#reservation_end').val()) {% if popup_view %}}){% endif %}">Change end</button>
+                    </span>
+                </div>
+            </td>
+        {% else %}
+            <td>End:</td>
+            <td>{{ reservation.end }}</td>
+        {% endif %}
     </tr>
     <tr>
         <td>Identifier:</td>
@@ -178,7 +215,7 @@
     {# Allow the user to cancel the reservation if they have that priviledge. #}
     {% if not reservation.missed and not reservation.cancelled %}
         {% if reservation.user.id == user.id and reservation.has_not_ended or user.is_staff %}
-            <div class="modal-footer">
+            <div class="modal-footer" style="padding: 15px 0 0 0;">
                 {# You must provide a reason if you are cancelling someone else's reservation. #}
                 {% if reservation.user == user %}
                     <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}cancel_reservation('{% url 'cancel_reservation' reservation.id %}', 'Reservation {{ reservation.id }}') {% if popup_view %}}){% endif %}" title="Cancel this reservation"><i class="glyphicon glyphicon-trash"></i> Cancel this reservation</button>

@@ -226,7 +226,6 @@ class SensorDataAdmin(admin.ModelAdmin):
 @register(SensorAlertEmail)
 class SensorAlertEmailAdmin(admin.ModelAdmin):
 	list_display = ("sensor", "enabled", "trigger_condition", "trigger_no_data", "additional_emails", "triggered_on")
-	readonly_fields = ("triggered_on",)
 
 
 @register(SensorAlertLog)

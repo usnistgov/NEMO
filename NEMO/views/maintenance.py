@@ -5,14 +5,21 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import staff_member_required
-from NEMO.models import Task, TaskCategory, TaskStatus
+from NEMO.models import Task, TaskCategory, TaskStatus, User
 from NEMO.utilities import as_timezone
 
 
 @staff_member_required
 @require_GET
 def maintenance(request, sort_by=''):
+	user: User = request.user
 	pending_tasks = Task.objects.filter(cancelled=False, resolved=False)
+	if user.get_preferences().tool_task_notifications.exists():
+		# Limit tools to preferences + tools user is the owner of + tools user is a backup owner of.
+		limit_tools = set(user.get_preferences().tool_task_notifications.all())
+		limit_tools.update(user.primary_tool_owner.all())
+		limit_tools.update(user.superuser_for_tools.all())
+		pending_tasks = pending_tasks.filter(tool__in=limit_tools)
 	if sort_by in ['urgency', 'force_shutdown', 'tool', 'problem_category', 'last_updated', 'creation_time']:
 		if sort_by == 'last_updated':
 			pending_tasks = pending_tasks.exclude(last_updated=None).order_by('-last_updated')

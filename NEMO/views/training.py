@@ -22,7 +22,7 @@ training_logger = getLogger(__name__)
 @staff_member_or_tool_superuser_required
 @require_GET
 def training(request):
-	""" Present a web page to allow staff or tool superusers to charge training and qualify users on particular tools. """
+	"""Present a web page to allow staff or tool superusers to charge training and qualify users on particular tools."""
 	user: User = request.user
 	users = User.objects.filter(is_active=True).exclude(id=user.id)
 	tools = Tool.objects.filter(visible=True)
@@ -30,15 +30,30 @@ def training(request):
 	if not user.is_staff and user.is_tool_superuser:
 		tools = tools.filter(_superusers__in=[user])
 		# Superusers can only use groups if they are superusers for all those
-		tool_groups = tool_groups.annotate(num_tools=Count("tools")).filter(tools__in=tools).filter(num_tools=len(tools))
-	return render(request, 'training/training.html', {'users': users, 'tools': list(tools), 'tool_groups': list(tool_groups), 'charge_types': TrainingSession.Type.Choices})
+		tool_groups = (
+			tool_groups.annotate(num_tools=Count("tools")).filter(tools__in=tools).filter(num_tools=len(tools))
+		)
+	return render(
+		request,
+		"training/training.html",
+		{
+			"users": users,
+			"tools": list(tools),
+			"tool_groups": list(tool_groups),
+			"charge_types": TrainingSession.Type.Choices,
+		},
+	)
 
 
 @staff_member_or_tool_superuser_required
 @require_GET
 def training_entry(request):
-	entry_number = int(request.GET['entry_number'])
-	return render(request, 'training/training_entry.html', {'entry_number': entry_number, 'charge_types': TrainingSession.Type.Choices})
+	entry_number = int(request.GET["entry_number"])
+	return render(
+		request,
+		"training/training_entry.html",
+		{"entry_number": entry_number, "charge_types": TrainingSession.Type.Choices},
+	)
 
 
 def is_valid_field(field):
@@ -63,7 +78,13 @@ def charge_training(request):
 				if attribute == "chosen_tool":
 					chosen_type = request.POST.get(f"chosen_type{separator}{index}", "tool")
 					identifier = to_int_or_negative(value)
-					setattr(charges[index], "qualify_tools", [Tool.objects.get(id=identifier)] if chosen_type == "tool" else ToolQualificationGroup.objects.get(id=identifier).tools.all())
+					setattr(
+						charges[index],
+						"qualify_tools",
+						[Tool.objects.get(id=identifier)]
+						if chosen_type == "tool"
+						else ToolQualificationGroup.objects.get(id=identifier).tools.all(),
+					)
 					# Even with a group of tools, we only charge training on the first one
 					charges[index].tool = next(iter(charges[index].qualify_tools))
 					if not trainer.is_staff and trainer.is_tool_superuser:
@@ -76,10 +97,10 @@ def charge_training(request):
 				if attribute == "charge_type":
 					charges[index].type = int(value)
 				if attribute == "qualify":
-					charges[index].qualified = (value == "on")
+					charges[index].qualified = value == "on"
 		for c in charges.values():
 			c.full_clean()
-			policy.check_billing_to_project(c.project, c.trainee, c.tool)
+			policy.check_billing_to_project(c.project, c.trainee, c.tool, c)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
 	except User.DoesNotExist:
@@ -90,7 +111,9 @@ def charge_training(request):
 		return HttpResponseBadRequest("Please select a project from the list")
 	except Exception as e:
 		training_logger.exception(e)
-		return HttpResponseBadRequest('An error occurred while processing the training charges. None of the charges were committed to the database. Please review the form for errors and omissions then submit the form again.')
+		return HttpResponseBadRequest(
+			"An error occurred while processing the training charges. None of the charges were committed to the database. Please review the form for errors and omissions then submit the form again."
+		)
 	else:
 		for c in charges.values():
 			if c.qualified:
@@ -98,11 +121,11 @@ def charge_training(request):
 					qualify(c.trainer, c.trainee, tool)
 			c.save()
 		dictionary = {
-			'title': 'Success!',
-			'content': 'Training charges were successfully saved.',
-			'redirect': reverse('landing'),
+			"title": "Success!",
+			"content": "Training charges were successfully saved.",
+			"redirect": reverse("landing"),
 		}
-		return render(request, 'display_success_and_redirect.html', dictionary)
+		return render(request, "display_success_and_redirect.html", dictionary)
 
 
 def qualify(authorizer, user, tool):
@@ -126,15 +149,15 @@ def qualify(authorizer, user, tool):
 			entry.action = entry.Action.ADDED
 			entry.save()
 
-	if get_identity_service().get('available', False):
+	if get_identity_service().get("available", False):
 		if tool.grant_badge_reader_access_upon_qualification:
 			parameters = {
-				'username': user.username,
-				'domain': user.domain,
-				'requested_area': tool.grant_badge_reader_access_upon_qualification,
+				"username": user.username,
+				"domain": user.domain,
+				"requested_area": tool.grant_badge_reader_access_upon_qualification,
 			}
-			timeout = settings.IDENTITY_SERVICE.get('timeout', 3)
-			requests.put(urljoin(settings.IDENTITY_SERVICE['url'], '/add/'), data=parameters, timeout=timeout)
+			timeout = settings.IDENTITY_SERVICE.get("timeout", 3)
+			requests.put(urljoin(settings.IDENTITY_SERVICE["url"], "/add/"), data=parameters, timeout=timeout)
 
 
 def to_int_or_negative(value: str):

@@ -3,6 +3,6 @@
 {% else %}
 	<h1>You're logged in to the {{ area }}, {{ name }}.</h1>
 {% endif %}
-<h1>The door is open.</h1>
+{% if door.interlock %}<h1>The door is open.</h1>{% endif %}
 <h2>Access time is being charged to the project named {{ project }}.</h2>
 <script>revert(7);</script>

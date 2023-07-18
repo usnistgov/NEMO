@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load custom_tags_and_filters %}
+{% block extrahead %}
+	{% load static %}
+	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+{% endblock %}
+{% block title %}Contracts and procurements{% endblock %}
+{% block content %}
+	<h1 style="margin-top: 0; margin-bottom: 25px">Contracts & procurements</h1>
+	<ul class="nav nav-tabs">
+		{% url 'service_contracts' as service_contracts_url %}
+		<li class="nav-item{% if service_contracts_url in request.path %} active{% endif %}">
+			<a class="nav-link" href="{{ service_contracts_url }}">Service contracts</a>
+		</li>
+        {% url 'procurements' as procurements_url %}
+        <li class="nav-item{% if procurements_url in request.path %} active{% endif %}">
+            <a class="nav-link" href="{{ procurements_url }}">Procurements</a>
+        </li>
+        {% url 'contractor_agreements' as contractors_url %}
+        <li class="nav-item{% if contractors_url in request.path %} active{% endif %}">
+            <a class="nav-link" href="{{ contractors_url }}">Contractors</a>
+        </li>
+	</ul>
+	<div id="contract-panel-content" class="tab-content panel panel-default panel-tab-content info-tooltip-container">
+		<div class="panel-body">
+			{% block tab_content %}
+                {# we cannot extend pagination page directly since we are already extending training_base #}
+                {% block before_pagination %}
+                    <div class="pull-right" style="{% if page %}margin-bottom: 15px;{% endif %}">
+                        {% button type="export" value="Export" url=request.path|concat:"?csv=true" target="_blank" %}
+                        {% block add_button %}{% endblock %}
+                    </div>
+                {% endblock %}
+                {% if page %}
+                    {% with paginator=page.paginator %}
+                        {% block pagination_header %}
+                            <div class="pagination pull-right" style="clear: both">
+                                {% include "pagination/pagination_selector.html" %}
+                            </div>
+                        {% endblock %}
+
+                        <div class="table-responsive" style="width: 100%">
+                            {% block pagination_content %}
+                            {% endblock %}
+                        </div>
+
+                        {% block pagination_footer %}
+                            <div class="pagination pull-right" style="margin-bottom: 0">
+                                {% include "pagination/pagination_pages.html" %}
+                            </div>
+                        {% endblock %}
+                    {% endwith %}
+                {% else %}
+                    <div class="pull-left form-control-static"><i>{% block table_empty_content %}{% endblock %}</i></div>
+                {% endif %}
+                {% block after_pagination %}{% endblock %}
+            {% endblock %}
+		</div>
+	</div>
+    <script>
+        {# Set a global click handler to dismiss manual tooltips #}
+        $('html').on('click', function(e)
+        {
+            {# Only dimiss tooltips when clicking outside of them #}
+            let target_id = $(e.target).parents('.tooltip').attr('id');
+            if (typeof $(e.target).data('original-title') == 'undefined')
+            {
+                $(".tooltip").not('#'+target_id).remove();
+            }
+        });
+        $("[data-toggle='tooltip-notes']").on('click', function ()
+        {
+            {# Remove associated data to prevent toggling issues #}
+            $(this).removeData('bs.tooltip');
+            $(".tooltip").remove();
+            $(this).tooltip({trigger: 'manual', html: 'true', container: '#contract-panel-content'}).tooltip('toggle');
+        });
+        $("[data-toggle='tooltip']").tooltip({html: 'true'});
+
+        function document_view(form)
+        {
+            let data = $(form).serialize();
+            ajax_post('{% url "media_list_view" allow_zip="true" popup="true" %}', data, ajax_success_callback);
+        }
+    </script>
+{% endblock %}

@@ -6,7 +6,7 @@ from typing import List
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.validators import validate_email
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -16,6 +16,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO.decorators import any_staff_required
 from NEMO.forms import EmailBroadcastForm
 from NEMO.models import Account, Area, Project, Tool, User, UserType
+from NEMO.typing import QuerySetType
 from NEMO.utilities import EmailCategory, export_format_datetime, render_email_template, send_mail
 from NEMO.views.customization import ApplicationCustomization, get_media_file_contents
 
@@ -238,7 +239,7 @@ def email_preview(request):
 	return HttpResponse()
 
 
-def get_users_for_email(audience: str, selection: List, no_type: bool) -> QuerySet:
+def get_users_for_email(audience: str, selection: List, no_type: bool) -> QuerySetType[User]:
 	users = User.objects.none()
 	if audience == "tool":
 		users = User.objects.filter(qualifications__id__in=selection).distinct()

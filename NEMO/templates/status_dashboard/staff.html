@@ -6,6 +6,7 @@
   background: #ddd !important;
 }
 </style>
+{% if staffs %}
 <div class="row" style="display: table-row;">
     <div style="display: table-cell;width: 100%">
         Staff availability is highlighted in <span style="display: inline-block; padding: 3px" class="alert-success">green</span><br>
@@ -19,10 +20,10 @@
         <div style="display: table-cell; vertical-align: bottom; width: 100%">
             <div style="display: inline-flex">
                 <div class="btn-group" role="group" style="display: inline-flex">
-                    <button type="button" class="btn btn-default {% if page_view == 'day' %}active{% endif %}" onclick="location.href = '?timestamp={{ page_timestamp }}&view=day'" {% if page_view == 'day' %}aria-pressed="true"{% endif %}>Day</button>
-                    <button type="button" class="btn btn-default {% if not page_view or page_view == 'week' %}active{% endif %}" onclick="location.href = '?timestamp={{ page_timestamp }}&view=week'" {% if not page_view or page_view == 'week' %}aria-pressed="true"{% endif %}>Week</button>
+                    <button type="button" class="btn btn-default {% if page_view == 'day' %}active{% endif %}" onclick="refresh_staff_status_dashboard('timestamp={{ page_timestamp }}&view=day');" {% if page_view == 'day' %}aria-pressed="true"{% endif %}>Day</button>
+                    <button type="button" class="btn btn-default {% if not page_view or page_view == 'week' %}active{% endif %}" onclick="refresh_staff_status_dashboard('timestamp={{ page_timestamp }}&view=week');" {% if not page_view or page_view == 'week' %}aria-pressed="true"{% endif %}>Week</button>
                     {% if not user_view %}
-                        <button type="button" class="btn btn-default {% if page_view == 'month' %}active{% endif %}" onclick="location.href = '?timestamp={{ page_timestamp }}&view=month'" {% if page_view == 'month' %}aria-pressed="true"{% endif %}>Month</button>
+                        <button type="button" class="btn btn-default {% if page_view == 'month' %}active{% endif %}" onclick="refresh_staff_status_dashboard('timestamp={{ page_timestamp }}&view=month');" {% if page_view == 'month' %}aria-pressed="true"{% endif %}>Month</button>
                     {% endif %}
                 </div>
                 {% if user.is_facility_manager %}
@@ -37,10 +38,10 @@
     <table class="table table-responsive table-hover-first" style="margin: 0;border-collapse: collapse">
         <thead>
             <tr class="no-border">
-                <th class="sticky" {% if days_length == 1 %}style="width:33%"{% endif %}></th>
+                <th class="sticky" style="background-color: white; {% if days_length == 1 %}width:33%{% endif %}" aria-label="Blank corner cell"></th>
                 {% if prev %}
-                    <th class="button-column-minimum" style="vertical-align: middle;">
-                        <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ prev }}&view={{ page_view }}">
+                    <th class="button-column-minimum" style="vertical-align: middle;" aria-label="Previous page cell">
+                        <a style="cursor: pointer" onclick="refresh_staff_status_dashboard('timestamp={{ page_timestamp }}&view=week');" aria-label="Previous page button">
                             <i class="glyphicon glyphicon-chevron-left chevron" style="padding: 0"></i>
                         </a>
                     </th>
@@ -52,8 +53,8 @@
                     </th>
                 {% endfor %}
                 {% if next %}
-                    <th class="button-column-minimum" style="vertical-align: middle;">
-                        <a href="{% url 'status_dashboard_tab' 'staff' %}?timestamp={{ next }}&view={{ page_view }}">
+                    <th class="button-column-minimum" style="vertical-align: middle;" aria-label="Next page cell">
+                        <a style="cursor: pointer" onclick="refresh_staff_status_dashboard('timestamp={{ next }}&view={{ page_view }}')" aria-label="Next page button">
                             <i class="glyphicon glyphicon-chevron-right chevron" style="padding: 0"></i>
                         </a>
                     </th>
@@ -65,10 +66,10 @@
             {% for category in category_staff %}
                 <tr>
                     <th colspan="{% if prev %}3{% else %}2{% endif %}" class="sticky">{{ category.grouper|default_if_none:'Other' }}</th>
-                    {% if next or days_length != 1 %}<th colspan="{% if next %}{{ days_length|add:'1' }}{% else %}{{ days_length }}{% endif %}"></th>{% endif %}
+                    {% if next or days_length != 1 %}<th aria-label="Staff category empty cells" colspan="{% if next %}{{ days_length|add:'1' }}{% else %}{{ days_length }}{% endif %}"></th>{% endif %}
                 </tr>
                 {% for staff in category.list %}
-                    <tr>
+                    <tr class="default">
                         <td style="vertical-align: middle;" class="sticky">
                             <div class="text-nowrap staff-status-contact">{{ staff.staff_member.get_contact_info_html|safe }}</div>
                             <div class="staff-status-add">{% if user.is_facility_manager %}<span class="glyphicon glyphicon-plus-sign success-highlight" onclick="ajax_get('{% url "create_staff_absence" %}?staff_id={{ staff.id }}&timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)" title="Add staff absence"></span>{% endif %}</div>
@@ -83,7 +84,11 @@
                                         {% endwith %}
                                     {% elif staff_absent %}
                                         {% if not user.is_facility_manager %}
-                                            <div data-toggle="tooltip" title="{{ staff_absent.description|linebreaksbr }}">&nbsp;</div>
+                                            {% if "dashboard"|customization:"dashboard_staff_status_absence_view_staff" and user.is_staff or "dashboard"|customization:"dashboard_staff_status_absence_view_user_office" and user.is_user_office or "dashboard"|customization:"dashboard_staff_status_absence_view_accounting_officer" and user.is_accounting_officer %}
+                                                <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span>{{ staff_absent.absence_type.name }}</span></div>
+                                            {% else %}
+                                                <div data-toggle="tooltip" title="{{ staff_absent.description|linebreaksbr }}">&nbsp;</div>
+                                            {% endif %}
                                         {% else %}
                                             <div data-toggle="tooltip" title="{{ staff_absent.details_for_manager }}"><span style="cursor: pointer" onclick="ajax_get('{% url "edit_staff_absence" staff_absent.id %}?timestamp={{ page_timestamp }}&view={{ page_view }}', undefined, ajax_success_callback)">{{ staff_absent.absence_type.name }}</span></div>
                                         {% endif %}
@@ -100,8 +105,11 @@
         </tbody>
     </table>
 </div>
+{% endif %}
 <script>
     $(".contact-info-tooltip").on('click', function () {
+        {# Remove associated data to prevent toggling issues #}
+        $(this).removeData('bs.tooltip');
         $(".tooltip").remove();
       	$(this).tooltip({trigger: 'manual', html: 'true', container: '#contact-info-tooltip-container'}).tooltip('toggle');
     });

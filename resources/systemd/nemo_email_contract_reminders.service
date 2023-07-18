@@ -1,0 +1,6 @@
+[Unit]
+Description=Email contract reminders in NEMO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin send_email_contract_reminders

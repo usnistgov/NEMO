@@ -1,0 +1,47 @@
+{% load custom_tags_and_filters %}
+<div class="panel-body">
+    <form method="POST" action="{% url 'customize' 'contracts' %}" class="form-horizontal">
+        {% csrf_token %}
+        <h3 class="customization-section-title">Contracts & procurements</h3>
+        <div class="form-group">
+            <label class="control-label col-md-4 col-sm-5">View permissions</label>
+            <div class="col-md-8 col-sm-7">
+				<div class="checkbox">
+					<label><input type="checkbox" name="contracts_view_staff" {% if contracts_view_staff %}checked{% endif %} value="enabled">Technical staff</label><br/>
+				</div>
+			</div>
+            <div class="col-md-offset-4 col-sm-offset-5 col-md-8 col-sm-7">
+				<div class="checkbox">
+					<label><input type="checkbox" name="contracts_view_user_office" {% if contracts_view_user_office %}checked{% endif %} value="enabled">User office</label><br/>
+				</div>
+			</div>
+            <div class="col-md-offset-4 col-sm-offset-5 col-md-8 col-sm-7">
+				<div class="checkbox">
+					<label><input type="checkbox" name="contracts_view_accounting_officer" {% if contracts_view_accounting_officer %}checked{% endif %} value="enabled">Accounting staff</label><br/>
+				</div>
+			</div>
+            <div class="col-md-offset-4 col-sm-offset-5 col-md-8 col-sm-7">
+				<div class="checkbox">
+					<label><input type="checkbox" checked disabled>Facility managers</label><br/>
+				</div>
+			</div>
+        </div>
+        <div class="form-group{% if errors.contracts_contractors_default_empty_label %}has-error{% endif %}">
+            <label class="control-label col-md-4 col-sm-5" for="contracts_contractors_default_empty_label">Contractor contract default</label>
+			<div class="col-md-5 col-sm-7">
+                <input class="form-control" name="contracts_contractors_default_empty_label" id="contracts_contractors_default_empty_label" type="text" value="{{ contracts_contractors_default_empty_label|default_if_none:'' }}">
+			</div>
+				<div class="col-md-offset-4 col-sm-offset-5 col-md-8 col-sm-7 help-block light-grey">
+			    {% if errors.contracts_contractors_default_empty_label %}
+                    {{ errors.contracts_contractors_default_empty_label.error }}
+			    {% else %}
+                    The default option name when no contracts are selected for a contractor agreement.
+			    {% endif %}
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <div class="text-center">
+            {% button type="save" value="Save settings" %}
+        </div>
+    </form>
+</div>

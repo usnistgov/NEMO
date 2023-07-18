@@ -3,6 +3,7 @@ from typing import List
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
@@ -29,7 +30,6 @@ from NEMO.utilities import (
     EmailCategory,
     bootstrap_primary_color,
     export_format_datetime,
-    get_email_from_settings,
     get_full_url,
     quiet_int,
     render_email_template,
@@ -59,6 +59,16 @@ def adjustment_requests(request):
     adj_requests = AdjustmentRequest.objects.filter(deleted=False)
     if not user.is_facility_manager and not user.is_user_office and not user.is_accounting_officer:
         adj_requests = adj_requests.filter(creator=user)
+    if user.is_facility_manager and user.get_preferences().tool_adjustment_notifications.all():
+        exclude = []
+        tools = user.get_preferences().tool_adjustment_notifications.all()
+        if tools:
+            for adj in adj_requests:
+                tool = getattr(adj.item, "tool", None) if adj.item else None
+                if tool and tool not in tools:
+                    exclude.append(adj.pk)
+            adj_requests = adj_requests.exclude(pk__in=exclude)
+
     dictionary = {
         "pending_adjustment_requests": adj_requests.filter(status=RequestStatus.PENDING),
         "approved_adjustment_requests": adj_requests.filter(status=RequestStatus.APPROVED)[:max_requests],
@@ -214,8 +224,12 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
     adjustment_request_notification_email = get_media_file_contents("adjustment_request_notification_email.html")
     if user_office_email and adjustment_request_notification_email:
         # cc facility managers
-        facility_managers: List[User] = list(User.objects.filter(is_active=True, is_facility_manager=True))
-        ccs = [
+        tool = getattr(adjustment_request.item, "tool", None) if adjustment_request.item else None
+        facility_managers_qs = User.objects.filter(is_active=True, is_facility_manager=True)
+        if tool:
+            facility_managers_qs = facility_managers_qs.filter(Q(preferences__tool_adjustment_notifications__isnull=True)|Q(preferences__tool_adjustment_notifications__in=[tool]))
+        facility_managers: List[User] = list(facility_managers_qs)
+        manager_emails = [
             email
             for user in facility_managers
             for email in user.get_emails(user.get_preferences().email_send_adjustment_request_updates)
@@ -240,15 +254,26 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             "user_office": False,
         }
         message = render_email_template(adjustment_request_notification_email, dictionary)
-        email_notification = adjustment_request.creator.get_preferences().email_send_adjustment_request_updates
-        send_mail(
-            subject=f"Your adjustment request has been {status}",
-            content=message,
-            from_email=user_office_email,
-            to=adjustment_request.creator.get_emails(email_notification),
-            cc=ccs,
-            email_category=EmailCategory.ADJUSTMENT_REQUESTS,
-        )
+        creator_notification = adjustment_request.creator.get_preferences().email_send_adjustment_request_updates
+        if status in ["received", "updated"]:
+            send_mail(
+                subject=f"Adjustment request {status}",
+                content=message,
+                from_email=adjustment_request.creator.email,
+                to=manager_emails,
+                cc=adjustment_request.creator.get_emails(creator_notification),
+                email_category=EmailCategory.ADJUSTMENT_REQUESTS,
+            )
+        else:
+            send_mail(
+                subject=f"Your adjustment request has been {status}",
+                content=message,
+                from_email=adjustment_request.reviewer.email,
+                to=adjustment_request.creator.get_emails(creator_notification),
+                cc=manager_emails,
+                email_category=EmailCategory.ADJUSTMENT_REQUESTS,
+            )
+
         # Send separate email to the user office (with the extra note) when a request is approved
         if adjustment_request.status == RequestStatus.APPROVED:
             dictionary["manager_note"] = adjustment_request.manager_note
@@ -257,9 +282,9 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             send_mail(
                 subject=f"{adjustment_request.creator.get_name()}'s adjustment request has been {status}",
                 content=message,
-                from_email=get_email_from_settings(),
+                from_email=adjustment_request.reviewer.email,
                 to=[user_office_email],
-                cc=ccs,
+                cc=manager_emails,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
 
@@ -280,7 +305,7 @@ Please visit {reply_url} to reply"""
             user.email_user(
                 subject=subject,
                 message=message,
-                from_email=get_email_from_settings(),
+                from_email=reply.author.email,
                 email_notification=email_notification,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )

@@ -1,6 +1,6 @@
 from abc import ABC
 from datetime import date, datetime
-from typing import Dict, Iterable
+from typing import Dict, Iterable, List
 
 from dateutil.relativedelta import relativedelta
 from django.contrib import messages
@@ -20,7 +20,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
-from NEMO.models import ConsumableCategory, Customization, Project, RecurringConsumableCharge
+from NEMO.models import BadgeReader, ConsumableCategory, Customization, Project, RecurringConsumableCharge
 from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
 
@@ -124,10 +124,24 @@ class CustomizationBase(ABC):
 			return datetime.strptime(str_date, date_input_format).date()
 
 	@classmethod
-	def get_datetime(cls, name:str, raise_exception=True) -> datetime:
+	def get_datetime(cls, name: str, raise_exception=True) -> datetime:
 		str_datetime = cls.get(name, raise_exception)
 		if str_datetime:
 			return datetime.strptime(str_datetime, datetime_input_format)
+
+	@classmethod
+	def get_list(cls, name: str, raise_exception=True) -> List[str]:
+		return [item.strip() for item in cls.get(name, raise_exception).split(",") if item]
+
+	@classmethod
+	def get_list_int(cls, name: str, raise_exception=True) -> List[int]:
+		result = []
+		for item in cls.get_list(name, raise_exception):
+			if item:
+				integer = quiet_int(item.strip(), None)
+				if integer:
+					result.append(integer)
+		return result
 
 	@classmethod
 	def set(cls, name: str, value):
@@ -150,7 +164,15 @@ class ApplicationCustomization(CustomizationBase):
 		"self_log_in": "",
 		"self_log_out": "",
 		"calendar_login_logout": "",
+		"area_logout_already_logged_in": "",
+		"default_badge_reader_id": "",
+		"consumable_user_self_checkout": "",
 	}
+
+	def context(self) -> Dict:
+		context_dict = super().context()
+		context_dict["badge_readers"] = BadgeReader.objects.all()
+		return context_dict
 
 	def save(self, request, element=None):
 		errors = super().save(request, element)
@@ -227,7 +249,7 @@ class CalendarCustomization(CustomizationBase):
 		"calendar_all_areas": "",
 		"calendar_all_areastools": "",
 		"calendar_outage_recurrence_limit": "90",
-		"calendar_qualified_tools": ""
+		"calendar_qualified_tools": "",
 	}
 
 
@@ -243,6 +265,9 @@ class StatusDashboardCustomization(CustomizationBase):
 		"dashboard_staff_status_check_future_status": "",
 		"dashboard_staff_status_user_view": "",
 		"dashboard_staff_status_staff_view": "",
+		"dashboard_staff_status_absence_view_staff": "",
+		"dashboard_staff_status_absence_view_user_office": "",
+		"dashboard_staff_status_absence_view_accounting_officer": "",
 	}
 
 
@@ -313,7 +338,9 @@ class UserRequestsCustomization(CustomizationBase):
 		if value and name == "adjustment_requests_time_limit_frequency":
 			try:
 				if RecurrenceFrequency(int(value)) not in self.frequencies:
-					raise ValidationError(f"frequency must be one of {[freq.display_value for freq in self.frequencies]}")
+					raise ValidationError(
+						f"frequency must be one of {[freq.display_value for freq in self.frequencies]}"
+					)
 			except Exception as e:
 				raise ValidationError(str(e))
 
@@ -325,7 +352,7 @@ class RecurringChargesCustomization(CustomizationBase):
 		"recurring_charges_lock": "",
 		"recurring_charges_category": "",
 		"recurring_charges_force_quantity": "",
-		"recurring_charges_skip_customer_validation": ""
+		"recurring_charges_skip_customer_validation": "",
 	}
 
 	def __init__(self, key, title):
@@ -356,6 +383,7 @@ class ToolCustomization(CustomizationBase):
 	variables = {
 		"tool_phone_number_required": "enabled",
 		"tool_location_required": "enabled",
+		"tool_task_updates_facility_managers": "enabled",
 		"tool_control_hide_data_history_users": "",
 		"tool_control_configuration_setting_template": "{{ current_setting }}",
 		"tool_qualification_reminder_days": "",
@@ -453,7 +481,7 @@ class RatesCustomization(CustomizationBase):
 
 
 def get_media_file_contents(file_name):
-	""" Get the contents of a media file if it exists. Return a blank string if it does not exist. """
+	"""Get the contents of a media file if it exists. Return a blank string if it does not exist."""
 	storage = get_storage_class()()
 	if not storage.exists(file_name):
 		return ""

@@ -19,10 +19,10 @@
                     <p>
                         {% if fatal_error %}
                             There is a problem with your <b>{{ reservation.start|time }}</b> reservation for the <b>{{ reservation.tool }}</b>.
-                            The tool was <b>shut down</b> when this email was sent. Please visit to NEMO to view current tool status.
+                            The tool was <b>shut down</b> when this email was sent. Please visit {{ site_title }} to view current tool status.
                         {% else %}
                             There may be a problem with your <b>{{ reservation.start|time }}</b> reservation for the <b>{{ reservation.tool }}</b>.
-                            The tool may be operating in a diminished capacity or may not be able to perform certain processes. Please visit NEMO to view current tool status.
+                            The tool may be operating in a diminished capacity or may not be able to perform certain processes. Please visit {{ site_title }} to view current tool status.
                         {% endif %}
                     </p>
 

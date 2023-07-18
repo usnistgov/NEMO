@@ -119,7 +119,7 @@ def make_reservation(request):
 	try:
 		reservation.project = Project.objects.get(id=request.POST['project_id'])
 		# Check if we are allowed to bill to project
-		policy.check_billing_to_project(reservation.project, request.user, reservation.reservation_item)
+		policy.check_billing_to_project(reservation.project, request.user, reservation.reservation_item, reservation)
 	except ProjectChargeException as e:
 		return render(request, 'mobile/error.html', {'message': e.msg})
 	except:

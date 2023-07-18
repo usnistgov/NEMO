@@ -1,3 +1,8 @@
+a
+{
+	color: #1067b4;
+}
+
 label
 {
 	font-weight: normal !important;
@@ -151,22 +156,42 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 
 .primary-highlight
 {
-	color: #428bca;
+	color: #3477b4;
+}
+
+.label-primary
+{
+	background-color: #3477b4;
 }
 
 .success-highlight
 {
-	color: #22b14c;
+	color: #008000;
+}
+
+.label-success
+{
+	background-color: #008000;
 }
 
 .warning-highlight
 {
-	color: #f0ad4e;
+	color: #eb9316;
+}
+
+.label-warning
+{
+	background-color: #eb9316;
 }
 
 .danger-highlight
 {
-	color: red;
+	color: #dc143c;
+}
+
+.label-danger
+{
+	background-color: #dc143c;
 }
 
 .grey
@@ -176,7 +201,7 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 
 .light-grey
 {
-	color: lightgrey;
+	color: #6F6F6F;
 }
 
 .hover-black:hover
@@ -280,6 +305,15 @@ div.fc-ltr .fc-time-grid .fc-event-container
 	margin-right: 15px;
 }
 
+/* Override Bootstrap's media and media-body CSS settings so that the
+Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
+.media, .media-body
+{
+	overflow: visible;
+	min-height: 35px;
+}
+
+
 /* Twitter typeahead styles */
 .twitter-typeahead
 {
@@ -303,14 +337,6 @@ div.fc-ltr .fc-time-grid .fc-event-container
 	box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
 	max-height: 150px;
 	overflow-y: auto;
-}
-
-/* Override Bootstrap's media and media-body CSS settings so that the
-Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
-.media, .media-body
-{
-	overflow: visible;
-	min-height: 35px;
 }
 
 /* The suggestion style encases the matching part of the query in each of the search results. */
@@ -876,7 +902,18 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	vertical-align: middle;
 }
 
+/* No bottom margin when using pagination inside a panel */
+.panel-body .pagination:last-of-type
+{
+	margin-bottom: 0;
+}
+
 /* Badge display on top right corner */
+.badge
+{
+	background-color: #6e6e6e;
+}
+
 .badge.badge-tab-top
 {
 	z-index: 5;
@@ -885,10 +922,15 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	right: -0.5em;
 }
 
-.active > a > .badge.badge-tab-top
+.badge.active
+{
+	vertical-align: top;
+}
+
+.active > a > .badge.badge-tab-top, .badge.active
 {
 	color: #fff !important;
-	background-color: red !important;
+	background-color: #ee0000 !important;
 }
 
 .nav-pills.nav-pills-spacer > li + li
@@ -922,7 +964,6 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	position: -webkit-sticky;
 	left: 0;
 	top:0;
-	background-color: #fff;
 	z-index: 5;
 }
 
@@ -1038,4 +1079,81 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 .adjustment-request-reply-textarea
 {
 	padding-top: 5px;
+}
+
+.usage-charge
+{
+	position: relative;
+}
+
+.usage-charge-adjustment-button
+{
+	position: absolute;
+	top: 15px;
+	right: 15px;
+}
+
+/* Table default color enforcing (useful when using sticky columns) */
+.table > thead > tr > td.default,
+.table > tbody > tr > td.default,
+.table > tfoot > tr > td.default,
+.table > thead > tr > th.default,
+.table > tbody > tr > th.default,
+.table > tfoot > tr > th.default,
+.table > thead > tr.default > td,
+.table > tbody > tr.default > td,
+.table > tfoot > tr.default > td,
+.table > thead > tr.default > th,
+.table > tbody > tr.default > th,
+.table > tfoot > tr.default > th
+{
+  	background-color: #ffffff;
+}
+
+.table-striped > thead > tr:nth-of-type(odd) > td.default,
+.table-striped > tbody > tr:nth-of-type(odd) > td.default,
+.table-striped > tfoot > tr:nth-of-type(odd) > td.default,
+.table-striped > thead > tr:nth-of-type(odd) > th.default,
+.table-striped > tbody > tr:nth-of-type(odd) > th.default,
+.table-striped > tfoot > tr:nth-of-type(odd) > th.default,
+.table-striped > thead > tr.default:nth-of-type(odd) > td,
+.table-striped > tbody > tr.default:nth-of-type(odd) > td,
+.table-striped > tfoot > tr.default:nth-of-type(odd) > td,
+.table-striped > thead > tr.default:nth-of-type(odd) > th,
+.table-striped > tbody > tr.default:nth-of-type(odd) > th,
+.table-striped > tfoot > tr.default:nth-of-type(odd) > th
+{
+  	background-color: #f9f9f9;
+}
+
+.table-hover > tbody > tr > td.default:hover,
+.table-hover > tbody > tr > th.default:hover,
+.table-hover > tbody > tr.default:hover > td,
+.table-hover > tbody > tr:hover > .default,
+.table-hover > tbody > tr.default:hover > th
+{
+  	background-color: #f5f5f5;
+}
+
+.strikethrough
+{
+	text-decoration: line-through;
+}
+
+#safety-tabs
+{
+	margin-top: 0;
+	margin-bottom: 15px;
+}
+
+.safety-title
+{
+	margin-top: 0;
+	margin-right: 20px;
+}
+
+.safety-tabs-nav
+{
+	display: inline-block;
+	float: right;
 }

@@ -19,6 +19,7 @@ from NEMO.views.calendar import (
 	render_reservation_questions,
 	shorten_reservation,
 )
+from NEMO.views.customization import ApplicationCustomization
 from NEMO.views.status_dashboard import create_tool_summary
 from NEMO.views.tool_control import (
 	email_managers_required_questions_disable_tool,
@@ -42,7 +43,7 @@ def do_enable_tool(request, tool_id):
 	project = Project.objects.get(id=request.POST["project_id"])
 	bypass_interlock = request.POST.get("bypass", "False") == "True"
 
-	response = policy.check_to_enable_tool(tool, operator=customer, user=customer, project=project, staff_charge=False)
+	response = policy.check_to_enable_tool(tool, operator=customer, user=customer, project=project, staff_charge=False, remote_work=False)
 	if response.status_code != HTTPStatus.OK:
 		dictionary = {
 			"message": "You are not authorized to enable this tool. {}".format(response.content.decode()),
@@ -95,7 +96,8 @@ def do_disable_tool(request, tool_id):
 			return interlock_error("Disable", customer)
 
 	# Shorten the user's tool reservation since we are now done using the tool
-	shorten_reservation(user=customer, item=tool, new_end=timezone.now() + downtime)
+	staff_shortening = request.POST.get("shorten", False)
+	shorten_reservation(user=customer, item=tool, new_end=timezone.now() + downtime, force=staff_shortening)
 
 	# End the current usage event for the tool and save it.
 	current_usage_event = tool.get_current_usage_event()
@@ -181,7 +183,9 @@ def reserve_tool(request):
 
 	# Reservation questions if applicable
 	try:
-		reservation.question_data = extract_reservation_questions(request, ReservationItemType.TOOL, tool.id, reservation.project)
+		reservation.question_data = extract_reservation_questions(
+			request, ReservationItemType.TOOL, tool.id, reservation.project
+		)
 	except RequiredUnansweredQuestionsException as e:
 		error_dictionary["message"] = str(e)
 		return render(request, "kiosk/error.html", error_dictionary)
@@ -194,7 +198,7 @@ def reserve_tool(request):
 @permission_required("NEMO.kiosk")
 @require_POST
 def cancel_reservation(request, reservation_id):
-	""" Cancel a reservation for a user. """
+	"""Cancel a reservation for a user."""
 	reservation = Reservation.objects.get(id=reservation_id)
 	customer = User.objects.get(id=request.POST["customer_id"])
 
@@ -268,7 +272,8 @@ def choices(request):
 	unqualified_categories = [
 		category
 		for category in categories
-		if not customer.is_staff and not Tool.objects.filter(
+		if not customer.is_staff
+		   and not Tool.objects.filter(
 			visible=True, _category=category, id__in=customer.qualifications.all().values_list("id")
 		).exists()
 	]
@@ -336,7 +341,7 @@ def tool_information(request, tool_id, user_id, back):
 		remaining_reservation_duration = int((current_reservation.end - timezone.now()).total_seconds() / 60)
 		# We don't need to bother telling the user their reservation will be shortened if there's less than two minutes left.
 		# Staff are exempt from reservation shortening.
-		if remaining_reservation_duration > 2 and not customer.is_staff:
+		if remaining_reservation_duration > 2:
 			dictionary["remaining_reservation_duration"] = remaining_reservation_duration
 	except Reservation.DoesNotExist:
 		pass
@@ -347,8 +352,13 @@ def tool_information(request, tool_id, user_id, back):
 @permission_required("NEMO.kiosk")
 @require_GET
 def kiosk(request, location=None):
-	reader_id = request.GET.get("reader_id")
-	dictionary = {
-		"badge_reader": BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default(),
-	}
-	return render(request, "kiosk/kiosk.html", dictionary)
+	return render(request, "kiosk/kiosk.html", {"badge_reader": get_badge_reader(request)})
+
+
+def get_badge_reader(request) -> BadgeReader:
+	reader_id = request.GET.get("reader_id") or ApplicationCustomization.get_int("default_badge_reader_id")
+	try:
+		badge_reader = BadgeReader.objects.get(id=reader_id)
+	except BadgeReader.DoesNotExist:
+		badge_reader = BadgeReader.default()
+	return badge_reader

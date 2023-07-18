@@ -842,6 +842,23 @@
     "model": "NEMO.landingpagechoice",
     "pk": 8,
     "fields": {
+      "image": "supplies.png",
+      "name": "Supplies/Consumables",
+      "url": "/consumables/",
+      "display_order": 7,
+      "open_in_new_tab": false,
+      "secure_referral": false,
+      "hide_from_mobile_devices": false,
+      "hide_from_desktop_computers": false,
+      "hide_from_users": false,
+      "hide_from_staff": false,
+      "notifications": null
+    }
+  },
+  {
+    "model": "NEMO.landingpagechoice",
+    "pk": 9,
+    "fields": {
       "image": "library.png",
       "name": "Google",
       "url": "https://www.google.com/",
@@ -857,7 +874,7 @@
   },
   {
     "model": "NEMO.landingpagechoice",
-    "pk": 9,
+    "pk": 10,
     "fields": {
       "image": "news.png",
       "name": "News and events",
@@ -870,6 +887,23 @@
       "hide_from_users": false,
       "hide_from_staff": false,
       "notifications": "news"
+    }
+  },
+  {
+    "model": "NEMO.landingpagechoice",
+    "pk": 11,
+    "fields": {
+      "image": "sensors.png",
+      "name": "Sensor data",
+      "url": "/sensors/",
+      "display_order": 10,
+      "open_in_new_tab": false,
+      "secure_referral": false,
+      "hide_from_mobile_devices": false,
+      "hide_from_desktop_computers": false,
+      "hide_from_users": false,
+      "hide_from_staff": false,
+      "notifications": "null"
     }
   },
   {
@@ -945,6 +979,13 @@
   {
     "model": "NEMO.customization",
     "pk": "user_allow_document_upload",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "consumable_user_self_checkout",
     "fields": {
       "value": "enabled"
     }
@@ -9098,6 +9139,40 @@
     }
   },
   {
+    "model": "NEMO.reservation",
+    "pk": 2,
+    "fields": {
+      "user": [
+        "captain"
+      ],
+      "creator": [
+        "captain"
+      ],
+      "creation_time": "2023-04-11T21:56:34.865Z",
+      "tool": [
+        "Sinter"
+      ],
+      "area": null,
+      "project": [
+        "Cleanroom Eng"
+      ],
+      "start": "2022-06-24T20:10:00Z",
+      "end": "2022-06-26T20:10:00Z",
+      "short_notice": false,
+      "cancelled": false,
+      "cancellation_time": null,
+      "cancelled_by": null,
+      "missed": false,
+      "shortened": false,
+      "descendant": null,
+      "additional_information": null,
+      "self_configuration": false,
+      "title": "",
+      "question_data": null,
+      "validated": false
+    }
+  },
+  {
     "model": "NEMO.reservationquestions",
     "pk": 1,
     "fields": {
@@ -9614,10 +9689,18 @@
     "model": "NEMO.trainingsession",
     "pk": 1,
     "fields": {
-      "trainer": 1,
-      "trainee": 3,
-      "tool": 3,
-      "project": 2,
+      "trainer": [
+        "captain"
+      ],
+      "trainee": [
+        "ned"
+      ],
+      "tool": [
+        "Dicing saw"
+      ],
+      "project": [
+        "Project 2"
+      ],
       "duration": 60,
       "type": 0,
       "date": "2023-05-12T23:29:00Z",
@@ -9630,14 +9713,129 @@
     "model": "NEMO.consumablewithdraw",
     "pk": 1,
     "fields": {
-      "customer": 3,
-      "merchant": 1,
+      "customer": [
+        "ned"
+      ],
+      "merchant": [
+        "captain"
+      ],
       "consumable": 2,
       "quantity": 1,
-      "project": 2,
+      "project": [
+        "Project 2"
+      ],
       "date": "2023-05-12T23:32:50.300Z",
       "validated": false,
       "validated_by": null
+    }
+  },
+  {
+    "model": "contracts.procurement",
+    "pk": 1,
+    "fields": {
+      "name": "JEOL",
+      "submitted_date": "2021-11-01",
+      "award_date": "2021-12-01",
+      "contract_number": "123456",
+      "requisition_number": "789012",
+      "cost": "123456.00",
+      "notes": "Period of performance 01/01/2022 to 12/31/2023\r\n\r\nInfo from the award document:\r\n1. Item Number 0022: EBL #1 $74,073.60\r\n2. Item Number 0024: EBL #2 $49,382.40\r\nTotal $123,456\r\n\r\nInstructions for contacting JEOL service:\r\n\r\nAll service visits are initiated with a call to the district service manager, Joel E'Beam. Joel's contact information is:\r\nJoel E'Beam\r\nService Manager\r\nTel: +1.234.567.8901\r\njoel.ebeam@example.com"
+    }
+  },
+  {
+    "model": "contracts.procurement",
+    "pk": 2,
+    "fields": {
+      "name": "NEMO",
+      "submitted_date": "2023-05-01",
+      "award_date": "2023-06-01",
+      "contract_number": "234567",
+      "requisition_number": "890123",
+      "cost": "123456.00",
+      "notes": ""
+    }
+  },
+  {
+    "model": "contracts.procurement",
+    "pk": 3,
+    "fields": {
+      "name": "Cleanroom Garments",
+      "submitted_date": "2023-01-01",
+      "award_date": "2023-02-01",
+      "contract_number": "345678",
+      "requisition_number": "901234",
+      "cost": "12345.00",
+      "notes": ""
+    }
+  },
+  {
+    "model": "contracts.procurement",
+    "pk": 4,
+    "fields": {
+      "name": "JEOL EBL #2",
+      "submitted_date": "2020-05-01",
+      "award_date": "2020-05-30",
+      "contract_number": "123456",
+      "requisition_number": "789012",
+      "cost": "1234567.00",
+      "notes": ""
+    }
+  },
+  {
+    "model": "contracts.servicecontract",
+    "pk": 1,
+    "fields": {
+      "current_year": 1,
+      "total_years": 5,
+      "start": "2022-01-01",
+      "end": "2022-12-31",
+      "reminder_date": "2022-10-01"
+    }
+  },
+  {
+    "model": "contracts.servicecontract",
+    "pk": 2,
+    "fields": {
+      "current_year": 1,
+      "total_years": 10,
+      "start": "2023-07-01",
+      "end": "2024-07-01",
+      "reminder_date": "2024-04-01"
+    }
+  },
+  {
+    "model": "contracts.servicecontract",
+    "pk": 3,
+    "fields": {
+      "current_year": 3,
+      "total_years": 5,
+      "start": "2023-03-01",
+      "end": "2024-02-29",
+      "reminder_date": "2024-02-01"
+    }
+  },
+  {
+    "model": "contracts.contractoragreement",
+    "pk": 1,
+    "fields": {
+      "name": "John",
+      "contract": 1,
+      "start": "2022-06-01",
+      "end": "2022-12-31",
+      "reminder_date": "2022-11-01",
+      "notes": "Needs to be renewed every 6 months per security policy"
+    }
+  },
+  {
+    "model": "contracts.contractoragreement",
+    "pk": 2,
+    "fields": {
+      "name": "Matt",
+      "contract": 2,
+      "start": "2023-07-01",
+      "end": "2024-07-01",
+      "reminder_date": "2024-05-01",
+      "notes": ""
     }
   }
 ]

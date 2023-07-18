@@ -7,6 +7,7 @@ from typing import Dict, List
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
@@ -331,7 +332,14 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 	project = get_object_or_404(Project, id=project_id)
 	staff_charge = staff_charge == "true"
 	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
-	response = policy.check_to_enable_tool(tool, operator, user, project, staff_charge)
+	# Figure out if the tool usage is part of remote work
+	# 1: Staff charge means it's always remote work
+	# 2: Always remote if operator is different from the user
+	# 3: Unless customization is set to ask explicitly
+	remote_work = (user != operator and operator.is_staff)
+	if RemoteWorkCustomization.get_bool("remote_work_ask_explicitly"):
+		remote_work = remote_work and bool(request.POST.get("remote_work", False))
+	response = policy.check_to_enable_tool(tool, operator, user, project, staff_charge, remote_work)
 	if response.status_code != HTTPStatus.OK:
 		return response
 
@@ -342,13 +350,6 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 		else:
 			return interlock_error("Enable", user)
 
-	# Figure out if the tool usage is part of remote work
-	# 1: Staff charge means it's always remote work
-	# 2: Always remote if operator is different from the user
-	# 3: Unless customization is set to ask explicitly
-	remote_work = (user != operator and operator.is_staff)
-	if RemoteWorkCustomization.get_bool("remote_work_ask_explicitly"):
-		remote_work = remote_work and bool(request.POST.get("remote_work", False))
 	# Start staff charge before tool usage
 	if staff_charge:
 		# Staff charge means always a remote
@@ -404,7 +405,8 @@ def disable_tool(request, tool_id):
 			return interlock_error("Disable", user)
 
 	# Shorten the user's tool reservation since we are now done using the tool
-	shorten_reservation(user=user, item=tool, new_end=timezone.now() + downtime)
+	staff_shortening = request.POST.get("shorten", False)
+	shorten_reservation(user=user, item=tool, new_end=timezone.now() + downtime, force=staff_shortening)
 
 	# End the current usage event for the tool
 	current_usage_event = tool.get_current_usage_event()
@@ -575,13 +577,16 @@ def interlock_error(action:str, user:User):
 	return JsonResponse(dictionary, status=501)
 
 
-def email_managers_required_questions_disable_tool(tool_user:User, staff_member:User, tool:Tool, questions:List[PostUsageQuestion]):
+def email_managers_required_questions_disable_tool(tool_user: User, staff_member: User, tool: Tool, questions: List[PostUsageQuestion]):
+	user_office_email = EmailsCustomization.get('user_office_email_address')
 	abuse_email_address = EmailsCustomization.get('abuse_email_address')
 	cc_users: List[User] = [staff_member, tool.primary_owner]
-	cc_users.extend(tool.backup_owners.all())
-	cc_users.extend(User.objects.filter(is_active=True, is_facility_manager=True))
+	# Add facility managers as CC based on their tool notification preferences if any
+	cc_users.extend(User.objects.filter(is_active=True, is_facility_manager=True).filter(
+		Q(preferences__tool_task_notifications__isnull=True) | Q(preferences__tool_task_notifications__in=[tool])))
 	facility_name = ApplicationCustomization.get('facility_name')
 	ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
+	ccs.append(abuse_email_address)
 	display_questions = "".join([linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions])
 	message = f"""
 Dear {tool_user.get_name()},<br/>
@@ -594,7 +599,7 @@ Regards,<br/>
 {facility_name} Management<br/>
 """
 	tos = tool_user.get_emails(EmailNotificationType.BOTH_EMAILS)
-	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=abuse_email_address, to=tos, cc=ccs, email_category=EmailCategory.ABUSE)
+	send_mail(subject=f"Unanswered post‑usage questions after logoff from the {tool.name}", content=message, from_email=user_office_email, to=tos, cc=ccs, email_category=EmailCategory.ABUSE)
 
 
 def send_tool_usage_counter_email(counter: ToolUsageCounter):

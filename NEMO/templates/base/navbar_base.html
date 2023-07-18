@@ -26,7 +26,7 @@
                         <li><a href="{% url 'user_requests' %}">
                             Requests
                             {% if buddy_notification_count or temporary_access_notification_count or adjustment_notification_count %}
-                                <span class="badge" style="vertical-align:middle; background-color:red">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count }}</span>
+                                <span class="badge active">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count }}</span>
                             {% endif %}
                         </a></li>
                     {% endif %}
@@ -34,7 +34,7 @@
                         <li><a href="{% url 'safety' %}">
                             Safety
                             {% if safety_notification_count %}
-                                <span class="badge" style="vertical-align:middle; background-color:red">{{ safety_notification_count }}</span>
+                                <span class="badge active">{{ safety_notification_count }}</span>
                             {% endif %}
                         </a></li>
                     {% endif %}
@@ -54,6 +54,9 @@
                                     {% navigation_url 'api-root' 'API' user.is_superuser %}
                                     {% if areas_exist %}{% navigation_url 'area_access' 'Area access' user.is_staff user.is_user_office user.is_superuser %}{% endif %}
                                     {% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' user.is_staff user.is_superuser %}{% endif %}
+                                    {% if user.is_facility_manager or user.is_superuser or user.is_staff and "contracts"|customization:"contracts_view_staff" == "enabled" or user.is_user_office and "contracts"|customization:"contracts_view_user_office" == "enabled" or user.is_accounting_officer and "contracts"|customization:"contracts_view_accounting_officer" == "enabled" %}
+                                        {% navigation_url 'service_contracts' 'Contracts & procurements' %}
+                                    {% endif %}
                                     {% navigation_url 'customization' 'Customization' user.is_superuser %}
                                     {% navigation_url 'email_broadcast' 'Email' %}
                                     {% navigation_url 'impersonate' 'Impersonate' user.is_superuser %}

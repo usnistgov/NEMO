@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import List, Set
 
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from django.utils import timezone
 
 from NEMO.models import (
@@ -119,7 +120,10 @@ def create_access_request_notification(access_request: TemporaryPhysicalAccessRe
 
 def create_adjustment_request_notification(adjustment_request: AdjustmentRequest):
 	users_to_notify = {adjustment_request.creator}
-	reviewers: List[User] = User.objects.filter(is_active=True, is_facility_manager=True)
+	tool = getattr(adjustment_request.item, "tool", None) if adjustment_request.item else None
+	reviewers = User.objects.filter(is_active=True, is_facility_manager=True)
+	if tool:
+		reviewers = reviewers.filter(Q(preferences__tool_adjustment_notifications__isnull=True) | Q(preferences__tool_adjustment_notifications__in=[tool]))
 	users_to_notify.update(reviewers)
 	expiration = timezone.now() + timedelta(days=30)  # 30 days for adjustment requests to expire
 	for user in users_to_notify:

@@ -21,7 +21,16 @@ from NEMO.exceptions import (
 	ScheduledOutageInProgressError,
 	UnavailableResourcesUserError,
 )
-from NEMO.models import (BadgeReader, Door, PhysicalAccessLog, PhysicalAccessType, Project, UsageEvent, User)
+from NEMO.models import (
+	AreaAccessRecord,
+	BadgeReader,
+	Door,
+	PhysicalAccessLog,
+	PhysicalAccessType,
+	Project,
+	UsageEvent,
+	User,
+)
 from NEMO.policy import policy_class as policy
 from NEMO.views.area_access import log_in_user_to_area, log_out_user
 from NEMO.views.customization import ApplicationCustomization, InterlockCustomization
@@ -33,10 +42,11 @@ from NEMO.views.tool_control import interlock_bypass_allowed
 @require_GET
 def welcome_screen(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
-	reader_id = request.GET.get("reader_id")
-	badge_reader = BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default()
+	dictionary = {"area": door.area, "door": door, "badge_reader": get_badge_reader(request)}
 	return render(
-		request, "area_access/welcome_screen.html", {"area": door.area, "door": door, "badge_reader": badge_reader}
+		request,
+		"area_access/welcome_screen.html",
+		dictionary,
 	)
 
 
@@ -45,11 +55,8 @@ def welcome_screen(request, door_id):
 @require_GET
 def farewell_screen(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
-	reader_id = request.GET.get("reader_id")
-	badge_reader = BadgeReader.objects.get(id=reader_id) if reader_id else BadgeReader.default()
-	return render(
-		request, "area_access/farewell_screen.html", {"area": door.area, "door": door, "badge_reader": badge_reader}
-	)
+	dictionary = {"area": door.area, "door": door, "badge_reader": get_badge_reader(request)}
+	return render(request, "area_access/farewell_screen.html", dictionary)
 
 
 @login_required
@@ -59,7 +66,7 @@ def login_to_area(request, door_id):
 	door = get_object_or_404(Door, id=door_id)
 
 	badge_number = request.POST.get("badge_number")
-	bypass_interlock = request.POST.get("bypass", 'False') == 'True'
+	bypass_interlock = request.POST.get("bypass", "False") == "True"
 	if not badge_number:
 		return render(request, "area_access/badge_not_found.html")
 	try:
@@ -139,12 +146,15 @@ def login_to_area(request, door_id):
 
 	current_area_access_record = user.area_access_record()
 	if current_area_access_record and current_area_access_record.area == door.area:
+		if ApplicationCustomization.get_bool("area_logout_already_logged_in"):
+			return logout_of_area(request, door_id)
 		# No log entry necessary here because all validation checks passed.
 		# The log entry is captured when the subsequent choice is made by the user.
 		return render(
 			request,
 			"area_access/already_logged_in.html",
 			{
+				"door": door,
 				"area": door.area,
 				"project": current_area_access_record.project,
 				"badge_number": user.badge_number,
@@ -186,9 +196,11 @@ def login_to_area(request, door_id):
 			else:
 				project = get_object_or_404(Project, id=project_id)
 				try:
-					policy.check_billing_to_project(project, user, door.area)
+					policy.check_billing_to_project(project, user, door.area, AreaAccessRecord(area=door.area, project=project, customer=user))
 				except ProjectChargeException as e:
-					log.details = "The user attempted to bill the project named {} but got error: {}".format(project.name, e.msg)
+					log.details = "The user attempted to bill the project named {} but got error: {}".format(
+						project.name, e.msg
+					)
 					log.save()
 					return render(request, "area_access/physical_access_denied.html", {"message": e.msg})
 
@@ -213,11 +225,15 @@ def login_to_area(request, door_id):
 
 		log_in_user_to_area(door.area, user, project)
 
-		return render(
-			request,
-			"area_access/login_success.html",
-			{"area": door.area, "name": user.first_name, "project": project, "previous_area": previous_area},
-		)
+		dictionary = {
+			"door": door,
+			"area": door.area,
+			"name": user.first_name,
+			"project": project,
+			"previous_area": previous_area,
+		}
+
+		return render(request, "area_access/login_success.html", dictionary)
 
 
 @postpone
@@ -292,11 +308,16 @@ def open_door(request, door_id):
 
 
 def interlock_error(action: str = None, user: User = None, bypass_allowed: bool = None):
-	error_message = InterlockCustomization.get('door_interlock_failure_message')
+	error_message = InterlockCustomization.get("door_interlock_failure_message")
 	bypass_allowed = interlock_bypass_allowed(user) if bypass_allowed is None else bypass_allowed
-	dictionary = {
-		"message": linebreaksbr(error_message),
-		"bypass_allowed": bypass_allowed,
-		"action": action
-	}
+	dictionary = {"message": linebreaksbr(error_message), "bypass_allowed": bypass_allowed, "action": action}
 	return JsonResponse(dictionary, status=501)
+
+
+def get_badge_reader(request) -> BadgeReader:
+	reader_id = request.GET.get("reader_id") or ApplicationCustomization.get_int("default_badge_reader_id")
+	try:
+		badge_reader = BadgeReader.objects.get(id=reader_id)
+	except BadgeReader.DoesNotExist:
+		badge_reader = BadgeReader.default()
+	return badge_reader

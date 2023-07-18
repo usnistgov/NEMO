@@ -1,4 +1,5 @@
 import logging
+import os
 from importlib import import_module
 
 from django.apps import apps
@@ -13,6 +14,7 @@ from django.views.generic import RedirectView
 from django.views.static import serve
 from rest_framework import routers
 
+from NEMO.decorators import any_staff_required
 from NEMO.models import ReservationItemType
 from NEMO.views import (
 	abuse,
@@ -56,6 +58,7 @@ from NEMO.views import (
 	user_requests,
 	users,
 )
+from NEMO.views.constants import MEDIA_PROTECTED
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +194,7 @@ urlpatterns += [
 	path("cancel_reservation/<int:reservation_id>/", calendar.cancel_reservation, name="cancel_reservation"),
 	path("cancel_outage/<int:outage_id>/", calendar.cancel_outage, name="cancel_outage"),
 	path("set_reservation_title/<int:reservation_id>/", calendar.set_reservation_title, name="set_reservation_title"),
+	path("change_reservation_date/", calendar.change_reservation_date, name="change_reservation_date"),
 	path("change_reservation_project/<int:reservation_id>/", calendar.change_reservation_project, name="change_reservation_project"),
 	path("proxy_reservation/", calendar.proxy_reservation, name="proxy_reservation"),
 	path("reservation_group_question/<int:reservation_question_id>/<str:group_name>/", calendar.reservation_group_question, name="reservation_group_question"),
@@ -343,8 +347,11 @@ urlpatterns += [
 	path("news/publish/<int:story_id>/", news.publish, name="publish_news_update"),
 
 	# Media
+	re_path(r"^media/" + MEDIA_PROTECTED + "/(?P<path>.*)$", any_staff_required(xframe_options_sameorigin(serve)), {"document_root": os.path.join(settings.MEDIA_ROOT, MEDIA_PROTECTED)}, name="media_protected"),
 	re_path(r"^media/(?P<path>.*)$", login_required(xframe_options_sameorigin(serve)), {"document_root": settings.MEDIA_ROOT}, name="media"),
-	re_path(r"^media_view/(?P<popup>(true|false))/(?P<document_type>\w+)/(?P<document_id>\d+)/$", documents.media_view, name="media_view"),
+	re_path(r"^media_view/(?P<popup>(true|false))/(?P<content_type_id>\d+)/(?P<document_id>\d+)/$", documents.media_view, name="media_view"),
+	re_path(r"^media_list_view/(?P<popup>(true|false))/(?P<allow_zip>(true|false))/$", documents.media_list_view, name="media_list_view"),
+	path("media_zip/", documents.media_zip, name="media_zip"),
 
 	# User Preferences
 	path("user_preferences/", users.user_preferences, name="user_preferences"),
@@ -409,7 +416,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		path("customize/<str:key>/", customization.customize, name="customize"),
 		path("customize/<str:key>/<str:element>/", customization.customize, name="customize"),
 
-		# Project Usage:
+		# Project usage:
 		path("project_usage/", usage.project_usage, name="project_usage"),
 		path("project_billing/", usage.project_billing, name="project_billing"),
 

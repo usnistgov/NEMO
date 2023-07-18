@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
+{% block title %}Impersonate{% endblock %}
 
 {% block content %}
 	<form class="form-horizontal" action="{% url 'impersonate' %}" method="post">

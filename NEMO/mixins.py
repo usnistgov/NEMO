@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import datetime
 from datetime import timedelta
-from typing import Optional, TYPE_CHECKING
+from typing import Dict, Optional, TYPE_CHECKING
 
+from dateutil import rrule
+from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils import timezone
 
-from NEMO.utilities import format_datetime
+from NEMO.utilities import beginning_of_the_day, format_datetime, get_recurring_rule, RecurrenceFrequency
 
 if TYPE_CHECKING:
 	from NEMO.models import User
@@ -172,3 +174,54 @@ class BillableItemMixin:
 		elif self.get_start() or self.get_end():
 			charge_time = f" on {format_datetime(self.get_start() or self.get_end(), DTF)}"
 		return f"{self.get_item()}{user_display}{charge_time}"
+
+
+class RecurrenceMixin:
+	@property
+	def get_rec_frequency_enum(self):
+		return RecurrenceFrequency(self.rec_frequency)
+
+	def get_recurrence(self) -> rrule:
+		if self.rec_start and self.rec_frequency:
+			return get_recurring_rule(
+				self.rec_start, self.get_rec_frequency_enum, self.rec_until, self.rec_interval, self.rec_count
+			)
+
+	def next_recurrence(self, inc=False) -> datetime:
+		today = beginning_of_the_day(datetime.datetime.now(), in_local_timezone=False)
+		recurrence = self.get_recurrence()
+		return recurrence.after(today, inc=inc) if recurrence else None
+
+	def get_recurrence_interval_display(self) -> str:
+		if not self.rec_start or not self.rec_frequency:
+			return ""
+		interval = f"{self.rec_interval} " if self.rec_interval != 1 else ""
+		f_enum = self.get_rec_frequency_enum
+		frequency = f"{f_enum.display_text}s" if self.rec_interval != 1 else f_enum.display_text
+		return f"Every {interval}{frequency}"
+
+	def get_recurrence_display(self) -> str:
+		rec_display = ""
+		if self.rec_start and self.rec_frequency:
+			start = f", starting {format_datetime(self.rec_start, 'SHORT_DATE_FORMAT')}"
+			end = ""
+			if self.rec_until or self.rec_count:
+				end = f" and ending "
+				if self.rec_until:
+					end += f"on {format_datetime(self.rec_until, 'SHORT_DATE_FORMAT')}"
+				elif self.rec_count:
+					end += f"after {self.rec_count} iterations" if self.rec_count != 1 else f"after one time"
+					if self.get_recurrence():
+						end += f" on {format_datetime(list(self.get_recurrence())[-1], 'SHORT_DATE_FORMAT')}"
+			return f"{self.get_recurrence_interval_display()}{start}{end}"
+		return rec_display
+
+	def clean_recurrence(self) -> Dict:
+		errors = {}
+		if not self.rec_start:
+			errors["rec_start"] = "This field is required."
+		if not self.rec_frequency:
+			errors["rec_frequency"] = "This field is required."
+		if self.rec_until and self.rec_count:
+			errors[NON_FIELD_ERRORS] = "'count' and 'until' cannot be used at the same time."
+		return errors

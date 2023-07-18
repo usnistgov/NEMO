@@ -6,11 +6,12 @@ from datetime import date, datetime, time
 from email import encoders
 from email.mime.base import MIMEBase
 from enum import Enum
-from io import BytesIO
+from io import BytesIO, StringIO
 from logging import getLogger
 from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
 from urllib.parse import urljoin
 
+import pytz
 from PIL import Image
 from dateutil import rrule
 from dateutil.parser import parse
@@ -76,6 +77,11 @@ datetime_input_format = get_format("DATETIME_INPUT_FORMATS")[0]
 time_input_js_format = convert_py_format_to_js(time_input_format)
 date_input_js_format = convert_py_format_to_js(date_input_format)
 datetime_input_js_format = convert_py_format_to_js(datetime_input_format)
+
+
+supported_embedded_video_extensions = [".mp4", ".ogv", ".webm", ".3gp"]
+supported_embedded_pdf_extensions = [".pdf"]
+supported_embedded_extensions = supported_embedded_pdf_extensions + supported_embedded_video_extensions
 
 
 class EmptyHttpRequest(HttpRequest):
@@ -407,6 +413,9 @@ def send_mail(subject, content, from_email, to=None, bcc=None, cc=None, attachme
 	if user_reply_to:
 		reply_to = [from_email]
 		from_email = None
+	email_prefix = getattr(settings, "NEMO_EMAIL_SUBJECT_PREFIX", None)
+	if email_prefix and not subject.startswith(email_prefix):
+		subject = email_prefix + subject
 	mail = EmailMessage(
 		subject=subject,
 		body=content,
@@ -494,13 +503,6 @@ def get_tool_image_filename(tool, filename):
 	return f"tool_images/{tool_name}{ext}"
 
 
-def get_tool_document_filename(tool_documents, filename):
-	from django.template.defaultfilters import slugify
-
-	tool_name = slugify(tool_documents.tool.name)
-	return f"tool_documents/{tool_name}/{filename}"
-
-
 def get_hazard_logo_filename(category, filename):
 	from django.template.defaultfilters import slugify
 
@@ -516,25 +518,8 @@ def get_chemical_document_filename(chemical, filename):
 	return f"chemical_documents/{chemical_name}/{filename}"
 
 
-def get_project_document_filename(project_documents, filename):
-	from django.template.defaultfilters import slugify
-
-	project_name = slugify(project_documents.project.name)
-	return f"project_documents/{project_name}/{filename}"
-
-
-def get_user_document_filename(user_documents, filename):
-	from django.template.defaultfilters import slugify
-
-	username = slugify(user_documents.user.username)
-	return f"user_documents/{username}/{filename}"
-
-
-def get_safety_document_filename(safety_documents, filename):
-	from django.template.defaultfilters import slugify
-
-	item_name = slugify(safety_documents.safety_item.name)
-	return f"safety_item/{item_name}/{filename}"
+def document_filename_upload(instance, filename):
+	return instance.get_filename_upload(filename)
 
 
 def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
@@ -683,3 +668,45 @@ def get_class_from_settings(setting_name: str, default_value: str):
 	pkg, attr = setting_class.rsplit(".", 1)
 	ret = getattr(importlib.import_module(pkg), attr)
 	return ret()
+
+
+def create_ics(identifier, event_name, start: datetime, end: datetime, user, organizer=None, cancelled: bool = False):
+	from NEMO.views.customization import ApplicationCustomization
+
+	site_title = ApplicationCustomization.get("site_title")
+	if organizer:
+		organizer_email = organizer.email
+		organizer = organizer.get_name()
+	else:
+		organizer_email = getattr(settings, "RESERVATION_ORGANIZER_EMAIL", "no_reply")
+		organizer = getattr(settings, "RESERVATION_ORGANIZER", site_title)
+	method_name = "CANCEL" if cancelled else "REQUEST"
+	sequence = "SEQUENCE:2\n" if cancelled else "SEQUENCE:0\n"
+	priority = "PRIORITY:5\n" if cancelled else "PRIORITY:0\n"
+	now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+	start = start.astimezone(pytz.utc).strftime("%Y%m%dT%H%M%SZ")
+	end = end.astimezone(pytz.utc).strftime("%Y%m%dT%H%M%SZ")
+	lines = [
+		"BEGIN:VCALENDAR\n",
+		"VERSION:2.0\n",
+		f"METHOD:{method_name}\n",
+		"BEGIN:VEVENT\n",
+		f"UID:{str(identifier)}\n",
+		sequence,
+		priority,
+		f"DTSTAMP:{now}\n",
+		f"DTSTART:{start}\n",
+		f"DTEND:{end}\n",
+		f'ATTENDEE;CN="{user.get_name()}";RSVP=TRUE:mailto:{user.email}\n',
+		f'ORGANIZER;CN="{organizer}":mailto:{organizer_email}\n',
+		f"SUMMARY:[{site_title}] {event_name}\n",
+		f"STATUS:{'CANCELLED' if cancelled else 'CONFIRMED'}\n",
+		"END:VEVENT\n",
+		"END:VCALENDAR\n"
+	]
+	ics = StringIO("")
+	ics.writelines(lines)
+	ics.seek(0)
+
+	attachment = create_email_attachment(ics, maintype="text", subtype="calendar", method=method_name)
+	return attachment

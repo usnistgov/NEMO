@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 <div class="tab-content panel panel-default">
     {% if safety_category %}
     <div class="panel-heading pointer" data-toggle="collapse" data-target="#items-{{ safety_category.id }}" onclick="toggle_details($(this).children(':first'))">
@@ -16,7 +17,9 @@
                         <ul>
                             {% for doc in safety_item.safetyitemdocuments_set.all %}
                                 {% if doc.can_be_embedded %}
-                                    <li><a href="#" onclick="open_doc('{% url 'media_view' 'true' 'safety_document' doc.id %}')">{{ doc.filename }}</a></li>
+                                    {% with content_type=doc|content_type %}
+                                        <li><a href="#" onclick="open_doc('{% url 'media_view' 'true' content_type.id doc.id %}')">{{ doc.filename }}</a></li>
+                                    {% endwith %}
                                 {% else %}
                                     <li><a href="{{ doc.link }}" target="_blank">{{ doc.filename }}</a></li>
                                 {% endif %}

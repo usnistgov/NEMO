@@ -47,7 +47,7 @@ function set_interval_when_visible(doc, function_to_repeat, time)
 function switch_tab(element)
 {
 	element.preventDefault();
-	$(this).tab('show')
+	$(this).tab('show');
 }
 
 function set_item_link_callback(callback)
@@ -82,7 +82,14 @@ function expand_to_item(id, type)
 {
 	$("#sidebar a").removeClass('selected');
 	$("#"+type+"-"+id).addClass('selected').click().parents('ul.tree').show();
+	$("#sidebar").attr("aria-expanded", true);
 	save_sidebar_state();
+}
+
+function toggle_categories()
+{
+	let sidebar_expanded = $("#sidebar").attr("aria-expanded") || "false";
+	sidebar_expanded === "true" ? collapse_all_categories(): expand_all_categories();
 }
 
 // This function expands all tool category branches for the sidebar in the calendar & tool control pages.
@@ -91,6 +98,8 @@ function expand_all_categories()
 	$(".item_tree ul.tree.area-list").show();
 	$(".item_tree ul.tree.tool-list").show();
 	$("#search").focus();
+	$("#sidebar").attr("aria-expanded", true);
+	$("#expand_collapse_icon").removeClass("glyphicon-resize-full").removeClass("glyphicon-resize-small").addClass("glyphicon-resize-small");
 	save_sidebar_state();
 }
 
@@ -100,6 +109,8 @@ function collapse_all_categories()
 	$(".item_tree ul.tree.tool-list").hide();
 	$(".item_tree ul.tree.area-list").hide();
 	$("#search").focus();
+	$("#sidebar").attr("aria-expanded", false);
+	$("#expand_collapse_icon").removeClass("glyphicon-resize-full").removeClass("glyphicon-resize-small").addClass("glyphicon-resize-full");
 	save_sidebar_state();
 }
 
@@ -264,6 +275,7 @@ function save_sidebar_state()
 	let showQualifiedTools = localStorage.getItem("showQualifiedTools");
 
 	localStorage.clear();
+	localStorage["sidebarExpanded"] = $("#sidebar").attr("aria-expanded") || "false";
 	let categories = $(".item_tree ul.tree");
 	for(let c = 0; c < categories.length; c++)
 	{
@@ -283,6 +295,16 @@ function save_sidebar_state()
 
 function load_sidebar_state()
 {
+	let sidebar_expanded = localStorage.getItem("sidebarExpanded");
+	if (sidebar_expanded === "true")
+	{
+		$("#expand_collapse_icon").addClass("glyphicon-resize-small");
+	}
+	else
+	{
+		$("#expand_collapse_icon").addClass("glyphicon-resize-full");
+	}
+	$("#sidebar").attr("aria-expanded", sidebar_expanded);
 	let categories = $(".item_tree ul.tree");
 	for(let c = 0; c < categories.length; c++)
 	{
@@ -349,8 +371,8 @@ function ajax_failure_callback(title, preface)
 	{
 		let dialog_contents =
 			"<div class='modal-header'>" +
-			"<button type='button' class='close' data-dismiss='modal'>&times;</button>" +
-			"<h4 class='modal-title'>" + title + "</h4>" +
+			"<button type='button' class='close' data-dismiss='modal' aria-label='Modal close button'>&times;</button>" +
+			"<h4 id='modal-description-label' class='modal-title'>" + title + "</h4>" +
 			"</div>" +
 			"<div class='modal-body'>" +
 			[preface, xml_http_request.responseText].join(" ") +
@@ -373,8 +395,8 @@ function ajax_complete_callback(title, preface)
 		}
 		let dialog_contents =
 			"<div class='modal-header'>" +
-			"<button type='button' class='close' data-dismiss='modal'>&times;</button>" +
-			"<h4 class='modal-title'>" + title + "</h4>" +
+			"<button type='button' class='close' data-dismiss='modal' aria-label='Modal close button'>&times;</button>" +
+			"<h4 id='modal-description-label' class='modal-title'>" + title + "</h4>" +
 			"</div>" +
 			"<div class='modal-body'>" +
 			[preface, xml_header_request.responseText].join(" ") +
@@ -728,4 +750,30 @@ function sort_elements(list_element, selector, sort_function)
 			switching = true;
 		}
 	}
+}
+
+function wait_for_element(selector)
+{
+    return new Promise(resolve =>
+	{
+        if (document.querySelector(selector))
+		{
+            return resolve(document.querySelector(selector));
+        }
+
+        const observer = new MutationObserver(mutations =>
+		{
+            if (document.querySelector(selector))
+			{
+                resolve(document.querySelector(selector));
+                observer.disconnect();
+            }
+        });
+
+        observer.observe(document.body,
+		{
+			childList: true,
+			subtree: true
+		});
+    });
 }

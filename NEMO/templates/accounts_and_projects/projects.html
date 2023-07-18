@@ -45,7 +45,7 @@
 						{% if project.user_set.all %}
 							<ul>
 							{% for u in project.user_set.all %}
-								<li class="{% if not u.is_active %}light-grey{% endif %}">{{ u }}</li>
+								<li class="{% if not u.is_active %}strikethrough light-grey{% endif %}">{{ u }}</li>
 							{% endfor %}
 							</ul>
 						{% else %}

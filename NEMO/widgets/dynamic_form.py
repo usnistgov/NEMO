@@ -566,6 +566,7 @@ def withdraw_consumable_for_question(question, input_data, customer, merchant, p
 						merchant=merchant,
 						quantity=quantity,
 						project_id=project.id,
+						tool_usage=True,
 						request=request,
 					)
 			except Exception as e:

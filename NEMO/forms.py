@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.forms import (
 	BaseForm,
@@ -12,6 +13,7 @@ from django.forms import (
 	IntegerField,
 	ModelChoiceField,
 	ModelForm,
+	ModelMultipleChoiceField,
 )
 from django.forms.utils import ErrorDict, ErrorList
 from django.utils import timezone
@@ -35,6 +37,7 @@ from NEMO.models import (
 	TaskCategory,
 	TaskImages,
 	TemporaryPhysicalAccessRequest,
+	Tool,
 	User,
 	UserPreferences,
 )
@@ -64,6 +67,27 @@ class ProjectForm(ModelForm):
 	class Meta:
 		model = Project
 		exclude = ["only_allow_tools", "allow_consumable_withdrawals"]
+
+	principal_investigators = ModelMultipleChoiceField(
+		queryset=User.objects.all(),
+		required=False,
+		widget=FilteredSelectMultiple(verbose_name="Principal investigators", is_stacked=False),
+	)
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		if self.instance.pk:
+			self.fields["principal_investigators"].initial = self.instance.manager_set.all()
+
+	def _save_m2m(self):
+		super()._save_m2m()
+		exclude = self._meta.exclude
+		fields = self._meta.fields
+		# Check for fields and exclude
+		if fields and "principal_investigators" not in fields or exclude and "principal_investigators" in exclude:
+			return
+		if "principal_investigators" in self.cleaned_data:
+			self.instance.manager_set.set(self.cleaned_data["principal_investigators"])
 
 
 class AccountForm(ModelForm):
@@ -358,6 +382,12 @@ class UserPreferencesForm(ModelForm):
 	class Meta:
 		model = UserPreferences
 		fields = "__all__"
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.fields["tool_freed_time_notifications"].queryset = Tool.objects.filter(visible=True, parent_tool__isnull=True)
+		self.fields["tool_adjustment_notifications"].queryset = Tool.objects.filter(visible=True, parent_tool__isnull=True)
+		self.fields["tool_task_notifications"].queryset = Tool.objects.filter(visible=True, parent_tool__isnull=True)
 
 	def clean_recurring_charges_reminder_days(self):
 		recurring_charges_reminder_days = self.cleaned_data["recurring_charges_reminder_days"]
