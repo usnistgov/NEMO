@@ -35,4 +35,24 @@ class Migration(migrations.Migration):
             name='_qualifications_never_expire',
             field=models.BooleanField(db_column='qualifications_never_expire', default=False, help_text='Check this box if qualifications for this tool should never expire (even if the tool qualification expiration feature is enabled).'),
         ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='tool_adjustment_notifications',
+            field=models.ManyToManyField(blank=True, help_text='Tools to see/receive adjustment notifications for. If empty all notifications will be received.', related_name='_NEMO_userpreferences_tool_adjustment_notifications_+', to='NEMO.Tool'),
+        ),
+        migrations.AlterField(
+            model_name='user',
+            name='is_facility_manager',
+            field=models.BooleanField(default=False, help_text='Designates this user as facility manager. Facility managers receive updates on all reported problems in the facility and also review access and adjustment requests.', verbose_name='facility manager'),
+        ),
+        migrations.AddField(
+            model_name='userpreferences',
+            name='tool_task_notifications',
+            field=models.ManyToManyField(blank=True, help_text='Tools to see maintenance records and receive task notifications for. If empty all notifications will be received.', related_name='_NEMO_userpreferences_tool_task_notifications_+', to='NEMO.Tool'),
+        ),
+        migrations.AddField(
+            model_name='consumablewithdraw',
+            name='tool_usage',
+            field=models.BooleanField(default=False, help_text='Whether this withdraw is from tool usage'),
+        ),
     ]
