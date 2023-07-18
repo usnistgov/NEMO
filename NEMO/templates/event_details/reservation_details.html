@@ -116,7 +116,7 @@
         </tr>
         {% if reservation_project_can_be_changed %}
             <tr id="reservation_change_project" style="display: none;">
-                <td style="vertical-align: middle;">Project:</td>
+                <td style="vertical-align: middle;"><label for="change_project">Project:</label></td>
                 <td>
                     <div class="input-group">
                         <select id="change_project" name="project" aria-label="Reservation project" class="form-control">
@@ -134,8 +134,12 @@
 	{% endif %}
     <tr>
         {% if request.user == reservation.user and reservation.has_not_ended and reservation.has_not_started %}
-            <td style="vertical-align: middle"><label for="reservation_start">Start:</label></td>
-            <td>
+            <td style="vertical-align: middle"><label for="reservation_start" style="margin-bottom: 0">Start:</label></td>
+            <td id="reservation_display_start">
+                {{ reservation.start }}
+                <span class="glyphicon glyphicon-pencil pull-right" title="Change the start date" onclick="$('#reservation_display_start').hide();$('#reservation_change_start').show();"></span>
+            </td>
+            <td id="reservation_change_start" style="display: none">
                 <div class="input-group">
                     <input type="text" id="reservation_start" class="form-control" value="{{ reservation.start|localtime|input_date_format }}">
                     <span class="input-group-btn">
