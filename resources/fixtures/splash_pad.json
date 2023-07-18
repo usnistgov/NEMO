@@ -9139,6 +9139,40 @@
     }
   },
   {
+    "model": "NEMO.reservation",
+    "pk": 2,
+    "fields": {
+      "user": [
+        "captain"
+      ],
+      "creator": [
+        "captain"
+      ],
+      "creation_time": "2023-04-11T21:56:34.865Z",
+      "tool": [
+        "Sinter"
+      ],
+      "area": null,
+      "project": [
+        "Cleanroom Eng"
+      ],
+      "start": "2022-06-24T20:10:00Z",
+      "end": "2022-06-26T20:10:00Z",
+      "short_notice": false,
+      "cancelled": false,
+      "cancellation_time": null,
+      "cancelled_by": null,
+      "missed": false,
+      "shortened": false,
+      "descendant": null,
+      "additional_information": null,
+      "self_configuration": false,
+      "title": "",
+      "question_data": null,
+      "validated": false
+    }
+  },
+  {
     "model": "NEMO.reservationquestions",
     "pk": 1,
     "fields": {
@@ -9655,10 +9689,18 @@
     "model": "NEMO.trainingsession",
     "pk": 1,
     "fields": {
-      "trainer": 1,
-      "trainee": 3,
-      "tool": 3,
-      "project": 2,
+      "trainer": [
+        "captain"
+      ],
+      "trainee": [
+        "ned"
+      ],
+      "tool": [
+        "Dicing saw"
+      ],
+      "project": [
+        "Project 2"
+      ],
       "duration": 60,
       "type": 0,
       "date": "2023-05-12T23:29:00Z",
@@ -9671,11 +9713,17 @@
     "model": "NEMO.consumablewithdraw",
     "pk": 1,
     "fields": {
-      "customer": 3,
-      "merchant": 1,
+      "customer": [
+        "ned"
+      ],
+      "merchant": [
+        "captain"
+      ],
       "consumable": 2,
       "quantity": 1,
-      "project": 2,
+      "project": [
+        "Project 2"
+      ],
       "date": "2023-05-12T23:32:50.300Z",
       "validated": false,
       "validated_by": null
