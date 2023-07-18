@@ -1,7 +1,7 @@
 import calendar
 from datetime import datetime, timedelta
 
-from django.test import TestCase
+from django.test import TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -10,7 +10,7 @@ from NEMO.models import Account, Area, Configuration, Project, Reservation, Sche
 from NEMO.tests.test_utilities import login_as, login_as_user
 
 
-class ReservationTestCase(TestCase):
+class ReservationTestCase(TransactionTestCase):
 	tool: Tool = None
 	owner: User = None
 	consumer: User = None
