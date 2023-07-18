@@ -1885,6 +1885,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 	quantity = models.PositiveIntegerField()
 	project = models.ForeignKey(Project, help_text="The withdraw will be billed to this project.", on_delete=models.CASCADE)
 	date = models.DateTimeField(default=timezone.now, help_text="The date and time when the user withdrew the consumable.")
+	tool_usage = models.BooleanField(default=False, help_text="Whether this withdraw is from tool usage")
 	validated = models.BooleanField(default=False)
 	validated_by = models.ForeignKey(User, null=True, blank=True, related_name="consumable_withdrawal_validated_set", on_delete=models.CASCADE)
 
@@ -1912,7 +1913,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 			from NEMO.exceptions import ProjectChargeException
 			from NEMO.policy import policy_class as policy
 			try:
-				policy.check_billing_to_project(self.project, self.customer, self.consumable)
+				policy.check_billing_to_project(self.project, self.customer, self.consumable, self)
 			except ProjectChargeException as e:
 				errors["project"] = e.msg
 		if errors:

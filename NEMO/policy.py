@@ -25,6 +25,7 @@ from NEMO.models import (
     AreaAccessRecord,
     ClosureTime,
     Consumable,
+    ConsumableWithdraw,
     PhysicalAccessLevel,
     Project,
     Reservation,
@@ -32,6 +33,7 @@ from NEMO.models import (
     ScheduledOutage,
     StaffCharge,
     Tool,
+    UsageEvent,
     User,
 )
 from NEMO.utilities import (
@@ -144,7 +146,7 @@ class NEMOPolicy:
 
         # Check if we are allowed to bill to project
         try:
-            self.check_billing_to_project(project, user, tool)
+            self.check_billing_to_project(project, user, tool, UsageEvent(tool=tool, project=project, remote_work=remote_work, user=user))
         except ProjectChargeException as e:
             return HttpResponseBadRequest(e.msg)
 
@@ -250,7 +252,7 @@ class NEMOPolicy:
 
         # Check if we are allowed to bill to project
         try:
-            self.check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item)
+            self.check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item, new_reservation)
         except ProjectChargeException as e:
             policy_problems.append(e.msg)
 
@@ -846,7 +848,7 @@ class NEMOPolicy:
                 raise ReservationRequiredUserError(user=user, area=area)
 
     def check_billing_to_project(
-        self, project: Project, user: User, item: Union[Tool, Area, Consumable, StaffCharge] = None
+        self, project: Project, user: User, item: Union[Tool, Area, Consumable, StaffCharge] = None, charge: Union[UsageEvent, AreaAccessRecord, ConsumableWithdraw, StaffCharge, Reservation] = None
     ):
         if project:
             if project not in user.active_projects():

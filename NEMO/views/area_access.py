@@ -124,53 +124,50 @@ def new_area_access_record(request):
 			pass
 		return render(request, 'area_access/new_area_access_record.html', dictionary)
 	if request.method == 'POST':
+		record = AreaAccessRecord()
 		try:
-			user = User.objects.get(id=request.POST['customer'])
-			project = Project.objects.get(id=request.POST['project'])
-			area = Area.objects.get(id=request.POST['area'])
+			record.customer = User.objects.get(id=request.POST['customer'])
+			record.project = Project.objects.get(id=request.POST['project'])
+			record.area = Area.objects.get(id=request.POST['area'])
 		except:
 			dictionary['error_message'] = 'Your request contained an invalid identifier.'
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		try:
-			error_message = check_policy_for_user(customer=user)
+			error_message = check_policy_for_user(customer=record.customer)
 			if error_message:
 				dictionary['error_message'] = error_message
 				return render(request, 'area_access/new_area_access_record.html', dictionary)
-			policy.check_billing_to_project(project, user, area)
-			policy.check_to_enter_area(area=area, user=user)
+			policy.check_billing_to_project(record.project, record.customer, record.area, record)
+			policy.check_to_enter_area(area=record.area, user=record.customer)
 		except ProjectChargeException as e:
 			dictionary['error_message'] = e.msg
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except NoAccessiblePhysicalAccessUserError as error:
 			if error.closure_time:
-				dictionary['error_message'] = '{} does not have access to the {} at this time due to the following closure: {}.'.format(user, area.name, error.closure_time.closure.name)
+				dictionary['error_message'] = '{} does not have access to the {} at this time due to the following closure: {}.'.format(record.customer, record.area.name, error.closure_time.closure.name)
 			else:
-				dictionary['error_message'] = '{} does not have a physical access level that allows access to the {} at this time.'.format(user, area.name)
+				dictionary['error_message'] = '{} does not have a physical access level that allows access to the {} at this time.'.format(record.customer, record.area.name)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except UnavailableResourcesUserError as error:
 			dictionary['error_message'] = 'The {} is inaccessible because a required resource ({}) is unavailable. You must make all required resources for this area available before creating a new area access record.'.format(error.area.name, error.resources[0])
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except MaximumCapacityReachedError as error:
-			dictionary['error_message'] = 'The {} is inaccessible because the {} has reached its maximum capacity. Wait for somebody to exit and try again.'.format(area.name, error.area.name)
+			dictionary['error_message'] = 'The {} is inaccessible because the {} has reached its maximum capacity. Wait for somebody to exit and try again.'.format(record.area.name, error.area.name)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except ScheduledOutageInProgressError as error:
 			dictionary['error_message'] = 'The {} is inaccessible because a scheduled outage is in effect. You must wait for the outage to end before creating a new area access record.'.format(error.area.name)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
 		except ReservationRequiredUserError:
-			dictionary['error_message'] = 'You do not have a current reservation for the {}. Please make a reservation before trying to access this area.'.format(area.name)
+			dictionary['error_message'] = 'You do not have a current reservation for the {}. Please make a reservation before trying to access this area.'.format(record.area.name)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
-		if user.billing_to_project():
-			dictionary['error_message'] = '{} is already billing area access to another area. The user must log out of that area before entering another.'.format(user)
+		if record.customer.billing_to_project():
+			dictionary['error_message'] = '{} is already billing area access to another area. The user must log out of that area before entering another.'.format(record.customer)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
-		if project not in user.active_projects():
-			dictionary['error_message'] = '{} is not authorized to bill that project.'.format(user)
+		if record.project not in record.customer.active_projects():
+			dictionary['error_message'] = '{} is not authorized to bill that project.'.format(record.customer)
 			return render(request, 'area_access/new_area_access_record.html', dictionary)
-		record = AreaAccessRecord()
-		record.area = area
-		record.customer = user
-		record.project = project
 		record.save()
-		dictionary['success'] = '{} is now logged in to the {}.'.format(user, area.name)
+		dictionary['success'] = '{} is now logged in to the {}.'.format(record.customer, record.area.name)
 		return render(request, 'area_access/new_area_access_record.html', dictionary)
 
 
@@ -218,7 +215,7 @@ def change_project(request, new_project=None):
 		return redirect(reverse('landing'))
 	new_project = get_object_or_404(Project, id=new_project)
 	try:
-		policy.check_billing_to_project(new_project, user, user.area_access_record().area)
+		policy.check_billing_to_project(new_project, user, user.area_access_record().area, user.area_access_record())
 	except ProjectChargeException as e:
 		dictionary = {
 			'error': e.msg
@@ -308,7 +305,7 @@ def self_log_in(request, load_areas=True):
 			a = Area.objects.get(id=request.POST['area'])
 			p = Project.objects.get(id=request.POST['project'])
 			policy.check_to_enter_area(a, request.user)
-			policy.check_billing_to_project(p, user, a)
+			policy.check_billing_to_project(p, user, a, AreaAccessRecord(customer=user, project=p, area=a))
 			log_in_user_to_area(a, request.user, p)
 		except ProjectChargeException as e:
 			dictionary['area_error_message'] = e.msg

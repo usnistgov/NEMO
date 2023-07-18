@@ -415,7 +415,7 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 
 		# Check if we are allowed to bill to project
 		try:
-			policy.check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item)
+			policy.check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item, new_reservation)
 		except ProjectChargeException as e:
 			policy_problems.append(e.msg)
 			return render(request, 'calendar/policy_dialog.html', {'policy_problems': policy_problems, 'overridable': False, 'reservation_action': 'create'})
@@ -778,7 +778,7 @@ def change_reservation_project(request, reservation_id):
 	reservation = get_object_or_404(Reservation, id=reservation_id)
 	project = get_object_or_404(Project, id=request.POST['project_id'])
 	try:
-		policy.check_billing_to_project(project, reservation.user, reservation.reservation_item)
+		policy.check_billing_to_project(project, reservation.user, reservation.reservation_item, reservation)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
 

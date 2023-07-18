@@ -21,7 +21,16 @@ from NEMO.exceptions import (
 	ScheduledOutageInProgressError,
 	UnavailableResourcesUserError,
 )
-from NEMO.models import BadgeReader, Door, PhysicalAccessLog, PhysicalAccessType, Project, UsageEvent, User
+from NEMO.models import (
+	AreaAccessRecord,
+	BadgeReader,
+	Door,
+	PhysicalAccessLog,
+	PhysicalAccessType,
+	Project,
+	UsageEvent,
+	User,
+)
 from NEMO.policy import policy_class as policy
 from NEMO.views.area_access import log_in_user_to_area, log_out_user
 from NEMO.views.customization import ApplicationCustomization, InterlockCustomization
@@ -187,7 +196,7 @@ def login_to_area(request, door_id):
 			else:
 				project = get_object_or_404(Project, id=project_id)
 				try:
-					policy.check_billing_to_project(project, user, door.area)
+					policy.check_billing_to_project(project, user, door.area, AreaAccessRecord(area=door.area, project=project, customer=user))
 				except ProjectChargeException as e:
 					log.details = "The user attempted to bill the project named {} but got error: {}".format(
 						project.name, e.msg

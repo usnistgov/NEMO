@@ -100,7 +100,7 @@ def charge_training(request):
 					charges[index].qualified = value == "on"
 		for c in charges.values():
 			c.full_clean()
-			policy.check_billing_to_project(c.project, c.trainee, c.tool)
+			policy.check_billing_to_project(c.project, c.trainee, c.tool, c)
 	except ProjectChargeException as e:
 		return HttpResponseBadRequest(e.msg)
 	except User.DoesNotExist:

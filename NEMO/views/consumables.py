@@ -70,7 +70,7 @@ def consumables(request):
 		if form.is_valid():
 			withdraw = form.save(commit=False)
 			try:
-				policy.check_billing_to_project(withdraw.project, withdraw.customer, withdraw.consumable)
+				policy.check_billing_to_project(withdraw.project, withdraw.customer, withdraw.consumable, withdraw)
 			except ProjectChargeException as e:
 				return HttpResponseBadRequest(e.msg)
 			add_withdraw_to_session(request, withdraw)
@@ -258,13 +258,14 @@ def extended_permissions(request) -> bool:
 	return not lock_charges or user.is_facility_manager or user.is_superuser
 
 
-def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, request=None):
+def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, tool_usage=False, request=None):
 	withdraw = ConsumableWithdraw.objects.create(
 		consumable_id=consumable_id,
 		quantity=quantity,
 		merchant=merchant,
 		customer_id=customer_id,
 		project_id=project_id,
+		tool_usage=tool_usage
 	)
 	if not withdraw.consumable.reusable:
 		# Only withdraw if it's an actual consumable (not reusable)
