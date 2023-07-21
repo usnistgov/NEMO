@@ -241,6 +241,16 @@ table > thead > tr.no-border > td, table > thead > tr.no-border > th
 	border: none;
 }
 
+.table-borderless > tbody > tr > td,
+.table-borderless > tbody > tr > th,
+.table-borderless > tfoot > tr > td,
+.table-borderless > tfoot > tr > th,
+.table-borderless > thead > tr > td,
+.table-borderless > thead > tr > th
+{
+    border: none;
+}
+
 .table .thead-light th, .table.thead-light th
 {
     color: #495057;
@@ -1091,6 +1101,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	position: absolute;
 	top: 15px;
 	right: 15px;
+	white-space: nowrap;
 }
 
 /* Table default color enforcing (useful when using sticky columns) */

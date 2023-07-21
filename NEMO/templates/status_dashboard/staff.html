@@ -41,7 +41,7 @@
                 <th class="sticky" style="background-color: white; {% if days_length == 1 %}width:33%{% endif %}" aria-label="Blank corner cell"></th>
                 {% if prev %}
                     <th class="button-column-minimum" style="vertical-align: middle;" aria-label="Previous page cell">
-                        <a style="cursor: pointer" onclick="refresh_staff_status_dashboard('timestamp={{ page_timestamp }}&view=week');" aria-label="Previous page button">
+                        <a style="cursor: pointer" onclick="refresh_staff_status_dashboard('timestamp={{ prev }}&view={{ page_view }}');" aria-label="Previous page button">
                             <i class="glyphicon glyphicon-chevron-left chevron" style="padding: 0"></i>
                         </a>
                     </th>
