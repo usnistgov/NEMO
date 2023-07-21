@@ -11,3 +11,4 @@ test_nemo.db
 test_nemo.log
 nemo.log
 .DS_Store
+conf/
