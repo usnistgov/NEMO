@@ -532,11 +532,11 @@ def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryU
 		if width > height:
 			width_ratio = max / float(width)
 			new_height = int((float(height) * float(width_ratio)))
-			img = img.resize((max, new_height), Image.ANTIALIAS)
+			img = img.resize((max, new_height), Image.Resampling.LANCZOS)
 		else:
 			height_ratio = max / float(height)
 			new_width = int((float(width) * float(height_ratio)))
-			img = img.resize((new_width, max), Image.ANTIALIAS)
+			img = img.resize((new_width, max), Image.Resampling.LANCZOS)
 		with BytesIO() as buffer:
 			img.save(fp=buffer, format="PNG", quality=quality)
 			resized_image = ContentFile(buffer.getvalue())
