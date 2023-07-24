@@ -38,7 +38,8 @@ from NEMO.models import (
 	StaffCharge,
 	Tool,
 	UsageEvent,
-	User, UserPreferences,
+	User,
+	UserPreferences,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
@@ -891,7 +892,9 @@ def email_usage_reminders(request):
 def send_email_usage_reminders(projects_to_exclude=None, request=None):
 	if projects_to_exclude is None:
 		projects_to_exclude = []
-	busy_users = AreaAccessRecord.objects.filter(end=None, staff_charge=None).exclude(project__id__in=projects_to_exclude)
+	busy_users = AreaAccessRecord.objects.none()
+	if ApplicationCustomization.get_bool("area_in_usage_reminders"):
+		busy_users = AreaAccessRecord.objects.filter(end=None, staff_charge=None).exclude(project__id__in=projects_to_exclude)
 	busy_tools = UsageEvent.objects.filter(end=None).exclude(project__id__in=projects_to_exclude)
 
 	# Make lists of all the things a user is logged in to.
