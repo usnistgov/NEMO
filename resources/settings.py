@@ -304,24 +304,24 @@ INTERLOCKS_ENABLED = False
 
 # Specify your list of LDAP authentication servers only if you choose to use LDAP authentication
 # Below is an example with a free ldap testing server. Usernames and passwords available at https://www.forumsys.com/tutorials/integration-how-to/ldap/online-ldap-test-server/
-LDAP_SERVERS = [
-    {
-        "url": "ldap.forumsys.com",
-        "port": 389,
-        "use_ssl": False,
-        "bind_as_authentication": False,
-        "base_dn": "dc=example,dc=com",
-    }
-]
+# LDAP_SERVERS = [
+#     {
+#         "url": "ldap.forumsys.com",
+#         "port": 389,
+#         "use_ssl": False,
+#         "bind_as_authentication": False,
+#         "base_dn": "dc=example,dc=com",
+#     }
+# ]
 
 # NEMO can integrate with a custom Identity Service to manage user accounts on
 # related computer systems, which streamlines user onboarding and offboarding.
 # You would need to build this service yourself.
-IDENTITY_SERVICE = {
-    "available": False,
-    "url": "myidentityservice.com",
-    "domains": [],
-}
+# IDENTITY_SERVICE = {
+#     "available": False,
+#     "url": "myidentityservice.com",
+#     "domains": [],
+# }
 
 # Audit log. Update this list based on your audit needs. See supported fields at https://django-auditlog.readthedocs.io/en/latest/usage.html#settings
 AUDITLOG_INCLUDE_TRACKING_MODELS = (
