@@ -522,21 +522,21 @@ def document_filename_upload(instance, filename):
 	return instance.get_filename_upload(filename)
 
 
-def resize_image(image: InMemoryUploadedFile, max: int, quality=85) -> InMemoryUploadedFile:
+def resize_image(image: InMemoryUploadedFile, max_size: int, quality=85) -> InMemoryUploadedFile:
 	"""Returns a resized image based on the given maximum size"""
 	with Image.open(image) as img:
 		width, height = img.size
 		# no need to resize if width or height is already less than the max
-		if width <= max or height <= max:
+		if width <= max_size or height <= max_size:
 			return image
 		if width > height:
-			width_ratio = max / float(width)
+			width_ratio = max_size / float(width)
 			new_height = int((float(height) * float(width_ratio)))
-			img = img.resize((max, new_height), Image.Resampling.LANCZOS)
+			img = img.resize((max_size, new_height), Image.Resampling.LANCZOS)
 		else:
-			height_ratio = max / float(height)
+			height_ratio = max_size / float(height)
 			new_width = int((float(width) * float(height_ratio)))
-			img = img.resize((new_width, max), Image.Resampling.LANCZOS)
+			img = img.resize((new_width, max_size), Image.Resampling.LANCZOS)
 		with BytesIO() as buffer:
 			img.save(fp=buffer, format="PNG", quality=quality)
 			resized_image = ContentFile(buffer.getvalue())
