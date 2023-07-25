@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.test import TestCase
+from PIL import Image
 
-from NEMO.utilities import capitalize, get_email_from_settings
+from NEMO.utilities import capitalize, get_email_from_settings, resize_image
 
 
 class MiscTests(TestCase):
@@ -20,4 +21,19 @@ class MiscTests(TestCase):
 		self.assertEqual(get_email_from_settings(), settings.SERVER_EMAIL)
 		with self.settings(DEFAULT_FROM_EMAIL=default_from):
 			self.assertEqual(get_email_from_settings(), default_from)
+
+	def test_resize_image(self):
+		image_path = settings.BASE_DIR + "/../resources/images/jumbotron_watermark.png"
+		image = Image.open(image_path)
+		width, height = image.size
+		image.close()
+		resized = resize_image(open(image_path, "rb"), 40)
+		resized_image = Image.open(resized)
+		resized_width, resized_height = resized_image.size
+		if width > height:
+			self.assertEqual(resized_width, 40)
+		else:
+			self.assertEqual(resized_height, 40)
+		resized_image.close()
+
 
