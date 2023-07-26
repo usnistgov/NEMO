@@ -2,7 +2,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
 	name='NEMO',
-	version='4.6.1',
+	version='4.6.2',
 	python_requires='>=3.8, <4',
 	packages=find_namespace_packages(exclude=['NEMO.tests', 'NEMO.tests.*']),
 	include_package_data=True,

@@ -358,9 +358,11 @@ def occupancy(request):
 		area = Area.objects.get(name=area_name)
 	except Area.DoesNotExist:
 		return HttpResponse()
+	reservations_can_expire = Area.objects.filter(requires_reservation=True)
 	dictionary = {
 		'area': area,
 		'occupants': AreaAccessRecord.objects.filter(area__name=area.name, end=None, staff_charge=None).prefetch_related('customer').order_by('-start'),
+		'reservations_can_expire': reservations_can_expire,
 	}
 	return render(request, 'occupancy/occupancy.html', dictionary)
 

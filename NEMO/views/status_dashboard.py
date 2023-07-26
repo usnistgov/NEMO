@@ -73,8 +73,9 @@ def get_tools_dictionary():
 
 
 def get_occupancy_dictionary(request):
+	reservations_can_expire = Area.objects.filter(requires_reservation=True)
 	area_items, no_occupants = process_area_access_record_with_parents(request.user)
-	return {"area_items": area_items, "no_occupants": no_occupants}
+	return {"area_items": area_items, "no_occupants": no_occupants, "reservations_can_expire": reservations_can_expire}
 
 
 def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
@@ -460,6 +461,8 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, 
 			result[event.tool.tool_or_parent_id()]["user"] += " on behalf of " + str(event.user)
 		result[event.tool.tool_or_parent_id()]["in_use"] = True
 		result[event.tool.tool_or_parent_id()]["in_use_since"] = event.start
+		result[event.tool.tool_or_parent_id()]["operator_is_any_part_of_staff"] = event.operator.is_any_part_of_staff
+		result[event.tool.tool_or_parent_id()]["operator_is_service_personnel"] = event.operator.is_service_personnel
 	for resource in unavailable_resources:
 		for tool in resource.fully_dependent_tools.filter(visible=True):
 			result[tool.id]["required_resource_is_unavailable"] = True

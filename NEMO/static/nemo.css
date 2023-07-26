@@ -644,9 +644,14 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 	background-attachment: fixed;
 }
 
+#jumbotron-container .table-bordered tr:not(.success, .warning, .danger) td, #jumbotron-container .table-bordered th
+{
+	background-color: white;
+}
+
 #jumbotron-container .table-bordered td, #jumbotron-container .table-bordered th
 {
-	background:rgba(255, 255, 255, 0.7)
+	opacity: 0.8;
 }
 
 .spinner-full-page

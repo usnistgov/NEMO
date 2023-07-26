@@ -7,9 +7,11 @@
 				{% regroup facility_occupants by area as area_occupants %}
 				<h2>Area occupancy</h2>
 				<p>
-					Staff members are highlighted in <span class="success-highlight">green</span>.<br>
-					Service personnel are highlighted in <span class="warning-highlight">orange</span>.<br>
-					Users with expired reservations are highlighted in <span class="danger-highlight">red</span>.
+					Staff members are highlighted in <span class="bg-success">&nbsp;green&nbsp;</span><br>
+                    Service personnel are highlighted in <span class="bg-warning">&nbsp;orange&nbsp;</span><br>
+                    {% if reservation_required_items %}
+                    Users with expired reservations are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
+                    {% endif %}
 				</p>
 				{% for area in area_occupants %}
 					{% include 'occupancy/occupancy_content.html' with area=area.grouper occupants=area.list transparent_bg=True center_th=True %}
@@ -34,9 +36,9 @@
 						</thead>
 						<tbody style="background:transparent">
 						{% for u in usage_events %}
-							<tr style="background:transparent">
+							<tr {% if u.operator.is_any_part_of_staff %}class="success" {% elif u.operator.is_service_personnel %}class="warning" {% else %}style="background:transparent"{% endif %}>
 								<td>{{ u.tool }}</td>
-								<td><span {% if u.operator.is_staff %}class="success-highlight"{% endif %}>{{ u.operator.first_name }} {{ u.operator.last_name }}{% if u.user != u.operator %} on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}</span></td>
+								<td><span>{{ u.operator.first_name }} {{ u.operator.last_name }}{% if u.user != u.operator %} on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}</span></td>
 								<td>{{ u.start|date:"l @ " }}{{ u.start|time }}</td>
 							</tr>
 						{% endfor %}
