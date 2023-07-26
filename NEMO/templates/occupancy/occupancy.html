@@ -1,8 +1,10 @@
 {% if occupants|length > 0 %}
 	<p>
-		Staff members are highlighted in <span class="success-highlight">green</span>.<br>
-		Service personnel are highlighted in <span class="warning-highlight">orange</span>.<br>
-		Users with expired reservations are highlighted in <span class="danger-highlight">red</span>.
+		Staff members are highlighted in <span class="bg-success">&nbsp;green&nbsp;</span><br>
+		Service personnel are highlighted in <span class="bg-warning">&nbsp;orange&nbsp;</span><br>
+        {% if reservation_required_items %}
+        Users with expired reservations are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
+        {% endif %}
 	</p>
 	{% include 'occupancy/occupancy_content.html' with area=area occupants=occupants %}
 {% endif %}

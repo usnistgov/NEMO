@@ -2,9 +2,11 @@
 	Nobody is in an access controlled {{ facility_name }} area.
 {% else %}
 	<p>
-		Staff members are highlighted in <span class="success-highlight">green</span>.<br>
-		Service personnel are highlighted in <span class="warning-highlight">orange</span>.<br>
-		Users with expired reservations are highlighted in <span class="danger-highlight">red</span>.
+		Staff members are highlighted in <span class="bg-success">&nbsp;green&nbsp;</span><br>
+		Service personnel are highlighted in <span class="bg-warning">&nbsp;orange&nbsp;</span><br>
+        {% if reservation_required_items %}
+        Users with expired reservations are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
+        {% endif %}
 	</p>
 	<ul class="area-tree-list area-tree-root" style="margin-top: 25px;padding-left: 0">
 		{% for area_item in area_items %}

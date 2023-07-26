@@ -8,7 +8,7 @@
 	</thead>
 	<tbody>
 	{% for tool in tool_summary %}
-		<tr class="{% if tool.problematic or not tool.operational or tool.required_resource_is_unavailable or tool.nonrequired_resource_is_unavailable %}problematic{% else %}healthy{% endif %} {% if tool.in_use %}in_use{% else %}idle{% endif %}">
+		<tr class="{% if tool.operator_is_any_part_of_staff %}success {% elif tool.operator_is_service_personnel %}warning {% endif %}{% if tool.problematic or not tool.operational or tool.required_resource_is_unavailable or tool.nonrequired_resource_is_unavailable %}problematic{% else %}healthy{% endif %} {% if tool.in_use %}in_use{% else %}idle{% endif %}">
 			<td>
 				{{ tool.get_tool_info_html|safe }}
 				{# Output the state of the tool, summarizing any associated problems. #}
