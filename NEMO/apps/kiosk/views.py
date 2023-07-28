@@ -117,13 +117,17 @@ def do_disable_tool(request, tool_id):
 			dictionary = {"message": str(e), "delay": 10}
 			return render(request, "kiosk/acknowledgement.html", dictionary)
 
-	dynamic_form.charge_for_consumables(
-		current_usage_event.user,
-		current_usage_event.operator,
-		current_usage_event.project,
-		current_usage_event.run_data,
-		request,
-	)
+	try:
+		dynamic_form.charge_for_consumables(
+			current_usage_event.user,
+			current_usage_event.operator,
+			current_usage_event.project,
+			current_usage_event.run_data,
+			request,
+		)
+	except Exception as e:
+		dictionary = {"message": str(e), "delay": 10}
+		return render(request, "kiosk/acknowledgement.html", dictionary)
 	dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
 
 	current_usage_event.save()

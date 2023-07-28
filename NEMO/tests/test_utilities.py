@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
@@ -64,7 +64,7 @@ def validate_model_error(test_case: TestCase, model, error_fields, strict=False)
 				test_case.fail(f"{diff2} have errors but shouldn't")
 
 
-def create_user_and_project(is_staff=False) -> (User, Project):
+def create_user_and_project(is_staff=False) -> Tuple[User, Project]:
 	count = User.objects.count()
 	user: User = User.objects.create(
 		first_name="Testy",
