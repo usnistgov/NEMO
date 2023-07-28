@@ -299,6 +299,7 @@ class UserPreferences(BaseModel):
 	tool_freed_time_notifications_min_time = models.PositiveIntegerField(default=120, help_text="Minimum amount of minutes freed to receive a notification.")
 	tool_freed_time_notifications_max_future_days = models.PositiveIntegerField(default=7, help_text="Maximum number of days in the future to receive a notification for.")
 	tool_adjustment_notifications = models.ManyToManyField("Tool", related_name="+", blank=True, help_text="Tools to see/receive adjustment notifications for. If empty all notifications will be received.")
+	area_adjustment_notifications = models.ManyToManyField("Area", related_name="+", blank=True, help_text="Areas to see/receive adjustment notifications for. If empty all notifications will be received.")
 	tool_task_notifications = models.ManyToManyField("Tool", related_name="+", blank=True, help_text="Tools to see maintenance records and receive task notifications for. If empty all notifications will be received.")
 
 	def get_recurring_charges_days(self) -> List[int]:
