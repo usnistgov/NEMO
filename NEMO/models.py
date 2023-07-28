@@ -1276,7 +1276,7 @@ class Tool(SerializationByNameModel):
 				return True
 		return False
 
-	def get_current_usage_event(self):
+	def get_current_usage_event(self) -> Optional[UsageEvent]:
 		""" Gets the usage event for the current user of this tool. """
 		try:
 			return UsageEvent.objects.get(end=None, tool_id__in=self.get_family_tool_ids())

@@ -405,11 +405,11 @@ def disable_tool(request, tool_id):
 			return interlock_error("Disable", user)
 
 	# Shorten the user's tool reservation since we are now done using the tool
+	current_usage_event = tool.get_current_usage_event()
 	staff_shortening = request.POST.get("shorten", False)
-	shorten_reservation(user=user, item=tool, new_end=timezone.now() + downtime, force=staff_shortening)
+	shorten_reservation(user=current_usage_event.user, item=tool, new_end=timezone.now() + downtime, force=staff_shortening)
 
 	# End the current usage event for the tool
-	current_usage_event = tool.get_current_usage_event()
 	current_usage_event.end = timezone.now() + downtime
 
 	# Collect post-usage questions
