@@ -70,6 +70,15 @@ class ConsumableTestCase(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(quantity - 1, Consumable.objects.get(pk=consumable.id).quantity)
 
+	def test_withdrawal_not_allowed(self):
+		customer, customer_project = create_user_and_project()
+		staff, staff_project = create_user_and_project(is_staff=True)
+		customer_project.allow_consumable_withdrawals = False
+		customer_project.save()
+		self.assertRaises(ValidationError, make_withdrawal, consumable.id, 1, customer_project.id, staff, customer.id)
+		# However, it should always work for tool usage (otherwise the user cannot disable the tool)
+		make_withdrawal(consumable.id, 1, customer_project.id, staff, customer.id, tool_usage=True)
+
 	def test_clean(self):
 		test_consumable = Consumable()
 		validate_model_error(self, test_consumable, ["name", "quantity"])

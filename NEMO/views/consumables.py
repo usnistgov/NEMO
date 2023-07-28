@@ -259,7 +259,7 @@ def extended_permissions(request) -> bool:
 
 
 def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, tool_usage=False, request=None):
-	withdraw = ConsumableWithdraw.objects.create(
+	withdraw = ConsumableWithdraw(
 		consumable_id=consumable_id,
 		quantity=quantity,
 		merchant=merchant,
@@ -267,6 +267,8 @@ def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant
 		project_id=project_id,
 		tool_usage=tool_usage
 	)
+	withdraw.full_clean()
+	withdraw.save()
 	if not withdraw.consumable.reusable:
 		# Only withdraw if it's an actual consumable (not reusable)
 		withdraw.consumable.quantity -= withdraw.quantity

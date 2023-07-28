@@ -867,8 +867,9 @@ class NEMOPolicy:
                         msg = f"{item.name} is not allowed for project {project.name}"
                         raise ItemNotAllowedForProjectException(project, user, item.name, msg)
                 # Check if consumable withdrawals are allowed
-                if isinstance(item, Consumable):
-                    if not project.allow_consumable_withdrawals:
+                # But only when doing a direct withdrawal, we cannot prevent tool usage consumable withdrawals
+                if isinstance(item, Consumable) and isinstance(charge, ConsumableWithdraw):
+                    if not charge.tool_usage and not project.allow_consumable_withdrawals:
                         msg = f"Consumable withdrawals are not allowed for project {project.name}"
                         raise ItemNotAllowedForProjectException(project, user, "Staff Charges", msg)
 

@@ -96,11 +96,11 @@ def do_disable_tool(request, tool_id):
 			return interlock_error("Disable", customer)
 
 	# Shorten the user's tool reservation since we are now done using the tool
+	current_usage_event = tool.get_current_usage_event()
 	staff_shortening = request.POST.get("shorten", False)
-	shorten_reservation(user=customer, item=tool, new_end=timezone.now() + downtime, force=staff_shortening)
+	shorten_reservation(user=current_usage_event.user, item=tool, new_end=timezone.now() + downtime, force=staff_shortening)
 
 	# End the current usage event for the tool and save it.
-	current_usage_event = tool.get_current_usage_event()
 	current_usage_event.end = timezone.now() + downtime
 
 	# Collect post-usage questions
@@ -117,13 +117,17 @@ def do_disable_tool(request, tool_id):
 			dictionary = {"message": str(e), "delay": 10}
 			return render(request, "kiosk/acknowledgement.html", dictionary)
 
-	dynamic_form.charge_for_consumables(
-		current_usage_event.user,
-		current_usage_event.operator,
-		current_usage_event.project,
-		current_usage_event.run_data,
-		request,
-	)
+	try:
+		dynamic_form.charge_for_consumables(
+			current_usage_event.user,
+			current_usage_event.operator,
+			current_usage_event.project,
+			current_usage_event.run_data,
+			request,
+		)
+	except Exception as e:
+		dictionary = {"message": str(e), "delay": 10}
+		return render(request, "kiosk/acknowledgement.html", dictionary)
 	dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
 
 	current_usage_event.save()

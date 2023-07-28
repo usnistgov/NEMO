@@ -25,6 +25,7 @@ from NEMO.models import (
     UsageEvent,
     User,
 )
+from NEMO.typing import QuerySetType
 from NEMO.utilities import (
     BasicDisplayTable,
     bootstrap_primary_color,
@@ -55,15 +56,13 @@ def adjustment_requests(request):
     adj_requests = AdjustmentRequest.objects.filter(deleted=False)
     if not user.is_facility_manager and not user.is_user_office and not user.is_accounting_officer:
         adj_requests = adj_requests.filter(creator=user)
-    if user.is_facility_manager and user.get_preferences().tool_adjustment_notifications.all():
+    if user.is_facility_manager and (user.get_preferences().tool_adjustment_notifications.exists() or user.get_preferences().area_adjustment_notifications.exists()):
         exclude = []
-        tools = user.get_preferences().tool_adjustment_notifications.all()
-        if tools:
-            for adj in adj_requests:
-                tool = getattr(adj.item, "tool", None) if adj.item else None
-                if tool and tool not in tools:
-                    exclude.append(adj.pk)
-            adj_requests = adj_requests.exclude(pk__in=exclude)
+        for adj in adj_requests:
+            managers = managers_for_adjustment_request(adj)
+            if user not in managers:
+                exclude.append(adj.pk)
+        adj_requests = adj_requests.exclude(pk__in=exclude)
 
     dictionary = {
         "pending_adjustment_requests": adj_requests.filter(status=RequestStatus.PENDING),
@@ -147,17 +146,7 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
             form.instance.last_updated_by = user
             new_adjustment_request = form.save()
 
-            # Create the list of facility managers to notify. If the adjustment request has a tool and no one added that
-            # tool to their adjustment request list, send to everyone (otherwise nobody would see it)
-            managers_to_notify: Set[User] = set()
-            tool = getattr(adjustment_request.item, "tool", None) if adjustment_request.item else None
-            reviewers: QuerySet = User.objects.filter(is_active=True, is_facility_manager=True)
-            if tool:
-                reviewers_filter = reviewers.filter(Q(preferences__tool_adjustment_notifications__isnull=True) | Q(preferences__tool_adjustment_notifications__in=[tool]))
-                if reviewers_filter.exists():
-                    # Only limit managers if at least one person will receive the notification.
-                    reviewers = reviewers_filter
-            managers_to_notify.update(list(reviewers))
+            managers_to_notify: Set[User] = set(list(managers_for_adjustment_request(adjustment_request)))
 
             create_adjustment_request_notification(new_adjustment_request, managers_to_notify)
             if edit:
@@ -402,3 +391,24 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     response = table_result.to_csv()
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
+
+
+def managers_for_adjustment_request(adjustment_request: AdjustmentRequest) -> QuerySetType[User]:
+    # Create the list of facility managers to notify/show request to. If the adjustment request has a tool/area and no
+    # one added that tool/area to their adjustment request list, send/show to everyone (otherwise nobody would see it)
+    tool = getattr(adjustment_request.item, "tool", None) if adjustment_request.item else None
+    area = getattr(adjustment_request.item, "area", None) if adjustment_request.item else None
+    reviewers = User.objects.filter(is_active=True, is_facility_manager=True)
+    if tool:
+        reviewers_filter = reviewers.filter(Q(preferences__tool_adjustment_notifications__isnull=True) | Q(
+            preferences__tool_adjustment_notifications__in=[tool]))
+        if reviewers_filter.exists():
+            # Only limit managers if at least one person will receive the notification.
+            reviewers = reviewers_filter
+    if area:
+        reviewers_filter = reviewers.filter(Q(preferences__area_adjustment_notifications__isnull=True) | Q(
+            preferences__area_adjustment_notifications__in=[area]))
+        if reviewers_filter.exists():
+            # Only limit managers if at least one person will receive the notification.
+            reviewers = reviewers_filter
+    return reviewers

@@ -219,7 +219,8 @@ def staff_absences_dict(staffs, days, start, end):
 			# non-working days should not count as absence
 			staff_works_this_day = staff_absence.staff_member.weekly_availability()[day.weekday()]
 			if staff_works_this_day and staff_absence.start_date <= day.date() <= staff_absence.end_date:
-				dictionary[staff_absence.staff_member.id][day.day] = staff_absence
+				if staff_absence.staff_member.id in dictionary:
+					dictionary[staff_absence.staff_member.id][day.day] = staff_absence
 	return dictionary
 
 

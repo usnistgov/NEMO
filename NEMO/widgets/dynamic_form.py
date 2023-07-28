@@ -549,32 +549,25 @@ def validate_consumable_for_question(question: PostUsageQuestion):
 def withdraw_consumable_for_question(question, input_data, customer, merchant, project, request):
 	if isinstance(question, PostUsageNumberFieldQuestion):
 		if question.consumable:
-			try:
-				consumable = Consumable.objects.get(name=question.consumable)
-				quantity = 0
-				if input_data and "user_input" in input_data and input_data["user_input"]:
-					if isinstance(input_data["user_input"], dict):
-						for user_input in input_data["user_input"].values():
-							if question.name in user_input and user_input[question.name]:
-								quantity += int(user_input[question.name])
-					else:
-						quantity = int(input_data["user_input"])
-				if quantity > 0:
-					make_withdrawal(
-						consumable_id=consumable.id,
-						customer_id=customer.id,
-						merchant=merchant,
-						quantity=quantity,
-						project_id=project.id,
-						tool_usage=True,
-						request=request,
-					)
-			except Exception as e:
-				dynamic_form_logger.warning(
-					f"Could not withdraw consumable: '{question.consumable}' with quantity: '{input_data}' for customer: '{customer}' by merchant: '{merchant}' for project: '{project}'",
-					e,
+			consumable = Consumable.objects.get(name=question.consumable)
+			quantity = 0
+			if input_data and "user_input" in input_data and input_data["user_input"]:
+				if isinstance(input_data["user_input"], dict):
+					for user_input in input_data["user_input"].values():
+						if question.name in user_input and user_input[question.name]:
+							quantity += int(user_input[question.name])
+				else:
+					quantity = int(input_data["user_input"])
+			if quantity > 0:
+				make_withdrawal(
+					consumable_id=consumable.id,
+					customer_id=customer.id,
+					merchant=merchant,
+					quantity=quantity,
+					project_id=project.id,
+					tool_usage=True,
+					request=request,
 				)
-				pass
 
 
 def get_counter_increment_for_question(question, input_data, counter_question):
