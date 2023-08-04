@@ -54,6 +54,8 @@ SHORT_DATETIME_FORMAT = "m/d/Y @ g:i A"
 DATE_FORMAT = "l, F jS, Y"
 SHORT_DATE_FORMAT = "m/d/Y"
 TIME_FORMAT = "g:i A"
+# This format is mostly used on the status dashboard and jumbotron when displaying since when the user has been doing some tasks
+MONTH_DAY_FORMAT = "l m/d"
 
 # Date and time formats, used in file names when exporting data
 EXPORT_DATE_FORMAT = "m_d_Y"
