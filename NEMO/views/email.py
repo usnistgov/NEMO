@@ -17,7 +17,13 @@ from NEMO.decorators import any_staff_required
 from NEMO.forms import EmailBroadcastForm
 from NEMO.models import Account, Area, Project, Tool, User, UserType
 from NEMO.typing import QuerySetType
-from NEMO.utilities import EmailCategory, export_format_datetime, render_email_template, send_mail
+from NEMO.utilities import (
+	EmailCategory,
+	create_email_attachment,
+	export_format_datetime,
+	render_email_template,
+	send_mail,
+)
 from NEMO.views.customization import ApplicationCustomization, get_media_file_contents
 
 logger = getLogger(__name__)
@@ -201,12 +207,14 @@ def send_broadcast_email(request):
 	sender: User = request.user
 	if form.cleaned_data["copy_me"]:
 		users += sender.get_emails(sender.get_preferences().email_send_broadcast_emails)
+	attachments = [create_email_attachment(attachment.file, attachment.name) for attachment in request.FILES.getlist('attachments', [])]
 	try:
 		send_mail(
 			subject=subject,
 			content=content,
 			from_email=sender.email,
 			bcc=set(users),
+			attachments=attachments,
 			email_category=EmailCategory.BROADCAST_EMAIL,
 		)
 	except SMTPException as error:

@@ -7,7 +7,7 @@
 		{{ error }}
 	{% elif generic_email_sample %}
 		<div class="row">
-			<form action="{% url 'send_broadcast_email' %}" id="email_form" method="post">
+			<form action="{% url 'send_broadcast_email' %}" id="email_form" method="post" enctype="multipart/form-data">
 				{% csrf_token %}
 				<div class="col-sm-6">
                     <div class="row">
@@ -70,6 +70,9 @@
 					</div>
 					<div class="form-group">
 						<textarea class="form-control" name="contents" aria-label="Email contents" rows="6" placeholder="What would you like to say?" oninput="updated_email_link()" required></textarea>
+					</div>
+					<div class="form-group">
+						<input name="attachments" type="file" multiple>
 					</div>
                     {% button type="view" onclick="update_preview()" value="Preview" %}
 					{% button type="save" value="Send" icon="glyphicon-send" %}
