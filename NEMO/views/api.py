@@ -118,11 +118,11 @@ class UserViewSet(ModelViewSet):
 		"id": ["exact", "in"],
 		"type": ["exact", "in"],
 		"domain": ["exact", "in", "isempty"],
-		"username": ["iexact", "in"],
-		"first_name": ["iexact", "icontains"],
-		"last_name": ["iexact", "icontains"],
-		"email": ["iexact", "icontains"],
-		"badge_number": ["iexact", "isempty"],
+		"username": ["exact", "iexact", "in"],
+		"first_name": ["exact", "iexact", "icontains"],
+		"last_name": ["exact", "iexact", "icontains"],
+		"email": ["exact", "iexact", "icontains"],
+		"badge_number": ["exact", "iexact", "isempty"],
 		"is_active": ["exact"],
 		"is_staff": ["exact"],
 		"is_facility_manager": ["exact"],
@@ -141,7 +141,7 @@ class ProjectDisciplineViewSet(ModelViewSet):
 	filename = "project_disciplines"
 	queryset = ProjectDiscipline.objects.all()
 	serializer_class = ProjectDisciplineSerializer
-	filterset_fields = {"id": ["exact", "in"], "name": ["iexact"], "display_order": ["exact"]}
+	filterset_fields = {"id": ["exact", "in"], "name": ["exact", "iexact"], "display_order": ["exact"]}
 
 
 class ProjectViewSet(ModelViewSet):
@@ -150,7 +150,7 @@ class ProjectViewSet(ModelViewSet):
 	serializer_class = ProjectSerializer
 	filterset_fields = {
 		"id": ["exact", "in"],
-		"name": ["iexact"],
+		"name": ["exact", "iexact"],
 		"application_identifier": ["exact"],
 		"active": ["exact"],
 		"account_id": ["exact", "in"],
@@ -358,7 +358,7 @@ class ConsumableCategoryViewSet(ModelViewSet):
 	filename = "consumable_categories"
 	queryset = ConsumableCategory.objects.all()
 	serializer_class = ConsumableCategorySerializer
-	filterset_fields = {"id": ["exact", "in"], "name": ["iexact"]}
+	filterset_fields = {"id": ["exact", "in"], "name": ["exact", "iexact"]}
 
 
 class ConsumableViewSet(ModelViewSet):
