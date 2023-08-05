@@ -177,11 +177,11 @@ class ToolViewSet(ModelViewSet):
 	serializer_class = ToolSerializer
 	filterset_fields = {
 		"id": ["exact", "in"],
-		"name": ["exact"],
+		"name": ["exact", "iexact"],
 		"visible": ["exact"],
-		"_category": ["exact"],
+		"_category": ["exact", "iexact"],
 		"_operational": ["exact"],
-		"_location": ["exact"],
+		"_location": ["exact", "iexact"],
 		"_requires_area_access": ["exact", "isnull"],
 		"_post_usage_questions": ["isempty"],
 	}
@@ -205,9 +205,9 @@ class AreaViewSet(ModelViewSet):
 	serializer_class = AreaSerializer
 	filterset_fields = {
 		"id": ["exact", "in"],
-		"name": ["exact"],
+		"name": ["exact", "iexact"],
 		"parent_area": ["exact", "in"],
-		"category": ["exact"],
+		"category": ["exact", "iexact"],
 		"requires_reservation": ["exact"],
 		"buddy_system_allowed": ["exact"],
 		"maximum_capacity": ["exact", "gte", "gt", "lte", "lt", "isnull"],
@@ -222,7 +222,7 @@ class ResourceViewSet(ModelViewSet):
 	serializer_class = ResourceSerializer
 	filterset_fields = {
 		"id": ["exact", "in"],
-		"name": ["exact"],
+		"name": ["exact", "iexact"],
 		"available": ["exact"],
 		"fully_dependent_tools": ["in"],
 		"partially_dependent_tools": ["in"],
@@ -410,7 +410,7 @@ class GroupViewSet(ModelViewSet):
 	queryset = Group.objects.all()
 	serializer_class = GroupSerializer
 	filterset_fields = {
-		"name": ["exact", "in"],
+		"name": ["exact", "iexact", "in"],
 		"permissions": ["exact"],
 	}
 
@@ -421,8 +421,8 @@ class PermissionViewSet(XLSXFileMixin, viewsets.ReadOnlyModelViewSet):
 	queryset = Permission.objects.all()
 	serializer_class = PermissionSerializer
 	filterset_fields = {
-		"name": ["exact", "in"],
-		"codename": ["exact", "in"],
+		"name": ["exact", "iexact", "in"],
+		"codename": ["exact", "iexact", "in"],
 		"content_type_id": ["exact", "in"],
 	}
 
