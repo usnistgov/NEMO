@@ -20,7 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.core.validators import MinValueValidator
 from django.db import connections, models, transaction
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.db.models.manager import Manager
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
@@ -1662,6 +1662,11 @@ class Project(SerializationByNameModel):
 
 	class Meta:
 		ordering = ["name"]
+
+	def display_with_pis(self):
+		pis = ", ".join([pi.get_name() for pi in self.manager_set.all()])
+		pis = f" (PI{'s' if self.manager_set.count() > 1 else ''}: {pis})" if pis else ""
+		return f"{self.name}{pis}"
 
 	def __str__(self):
 		return str(self.name)
