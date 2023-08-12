@@ -6,7 +6,6 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
-from django.utils.text import slugify
 from django.views.decorators.http import require_GET
 
 from NEMO.apps.sensors.customizations import SensorCustomization
@@ -19,6 +18,7 @@ from NEMO.utilities import (
 	export_format_datetime,
 	extract_times,
 	format_datetime,
+	slugify_underscore,
 )
 
 
@@ -77,7 +77,7 @@ def export_sensor_data(request, sensor_id):
 			}
 		)
 	response = table_result.to_csv()
-	sensor_name = slugify(sensor.name).replace("-", "_")
+	sensor_name = slugify_underscore(sensor.name)
 	filename = f"{sensor_name}_data_{export_format_datetime(start)}_to_{export_format_datetime(end)}.csv"
 	response["Content-Disposition"] = f'attachment; filename="{filename}"'
 	return response

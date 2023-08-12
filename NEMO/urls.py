@@ -62,6 +62,11 @@ from NEMO.views.constants import MEDIA_PROTECTED
 
 logger = logging.getLogger(__name__)
 
+
+def sort_urls(url_path):
+	return url_path[0].count('/'), url_path[0]
+
+
 # REST API URLs
 router = routers.DefaultRouter()
 router.register(r"auth_groups", api.GroupViewSet)
@@ -87,6 +92,7 @@ router.register(r"tools", api.ToolViewSet)
 router.register(r"training_sessions", api.TrainingSessionViewSet)
 router.register(r"usage_events", api.UsageEventViewSet)
 router.register(r"users", api.UserViewSet)
+router.registry.sort(key=sort_urls)
 
 reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
 

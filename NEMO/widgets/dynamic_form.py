@@ -7,10 +7,10 @@ from typing import Any, Callable, Dict, List, Optional, Type
 
 from django.urls import NoReverseMatch, reverse
 from django.utils.safestring import mark_safe
-from django.utils.text import slugify
 
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Consumable, ToolUsageCounter
+from NEMO.utilities import slugify_underscore
 from NEMO.views.consumables import make_withdrawal
 
 dynamic_form_logger = getLogger(__name__)
@@ -301,7 +301,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 		super().__init__(properties, index)
 		self.max_number = self._init_property("max_number")
 		# we need a safe group name to use in js function and variable names
-		self.group_name = slugify(self.name).replace("-", "_")
+		self.group_name = slugify_underscore(self.name)
 		self.sub_questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(
 			self._init_property("questions"), index
 		)

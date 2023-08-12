@@ -4,12 +4,12 @@ from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render
-from django.utils.text import capfirst, slugify
+from django.utils.text import capfirst
 from django.views.decorators.http import require_GET
 
 from NEMO.decorators import any_staff_required
 from NEMO.models import Account, ActivityHistory, MembershipHistory, Project, User
-from NEMO.utilities import BasicDisplayTable, export_format_datetime
+from NEMO.utilities import BasicDisplayTable, export_format_datetime, slugify_underscore
 
 
 @any_staff_required
@@ -69,7 +69,7 @@ def history(request, item_type, item_id):
 	action_list.rows.sort(key=lambda x: x["date"], reverse=True)
 	csv_export = bool(request.GET.get("csv", False))
 	if csv_export:
-		name = slugify(getattr(item, 'name', str(item))).replace("-", "_")
+		name = slugify_underscore(getattr(item, 'name', str(item)))
 		response = action_list.to_csv()
 		filename = f"{item_type}_history_{name}_{export_format_datetime()}.csv"
 		response["Content-Disposition"] = f'attachment; filename="{filename}"'

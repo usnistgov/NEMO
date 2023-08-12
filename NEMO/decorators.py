@@ -5,7 +5,8 @@ from threading import Lock, RLock, Thread
 
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import user_passes_test
-from django.utils.text import slugify
+
+from NEMO.utilities import slugify_underscore
 
 
 def disable_session_expiry_refresh(f):
@@ -42,7 +43,7 @@ def synchronized(method_argument=""):
 	def inner(function):
 		def decorator(*args, **kwargs):
 			func_args = inspect.signature(function).bind(*args, **kwargs).arguments
-			attribute_value = slugify(str(func_args.get(method_argument, ""))).replace("-", "_")
+			attribute_value = slugify_underscore(str(func_args.get(method_argument, "")))
 			lock_name = "__" + function.__name__ + "_lock_" + attribute_value + "__"
 			lock: RLock = vars(function).get(lock_name, None)
 			if lock is None:

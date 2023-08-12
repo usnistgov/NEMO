@@ -9,7 +9,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import user_office_or_manager_required
@@ -34,6 +33,7 @@ from NEMO.utilities import (
 	quiet_int,
 	render_email_template,
 	send_mail,
+	slugify_underscore,
 )
 from NEMO.views.customization import (
 	ApplicationCustomization,
@@ -345,7 +345,7 @@ def access_csv_export(request_qs: QuerySetType[TemporaryPhysicalAccessRequest]) 
 			}
 		)
 
-	name = slugify(UserRequestsCustomization.get("access_requests_title")).replace("-", "_")
+	name = slugify_underscore(UserRequestsCustomization.get("access_requests_title"))
 	filename = f"{name}_{export_format_datetime()}.csv"
 	response = table_result.to_csv()
 	response["Content-Disposition"] = f'attachment; filename="{filename}"'
