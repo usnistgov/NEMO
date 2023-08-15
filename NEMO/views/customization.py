@@ -391,10 +391,11 @@ class ToolCustomization(CustomizationBase):
 		"tool_qualification_expiration_days": "",
 		"tool_qualification_expiration_never_used_days": "",
 		"tool_qualification_cc": "",
+		"tool_problem_max_image_size_pixels": "750",
 	}
 
 	def validate(self, name, value):
-		if name == "tool_qualification_expiration_days" and value:
+		if name in ["tool_qualification_expiration_days", "tool_problem_max_image_size_pixels"] and value:
 			validate_integer(value)
 		if name == "tool_qualification_reminder_days" and value:
 			# Check that we have an integer or a list of integers

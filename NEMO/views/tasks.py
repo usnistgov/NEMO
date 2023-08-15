@@ -301,9 +301,10 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
 	task_images: List[TaskImages] = []
 	try:
 		images_form = TaskImagesForm(request.POST, request.FILES)
+		max_size_pixels = ToolCustomization.get_int("tool_problem_max_image_size_pixels")
 		if images_form.is_valid() and images_form.cleaned_data['image'] is not None:
 			for image_memory_file in request.FILES.getlist('image'):
-				resized_image = resize_image(image_memory_file, 350)
+				resized_image = resize_image(image_memory_file, max_size_pixels)
 				image = TaskImages(task=task)
 				image.image.save(resized_image.name, ContentFile(resized_image.read()), save=False)
 				image.save()
