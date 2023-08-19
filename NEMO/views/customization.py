@@ -392,6 +392,7 @@ class ToolCustomization(CustomizationBase):
 		"tool_qualification_expiration_never_used_days": "",
 		"tool_qualification_cc": "",
 		"tool_problem_max_image_size_pixels": "750",
+		"tool_problem_send_to_all_qualified_users": "",
 	}
 
 	def validate(self, name, value):
