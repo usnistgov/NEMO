@@ -116,6 +116,12 @@ def usage(request):
 	trainee_filter = Q(trainee=user) | Q(project__in=user_managed_projects)
 	project_id = request.GET.get("project") or request.GET.get("pi_project")
 	csv_export = bool(request.GET.get("csv", False))
+	show_only_my_usage = user_managed_projects and request.GET.get("show_only_my_usage", "enabled") == "enabled"
+	if show_only_my_usage:
+		# Forcing to be user only
+		customer_filter &= Q(customer=user)
+		user_filter &= Q(user=user)
+		trainee_filter &= Q(trainee=user)
 	if user_managed_projects:
 		base_dictionary['selected_project'] = "all"
 	if project_id:
@@ -146,6 +152,7 @@ def usage(request):
 		}
 		if user_managed_projects:
 			dictionary['pi_projects'] = user_managed_projects
+			dictionary['show_only_my_usage'] = show_only_my_usage
 		dictionary['no_charges'] = not (dictionary['area_access'] or dictionary['consumables'] or dictionary['missed_reservations'] or dictionary['staff_charges'] or dictionary['training_sessions'] or dictionary['usage_events'])
 		return render(request, 'usage/usage.html', {**base_dictionary, **dictionary})
 

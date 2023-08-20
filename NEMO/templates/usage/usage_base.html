@@ -46,12 +46,18 @@
                         <label for="pi_project">Managed project</label>
                     </div>
                     <div class="col-sm-3 col-md-3 col-lg-2">
-                        <select name="pi_project" id="pi_project" class="form-control" style="text-align-last:center" title="Select a project you are the PI for to see all usage for that project">
+                        <select {% if show_only_my_usage %}disabled{% endif %} name="pi_project" id="pi_project" class="form-control" style="text-align-last:center" title="Select a project you are the PI for to see all usage for that project">
                             <option selected value="">All</option>
                             {% for project in pi_projects %}
                                 <option value="{{ project.id }}" {% if selected_project and selected_project.id == project.id %}selected{% endif %}>{{ project.name }}</option>
                             {% endfor %}
                         </select>
+                    </div>
+                    <div class="col-sm-3 col-md-3 col-lg-2">
+                        <div class="checkbox">
+                            <input type="hidden" name="show_only_my_usage" value="off">
+                            <label><input type="checkbox" {% if show_only_my_usage %}checked{% endif %} name="show_only_my_usage" value="enabled" onclick="$('#pi_project').attr('disabled', this.checked)">Show only my usage</label>
+                        </div>
                     </div>
             {% endif %}
 			{% if user.active_projects %}
