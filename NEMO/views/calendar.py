@@ -42,6 +42,7 @@ from NEMO.models import (
 	UserPreferences,
 )
 from NEMO.policy import policy_class as policy
+from NEMO.typing import QuerySetType
 from NEMO.utilities import (
 	EmailCategory,
 	RecurrenceFrequency,
@@ -1286,6 +1287,28 @@ This email is to inform you that today was the last occurrence for the {closure_
 		to=facility_manager_emails,
 		email_category=EmailCategory.SYSTEM,
 	)
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def auto_logout_users(request):
+	return do_auto_logout_users()
+
+
+def do_auto_logout_users():
+	from NEMO.views.area_access import log_out_user
+
+	current_logged_in_user_to_logout: QuerySetType[AreaAccessRecord] = AreaAccessRecord.objects.filter(area__auto_logout_time__isnull=False, end__isnull=True, staff_charge__isnull=True).prefetch_related("customer", "area")
+	for record in current_logged_in_user_to_logout:
+		timeout = timedelta(minutes=record.area.auto_logout_time)
+		if record.start + timeout <= timezone.now():
+			# Using regular logout function for consistency
+			log_out_user(record.customer)
+			# Now adjust the time, so it's "auto_logout_time" minutes long max
+			record.end = record.start + timeout
+			record.save(update_fields=["end"])
+	return HttpResponse()
 
 
 @login_required

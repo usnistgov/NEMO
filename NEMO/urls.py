@@ -387,6 +387,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		path("email_user_access_expiration_reminders/", calendar.email_user_access_expiration_reminders, name="email_user_access_expiration_reminders"),
 		path("manage_tool_qualifications/", calendar.manage_tool_qualifications, name="manage_tool_qualifications"),
 		path("manage_recurring_charges/", calendar.manage_recurring_charges, name="manage_recurring_charges"),
+		path("auto_logout_users/", calendar.auto_logout_users, name="auto_logout_users"),
 
 		# Abuse:
 		path("abuse/", abuse.abuse, name="abuse"),

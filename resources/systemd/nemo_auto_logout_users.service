@@ -1,0 +1,6 @@
+[Unit]
+Description=Auto logout users in NEMO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin area_auto_logout_users

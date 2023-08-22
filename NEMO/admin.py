@@ -355,7 +355,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 		("Additional Information", {"fields": ("area_calendar_color",)}),
 		(
 			"Area access",
-			{"fields": ("requires_reservation", "logout_grace_period", "welcome_message", "buddy_system_allowed")},
+			{"fields": ("requires_reservation", "logout_grace_period", "welcome_message", "auto_logout_time", "buddy_system_allowed")},
 		),
 		(
 			"Occupancy",
