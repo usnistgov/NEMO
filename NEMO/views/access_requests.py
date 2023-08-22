@@ -175,19 +175,21 @@ def mark_requests_expired():
 
 
 def send_request_received_email(request, access_request: TemporaryPhysicalAccessRequest, edit):
-	user_office_email = EmailsCustomization.get("user_office_email_address")
 	access_request_notification_email = get_media_file_contents("access_request_notification_email.html")
-	if user_office_email and access_request_notification_email:
-		# cc facility managers
-		cc_users: List[User] = list(User.objects.filter(is_active=True, is_facility_manager=True))
-		# and other users
-		cc_users.extend(access_request.other_users.all())
+	if access_request_notification_email:
+		# facility managers
+		manager_emails = [
+			email
+			for user in User.objects.filter(is_active=True, is_facility_manager=True)
+			for email in user.get_emails(user.get_preferences().email_send_adjustment_request_updates)
+		]
+		# cc creator + other users
+		cc_users = access_request.creator_and_other_users()
 		ccs = [
 			email
 			for user in cc_users
 			for email in user.get_emails(user.get_preferences().email_send_access_request_updates)
 		]
-		ccs.append(user_office_email)
 		status = (
 			"approved"
 			if access_request.status == RequestStatus.APPROVED
@@ -208,15 +210,24 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 				"access_requests_url": absolute_url,
 			},
 		)
-		email_notification = access_request.creator.get_preferences().email_send_access_request_updates
-		send_mail(
-			subject=f"Your access request for the {access_request.physical_access_level.area} has been {status}",
-			content=message,
-			from_email=user_office_email,
-			to=access_request.creator.get_emails(email_notification),
-			cc=ccs,
-			email_category=EmailCategory.ACCESS_REQUESTS,
-		)
+		if status in ["received", "updated"]:
+			send_mail(
+				subject=f"Access request for the {access_request.physical_access_level.area} {status}",
+				content=message,
+				from_email=access_request.creator.email,
+				to=manager_emails,
+				cc=ccs,
+				email_category=EmailCategory.ACCESS_REQUESTS,
+			)
+		else:
+			send_mail(
+				subject=f"Your access request for the {access_request.physical_access_level.area} has been {status}",
+				content=message,
+				from_email=access_request.reviewer.email,
+				to=ccs,
+				cc=manager_emails,
+				email_category=EmailCategory.ACCESS_REQUESTS,
+			)
 
 
 @user_office_or_manager_required

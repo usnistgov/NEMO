@@ -221,7 +221,7 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
     user_office_email = EmailsCustomization.get("user_office_email_address")
     adjustment_request_notification_email = get_media_file_contents("adjustment_request_notification_email.html")
     if user_office_email and adjustment_request_notification_email:
-        # cc facility managers
+        # facility managers
         manager_emails = [
             email
             for user in facility_managers
