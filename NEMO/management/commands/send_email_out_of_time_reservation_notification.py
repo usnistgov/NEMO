@@ -1,6 +1,6 @@
 from django.core.management import BaseCommand
 
-from NEMO.views.calendar import send_email_out_of_time_reservation_notification
+from NEMO.views.timed_services import send_email_out_of_time_reservation_notification
 
 
 class Command(BaseCommand):

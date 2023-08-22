@@ -1,14 +1,12 @@
-from datetime import datetime, timedelta
 from logging import getLogger
 from typing import List
 
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import user_office_or_manager_required
@@ -25,10 +23,8 @@ from NEMO.typing import QuerySetType
 from NEMO.utilities import (
 	BasicDisplayTable,
 	EmailCategory,
-	beginning_of_the_day,
 	bootstrap_primary_color,
 	export_format_datetime,
-	format_datetime,
 	get_full_url,
 	quiet_int,
 	render_email_template,
@@ -36,8 +32,6 @@ from NEMO.utilities import (
 	slugify_underscore,
 )
 from NEMO.views.customization import (
-	ApplicationCustomization,
-	CustomizationBase,
 	EmailsCustomization,
 	UserRequestsCustomization,
 	get_media_file_contents,
@@ -223,92 +217,6 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 			cc=ccs,
 			email_category=EmailCategory.ACCESS_REQUESTS,
 		)
-
-
-@login_required
-@permission_required("NEMO.trigger_timed_services", raise_exception=True)
-@require_GET
-def email_weekend_access_notification(request):
-	return send_email_weekend_access_notification()
-
-
-def send_email_weekend_access_notification():
-	"""
-	Sends a weekend access email to the addresses set in customization with the template provided.
-	The email is sent when the first request (each week) that includes weekend access is approved.
-	If no weekend access requests are made by the given time on the cutoff day (if set), a no access email is sent.
-	"""
-	try:
-		user_office_email = EmailsCustomization.get("user_office_email_address")
-		email_to = UserRequestsCustomization.get("weekend_access_notification_emails")
-		access_contents = get_media_file_contents("weekend_access_email.html")
-		if user_office_email and email_to and access_contents:
-			process_weekend_access_notification(user_office_email, email_to, access_contents)
-	except Exception as error:
-		access_request_logger.error(error)
-	return HttpResponse()
-
-
-def process_weekend_access_notification(user_office_email, email_to, access_contents):
-	today = datetime.today()
-	beginning_of_the_week = beginning_of_the_day(today - timedelta(days=today.weekday()))
-	cutoff_day = UserRequestsCustomization.get("weekend_access_notification_cutoff_day")
-	cutoff_hour = UserRequestsCustomization.get("weekend_access_notification_cutoff_hour")
-	# Set the cutoff in actual datetime format
-	cutoff_datetime = None
-	if cutoff_hour.isdigit() and cutoff_day and cutoff_day.isdigit():
-		cutoff_datetime = (beginning_of_the_week + timedelta(days=int(cutoff_day))).replace(hour=int(cutoff_hour))
-
-	end_of_the_week = beginning_of_the_week + timedelta(weeks=1)
-	beginning_of_the_weekend = beginning_of_the_week + timedelta(days=5)
-
-	# Approved access request that include weekend time do overlap with weekend date interval.
-	approved_weekend_access_requests = TemporaryPhysicalAccessRequest.objects.filter(
-		deleted=False, status=RequestStatus.APPROVED
-	)
-	approved_weekend_access_requests = approved_weekend_access_requests.exclude(start_time__gte=end_of_the_week)
-	approved_weekend_access_requests = approved_weekend_access_requests.exclude(end_time__lte=beginning_of_the_weekend)
-
-	cutoff_time_passed = cutoff_datetime and timezone.now() >= cutoff_datetime
-	last_sent = CustomizationBase.get("weekend_access_notification_last_sent")
-	last_sent_datetime = parse_datetime(last_sent) if last_sent else None
-	if (
-			(not last_sent_datetime or last_sent_datetime < beginning_of_the_week)
-			and access_contents
-			and approved_weekend_access_requests.exists()
-			and not cutoff_time_passed
-	):
-		send_weekend_email_access(True, user_office_email, email_to, access_contents, beginning_of_the_week)
-		CustomizationBase.set("weekend_access_notification_last_sent", str(timezone.now()))
-	if access_contents and cutoff_datetime and not approved_weekend_access_requests.exists():
-		is_cutoff = today.weekday() == int(cutoff_day) and cutoff_datetime.hour == timezone.localtime().hour
-		if is_cutoff:
-			send_weekend_email_access(False, user_office_email, email_to, access_contents, beginning_of_the_week)
-
-
-def send_weekend_email_access(access, user_office_email, email_to, contents, beginning_of_the_week):
-	facility_name = ApplicationCustomization.get("facility_name")
-	recipients = tuple([e for e in email_to.split(",") if e])
-	ccs = [
-		email
-		for manager in User.objects.filter(is_active=True, is_facility_manager=True)
-		for email in manager.get_emails(manager.get_preferences().email_send_access_request_updates)
-	]
-	ccs.append(user_office_email)
-
-	sat = format_datetime(beginning_of_the_week + timedelta(days=5), "SHORT_DATE_FORMAT", as_current_timezone=False)
-	sun = format_datetime(beginning_of_the_week + timedelta(days=6), "SHORT_DATE_FORMAT", as_current_timezone=False)
-
-	subject = f"{'NO w' if not access else 'W'}eekend access for the {facility_name} {sat} - {sun}"
-	message = render_email_template(contents, {"weekend_access": access})
-	send_mail(
-		subject=subject,
-		content=message,
-		from_email=user_office_email,
-		to=recipients,
-		cc=ccs,
-		email_category=EmailCategory.ACCESS_REQUESTS,
-	)
 
 
 @user_office_or_manager_required

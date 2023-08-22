@@ -1,4 +1,7 @@
+import datetime
+
 from django.contrib.auth.models import Permission
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -87,7 +90,6 @@ class KioskAreaAccess(TestCase):
 		response = self.client.get(reverse('farewell_screen', kwargs={'door_id': door.id}), follow=True)
 		self.assertEqual(response.status_code, 200)  # All good now
 		self.assertTrue("farewell_screen" in response.request['PATH_INFO'])
-
 
 	def test_login_to_area(self):
 		response = self.client.post(reverse('login_to_area', kwargs={'door_id': door.id}), follow=True)
@@ -380,3 +382,24 @@ class DoorInterlockTestCase(TestCase):
 		self.assertEqual(door.interlock.state, Interlock.State.UNKNOWN)
 		# unlocking door is an async action and creates problems when testing with SQLite (Database Table locked)
 
+
+class AreaAutoLogoutTestCase(TestCase):
+	def testAutoLogout(self):
+		user = login_as_user(self.client)
+		area = Area.objects.create(name="Cleanroom", welcome_message="Welcome to the cleanroom")
+		project = Project.objects.create(name="Project1", account=Account.objects.create(name="Account1"))
+		start = timezone.now() - datetime.timedelta(minutes=5)
+		record = AreaAccessRecord.objects.create(area=area, customer=user, project=project, start=start)
+		call_command("area_auto_logout_users")
+		# Nothing should happen
+		self.assertFalse(AreaAccessRecord.objects.get(id=record.id).end)
+		area.auto_logout_time = 10
+		area.save()
+		call_command("area_auto_logout_users")
+		# Nothing should happen
+		self.assertFalse(AreaAccessRecord.objects.get(id=record.id).end)
+		area.auto_logout_time = 3
+		area.save()
+		call_command("area_auto_logout_users")
+		new_record = AreaAccessRecord.objects.get(id=record.id)
+		self.assertEqual(new_record.end, new_record.start + datetime.timedelta(minutes=3))

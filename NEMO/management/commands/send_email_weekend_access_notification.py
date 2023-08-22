@@ -1,6 +1,6 @@
 from django.core.management import BaseCommand
 
-from NEMO.views.access_requests import send_email_weekend_access_notification
+from NEMO.views.timed_services import send_email_weekend_access_notification
 
 
 class Command(BaseCommand):

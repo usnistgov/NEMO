@@ -1,6 +1,6 @@
 from django.core.management import BaseCommand
 
-from NEMO.views.calendar import do_auto_logout_users
+from NEMO.views.timed_services import do_auto_logout_users
 
 
 class Command(BaseCommand):

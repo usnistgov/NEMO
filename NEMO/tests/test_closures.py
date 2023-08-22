@@ -6,7 +6,7 @@ from django.utils import timezone
 from NEMO.admin import ClosureAdminForm
 from NEMO.models import Alert, Closure, ClosureTime, Customization, EmailLog, User
 from NEMO.utilities import EmailCategory
-from NEMO.views.calendar import do_create_closure_alerts
+from NEMO.views.timed_services import do_create_closure_alerts
 
 
 class ClosuresTestCase(TestCase):
