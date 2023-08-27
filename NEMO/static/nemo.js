@@ -58,6 +58,14 @@ function set_item_link_callback(callback)
 	});
 }
 
+function set_item_checkbox_callback(callback)
+{
+	$("input[type='checkbox'][data-item-type='tool'], input[type='checkbox'][data-item-type='area']").each(function()
+	{
+		$(this).click({"callback": callback}, callback);
+	});
+}
+
 // This function allows categories in the tool tree sidebar to be expanded and collapsed.
 // It must be called upon loading any page that uses the tool tree.
 function enable_item_tree_toggling()
@@ -211,6 +219,30 @@ function toggle_item_categories(item_type)
 	save_sidebar_state();
 }
 
+function get_checked_items() {
+	const items = [];
+	$('.item-checkbox:checkbox:checked').each(function() {
+		items.push({
+			id: $(this).data('item-id'),
+			type: $(this).data('item-type'),
+		});
+	});
+	return items;
+}
+
+function set_checked_item_by_id(item_id, item_type)
+{
+	let item = $("#checkbox-" + item_type + "-" + item_id);
+	if(item.length === 1)
+	{
+		item.prop('checked', true)
+	}
+}
+
+function clear_checked_items() {
+	$('.item-checkbox:checkbox').removeAttr('checked');
+}
+
 function get_selected_item()
 {
 	let selected_item = $(".selected");
@@ -288,6 +320,11 @@ function save_sidebar_state()
 		localStorage['Selected item ID'] = selected_item;
 	}
 
+	let checked_items = get_checked_items();
+	if(checked_items && checked_items.length > 0) {
+		localStorage['Checked Items'] = JSON.stringify(checked_items);
+	}
+
 	if(showQualifiedTools !== null) {
 		localStorage.setItem("showQualifiedTools", showQualifiedTools)
 	}
@@ -328,6 +365,13 @@ function load_sidebar_state()
 	{
 		let selected_item = JSON.parse(selected)
 		set_selected_item_by_id(selected_item.id, selected_item.type);
+	}
+
+	let checked_items = localStorage['Checked Items'];
+	if(checked_items) {
+		JSON.parse(checked_items).forEach(function (item) {
+			set_checked_item_by_id(item.id, item.type);
+		});
 	}
 }
 
