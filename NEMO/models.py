@@ -1892,12 +1892,16 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 	quantity = models.PositiveIntegerField()
 	project = models.ForeignKey(Project, help_text="The withdraw will be billed to this project.", on_delete=models.CASCADE)
 	date = models.DateTimeField(default=timezone.now, help_text="The date and time when the user withdrew the consumable.")
-	tool_usage = models.BooleanField(default=False, help_text="Whether this withdraw is from tool usage")
+	usage_event = models.ForeignKey(UsageEvent, null=True, blank=True, help_text="Whether this withdraw is from tool usage", on_delete=models.CASCADE)
 	validated = models.BooleanField(default=False)
 	validated_by = models.ForeignKey(User, null=True, blank=True, related_name="consumable_withdrawal_validated_set", on_delete=models.CASCADE)
 
 	class Meta:
 		ordering = ['-date']
+
+	@property
+	def tool_usage(self) -> bool:
+		return bool(self.usage_event)
 
 	def clean(self):
 		errors = {}

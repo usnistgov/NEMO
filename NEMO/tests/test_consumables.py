@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from NEMO.forms import RecurringConsumableChargeForm
-from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, User
+from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, Tool, UsageEvent, User
 from NEMO.tests.test_utilities import (
 	create_user_and_project,
 	login_as,
@@ -76,8 +76,11 @@ class ConsumableTestCase(TestCase):
 		customer_project.allow_consumable_withdrawals = False
 		customer_project.save()
 		self.assertRaises(ValidationError, make_withdrawal, consumable.id, 1, customer_project.id, staff, customer.id)
+		tool = Tool.objects.create(name="test_tool1", primary_owner=staff)
+		start = timezone.now() - timedelta(hours=2)
+		usage_event = UsageEvent.objects.create(user=customer, operator=customer, tool=tool, project=customer_project, start=start, end=timezone.now())
 		# However, it should always work for tool usage (otherwise the user cannot disable the tool)
-		make_withdrawal(consumable.id, 1, customer_project.id, staff, customer.id, tool_usage=True)
+		make_withdrawal(consumable.id, 1, customer_project.id, staff, customer.id, usage_event=usage_event)
 
 	def test_clean(self):
 		test_consumable = Consumable()

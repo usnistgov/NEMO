@@ -426,13 +426,7 @@ def disable_tool(request, tool_id):
 			return HttpResponseBadRequest(str(e))
 
 	try:
-		dynamic_form.charge_for_consumables(
-			current_usage_event.user,
-			current_usage_event.operator,
-			current_usage_event.project,
-			current_usage_event.run_data,
-			request
-		)
+		dynamic_form.charge_for_consumables(current_usage_event, request)
 	except Exception as e:
 		return HttpResponseBadRequest(str(e))
 	dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
