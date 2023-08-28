@@ -281,7 +281,7 @@ class ToolAdmin(admin.ModelAdmin):
 		("Dependencies", {"fields": ("required_resources", "nonrequired_resources")}),
 	)
 
-	@admin.display(description="Questions", ordering="post_usage_questions", boolean=True)
+	@admin.display(description="Questions", ordering="_post_usage_questions", boolean=True)
 	def has_post_usage_questions(self, obj: Tool):
 		return True if obj.post_usage_questions else False
 
