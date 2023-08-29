@@ -2,19 +2,23 @@
 	{% for x in events %}
 	{
 		{% if personal_schedule and x.tool %}
-			"title": "{{ x.title|default:x.reservation_item.name|escapejs }}",
+			"title": "{{x.reservation_item.name|escapejs}} ({{x.user.username|escapejs}})\n{{ x.title|escapejs }}",
 			"color": "#33ad33",
 		{% elif personal_schedule and x.area %}
-			"title": "{{ x.title|default:x.reservation_item.name|escapejs }}",
+			"title": "{{x.reservation_item.name|escapejs}} ({{x.user.username|escapejs}})\n{{ x.title|escapejs }}",
 			"color": "#84CD84",
 		{% elif all_tools or all_areastools and x.tool %}
-			"title": "{{ x.reservation_item.name|escapejs }}\n{{ x.title|escapejs }}",
+			"title": "{{x.reservation_item.name|escapejs}} ({{x.user.username|escapejs}})\n{{ x.title|escapejs }}",
 			"color": "{{ x.reservation_item.tool_calendar_color|default:'#33ad33'|escapejs }}",
 		{% elif all_areas or all_areastools and x.area %}
-			"title": "{{ x.reservation_item.name|escapejs }}\n{{ x.title|escapejs }}",
+			"title": "{{x.reservation_item.name|escapejs}} ({{x.user.username|escapejs}})\n{{ x.title|escapejs }}",
 			"color": "{{ x.reservation_item.area_calendar_color|default:'#84CD84'|escapejs }}",
 		{% else %}
-			"title": "{{ x.title|default:x.user|escapejs }}",
+            {% if display_name %}
+			    "title": "{{x.reservation_item.name|escapejs}} ({{x.user.username|escapejs}})\n{{ x.title|escapejs }}",
+            {% else %}
+                "title": "{{ x.title|default:x.user|escapejs }}",
+            {% endif %}
 			"color": {% if x.user.id == user.id %}"#3a87ad"{% else %}"#88B7CD"{% endif %},
 		{% endif %}
 		{% if x.creator.id == x.user.id %}

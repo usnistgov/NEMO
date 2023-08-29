@@ -10567,6 +10567,7 @@ function EventManager(options) { // assumed to be a calendar
 	t.isFetchNeeded = isFetchNeeded;
 	t.fetchEvents = fetchEvents;
 	t.addEventSource = addEventSource;
+	t.addEventSourceList = addEventSourceList;
 	t.removeEventSource = removeEventSource;
 	t.updateEvent = updateEvent;
 	t.renderEvent = renderEvent;
@@ -10784,6 +10785,20 @@ function EventManager(options) { // assumed to be a calendar
 			sources.push(source);
 			pendingSourceCnt++;
 			fetchEventSource(source, currentFetchID); // will eventually call reportEvents
+		}
+	}
+
+
+	// Adds a list of event sources and re-fetches events
+	function addEventSourceList(sourceList) {
+		if(sourceList && $.isArray(sourceList)) {
+			for(const sourceInput of sourceList) {
+				let source = buildEventSource(sourceInput);
+				if (source) {
+					sources.push(source);
+				}
+			}
+			this.refetchEvents();
 		}
 	}
 

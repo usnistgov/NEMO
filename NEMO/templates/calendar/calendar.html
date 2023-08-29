@@ -37,17 +37,20 @@
 
 	{# The following menu tree code was take from an example at http://www.bootply.com/120625 #}
 	<ul id="extra-links" class="nav nav-list" style="margin-top: 10px; margin-bottom: 8px;">
-		<li><a href="javascript:void(0)" class="selected personal_schedule" data-item-id="personal_schedule" onclick="set_selected_item(this); update_event_sources()">Personal schedule</a></li>
+		<li><a href="javascript:void(0)" class="selected personal_schedule" data-item-id="personal_schedule" onclick="on_extra_link_click(this)">Personal schedule</a></li>
 		{% if calendar_all_tools %}
-		<li><a href="javascript:void(0)" class="all_tools" data-item-id="all_tools" onclick="set_selected_item(this); update_event_sources()">All tools</a></li>
+		<li><a href="javascript:void(0)" class="all_tools" data-item-id="all_tools" onclick="on_extra_link_click(this)">All tools</a></li>
 		{% endif %}
 		{% if calendar_all_areas %}
-		<li><a href="javascript:void(0)" class="all_areas" data-item-id="all_areas" onclick="set_selected_item(this); update_event_sources()">All areas</a></li>
+		<li><a href="javascript:void(0)" class="all_areas" data-item-id="all_areas" onclick="on_extra_link_click(this)">All areas</a></li>
 		{% endif %}
 		{% if calendar_all_areastools %}
-		<li><a href="javascript:void(0)" class="all_areastools" data-item-id="all_areastools" onclick="set_selected_item(this); update_event_sources()">All areas and tools</a></li>
+		<li><a href="javascript:void(0)" class="all_areastools" data-item-id="all_areastools" onclick="on_extra_link_click(this)">All areas and tools</a></li>
 		{% endif %}
 	</ul>
+    <button style="width: 100%" id="clear-selection-btn" class="btn btn-default" onclick="on_clear_selection_click();">
+        Clear Selection
+    </button>
 	{# The item tree has the HTML class tag "item_tree". See the widgets/item_tree.py file for more information. #}
 	{{ rendered_item_tree_html }}
 	<div style="height:50px"></div>
@@ -82,14 +85,8 @@ function update_event_sources()
 	calendar_jq.fullCalendar("removeEventSource", "{% url 'event_feed' %}");
 
 	let event_type = get_event_type();
-	let item_event_source =
-	{
-		url: "{% url 'event_feed' %}",
-		data:
-		{
-			event_type: event_type
-		}
-	};
+    let item_event_source_list = [];
+    let url = "{% url 'event_feed' %}";
 
 	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage')
 	{
@@ -98,41 +95,80 @@ function update_event_sources()
 		$(scheduled_outage_button).attr("disabled", "true").addClass('fc-state-disabled');
 		if(item === 'personal_schedule')
 		{
-			item_event_source.data.personal_schedule = true;
+            add_item_to_event_feed_list(item_event_source_list, url, event_type, { personal_schedule: true });
 		}
 		else if(item === 'all_tools')
 		{
-			item_event_source.data.all_tools = true;
+            add_item_to_event_feed_list(item_event_source_list, url, event_type, { all_tools: true });
 		}
 		else if(item === 'all_areas')
 		{
-			item_event_source.data.all_areas = true;
+            add_item_to_event_feed_list(item_event_source_list, url, event_type, { all_areas: true });
 		}
 		else if(item === 'all_areastools')
 		{
-			item_event_source.data.all_areastools = true;
+            add_item_to_event_feed_list(item_event_source_list, url, event_type, { all_areastools: true });
 		}
-		else if(item)
-		{
-			item = JSON.parse(item)
-			item_event_source.data.item_id = item.id;
-			item_event_source.data.item_type = item.type;
-			$(scheduled_outage_button).removeAttr("disabled").removeClass('fc-state-disabled');
-		}
+        else
+        {
+            let selected_tree_item = item ? JSON.parse(item) : undefined;
+            const checked_items = get_checked_items();
+            const has_checked_items = checked_items && checked_items.length > 0;
+            const one_item_checked_and_selected = selected_tree_item && checked_items && checked_items.length === 1 && checked_items[0].id === selected_tree_item.id && checked_items[0].type === selected_tree_item.type;
+            const display_name = has_checked_items && !one_item_checked_and_selected;
+
+            if(selected_tree_item)
+		    {
+                add_item_to_event_feed_list(item_event_source_list, url, event_type, {
+                    item_id: selected_tree_item.id,
+                    item_type: selected_tree_item.type,
+                    display_name,
+                });
+                $(scheduled_outage_button).removeAttr("disabled").removeClass('fc-state-disabled');
+		    }
+
+            {# For each checked item, add item event source feed to list #}
+            checked_items.forEach(function(checked_item)
+            {
+                {# If the checked item is not already selected #}
+                if(!selected_tree_item || selected_tree_item.id !== checked_item.id || selected_tree_item.type !== checked_item.type) {
+                    add_item_to_event_feed_list(item_event_source_list, url, event_type, {
+                        item_id: checked_item.id,
+                        item_type: checked_item.type,
+                        display_name,
+                    });
+                }
+            });
+        }
 	}
 	else if(event_type === 'specific user')
 	{
 		let user_search = $("#user_search");
 		if(user_search.typeahead('val'))
-			item_event_source.data.user = user_search.typeahead('val');
+        {
+            add_item_to_event_feed_list(item_event_source_list, url, event_type, { user: user_search.typeahead('val') });
+        }
 		else
 			return;
 	}
 
-	calendar_jq.fullCalendar("addEventSource", item_event_source);
+    {# Add event source feeds to calendar and re-fetch events #}
+    calendar_jq.fullCalendar("addEventSourceList", item_event_source_list);
 
 	refresh_sidebar_icons();
 	refresh_calendar_login();
+}
+
+{# Adds an event source feed to an event source list #}
+function add_item_to_event_feed_list(item_event_source_list, url, event_type, data)
+{
+    item_event_source_list.push({
+        url,
+        data: {
+            event_type,
+            ...data,
+        },
+    });
 }
 
 {# This function is a callback for when a reservation is successfully created by the user. #}
@@ -633,6 +669,7 @@ function change_calendar_event_type(calling_element)
 		$(scheduled_outage_button).hide();
 		clear_specific_user();
 	}
+    update_clear_selection_btn_display();
 }
 
 function get_specific_user_activity(jquery_event, search_selection, dataset_name)
@@ -656,20 +693,68 @@ function retrieve_user_qualifications()
     );
 }
 
+{# Clear selection button - on click handler #}
+function on_clear_selection_click()
+{
+    clear_checked_items();
+    save_sidebar_state();
+    update_clear_selection_btn_display();
+    update_event_sources();
+}
+
+{# Item Checkbox - on click handler #}
+function on_item_checkbox_click()
+{
+    {# When the current selected item is not a tool or area, change selection to the checked item #}
+    let selected_item = get_selected_item();
+    if (selected_item === "personal_schedule" || selected_item === "all_tools" || selected_item === "all_areas" || selected_item === "all_areastools") {
+        set_selected_item_by_id($(this).data('item-id'), $(this).data('item-type'));
+    }
+
+    update_event_sources();
+    save_sidebar_state();
+    update_clear_selection_btn_display();
+}
+
+{# Extra Link - on click handler #}
+function on_extra_link_click(extra_link)
+{
+    set_selected_item(extra_link);
+    clear_checked_items();
+    save_sidebar_state();
+    update_clear_selection_btn_display();
+    update_event_sources();
+}
+
+
+{# Show / Hide Clear Selection button #}
+function update_clear_selection_btn_display()
+{
+    const event_type = get_event_type();
+    if(get_checked_items().length > 0 && event_type !== "specific user") {
+        $('#clear-selection-btn').show();
+    } else {
+        $('#clear-selection-btn').hide();
+    }
+}
+
 function on_load()
 {
     $("html").css("overflow", "hidden");
 	create_calendar();
 	set_interval_when_visible(document, refresh_calendar_and_sidebar, 30000);
 	set_item_link_callback(update_event_sources);
+    set_item_checkbox_callback(on_item_checkbox_click);
 	enable_item_tree_toggling();
 	$('#item_search').autocomplete('items', on_item_search_selection, {% json_search_base_with_extra_fields tools|add:areas %}, {% if tools and areas %}false{% else %}true{% endif %});
 	$("#item_search").focus();
 	load_sidebar_state();
+    update_clear_selection_btn_display();
     {% if calendar_qualified_tools and not user.is_staff  %}
         {# Filter qualified tools depending on the status of the button. #}
         load_qualified_tools(retrieve_user_qualifications());
     {% endif %}
+	$('input[type=checkbox].item-checkbox').show();
 	$(".item_tree").show(); {# Item tree is initially hidden so that previous expand/collapse state of categories is configured before it's visible. #}
 	{% if auto_select_item_id %}
 		expand_to_item("{{ auto_select_item_id }}", "{{ auto_select_item_type }}");

@@ -129,8 +129,9 @@ class ItemTreeHelper:
 		Each node is output as an HTML list item. If the node has children then those are also output.
 		"""
 		if node.__is_leaf():
-			result += '<li>'
+			result += '<li style="display: flex;">'
 			css_class = "" if node.is_user_qualified else 'class="disabled"'
+			result += f'<input type="checkbox" id="checkbox-{node.item_type.value}-{node.id}" name="item-checkbox" class="item-checkbox" data-item-id="{node.id}" data-item-type="{node.item_type.value}" style="display: none;">'
 			result += f'<a id="{node.item_type.value}-{node.id}" href="javascript:void(0);" onclick="set_selected_item(this)" data-item-id="{node.id}" data-item-type="{node.item_type.value}" data-item-name="{node.name}" {css_class}>{node.name}</a>'
 		if not node.__is_leaf():
 			node_li_class = "area-category" if node.item_type == ReservationItemType.AREA else 'tool-category'

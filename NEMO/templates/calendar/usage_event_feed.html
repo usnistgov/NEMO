@@ -2,9 +2,9 @@
 	{% for x in usage_events %}
 	{
 		{% if personal_schedule %}
-			"title": "{{ x.tool.name }} \n {{ x.project }}",
+			"title": "{{ x.tool.name }} ({{ x.user.username }})\n {{ x.project }}",
 		{% else %}
-			"title": "{% if x.operator.id != x.user.id %}{{ x.operator }} on behalf of {% endif %}{{ x.user }} \n {{ x.project }}",
+			"title": "{{ x.tool.name }} ({% if x.operator.id != x.user.id %}{{ x.operator }} on behalf of {% endif %}{{ x.user.username }})\n {{ x.project }}",
 		{% endif %}
 		{% if x.operator.id == x.user.id %}
 			"tooltip": "{{ x.tool.name }} usage for {{ x.user }} billed to project {{ x.project }}",
