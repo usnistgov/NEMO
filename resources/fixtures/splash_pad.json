@@ -535,10 +535,31 @@
     }
   },
   {
+    "model": "NEMO.consumable",
+    "pk": 5,
+    "fields": {
+      "name": "Sputter gold",
+      "category": 2,
+      "quantity": 200,
+      "reusable": true,
+      "visible": true,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
     "model": "NEMO.consumablecategory",
     "pk": 1,
     "fields": {
       "name": "Rental"
+    }
+  },
+  {
+    "model": "NEMO.consumablecategory",
+    "pk": 2,
+    "fields": {
+      "name": "Material"
     }
   },
   {
@@ -5256,7 +5277,7 @@
       "_maximum_future_reservation_time": null,
       "_missed_reservation_threshold": 30,
       "_allow_delayed_logoff": false,
-      "_post_usage_questions": "",
+      "_post_usage_questions": "[\n   {\n      \"type\":\"group\",\n      \"name\":\"group1\",\n      \"title\":\"Add up to 3 processes:\",\n      \"max_number\":3,\n      \"group_add_button_name\": \"Add another process\",\n      \"questions\":[\n         {\n            \"type\":\"number\",\n            \"precision\": 5,\n            \"title\":\"How much gold was deposited?\",\n            \"max-width\":250,\n            \"suffix\":\"nl\",\n            \"required\":true,\n            \"placeholder\":\"0\",\n            \"name\":\"gold_used\",\n            \"consumable\": \"Sputter gold\"\n         },\n         {\n            \"type\": \"textarea\",\n            \"title\": \"Comments\",\n            \"name\": \"comments\",\n            \"required\": false,\n            \"max-width\":250,\n            \"rows\": 5\n         }\n      ]\n   }\n]",
       "_policy_off_between_times": false,
       "_policy_off_start_time": null,
       "_policy_off_end_time": null,
@@ -8674,6 +8695,24 @@
         ]
       ],
       "_superusers": []
+    }
+  },
+  {
+    "model": "NEMO.toolusagecounter",
+    "pk": 1,
+    "fields": {
+      "name": "Total gold used",
+      "description": "",
+      "value": 203,
+      "tool": 63,
+      "tool_usage_question": "gold_used",
+      "last_reset_value": null,
+      "last_reset": null,
+      "last_reset_by": null,
+      "warning_threshold": null,
+      "warning_email": "",
+      "warning_threshold_reached": false,
+      "is_active": true
     }
   },
   {
