@@ -550,7 +550,7 @@ def validate_consumable_for_question(question: PostUsageQuestion):
 				raise Exception(f"Consumable with name '{question.consumable}' could not be found. Make sure the names match.")
 
 
-def withdraw_consumable_for_question(question, input_data, customer, merchant, project, request, usage_event):
+def withdraw_consumable_for_question(question, input_data, customer, merchant, project, usage_event, request):
 	if isinstance(question, PostUsageNumberFieldQuestion):
 		if question.consumable:
 			consumable = Consumable.objects.get(name=question.consumable)
