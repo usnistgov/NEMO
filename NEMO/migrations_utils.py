@@ -20,7 +20,7 @@ def create_news_for_version(apps, version, extra_content=None):
         story.title = f"What's new in NEMO {version}?"
         content = f"Thank you for updating to NEMO {version}.\n"
         if extra_content:
-            content += extra_content + "\n"
+            content += "\n" + extra_content + "\n"
         content += (
             f"\nClick on the following links to consult the <a href='https://github.com/usnistgov/NEMO/releases/tag/{version}' target='_blank'>NEMO {version} Release Notes</a> "
             f"and the <a href='https://www.nist.gov/document/nemofeaturemanualpdf' target='_blank'>NEMO {version} Feature manual</a>"
