@@ -446,7 +446,7 @@ class TemporaryPhysicalAccessRequest(BaseModel):
 	reviewer = models.ForeignKey("User", null=True, blank=True, related_name='access_requests_reviewed', on_delete=models.CASCADE)
 	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
 
-	def creator_and_other_users(self) -> Set:
+	def creator_and_other_users(self) -> Set[User]:
 		result = {self.creator}
 		result.update(self.other_users.all())
 		return result
