@@ -111,24 +111,31 @@ function update_event_sources()
 		}
         else
         {
-            let selected_tree_item = undefined;
-            if(item)
+            let selected_tree_item = item ? JSON.parse(item) : undefined;
+            const checked_items = get_checked_items();
+            const has_checked_items = checked_items && checked_items.length > 0;
+            const one_item_checked_and_selected = selected_tree_item && checked_items && checked_items.length === 1 && checked_items[0].id === selected_tree_item.id && checked_items[0].type === selected_tree_item.type;
+            const display_name = has_checked_items && !one_item_checked_and_selected;
+
+            if(selected_tree_item)
 		    {
-                selected_tree_item = JSON.parse(item);
                 add_item_to_event_feed_list(item_event_source_list, url, event_type, {
                     item_id: selected_tree_item.id,
                     item_type: selected_tree_item.type,
+                    display_name,
                 });
                 $(scheduled_outage_button).removeAttr("disabled").removeClass('fc-state-disabled');
 		    }
 
             {# For each checked item, add item event source feed to list #}
-            get_checked_items().forEach(function(checked_item) {
+            checked_items.forEach(function(checked_item)
+            {
                 {# If the checked item is not already selected #}
                 if(!selected_tree_item || selected_tree_item.id !== checked_item.id || selected_tree_item.type !== checked_item.type) {
                     add_item_to_event_feed_list(item_event_source_list, url, event_type, {
                         item_id: checked_item.id,
                         item_type: checked_item.type,
+                        display_name,
                     });
                 }
             });
@@ -153,7 +160,8 @@ function update_event_sources()
 }
 
 {# Adds an event source feed to an event source list #}
-function add_item_to_event_feed_list(item_event_source_list, url, event_type, data) {
+function add_item_to_event_feed_list(item_event_source_list, url, event_type, data)
+{
     item_event_source_list.push({
         url,
         data: {
@@ -686,7 +694,8 @@ function retrieve_user_qualifications()
 }
 
 {# Clear selection button - on click handler #}
-function on_clear_selection_click() {
+function on_clear_selection_click()
+{
     clear_checked_items();
     save_sidebar_state();
     update_clear_selection_btn_display();
@@ -694,7 +703,8 @@ function on_clear_selection_click() {
 }
 
 {# Item Checkbox - on click handler #}
-function on_item_checkbox_click() {
+function on_item_checkbox_click()
+{
     {# When the current selected item is not a tool or area, change selection to the checked item #}
     let selected_item = get_selected_item();
     if (selected_item === "personal_schedule" || selected_item === "all_tools" || selected_item === "all_areas" || selected_item === "all_areastools") {
@@ -707,7 +717,8 @@ function on_item_checkbox_click() {
 }
 
 {# Extra Link - on click handler #}
-function on_extra_link_click(extra_link) {
+function on_extra_link_click(extra_link)
+{
     set_selected_item(extra_link);
     clear_checked_items();
     save_sidebar_state();
@@ -717,7 +728,8 @@ function on_extra_link_click(extra_link) {
 
 
 {# Show / Hide Clear Selection button #}
-function update_clear_selection_btn_display() {
+function update_clear_selection_btn_display()
+{
     const event_type = get_event_type();
     if(get_checked_items().length > 0 && event_type !== "specific user") {
         $('#clear-selection-btn').show();

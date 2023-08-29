@@ -203,6 +203,7 @@ def reservation_event_feed(request, start, end):
 	all_tools = request.GET.get('all_tools')
 	all_areas = request.GET.get('all_areas')
 	all_areastools = request.GET.get('all_areastools')
+	display_name = request.GET.get("display_name") == "true"
 
 	# Filter events that only have to do with the relevant tool/area.
 	item_type = request.GET.get('item_type')
@@ -238,6 +239,7 @@ def reservation_event_feed(request, start, end):
 		'all_tools': all_tools,
 		'all_areas': all_areas,
 		'all_areastools': all_areastools,
+		'display_name': display_name,
 	}
 	return render(request, 'calendar/reservation_event_feed.html', dictionary)
 

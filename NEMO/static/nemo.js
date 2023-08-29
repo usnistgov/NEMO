@@ -219,9 +219,11 @@ function toggle_item_categories(item_type)
 	save_sidebar_state();
 }
 
-function get_checked_items() {
+function get_checked_items()
+{
 	const items = [];
-	$('.item-checkbox:checkbox:checked').each(function() {
+	$('.item-checkbox:checkbox:checked').each(function()
+	{
 		items.push({
 			id: $(this).data('item-id'),
 			type: $(this).data('item-type'),
@@ -239,7 +241,8 @@ function set_checked_item_by_id(item_id, item_type)
 	}
 }
 
-function clear_checked_items() {
+function clear_checked_items()
+{
 	$('.item-checkbox:checkbox').removeAttr('checked');
 }
 
