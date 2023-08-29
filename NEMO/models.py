@@ -144,7 +144,7 @@ class BaseCategory(SerializationByNameModel):
 
 
 class BaseDocumentModel(BaseModel):
-	document = models.FileField(null=True, blank=True, upload_to=document_filename_upload, verbose_name='Document')
+	document = models.FileField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, null=True, blank=True, upload_to=document_filename_upload, verbose_name='Document')
 	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
 	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
 	uploaded_at = models.DateTimeField(auto_now_add=True)
