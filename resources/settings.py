@@ -172,7 +172,7 @@ REST_FRAMEWORK = {
     # "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.TokenAuthentication", "rest_framework.authentication.SessionAuthentication"),
     "DEFAULT_RENDERER_CLASSES": DEFAULTS["DEFAULT_RENDERER_CLASSES"] + ["drf_excel.renderers.XLSXRenderer"],
     "DEFAULT_PARSER_CLASSES": DEFAULTS["DEFAULT_PARSER_CLASSES"] + ["NEMO.parsers.CSVParser"],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "NEMO.rest_pagination.PageNumberPagination",
     "PAGE_SIZE": 1000,
     # Formats used when exporting data in REST API (for export in json, excel, html etc.)
     # "DATETIME_FORMAT": "%m-%d-%Y %H:%M:%S",

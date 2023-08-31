@@ -88,6 +88,13 @@ class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
 	Also allows XLSX retrieval
 	"""
 
+	# Bypass pagination when exporting into any format that's not the browsable API
+	def paginate_queryset(self, queryset):
+		renderer = self.request.accepted_renderer if self.request and hasattr(self.request, "accepted_renderer") else None
+		if not renderer or isinstance(renderer, BrowsableAPIRenderer):
+			return super().paginate_queryset(queryset)
+		return None
+
 	def create(self, request, *args, **kwargs):
 		many = isinstance(request.data, list)
 		serializer = self.get_serializer(data=request.data, many=many)
