@@ -48,7 +48,7 @@
                 {% if errors.tool_configuration_near_future_days %}
                     {{ errors.tool_configuration_near_future_days.error }}
                 {% else %}
-                    The number of days for the "near future" configuration agenda (On Friday and Saturday, the rest of the weekend days are always included).
+                    The number of days for the "near future" configuration agenda (Weekend days are automatically included if the "near future" falls on the weekend).
                 {% endif %}
             </div>
         </div>
