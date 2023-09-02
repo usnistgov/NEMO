@@ -22,6 +22,37 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Tool configuration</h3>
+        <div class="form-group {% if errors.tool_control_configuration_setting_template %}has-error{% endif %}">
+            <label class="control-label col-md-3" for="tool_control_configuration_setting_template">Configuration template</label>
+            <div class="col-md-7">
+                <textarea oninput="auto_size_textarea(this);" id="tool_control_configuration_setting_template" name="tool_control_configuration_setting_template" class="form-control">{% if errors.tool_control_configuration_setting_template %}{{ errors.tool_control_configuration_setting_template.value }}{% else %}{{ tool_control_configuration_setting_template }}{% endif %}</textarea>
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                {% if errors.tool_control_configuration_setting_template %}
+                    {{ errors.tool_control_configuration_setting_template.error }}
+                {% else %}
+                    The django template used for rendering current configuration setting. The context variable <b>current_setting</b> is provided.
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group {% if errors.tool_configuration_near_future_days %}has-error{% endif %}">
+            <label class="control-label col-sm-4 col-md-3" for="tool_configuration_near_future_days">Near future</label>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <input type="number" min="1" id="tool_configuration_near_future_days" name="tool_configuration_near_future_days" class="form-control text-right" value="{% if errors.tool_configuration_near_future_days %}{{ errors.tool_configuration_near_future_days.value }}{% else %}{{ tool_configuration_near_future_days }}{% endif %}"/>
+                    <span class="input-group-addon">day(s)</span>
+                </div>
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                {% if errors.tool_configuration_near_future_days %}
+                    {{ errors.tool_configuration_near_future_days.error }}
+                {% else %}
+                    The number of days for the "near future" configuration agenda (On Friday and Saturday, the rest of the weekend days are always included).
+                {% endif %}
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool problems</h3>
         <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">New problems</label>
@@ -42,7 +73,7 @@
         </div>
         <div class="form-group">
             <label class="control-label col-sm-4 col-md-3" for="tool_problem_max_image_size_pixels">Limit task images size</label>
-            <div class="col-md-5">
+            <div class="col-md-3">
                 <div class="input-group">
                     <input type="number" min="0" id="tool_problem_max_image_size_pixels" name="tool_problem_max_image_size_pixels" class="form-control text-right" value="{% if errors.tool_problem_max_image_size_pixels %}{{ errors.tool_problem_max_image_size_pixels.value }}{% else %}{{ tool_problem_max_image_size_pixels }}{% endif %}"/>
                     <span class="input-group-addon">pixels</span>
@@ -51,19 +82,6 @@
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool control</h3>
-        <div class="form-group {% if errors.tool_control_configuration_setting_template %}has-error{% endif %}">
-            <label class="control-label col-md-3" for="tool_control_configuration_setting_template">Configuration template</label>
-            <div class="col-md-7">
-                <textarea oninput="auto_size_textarea(this);" id="tool_control_configuration_setting_template" name="tool_control_configuration_setting_template" class="form-control">{% if errors.tool_control_configuration_setting_template %}{{ errors.tool_control_configuration_setting_template.value }}{% else %}{{ tool_control_configuration_setting_template }}{% endif %}</textarea>
-            </div>
-            <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                {% if errors.tool_control_configuration_setting_template %}
-                    {{ errors.tool_control_configuration_setting_template.error }}
-                {% else %}
-                    The django template used for rendering current configuration setting. The context variable <b>current_setting</b> is provided.
-                {% endif %}
-            </div>
-        </div>
         <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">Usage data history</label>
             <div class="col-sm-8 col-md-9">
