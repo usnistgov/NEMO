@@ -394,6 +394,7 @@ class ToolCustomization(CustomizationBase):
 		"tool_problem_max_image_size_pixels": "750",
 		"tool_problem_send_to_all_qualified_users": "",
 		"tool_configuration_near_future_days": "1",
+		"tool_reservation_policy_superusers_bypass": "",
 	}
 
 	def validate(self, name, value):

@@ -21,6 +21,14 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Reservation policy</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="tool_reservation_policy_superusers_bypass" {% if tool_reservation_policy_superusers_bypass %}checked{% endif %} value="enabled"> Tool superusers are exempt from reservation policy rules</label>
+                </div>
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool configuration</h3>
         <div class="form-group {% if errors.tool_control_configuration_setting_template %}has-error{% endif %}">
