@@ -14,6 +14,7 @@ from django.utils.safestring import mark_safe
 
 from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.apps.sensors.evaluators import evaluate_boolean_expression
+from NEMO.decorators import postpone
 from NEMO.fields import MultiEmailField
 from NEMO.models import BaseModel, InterlockCard
 from NEMO.typing import QuerySetType
@@ -123,6 +124,10 @@ class Sensor(BaseModel):
 	@property
 	def card(self):
 		return self.sensor_card or self.interlock_card
+
+	@postpone
+	def read_data_async(self, raise_exception=False):
+		return self.read_data(raise_exception)
 
 	def read_data(self, raise_exception=False):
 		from NEMO.apps.sensors import sensors
