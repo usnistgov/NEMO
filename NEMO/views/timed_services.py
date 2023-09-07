@@ -44,6 +44,7 @@ from NEMO.utilities import (
 	send_mail,
 )
 from NEMO.views.area_access import log_out_user
+from NEMO.views.calendar import send_tool_free_time_notification
 from NEMO.views.customization import (
 	ApplicationCustomization,
 	CustomizationBase,
@@ -75,7 +76,7 @@ def do_cancel_unused_reservations(request=None):
 
 	# Missed Tool Reservations
 	tools = Tool.objects.filter(visible=True, _operational=True, _missed_reservation_threshold__isnull=False)
-	missed_reservations = []
+	missed_reservations: List[Reservation] = []
 	for tool in tools:
 		# If a tool is in use then there's no need to look for unused reservation time.
 		if tool.in_use() or tool.required_resource_is_unavailable() or tool.scheduled_outage_in_progress():
@@ -121,7 +122,14 @@ def do_cancel_unused_reservations(request=None):
 
 	for r in missed_reservations:
 		send_missed_reservation_notification(r, request)
-
+	# Deal with the missed reservation freed time in a separate loop just in case something raises an exception
+	for r in missed_reservations:
+		if r.tool:
+			# This is a fake reservation to free the time between now and the original end of the reservation
+			new_reservation = Reservation()
+			new_reservation.start = r.start
+			new_reservation.end = timezone.now()
+			send_tool_free_time_notification(request, r, new_reservation, missed_or_shortened=True)
 	return HttpResponse()
 
 
