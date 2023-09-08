@@ -33,7 +33,14 @@
 					    <input type="hidden" name="selection" value="{{ selection_value }}" oninput="updated_email_link()">
                     {% endfor %}
 					<div class="form-group">
+                        {% if topic %}
+                            <div class="input-group">
+                                <span class="input-group-addon">[{{ topic }}]</span>
+                        {% endif %}
 						<input type="text" name="subject" class="form-control" aria-label="Email subject" placeholder="Subject line" oninput="updated_email_link()" autofocus required>
+                        {% if topic %}
+                            </div>
+                        {% endif %}
 					</div>
 					<div class="form-group">
 						Title background color:
