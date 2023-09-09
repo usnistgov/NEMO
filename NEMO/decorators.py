@@ -31,7 +31,7 @@ def disable_session_expiry_refresh(f):
 # commands exit without waiting for threads to finish
 def postpone(function):
 	def decorator(*arguments, **named_arguments):
-		is_management_command = ("django-admin" in sys.argv[0] or "manage" in sys.argv[0])
+		is_management_command = ("django-admin" in sys.argv[0] or "manage" in sys.argv[0] or "django/__main__.py" in sys.argv[0])
 		is_runserver = "runserver" in sys.argv
 		if is_management_command and not is_runserver:
 			return function(*arguments, **named_arguments)
