@@ -387,6 +387,7 @@ class ToolCustomization(CustomizationBase):
 		"tool_task_updates_facility_managers": "enabled",
 		"tool_control_hide_data_history_users": "",
 		"tool_control_configuration_setting_template": "{{ current_setting }}",
+		"tool_control_broadcast_upcoming_reservation": "",
 		"tool_qualification_reminder_days": "",
 		"tool_qualification_expiration_days": "",
 		"tool_qualification_expiration_never_used_days": "",

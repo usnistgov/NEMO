@@ -14,6 +14,7 @@
 	<ul>
 		<li><a href="{% url 'email_broadcast' 'user' %}">have an account in {{ site_title }}</a></li>
 		{% if tools_exist %}<li><a href="{% url 'email_broadcast' 'tool' %}">are qualified for a tool</a></li>{% endif %}
+        {% if tools_exist %}<li><a href="{% url 'email_broadcast' 'tool-reservation' %}">have an upcoming reservation on a tool</a></li>{% endif %}
 		{% if areas_exist %}<li><a href="{% url 'email_broadcast' 'area' %}">have access to an area</a></li>{% endif %}
 		<li><a href="{% url 'email_broadcast' 'project' %}">are working on a project</a></li>
 		<li><a href="{% url 'email_broadcast' 'account' %}">bill to an account</a></li>
@@ -22,7 +23,7 @@
 	{% if search_base %}
 		<div class="row">
 			<div class="col-sm-4">
-				<input id="search" class="form-control" aria-label="Audience" placeholder="Which {{ audience }}?" autofocus />
+				<input id="search" class="form-control" aria-label="Audience" placeholder="Which {% if audience == 'tool-reservation' %}tool{% else %}{{ audience }}{% endif %}?" autofocus />
 			</div>
 		</div>
 

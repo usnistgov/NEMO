@@ -54,6 +54,7 @@ from NEMO.views.customization import (
 	EmailsCustomization,
 	InterlockCustomization,
 	RemoteWorkCustomization,
+	ToolCustomization,
 	get_media_file_contents,
 )
 from NEMO.widgets.configuration_editor import ConfigurationEditor
@@ -89,7 +90,9 @@ def tool_status(request, tool_id):
 	""" Gets the current status of the tool (that is, whether it is currently in use or not). """
 	from NEMO.rates import rate_class
 	tool = get_object_or_404(Tool, id=tool_id, visible=True)
-
+	user_is_qualified = tool.user_set.filter(id=request.user.id).exists()
+	user_is_staff = request.user.is_staff
+	tool_control_broadcast_upcoming_reservation_enabled = ToolCustomization.get_bool("tool_control_broadcast_upcoming_reservation")
 	dictionary = {
 		"tool": tool,
 		"tool_rate": rate_class.get_tool_rate(tool),
@@ -99,6 +102,8 @@ def tool_status(request, tool_id):
 		"task_statuses": TaskStatus.objects.all(),
 		"post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
 		"configs": get_tool_full_config_history(tool),
+		"user_is_qualified": tool.user_set.filter(id=request.user.id).exists(),
+		"show_broadcast_upcoming_reservation": user_is_staff or (user_is_qualified and tool_control_broadcast_upcoming_reservation_enabled),
 	}
 
 	try:
