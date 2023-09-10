@@ -118,13 +118,7 @@ def do_disable_tool(request, tool_id):
 			return render(request, "kiosk/acknowledgement.html", dictionary)
 
 	try:
-		dynamic_form.charge_for_consumables(
-			current_usage_event.user,
-			current_usage_event.operator,
-			current_usage_event.project,
-			current_usage_event.run_data,
-			request,
-		)
+		dynamic_form.charge_for_consumables(current_usage_event, request)
 	except Exception as e:
 		dictionary = {"message": str(e), "delay": 10}
 		return render(request, "kiosk/acknowledgement.html", dictionary)

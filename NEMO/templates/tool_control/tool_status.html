@@ -563,8 +563,7 @@
 			{% csrf_token %}
 			<input type="hidden" name="action" value="create">
 			<input type="hidden" name="tool" value="{{ tool.id }}">
-			<p>Use this form to report a problem relating to the currently selected tool. The {{ facility_name }} staff will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</p>
-
+			<p>Use this form to report a problem relating to the currently selected tool. The {{ facility_name }} staff as well as anyone with an upcoming reservation will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</p>
 			{% if task_categories %}
 				<div class="form-group">
 					<label for="problem_category">Please choose a category that best describes this problem. If there is no appropriate category then leave this field blank.</label>

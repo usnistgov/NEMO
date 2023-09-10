@@ -846,6 +846,7 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 			current_reservation.shortened = True
 			current_reservation.descendant = new_reservation
 			current_reservation.save()
+			send_tool_free_time_notification(None, current_reservation, new_reservation, missed_or_shortened=True)
 	except Reservation.DoesNotExist:
 		pass
 
@@ -941,9 +942,9 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
 
 
 @postpone
-def send_tool_free_time_notification(request, cancelled_reservation: Reservation, new_reservation: Optional[Reservation] = None):
+def send_tool_free_time_notification(request, cancelled_reservation: Reservation, new_reservation: Optional[Reservation] = None, missed_or_shortened=False):
 	tool = cancelled_reservation.tool
-	if tool and cancelled_reservation.start > timezone.now():
+	if tool and (cancelled_reservation.start > timezone.now() or missed_or_shortened):
 		max_duration = cancelled_reservation.duration().total_seconds() / 60
 		freed_time = None
 		start_time = None

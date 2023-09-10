@@ -114,7 +114,7 @@ def compose_email(request):
 		audience = request.GET["audience"]
 		selection = request.GET.getlist("selection")
 		no_type = request.GET.get("no_type") == "on"
-		users = get_users_for_email(audience, selection, no_type)
+		users, topic = get_users_for_email(audience, selection, no_type)
 	except:
 		dictionary = {"error": "You specified an invalid audience parameter"}
 		return render(request, "email/email_broadcast.html", dictionary)
@@ -124,6 +124,7 @@ def compose_email(request):
 		"selection": selection,
 		"no_type": no_type,
 		"users": users,
+		"topic": topic,
 		"user_emails": ";".join([email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)]),
 		"active_user_emails": ";".join([email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails) if user.is_active]),
 	}
@@ -146,7 +147,7 @@ def export_email_addresses(request):
 		selection = request.GET.getlist("selection")
 		no_type = request.GET.get("no_type") == "on"
 		only_active_users = request.GET.get("active") == "on"
-		users = get_users_for_email(audience, selection, no_type)
+		users, topic = get_users_for_email(audience, selection, no_type)
 		response = HttpResponse(content_type="text/csv")
 		writer = csv.writer(response)
 		writer.writerow(["First", "Last", "Username", "Email"])
@@ -186,7 +187,7 @@ def send_broadcast_email(request):
 		audience = form.cleaned_data["audience"]
 		selection = form.cleaned_data["selection"]
 		no_type = form.cleaned_data["no_type"]
-		users = get_users_for_email(audience, selection, no_type)
+		users, topic = get_users_for_email(audience, selection, no_type)
 		if active_choice:
 			users = users.filter(is_active=True)
 	except Exception as error:
@@ -203,6 +204,8 @@ def send_broadcast_email(request):
 		dictionary = {"error": "The audience you specified is empty. You must send the email to at least one person."}
 		return render(request, "email/compose_email.html", dictionary)
 	subject = form.cleaned_data["subject"]
+	if topic:
+		subject = f"[{topic}] " + subject
 	users = [email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)]
 	sender: User = request.user
 	if form.cleaned_data["copy_me"]:
@@ -247,22 +250,33 @@ def email_preview(request):
 	return HttpResponse()
 
 
-def get_users_for_email(audience: str, selection: List, no_type: bool) -> QuerySetType[User]:
+# Returns users and an optional topic to add to the email subject
+def get_users_for_email(audience: str, selection: List, no_type: bool) -> (QuerySetType[User], str):
 	users = User.objects.none()
+	topic = None
 	if audience == "tool":
 		users = User.objects.filter(qualifications__id__in=selection).distinct()
+		if len(selection) == 1:
+			topic = Tool.objects.filter(pk=selection[0]).first().name
 	elif audience == "area":
-		access_levels = [access_level for area in Area.objects.filter(pk__in=selection) for access_level in area.get_physical_access_levels()]
+		areas: QuerySetType[Area] = Area.objects.filter(pk__in=selection)
+		access_levels = [access_level for area in areas for access_level in area.get_physical_access_levels()]
 		user_filter = Q(physical_access_levels__in=access_levels)
 		# if one of the access levels allows staff, add all staff & user office
 		if any([access_level.allow_staff_access for access_level in access_levels]):
 			user_filter |= Q(is_staff=True)
 			user_filter |= Q(is_user_office=True)
 		users = User.objects.filter(user_filter).distinct()
+		if len(selection) == 1:
+			topic = areas.first().name
 	elif audience == "project":
 		users = User.objects.filter(projects__id__in=selection).distinct()
+		if len(selection) == 1:
+			topic = Project.objects.filter(pk=selection[0]).first().name
 	elif audience == "account":
 		users = User.objects.filter(projects__account__id__in=selection).distinct()
+		if len(selection) == 1:
+			topic = Account.objects.filter(pk=selection[0]).first().name
 	elif audience == "user":
 		users = User.objects.all().distinct()
 		if selection:
@@ -273,4 +287,4 @@ def get_users_for_email(audience: str, selection: List, no_type: bool) -> QueryS
 			)
 		elif no_type:
 			users = users.filter(type_id__isnull=True)
-	return users
+	return users, topic

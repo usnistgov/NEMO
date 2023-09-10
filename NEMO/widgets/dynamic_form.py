@@ -491,7 +491,11 @@ class DynamicForm:
 						results.append(sub_question)
 		return results
 
-	def charge_for_consumables(self, customer, merchant, project, run_data: str, request=None):
+	def charge_for_consumables(self, usage_event, request=None):
+		customer = usage_event.user
+		merchant = usage_event.operator
+		project = usage_event.project
+		run_data = usage_event.run_data
 		try:
 			run_data_json = loads(run_data)
 		except Exception as error:
@@ -499,10 +503,10 @@ class DynamicForm:
 			return
 		for question in self.questions:
 			input_data = run_data_json[question.name] if question.name in run_data_json else None
-			withdraw_consumable_for_question(question, input_data, customer, merchant, project, request)
+			withdraw_consumable_for_question(question, input_data, customer, merchant, project, usage_event, request)
 			if isinstance(question, PostUsageGroupQuestion):
 				for sub_question in question.sub_questions:
-					withdraw_consumable_for_question(sub_question, input_data, customer, merchant, project, request)
+					withdraw_consumable_for_question(sub_question, input_data, customer, merchant, project, usage_event, request)
 
 	def update_tool_counters(self, run_data: str, tool_id: int):
 		# This function increments all counters associated with the given tool
@@ -546,7 +550,7 @@ def validate_consumable_for_question(question: PostUsageQuestion):
 				raise Exception(f"Consumable with name '{question.consumable}' could not be found. Make sure the names match.")
 
 
-def withdraw_consumable_for_question(question, input_data, customer, merchant, project, request):
+def withdraw_consumable_for_question(question, input_data, customer, merchant, project, usage_event, request):
 	if isinstance(question, PostUsageNumberFieldQuestion):
 		if question.consumable:
 			consumable = Consumable.objects.get(name=question.consumable)
@@ -565,7 +569,7 @@ def withdraw_consumable_for_question(question, input_data, customer, merchant, p
 					merchant=merchant,
 					quantity=quantity,
 					project_id=project.id,
-					tool_usage=True,
+					usage_event=usage_event,
 					request=request,
 				)
 

@@ -10,7 +10,7 @@ from django.views.decorators.http import require_GET
 
 from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.apps.sensors.models import Sensor, SensorAlertLog, SensorCategory, SensorData
-from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required
+from NEMO.decorators import disable_session_expiry_refresh, staff_member_required
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
 	BasicDisplayTable,
@@ -142,10 +142,10 @@ def manage_sensor_data(request):
 	return do_manage_sensor_data()
 
 
-def do_manage_sensor_data(asynchronous=True):
+def do_manage_sensor_data():
 	minute_of_the_day = floor((timezone.now() - beginning_of_the_day(timezone.now())).total_seconds() / 60)
 	# Read data for each sensor at the minute interval set
 	for sensor in Sensor.objects.exclude(read_frequency=0):
 		if minute_of_the_day % sensor.read_frequency == 0:
-			postpone(sensor.read_data)() if asynchronous else sensor.read_data()
+			sensor.read_data_async()
 	return HttpResponse()

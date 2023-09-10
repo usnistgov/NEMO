@@ -259,14 +259,14 @@ def extended_permissions(request) -> bool:
 	return not lock_charges or user.is_facility_manager or user.is_superuser
 
 
-def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, tool_usage=False, request=None):
+def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, usage_event=None, request=None):
 	withdraw = ConsumableWithdraw(
 		consumable_id=consumable_id,
 		quantity=quantity,
 		merchant=merchant,
 		customer_id=customer_id,
 		project_id=project_id,
-		tool_usage=tool_usage
+		usage_event=usage_event
 	)
 	withdraw.full_clean()
 	withdraw.save()

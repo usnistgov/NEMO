@@ -144,7 +144,7 @@ class BaseCategory(SerializationByNameModel):
 
 
 class BaseDocumentModel(BaseModel):
-	document = models.FileField(null=True, blank=True, upload_to=document_filename_upload, verbose_name='Document')
+	document = models.FileField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, null=True, blank=True, upload_to=document_filename_upload, verbose_name='Document')
 	url = models.CharField(null=True, blank=True, max_length=200, verbose_name='URL')
 	name = models.CharField(null=True, blank=True, max_length=200, help_text="The optional name to display for this document")
 	uploaded_at = models.DateTimeField(auto_now_add=True)
@@ -446,7 +446,7 @@ class TemporaryPhysicalAccessRequest(BaseModel):
 	reviewer = models.ForeignKey("User", null=True, blank=True, related_name='access_requests_reviewed', on_delete=models.CASCADE)
 	deleted = models.BooleanField(default=False, help_text="Indicates the request has been deleted and won't be shown anymore.")
 
-	def creator_and_other_users(self) -> Set:
+	def creator_and_other_users(self) -> Set[User]:
 		result = {self.creator}
 		result.update(self.other_users.all())
 		return result
@@ -1892,12 +1892,16 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 	quantity = models.PositiveIntegerField()
 	project = models.ForeignKey(Project, help_text="The withdraw will be billed to this project.", on_delete=models.CASCADE)
 	date = models.DateTimeField(default=timezone.now, help_text="The date and time when the user withdrew the consumable.")
-	tool_usage = models.BooleanField(default=False, help_text="Whether this withdraw is from tool usage")
+	usage_event = models.ForeignKey(UsageEvent, null=True, blank=True, help_text="Whether this withdraw is from tool usage", on_delete=models.CASCADE)
 	validated = models.BooleanField(default=False)
 	validated_by = models.ForeignKey(User, null=True, blank=True, related_name="consumable_withdrawal_validated_set", on_delete=models.CASCADE)
 
 	class Meta:
 		ordering = ['-date']
+
+	@property
+	def tool_usage(self) -> bool:
+		return bool(self.usage_event)
 
 	def clean(self):
 		errors = {}
