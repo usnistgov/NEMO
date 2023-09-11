@@ -4,6 +4,7 @@ from typing import List
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
@@ -49,27 +50,31 @@ def self_checkout(user) -> bool:
 @require_http_methods(["GET", "POST"])
 def consumables(request):
 	user: User = request.user
+	is_self_checkout = self_checkout(user)
 	if request.method == "GET":
 		from NEMO.rates import rate_class
 
 		rate_dict = rate_class.get_consumable_rates(Consumable.objects.all())
+		consumables_filter = Q(visible=True, allow_self_checkout=True) if is_self_checkout else Q(visible=True)
 
 		dictionary = {
 			"users": User.objects.filter(is_active=True),
-			"consumables": Consumable.objects.filter(visible=True).order_by("category", "name"),
+			"consumables": Consumable.objects.filter(consumables_filter).order_by("category", "name"),
 			"rates": rate_dict,
-			"self_checkout": self_checkout(user),
+			"self_checkout": is_self_checkout,
 		}
 		if self_checkout(user):
 			dictionary["projects"] = user.active_projects()
 		return render(request, "consumables/consumables.html", dictionary)
 	elif request.method == "POST":
 		updated_post_data = request.POST.copy()
-		if self_checkout(user):
+		if is_self_checkout:
 			updated_post_data.update({'customer': user.id})
 		form = ConsumableWithdrawForm(updated_post_data)
 		if form.is_valid():
 			withdraw = form.save(commit=False)
+			if is_self_checkout and not withdraw.consumable.allow_self_checkout:
+				return HttpResponseBadRequest("You can not self checkout this consumable")
 			try:
 				policy.check_billing_to_project(withdraw.project, withdraw.customer, withdraw.consumable, withdraw)
 			except ProjectChargeException as e:
