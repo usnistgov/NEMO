@@ -729,6 +729,24 @@ def set_reservation_title(request, reservation_id):
 	return HttpResponse()
 
 
+@staff_member_required
+@require_POST
+def change_outage_title(request, outage_id):
+	outage = get_object_or_404(ScheduledOutage, id=outage_id)
+	outage.title = request.POST.get("title", "")[:outage._meta.get_field("title").max_length]
+	outage.save(update_fields=["title"])
+	return HttpResponse()
+
+
+@staff_member_required
+@require_POST
+def change_outage_details(request, outage_id):
+	outage = get_object_or_404(ScheduledOutage, id=outage_id)
+	outage.details = request.POST.get("details", "")
+	outage.save(update_fields=["details"])
+	return HttpResponse()
+
+
 @login_required
 @require_POST
 def change_reservation_date(request):

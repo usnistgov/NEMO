@@ -30,7 +30,7 @@
             Additional information:<br>
             {{ reservation.additional_information|linebreaksbr }}
         {% endif %}
-        {# Allow the user to cancel the reservation if they have that priviledge. #}
+        {# Allow the user to cancel the reservation if they have that privilege. #}
         {% if not reservation.missed and not reservation.cancelled %}
             {% if reservation.user.id == customer.id and reservation.has_not_ended %}
                 <div style="height:10px">{# Vertical spacer #}</div>

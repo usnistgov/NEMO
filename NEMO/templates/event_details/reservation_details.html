@@ -216,7 +216,7 @@
     {% endif %}
     </table>
 
-    {# Allow the user to cancel the reservation if they have that priviledge. #}
+    {# Allow the user to cancel the reservation if they have that privilege. #}
     {% if not reservation.missed and not reservation.cancelled %}
         {% if reservation.user.id == user.id and reservation.has_not_ended or user.is_staff %}
             <div class="modal-footer" style="padding: 15px 0 0 0;">
