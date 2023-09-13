@@ -102,7 +102,6 @@ def tool_status(request, tool_id):
 		"task_statuses": TaskStatus.objects.all(),
 		"post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
 		"configs": get_tool_full_config_history(tool),
-		"user_is_qualified": tool.user_set.filter(id=request.user.id).exists(),
 		"show_broadcast_upcoming_reservation": user_is_staff or (user_is_qualified and tool_control_broadcast_upcoming_reservation_enabled),
 	}
 
