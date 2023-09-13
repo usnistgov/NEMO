@@ -138,6 +138,7 @@
 			{% endif %}
 			<div class="col-sm-offset-2 col-sm-4">
 				<div class="checkbox">
+					<label><input id="is_service_personnel" name="is_service_personnel" type="checkbox" {% if form.is_service_personnel.value %}checked{% endif %}> Service personnel</label><br>
 					<label><input id="training_required" name="training_required" type="checkbox" {% if form.training_required.value %}checked{% endif %}> Facility rules tutorial required</label>
 				</div>
 			</div>

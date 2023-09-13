@@ -51,7 +51,6 @@ class UserForm(ModelForm):
 		model = User
 		exclude = [
 			"is_staff",
-			"is_service_personnel",
 			"is_technician",
 			"is_facility_manager",
 			"is_superuser",
