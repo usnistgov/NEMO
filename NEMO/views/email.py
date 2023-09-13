@@ -273,19 +273,10 @@ def get_users_for_email(audience: str, selection: List, no_type: bool) -> (Query
 		if len(selection) == 1:
 			topic = Tool.objects.filter(pk=selection[0]).first().name
 	elif audience == "tool-reservation":
-		reservation_flags_filter = Q(reservation_user__cancelled=False, reservation_user__missed=False, reservation_user__shortened=False)
-		tools_reservation_filter = Q()
-		for tool_id in selection:
-			tool = Tool.objects.get(pk=tool_id)
-			# If only one tool is selected, set the topic to tool's name
-			if len(selection) == 1:
-				topic = tool.name
-			tool_reservation_filter = Q(reservation_user__tool__id=tool_id)
-			tool_reservation_filter &= Q(reservation_user__start__gte=timezone.now())
-			if tool.reservation_horizon:
-				tool_reservation_filter &= Q(reservation_user__start__lte=timedelta(days=tool.reservation_horizon) + timezone.now())
-			tools_reservation_filter = tools_reservation_filter | tool_reservation_filter
-		users = User.objects.filter(reservation_flags_filter & tools_reservation_filter).distinct()
+		upcoming_reservations = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, tool__in=selection, end__gte=timezone.now())
+		users = User.objects.filter(reservation_user__in=upcoming_reservations).distinct()
+		if len(selection) == 1:
+			topic = Tool.objects.filter(pk=selection[0]).first().name
 	elif audience == "area":
 		areas: QuerySetType[Area] = Area.objects.filter(pk__in=selection)
 		access_levels = [access_level for area in areas for access_level in area.get_physical_access_levels()]
