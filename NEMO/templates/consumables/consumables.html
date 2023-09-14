@@ -53,7 +53,21 @@
                             {% endif %}
                             {% for item in category.list %}
                                 <tr><td {% if categories|length > 1 or category.grouper %}style="padding-left: 15px;"{% endif %}>
-                                    <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %} <span class="glyphicon glyphicon-plus-sign success-highlight" style="vertical-align: text-top"></span></span>
+                                    <div class="consumable-row">
+                                        {% if item.notes %}<span data-toggle="notes-tooltip" title="{{ item.notes|linebreaksbr }}" class="glyphicon glyphicon-info-sign primary-highlight"></span>{% endif %}
+                                        <span class="consumable_trigger" style="display: flex; align-items: center; gap: 5px;" data-item-id="{{ item.id }}">{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}
+                                            {% if not item.reusable %}
+                                                {% if item.quantity > 0 %}
+                                                    <span>({{ item.quantity }} left)</span>
+                                                {% else %}
+                                                    <span style="color: red">(sold-out)</span>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if item.reusable or item.quantity > 0 %}
+                                                <span class="glyphicon glyphicon-plus-sign success-highlight" style="vertical-align: text-top"></span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
                                 </td></tr>
                             {% endfor %}
                         {% endfor %}
@@ -123,6 +137,7 @@
 		}
         window.addEventListener("load", function ()
         {
+			$('[data-toggle="notes-tooltip"]').tooltip({"html": true});
             $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
             let withdrawal_order_form = $('#withdrawal_form_order');
             withdrawal_order_form.on('shown.bs.tooltip', function(e)

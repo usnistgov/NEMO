@@ -1180,3 +1180,13 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	display: inline-block;
 	float: right;
 }
+
+.consumable-row
+{
+	display: flex; align-items: center; gap: 5px;
+}
+
+.consumable-row .tooltip-inner
+{
+	text-align: left!important;
+}
