@@ -55,7 +55,9 @@ def consumables(request):
 		from NEMO.rates import rate_class
 
 		rate_dict = rate_class.get_consumable_rates(Consumable.objects.all())
-		consumables_filter = Q(visible=True, allow_self_checkout=True) if is_self_checkout else Q(visible=True)
+		consumable_list = Consumable.objects.filter(visible=True).order_by("category", "name")
+		if is_self_checkout:
+			consumable_list = consumable_list.filter(allow_self_checkout=True)
 
 		dictionary = {
 			"users": User.objects.filter(is_active=True),
