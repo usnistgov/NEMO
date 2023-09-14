@@ -443,6 +443,7 @@
 				{% endif %}
 				{% if tool.location %}<p>The {{ tool.name_or_child_in_use_name }} is located in room <span class="glyphicon glyphicon-map-marker small-icon"></span>{{ tool.location }}.</p>{% endif %}
 				{% if tool.phone_number %}<p>You may dial the phone that is closest to the {{ tool.name_or_child_in_use_name }} at extension <span class="glyphicon glyphicon-phone small-icon"></span>{{ tool.phone_number }}.</p>{% endif %}
+				{% if show_broadcast_upcoming_reservation %}<p>You can email <a href="{% url 'compose_email' %}?audience=tool-reservation&selection={{ tool.id }}"><span class="glyphicon glyphicon-send"></span> all users with an upcoming reservation</a>.</p>{% endif %}
 			</div>
 		</div>
 		{% if user.is_staff %}

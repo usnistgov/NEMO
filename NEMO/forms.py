@@ -343,7 +343,7 @@ class EmailBroadcastForm(Form):
 	copy_me = BooleanField(required=False, initial=True)
 
 	audience = ChoiceField(
-		choices=[("tool", "tool"), ("project", "project"), ("account", "account"), ("area", "area"), ("user", "user")]
+		choices=[("tool", "tool"), ("tool-reservation", "tool-reservation"), ("project", "project"), ("account", "account"), ("area", "area"), ("user", "user")]
 	)
 	selection = CharField(required=False)
 	no_type = BooleanField(initial=False, required=False)

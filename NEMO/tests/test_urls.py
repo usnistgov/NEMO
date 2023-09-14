@@ -102,6 +102,7 @@ url_kwargs_get_post = {
 	"create_adjustment_request": {"kwargs": {}},
 	"edit_adjustment_request": {"kwargs": {"request_id": 1}},
 	"change_reservation_date": {"login_id": 1, "post": {"id": 2, "new_start": (start + datetime.timedelta(hours=12)).replace(minute=15).strftime(settings.DATETIME_INPUT_FORMATS[0]), "new_end": end_one_day.replace(minute=30).strftime(settings.DATETIME_INPUT_FORMATS[0]),}},
+	"compose_email": {"login_id": 1},
 }
 
 urls_to_skip = [
