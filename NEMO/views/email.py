@@ -1,5 +1,4 @@
 import csv
-from datetime import timedelta
 from logging import getLogger
 from smtplib import SMTPException
 from typing import List, Optional
@@ -17,7 +16,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import any_staff_required
 from NEMO.forms import EmailBroadcastForm
-from NEMO.models import Account, Area, Project, Tool, User, UserType
+from NEMO.models import Account, Area, Project, Reservation, Tool, User, UserType
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
 	EmailCategory,
@@ -178,7 +177,7 @@ def export_email_addresses(request):
 		return render(request, "email/email_broadcast.html", dictionary)
 
 
-@any_staff_required
+@login_required
 @require_POST
 def send_broadcast_email(request):
 	content = get_media_file_contents("generic_email.html")
@@ -189,6 +188,10 @@ def send_broadcast_email(request):
 	form = EmailBroadcastForm(request.POST)
 	if not form.is_valid():
 		return render(request, "email/compose_email.html", {"form": form})
+	# Check if the user is allowed to broadcast email
+	error = check_user_allowed(request.user, form.cleaned_data["audience"], form.cleaned_data["selection"])
+	if error:
+		return HttpResponseBadRequest(error)
 	dictionary = {
 		"title": form.cleaned_data["title"],
 		"greeting": form.cleaned_data["greeting"],
