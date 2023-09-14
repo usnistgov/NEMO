@@ -250,7 +250,7 @@ def send_broadcast_email(request):
 	return redirect("email_broadcast")
 
 
-@any_staff_required
+@login_required
 @require_POST
 def email_preview(request):
 	generic_email_template = get_media_file_contents("generic_email.html")
