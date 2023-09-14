@@ -1181,10 +1181,12 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	float: right;
 }
 
-.consumable-row {
+.consumable-row
+{
 	display: flex; align-items: center; gap: 5px;
 }
 
-.consumable-row .tooltip-inner {
+.consumable-row .tooltip-inner
+{
   text-align: left!important;
 }
