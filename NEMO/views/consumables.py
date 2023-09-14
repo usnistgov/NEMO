@@ -63,7 +63,7 @@ def consumables(request):
 			"rates": rate_dict,
 			"self_checkout": is_self_checkout,
 		}
-		if self_checkout(user):
+		if is_self_checkout:
 			dictionary["projects"] = user.active_projects()
 		return render(request, "consumables/consumables.html", dictionary)
 	elif request.method == "POST":
