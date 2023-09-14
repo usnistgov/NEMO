@@ -7,7 +7,7 @@
                 <li style="width:48%; text-align:center" class="active"><a href="#summary" style="padding: 10px 5px">Summary</a></li>
                 <li style="width:48%; text-align:center"><a href="#details" style="padding: 10px 5px">Details</a></li>
                 {% if configs %}<li style="width:48%; text-align:center"><a href="#config" style="padding: 10px 5px">Config History</a></li>{% endif %}
-                {% if tool.post_usage_questions and not hide_data_history or user.is_any_part_of_staff %}<li style="width: 48%; text-align: center"><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
+                {% if tool.post_usage_questions and not hide_data_history or tool.post_usage_questions and user.is_any_part_of_staff %}<li style="width: 48%; text-align: center"><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
                 <li style="width:48%; text-align:center"><a href="#problem" style="padding: 10px 5px">Report a problem</a></li>
                 <li style="width:48%; text-align:center"><a href="#comment" style="padding: 10px 5px">Post a comment</a></li>
             </ul>
@@ -17,7 +17,7 @@
                 <li class="active"><a href="#summary">Summary</a></li>
                 <li><a href="#details">Details</a></li>
                 {% if configs %}<li><a href="#config">Config History</a></li>{% endif %}
-                {% if tool.post_usage_questions and not hide_data_history or user.is_any_part_of_staff %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
+                {% if tool.post_usage_questions and not hide_data_history or tool.post_usage_questions and user.is_any_part_of_staff %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
                 <li><a href="#problem">Report a problem</a></li>
                 <li><a href="#comment">Post a comment</a></li>
             </ul>
