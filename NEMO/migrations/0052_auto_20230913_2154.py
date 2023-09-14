@@ -13,11 +13,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='consumable',
             name='allow_self_checkout',
-            field=models.BooleanField(default=True, help_text='Allow users to self checkout this consumable, only applicable when self checkout customization is enabled'),
+            field=models.BooleanField(default=True, help_text='Allow users to self checkout this consumable, only applicable when self checkout customization is enabled.'),
         ),
         migrations.AddField(
             model_name='consumable',
             name='notes',
-            field=models.TextField(blank=True, help_text='Notes about the consumable', null=True),
+            field=models.TextField(blank=True, help_text='Notes about the consumable.', null=True),
         ),
     ]

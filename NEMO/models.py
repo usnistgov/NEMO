@@ -1838,8 +1838,8 @@ class Consumable(BaseModel):
 	reminder_threshold = models.IntegerField(null=True, blank=True, help_text="More of this item should be ordered when the quantity falls below this threshold.")
 	reminder_email = models.EmailField(null=True, blank=True, help_text="An email will be sent to this address when the quantity of this item falls below the reminder threshold.")
 	reminder_threshold_reached = models.BooleanField(default=False)
-	allow_self_checkout = models.BooleanField(default=True, help_text="Allow users to self checkout this consumable, only applicable when self checkout customization is enabled")
-	notes = models.TextField(null=True, blank=True, help_text="Notes about the consumable")
+	allow_self_checkout = models.BooleanField(default=True, help_text="Allow users to self checkout this consumable, only applicable when self checkout customization is enabled.")
+	notes = models.TextField(null=True, blank=True, help_text="Notes about the consumable.")
 
 	class Meta:
 		ordering = ["name"]
