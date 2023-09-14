@@ -61,7 +61,7 @@ def consumables(request):
 
 		dictionary = {
 			"users": User.objects.filter(is_active=True),
-			"consumables": Consumable.objects.filter(consumables_filter).order_by("category", "name"),
+			"consumables": consumable_list,
 			"rates": rate_dict,
 			"self_checkout": is_self_checkout,
 		}
