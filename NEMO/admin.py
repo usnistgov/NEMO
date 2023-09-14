@@ -659,8 +659,8 @@ class UsageEventAdmin(ModelAdminRedirect):
 
 @register(Consumable)
 class ConsumableAdmin(admin.ModelAdmin):
-	list_display = ("name", "quantity", "category", "visible", "reusable", "reminder_threshold", "reminder_email", "id")
-	list_filter = ("visible", ("category", admin.RelatedOnlyFieldListFilter), "reusable")
+	list_display = ("name", "quantity", "category", "visible", "reusable", "allow_self_checkout", "reminder_threshold", "reminder_email", "id")
+	list_filter = ("visible", ("category", admin.RelatedOnlyFieldListFilter), "reusable", "allow_self_checkout")
 	search_fields = ("name",)
 	readonly_fields = ("reminder_threshold_reached",)
 
