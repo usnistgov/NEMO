@@ -2,8 +2,6 @@
 
 from django.db import migrations, models
 
-from NEMO.migrations_utils import create_news_for_version
-
 
 class Migration(migrations.Migration):
 
@@ -11,11 +9,7 @@ class Migration(migrations.Migration):
         ('NEMO', '0049_version_4_7_0'),
     ]
 
-    def new_version_news(apps, schema_editor):
-        create_news_for_version(apps, "4.7.0", "The new version of the calendar allows users to view multiple tool feeds at once by checking the box next to each tool you would like to see.")
-
     operations = [
-        migrations.RunPython(new_version_news),
         migrations.AddField(
             model_name='consumable',
             name='allow_self_checkout',
