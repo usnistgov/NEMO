@@ -55,7 +55,7 @@
                                 <tr><td {% if categories|length > 1 or category.grouper %}style="padding-left: 15px;"{% endif %}>
                                     <div class="consumable-row">
                                         {% if item.notes %}<span data-toggle="notes-tooltip" title="{{ item.notes|linebreaksbr }}" class="glyphicon glyphicon-info-sign primary-highlight"></span>{% endif %}
-                                        <span class="consumable_trigger" style="display: flex; align-items: center; gap: 5px;" data-item-id="{{ item.id }}">{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}
+                                        <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}
                                             {% if not item.reusable %}
                                                 {% if item.quantity > 0 %}
                                                     <span>({{ item.quantity }} left)</span>
