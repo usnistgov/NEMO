@@ -30,8 +30,6 @@ window.addEventListener("load", function()
         selector.change(hide_fields);
         hide_fields()
 
-        /* set a separate form for testing post_usage data */
-        $('#tool_form').after('<form id="questions_preview_form"></form>')
         add_required_class();
     })(django.jQuery);
 });

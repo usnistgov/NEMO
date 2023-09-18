@@ -146,8 +146,8 @@ class ToolAdminForm(forms.ModelForm):
 		fields = "__all__"
 
 	class Media:
-		js = ("admin/tool/tool.js", "admin/questions_preview/questions_preview.js")
-		css = {"": ("admin/questions_preview/questions_preview.css",)}
+		js = ("admin/tool/tool.js", "admin/dynamic_form_preview/dynamic_form_preview.js")
+		css = {"": ("admin/dynamic_form_preview/dynamic_form_preview.css",)}
 
 	qualified_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
@@ -289,7 +289,7 @@ class ToolAdmin(admin.ModelAdmin):
 		if obj.id:
 			form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ""
 			return mark_safe(
-				'<div class="questions_preview">{}{}</div><div class="help questions_preview_help">Save form to preview post usage questions</div>'.format(
+				'<div class="dynamic_form_preview">{}{}</div><div class="help dynamic_form_preview_help">Save form to preview post usage questions</div>'.format(
 					DynamicForm(obj.post_usage_questions).render("tool_usage_group_question", obj.id), form_validity_div
 				)
 			)
@@ -573,8 +573,8 @@ class ReservationQuestionsForm(forms.ModelForm):
 		fields = "__all__"
 
 	class Media:
-		js = ("admin/reservation_questions/reservation_questions.js", "admin/questions_preview/questions_preview.js")
-		css = {"": ("admin/questions_preview/questions_preview.css",)}
+		js = ("admin/dynamic_form_preview/dynamic_form_preview.js",)
+		css = {"": ("admin/dynamic_form_preview/dynamic_form_preview.css",)}
 
 	def clean(self):
 		cleaned_data = super().clean()
@@ -644,7 +644,7 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 		except:
 			pass
 		return mark_safe(
-			'<div class="questions_preview">{}{}</div><div class="help questions_preview_help">Save form to preview reservation questions</div>'.format(
+			'<div class="dynamic_form_preview">{}{}</div><div class="help dynamic_form_preview_help">Save form to preview reservation questions</div>'.format(
 				rendered_form, form_validity_div
 			)
 		)

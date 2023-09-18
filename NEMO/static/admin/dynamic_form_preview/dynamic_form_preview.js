@@ -2,10 +2,13 @@ window.addEventListener("load", function()
 {
     (function ($)
     {
+        /* set a separate form for testing post_usage data */
+        $('form').last().after('<form id="dynamic_form_preview_form"></form>');
+
         function update_input_form()
         {
-            $('.questions_preview input, .questions_preview textarea, .questions_preview select').each(function (index, element) {
-                $(element).attr('form', 'questions_preview_form')
+            $('.dynamic_form_preview input, .dynamic_form_preview textarea, .dynamic_form_preview select').each(function (index, element) {
+                $(element).attr('form', 'dynamic_form_preview_form')
             })
         }
         function update_validation_button()
@@ -13,7 +16,7 @@ window.addEventListener("load", function()
             let valid_message = $("#form_validity")
             if (valid_message)
             {
-                if(document.querySelector('#questions_preview_form').checkValidity())
+                if(document.querySelector('#dynamic_form_preview_form').checkValidity())
                 {
                     valid_message.removeClass("invalid");
                     valid_message.text("The form is valid!");
@@ -25,7 +28,7 @@ window.addEventListener("load", function()
                 }
             }
         }
-        $('.questions_preview').on('change keyup', "input[form='questions_preview_form'], textarea[form='questions_preview_form'], select[form='questions_preview_form']", update_validation_button);
+        $('.dynamic_form_preview').on('change keyup', "input[form='dynamic_form_preview_form'], textarea[form='dynamic_form_preview_form'], select[form='dynamic_form_preview_form']", update_validation_button);
         $('body').on('question-group-changed', function()
         {
             update_input_form();

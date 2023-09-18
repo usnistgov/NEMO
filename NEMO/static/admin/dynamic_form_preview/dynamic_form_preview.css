@@ -3,12 +3,12 @@ label
     text-transform:capitalize
 }
 
-.questions_preview label
+.dynamic_form_preview label
 {
     text-transform: none;
 }
 
-.questions_preview
+.dynamic_form_preview
 {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;
@@ -18,30 +18,30 @@ label
     padding: 20px 30px;
 }
 
-div.questions_preview:empty
+div.dynamic_form_preview:empty
 {
     display: none;
 }
 
-.questions_preview_help
+.dynamic_form_preview_help
 {
     margin-left: 0 !important;
     padding-left: 0 !important;
 }
 
-.questions_preview *
+.dynamic_form_preview *
 {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
 }
 
-.questions_preview .form-group
+.dynamic_form_preview .form-group
 {
     margin-bottom: 15px;
 }
 
-.questions_preview .form-group label
+.dynamic_form_preview .form-group label
 {
     display: inline-block;
     max-width: 100%;
@@ -55,19 +55,19 @@ div.questions_preview:empty
     line-height: inherit;
 }
 
-.questions_preview .form-group label:after
+.dynamic_form_preview .form-group label:after
 {
     height: initial !important;
 }
 
-.questions_preview .form-group .input-group
+.dynamic_form_preview .form-group .input-group
 {
     position: relative;
     display: table;
     border-collapse: separate;
 }
 
-.questions_preview .form-group .input-group .input-group-addon
+.dynamic_form_preview .form-group .input-group .input-group-addon
 {
     padding: 6px 12px;
     font-size: 14px;
@@ -84,14 +84,14 @@ div.questions_preview:empty
     display: table-cell;
 }
 
-.questions_preview .form-group .input-group .input-group-addon:last-child
+.dynamic_form_preview .form-group .input-group .input-group-addon:last-child
 {
     border-left: 0;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
 
-.questions_preview .form-group .form-control
+.dynamic_form_preview .form-group .form-control
 {
     display: block;
     width: 100%;
@@ -111,7 +111,7 @@ div.questions_preview:empty
     transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
 }
 
-.questions_preview .form-group .input-group .form-control
+.dynamic_form_preview .form-group .input-group .form-control
 {
     display: table-cell;
     position: relative;
@@ -121,13 +121,13 @@ div.questions_preview:empty
     margin-bottom: 0;
 }
 
-.questions_preview .form-group .input-group .form-control:first-child
+.dynamic_form_preview .form-group .input-group .form-control:first-child
 {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
 }
 
-.questions_preview .form-group .radio, .questions_preview .form-group .checkbox
+.dynamic_form_preview .form-group .radio, .dynamic_form_preview .form-group .checkbox
 {
     position: relative;
     display: block;
@@ -135,7 +135,7 @@ div.questions_preview:empty
     margin-bottom: 10px;
 }
 
-.questions_preview .form-group .radio label, .questions_preview .form-group .checkbox label
+.dynamic_form_preview .form-group .radio label, .dynamic_form_preview .form-group .checkbox label
 {
     min-height: 20px;
     padding-left: 20px;
@@ -144,21 +144,21 @@ div.questions_preview:empty
     cursor: pointer;
 }
 
-.questions_preview .form-group .radio input[type="radio"], .questions_preview .form-group .radio-inline input[type="radio"], .questions_preview .form-group .checkbox input[type="checkbox"], .questions_preview .form-group .checkbox-inline input[type="checkbox"]
+.dynamic_form_preview .form-group .radio input[type="radio"], .dynamic_form_preview .form-group .radio-inline input[type="radio"], .dynamic_form_preview .form-group .checkbox input[type="checkbox"], .dynamic_form_preview .form-group .checkbox-inline input[type="checkbox"]
 {
     position: absolute;
     margin-top: 4px \9;
     margin-left: -20px;
 }
 
-.questions_preview .form-group input[type="radio"], .questions_preview .form-group input[type="checkbox"]
+.dynamic_form_preview .form-group input[type="radio"], .dynamic_form_preview .form-group input[type="checkbox"]
 {
     margin: 4px 0 0;
     margin-top: 1px \9;
     line-height: normal;
 }
 
-.questions_preview .form-group input[type="checkbox"], .questions_preview .form-group input[type="radio"]
+.dynamic_form_preview .form-group input[type="checkbox"], .dynamic_form_preview .form-group input[type="radio"]
 {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -181,7 +181,7 @@ div.questions_preview:empty
     background-color: #ac2925;
 }
 
-.questions_preview input:invalid, .questions_preview select:invalid, .questions_preview textarea:invalid
+.dynamic_form_preview input:invalid, .dynamic_form_preview select:invalid, .dynamic_form_preview textarea:invalid
 {
     border-color: #dc3545!important;
 }
