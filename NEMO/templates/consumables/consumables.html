@@ -60,7 +60,7 @@
                                                 {% if item.quantity > 0 %}
                                                     <span>({{ item.quantity }} left)</span>
                                                 {% else %}
-                                                    <span style="color: red">(sold-out)</span>
+                                                    <span class="danger-highlight">(sold-out)</span>
                                                 {% endif %}
                                             {% endif %}
                                             {% if item.reusable or item.quantity > 0 %}
