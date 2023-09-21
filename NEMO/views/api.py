@@ -2,6 +2,7 @@ from typing import List
 
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 from django.utils.safestring import mark_safe
 from drf_excel.mixins import XLSXFileMixin
 from rest_framework import status, viewsets
@@ -95,6 +96,7 @@ class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
 			return super().paginate_queryset(queryset)
 		return None
 
+	@transaction.atomic
 	def create(self, request, *args, **kwargs):
 		many = isinstance(request.data, list)
 		serializer = self.get_serializer(data=request.data, many=many)
