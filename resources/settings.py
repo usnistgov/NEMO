@@ -215,6 +215,8 @@ RESERVATION_ORGANIZER = "NEMO"
 # Setting a real email address here will mean that email will receive all the responses from every user after they
 # accept the invitation.
 RESERVATION_ORGANIZER_EMAIL = "no_reply"
+# Change this default value to True if you want new users to get ICS calendar invite for reservations by default.
+USER_RESERVATION_PREFERENCES_DEFAULT = False
 
 # -------------------- SMTP Server config --------------------
 # Uncomment the following if using an email SMTP server
