@@ -744,11 +744,11 @@ function submit_and_disable(input_submit)
 	}
 }
 
-function auto_size_textarea(textarea)
+function auto_size_textarea(textarea, rows)
 {
 	if (textarea)
 	{
-		textarea.rows = 1;
+		textarea.rows = rows || 1;
 		textarea.style.height = '';
 		textarea.style.height = textarea.scrollHeight + 3 + 'px';
 	}
