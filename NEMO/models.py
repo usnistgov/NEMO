@@ -621,27 +621,6 @@ class User(BaseModel, PermissionsMixin):
 						return True
 		return False
 
-	def has_perms(self, perm_list, obj=None):
-		for perm in perm_list:
-			if not self.has_perm(perm, obj):
-				return False
-		return True
-
-	def has_module_perms(self, app_label):
-		"""
-		Returns True if the user has any permissions in the given app label.
-		Uses pretty much the same logic as has_perm, above.
-		"""
-		# Active administrators have all permissions.
-		if self.is_active and self.is_superuser:
-			return True
-
-		for backend in auth.get_backends():
-			if hasattr(backend, "has_module_perms"):
-				if backend.has_module_perms(self, app_label):
-					return True
-		return False
-
 	def check_password(self, raw_password):
 		return False
 
@@ -694,6 +673,11 @@ class User(BaseModel, PermissionsMixin):
 
 	def get_name(self):
 		return self.first_name + ' ' + self.last_name
+
+	def get_initials(self):
+		first_name_initial = self.first_name[0] if self.first_name else ""
+		last_name_initial = self.last_name[0] if self.last_name else ""
+		return first_name_initial + last_name_initial
 
 	def accessible_access_levels(self):
 		if not self.is_staff and not self.is_user_office:
