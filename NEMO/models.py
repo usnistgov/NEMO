@@ -1304,7 +1304,7 @@ class Tool(SerializationByNameModel):
 				errors["parent_tool"] = "You cannot select the parent to be the tool itself."
 		else:
 			from NEMO.views.customization import ToolCustomization
-			from NEMO.widgets.dynamic_form import DynamicForm
+			from NEMO.widgets.dynamic_form import validate_dynamic_form_model
 			if not self._category:
 				errors["_category"] = "This field is required."
 			if not self._location and ToolCustomization.get_bool("tool_location_required"):
@@ -1316,15 +1316,9 @@ class Tool(SerializationByNameModel):
 
 			# Validate _post_usage_questions JSON format
 			if self._post_usage_questions:
-				try:
-					loads(self._post_usage_questions)
-				except ValueError:
-					errors["_post_usage_questions"] = "This field needs to be a valid JSON string"
-				try:
-					DynamicForm(self._post_usage_questions).validate("tool_usage_group_question", self.id)
-				except Exception:
-					error_info = sys.exc_info()
-					errors["_post_usage_questions"] = error_info[0].__name__ + ": " + str(error_info[1])
+				dynamic_form_errors = validate_dynamic_form_model(self._post_usage_questions, "tool_usage_group_question", self.id)
+				if dynamic_form_errors:
+					errors["_post_usage_questions"] = dynamic_form_errors
 
 			if self._policy_off_between_times and (not self._policy_off_start_time or not self._policy_off_end_time):
 				if not self._policy_off_start_time:

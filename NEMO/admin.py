@@ -1,6 +1,4 @@
 import datetime
-import sys
-from json import loads
 
 from django import forms
 from django.contrib import admin
@@ -109,7 +107,13 @@ from NEMO.models import (
 from NEMO.utilities import admin_get_item, format_daterange
 from NEMO.views.constants import NEXT_PARAMETER_NAME
 from NEMO.views.customization import ProjectsAccountsCustomization
-from NEMO.widgets.dynamic_form import DynamicForm, PostUsageFloatFieldQuestion, PostUsageNumberFieldQuestion
+from NEMO.widgets.dynamic_form import (
+	DynamicForm,
+	PostUsageFloatFieldQuestion,
+	PostUsageNumberFieldQuestion,
+	admin_render_dynamic_form_preview,
+	validate_dynamic_form_model,
+)
 
 
 # Admin class to allow redirect after add or change
@@ -286,13 +290,7 @@ class ToolAdmin(admin.ModelAdmin):
 		return True if obj.post_usage_questions else False
 
 	def _post_usage_preview(self, obj):
-		if obj.id:
-			form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ""
-			return mark_safe(
-				'<div class="dynamic_form_preview">{}{}</div><div class="help dynamic_form_preview_help">Save form to preview post usage questions</div>'.format(
-					DynamicForm(obj.post_usage_questions).render("tool_usage_group_question", obj.id), form_validity_div
-				)
-			)
+		return admin_render_dynamic_form_preview(obj.post_usage_questions, "tool_usage_group_question", obj.id)
 
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):
 		""" We only want non children tool to be eligible as parents """
@@ -596,18 +594,9 @@ class ReservationQuestionsForm(forms.ModelForm):
 			)
 		# Validate reservation_questions JSON format
 		if reservation_questions:
-			try:
-				loads(reservation_questions)
-			except ValueError:
-				self.add_error("questions", "This field needs to be a valid JSON string")
-			try:
-				dynamic_form = DynamicForm(reservation_questions)
-				dynamic_form.validate("reservation_group_question", self.instance.id)
-			except KeyError as e:
-				self.add_error("questions", f"{e} property is required")
-			except Exception:
-				error_info = sys.exc_info()
-				self.add_error("questions", error_info[0].__name__ + ": " + str(error_info[1]))
+			errors = validate_dynamic_form_model(reservation_questions, "reservation_group_question", self.instance.id)
+			for error in errors:
+				self.add_error("questions", error)
 		return cleaned_data
 
 
@@ -635,19 +624,7 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 	)
 
 	def questions_preview(self, obj):
-		form_validity_div = ""
-		rendered_form = ""
-		try:
-			rendered_form = DynamicForm(obj.questions).render("reservation_group_question", obj.id)
-			if obj.questions:
-				form_validity_div = '<div id="form_validity"></div>'
-		except:
-			pass
-		return mark_safe(
-			'<div class="dynamic_form_preview">{}{}</div><div class="help dynamic_form_preview_help">Save form to preview reservation questions</div>'.format(
-				rendered_form, form_validity_div
-			)
-		)
+		return admin_render_dynamic_form_preview(obj.questions, "reservation_group_question", obj.id)
 
 
 @register(UsageEvent)
@@ -872,7 +849,7 @@ class UserTypeAdmin(admin.ModelAdmin):
 class UserPreferencesAdmin(admin.ModelAdmin):
 	list_display = ("user",)
 	search_fields = ["user_preferences__user__first_name", "user_preferences__user__last_name", "user_preferences__user__username"]
-	filter_horizontal = ["tool_freed_time_notifications", "tool_adjustment_notifications", "area_adjustment_notifications"]
+	filter_horizontal = ["tool_freed_time_notifications", "tool_adjustment_notifications", "area_adjustment_notifications", "tool_task_notifications"]
 	form = UserPreferencesForm
 
 

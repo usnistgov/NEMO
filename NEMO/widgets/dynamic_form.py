@@ -1,3 +1,4 @@
+import sys
 from collections import Counter
 from copy import copy
 from distutils.util import strtobool
@@ -585,6 +586,40 @@ def get_counter_increment_for_question(question, input_data, counter_question):
 			else:
 				additional_value = float(input_data["user_input"])
 	return additional_value
+
+
+def validate_dynamic_form_model(dynamic_form_json: str, group_url: str, item_id) -> List[str]:
+	errors = []
+	if dynamic_form_json:
+		try:
+			loads(dynamic_form_json)
+		except ValueError:
+			errors.append("This field needs to be a valid JSON string")
+		try:
+			dynamic_form = DynamicForm(dynamic_form_json)
+			dynamic_form.validate(group_url, item_id)
+		except KeyError as e:
+			errors.append(f"{e} property is required")
+		except Exception:
+			error_info = sys.exc_info()
+			errors.append(error_info[0].__name__ + ": " + str(error_info[1]))
+	return errors
+
+
+def admin_render_dynamic_form_preview(dynamic_form_json: str, group_url: str, item_id):
+	form_validity_div = ""
+	rendered_form = ""
+	try:
+		rendered_form = DynamicForm(dynamic_form_json).render(group_url, item_id)
+		if dynamic_form_json:
+			form_validity_div = '<div id="form_validity"></div>'
+	except:
+		pass
+	return mark_safe(
+		'<div class="dynamic_form_preview">{}{}</div><div class="help dynamic_form_preview_help">Save form to preview</div>'.format(
+			rendered_form, form_validity_div
+		)
+	)
 
 
 question_types: Dict[str, Type[PostUsageQuestion]] = {
