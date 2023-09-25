@@ -2076,7 +2076,7 @@ class Interlock(BaseModel):
 
 	card = models.ForeignKey(InterlockCard, on_delete=models.CASCADE)
 	channel = models.PositiveIntegerField(blank=True, null=True, verbose_name="Channel/Relay/Coil")
-	unit_id = models.PositiveIntegerField(null=True, blank=True, verbose_name="Multiplier/Unit id")
+	unit_id = models.PositiveIntegerField(null=True, blank=True, verbose_name="Multiplier/Unit id/Bank")
 	state = models.IntegerField(choices=State.Choices, default=State.UNKNOWN)
 	most_recent_reply = models.TextField(default="None")
 	most_recent_reply_time = models.DateTimeField(null=True, blank=True)
