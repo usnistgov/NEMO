@@ -1,5 +1,6 @@
 import re
 
+from django.conf import global_settings
 from rest_framework.settings import DEFAULTS
 
 # ------------------------------------------------------------------
@@ -73,9 +74,9 @@ EXPORT_TIME_FORMAT = "h_i_s"
 
 # -------------------- Input date and time formats --------------------
 # See allowed formats at https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
-DATETIME_INPUT_FORMATS = ["%m/%d/%Y %I:%M %p"]
-DATE_INPUT_FORMATS = ["%m/%d/%Y"]
-TIME_INPUT_FORMATS = ["%I:%M %p"]
+DATETIME_INPUT_FORMATS = ["%m/%d/%Y %I:%M %p", *global_settings.DATE_INPUT_FORMATS]
+DATE_INPUT_FORMATS = ["%m/%d/%Y", *global_settings.DATE_INPUT_FORMATS]
+TIME_INPUT_FORMATS = ["%I:%M %p", *global_settings.TIME_INPUT_FORMATS]
 
 # -------------------- Internationalization and localization --------------------
 # A boolean that specifies whether Django’s translation system should be enabled.
