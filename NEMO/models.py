@@ -600,27 +600,6 @@ class User(BaseModel, PermissionsMixin):
 				}
 			)
 
-	def has_perm(self, perm, obj=None):
-		"""
-		Returns True if the user has each of the specified permissions. If
-		object is passed, it checks if the user has all required perms for this object.
-		"""
-
-		# Active administrators have all permissions.
-		if self.is_active and self.is_superuser:
-			return True
-
-		# Otherwise we need to check the backends.
-		for backend in auth.get_backends():
-			if hasattr(backend, "has_perm"):
-				if obj is not None:
-					if backend.has_perm(self, perm, obj):
-						return True
-				else:
-					if backend.has_perm(self, perm):
-						return True
-		return False
-
 	def check_password(self, raw_password):
 		return False
 
