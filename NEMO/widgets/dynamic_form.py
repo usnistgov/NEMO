@@ -48,6 +48,7 @@ class PostUsageQuestion:
 		# For backwards compatibility keep default choice
 		self.default_value = self._init_property("default_value") or self._init_property("default_choice")
 		self.choices = self._init_property("choices")
+		self.labels = self._init_property("labels")
 		self.group_add_button_name = self._init_property("group_add_button_name") or "Add"
 		self.index = index
 		if index and not isinstance(self, PostUsageGroupQuestion):
@@ -98,6 +99,12 @@ class PostUsageQuestion:
 		except KeyError:
 			raise Exception(f"{self.question_type} requires property '{prop}' to be defined")
 
+	def validate_labels_and_choices(self):
+		self.validate_property_exists("choices")
+		if "labels" in self.properties:
+			if len(self.properties["labels"]) != len(self.properties["choices"]):
+				raise Exception("When using labels you need one for each choice")
+
 	@staticmethod
 	def load_questions(questions: Optional[List[Dict]], index: int = None):
 		questions_to_load = questions or []
@@ -112,16 +119,17 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 
 	def validate(self):
 		super().validate()
-		self.validate_property_exists("choices")
+		self.validate_labels_and_choices()
 
 	def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
 		title = self.title_html or self.title
 		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
-		for choice in self.choices:
+		for index, choice in enumerate(self.choices):
+			label = self.labels[index] if self.labels else choice
 			result += '<div class="radio">'
 			required = "required" if self.required else ""
 			is_default_choice = "checked" if self.default_value and self.default_value == choice else ""
-			result += f'<label><input type="radio" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
+			result += f'<label><input type="radio" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
 			result += "</div>"
 		result += "</div>"
 		return result
@@ -132,17 +140,18 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
 
 	def validate(self):
 		super().validate()
-		self.validate_property_exists("choices")
+		self.validate_labels_and_choices()
 
 	def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
 		title = self.title_html or self.title
 		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
 		result += f'<input aria-label="hidden field used for required answer" id="required_{ self.form_name }" type="checkbox" value="" style="display: none" { "required" if self.required else "" }/>'
-		for choice in self.choices:
+		for index, choice in enumerate(self.choices):
+			label = self.labels[index] if self.labels else choice
 			result += '<div class="checkbox">'
 			required = f"""onclick="checkbox_required('{self.form_name}')" """ if self.required else ""
 			is_default_choice = "checked" if self.default_value and self.default_value == choice else ""
-			result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
+			result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
 			result += "</div>"
 		result += "</div>"
 		return result
@@ -172,7 +181,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 	def validate(self):
 		super().validate()
 		self.validate_property_exists("max-width")
-		self.validate_property_exists("choices")
+		self.validate_labels_and_choices()
 
 	def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
 		title = self.title_html or self.title
@@ -185,9 +194,10 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 		blank_disabled = 'disabled="disabled"' if required else ""
 		placeholder = self.placeholder if self.placeholder else "Select an option"
 		result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
-		for choice in self.choices:
+		for index, choice in enumerate(self.choices):
+			label = self.labels[index] if self.labels else choice
 			is_default_choice = "selected" if self.default_value and self.default_value == choice else ""
-			result += f'<option value="{choice}" {is_default_choice}>{choice}</option>'
+			result += f'<option value="{choice}" {is_default_choice}>{label}</option>'
 		result += "</select>"
 		if self.help:
 			result += f'<div style="font-size:smaller;color:#999;{max_width}">{self.help}</div>'
@@ -528,6 +538,18 @@ class DynamicForm:
 			if additional_value:
 				counter.value += additional_value
 				counter.save()
+
+
+def get_submitted_user_inputs(user_data: str) -> Dict:
+	""" Takes the user data as a string and returns a dictionary of inputs or a list of inputs for group fields """
+	user_input = {}
+	user_data_json = loads(user_data)
+	for field_name, data in user_data_json.items():
+		if data["type"] != 'group':
+			user_input[field_name] = data["user_input"]
+		else:
+			user_input[field_name] = data["user_input"].values()
+	return user_input
 
 
 def render_group_questions(request, questions, group_question_url, group_item_id, group_name) -> str:
