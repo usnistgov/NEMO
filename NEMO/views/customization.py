@@ -20,7 +20,7 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
-from NEMO.models import BadgeReader, ConsumableCategory, Customization, Project, RecurringConsumableCharge
+from NEMO.models import BadgeReader, ConsumableCategory, Customization, Notification, Project, RecurringConsumableCharge
 from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
 
@@ -325,6 +325,17 @@ class UserRequestsCustomization(CustomizationBase):
 				return timezone.now() - delta
 		except:
 			pass
+
+	@classmethod
+	def set(cls, name: str, value):
+		if name == "adjustment_requests_enabled" and value != "enabled":
+			# If adjustment requests are being disabled, remove all notifications
+			previously_enabled = cls.get_bool("adjustment_requests_enabled")
+			if previously_enabled:
+				Notification.objects.filter(
+					notification_type__in=[Notification.Types.ADJUSTMENT_REQUEST, Notification.Types.ADJUSTMENT_REQUEST_REPLY]
+				).delete()
+		super().set(name, value)
 
 	def context(self) -> Dict:
 		context_dict = super().context()
