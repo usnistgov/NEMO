@@ -17,7 +17,7 @@ from NEMO.views.consumables import make_withdrawal
 dynamic_form_logger = getLogger(__name__)
 
 
-GROUP_TYPE_QUESTION_KEY = "group"
+GROUP_TYPE_FIELD_KEY = "group"
 
 
 class PostUsageQuestion:
@@ -432,7 +432,7 @@ class DynamicForm:
 		for question in self.untreated_questions:
 			if question["type"] not in question_types.keys():
 				raise Exception(f"type has to be one of {', '.join(question_types.keys())}")
-			if question["type"] == GROUP_TYPE_QUESTION_KEY and "questions" in question:
+			if question["type"] == GROUP_TYPE_FIELD_KEY and "questions" in question:
 				for sub_question in question["questions"]:
 					if sub_question["type"] not in question_types.keys():
 						raise Exception(f"type has to be one of {', '.join(question_types.keys())}")
