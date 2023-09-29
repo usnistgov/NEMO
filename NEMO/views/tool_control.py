@@ -95,7 +95,7 @@ def tool_status(request, tool_id):
 	tool_control_broadcast_upcoming_reservation_enabled = ToolCustomization.get_bool("tool_control_broadcast_upcoming_reservation")
 	dictionary = {
 		"tool": tool,
-		"tool_rate": rate_class.get_tool_rate(tool),
+		"tool_rate": rate_class.get_tool_rate(tool, request.user),
 		"task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
 		"rendered_configuration_html": tool.configuration_widget(request.user),
 		"mobile": request.device == "mobile",
