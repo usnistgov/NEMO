@@ -5,7 +5,7 @@ from typing import Dict, List, Union
 
 from django.conf import settings
 
-from NEMO.models import Consumable, Tool
+from NEMO.models import Consumable, Tool, User
 from NEMO.utilities import get_class_from_settings
 
 rates_logger = getLogger(__name__)
@@ -19,20 +19,20 @@ class Rates(ABC):
 	def load_rates(self, force_reload=False):
 		pass
 
-	def get_consumable_rates(self, consumables: List[Consumable]) -> Dict[str, str]:
+	def get_consumable_rates(self, consumables: List[Consumable], user: User = None) -> Dict[str, str]:
 		if self.rates:
-			return {consumable.name : self.get_consumable_rate(consumable) for consumable in consumables}
+			return {consumable.name : self.get_consumable_rate(consumable, user) for consumable in consumables}
 
 	@abstractmethod
-	def get_consumable_rate(self, consumable: Consumable) -> str:
+	def get_consumable_rate(self, consumable: Consumable, user: User = None) -> str:
 		pass
 
-	def get_tool_rates(self, tools: List[Tool]) -> Dict[str, str]:
+	def get_tool_rates(self, tools: List[Tool], user: User = None) -> Dict[str, str]:
 		if self.rates:
-			return {tool.name : self.get_tool_rate(tool) for tool in tools}
+			return {tool.name : self.get_tool_rate(tool, user) for tool in tools}
 
 	@abstractmethod
-	def get_tool_rate(self, tool: Tool) -> str:
+	def get_tool_rate(self, tool: Tool, user: User = None) -> str:
 		pass
 
 	@staticmethod
@@ -74,12 +74,12 @@ class NISTRates(Rates):
 				if json_data:
 					json_data.close()
 
-	def get_consumable_rate(self, consumable) -> str:
+	def get_consumable_rate(self, consumable: Consumable, user: User = None) -> str:
 		full_cost_rate = self._get_rate_by_table_id_and_class(consumable, self.consumable_rate_class, self.full_cost_rate_class)
 		if full_cost_rate:
 			return "Cost <b>${:0,.2f}</b>".format(full_cost_rate)
 
-	def get_tool_rate(self, tool: Tool) -> str:
+	def get_tool_rate(self, tool: Tool, user: User = None) -> str:
 		full_cost_rate = self._get_rate_by_table_id_and_class(tool, self.tool_rate_class, self.full_cost_rate_class)
 		shared_cost_rate = self._get_rate_by_table_id_and_class(tool, self.tool_rate_class, self.shared_cost_rate_class)
 		if not full_cost_rate and not shared_cost_rate:
