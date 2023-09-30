@@ -17,7 +17,7 @@
                     {{ form.non_field_errors }}
                 </div>
             {% endif %}
-            {% if instance_id and user.is_facility_manager %}
+            {% if instance_id and user in form.instance.reviewers %}
                 <div class="form-group">
                     <div class="row">
                         <div class="col-sm-6">
@@ -74,7 +74,7 @@
                 <label for="description" class="control-label">Description</label>{% if form.description.errors %} - <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
                 <textarea class="form-control" rows="3" name="description" id="description" placeholder="Explain the reason for this request" required>{{ form.description.value|default_if_none:"" }}</textarea>
             </div>
-            {% if form.instance.get_status_display == "Pending" and instance_id and user.is_facility_manager %}
+            {% if form.instance.get_status_display == "Pending" and instance_id and user in form.instance.reviewers %}
                 <div class="form-group">
                     <label for="manager_note" class="control-label">Feedback/Instructions</label>{% if form.description.errors %} - <span style="color:red">{{ form.manager_note.errors|striptags }}</span>{% endif %}
                     <textarea class="form-control" rows="3" name="manager_note" id="manager_note" placeholder="Feedback to send to the user if the request is denied or instructions to the user office if it's approved">{{ form.manager_note.value|default_if_none:"" }}</textarea>
@@ -82,7 +82,7 @@
             {% endif %}
             <div class="text-right">
                 {% if form.instance.get_status_display == "Pending" %}
-                    {% if instance_id and user.is_facility_manager %}
+                    {% if instance_id and user in form.instance.reviewers %}
                         {% button type="save" submit=False name="approve_request" title="Approve request" icon="glyphicon-ok-circle" value="Approve" onclick="confirm_review_dialog(this);" %}
                         {% button type="delete" submit=False name="deny_request" title="Deny request" icon="glyphicon-ban-circle" value="Deny" onclick="confirm_review_dialog(this);" %}
                     {% endif %}

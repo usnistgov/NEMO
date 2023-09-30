@@ -5,10 +5,13 @@ from datetime import timedelta
 from typing import Dict, Optional, TYPE_CHECKING
 
 from dateutil import rrule
+from django.contrib.auth import get_permission_codename
 from django.core.exceptions import NON_FIELD_ERRORS
+from django.shortcuts import redirect
 from django.utils import timezone
 
 from NEMO.utilities import beginning_of_the_day, format_datetime, get_recurring_rule, RecurrenceFrequency
+from NEMO.views.constants import NEXT_PARAMETER_NAME
 
 if TYPE_CHECKING:
 	from NEMO.models import User
@@ -225,3 +228,73 @@ class RecurrenceMixin:
 		if self.rec_until and self.rec_count:
 			errors[NON_FIELD_ERRORS] = "'count' and 'until' cannot be used at the same time."
 		return errors
+
+
+# Admin mixin to allow redirect after add or change
+class ModelAdminRedirectMixin:
+
+	def response_post_save_add(self, request, obj):
+		return self.response_redirect(request, super().response_post_save_add(request, obj))
+
+	def response_post_save_change(self, request, obj):
+		return self.response_redirect(request, super().response_post_save_change(request, obj))
+
+	def response_delete(self, request, obj_display, obj_id):
+		return self.response_redirect(request, super().response_delete(request, obj_display, obj_id))
+
+	def response_redirect(self, request, original_response):
+		if NEXT_PARAMETER_NAME in request.GET:
+			return redirect(request.GET[NEXT_PARAMETER_NAME])
+		return original_response
+
+
+# Mixin to use the obj in permissions. By default, admin classes ignore the actual obj
+class ObjPermissionAdminMixin:
+	def has_change_permission(self, request, obj=None):
+		"""
+		Return True if the given request has permission to change the given
+		Django model instance, the default implementation doesn't examine the
+		`obj` parameter.
+
+		Can be overridden by the user in subclasses. In such case it should
+		return True if the given request has permission to change the `obj`
+		model instance. If `obj` is None, this should return True if the given
+		request has permission to change *any* object of the given type.
+		"""
+		opts = self.opts
+		codename = get_permission_codename('change', opts)
+		return request.user.has_perm("%s.%s" % (opts.app_label, codename), obj)
+
+	def has_delete_permission(self, request, obj=None):
+		"""
+		Return True if the given request has permission to change the given
+		Django model instance, the default implementation doesn't examine the
+		`obj` parameter.
+
+		Can be overridden by the user in subclasses. In such case it should
+		return True if the given request has permission to delete the `obj`
+		model instance. If `obj` is None, this should return True if the given
+		request has permission to delete *any* object of the given type.
+		"""
+		opts = self.opts
+		codename = get_permission_codename('delete', opts)
+		return request.user.has_perm("%s.%s" % (opts.app_label, codename), obj)
+
+	def has_view_permission(self, request, obj=None):
+		"""
+		Return True if the given request has permission to view the given
+		Django model instance. The default implementation doesn't examine the
+		`obj` parameter.
+
+		If overridden by the user in subclasses, it should return True if the
+		given request has permission to view the `obj` model instance. If `obj`
+		is None, it should return True if the request has permission to view
+		any object of the given type.
+		"""
+		opts = self.opts
+		codename_view = get_permission_codename('view', opts)
+		codename_change = get_permission_codename('change', opts)
+		return (
+				request.user.has_perm('%s.%s' % (opts.app_label, codename_view), obj) or
+				request.user.has_perm('%s.%s' % (opts.app_label, codename_change), obj)
+		)

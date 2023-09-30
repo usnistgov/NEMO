@@ -1,5 +1,4 @@
 from logging import getLogger
-from typing import List
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -12,6 +11,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 from NEMO.decorators import user_office_or_manager_required
 from NEMO.forms import TemporaryPhysicalAccessRequestForm
 from NEMO.models import (
+	Area,
 	Notification,
 	PhysicalAccessLevel,
 	RequestStatus,
@@ -32,7 +32,6 @@ from NEMO.utilities import (
 	slugify_underscore,
 )
 from NEMO.views.customization import (
-	EmailsCustomization,
 	UserRequestsCustomization,
 	get_media_file_contents,
 )
@@ -49,22 +48,34 @@ def access_requests(request):
 	max_requests = quiet_int(UserRequestsCustomization.get("access_requests_display_max"), None)
 	physical_access_requests = TemporaryPhysicalAccessRequest.objects.filter(deleted=False)
 	physical_access_requests = physical_access_requests.order_by("-end_time")
-	if not user.is_facility_manager and not user.is_staff and not user.is_user_office:
-		# For some reason doing an "or" filtering with manytomany field returns duplicates, and using distinct() returns nothing...
-		other_user_physical_access_requests = physical_access_requests.filter(other_users__in=[user]).distinct()
-		physical_access_requests = physical_access_requests.filter(
-			Q(creator=user) | Q(id__in=other_user_physical_access_requests)
-		)
+
+	# For some reason doing an "or" filtering with manytomany field returns duplicates, and using distinct() returns nothing...
+	other_user_physical_access_requests = physical_access_requests.filter(other_users__in=[user]).distinct()
+	my_requests = physical_access_requests.filter(Q(creator=user) | Q(id__in=other_user_physical_access_requests))
+
+	user_is_reviewer = is_user_a_reviewer(user)
+	user_is_staff = user.is_facility_manager or user.is_user_office or user.is_staff
+	if not user_is_reviewer and not user_is_staff:
+		physical_access_requests = my_requests
+	elif user_is_reviewer:
+		# show all requests the user can review (+ his requests), exclude the rest
+		exclude = []
+		for access_request in physical_access_requests:
+			if user not in access_request.creator_and_other_users() and user not in access_request.reviewers():
+				exclude.append(access_request.pk)
+		physical_access_requests = physical_access_requests.exclude(pk__in=exclude)
 	dictionary = {
 		"pending_access_requests": physical_access_requests.filter(status=RequestStatus.PENDING).order_by("start_time"),
 		"approved_access_requests": physical_access_requests.filter(status=RequestStatus.APPROVED)[:max_requests],
 		"denied_access_requests": physical_access_requests.filter(status=RequestStatus.DENIED)[:max_requests],
 		"expired_access_requests": physical_access_requests.filter(status=RequestStatus.EXPIRED)[:max_requests],
 		"access_requests_description": UserRequestsCustomization.get("access_requests_description"),
-		"access_request_notifications": get_notifications(
-			request.user, Notification.Types.TEMPORARY_ACCESS_REQUEST, delete=not user.is_facility_manager
-		),
+		"access_request_notifications": get_notifications(request.user, Notification.Types.TEMPORARY_ACCESS_REQUEST, delete=False),
+		"user_is_reviewer": user_is_reviewer
 	}
+
+	# Delete notifications for seen requests
+	Notification.objects.filter(user=request.user, notification_type=Notification.Types.TEMPORARY_ACCESS_REQUEST, object_id__in=my_requests).delete()
 	return render(request, "requests/access_requests/access_requests.html", dictionary)
 
 
@@ -91,8 +102,8 @@ def create_access_request(request, request_id=None):
 				errors.append("You are not allowed to edit expired or deleted requests.")
 			if access_request.status != RequestStatus.PENDING:
 				errors.append("Only pending requests can be modified.")
-			if access_request.creator != user and not user.is_facility_manager:
-				errors.append("You are not allowed to edit a request you didn't create.")
+			if access_request.creator != user and not user in access_request.reviewers():
+				errors.append("You are not allowed to edit this request.")
 
 		form = TemporaryPhysicalAccessRequestForm(
 			request.POST, instance=access_request, initial={"creator": access_request.creator if edit else user}
@@ -103,13 +114,13 @@ def create_access_request(request, request_id=None):
 			form.add_error(None, error)
 
 		cleaned_data = form.clean()
-		if cleaned_data and not user.is_facility_manager and cleaned_data.get("start_time") < timezone.now():
+		if cleaned_data and (not edit or user not in access_request.reviewers()) and cleaned_data.get("start_time") < timezone.now():
 			form.add_error("start_time", "The start time must be later than the current time")
 
 		if form.is_valid():
 			if not edit:
 				form.instance.creator = user
-			if edit and user.is_facility_manager:
+			if edit and user in access_request.reviewers():
 				decision = [state for state in ["approve_request", "deny_request"] if state in request.POST]
 				if decision:
 					if next(iter(decision)) == "approve_request":
@@ -123,11 +134,10 @@ def create_access_request(request, request_id=None):
 			new_access_request = form.save()
 			create_access_request_notification(new_access_request)
 			if edit:
-				# remove notification for current user and other facility managers
+				# remove notification for current user and other reviewers
 				delete_notification(Notification.Types.TEMPORARY_ACCESS_REQUEST, new_access_request.id, [user])
-				if user.is_facility_manager:
-					managers = User.objects.filter(is_active=True, is_facility_manager=True)
-					delete_notification(Notification.Types.TEMPORARY_ACCESS_REQUEST, new_access_request.id, managers)
+				if user in access_request.reviewers():
+					delete_notification(Notification.Types.TEMPORARY_ACCESS_REQUEST, new_access_request.id, access_request.reviewers())
 			send_request_received_email(request, new_access_request, edit)
 			return redirect("user_requests", "access")
 		else:
@@ -177,10 +187,10 @@ def mark_requests_expired():
 def send_request_received_email(request, access_request: TemporaryPhysicalAccessRequest, edit):
 	access_request_notification_email = get_media_file_contents("access_request_notification_email.html")
 	if access_request_notification_email:
-		# facility managers
-		manager_emails = [
+		# reviewers
+		reviewer_emails = [
 			email
-			for user in User.objects.filter(is_active=True, is_facility_manager=True)
+			for user in access_request.reviewers()
 			for email in user.get_emails(user.get_preferences().email_send_adjustment_request_updates)
 		]
 		# cc creator + other users
@@ -215,7 +225,7 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 				subject=f"Access request for the {access_request.physical_access_level.area} {status}",
 				content=message,
 				from_email=access_request.creator.email,
-				to=manager_emails,
+				to=reviewer_emails,
 				cc=ccs,
 				email_category=EmailCategory.ACCESS_REQUESTS,
 			)
@@ -225,7 +235,7 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
 				content=message,
 				from_email=access_request.reviewer.email,
 				to=ccs,
-				cc=manager_emails,
+				cc=reviewer_emails,
 				email_category=EmailCategory.ACCESS_REQUESTS,
 			)
 
@@ -269,3 +279,8 @@ def access_csv_export(request_qs: QuerySetType[TemporaryPhysicalAccessRequest]) 
 	response = table_result.to_csv()
 	response["Content-Disposition"] = f'attachment; filename="{filename}"'
 	return response
+
+
+def is_user_a_reviewer(user: User) -> bool:
+	area_reviewer_not_emtpy = Area.objects.filter(access_request_reviewers__isnull=False).exists()
+	return user.is_facility_manager or area_reviewer_not_emtpy

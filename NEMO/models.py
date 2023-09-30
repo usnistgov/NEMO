@@ -298,8 +298,6 @@ class UserPreferences(BaseModel):
 	tool_freed_time_notifications = models.ManyToManyField("Tool", blank=True, help_text="Tools to receive notification when reservation time is freed.")
 	tool_freed_time_notifications_min_time = models.PositiveIntegerField(default=120, help_text="Minimum amount of minutes freed to receive a notification.")
 	tool_freed_time_notifications_max_future_days = models.PositiveIntegerField(default=7, help_text="Maximum number of days in the future to receive a notification for.")
-	tool_adjustment_notifications = models.ManyToManyField("Tool", related_name="+", blank=True, help_text="Tools to see/receive adjustment notifications for. If empty all notifications will be received.")
-	area_adjustment_notifications = models.ManyToManyField("Area", related_name="+", blank=True, help_text="Areas to see/receive adjustment notifications for. If empty all notifications will be received.")
 	tool_task_notifications = models.ManyToManyField("Tool", related_name="+", blank=True, help_text="Tools to see maintenance records and receive task notifications for. If empty all notifications will be received.")
 
 	def get_recurring_charges_days(self) -> List[int]:
@@ -450,6 +448,14 @@ class TemporaryPhysicalAccessRequest(BaseModel):
 		result = {self.creator}
 		result.update(self.other_users.all())
 		return result
+
+	def reviewers(self) -> QuerySetType[User]:
+		# Create the list of users to notify/show request to. If the physical access request area's
+		# list of reviewers is empty, send/show to all facility managers
+		area: Area = self.physical_access_level.area
+		facility_managers = User.objects.filter(is_active=True, is_facility_manager=True)
+		area_reviewers = area.access_request_reviewers.filter(is_active=True)
+		return area_reviewers or facility_managers
 
 	def clean(self):
 		if self.start_time and self.end_time and self.end_time <= self.start_time:
@@ -731,6 +737,19 @@ class User(BaseModel, PermissionsMixin):
 			content = escape(f'<h4 style="margin-top:0; text-align: center">{self.get_name()}</h4>Email: <a href="{email_url}" target="_blank">{self.email}</a><br>')
 			return f'<a href="javascript:;" data-title="{content}" data-placement="bottom" class="contact-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
 
+	def has_perm(self, perm, obj=None):
+		# By default we don't use the actual object, similar to django admin
+		general_permission = super().has_perm(perm)
+		if general_permission:
+			return True
+		# For charges, the reviewer of an adjustment request for that charge can also edit it
+		if obj and issubclass(type(obj), BillableItemMixin):
+			# If there is an approved adjustment request for this charge, check if the user is a reviewer
+			adjustment_request: AdjustmentRequest = AdjustmentRequest.objects.filter(status=RequestStatus.APPROVED, deleted=False, item_id=obj.id, item_type=ContentType.objects.get_for_model(obj)).first()
+			if adjustment_request:
+				return self in adjustment_request.reviewers()
+		return general_permission
+
 	@classmethod
 	def get_email_field_name(cls):
 		return 'email'
@@ -770,9 +789,12 @@ class Tool(SerializationByNameModel):
 	_tool_calendar_color = models.CharField(db_column="tool_calendar_color", max_length=9, default="#33ad33", help_text="Color for tool reservations in calendar overviews")
 	_category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
 	_operational = models.BooleanField(db_column="operational", default=False, help_text="Marking the tool non-operational will prevent users from using the tool.")
+	# Tool permissions
 	_primary_owner = models.ForeignKey(User, db_column="primary_owner_id", null=True, blank=True, related_name="primary_tool_owner", help_text="The staff member who is responsible for administration of this tool.", on_delete=models.PROTECT)
 	_backup_owners = models.ManyToManyField(User, db_table='NEMO_tool_backup_owners', blank=True, related_name="backup_for_tools", help_text="Alternate staff members who are responsible for administration of this tool when the primary owner is unavailable.")
 	_superusers = models.ManyToManyField(User, db_table='NEMO_tool_superusers', blank=True, related_name="superuser_for_tools", help_text="Superusers who can train users on this tool.")
+	_adjustment_request_reviewers = models.ManyToManyField(User, db_table='NEMO_tool_adjustment_request_reviewers', blank=True, related_name="adjustment_request_reviewer_on_tools", help_text="Users who can approve/deny adjustment requests for this tool. Defaults to facility managers if left blank.")
+	# Extra info
 	_location = models.CharField(db_column="location", null=True, blank=True, max_length=100)
 	_phone_number = models.CharField(db_column="phone_number", null=True, blank=True, max_length=100)
 	_notification_email_address = models.EmailField(db_column="notification_email_address", blank=True, null=True, help_text="Messages that relate to this tool (such as comments, problems, and shutdowns) will be forwarded to this email address. This can be a normal email address or a mailing list address.")
@@ -879,6 +901,15 @@ class Tool(SerializationByNameModel):
 	def superusers(self, value):
 		self.raise_setter_error_if_child_tool("superusers")
 		self._superusers = value
+
+	@property
+	def adjustment_request_reviewers(self) -> QuerySetType[User]:
+		return self.parent_tool.adjustment_request_reviewers if self.is_child_tool() else self._adjustment_request_reviewers
+
+	@adjustment_request_reviewers.setter
+	def adjustment_request_reviewers(self, value):
+		self.raise_setter_error_if_child_tool("_adjustment_request_reviewers")
+		self._adjustment_request_reviewers = value
 
 	@property
 	def location(self):
@@ -1434,6 +1465,10 @@ class Area(MPTTModel):
 	category = models.CharField(db_column="category", null=True, blank=True, max_length=1000, help_text="Create sub-categories using slashes. For example \"Category 1/Sub-category 1\".")
 	abuse_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users overstay in the area or in children areas (logged in with expired reservation). A comma-separated list can be used.")
 	reservation_email: List[str] = fields.MultiEmailField(null=True, blank=True, help_text="An email will be sent to this address when users create or cancel reservations in the area or in children areas. A comma-separated list can be used.")
+
+	# Area permissions
+	adjustment_request_reviewers = models.ManyToManyField(User, blank=True, related_name="adjustment_request_reviewer_on_areas", help_text="Users who can approve/deny adjustment requests for this area. Defaults to facility managers if left blank.")
+	access_request_reviewers = models.ManyToManyField(User, blank=True, related_name="access_request_reviewer_on_areas", help_text="Users who can approve/deny access requests for this area. Defaults to facility managers if left blank.")
 
 	# Additional information
 	area_calendar_color = models.CharField(max_length=9, default="#88B7CD", help_text="Color for tool reservations in calendar overviews")
@@ -2756,9 +2791,22 @@ class AdjustmentRequest(BaseModel):
 		result = {self.creator}
 		for reply in self.replies:
 			result.add(reply.author)
-		for manager in User.objects.filter(is_active=True, is_facility_manager=True):
-			result.add(manager)
+		result.update(self.reviewers())
 		return list(result)
+
+	def reviewers(self) -> QuerySetType[User]:
+		# Create the list of users to notify/show request to. If the adjustment request has a tool/area and their
+		# list of reviewers is empty, send/show to all facility managers
+		tool: Tool = getattr(self.item, "tool", None) if self.item else None
+		area: Area = getattr(self.item, "area", None) if self.item else None
+		facility_managers = User.objects.filter(is_active=True, is_facility_manager=True)
+		if tool:
+			tool_reviewers = tool._adjustment_request_reviewers.filter(is_active=True)
+			return tool_reviewers or facility_managers
+		if area:
+			area_reviewers = area.adjustment_request_reviewers.filter(is_active=True)
+			return area_reviewers or facility_managers
+		return facility_managers
 
 	def clean(self):
 		if not self.description:

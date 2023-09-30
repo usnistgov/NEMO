@@ -47,7 +47,7 @@
                     {% endif %}
                     </select>
                 </div>
-                {% if form.instance.id and user.is_facility_manager %}
+                {% if form.instance.id and user in form.instance.reviewers %}
                     <div class="col-sm-6">
                         <label for="creator_readonly" class="control-label">Creator</label>
                         <input id="creator_readonly" class="form-control" style="min-width: 250px;" disabled value="{{ form.instance.creator }}">
@@ -79,7 +79,7 @@
 		</div>
 		<div class="text-right">
             {% if form.instance.get_status_display == "Pending" %}
-                {% if form.instance.id and user.is_facility_manager %}
+                {% if form.instance.id and user in form.instance.reviewers %}
                     {% button type="save" submit=False name="approve_request" title="Approve request" icon="glyphicon-ok-circle" value="Approve" onclick="if (confirm('Are you sure you want to approve this request?')) {submit_and_disable(this)}" %}
                     {% button type="delete" submit=False name="deny_request" title="Deny request" icon="glyphicon-ban-circle" value="Deny" onclick="if (confirm('Are you sure you want to deny this request?')) {submit_and_disable(this)}" %}
                 {% else %}

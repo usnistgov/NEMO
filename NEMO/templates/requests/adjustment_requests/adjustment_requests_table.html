@@ -3,7 +3,7 @@
     <thead>
         <tr>
             <th>Created</th>
-            {% if user.is_any_part_of_staff %}
+            {% if user_is_reviewer or user.is_any_part_of_staff %}
                 <th>User</th>
             {% endif %}
             <th class="text-center">Charge</th>
@@ -11,7 +11,7 @@
             <th class="text-center text-nowrap">New end</th>
             <th class="text-center">Difference</th>
             <th class="text-right text-nowrap">
-                {% if request_status == 'pending' and user.is_facility_manager %}
+                {% if request_status == 'pending' and user_is_reviewer %}
                     Action
                 {% elif request_status == 'approved' %}
                     Approved by
@@ -25,7 +25,7 @@
         {% for a_request in adjustment_request_list %}
             <tr>
                 <td style="vertical-align: middle">{% if a_request.id in request_notifications %}<span class="label label-success">New</span> {% endif %}{{ a_request.creation_time|date:'SHORT_DATETIME_FORMAT' }}</td>
-                {% if user.is_any_part_of_staff %}
+                {% if user_is_reviewer or user.is_any_part_of_staff %}
                     <td style="vertical-align: middle">{{ a_request.creator.get_name }}</td>
                 {% endif %}
                 <td class="text-center" style="vertical-align: middle">{{ a_request.item.get_display }}</td>
@@ -43,7 +43,7 @@
                             {% endif %}
                         {% endif %}
                     {% else %}
-                        {% if request_status == 'pending' and user.is_facility_manager %}
+                        {% if request_status == 'pending' and user in a_request.reviewers %}
                             <a class="btn btn-sm btn-default" title="Approve/Deny" href="{% url 'edit_adjustment_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
                         {% endif %}
                         {% if request_status == 'pending' and a_request.creator == user %}
@@ -56,8 +56,8 @@
                 </td>
             </tr>
             <tr>
-                <td colspan="{% if user.is_any_part_of_staff %}3{% else %}2{% endif %}" style="border: none">
-                    <div style="color: gray">
+                <td colspan="{% if user_is_reviewer or user.is_any_part_of_staff %}3{% else %}2{% endif %}" style="border: none">
+                    <div style="color: rgb(128,128,128)">
                         {% if a_request.description %}
                             <div>
                                 <div class="adjustment-request-message">
@@ -78,7 +78,7 @@
                             {% endfor %}
                         {% endif %}
                         {% if a_request.get_status_display == "Pending" %}
-                            {% if user == a_request.creator or user.is_facility_manager %}
+                            {% if user == a_request.creator or user in a_request.reviewers %}
                                 <div>
                                     <div class="adjustment-request-reply-textarea" style="display: none;">
                                         <form id="adjustment_request_reply_{{ a_request.id }}" action="{% url 'adjustment_request_reply' a_request.id %}" method="post">

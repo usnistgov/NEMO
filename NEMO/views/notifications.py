@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import List, Set
+from typing import Iterable, List, Set
 
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -38,7 +38,7 @@ def get_notification_counts(user: User):
 	return counts
 
 
-def delete_notification(notification_type: Notification.Types, instance_id, users: List[User] = None):
+def delete_notification(notification_type: Notification.Types, instance_id, users: Iterable[User] = None):
 	notifications = Notification.objects.filter(notification_type=notification_type, object_id=instance_id)
 	if users:
 		notifications = notifications.filter(user__in=users)
@@ -101,7 +101,7 @@ def create_access_request_notification(access_request: TemporaryPhysicalAccessRe
 	request_end = access_request.end_time
 	expiration = end_of_the_day(datetime(request_end.year, request_end.month, request_end.day))
 
-	reviewers: List[User] = User.objects.filter(is_active=True, is_facility_manager=True)
+	reviewers: Iterable[User] = access_request.reviewers()
 
 	users_to_notify: Set[User] = set(access_request.other_users.all())
 	users_to_notify.update(reviewers)
