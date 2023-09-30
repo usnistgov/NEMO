@@ -4,12 +4,13 @@ from typing import Dict, Set
 
 from django.conf import settings
 from django.db import migrations, models
+from django.db.models import Q
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('NEMO', '0053_documents_update_max_length'),
+        ('NEMO', '0050_consumable_add_self_checkout_and_notes'),
     ]
 
     def migrate_adjustment_request_reviewers_forward(apps, schema_editor):
@@ -21,7 +22,7 @@ class Migration(migrations.Migration):
         area_adjustments: Dict[int, Set] = defaultdict(set)
         managers_all_tool_adjustments = User.objects.filter(is_active=True, is_facility_manager=True, preferences__tool_adjustment_notifications__isnull=True)
         managers_all_area_adjustments = User.objects.filter(is_active=True, is_facility_manager=True, preferences__area_adjustment_notifications__isnull=True)
-        for user_preference in UserPreferences.objects.filter():
+        for user_preference in UserPreferences.objects.filter(Q(tool_adjustment_notifications__isnull=False) | Q(area_adjustment_notifications__isnull=False)):
             for tool in user_preference.tool_adjustment_notifications.all():
                 tool_adjustments[tool.id].add(user_preference.user)
                 # Add managers who want to receive all

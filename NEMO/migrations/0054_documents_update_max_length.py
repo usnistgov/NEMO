@@ -8,7 +8,7 @@ import NEMO.utilities
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('NEMO', '0052_consumable_withdraw_add_usage_event_link'),
+        ('NEMO', '0053_consumable_withdraw_add_usage_event_link'),
     ]
 
     operations = [

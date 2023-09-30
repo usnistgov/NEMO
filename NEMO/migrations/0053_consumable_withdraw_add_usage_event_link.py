@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('NEMO', '0051_area_add_auto_logout_time'),
+        ('NEMO', '0052_area_add_auto_logout_time'),
     ]
 
     operations = [
