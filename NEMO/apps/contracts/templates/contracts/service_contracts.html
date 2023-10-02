@@ -14,8 +14,7 @@
                 <th class="text-center">Year</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='submitted_date' name='Submitted' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='award_date' name='Awarded' %}</th>
-                <th>{% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract number' %}</th>
-                <th>{% include 'pagination/pagination_column.html' with order_by='requisition_number' name='Requisition number' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract/Requisition number' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='start' name='Start' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='natural_end' name='End' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='reminder_date' name='Reminder' %}</th>
@@ -30,8 +29,12 @@
                     <td class="text-center text-nowrap">{{ service_contract.display_current_year }}</td>
                     <td>{{ service_contract.submitted_date|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.award_date|date:"SHORT_DATE_FORMAT" }}</td>
-                    <td>{{ service_contract.contract_number|default_if_none:"" }}</td>
-                    <td>{{ service_contract.requisition_number|default_if_none:"" }}</td>
+                    <td>
+                        {{ service_contract.contract_number|default_if_none:"" }}
+                        {% if service_contract.requisition_number %}
+                            <br>{{ service_contract.requisition_number|default_if_none:"" }}
+                        {% endif %}
+                    </td>
                     <td>{{ service_contract.start|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.end|date:"SHORT_DATE_FORMAT" }}</td>
                     <td>{{ service_contract.reminder_date|date:"SHORT_DATE_FORMAT" }}</td>
