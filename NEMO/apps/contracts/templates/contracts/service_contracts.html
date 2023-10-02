@@ -41,7 +41,7 @@
                     <td>{{ service_contract.display_cost|default_if_none:"" }}</td>
                     <td class="text-right text-nowrap">
                         {% if service_contract.notes %}
-                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=service_contract.notes|default_if_none:""|linebreaksbr data_toggle="tooltip-notes" %}
+                            {% button icon="glyphicon-info-sign" type="warn" size="xsmall" value="Notes" title=service_contract.notes|default_if_none:""|linebreaksbr data_toggle="tooltip-notes" %}
                         {% endif %}
                         {% if service_contract.procurementdocuments_set.all %}
                             <form method="post" style="display: inline">
@@ -52,16 +52,16 @@
                                         <input type="hidden" name="document_info" value="{{ content_type.id }}__{{ document.id }}">
                                     {% endwith %}
                                 {% endfor %}
-                                {% button icon="glyphicon-list-alt" size="small" type="export" value="Docs" onclick="document_view(this.form);" %}
+                                {% button icon="glyphicon-list-alt" size="xsmall" type="export" value="Docs" onclick="document_view(this.form);" %}
                             </form>
                         {% endif %}
                         {% if perms.contracts.change_servicecontract %}
                             {% url "service_contract_renew" service_contract.id as renew_service_contract_url %}
-                            {% button icon="glyphicon-refresh" size="small" type="default" value="Renew" url=renew_service_contract_url %}
+                            {% button icon="glyphicon-refresh" size="xsmall" type="default" value="Renew" url=renew_service_contract_url %}
                         {% endif %}
                         {% admin_edit_url service_contract request.path as change_servicecontract_url %}
                         {% if change_servicecontract_url %}
-                            {% button size="small" type="edit" value="Edit" url=change_servicecontract_url %}
+                            {% button size="xsmall" type="edit" value="Edit" url=change_servicecontract_url %}
                         {% endif %}
                     </td>
                 </tr>
