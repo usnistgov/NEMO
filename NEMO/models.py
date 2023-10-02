@@ -2538,7 +2538,7 @@ class Notification(BaseModel):
 			(SAFETY, 'New safety issues - notifies staff only'),
 			(BUDDY_REQUEST, 'New buddy request - notifies all users'),
 			(BUDDY_REQUEST_REPLY, 'New buddy request reply - notifies request creator and users who have replied'),
-			(ADJUSTMENT_REQUEST, 'New adjustment request - notifies facility managers only'),
+			(ADJUSTMENT_REQUEST, 'New adjustment request - notifies reviewers only'),
 			(ADJUSTMENT_REQUEST_REPLY, 'New adjustment request reply - notifies request creator and users who have replied'),
 			(TEMPORARY_ACCESS_REQUEST, 'New access request - notifies other users on request and reviewers')
 		)
