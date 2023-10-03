@@ -65,8 +65,8 @@ class ToolTestCase(TestCase):
 		alternate_tool = alternate_tool_form.save()
 
 	def test_tool_and_parent_properties(self):
-		self.assertNotEquals(tool.id, alternate_tool.id)
-		self.assertNotEquals(tool.name, alternate_tool.name)
+		self.assertNotEqual(tool.id, alternate_tool.id)
+		self.assertNotEqual(tool.name, alternate_tool.name)
 		self.assertFalse(alternate_tool.visible)
 		self.assertTrue(tool.visible)
 		self.assertTrue(tool.is_parent_tool())
