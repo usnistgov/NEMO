@@ -71,38 +71,38 @@ class ToolTestCase(TestCase):
 		self.assertTrue(tool.visible)
 		self.assertTrue(tool.is_parent_tool())
 		self.assertTrue(alternate_tool.is_child_tool())
-		self.assertEquals(tool.category, alternate_tool.category)
-		self.assertEquals(tool.operational, alternate_tool.operational)
-		self.assertEquals(tool.primary_owner, alternate_tool.primary_owner)
-		self.assertEquals(tool.backup_owners, alternate_tool.backup_owners)
-		self.assertEquals(tool.location, alternate_tool.location)
-		self.assertEquals(tool.phone_number, alternate_tool.phone_number)
-		self.assertEquals(tool.notification_email_address, alternate_tool.notification_email_address)
-		self.assertEquals(tool.interlock, alternate_tool.interlock)
-		self.assertEquals(tool.requires_area_access, alternate_tool.requires_area_access)
-		self.assertEquals(
+		self.assertEqual(tool.category, alternate_tool.category)
+		self.assertEqual(tool.operational, alternate_tool.operational)
+		self.assertEqual(tool.primary_owner, alternate_tool.primary_owner)
+		self.assertEqual(tool.backup_owners, alternate_tool.backup_owners)
+		self.assertEqual(tool.location, alternate_tool.location)
+		self.assertEqual(tool.phone_number, alternate_tool.phone_number)
+		self.assertEqual(tool.notification_email_address, alternate_tool.notification_email_address)
+		self.assertEqual(tool.interlock, alternate_tool.interlock)
+		self.assertEqual(tool.requires_area_access, alternate_tool.requires_area_access)
+		self.assertEqual(
 			tool.grant_physical_access_level_upon_qualification,
 			alternate_tool.grant_physical_access_level_upon_qualification,
 		)
-		self.assertEquals(
+		self.assertEqual(
 			tool.grant_badge_reader_access_upon_qualification,
 			alternate_tool.grant_badge_reader_access_upon_qualification,
 		)
-		self.assertEquals(tool.reservation_horizon, alternate_tool.reservation_horizon)
-		self.assertEquals(tool.minimum_usage_block_time, alternate_tool.minimum_usage_block_time)
-		self.assertEquals(tool.maximum_usage_block_time, alternate_tool.maximum_usage_block_time)
-		self.assertEquals(tool.maximum_reservations_per_day, alternate_tool.maximum_reservations_per_day)
-		self.assertEquals(tool.minimum_time_between_reservations, alternate_tool.minimum_time_between_reservations)
-		self.assertEquals(tool.maximum_future_reservation_time, alternate_tool.maximum_future_reservation_time)
-		self.assertEquals(tool.missed_reservation_threshold, alternate_tool.missed_reservation_threshold)
-		self.assertEquals(tool.allow_delayed_logoff, alternate_tool.allow_delayed_logoff)
-		self.assertEquals(tool.post_usage_questions, alternate_tool.post_usage_questions)
-		self.assertEquals(tool.policy_off_between_times, alternate_tool.policy_off_between_times)
-		self.assertEquals(tool.policy_off_start_time, alternate_tool.policy_off_start_time)
-		self.assertEquals(tool.policy_off_end_time, alternate_tool.policy_off_end_time)
-		self.assertEquals(tool.policy_off_weekend, alternate_tool.policy_off_weekend)
+		self.assertEqual(tool.reservation_horizon, alternate_tool.reservation_horizon)
+		self.assertEqual(tool.minimum_usage_block_time, alternate_tool.minimum_usage_block_time)
+		self.assertEqual(tool.maximum_usage_block_time, alternate_tool.maximum_usage_block_time)
+		self.assertEqual(tool.maximum_reservations_per_day, alternate_tool.maximum_reservations_per_day)
+		self.assertEqual(tool.minimum_time_between_reservations, alternate_tool.minimum_time_between_reservations)
+		self.assertEqual(tool.maximum_future_reservation_time, alternate_tool.maximum_future_reservation_time)
+		self.assertEqual(tool.missed_reservation_threshold, alternate_tool.missed_reservation_threshold)
+		self.assertEqual(tool.allow_delayed_logoff, alternate_tool.allow_delayed_logoff)
+		self.assertEqual(tool.post_usage_questions, alternate_tool.post_usage_questions)
+		self.assertEqual(tool.policy_off_between_times, alternate_tool.policy_off_between_times)
+		self.assertEqual(tool.policy_off_start_time, alternate_tool.policy_off_start_time)
+		self.assertEqual(tool.policy_off_end_time, alternate_tool.policy_off_end_time)
+		self.assertEqual(tool.policy_off_weekend, alternate_tool.policy_off_weekend)
 
-		self.assertEquals(tool.get_absolute_url(), alternate_tool.get_absolute_url())
+		self.assertEqual(tool.get_absolute_url(), alternate_tool.get_absolute_url())
 
 	def test_tool_in_use(self):
 		user = login_as_user(self.client)
@@ -124,7 +124,7 @@ class ToolTestCase(TestCase):
 		response = self.client.post(
 			reverse("login_to_area", kwargs={"door_id": area_door.id}), {"badge_number": user.badge_number}, follow=True
 		)
-		self.assertEquals(response.status_code, 200, response.content.decode())
+		self.assertEqual(response.status_code, 200, response.content.decode())
 		login_as(self.client, user)
 		# start using tool
 		response = self.client.post(
@@ -134,9 +134,9 @@ class ToolTestCase(TestCase):
 			),
 			follow=True,
 		)
-		self.assertEquals(response.status_code, 200, response.content.decode())
+		self.assertEqual(response.status_code, 200, response.content.decode())
 		# make sure both tool and child tool are "in use"
 		self.assertTrue(tool.in_use())
 		self.assertTrue(alternate_tool.in_use())
 		# make sure both return the same usage event
-		self.assertEquals(tool.get_current_usage_event(), alternate_tool.get_current_usage_event())
+		self.assertEqual(tool.get_current_usage_event(), alternate_tool.get_current_usage_event())
