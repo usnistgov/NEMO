@@ -19,7 +19,7 @@ def delete_expired_notifications():
 	Notification.objects.filter(expiration__lt=timezone.now()).delete()
 
 
-def get_notifications(user: User, notification_type: Notification.Types, delete=True):
+def get_notifications(user: User, notification_type: str, delete=True):
 	notifications = Notification.objects.filter(user=user, notification_type=notification_type)
 	if notifications:
 		notification_ids = list(notifications.values_list("object_id", flat=True))
@@ -38,7 +38,7 @@ def get_notification_counts(user: User):
 	return counts
 
 
-def delete_notification(notification_type: Notification.Types, instance_id, users: Iterable[User] = None):
+def delete_notification(notification_type: str, instance_id, users: Iterable[User] = None):
 	notifications = Notification.objects.filter(notification_type=notification_type, object_id=instance_id)
 	if users:
 		notifications = notifications.filter(user__in=users)
@@ -85,7 +85,7 @@ def create_buddy_request_notification(buddy_request: BuddyRequest):
 			)
 
 
-def create_request_message_notification(reply: RequestMessage, notification_type: Notification.Types, expiration: datetime):
+def create_request_message_notification(reply: RequestMessage, notification_type: str, expiration: datetime):
 	for user in reply.content_object.creator_and_reply_users():
 		if user != reply.author:
 			Notification.objects.update_or_create(
