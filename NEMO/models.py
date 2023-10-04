@@ -13,7 +13,6 @@ from re import match
 from typing import List, Optional, Set, Union
 
 from django.conf import settings
-from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager, Group, Permission, PermissionsMixin
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -452,9 +451,8 @@ class TemporaryPhysicalAccessRequest(BaseModel):
 	def reviewers(self) -> QuerySetType[User]:
 		# Create the list of users to notify/show request to. If the physical access request area's
 		# list of reviewers is empty, send/show to all facility managers
-		area: Area = self.physical_access_level.area
 		facility_managers = User.objects.filter(is_active=True, is_facility_manager=True)
-		area_reviewers = area.access_request_reviewers.filter(is_active=True)
+		area_reviewers = self.physical_access_level.area.access_request_reviewers.filter(is_active=True)
 		return area_reviewers or facility_managers
 
 	def clean(self):
