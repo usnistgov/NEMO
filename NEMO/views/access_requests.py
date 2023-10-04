@@ -282,5 +282,5 @@ def access_csv_export(request_qs: QuerySetType[TemporaryPhysicalAccessRequest]) 
 
 
 def is_user_a_reviewer(user: User) -> bool:
-	area_reviewer_not_emtpy = Area.objects.filter(access_request_reviewers__isnull=False).exists()
-	return user.is_facility_manager or area_reviewer_not_emtpy
+	is_reviewer_on_any_area = Area.objects.filter(access_request_reviewers__in=[user]).exists()
+	return user.is_facility_manager or is_reviewer_on_any_area

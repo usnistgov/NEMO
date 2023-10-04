@@ -400,6 +400,6 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
 
 
 def is_user_a_reviewer(user: User) -> bool:
-    tool_reviewer_not_empty = Tool.objects.filter(_adjustment_request_reviewers__isnull=False).exists()
-    area_reviewer_not_emtpy = Area.objects.filter(adjustment_request_reviewers__isnull=False).exists()
-    return user.is_facility_manager or tool_reviewer_not_empty or area_reviewer_not_emtpy
+    is_reviewer_on_any_tool = Tool.objects.filter(_adjustment_request_reviewers__in=[user]).exists()
+    is_reviewer_on_any_area = Area.objects.filter(adjustment_request_reviewers__in=[user]).exists()
+    return user.is_facility_manager or is_reviewer_on_any_tool or is_reviewer_on_any_area
