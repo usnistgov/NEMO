@@ -24,7 +24,7 @@ setup(
 		'Programming Language :: Python :: 3.8',
 	],
 	install_requires=[
-		'cryptography==41.0.2',
+		'cryptography==41.0.4',
 		'Django==3.2.21',
 		'django-auditlog==2.3.0',
 		'django-filter==23.2',
@@ -33,7 +33,7 @@ setup(
 		'drf-excel==2.4.0',
 		'drf-flex-fields==1.0.2',
 		'ldap3==2.9.1',
-		'Pillow==10.0.0',
+		'Pillow==10.0.1',
 		'pymodbus==3.3.2',
 		'python-dateutil==2.8.2',
 		'pytz==2023.3',
