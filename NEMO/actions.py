@@ -3,9 +3,24 @@ from django.db.models import Max
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
-from NEMO.models import Area, Interlock, Tool, User
+from NEMO.models import Area, Interlock, InterlockCard, Tool, User
+from NEMO.typing import QuerySetType
 from NEMO.views.access_requests import access_csv_export
 from NEMO.views.adjustment_requests import adjustments_csv_export
+
+
+@admin.action(description="Disable selected cards")
+def disable_selected_cards(model_admin, request, queryset: QuerySetType[InterlockCard]):
+	for interlock_card in queryset:
+		interlock_card.enabled = False
+		interlock_card.save(update_fields=["enabled"])
+
+
+@admin.action(description="Enable selected cards")
+def enable_selected_cards(model_admin, request, queryset: QuerySetType[InterlockCard]):
+	for interlock_card in queryset:
+		interlock_card.enabled = True
+		interlock_card.save(update_fields=["enabled"])
 
 
 @admin.action(description="Lock selected interlocks")

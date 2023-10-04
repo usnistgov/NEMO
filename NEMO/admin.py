@@ -18,7 +18,9 @@ from NEMO.actions import (
 	access_requests_export_csv,
 	adjustment_requests_export_csv,
 	create_next_interlock,
+	disable_selected_cards,
 	duplicate_tool_configuration,
+	enable_selected_cards,
 	lock_selected_interlocks,
 	rebuild_area_tree,
 	synchronize_with_tool_usage,
@@ -670,6 +672,7 @@ class InterlockCardAdminForm(forms.ModelForm):
 class InterlockCardAdmin(admin.ModelAdmin):
 	form = InterlockCardAdminForm
 	list_display = ("name", "enabled", "server", "port", "number", "category", "even_port", "odd_port")
+	actions = [disable_selected_cards, enable_selected_cards]
 
 
 class InterlockAdminForm(forms.ModelForm):
