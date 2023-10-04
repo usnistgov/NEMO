@@ -155,7 +155,7 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
 
             reviewers: Set[User] = set(list(adjustment_request.reviewers()))
 
-            create_adjustment_request_notification(new_adjustment_request, reviewers)
+            create_adjustment_request_notification(new_adjustment_request)
             if edit:
                 # remove notification for current user and other reviewers
                 delete_notification(Notification.Types.ADJUSTMENT_REQUEST, adjustment_request.id, [user])

@@ -101,10 +101,8 @@ def create_access_request_notification(access_request: TemporaryPhysicalAccessRe
 	request_end = access_request.end_time
 	expiration = end_of_the_day(datetime(request_end.year, request_end.month, request_end.day))
 
-	reviewers: Iterable[User] = access_request.reviewers()
-
 	users_to_notify: Set[User] = set(access_request.other_users.all())
-	users_to_notify.update(reviewers)
+	users_to_notify.update(access_request.reviewers())
 	if access_request.last_updated_by and access_request.last_updated_by != access_request.creator:
 		users_to_notify.add(access_request.creator)
 	for user in users_to_notify:
@@ -117,7 +115,8 @@ def create_access_request_notification(access_request: TemporaryPhysicalAccessRe
 		)
 
 
-def create_adjustment_request_notification(adjustment_request: AdjustmentRequest, users_to_notify: Set[User]):
+def create_adjustment_request_notification(adjustment_request: AdjustmentRequest):
+	users_to_notify = set(adjustment_request.reviewers())
 	users_to_notify.add(adjustment_request.creator)
 	expiration = timezone.now() + timedelta(days=30)  # 30 days for adjustment requests to expire
 	for user in users_to_notify:
