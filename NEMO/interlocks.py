@@ -347,15 +347,15 @@ class WebRelayHttpInterlock(Interlock):
 		state = Interlock_model.State.UNKNOWN
 		try:
 			if command_type == Interlock_model.State.LOCKED:
-				state = self.setRelayState(interlock, self.WEB_RELAY_OFF)
+				state = self.set_relay_state(interlock, self.WEB_RELAY_OFF)
 			elif command_type == Interlock_model.State.UNLOCKED:
-				state = self.setRelayState(interlock, self.WEB_RELAY_ON)
+				state = self.set_relay_state(interlock, self.WEB_RELAY_ON)
 		except Exception as error:
 			raise InterlockError(interlock=interlock, msg="General exception: " + str(error))
 		return state
 
 	@classmethod
-	def setRelayState(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
+	def set_relay_state(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
 		response, auth, response_error = None, None, None
 		if interlock.card.username and interlock.card.password:
 			auth = (interlock.card.username, interlock.card.password)
@@ -371,11 +371,11 @@ class WebRelayHttpInterlock(Interlock):
 		if response_error:
 			raise Exception(f"Communication error: {response_error}")
 		# No errors, continue and read relay state
-		responseXML = ElementTree.fromstring(response.content)
+		response_xml = ElementTree.fromstring(response.content)
 		state = None
 		# Try with a few different lookups here since depending on the relay model, it could be relayX or relayXstate
 		for state_suffix in cls.state_response_suffixes:
-			element = responseXML.find(cls.state_parameter_template.format(interlock.channel or '') + state_suffix)
+			element = response_xml.find(cls.state_parameter_template.format(interlock.channel or '') + state_suffix)
 			# Explicitly check for None since 0 is a valid state to return
 			if element is not None:
 				state = int(element.text)
@@ -417,16 +417,16 @@ class ModbusTcpInterlock(Interlock):
 		state = Interlock_model.State.UNKNOWN
 		try:
 			if command_type == Interlock_model.State.LOCKED:
-				state = self.setRelayState(interlock, self.MODBUS_OFF)
+				state = self.set_relay_state(interlock, self.MODBUS_OFF)
 			elif command_type == Interlock_model.State.UNLOCKED:
-				state = self.setRelayState(interlock, self.MODBUS_ON)
+				state = self.set_relay_state(interlock, self.MODBUS_ON)
 		except Exception as error:
 			interlocks_logger.exception(error)
 			raise Exception("General exception: " + str(error))
 		return state
 
 	@classmethod
-	def setRelayState(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
+	def set_relay_state(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
 		coil = interlock.channel
 		client = ModbusTcpClient(interlock.card.server, port=interlock.card.port)
 		try:
