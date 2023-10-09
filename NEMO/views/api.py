@@ -32,6 +32,7 @@ from NEMO.models import (
 	UsageEvent,
 	User,
 )
+from NEMO.rest_pagination import NEMOPageNumberPagination
 from NEMO.serializers import (
 	AccountSerializer,
 	AccountTypeSerializer,
@@ -92,8 +93,9 @@ class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
 
 	# Bypass pagination when exporting into any format that's not the browsable API
 	def paginate_queryset(self, queryset):
+		page_size_override = self.request and self.request.GET.get(NEMOPageNumberPagination.page_size_query_param, None)
 		renderer = self.request.accepted_renderer if self.request and hasattr(self.request, "accepted_renderer") else None
-		if not renderer or isinstance(renderer, BrowsableAPIRenderer):
+		if page_size_override is not None or not renderer or isinstance(renderer, BrowsableAPIRenderer):
 			return super().paginate_queryset(queryset)
 		return None
 

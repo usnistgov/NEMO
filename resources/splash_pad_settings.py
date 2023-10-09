@@ -84,7 +84,7 @@ REST_FRAMEWORK = {
 	"DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication", "rest_framework.authentication.TokenAuthentication"),
 	"DEFAULT_RENDERER_CLASSES": DEFAULTS["DEFAULT_RENDERER_CLASSES"] + ["drf_excel.renderers.XLSXRenderer"],
 	"DEFAULT_PARSER_CLASSES": DEFAULTS["DEFAULT_PARSER_CLASSES"] + ["NEMO.parsers.CSVParser"],
-	"DEFAULT_PAGINATION_CLASS": "NEMO.rest_pagination.PageNumberPagination",
+	"DEFAULT_PAGINATION_CLASS": "NEMO.rest_pagination.NEMOPageNumberPagination",
 	"PAGE_SIZE": 1000,
 }
 
