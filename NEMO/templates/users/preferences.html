@@ -75,6 +75,16 @@
 					</div>
 				</div>
 			</div>
+             <div class="panel panel-default">
+				<div class="panel-body">
+					<h3 id="adjustment_requests_label">Adjustment Requests</h3>
+					<div class="form-group col-sm-12">
+						<div class="checkbox">
+							<label><input name="email_new_adjustment_request_reply" type="checkbox" {% if user_preferences.email_new_adjustment_request_reply %}checked{% endif %}>Check this box to receive an email notification for replies to your adjustment requests</label>
+						</div>
+					</div>
+                </div>
+             </div>
             {% if user.is_staff or user.is_facility_manager or user.is_service_personnel %}
                 <div class="panel panel-default">
                     <div class="panel-body">
