@@ -25,9 +25,9 @@ setup(
 	],
 	install_requires=[
 		'cryptography==41.0.4',
-		'Django==3.2.21',
+		'Django==3.2.22',
 		'django-auditlog==2.3.0',
-		'django-filter==23.2',
+		'django-filter==23.3',
 		'django-mptt==0.14.0',
 		'djangorestframework==3.14.0',
 		'drf-excel==2.4.0',
