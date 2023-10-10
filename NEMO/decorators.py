@@ -1,11 +1,13 @@
 import importlib
 import inspect
+import sys
 from functools import wraps
 from threading import Lock, RLock, Thread
 
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import user_passes_test
-from django.utils.text import slugify
+
+from NEMO.utilities import slugify_underscore
 
 
 def disable_session_expiry_refresh(f):
@@ -25,11 +27,18 @@ def disable_session_expiry_refresh(f):
 
 # Use this decorator on a function to make a call to that function asynchronously
 # The function will be run in a separate thread, and the current execution will continue
+# The function will be run synchronously in the case of a management command (excluding runserver) since management
+# commands exit without waiting for threads to finish
 def postpone(function):
 	def decorator(*arguments, **named_arguments):
-		t = Thread(target=function, args=arguments, kwargs=named_arguments)
-		t.daemon = True
-		t.start()
+		is_management_command = ("django-admin" in sys.argv[0] or "manage" in sys.argv[0] or "django/__main__.py" in sys.argv[0])
+		is_runserver = "runserver" in sys.argv
+		if is_management_command and not is_runserver:
+			return function(*arguments, **named_arguments)
+		else:
+			t = Thread(target=function, args=arguments, kwargs=named_arguments)
+			t.daemon = True
+			t.start()
 
 	return decorator
 
@@ -42,7 +51,7 @@ def synchronized(method_argument=""):
 	def inner(function):
 		def decorator(*args, **kwargs):
 			func_args = inspect.signature(function).bind(*args, **kwargs).arguments
-			attribute_value = slugify(str(func_args.get(method_argument, ""))).replace("-", "_")
+			attribute_value = slugify_underscore(str(func_args.get(method_argument, "")))
 			lock_name = "__" + function.__name__ + "_lock_" + attribute_value + "__"
 			lock: RLock = vars(function).get(lock_name, None)
 			if lock is None:

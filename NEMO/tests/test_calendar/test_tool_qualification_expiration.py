@@ -6,8 +6,8 @@ from django.test import TestCase
 from django.utils import timezone
 
 from NEMO.models import Account, EmailLog, Project, Qualification, Tool, UsageEvent, User
-from NEMO.views.calendar import do_manage_tool_qualifications
 from NEMO.views.customization import EmailsCustomization, ToolCustomization
+from NEMO.views.timed_services import do_manage_tool_qualifications
 
 
 @patch("django.core.files.storage.FileSystemStorage.exists")

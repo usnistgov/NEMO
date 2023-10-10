@@ -1,6 +1,6 @@
 from django.core.management import BaseCommand
 
-from NEMO.views.calendar import do_manage_recurring_charges
+from NEMO.views.timed_services import do_manage_recurring_charges
 
 
 class Command(BaseCommand):

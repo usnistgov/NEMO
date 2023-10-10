@@ -65,8 +65,8 @@ class AdjustmentRequestTestCase(TestCase):
         self.assertEqual(adjustment_request.status, RequestStatus.PENDING)
 
     def test_notification_created(self):
-        # Test that new adjustment request => facility managers are notified
-        facility_manager = User.objects.create(
+        # Test that new adjustment request => reviewers are notified (here just managers)
+        reviewer = User.objects.create(
             username="test_manager", first_name="Managy", last_name="McManager", is_facility_manager=True
         )
         login_as_user(self.client)
@@ -75,9 +75,7 @@ class AdjustmentRequestTestCase(TestCase):
         }
         self.client.post(reverse("create_adjustment_request"), data=data)
         self.assertTrue(
-            Notification.objects.filter(
-                user=facility_manager, notification_type=Notification.Types.ADJUSTMENT_REQUEST
-            ).exists()
+            Notification.objects.filter(user=reviewer, notification_type=Notification.Types.ADJUSTMENT_REQUEST).exists()
         )
 
     def test_delete_request(self):
@@ -111,7 +109,7 @@ class AdjustmentRequestTestCase(TestCase):
         self.review_request(deny_request="Deny")
 
     def review_request(self, approve_request="", deny_request=""):
-        manager = User.objects.create(username="manager", first_name="", last_name="Manager", is_facility_manager=True)
+        reviewer = User.objects.create(username="manager", first_name="", last_name="Manager", is_facility_manager=True)
         user, project = create_user_and_project()
         login_as(self.client, user)
         data = {
@@ -133,24 +131,22 @@ class AdjustmentRequestTestCase(TestCase):
             data["deny_request"] = deny_request
         response = self.client.post(reverse("edit_adjustment_request", args=[adjustment_request.id]), data=data)
         # regular user cannot edit request they didn't create
-        self.assertContains(response, "You are not allowed to edit a request you")
+        self.assertContains(response, "You are not allowed to edit this request.")
         staff = login_as_staff(self.client)
         response = self.client.post(reverse("edit_adjustment_request", args=[adjustment_request.id]), data=data)
         # regular staff cannot either
-        self.assertContains(response, "You are not allowed to edit a request you")
-        facility_manager = staff
-        facility_manager.is_facility_manager = True
-        facility_manager.save()
-        login_as(self.client, facility_manager)
+        self.assertContains(response, "You are not allowed to edit this request.")
+        # reviewer can
+        login_as(self.client, reviewer)
         response = self.client.post(reverse("edit_adjustment_request", args=[adjustment_request.id]), data=data)
         self.assertRedirects(response, reverse("user_requests", args=["adjustment"]))
         adjustment_request = AdjustmentRequest.objects.get(id=adjustment_request.id)
         status = RequestStatus.APPROVED if approve_request else RequestStatus.DENIED
         self.assertEqual(adjustment_request.status, status)
-        # Notification doesn't exist anymore (for manager)
+        # Notification doesn't exist anymore (for reviewer)
         self.assertFalse(
-            Notification.objects.filter(user=manager,
-                notification_type=Notification.Types.ADJUSTMENT_REQUEST, object_id=adjustment_request.id
+            Notification.objects.filter(
+                user=reviewer, notification_type=Notification.Types.ADJUSTMENT_REQUEST, object_id=adjustment_request.id
             ).exists()
         )
 
@@ -163,10 +159,14 @@ class AdjustmentRequestTestCase(TestCase):
         login_as_user(self.client)
         data = {"reply_content": "this is a reply"}
         response = self.client.post(reverse("adjustment_request_reply", args=[adjustment_request.id]), data=data)
-        self.assertContains(response, "Only the creator and managers can reply to adjustment requests", status_code=400)
+        self.assertContains(
+            response, "Only the creator and reviewers can reply to adjustment requests", status_code=400
+        )
         staff = login_as_staff(self.client)
         response = self.client.post(reverse("adjustment_request_reply", args=[adjustment_request.id]), data=data)
-        self.assertContains(response, "Only the creator and managers can reply to adjustment requests", status_code=400)
+        self.assertContains(
+            response, "Only the creator and reviewers can reply to adjustment requests", status_code=400
+        )
         staff.is_facility_manager = True
         staff.save()
         response = self.client.post(reverse("adjustment_request_reply", args=[adjustment_request.id]), data=data)

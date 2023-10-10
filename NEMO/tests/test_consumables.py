@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from NEMO.forms import RecurringConsumableChargeForm
-from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, User
+from NEMO.models import Consumable, ConsumableWithdraw, RecurringConsumableCharge, Tool, UsageEvent, User
 from NEMO.tests.test_utilities import (
 	create_user_and_project,
 	login_as,
@@ -19,7 +19,10 @@ from NEMO.tests.test_utilities import (
 )
 from NEMO.utilities import RecurrenceFrequency, beginning_of_the_day, format_datetime, get_recurring_rule
 from NEMO.views.consumables import make_withdrawal
-from NEMO.views.customization import RecurringChargesCustomization
+from NEMO.views.customization import (
+	ApplicationCustomization,
+	RecurringChargesCustomization,
+)
 
 consumable: Optional[Consumable] = None
 supply: Optional[Consumable] = None
@@ -76,8 +79,38 @@ class ConsumableTestCase(TestCase):
 		customer_project.allow_consumable_withdrawals = False
 		customer_project.save()
 		self.assertRaises(ValidationError, make_withdrawal, consumable.id, 1, customer_project.id, staff, customer.id)
+		tool = Tool.objects.create(name="test_tool1", primary_owner=staff)
+		start = timezone.now() - timedelta(hours=2)
+		usage_event = UsageEvent.objects.create(user=customer, operator=customer, tool=tool, project=customer_project, start=start, end=timezone.now())
 		# However, it should always work for tool usage (otherwise the user cannot disable the tool)
-		make_withdrawal(consumable.id, 1, customer_project.id, staff, customer.id, tool_usage=True)
+		make_withdrawal(consumable.id, 1, customer_project.id, staff, customer.id, usage_event=usage_event)
+
+	def test_post_self_checkout_not_allowed(self):
+		# save consumable_user_self_checkout value
+		consumable_user_self_checkout = ApplicationCustomization.get("consumable_user_self_checkout")
+		try:
+			ApplicationCustomization.set("consumable_user_self_checkout", "enabled")
+			consumable_no_self_checkout = Consumable.objects.create(
+				name="Consumable No Self Checkout",
+				quantity=10,
+				reminder_threshold=5,
+				reminder_email="test@test.com",
+				allow_self_checkout=False
+			)
+			customer, customer_project = create_user_and_project()
+			quantity = consumable_no_self_checkout.quantity
+			login_as(self.client, customer)
+			data = {"customer": customer.id, "project": customer_project.id, "consumable": consumable_no_self_checkout.id, "quantity": "1"}
+			response = self.client.post(reverse("consumables"), data, follow=True)
+			# Should fail because consumable is not tagged with allow_self_checkout = True
+			self.assertEqual(response.status_code, 400)
+			# Checkout, nothing should happen since the order did not go through
+			response = self.client.post(reverse("withdraw_consumables"), follow=True)
+			self.assertEqual(response.status_code, 200)
+			self.assertEqual(quantity, Consumable.objects.get(pk=consumable_no_self_checkout.id).quantity)
+		finally:
+			# restore consumable_user_self_checkout value
+			ApplicationCustomization.set("consumable_user_self_checkout", consumable_user_self_checkout)
 
 	def test_clean(self):
 		test_consumable = Consumable()

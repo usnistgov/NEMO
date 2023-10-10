@@ -1,6 +1,6 @@
 from django.core.management import BaseCommand
 
-from NEMO.views.calendar import do_manage_tool_qualifications
+from NEMO.views.timed_services import do_manage_tool_qualifications
 
 
 class Command(BaseCommand):

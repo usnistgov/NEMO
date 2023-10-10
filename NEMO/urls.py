@@ -51,6 +51,7 @@ from NEMO.views import (
 	sidebar,
 	status_dashboard,
 	tasks,
+	timed_services,
 	tool_control,
 	training,
 	tutorials,
@@ -61,6 +62,11 @@ from NEMO.views import (
 from NEMO.views.constants import MEDIA_PROTECTED
 
 logger = logging.getLogger(__name__)
+
+
+def sort_urls(url_path):
+	return url_path[0].count('/'), url_path[0]
+
 
 # REST API URLs
 router = routers.DefaultRouter()
@@ -87,6 +93,7 @@ router.register(r"tools", api.ToolViewSet)
 router.register(r"training_sessions", api.TrainingSessionViewSet)
 router.register(r"usage_events", api.UsageEventViewSet)
 router.register(r"users", api.UserViewSet)
+router.registry.sort(key=sort_urls)
 
 reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
 
@@ -194,6 +201,8 @@ urlpatterns += [
 	path("cancel_reservation/<int:reservation_id>/", calendar.cancel_reservation, name="cancel_reservation"),
 	path("cancel_outage/<int:outage_id>/", calendar.cancel_outage, name="cancel_outage"),
 	path("set_reservation_title/<int:reservation_id>/", calendar.set_reservation_title, name="set_reservation_title"),
+	path("change_outage_title/<int:outage_id>/", calendar.change_outage_title, name="change_outage_title"),
+	path("change_outage_details/<int:outage_id>/", calendar.change_outage_details, name="change_outage_details"),
 	path("change_reservation_date/", calendar.change_reservation_date, name="change_reservation_date"),
 	path("change_reservation_project/<int:reservation_id>/", calendar.change_reservation_project, name="change_reservation_project"),
 	path("proxy_reservation/", calendar.proxy_reservation, name="proxy_reservation"),
@@ -254,7 +263,7 @@ urlpatterns += [
 	path("get_email_form_for_user/<int:user_id>/", email.get_email_form_for_user, name="get_email_form_for_user"),
 	path("send_email/", email.send_email, name="send_email"),
 	path("email_broadcast/", email.email_broadcast, name="email_broadcast"),
-	re_path(r"^email_broadcast/(?P<audience>tool|area|account|project|user)/$", email.email_broadcast, name="email_broadcast"),
+	re_path(r"^email_broadcast/(?P<audience>tool|area|account|project|user|tool-reservation)/$", email.email_broadcast, name="email_broadcast"),
 	path("email_preview/", email.email_preview, name="email_preview"),
 	path("compose_email/", email.compose_email, name="compose_email"),
 	path("email_export_addresses/", email.export_email_addresses, name="export_email_addresses"),
@@ -371,16 +380,17 @@ if settings.ALLOW_CONDITIONAL_URLS:
 		path("new_area_access_record/", area_access.new_area_access_record, name="new_area_access_record"),
 
 		# Reminders and periodic events
-		path("cancel_unused_reservations/", calendar.cancel_unused_reservations, name="cancel_unused_reservations"),
-		path("create_closure_alerts/", calendar.create_closure_alerts, name="create_closure_alerts"),
-		path("email_out_of_time_reservation_notification/", calendar.email_out_of_time_reservation_notification, name="email_out_of_time_reservation_notification"),
-		path("email_reservation_ending_reminders/", calendar.email_reservation_ending_reminders, name="email_reservation_ending_reminders"),
-		path("email_reservation_reminders/", calendar.email_reservation_reminders, name="email_reservation_reminders"),
-		path("email_usage_reminders/", calendar.email_usage_reminders, name="email_usage_reminders"),
-		path("email_weekend_access_notification/", access_requests.email_weekend_access_notification, name="email_weekend_access_notification"),
-		path("email_user_access_expiration_reminders/", calendar.email_user_access_expiration_reminders, name="email_user_access_expiration_reminders"),
-		path("manage_tool_qualifications/", calendar.manage_tool_qualifications, name="manage_tool_qualifications"),
-		path("manage_recurring_charges/", calendar.manage_recurring_charges, name="manage_recurring_charges"),
+		path("cancel_unused_reservations/", timed_services.cancel_unused_reservations, name="cancel_unused_reservations"),
+		path("create_closure_alerts/", timed_services.create_closure_alerts, name="create_closure_alerts"),
+		path("email_out_of_time_reservation_notification/", timed_services.email_out_of_time_reservation_notification, name="email_out_of_time_reservation_notification"),
+		path("email_reservation_ending_reminders/", timed_services.email_reservation_ending_reminders, name="email_reservation_ending_reminders"),
+		path("email_reservation_reminders/", timed_services.email_reservation_reminders, name="email_reservation_reminders"),
+		path("email_usage_reminders/", timed_services.email_usage_reminders, name="email_usage_reminders"),
+		path("email_weekend_access_notification/", timed_services.email_weekend_access_notification, name="email_weekend_access_notification"),
+		path("email_user_access_expiration_reminders/", timed_services.email_user_access_expiration_reminders, name="email_user_access_expiration_reminders"),
+		path("manage_tool_qualifications/", timed_services.manage_tool_qualifications, name="manage_tool_qualifications"),
+		path("manage_recurring_charges/", timed_services.manage_recurring_charges, name="manage_recurring_charges"),
+		path("auto_logout_users/", timed_services.auto_logout_users, name="auto_logout_users"),
 
 		# Abuse:
 		path("abuse/", abuse.abuse, name="abuse"),

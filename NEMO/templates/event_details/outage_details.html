@@ -1,11 +1,67 @@
 {% extends popup_view|yesno:"base/popup.html,base.html" %}
 {% load custom_tags_and_filters %}
+
+{% if not popup_view %}
+{% block extrahead %}
+    <script type="text/javascript">
+    function callback_success(){
+        // if on a standalone page, reload the browser window to display the results of the change to the outage
+        location.reload()
+    }
+
+    function cancel_outage(url)
+    {
+        let failure_dialog = ajax_failure_callback("Unable to cancel this outage");
+        ajax_post(url, undefined, callback_success, [failure_dialog, callback_success]);
+    }
+
+    function change_outage_title(url, title)
+    {
+        let failure_dialog = ajax_failure_callback("Unable to change outage title");
+        ajax_post(url, {'title': title}, callback_success, [failure_dialog]);
+    }
+
+    function change_outage_details(url, details)
+    {
+        let failure_dialog = ajax_failure_callback("Unable to change outage details");
+        ajax_post(url, {'details': details}, callback_success, [failure_dialog]);
+    }
+
+    function change_outage_date(url, outage_id, param, value)
+    {
+        let failure_dialog = ajax_failure_callback("Unable to change outage date");
+        let data = {'id': outage_id};
+        data[param] = value;
+        ajax_post(url, data, callback_success, [failure_dialog]);
+    }
+
+    </script>
+{% endblock %}
+{% endif %}
+
 {% block title %}Scheduled outage details{% endblock %}
 {% block content %}
     {% if not popup_view %}
         <h1>Scheduled outage details</h1>
     {% endif %}
-    Title: {{ outage.title }}<br>
+    {% if user.is_staff %}
+        <label for="outage_title" style="margin-bottom: 0">Title: </label>
+        <div id="outage_display_title" style="display: inline">
+            {{ outage.title }}
+            <span class="glyphicon glyphicon-pencil pull-right" title="Change the outage title" onclick="$('#outage_display_title').hide();$('#outage_change_title').css('display', 'inline');"></span>
+        </div>
+        <div id="outage_change_title" style="display: none">
+            <div class="input-group" style="display: inline-flex; vertical-align: middle">
+                <input type="text" id="outage_title" class="form-control" value="{{ outage.title }}">
+                <span class="input-group-btn">
+                    <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}change_outage_title('{% url 'change_outage_title' outage.id %}', $('#outage_title').val()) {% if popup_view %}}){% endif %}">Change title</button>
+                </span>
+            </div>
+        </div>
+        <br>
+    {% else %}
+        Title: {{ outage.title }}<br>
+    {% endif %}
     Created by: {{ outage.creator }}<br>
     {% if outage.tool %}Tool: {{ outage.tool }}<br>{% endif %}
     {% if outage.resource %}Resource: {{ outage.resource }} <span class="light-grey">({{ outage.resource.category }})</span><br>{% endif %}
@@ -13,16 +69,30 @@
     Start: {{ outage.start }}<br>
     End: {{ outage.end }}<br>
     Identifier: {{ outage.id }}<br>
-    {% if outage.details %}
-        Details:<br>
-        {{ outage.details|linebreaksbr }}
+    {% if outage.details or user.is_staff %}
+        {% if user.is_staff %}
+            <label for="outage_details" style="margin-bottom: 0">Details: </label><br>
+            <div id="outage_display_details">
+                <span class="glyphicon glyphicon-pencil pull-right" title="Change the outage details" onclick="$('#outage_display_details').hide();$('#outage_change_details').show();auto_size_textarea(document.getElementById('outage_details'))"></span>
+                {{ outage.details|linebreaksbr }}
+            </div>
+            <div id="outage_change_details" style="display: none">
+                <div class="input-group" style="width: 100%;">
+                    <textarea id="outage_details" class="form-control">{{ outage.details }}</textarea>
+                    <span class="input-group-addon btn btn-success" style="color: #fff" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}change_outage_details('{% url 'change_outage_details' outage.id %}', $('#outage_details').val()) {% if popup_view %}}){% endif %}">Change details</span>
+                </div>
+            </div>
+            <br>
+        {% else %}
+            Details:<br>
+            {{ outage.details|linebreaksbr }}<br>
+        {% endif %}
     {% endif %}
 
-    {# Allow the user to cancel the outage if they have that priviledge. only in popup view #}
-    {% if user.is_staff and popup_view %}
+    {# Allow the user to cancel the outage if they have that privilege. only in popup view #}
+    {% if user.is_staff %}
         <div class="modal-footer" style="padding: 15px 0 0 0;">
-            {% url 'cancel_outage' outage.id as cancel_outage_url %}
-            {% button type="delete" value="Cancel this outage" dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { cancel_outage('"|concat:cancel_outage_url|concat:"', 'Outage "|concat:outage.id|concat:"'); });" %}
+            <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}cancel_outage('{% url 'cancel_outage' outage.id  %}', 'Outage {{ outage.id }}'); {% if popup_view %}}){% endif %}">Cancel this outage</button>
         </div>
     {% endif %}
 {% endblock %}

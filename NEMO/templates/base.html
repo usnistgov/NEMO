@@ -56,9 +56,9 @@
 
 	<title>{% block title %}{% endblock %}</title>
 </head>
-<body class="{% if request.session.impersonate_id %}impersonating{% endif %}">
+<body class="{% if "impersonate_id" in request.session and request.session.impersonate_id %}impersonating{% endif %}">
 <a class="sr-only sr-only-focusable" href="#main-content">Skip to main content</a>
-{% if request.session.impersonate_id %}
+{% if "impersonate_id" in request.session and request.session.impersonate_id %}
 	{% include 'base/impersonate_header.html' %}
 {% endif %}
 {% if no_header %}

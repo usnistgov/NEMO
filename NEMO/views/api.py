@@ -2,9 +2,11 @@ from typing import List
 
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 from django.utils.safestring import mark_safe
 from drf_excel.mixins import XLSXFileMixin
 from rest_framework import status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 from rest_framework.serializers import ListSerializer
@@ -30,6 +32,7 @@ from NEMO.models import (
 	UsageEvent,
 	User,
 )
+from NEMO.rest_pagination import NEMOPageNumberPagination
 from NEMO.serializers import (
 	AccountSerializer,
 	AccountTypeSerializer,
@@ -88,11 +91,23 @@ class ModelViewSet(XLSXFileMixin, viewsets.ModelViewSet):
 	Also allows XLSX retrieval
 	"""
 
+	# Bypass pagination when exporting into any format that's not the browsable API
+	def paginate_queryset(self, queryset):
+		page_size_override = self.request and self.request.GET.get(NEMOPageNumberPagination.page_size_query_param, None)
+		renderer = self.request.accepted_renderer if self.request and hasattr(self.request, "accepted_renderer") else None
+		if page_size_override is not None or not renderer or isinstance(renderer, BrowsableAPIRenderer):
+			return super().paginate_queryset(queryset)
+		return None
+
+	@transaction.atomic
 	def create(self, request, *args, **kwargs):
 		many = isinstance(request.data, list)
 		serializer = self.get_serializer(data=request.data, many=many)
 		serializer.is_valid(raise_exception=True)
-		self.perform_create(serializer)
+		try:
+			self.perform_create(serializer)
+		except Exception as e:
+			raise ValidationError({"error": str(e)})
 		headers = self.get_success_headers(serializer.data)
 		return Response(serializer.data, headers=headers)
 
@@ -118,11 +133,11 @@ class UserViewSet(ModelViewSet):
 		"id": ["exact", "in"],
 		"type": ["exact", "in"],
 		"domain": ["exact", "in", "isempty"],
-		"username": ["iexact", "in"],
-		"first_name": ["iexact", "icontains"],
-		"last_name": ["iexact", "icontains"],
-		"email": ["iexact", "icontains"],
-		"badge_number": ["iexact", "isempty"],
+		"username": ["exact", "iexact", "in"],
+		"first_name": ["exact", "iexact", "icontains"],
+		"last_name": ["exact", "iexact", "icontains"],
+		"email": ["exact", "iexact", "icontains"],
+		"badge_number": ["exact", "iexact", "isempty"],
 		"is_active": ["exact"],
 		"is_staff": ["exact"],
 		"is_facility_manager": ["exact"],
@@ -141,7 +156,7 @@ class ProjectDisciplineViewSet(ModelViewSet):
 	filename = "project_disciplines"
 	queryset = ProjectDiscipline.objects.all()
 	serializer_class = ProjectDisciplineSerializer
-	filterset_fields = {"id": ["exact", "in"], "name": ["iexact"], "display_order": ["exact"]}
+	filterset_fields = {"id": ["exact", "in"], "name": ["exact", "iexact"], "display_order": ["exact"]}
 
 
 class ProjectViewSet(ModelViewSet):
@@ -150,7 +165,7 @@ class ProjectViewSet(ModelViewSet):
 	serializer_class = ProjectSerializer
 	filterset_fields = {
 		"id": ["exact", "in"],
-		"name": ["iexact"],
+		"name": ["exact", "iexact"],
 		"application_identifier": ["exact"],
 		"active": ["exact"],
 		"account_id": ["exact", "in"],
@@ -177,11 +192,11 @@ class ToolViewSet(ModelViewSet):
 	serializer_class = ToolSerializer
 	filterset_fields = {
 		"id": ["exact", "in"],
-		"name": ["exact"],
+		"name": ["exact", "iexact"],
 		"visible": ["exact"],
-		"_category": ["exact"],
+		"_category": ["exact", "iexact"],
 		"_operational": ["exact"],
-		"_location": ["exact"],
+		"_location": ["exact", "iexact"],
 		"_requires_area_access": ["exact", "isnull"],
 		"_post_usage_questions": ["isempty"],
 	}
@@ -205,9 +220,9 @@ class AreaViewSet(ModelViewSet):
 	serializer_class = AreaSerializer
 	filterset_fields = {
 		"id": ["exact", "in"],
-		"name": ["exact"],
+		"name": ["exact", "iexact"],
 		"parent_area": ["exact", "in"],
-		"category": ["exact"],
+		"category": ["exact", "iexact"],
 		"requires_reservation": ["exact"],
 		"buddy_system_allowed": ["exact"],
 		"maximum_capacity": ["exact", "gte", "gt", "lte", "lt", "isnull"],
@@ -222,7 +237,7 @@ class ResourceViewSet(ModelViewSet):
 	serializer_class = ResourceSerializer
 	filterset_fields = {
 		"id": ["exact", "in"],
-		"name": ["exact"],
+		"name": ["exact", "iexact"],
 		"available": ["exact"],
 		"fully_dependent_tools": ["in"],
 		"partially_dependent_tools": ["in"],
@@ -246,6 +261,7 @@ class ReservationViewSet(ModelViewSet):
 		"cancelled": ["exact"],
 		"missed": ["exact"],
 		"validated": ["exact"],
+		"validated_by": ["exact", "in", "isnull"],
 		"question_data": ["isempty"],
 	}
 
@@ -263,6 +279,7 @@ class UsageEventViewSet(ModelViewSet):
 		"operator_id": ["exact", "in"],
 		"tool_id": ["exact", "in"],
 		"validated": ["exact"],
+		"validated_by": ["exact", "in", "isnull"],
 	}
 
 
@@ -279,6 +296,7 @@ class AreaAccessRecordViewSet(ModelViewSet):
 		"area_id": ["exact", "in"],
 		"staff_charge_id": ["exact", "isnull", "in"],
 		"validated": ["exact"],
+		"validated_by": ["exact", "in", "isnull"],
 	}
 
 
@@ -332,6 +350,7 @@ class StaffChargeViewSet(ModelViewSet):
 		"start": ["month", "year", "day", "gte", "gt", "lte", "lt"],
 		"end": ["month", "year", "day", "gte", "gt", "lte", "lt", "isnull"],
 		"validated": ["exact"],
+		"validated_by": ["exact", "in", "isnull"],
 		"note": ["contains"],
 	}
 
@@ -351,6 +370,7 @@ class TrainingSessionViewSet(ModelViewSet):
 		"date": ["month", "year", "day", "gte", "gt", "lte", "lt"],
 		"qualified": ["exact"],
 		"validated": ["exact"],
+		"validated_by": ["exact", "in", "isnull"],
 	}
 
 
@@ -358,7 +378,7 @@ class ConsumableCategoryViewSet(ModelViewSet):
 	filename = "consumable_categories"
 	queryset = ConsumableCategory.objects.all()
 	serializer_class = ConsumableCategorySerializer
-	filterset_fields = {"id": ["exact", "in"], "name": ["iexact"]}
+	filterset_fields = {"id": ["exact", "in"], "name": ["exact", "iexact"]}
 
 
 class ConsumableViewSet(ModelViewSet):
@@ -389,6 +409,7 @@ class ConsumableWithdrawViewSet(ModelViewSet):
 		"quantity": ["exact", "gte", "lte", "gt", "lt"],
 		"date": ["month", "year", "day", "gte", "gt", "lte", "lt"],
 		"validated": ["exact"],
+		"validated_by": ["exact", "in", "isnull"],
 	}
 
 
@@ -410,7 +431,7 @@ class GroupViewSet(ModelViewSet):
 	queryset = Group.objects.all()
 	serializer_class = GroupSerializer
 	filterset_fields = {
-		"name": ["exact", "in"],
+		"name": ["exact", "iexact", "in"],
 		"permissions": ["exact"],
 	}
 
@@ -421,8 +442,8 @@ class PermissionViewSet(XLSXFileMixin, viewsets.ReadOnlyModelViewSet):
 	queryset = Permission.objects.all()
 	serializer_class = PermissionSerializer
 	filterset_fields = {
-		"name": ["exact", "in"],
-		"codename": ["exact", "in"],
+		"name": ["exact", "iexact", "in"],
+		"codename": ["exact", "iexact", "in"],
 		"content_type_id": ["exact", "in"],
 	}
 

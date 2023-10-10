@@ -1,3 +1,4 @@
+import sys
 from collections import Counter
 from copy import copy
 from distutils.util import strtobool
@@ -7,16 +8,16 @@ from typing import Any, Callable, Dict, List, Optional, Type
 
 from django.urls import NoReverseMatch, reverse
 from django.utils.safestring import mark_safe
-from django.utils.text import slugify
 
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Consumable, ToolUsageCounter
+from NEMO.utilities import slugify_underscore
 from NEMO.views.consumables import make_withdrawal
 
 dynamic_form_logger = getLogger(__name__)
 
 
-GROUP_TYPE_QUESTION_KEY = "group"
+GROUP_TYPE_FIELD_KEY = "group"
 
 
 class PostUsageQuestion:
@@ -47,6 +48,7 @@ class PostUsageQuestion:
 		# For backwards compatibility keep default choice
 		self.default_value = self._init_property("default_value") or self._init_property("default_choice")
 		self.choices = self._init_property("choices")
+		self.labels = self._init_property("labels")
 		self.group_add_button_name = self._init_property("group_add_button_name") or "Add"
 		self.index = index
 		if index and not isinstance(self, PostUsageGroupQuestion):
@@ -97,6 +99,12 @@ class PostUsageQuestion:
 		except KeyError:
 			raise Exception(f"{self.question_type} requires property '{prop}' to be defined")
 
+	def validate_labels_and_choices(self):
+		self.validate_property_exists("choices")
+		if "labels" in self.properties:
+			if len(self.properties["labels"]) != len(self.properties["choices"]):
+				raise Exception("When using labels you need one for each choice")
+
 	@staticmethod
 	def load_questions(questions: Optional[List[Dict]], index: int = None):
 		questions_to_load = questions or []
@@ -111,16 +119,17 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 
 	def validate(self):
 		super().validate()
-		self.validate_property_exists("choices")
+		self.validate_labels_and_choices()
 
 	def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
 		title = self.title_html or self.title
 		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
-		for choice in self.choices:
+		for index, choice in enumerate(self.choices):
+			label = self.labels[index] if self.labels else choice
 			result += '<div class="radio">'
 			required = "required" if self.required else ""
 			is_default_choice = "checked" if self.default_value and self.default_value == choice else ""
-			result += f'<label><input type="radio" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
+			result += f'<label><input type="radio" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
 			result += "</div>"
 		result += "</div>"
 		return result
@@ -131,17 +140,18 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
 
 	def validate(self):
 		super().validate()
-		self.validate_property_exists("choices")
+		self.validate_labels_and_choices()
 
 	def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
 		title = self.title_html or self.title
 		result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
 		result += f'<input aria-label="hidden field used for required answer" id="required_{ self.form_name }" type="checkbox" value="" style="display: none" { "required" if self.required else "" }/>'
-		for choice in self.choices:
+		for index, choice in enumerate(self.choices):
+			label = self.labels[index] if self.labels else choice
 			result += '<div class="checkbox">'
 			required = f"""onclick="checkbox_required('{self.form_name}')" """ if self.required else ""
 			is_default_choice = "checked" if self.default_value and self.default_value == choice else ""
-			result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{choice}</label>'
+			result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
 			result += "</div>"
 		result += "</div>"
 		return result
@@ -171,7 +181,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 	def validate(self):
 		super().validate()
 		self.validate_property_exists("max-width")
-		self.validate_property_exists("choices")
+		self.validate_labels_and_choices()
 
 	def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
 		title = self.title_html or self.title
@@ -184,9 +194,10 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 		blank_disabled = 'disabled="disabled"' if required else ""
 		placeholder = self.placeholder if self.placeholder else "Select an option"
 		result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
-		for choice in self.choices:
+		for index, choice in enumerate(self.choices):
+			label = self.labels[index] if self.labels else choice
 			is_default_choice = "selected" if self.default_value and self.default_value == choice else ""
-			result += f'<option value="{choice}" {is_default_choice}>{choice}</option>'
+			result += f'<option value="{choice}" {is_default_choice}>{label}</option>'
 		result += "</select>"
 		if self.help:
 			result += f'<div style="font-size:smaller;color:#999;{max_width}">{self.help}</div>'
@@ -301,7 +312,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 		super().__init__(properties, index)
 		self.max_number = self._init_property("max_number")
 		# we need a safe group name to use in js function and variable names
-		self.group_name = slugify(self.name).replace("-", "_")
+		self.group_name = slugify_underscore(self.name)
 		self.sub_questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(
 			self._init_property("questions"), index
 		)
@@ -421,7 +432,7 @@ class DynamicForm:
 		for question in self.untreated_questions:
 			if question["type"] not in question_types.keys():
 				raise Exception(f"type has to be one of {', '.join(question_types.keys())}")
-			if question["type"] == GROUP_TYPE_QUESTION_KEY and "questions" in question:
+			if question["type"] == GROUP_TYPE_FIELD_KEY and "questions" in question:
 				for sub_question in question["questions"]:
 					if sub_question["type"] not in question_types.keys():
 						raise Exception(f"type has to be one of {', '.join(question_types.keys())}")
@@ -491,7 +502,11 @@ class DynamicForm:
 						results.append(sub_question)
 		return results
 
-	def charge_for_consumables(self, customer, merchant, project, run_data: str, request=None):
+	def charge_for_consumables(self, usage_event, request=None):
+		customer = usage_event.user
+		merchant = usage_event.operator
+		project = usage_event.project
+		run_data = usage_event.run_data
 		try:
 			run_data_json = loads(run_data)
 		except Exception as error:
@@ -499,10 +514,10 @@ class DynamicForm:
 			return
 		for question in self.questions:
 			input_data = run_data_json[question.name] if question.name in run_data_json else None
-			withdraw_consumable_for_question(question, input_data, customer, merchant, project, request)
+			withdraw_consumable_for_question(question, input_data, customer, merchant, project, usage_event, request)
 			if isinstance(question, PostUsageGroupQuestion):
 				for sub_question in question.sub_questions:
-					withdraw_consumable_for_question(sub_question, input_data, customer, merchant, project, request)
+					withdraw_consumable_for_question(sub_question, input_data, customer, merchant, project, usage_event, request)
 
 	def update_tool_counters(self, run_data: str, tool_id: int):
 		# This function increments all counters associated with the given tool
@@ -523,6 +538,18 @@ class DynamicForm:
 			if additional_value:
 				counter.value += additional_value
 				counter.save()
+
+
+def get_submitted_user_inputs(user_data: str) -> Dict:
+	""" Takes the user data as a string and returns a dictionary of inputs or a list of inputs for group fields """
+	user_input = {}
+	user_data_json = loads(user_data)
+	for field_name, data in user_data_json.items():
+		if data["type"] != 'group':
+			user_input[field_name] = data["user_input"]
+		else:
+			user_input[field_name] = data["user_input"].values()
+	return user_input
 
 
 def render_group_questions(request, questions, group_question_url, group_item_id, group_name) -> str:
@@ -546,7 +573,7 @@ def validate_consumable_for_question(question: PostUsageQuestion):
 				raise Exception(f"Consumable with name '{question.consumable}' could not be found. Make sure the names match.")
 
 
-def withdraw_consumable_for_question(question, input_data, customer, merchant, project, request):
+def withdraw_consumable_for_question(question, input_data, customer, merchant, project, usage_event, request):
 	if isinstance(question, PostUsageNumberFieldQuestion):
 		if question.consumable:
 			consumable = Consumable.objects.get(name=question.consumable)
@@ -565,7 +592,7 @@ def withdraw_consumable_for_question(question, input_data, customer, merchant, p
 					merchant=merchant,
 					quantity=quantity,
 					project_id=project.id,
-					tool_usage=True,
+					usage_event=usage_event,
 					request=request,
 				)
 
@@ -581,6 +608,40 @@ def get_counter_increment_for_question(question, input_data, counter_question):
 			else:
 				additional_value = float(input_data["user_input"])
 	return additional_value
+
+
+def validate_dynamic_form_model(dynamic_form_json: str, group_url: str, item_id) -> List[str]:
+	errors = []
+	if dynamic_form_json:
+		try:
+			loads(dynamic_form_json)
+		except ValueError:
+			errors.append("This field needs to be a valid JSON string")
+		try:
+			dynamic_form = DynamicForm(dynamic_form_json)
+			dynamic_form.validate(group_url, item_id)
+		except KeyError as e:
+			errors.append(f"{e} property is required")
+		except Exception:
+			error_info = sys.exc_info()
+			errors.append(error_info[0].__name__ + ": " + str(error_info[1]))
+	return errors
+
+
+def admin_render_dynamic_form_preview(dynamic_form_json: str, group_url: str, item_id):
+	form_validity_div = ""
+	rendered_form = ""
+	try:
+		rendered_form = DynamicForm(dynamic_form_json).render(group_url, item_id)
+		if dynamic_form_json:
+			form_validity_div = '<div id="form_validity"></div>'
+	except:
+		pass
+	return mark_safe(
+		'<div class="dynamic_form_preview">{}{}</div><div class="help dynamic_form_preview_help">Save form to preview</div>'.format(
+			rendered_form, form_validity_div
+		)
+	)
 
 
 question_types: Dict[str, Type[PostUsageQuestion]] = {

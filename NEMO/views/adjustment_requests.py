@@ -3,40 +3,40 @@ from typing import List, Set
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, QuerySet
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import accounting_or_user_office_or_manager_required
 from NEMO.forms import AdjustmentRequestForm
 from NEMO.mixins import BillableItemMixin
 from NEMO.models import (
     AdjustmentRequest,
+    Area,
     AreaAccessRecord,
     Notification,
     RequestMessage,
     RequestStatus,
     Reservation,
     StaffCharge,
+    Tool,
     UsageEvent,
     User,
 )
-from NEMO.typing import QuerySetType
 from NEMO.utilities import (
     BasicDisplayTable,
-    bootstrap_primary_color,
     EmailCategory,
+    bootstrap_primary_color,
     export_format_datetime,
     get_full_url,
     quiet_int,
     render_email_template,
     send_mail,
 )
-from NEMO.views.customization import (EmailsCustomization, get_media_file_contents, UserRequestsCustomization)
+from NEMO.views.customization import (EmailsCustomization, UserRequestsCustomization, get_media_file_contents)
 from NEMO.views.notifications import (
     create_adjustment_request_notification,
     create_request_message_notification,
@@ -54,13 +54,18 @@ def adjustment_requests(request):
     user: User = request.user
     max_requests = quiet_int(UserRequestsCustomization.get("adjustment_requests_display_max"), None)
     adj_requests = AdjustmentRequest.objects.filter(deleted=False)
-    if not user.is_facility_manager and not user.is_user_office and not user.is_accounting_officer:
-        adj_requests = adj_requests.filter(creator=user)
-    if user.is_facility_manager and (user.get_preferences().tool_adjustment_notifications.exists() or user.get_preferences().area_adjustment_notifications.exists()):
+    my_requests = adj_requests.filter(creator=user)
+
+    user_is_reviewer = is_user_a_reviewer(user)
+    user_is_staff = user.is_facility_manager or user.is_user_office or user.is_accounting_officer
+    if not user_is_reviewer and not user_is_staff:
+        # only show own requests
+        adj_requests = my_requests
+    elif user_is_reviewer:
+        # show all requests the user can review, exclude the rest
         exclude = []
         for adj in adj_requests:
-            managers = managers_for_adjustment_request(adj)
-            if user not in managers:
+            if user != adj.creator and user not in adj.reviewers():
                 exclude.append(adj.pk)
         adj_requests = adj_requests.exclude(pk__in=exclude)
 
@@ -69,11 +74,13 @@ def adjustment_requests(request):
         "approved_adjustment_requests": adj_requests.filter(status=RequestStatus.APPROVED)[:max_requests],
         "denied_adjustment_requests": adj_requests.filter(status=RequestStatus.DENIED)[:max_requests],
         "adjustment_requests_description": UserRequestsCustomization.get("adjustment_requests_description"),
-        "request_notifications": get_notifications(
-            request.user, Notification.Types.ADJUSTMENT_REQUEST, delete=not user.is_facility_manager
-        ),
+        "request_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST, delete=False),
         "reply_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST_REPLY),
+        "user_is_reviewer": user_is_reviewer
     }
+
+    # Delete notifications for seen requests
+    Notification.objects.filter(user=request.user, notification_type=Notification.Types.ADJUSTMENT_REQUEST, object_id__in=my_requests).delete()
     return render(request, "requests/adjustment_requests/adjustment_requests.html", dictionary)
 
 
@@ -118,8 +125,8 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
                 errors.append("You are not allowed to edit deleted requests.")
             if adjustment_request.status != RequestStatus.PENDING:
                 errors.append("Only pending requests can be modified.")
-            if adjustment_request.creator != user and not user.is_facility_manager:
-                errors.append("You are not allowed to edit a request you didn't create.")
+            if adjustment_request.creator != user and user not in adjustment_request.reviewers():
+                errors.append("You are not allowed to edit this request.")
 
         form = AdjustmentRequestForm(
             request.POST,
@@ -134,7 +141,7 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
         if form.is_valid():
             if not edit:
                 form.instance.creator = user
-            if edit and user.is_facility_manager:
+            if edit and user in adjustment_request.reviewers():
                 decision = [state for state in ["approve_request", "deny_request"] if state in request.POST]
                 if decision:
                     if next(iter(decision)) == "approve_request":
@@ -146,16 +153,15 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
             form.instance.last_updated_by = user
             new_adjustment_request = form.save()
 
-            managers_to_notify: Set[User] = set(list(managers_for_adjustment_request(adjustment_request)))
+            reviewers: Set[User] = set(list(adjustment_request.reviewers()))
 
-            create_adjustment_request_notification(new_adjustment_request, managers_to_notify)
+            create_adjustment_request_notification(new_adjustment_request)
             if edit:
-                # remove notification for current user and other facility managers
+                # remove notification for current user and other reviewers
                 delete_notification(Notification.Types.ADJUSTMENT_REQUEST, adjustment_request.id, [user])
-                if user.is_facility_manager:
-                    managers = User.objects.filter(is_active=True, is_facility_manager=True)
-                    delete_notification(Notification.Types.ADJUSTMENT_REQUEST, adjustment_request.id, managers)
-            send_request_received_email(request, new_adjustment_request, edit, managers_to_notify)
+                if user in reviewers:
+                    delete_notification(Notification.Types.ADJUSTMENT_REQUEST, adjustment_request.id, reviewers)
+            send_request_received_email(request, new_adjustment_request, edit, reviewers)
             return redirect("user_requests", "adjustment")
         else:
             item_type = form.cleaned_data.get("item_type")
@@ -183,8 +189,8 @@ def adjustment_request_reply(request, request_id):
 
     if adjustment_request.status != RequestStatus.PENDING:
         return HttpResponseBadRequest("Replies are only allowed on PENDING requests")
-    elif user != adjustment_request.creator and not user.is_facility_manager:
-        return HttpResponseBadRequest("Only the creator and managers can reply to adjustment requests")
+    elif user != adjustment_request.creator and user not in adjustment_request.reviewers():
+        return HttpResponseBadRequest("Only the creator and reviewers can reply to adjustment requests")
     elif message_content:
         reply = RequestMessage()
         reply.content_object = adjustment_request
@@ -217,14 +223,14 @@ def delete_adjustment_request(request, request_id):
     return redirect("user_requests", "adjustment")
 
 
-def send_request_received_email(request, adjustment_request: AdjustmentRequest, edit, facility_managers: Set[User]):
+def send_request_received_email(request, adjustment_request: AdjustmentRequest, edit, reviewers: Set[User]):
     user_office_email = EmailsCustomization.get("user_office_email_address")
     adjustment_request_notification_email = get_media_file_contents("adjustment_request_notification_email.html")
     if user_office_email and adjustment_request_notification_email:
-        # cc facility managers
-        manager_emails = [
+        # reviewers
+        reviewer_emails = [
             email
-            for user in facility_managers
+            for user in reviewers
             for email in user.get_emails(user.get_preferences().email_send_adjustment_request_updates)
         ]
         status = (
@@ -253,7 +259,7 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
                 subject=f"Adjustment request {status}",
                 content=message,
                 from_email=adjustment_request.creator.email,
-                to=manager_emails,
+                to=reviewer_emails,
                 cc=adjustment_request.creator.get_emails(creator_notification),
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
@@ -263,7 +269,7 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
                 content=message,
                 from_email=adjustment_request.reviewer.email,
                 to=adjustment_request.creator.get_emails(creator_notification),
-                cc=manager_emails,
+                cc=reviewer_emails,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
 
@@ -277,7 +283,7 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
                 content=message,
                 from_email=adjustment_request.reviewer.email,
                 to=[user_office_email],
-                cc=manager_emails,
+                cc=reviewer_emails,
                 email_category=EmailCategory.ADJUSTMENT_REQUESTS,
             )
 
@@ -393,22 +399,7 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     return response
 
 
-def managers_for_adjustment_request(adjustment_request: AdjustmentRequest) -> QuerySetType[User]:
-    # Create the list of facility managers to notify/show request to. If the adjustment request has a tool/area and no
-    # one added that tool/area to their adjustment request list, send/show to everyone (otherwise nobody would see it)
-    tool = getattr(adjustment_request.item, "tool", None) if adjustment_request.item else None
-    area = getattr(adjustment_request.item, "area", None) if adjustment_request.item else None
-    reviewers = User.objects.filter(is_active=True, is_facility_manager=True)
-    if tool:
-        reviewers_filter = reviewers.filter(Q(preferences__tool_adjustment_notifications__isnull=True) | Q(
-            preferences__tool_adjustment_notifications__in=[tool]))
-        if reviewers_filter.exists():
-            # Only limit managers if at least one person will receive the notification.
-            reviewers = reviewers_filter
-    if area:
-        reviewers_filter = reviewers.filter(Q(preferences__area_adjustment_notifications__isnull=True) | Q(
-            preferences__area_adjustment_notifications__in=[area]))
-        if reviewers_filter.exists():
-            # Only limit managers if at least one person will receive the notification.
-            reviewers = reviewers_filter
-    return reviewers
+def is_user_a_reviewer(user: User) -> bool:
+    is_reviewer_on_any_tool = Tool.objects.filter(_adjustment_request_reviewers__in=[user]).exists()
+    is_reviewer_on_any_area = Area.objects.filter(adjustment_request_reviewers__in=[user]).exists()
+    return user.is_facility_manager or is_reviewer_on_any_tool or is_reviewer_on_any_area

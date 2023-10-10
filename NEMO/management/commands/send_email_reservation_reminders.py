@@ -1,6 +1,6 @@
 from django.core.management import BaseCommand
 
-from NEMO.views.calendar import send_email_reservation_reminders
+from NEMO.views.timed_services import send_email_reservation_reminders
 
 
 class Command(BaseCommand):

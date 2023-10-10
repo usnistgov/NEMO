@@ -263,9 +263,12 @@ class ProXrInterlock(Interlock):
 	def clean_interlock(self, interlock_form: InterlockAdminForm):
 		"""Validates NEMO interlock configuration."""
 		channel = interlock_form.cleaned_data["channel"]
+		bank = interlock_form.cleaned_data["unit_id"]
 		error = {}
-		if channel not in range(1, 9):
-			error["channel"] = _("Relay must be 1-8.")
+		if bank is not None and bank not in range(0, 33):
+			error["unit_id"] = _("Bank must be 0-32. Use 0 to trigger all banks.")
+		if channel not in range(0, 9):
+			error["channel"] = _("Relay must be 0-8. Use 0 to trigger all relays.")
 		if error:
 			raise ValidationError(error)
 
@@ -283,13 +286,18 @@ class ProXrInterlock(Interlock):
 		# only the last byte of the response is important
 		return relay_socket.recv(64)[-1]
 
-	def _get_state(self, relay_socket, interlock_channel):
+	def _get_state(self, relay_socket, interlock_channel, interlock_bank):
 		"""
 		Returns current NEMO state of the relay.
 		Argument relay_socket is a connected socket object.
 		Argument interlock_channel is the NEMO interlock.channel.
+		Argument interlock_bank is the NEMO interlock.unit_id.
 		"""
-		state = self._send_bytes(relay_socket, (254, 115 + interlock_channel, 1))
+		# We cannot read bank 0 since it means all banks, so check the first one
+		read_bank = interlock_bank if interlock_bank != 0 else 1
+		# We cannot read relay 0 since it means all relays, so check the first one
+		read_channel = interlock_channel if interlock_channel != 0 else 1
+		state = self._send_bytes(relay_socket, (254, 115 + read_channel, read_bank))
 		if state == self.PXR_RELAY_OFF:
 			return Interlock_model.State.LOCKED
 		elif state == self.PXR_RELAY_ON:
@@ -300,16 +308,20 @@ class ProXrInterlock(Interlock):
 	def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
 		"""Returns and sets NEMO locked/unlocked state."""
 		state = Interlock_model.State.UNKNOWN
+		# Backward compatibility, no bank means bank 1
+		bank = interlock.unit_id if interlock.unit_id is not None else 1
 		try:
 			with socket.create_connection((interlock.card.server, interlock.card.port), 10) as relay_socket:
 				if command_type == Interlock_model.State.LOCKED:
 					# turn the interlock channel off
-					self._send_bytes(relay_socket, (254, 99 + interlock.channel, 1))
-					state = self._get_state(relay_socket, interlock.channel)
+					off_command = (99 + interlock.channel) if interlock.channel != 0 else 129
+					self._send_bytes(relay_socket, (254, off_command, bank))
+					state = self._get_state(relay_socket, interlock.channel, bank)
 				elif command_type == Interlock_model.State.UNLOCKED:
 					# turn the interlock channel on
-					self._send_bytes(relay_socket, (254, 107 + interlock.channel, 1))
-					state = self._get_state(relay_socket, interlock.channel)
+					on_command = (107 + interlock.channel) if interlock.channel != 0 else 130
+					self._send_bytes(relay_socket, (254, on_command, bank))
+					state = self._get_state(relay_socket, interlock.channel, bank)
 		except Exception as error:
 			raise InterlockError(interlock=interlock, msg="Communication error: " + str(error))
 		return state
@@ -335,15 +347,15 @@ class WebRelayHttpInterlock(Interlock):
 		state = Interlock_model.State.UNKNOWN
 		try:
 			if command_type == Interlock_model.State.LOCKED:
-				state = self.setRelayState(interlock, self.WEB_RELAY_OFF)
+				state = self.set_relay_state(interlock, self.WEB_RELAY_OFF)
 			elif command_type == Interlock_model.State.UNLOCKED:
-				state = self.setRelayState(interlock, self.WEB_RELAY_ON)
+				state = self.set_relay_state(interlock, self.WEB_RELAY_ON)
 		except Exception as error:
 			raise InterlockError(interlock=interlock, msg="General exception: " + str(error))
 		return state
 
 	@classmethod
-	def setRelayState(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
+	def set_relay_state(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
 		response, auth, response_error = None, None, None
 		if interlock.card.username and interlock.card.password:
 			auth = (interlock.card.username, interlock.card.password)
@@ -359,11 +371,11 @@ class WebRelayHttpInterlock(Interlock):
 		if response_error:
 			raise Exception(f"Communication error: {response_error}")
 		# No errors, continue and read relay state
-		responseXML = ElementTree.fromstring(response.content)
+		response_xml = ElementTree.fromstring(response.content)
 		state = None
 		# Try with a few different lookups here since depending on the relay model, it could be relayX or relayXstate
 		for state_suffix in cls.state_response_suffixes:
-			element = responseXML.find(cls.state_parameter_template.format(interlock.channel or '') + state_suffix)
+			element = response_xml.find(cls.state_parameter_template.format(interlock.channel or '') + state_suffix)
 			# Explicitly check for None since 0 is a valid state to return
 			if element is not None:
 				state = int(element.text)
@@ -405,16 +417,16 @@ class ModbusTcpInterlock(Interlock):
 		state = Interlock_model.State.UNKNOWN
 		try:
 			if command_type == Interlock_model.State.LOCKED:
-				state = self.setRelayState(interlock, self.MODBUS_OFF)
+				state = self.set_relay_state(interlock, self.MODBUS_OFF)
 			elif command_type == Interlock_model.State.UNLOCKED:
-				state = self.setRelayState(interlock, self.MODBUS_ON)
+				state = self.set_relay_state(interlock, self.MODBUS_ON)
 		except Exception as error:
 			interlocks_logger.exception(error)
 			raise Exception("General exception: " + str(error))
 		return state
 
 	@classmethod
-	def setRelayState(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
+	def set_relay_state(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
 		coil = interlock.channel
 		client = ModbusTcpClient(interlock.card.server, port=interlock.card.port)
 		try:

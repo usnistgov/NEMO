@@ -17,9 +17,10 @@ from NEMO.apps.sensors.models import (
 	SensorCategory,
 	SensorData,
 )
+from NEMO.typing import QuerySetType
 
 
-def duplicate_sensor_configuration(model_admin, request, queryset):
+def duplicate_sensor_configuration(model_admin, request, queryset: QuerySetType[Sensor]):
 	for sensor in queryset:
 		original_name = sensor.name
 		new_name = "Copy of " + sensor.name
@@ -52,7 +53,7 @@ def duplicate_sensor_configuration(model_admin, request, queryset):
 			)
 
 
-def read_selected_sensors(model_admin, request, queryset):
+def read_selected_sensors(model_admin, request, queryset: QuerySetType[Sensor]):
 	for sensor in queryset:
 		try:
 			response = sensor.read_data(raise_exception=True)
@@ -62,6 +63,48 @@ def read_selected_sensors(model_admin, request, queryset):
 				messages.warning(request, response)
 		except Exception as error:
 			messages.error(request, f"{sensor} data could not be read due to the following error: {str(error)}")
+
+
+@admin.action(description="Hide selected sensors")
+def hide_selected_sensors(model_admin, request, queryset: QuerySetType[Sensor]):
+	for sensor in queryset:
+		sensor.visible = False
+		sensor.save(update_fields=["visible"])
+
+
+@admin.action(description="Show selected sensors")
+def show_selected_sensors(model_admin, request, queryset: QuerySetType[Sensor]):
+	for sensor in queryset:
+		sensor.visible = True
+		sensor.save(update_fields=["visible"])
+
+
+@admin.action(description="Disable selected alerts")
+def disable_selected_alerts(model_admin, request, queryset: QuerySetType[SensorAlertEmail]):
+	for sensor_alert in queryset:
+		sensor_alert.enabled = False
+		sensor_alert.save(update_fields=["enabled"])
+
+
+@admin.action(description="Enable selected alerts")
+def enable_selected_alerts(model_admin, request, queryset: QuerySetType[SensorAlertEmail]):
+	for sensor_alert in queryset:
+		sensor_alert.enabled = True
+		sensor_alert.save(update_fields=["enabled"])
+
+
+@admin.action(description="Disable selected cards")
+def disable_selected_cards(model_admin, request, queryset: QuerySetType[SensorCard]):
+	for sensor_card in queryset:
+		sensor_card.enabled = False
+		sensor_card.save(update_fields=["enabled"])
+
+
+@admin.action(description="Enable selected cards")
+def enable_selected_cards(model_admin, request, queryset: QuerySetType[SensorCard]):
+	for sensor_card in queryset:
+		sensor_card.enabled = True
+		sensor_card.save(update_fields=["enabled"])
 
 
 class SensorCardAdminForm(forms.ModelForm):
@@ -85,6 +128,7 @@ class SensorCardAdminForm(forms.ModelForm):
 class SensorCardAdmin(admin.ModelAdmin):
 	form = SensorCardAdminForm
 	list_display = ("name", "enabled", "server", "port", "category")
+	actions = [disable_selected_cards, enable_selected_cards]
 
 
 class SensorAdminForm(forms.ModelForm):
@@ -176,7 +220,7 @@ class SensorAdmin(admin.ModelAdmin):
 		("sensor_card", admin.RelatedOnlyFieldListFilter),
 		("sensor_category", admin.RelatedOnlyFieldListFilter),
 	)
-	actions = [duplicate_sensor_configuration, read_selected_sensors]
+	actions = [duplicate_sensor_configuration, read_selected_sensors, hide_selected_sensors, show_selected_sensors]
 
 	@display(boolean=True, ordering="sensor_card__enabled", description="Card Enabled")
 	def get_card_enabled(self, obj: Sensor):
@@ -226,6 +270,7 @@ class SensorDataAdmin(admin.ModelAdmin):
 @register(SensorAlertEmail)
 class SensorAlertEmailAdmin(admin.ModelAdmin):
 	list_display = ("sensor", "enabled", "trigger_condition", "trigger_no_data", "additional_emails", "triggered_on")
+	actions = [disable_selected_alerts, enable_selected_alerts]
 
 
 @register(SensorAlertLog)

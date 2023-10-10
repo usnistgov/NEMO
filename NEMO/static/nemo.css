@@ -77,9 +77,16 @@ body.impersonating .application-sidebar, body.impersonating .application-content
     padding-right: 4px;
 }
 
+#sidebar #tool_tree input[type=checkbox], #sidebar #area_tree input[type=checkbox]
+{
+	margin-right: 5px;
+	margin-top: 0;
+}
+
 #sidebar #tool_tree a, #sidebar #area_tree a
 {
 	padding-left: 0;
+	display: inline;
 }
 
 #extra-links a
@@ -1172,4 +1179,9 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 {
 	display: inline-block;
 	float: right;
+}
+
+.consumable-row .tooltip-inner
+{
+	text-align: left!important;
 }

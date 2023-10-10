@@ -3,9 +3,24 @@ from django.db.models import Max
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
-from NEMO.models import Area, Interlock, Tool, User
+from NEMO.models import Area, Interlock, InterlockCard, Tool, User
+from NEMO.typing import QuerySetType
 from NEMO.views.access_requests import access_csv_export
 from NEMO.views.adjustment_requests import adjustments_csv_export
+
+
+@admin.action(description="Disable selected cards")
+def disable_selected_cards(model_admin, request, queryset: QuerySetType[InterlockCard]):
+	for interlock_card in queryset:
+		interlock_card.enabled = False
+		interlock_card.save(update_fields=["enabled"])
+
+
+@admin.action(description="Enable selected cards")
+def enable_selected_cards(model_admin, request, queryset: QuerySetType[InterlockCard]):
+	for interlock_card in queryset:
+		interlock_card.enabled = True
+		interlock_card.save(update_fields=["enabled"])
 
 
 @admin.action(description="Lock selected interlocks")
@@ -79,6 +94,7 @@ def duplicate_tool_configuration(model_admin, request, queryset):
 				old_nonrequired_resources = tool.nonrequired_resource_set.all()
 				old_backup_users = tool.backup_owners.all()
 				old_superusers = tool.superusers.all()
+				old_reviewers = tool.adjustment_request_reviewers.all()
 				old_qualified_users = User.objects.filter(qualifications__id=tool.pk).distinct()
 				tool.pk = None
 				tool.interlock = None
@@ -93,6 +109,7 @@ def duplicate_tool_configuration(model_admin, request, queryset):
 				tool.nonrequired_resource_set.set(old_nonrequired_resources)
 				tool.backup_owners.set(old_backup_users)
 				tool.superusers.set(old_superusers)
+				tool.adjustment_request_reviewers.set(old_reviewers)
 				for user in old_qualified_users:
 					user.qualifications.add(tool)
 				messages.success(

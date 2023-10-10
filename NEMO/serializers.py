@@ -6,6 +6,7 @@ from django.core import validators
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.fields import CharField, ChoiceField, DateTimeField, DecimalField, IntegerField
+from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.utils import model_meta
 
 from NEMO.models import (
@@ -114,12 +115,15 @@ class ProjectDisciplineSerializer(ModelSerializer):
 
 
 class ProjectSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+	principal_investigators = PrimaryKeyRelatedField(source="manager_set.all", many=True, read_only=True)
+
 	class Meta:
 		model = Project
 		fields = "__all__"
 		expandable_fields = {
 			"account": "NEMO.serializers.AccountSerializer",
 			"only_allow_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
+			"principal_investigators": ("NEMO.serializers.UserSerializer", {"source": "manager_set", "many": True}),
 		}
 
 

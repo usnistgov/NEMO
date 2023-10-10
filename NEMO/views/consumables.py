@@ -6,7 +6,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import user_office_or_manager_required
@@ -20,8 +19,10 @@ from NEMO.utilities import (
 	as_timezone,
 	export_format_datetime,
 	format_datetime,
-	queryset_search_filter, render_email_template,
+	queryset_search_filter,
+	render_email_template,
 	send_mail,
+	slugify_underscore,
 )
 from NEMO.views.customization import (
 	ApplicationCustomization,
@@ -48,27 +49,33 @@ def self_checkout(user) -> bool:
 @require_http_methods(["GET", "POST"])
 def consumables(request):
 	user: User = request.user
+	is_self_checkout = self_checkout(user)
 	if request.method == "GET":
 		from NEMO.rates import rate_class
 
 		rate_dict = rate_class.get_consumable_rates(Consumable.objects.all())
+		consumable_list = Consumable.objects.filter(visible=True).order_by("category", "name")
+		if is_self_checkout:
+			consumable_list = consumable_list.filter(allow_self_checkout=True)
 
 		dictionary = {
 			"users": User.objects.filter(is_active=True),
-			"consumables": Consumable.objects.filter(visible=True).order_by("category", "name"),
+			"consumables": consumable_list,
 			"rates": rate_dict,
-			"self_checkout": self_checkout(user),
+			"self_checkout": is_self_checkout,
 		}
-		if self_checkout(user):
+		if is_self_checkout:
 			dictionary["projects"] = user.active_projects()
 		return render(request, "consumables/consumables.html", dictionary)
 	elif request.method == "POST":
 		updated_post_data = request.POST.copy()
-		if self_checkout(user):
+		if is_self_checkout:
 			updated_post_data.update({'customer': user.id})
 		form = ConsumableWithdrawForm(updated_post_data)
 		if form.is_valid():
 			withdraw = form.save(commit=False)
+			if is_self_checkout and not withdraw.consumable.allow_self_checkout:
+				return HttpResponseBadRequest("You can not self checkout this consumable")
 			try:
 				policy.check_billing_to_project(withdraw.project, withdraw.customer, withdraw.consumable, withdraw)
 			except ProjectChargeException as e:
@@ -195,7 +202,7 @@ def export_recurring_charges(request):
 
 	response = table.to_csv()
 	feature_name = RecurringChargesCustomization.get("recurring_charges_name")
-	filename = f"{slugify(feature_name.lower()).replace('-', '_')}_{export_format_datetime()}.csv"
+	filename = f"{slugify_underscore(feature_name.lower())}_{export_format_datetime()}.csv"
 	response["Content-Disposition"] = f'attachment; filename="{filename}"'
 	return response
 
@@ -258,14 +265,14 @@ def extended_permissions(request) -> bool:
 	return not lock_charges or user.is_facility_manager or user.is_superuser
 
 
-def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, tool_usage=False, request=None):
+def make_withdrawal(consumable_id: int, quantity: int, project_id: int, merchant: User, customer_id: int, usage_event=None, request=None):
 	withdraw = ConsumableWithdraw(
 		consumable_id=consumable_id,
 		quantity=quantity,
 		merchant=merchant,
 		customer_id=customer_id,
 		project_id=project_id,
-		tool_usage=tool_usage
+		usage_event=usage_event
 	)
 	withdraw.full_clean()
 	withdraw.save()

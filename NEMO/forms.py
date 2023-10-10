@@ -51,7 +51,6 @@ class UserForm(ModelForm):
 		model = User
 		exclude = [
 			"is_staff",
-			"is_service_personnel",
 			"is_technician",
 			"is_facility_manager",
 			"is_superuser",
@@ -344,7 +343,7 @@ class EmailBroadcastForm(Form):
 	copy_me = BooleanField(required=False, initial=True)
 
 	audience = ChoiceField(
-		choices=[("tool", "tool"), ("project", "project"), ("account", "account"), ("area", "area"), ("user", "user")]
+		choices=[("tool", "tool"), ("tool-reservation", "tool-reservation"), ("project", "project"), ("account", "account"), ("area", "area"), ("user", "user")]
 	)
 	selection = CharField(required=False)
 	no_type = BooleanField(initial=False, required=False)
@@ -387,8 +386,6 @@ class UserPreferencesForm(ModelForm):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.fields["tool_freed_time_notifications"].queryset = Tool.objects.filter(visible=True, parent_tool__isnull=True)
-		self.fields["tool_adjustment_notifications"].queryset = Tool.objects.filter(visible=True, parent_tool__isnull=True)
-		self.fields["area_adjustment_notifications"].queryset = Area.objects.filter(area_children_set__isnull=True)
 		self.fields["tool_task_notifications"].queryset = Tool.objects.filter(visible=True, parent_tool__isnull=True)
 
 	def clean_recurring_charges_reminder_days(self):

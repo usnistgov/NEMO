@@ -117,6 +117,11 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
 		subject = ('SAFETY HAZARD: ' if task.safety_hazard else '') + task.tool.name + (' shutdown' if task.force_shutdown else ' problem')
 		message = render_email_template(message, dictionary, request)
 		recipients = get_task_email_recipients(task)
+		if ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
+			recipients = set(recipients)
+			for user in task.tool.user_set.all():
+				if user.is_active:
+					recipients.update([email for email in user.get_emails(user.get_preferences().email_send_task_updates)])
 		send_mail(subject=subject, content=message, from_email=request.user.email, to=recipients, attachments=attachments, email_category=EmailCategory.TASKS)
 
 	# Email any user (excluding staff) with a future reservation on the tool:
@@ -301,9 +306,10 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
 	task_images: List[TaskImages] = []
 	try:
 		images_form = TaskImagesForm(request.POST, request.FILES)
+		max_size_pixels = ToolCustomization.get_int("tool_problem_max_image_size_pixels")
 		if images_form.is_valid() and images_form.cleaned_data['image'] is not None:
 			for image_memory_file in request.FILES.getlist('image'):
-				resized_image = resize_image(image_memory_file, 350)
+				resized_image = resize_image(image_memory_file, max_size_pixels)
 				image = TaskImages(task=task)
 				image.image.save(resized_image.name, ContentFile(resized_image.read()), save=False)
 				image.save()

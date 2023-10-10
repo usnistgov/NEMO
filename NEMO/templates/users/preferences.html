@@ -75,7 +75,7 @@
 					</div>
 				</div>
 			</div>
-            <div class="panel panel-default">
+             <div class="panel panel-default">
 				<div class="panel-body">
 					<h3 id="adjustment_requests_label">Adjustment Requests</h3>
 					<div class="form-group col-sm-12">
@@ -83,32 +83,8 @@
 							<label><input name="email_new_adjustment_request_reply" type="checkbox" {% if user_preferences.email_new_adjustment_request_reply %}checked{% endif %}>Check this box to receive an email notification for replies to your adjustment requests</label>
 						</div>
 					</div>
-                    {% if user.is_facility_manager %}
-                        <div class="form-group">
-                            <label class="col-sm-5 col-md-4 col-lg-3 form-control-static" for="tool_adjustment_notification_search">Only manage requests for tools</label>
-                            <div class="col-sm-6 col-lg-4">
-                                <input id="tool_adjustment_notification_search" type="text" autocomplete="off" class="form-control" placeholder="Add a tool">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div id="tool-adjustment-notification-list" class="col-sm-offset-5 col-md-offset-4 col-lg-offset-3 col-sm-7">
-                                You are currently receiving adjustment request notifications for all tools.
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="col-sm-5 col-md-4 col-lg-3 form-control-static" for="area_adjustment_notification_search">Only manage requests for areas</label>
-                            <div class="col-sm-6 col-lg-4">
-                                <input id="area_adjustment_notification_search" type="text" autocomplete="off" class="form-control" placeholder="Add an area">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div id="area-adjustment-notification-list" class="col-sm-offset-5 col-md-offset-4 col-lg-offset-3 col-sm-7">
-                                You are currently receiving adjustment request notifications for all areas.
-                            </div>
-                        </div>
-                    {% endif %}
                 </div>
-            </div>
+             </div>
             {% if user.is_staff or user.is_facility_manager or user.is_service_personnel %}
                 <div class="panel panel-default">
                     <div class="panel-body">
@@ -214,24 +190,6 @@
             {
                 remove_from_list("#task-notification-list", "#tool_task_notifications_" + tool_id, "You are currently viewing/receiving maintenance notifications for all tools{% if not user.is_facility_manager or not 'tool'|customization:'tool_task_updates_facility_managers' == 'enabled' %} you are an owner or backup owners of{% endif %}.");
             }
-            function add_tool_adjustment_notification(jquery_event, search_selection, dataset_name)
-            {
-                add_to_list("#tool-adjustment-notification-list", "remove_tool_adjustment_notification", search_selection.id, search_selection.name, "Remove the " + search_selection.name, "tool_adjustment_notifications");
-                $("#tool_adjustment_notification_search").typeahead('val', '').focus();
-            }
-            function remove_tool_adjustment_notification(tool_id)
-            {
-                remove_from_list("#tool-adjustment-notification-list", "#tool_adjustment_notifications_" + tool_id, "You are currently receiving adjustment request notifications for all tools.");
-            }
-            function add_area_adjustment_notification(jquery_event, search_selection, dataset_name)
-            {
-                add_to_list("#area-adjustment-notification-list", "remove_area_adjustment_notification", search_selection.id, search_selection.name, "Remove the " + search_selection.name, "area_adjustment_notifications");
-                $("#area_adjustment_notification_search").typeahead('val', '').focus();
-            }
-            function remove_area_adjustment_notification(area_id)
-            {
-                remove_from_list("#area-adjustment-notification-list", "#area_adjustment_notifications_" + area_id, "You are currently receiving adjustment request notifications for all areas.");
-            }
             function add_tool_notification(jquery_event, search_selection, dataset_name)
             {
                 add_to_list("#notification-list", "remove_tool_notification", search_selection.id, search_selection.name, "Remove the " + search_selection.name, "tool_freed_time_notifications");
@@ -253,24 +211,8 @@
                         {% endfor %}
                     {% endfor %}
                 {% endif %}
-                $('#tool_adjustment_notification_search').autocomplete('tools', add_tool_adjustment_notification, {{ form.fields.tool_adjustment_notifications.queryset|json_search_base }});
-                $('#area_adjustment_notification_search').autocomplete('areas', add_area_adjustment_notification, {{ form.fields.area_adjustment_notifications.queryset|json_search_base }});
                 $('#tool_task_notification_search').autocomplete('tools', add_tool_task_notification, {{ form.fields.tool_task_notifications.queryset|json_search_base }});
                 {% if form.instance.id %}
-                    {% for tool_id in form.tool_adjustment_notifications.value %}
-                        {% for tool in form.fields.tool_adjustment_notifications.queryset %}
-                            {% if tool.id == tool_id|to_int %}
-                                add_tool_adjustment_notification(null, {'name': '{{ tool.name }}', 'id': {{ tool.id }} });
-                            {% endif %}
-                        {% endfor %}
-                    {% endfor %}
-                    {% for area_id in form.area_adjustment_notifications.value %}
-                        {% for area in form.fields.area_adjustment_notifications.queryset %}
-                            {% if area.id == area_id|to_int %}
-                                add_area_adjustment_notification(null, {'name': '{{ area.name }}', 'id': {{ area.id }} });
-                            {% endif %}
-                        {% endfor %}
-                    {% endfor %}
                     {% for tool_id in form.tool_task_notifications.value %}
                         {% for tool in form.fields.tool_task_notifications.queryset %}
                             {% if tool.id == tool_id|to_int %}

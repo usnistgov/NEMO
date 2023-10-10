@@ -33,9 +33,9 @@ from NEMO.utilities import (
 	as_timezone,
 	BasicDisplayTable,
 	beginning_of_the_day,
+	end_of_the_day,
 	export_format_datetime,
 	format_datetime,
-	localize,
 	quiet_int,
 )
 from NEMO.views.customization import StatusDashboardCustomization
@@ -226,7 +226,7 @@ def staff_absences_dict(staffs, days, start, end):
 
 def closures_dict(days, start, end):
 	dictionary = {}
-	l_start, l_end = localize(start), localize(end)
+	l_start, l_end = beginning_of_the_day(start), end_of_the_day(end)
 	closure_times = ClosureTime.objects.filter(start_time__lte=l_end, end_time__gte=l_start, closure__staff_absent=True)
 	for closure_time in closure_times:
 		for day in days:

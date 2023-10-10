@@ -7,4 +7,4 @@ class Command(BaseCommand):
 	help = "Run every minute to read and manage sensors data."
 
 	def handle(self, *args, **options):
-		do_manage_sensor_data(asynchronous=False)
+		do_manage_sensor_data()

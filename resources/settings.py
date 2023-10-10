@@ -1,3 +1,8 @@
+import re
+
+from django.conf import global_settings
+from rest_framework.settings import DEFAULTS
+
 # ------------------------------------------------------------------
 # -------------------- Django settings for NEMO --------------------
 # ------------------------------------------------------------------
@@ -17,28 +22,34 @@ ROOT_URLCONF = "NEMO.urls"
 SESSION_COOKIE_AGE = 2419200  # 2419200 seconds == 4 weeks
 # Whether to expire the session when the user closes their browser
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-# Whether to use a secure cookie for the session cookie. If this is set to True, the cookie will be marked as “secure”, which means browsers may ensure that the cookie is only sent under an HTTPS connection.
-SESSION_COOKIE_SECURE = False  # Set to True if you have a HTTPS Certificate installed
+# Whether to use a secure cookie for the session cookie. If this is set to True, the cookie will be marked as “secure”,
+# which means browsers may ensure that the cookie is only sent under an HTTPS connection.
+SESSION_COOKIE_SECURE = False  # Set to True if you have an HTTPS Certificate installed
 
 # -------------------- CSRF --------------------
-# Whether to use a secure cookie for the CSRF cookie. If this is set to True, the cookie will be marked as “secure”, which means browsers may ensure that the cookie is only sent with an HTTPS connection.
-CSRF_COOKIE_SECURE = False  # Set to True if you have a HTTPS Certificate installed
+# Whether to use a secure cookie for the CSRF cookie. If this is set to True, the cookie will be marked as “secure”,
+# which means browsers may ensure that the cookie is only sent with an HTTPS connection.
+CSRF_COOKIE_SECURE = False  # Set to True if you have an HTTPS Certificate installed
 # Set to None to use session-based CSRF cookies, which keep the cookies in-memory instead of persistent storage
 CSRF_COOKIE_AGE = None  # Keeps the cookies in-memory
-# Whether to store the CSRF token in a the user's session vs in a cookie
+# Whether to store the CSRF token in the user's session vs in a cookie
 CSRF_USE_SESSIONS = False  # Using cookie
 
 # -------------------- Security --------------------
-# If True, the SecurityMiddleware sets the "X-XSS-Protection: 1; mode=block" header on all responses that do not already have it.
+# If True, the SecurityMiddleware sets the "X-XSS-Protection: 1; mode=block" header
+# on all responses that do not already have it.
 SECURE_BROWSER_XSS_FILTER = True
-# If True, the SecurityMiddleware sets the "X-Content-Type-Options: nosniff" header on all responses that do not already have it.
+# If True, the SecurityMiddleware sets the "X-Content-Type-Options: nosniff" header
+# on all responses that do not already have it.
 SECURE_CONTENT_TYPE_NOSNIFF = True
-# If set to a non-zero integer value, the SecurityMiddleware sets the HTTP Strict Transport Security header on all responses that do not already have it.
+# If set to a non-zero integer value, the SecurityMiddleware sets the HTTP Strict Transport Security header
+# on all responses that do not already have it.
 SECURE_HSTS_SECONDS = 15768000
 # If True, the SecurityMiddleware adds the includeSubDomains directive to the HTTP Strict Transport Security header.
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# If True, the SecurityMiddleware redirects all non-HTTPS requests to HTTPS (except for those URLs matching a regular expression listed in SECURE_REDIRECT_EXEMPT).
-SECURE_SSL_REDIRECT = False  # Set to True if you have a HTTPS Certificate installed
+# If True, the SecurityMiddleware redirects all non-HTTPS requests to HTTPS
+# (except for those URLs matching a regular expression listed in SECURE_REDIRECT_EXEMPT).
+SECURE_SSL_REDIRECT = False  # Set to True if you have an HTTPS Certificate installed
 # Set to "DENY" to prevent frames even from the same server
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
@@ -54,6 +65,8 @@ SHORT_DATETIME_FORMAT = "m/d/Y @ g:i A"
 DATE_FORMAT = "l, F jS, Y"
 SHORT_DATE_FORMAT = "m/d/Y"
 TIME_FORMAT = "g:i A"
+# This format is used on the status dashboard and jumbotron when displaying since when the user has been logged in.
+MONTH_DAY_FORMAT = "l m/d"
 
 # Date and time formats, used in file names when exporting data
 EXPORT_DATE_FORMAT = "m_d_Y"
@@ -61,16 +74,20 @@ EXPORT_TIME_FORMAT = "h_i_s"
 
 # -------------------- Input date and time formats --------------------
 # See allowed formats at https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
-DATETIME_INPUT_FORMATS = ["%m/%d/%Y %I:%M %p"]
-DATE_INPUT_FORMATS = ["%m/%d/%Y"]
-TIME_INPUT_FORMATS = ["%I:%M %p"]
+DATETIME_INPUT_FORMATS = ["%m/%d/%Y %I:%M %p", *global_settings.DATE_INPUT_FORMATS]
+DATE_INPUT_FORMATS = ["%m/%d/%Y", *global_settings.DATE_INPUT_FORMATS]
+TIME_INPUT_FORMATS = ["%I:%M %p", *global_settings.TIME_INPUT_FORMATS]
 
 # -------------------- Internationalization and localization --------------------
-# A boolean that specifies whether Django’s translation system should be enabled. This provides an easy way to turn it off, for performance. If this is set to False, Django will make some optimizations so as not to load the translation machinery.
+# A boolean that specifies whether Django’s translation system should be enabled.
+# This provides an easy way to turn it off, for performance.
+# If this is set to False, Django will make some optimizations so as not to load the translation machinery.
 USE_I18N = False
-# A boolean that specifies if localized formatting of data will be enabled by default or not. If this is set to True, e.g. Django will display numbers and dates using the format of the current locale
+# A boolean that specifies if localized formatting of data will be enabled by default or not.
+# If this is set to True, e.g. Django will display numbers and dates using the format of the current locale
 USE_L10N = False
-# A boolean that specifies if datetimes will be timezone-aware by default or not. If this is set to True, Django will use timezone-aware datetimes internally. Otherwise, Django will use naive datetimes in local time.
+# A boolean that specifies if datetimes will be timezone-aware by default or not. If this is set to True,
+# Django will use timezone-aware datetimes internally. Otherwise, Django will use naive datetimes in local time.
 USE_TZ = True
 
 # -------------------- Installed Apps --------------------
@@ -105,14 +122,20 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.common.BrokenLinkEmailsMiddleware",
     "NEMO.middleware.DeviceDetectionMiddleware",
-    "NEMO.middleware.SessionTimeout",  # Needed for LDAP and other non-SSO authentication. Adds a middleware to identify when the user's session has expired.
-    # "NEMO.middleware.HTTPHeaderAuthenticationMiddleware", # Needed for Nginx or other remote user Authentication. Adds a middleware to look for remote user in http header (which can be customized)
-    # "NEMO.middleware.RemoteUserAuthenticationMiddleware", # Needed for development setup with REMOTE_USER environment variable
-    "NEMO.middleware.ImpersonateMiddleware", # This needs to be added AFTER any kind of authentication middleware
-    "NEMO.middleware.NEMOAuditlogMiddleware", # This needs to be set AFTER ImpersonateMiddleware to correctly set the user in the audit log. If set before the ImpersonateMiddleware, the admin user will be the one recorded as making changes, not the impersonated user.
+    # Needed for LDAP and non-SSO authentication. Adds a middleware to identify when the user's session has expired.
+    "NEMO.middleware.SessionTimeout",
+    # Needed for Nginx and remote user Authentication. Adds a middleware to look for remote user in http header.
+    # "NEMO.middleware.HTTPHeaderAuthenticationMiddleware",
+    # Needed for development setup with REMOTE_USER environment variable
+    # "NEMO.middleware.RemoteUserAuthenticationMiddleware",
+    # This needs to be added AFTER any kind of authentication middleware
+    "NEMO.middleware.ImpersonateMiddleware",
+    # This needs to be set AFTER ImpersonateMiddleware to correctly set the user in the audit log. If set before
+    # the ImpersonateMiddleware, the admin user will be the one recorded as making changes, not the impersonated user.
+    "NEMO.middleware.NEMOAuditlogMiddleware",
 ]
 
-# By default HTTPHeaderAuthenticationMiddleware will look in the `AUTHORIZATION` HTTP header.
+# By default, HTTPHeaderAuthenticationMiddleware will look in the `AUTHORIZATION` HTTP header.
 AUTHENTICATION_HEADER = "AUTHORIZATION"
 
 # -------------------- Template Settings --------------------
@@ -143,7 +166,6 @@ TEMPLATES = [
 
 # Django REST framework:
 # http://www.django-rest-framework.org/
-from rest_framework.settings import DEFAULTS
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("NEMO.permissions.DjangoModelPermissions",),
     "DEFAULT_FILTER_BACKENDS": ("NEMO.rest_filter_backend.NEMOFilterBackend",),
@@ -151,7 +173,7 @@ REST_FRAMEWORK = {
     # "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.TokenAuthentication", "rest_framework.authentication.SessionAuthentication"),
     "DEFAULT_RENDERER_CLASSES": DEFAULTS["DEFAULT_RENDERER_CLASSES"] + ["drf_excel.renderers.XLSXRenderer"],
     "DEFAULT_PARSER_CLASSES": DEFAULTS["DEFAULT_PARSER_CLASSES"] + ["NEMO.parsers.CSVParser"],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "NEMO.rest_pagination.NEMOPageNumberPagination",
     "PAGE_SIZE": 1000,
     # Formats used when exporting data in REST API (for export in json, excel, html etc.)
     # "DATETIME_FORMAT": "%m-%d-%Y %H:%M:%S",
@@ -164,10 +186,13 @@ REST_FRAMEWORK = {
 
 # ALLOWED_HOSTS = ["*"] # "*" allows any domain. Use at your own risk. Not recommended.
 ALLOWED_HOSTS = ["nemo.mydomain.com", "localhost", "192.168.1.2"]  # Preferred way of specifying allowed hosts.
-# Change this SERVER_DOMAIN setting to specify the server domain to use for building links when a request IS NOT available (for email reminders and other timed services).
+# Change this SERVER_DOMAIN setting to specify the server domain to use for building links when
+# a request IS NOT available (for email reminders and other timed services).
 SERVER_DOMAIN = "https://{}".format(ALLOWED_HOSTS[0])
-# When a request IS available, django will use the request server name, or the HTTP_HOST header if provided, or the X_FORWARDED_HOST header if the following setting is uncommented.
-# Uncomment the following line to use the "X_FORWARDED_HOST" header of the web server to build URLs. This header needs to be configured in your Nginx/Apache web server. The host also needs to be in ALLOWED_HOSTS.
+# When a request IS available, django will use the request server name, or the HTTP_HOST header if provided,
+# or the X_FORWARDED_HOST header if the following setting is uncommented.
+# Uncomment the following line to use the "X_FORWARDED_HOST" header of the web server to build URLs.
+# This header needs to be configured in your Nginx/Apache web server. The host also needs to be in ALLOWED_HOSTS.
 # USE_X_FORWARDED_HOST = True
 
 # -------------------- Elevated roles --------------------
@@ -182,13 +207,17 @@ NEMO_EMAIL_SUBJECT_PREFIX = "[NEMO] "
 SERVER_EMAIL = "NEMO Administrator <admin@mydomain.com>"
 # Default email address to use for various automated correspondence from the site manager(s).
 DEFAULT_FROM_EMAIL = "NEMO Webmaster <webmaster@mydomain.com>"
-# Change this to True to ALWAYS use DEFAULT_FROM_EMAIL as sender for all emails and use REPLY_TO with the original sender
+# Change this to True to ALWAYS use DEFAULT_FROM_EMAIL as sender and use REPLY_TO with the original sender
 # Useful when using a single email address (gmail) that prevents "spoofing" (sending as someone else)
 EMAIL_USE_DEFAULT_AND_REPLY_TO = False
 # Name of the reservation calendar invite organizer.
 RESERVATION_ORGANIZER = "NEMO"
-# Email used as the reservation calendar invite organizer email. Defaults to "no_reply" which is an invalid email. Setting a real email address here will mean that email will receive all the responses from every user after they accept the invitation.
+# Email used as the reservation calendar invite organizer email. Defaults to "no_reply" which is an invalid email.
+# Setting a real email address here will mean that email will receive all the responses from every user after they
+# accept the invitation.
 RESERVATION_ORGANIZER_EMAIL = "no_reply"
+# Change this default value to True if you want new users to get ICS calendar invite for reservations by default.
+USER_RESERVATION_PREFERENCES_DEFAULT = False
 
 # -------------------- SMTP Server config --------------------
 # Uncomment the following if using an email SMTP server
@@ -211,7 +240,9 @@ DATABASES = {
     }
 }
 
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"  # Comment this line out for dev. This makes sure static files have a version to avoid having to clear browser cache between releases.
+# Comment this line out for dev. This makes sure static files have a version to avoid
+# having to clear browser cache between releases.
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 STATIC_ROOT = "/nemo/static/"
 STATIC_URL = "/static/"
 MEDIA_ROOT = "/nemo/media/"
@@ -303,7 +334,8 @@ INTERLOCKS_ENABLED = False
 # USERNAME_REGEX = "^[A-Za-z0-9_]+$"
 
 # Specify your list of LDAP authentication servers only if you choose to use LDAP authentication
-# Below is an example with a free ldap testing server. Usernames and passwords available at https://www.forumsys.com/tutorials/integration-how-to/ldap/online-ldap-test-server/
+# Below is an example with a free ldap testing server. Usernames and passwords available at
+# https://www.forumsys.com/tutorials/integration-how-to/ldap/online-ldap-test-server/
 # LDAP_SERVERS = [
 #     {
 #         "url": "ldap.forumsys.com",
@@ -323,7 +355,8 @@ INTERLOCKS_ENABLED = False
 #     "domains": [],
 # }
 
-# Audit log. Update this list based on your audit needs. See supported fields at https://django-auditlog.readthedocs.io/en/latest/usage.html#settings
+# Audit log. Update this list based on your audit needs. See supported fields at
+# https://django-auditlog.readthedocs.io/en/latest/usage.html#settings
 AUDITLOG_INCLUDE_TRACKING_MODELS = (
     # Track changes to user access expiration, roles and managed projects
     {
@@ -336,3 +369,13 @@ AUDITLOG_INCLUDE_TRACKING_MODELS = (
     "NEMO.Account",
     "NEMO.Customization",
 )
+
+# List of compiled regular expression objects describing URLs that should be ignored
+# when reporting HTTP 404 errors via email
+IGNORABLE_404_URLS = [
+    re.compile(r'\.(php|cgi)$'),
+    re.compile(r'^/phpmyadmin/'),
+    re.compile(r'^/robots.txt$'),
+    re.compile(r"^/apple-touch-icon.*\.png$"),
+    re.compile(r"^/favicon\.ico$"),
+]

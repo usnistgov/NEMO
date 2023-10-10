@@ -8,7 +8,7 @@
             <th class="text-center">Requested end</th>
             <th class="text-center">Users</th>
             <th class="text-center">
-                {% if request_status == 'pending' and user.is_facility_manager %}
+                {% if request_status == 'pending' and user_is_reviewer %}
                     Action
                 {% elif request_status == 'approved' %}
                     Approved by
@@ -34,7 +34,7 @@
                     </ul>
                 </td>
                 <td class="text-center text-nowrap" style="vertical-align: middle">
-                    {% if request_status == 'pending' and user.is_facility_manager %}
+                    {% if request_status == 'pending' and user in a_request.reviewers %}
                         <a class="btn btn-sm btn-default" title="Approve/Deny" href="{% url 'edit_access_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
                     {% elif request_status == 'pending' and a_request.creator == user %}
                         {% url 'edit_access_request' a_request.id as edit_request_url %}

@@ -39,7 +39,7 @@
 							<tr {% if u.operator.is_any_part_of_staff %}class="success" {% elif u.operator.is_service_personnel %}class="warning" {% else %}style="background:transparent"{% endif %}>
 								<td>{{ u.tool }}</td>
 								<td><span>{{ u.operator.first_name }} {{ u.operator.last_name }}{% if u.user != u.operator %} on behalf of {{ u.user.first_name }} {{ u.user.last_name }}{% endif %}</span></td>
-								<td>{{ u.start|date:"l @ " }}{{ u.start|time }}</td>
+								<td>{{ u.start|date:"MONTH_DAY_FORMAT" }} @ {{ u.start|time }}</td>
 							</tr>
 						{% endfor %}
 						</tbody>

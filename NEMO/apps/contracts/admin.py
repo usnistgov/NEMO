@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 
-from NEMO.admin import ModelAdminRedirect
+from NEMO.mixins import ModelAdminRedirectMixin
 from NEMO.apps.contracts.customization import ContractsCustomization
 from NEMO.apps.contracts.models import (
     ContractorAgreement,
@@ -34,7 +34,7 @@ class ProcurementDocumentsInline(admin.TabularInline):
 
 
 @admin.register(Procurement)
-class ProcurementAdmin(ModelAdminRedirect):
+class ProcurementAdmin(ModelAdminRedirectMixin, admin.ModelAdmin):
     list_display = ["name", "submitted_date", "award_date", "contract_number", "requisition_number", "cost"]
     list_filter = ["submitted_date", "award_date", "cost"]
     actions = [procurements_export_csv]
@@ -45,7 +45,7 @@ class ProcurementAdmin(ModelAdminRedirect):
 
 
 @admin.register(ServiceContract)
-class ServiceContractAdmin(ModelAdminRedirect):
+class ServiceContractAdmin(ModelAdminRedirectMixin, admin.ModelAdmin):
     list_display = [
         "get_display_name",
         "get_display_current_year",
@@ -92,7 +92,7 @@ class ContractorAgreementAdminForm(forms.ModelForm):
 
 
 @admin.register(ContractorAgreement)
-class ContractorAgreementAdmin(ModelAdminRedirect):
+class ContractorAgreementAdmin(ModelAdminRedirectMixin, admin.ModelAdmin):
     list_display = ["name", "get_contract_name", "get_contract_number", "start", "end", "reminder_date"]
     list_filter = ["start", "end", "reminder_date", "contract"]
     actions = [contractor_agreements_export_csv]

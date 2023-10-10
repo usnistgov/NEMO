@@ -1,7 +1,7 @@
 import csv
 from logging import getLogger
 from smtplib import SMTPException
-from typing import List
+from typing import List, Optional
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -10,15 +10,26 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import any_staff_required
 from NEMO.forms import EmailBroadcastForm
-from NEMO.models import Account, Area, Project, Tool, User, UserType
+from NEMO.models import Account, Area, Project, Reservation, Tool, User, UserType
 from NEMO.typing import QuerySetType
-from NEMO.utilities import EmailCategory, export_format_datetime, render_email_template, send_mail
-from NEMO.views.customization import ApplicationCustomization, get_media_file_contents
+from NEMO.utilities import (
+	EmailCategory,
+	create_email_attachment,
+	export_format_datetime,
+	render_email_template,
+	send_mail,
+)
+from NEMO.views.customization import (
+	ApplicationCustomization,
+	ToolCustomization,
+	get_media_file_contents,
+)
 
 logger = getLogger(__name__)
 
@@ -84,7 +95,7 @@ def send_email(request):
 @require_GET
 def email_broadcast(request, audience=""):
 	dictionary = {}
-	if audience == "tool":
+	if audience == "tool" or audience == "tool-reservation":
 		dictionary["search_base"] = Tool.objects.filter(visible=True)
 	elif audience == "area":
 		dictionary["search_base"] = Area.objects.all()
@@ -101,23 +112,32 @@ def email_broadcast(request, audience=""):
 	return render(request, "email/email_broadcast.html", dictionary)
 
 
-@any_staff_required
+@login_required
 @require_GET
 def compose_email(request):
 	try:
 		audience = request.GET["audience"]
 		selection = request.GET.getlist("selection")
+		# Check if the user is allowed to broadcast email
+		error = check_user_allowed(request.user, audience, selection)
+		if error:
+			return HttpResponseBadRequest(error)
 		no_type = request.GET.get("no_type") == "on"
-		users = get_users_for_email(audience, selection, no_type)
+		users, topic = get_users_for_email(audience, selection, no_type)
 	except:
 		dictionary = {"error": "You specified an invalid audience parameter"}
-		return render(request, "email/email_broadcast.html", dictionary)
+		# Only render the email_broadcast page when user is staff member
+		if request.user.is_any_part_of_staff:
+			return render(request, "email/email_broadcast.html", dictionary)
+		else:
+			return HttpResponseBadRequest("You specified an invalid audience parameter")
 	generic_email_sample = get_media_file_contents("generic_email.html")
 	dictionary = {
 		"audience": audience,
 		"selection": selection,
 		"no_type": no_type,
 		"users": users,
+		"topic": topic,
 		"user_emails": ";".join([email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)]),
 		"active_user_emails": ";".join([email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails) if user.is_active]),
 	}
@@ -140,7 +160,7 @@ def export_email_addresses(request):
 		selection = request.GET.getlist("selection")
 		no_type = request.GET.get("no_type") == "on"
 		only_active_users = request.GET.get("active") == "on"
-		users = get_users_for_email(audience, selection, no_type)
+		users, topic = get_users_for_email(audience, selection, no_type)
 		response = HttpResponse(content_type="text/csv")
 		writer = csv.writer(response)
 		writer.writerow(["First", "Last", "Username", "Email"])
@@ -157,7 +177,7 @@ def export_email_addresses(request):
 		return render(request, "email/email_broadcast.html", dictionary)
 
 
-@any_staff_required
+@login_required
 @require_POST
 def send_broadcast_email(request):
 	content = get_media_file_contents("generic_email.html")
@@ -168,6 +188,10 @@ def send_broadcast_email(request):
 	form = EmailBroadcastForm(request.POST)
 	if not form.is_valid():
 		return render(request, "email/compose_email.html", {"form": form})
+	# Check if the user is allowed to broadcast email
+	error = check_user_allowed(request.user, form.cleaned_data["audience"], form.cleaned_data["selection"])
+	if error:
+		return HttpResponseBadRequest(error)
 	dictionary = {
 		"title": form.cleaned_data["title"],
 		"greeting": form.cleaned_data["greeting"],
@@ -180,7 +204,7 @@ def send_broadcast_email(request):
 		audience = form.cleaned_data["audience"]
 		selection = form.cleaned_data["selection"]
 		no_type = form.cleaned_data["no_type"]
-		users = get_users_for_email(audience, selection, no_type)
+		users, topic = get_users_for_email(audience, selection, no_type)
 		if active_choice:
 			users = users.filter(is_active=True)
 	except Exception as error:
@@ -197,16 +221,20 @@ def send_broadcast_email(request):
 		dictionary = {"error": "The audience you specified is empty. You must send the email to at least one person."}
 		return render(request, "email/compose_email.html", dictionary)
 	subject = form.cleaned_data["subject"]
+	if topic:
+		subject = f"[{topic}] " + subject
 	users = [email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)]
 	sender: User = request.user
 	if form.cleaned_data["copy_me"]:
 		users += sender.get_emails(sender.get_preferences().email_send_broadcast_emails)
+	attachments = [create_email_attachment(attachment.file, attachment.name) for attachment in request.FILES.getlist('attachments', [])]
 	try:
 		send_mail(
 			subject=subject,
 			content=content,
 			from_email=sender.email,
 			bcc=set(users),
+			attachments=attachments,
 			email_category=EmailCategory.BROADCAST_EMAIL,
 		)
 	except SMTPException as error:
@@ -222,7 +250,7 @@ def send_broadcast_email(request):
 	return redirect("email_broadcast")
 
 
-@any_staff_required
+@login_required
 @require_POST
 def email_preview(request):
 	generic_email_template = get_media_file_contents("generic_email.html")
@@ -239,22 +267,38 @@ def email_preview(request):
 	return HttpResponse()
 
 
-def get_users_for_email(audience: str, selection: List, no_type: bool) -> QuerySetType[User]:
+# Returns users and an optional topic to add to the email subject
+def get_users_for_email(audience: str, selection: List, no_type: bool) -> (QuerySetType[User], str):
 	users = User.objects.none()
+	topic = None
 	if audience == "tool":
 		users = User.objects.filter(qualifications__id__in=selection).distinct()
+		if len(selection) == 1:
+			topic = Tool.objects.filter(pk=selection[0]).first().name
+	elif audience == "tool-reservation":
+		upcoming_reservations = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, tool__in=selection, end__gte=timezone.now())
+		users = User.objects.filter(reservation_user__in=upcoming_reservations).distinct()
+		if len(selection) == 1:
+			topic = Tool.objects.filter(pk=selection[0]).first().name
 	elif audience == "area":
-		access_levels = [access_level for area in Area.objects.filter(pk__in=selection) for access_level in area.get_physical_access_levels()]
+		areas: QuerySetType[Area] = Area.objects.filter(pk__in=selection)
+		access_levels = [access_level for area in areas for access_level in area.get_physical_access_levels()]
 		user_filter = Q(physical_access_levels__in=access_levels)
 		# if one of the access levels allows staff, add all staff & user office
 		if any([access_level.allow_staff_access for access_level in access_levels]):
 			user_filter |= Q(is_staff=True)
 			user_filter |= Q(is_user_office=True)
 		users = User.objects.filter(user_filter).distinct()
+		if len(selection) == 1:
+			topic = areas.first().name
 	elif audience == "project":
 		users = User.objects.filter(projects__id__in=selection).distinct()
+		if len(selection) == 1:
+			topic = Project.objects.filter(pk=selection[0]).first().name
 	elif audience == "account":
 		users = User.objects.filter(projects__account__id__in=selection).distinct()
+		if len(selection) == 1:
+			topic = Account.objects.filter(pk=selection[0]).first().name
 	elif audience == "user":
 		users = User.objects.all().distinct()
 		if selection:
@@ -265,4 +309,14 @@ def get_users_for_email(audience: str, selection: List, no_type: bool) -> QueryS
 			)
 		elif no_type:
 			users = users.filter(type_id__isnull=True)
-	return users
+	return users, topic
+
+def check_user_allowed(user: User, audience: str, selection: str) -> Optional[str]:
+	if not user.is_any_part_of_staff:
+		allow_broadcast_upcoming_reservation = ToolCustomization.get_bool("tool_control_broadcast_upcoming_reservation")
+		if not allow_broadcast_upcoming_reservation or audience != "tool-reservation":
+			return "You may not broadcast email to this audience"
+		else:
+			tool = Tool.objects.filter(id__in=selection).first()
+			if not tool or user not in tool.user_set.all():
+				return "You can only send a broadcast email to users of a tool you are qualified to use"

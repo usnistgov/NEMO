@@ -295,18 +295,18 @@ class AreaReservationTestCase(TransactionTestCase):
 		end_outage = start_outage + timedelta(hours=1)
 		ScheduledOutage.objects.create(area=area, start=start_outage, end=end_outage, creator=staff)
 		response = self.client.post(reverse('resize_reservation'), {'delta': 61, 'id': reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "Your reservation coincides with a scheduled outage. Please choose a different time.")
 
 		# test reduce reservation time by 10 min
 		response = self.client.post(reverse('resize_reservation'), {'delta': -10, 'id': reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		old_reservation = Reservation.objects.get(pk=reservation.id)
 		self.assertTrue(old_reservation.cancelled)
-		self.assertEquals(old_reservation.cancelled_by, consumer)
-		self.assertEquals(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
+		self.assertEqual(old_reservation.cancelled_by, consumer)
+		self.assertEqual(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
 		new_reservation = list(Reservation.objects.filter(area=area, cancelled=False))[0]
-		self.assertEquals(new_reservation.end, old_reservation.end - timedelta(minutes=10))
+		self.assertEqual(new_reservation.end, old_reservation.end - timedelta(minutes=10))
 
 		# test resize cancelled reservation
 		reservation = Reservation.objects.get(pk=reservation.id)
@@ -315,41 +315,41 @@ class AreaReservationTestCase(TransactionTestCase):
 
 		# test increase reservation time by 10 min
 		response = self.client.post(reverse('resize_reservation'), {'delta': 10, 'id': new_reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		old_reservation = Reservation.objects.get(pk=new_reservation.id)
 		self.assertTrue(old_reservation.cancelled)
-		self.assertEquals(old_reservation.cancelled_by, consumer)
-		self.assertEquals(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
+		self.assertEqual(old_reservation.cancelled_by, consumer)
+		self.assertEqual(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
 		new_reservation = list(Reservation.objects.filter(area=area, cancelled=False))[0]
-		self.assertEquals(new_reservation.end, old_reservation.end + timedelta(minutes=10))
+		self.assertEqual(new_reservation.end, old_reservation.end + timedelta(minutes=10))
 		new_reservation.delete()
 
 		# test increase reservation time by 10 min while logged in
 		older_resa_still_ongoing = Reservation.objects.create(area=area, start=timezone.now() - timedelta(hours=1), end=timezone.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
 		AreaAccessRecord.objects.create(area=area, customer=consumer, start=timezone.now(), project=project)
 		response = self.client.post(reverse('resize_reservation'), {'delta': 10, 'id': older_resa_still_ongoing.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		old_reservation = Reservation.objects.get(pk=older_resa_still_ongoing.id)
 		self.assertTrue(old_reservation.cancelled)
-		self.assertEquals(old_reservation.cancelled_by, consumer)
-		self.assertEquals(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
+		self.assertEqual(old_reservation.cancelled_by, consumer)
+		self.assertEqual(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
 		new_reservation = list(Reservation.objects.filter(area=area, cancelled=False))[0]
-		self.assertEquals(new_reservation.end, old_reservation.end + timedelta(minutes=10))
-		self.assertEquals(new_reservation.start, old_reservation.start)
+		self.assertEqual(new_reservation.end, old_reservation.end + timedelta(minutes=10))
+		self.assertEqual(new_reservation.start, old_reservation.start)
 		new_reservation.delete()
 
 		# test decrease reservation time by 10 min while logged in
 		older_resa_still_ongoing = Reservation.objects.create(area=area, start=timezone.now() - timedelta(hours=1), end=timezone.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
 		AreaAccessRecord.objects.create(area=area, customer=consumer, start=timezone.now(), project=project)
 		response = self.client.post(reverse('resize_reservation'), {'delta': -10, 'id': older_resa_still_ongoing.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		old_reservation = Reservation.objects.get(pk=older_resa_still_ongoing.id)
 		self.assertTrue(old_reservation.cancelled)
-		self.assertEquals(old_reservation.cancelled_by, consumer)
-		self.assertEquals(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
+		self.assertEqual(old_reservation.cancelled_by, consumer)
+		self.assertEqual(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
 		new_reservation = list(Reservation.objects.filter(area=area, cancelled=False))[0]
-		self.assertEquals(new_reservation.end, old_reservation.end - timedelta(minutes=10))
-		self.assertEquals(new_reservation.start, old_reservation.start)
+		self.assertEqual(new_reservation.end, old_reservation.end - timedelta(minutes=10))
+		self.assertEqual(new_reservation.start, old_reservation.start)
 
 	def test_move_reservation(self):
 		# create reservation
@@ -359,47 +359,47 @@ class AreaReservationTestCase(TransactionTestCase):
 
 		login_as(self.client, consumer)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		reservation = Reservation.objects.get(area=area)
 		self.assertTrue(reservation.id)
 
 		# test wrong delta
 		response = self.client.post(reverse('move_reservation'), {'delta': 'asd', 'id': reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "Invalid delta")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "Invalid delta")
 
 		# test no reservation id
 		response = self.client.post(reverse('move_reservation'), {'delta': 10}, follow=True)
-		self.assertEquals(response.status_code, 404)
-		self.assertEquals(response.content.decode(), "The reservation that you wish to modify doesn't exist!")
+		self.assertEqual(response.status_code, 404)
+		self.assertEqual(response.content.decode(), "The reservation that you wish to modify doesn't exist!")
 
 		# create an outage and try to move reservation to overlap outage
 		start_outage = (end + timedelta(hours=1)).astimezone()
 		end_outage = start_outage + timedelta(hours=1)
 		ScheduledOutage.objects.create(area=area, start=start_outage, end=end_outage, creator=staff)
 		response = self.client.post(reverse('move_reservation'), {'delta': 61, 'id': reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "Your reservation coincides with a scheduled outage. Please choose a different time.")
 
 		# test move reservation while logged in area
 		older_resa_still_ongoing = Reservation.objects.create(area=area, start=timezone.now() - timedelta(hours=1), end=timezone.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
 		area_access_record = AreaAccessRecord.objects.create(area=area, customer=consumer, start=timezone.now(), project=project)
 		response = self.client.post(reverse('move_reservation'), {'delta': -10, 'id': older_resa_still_ongoing.id}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "You may only resize an area reservation while logged in that area.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "You may only resize an area reservation while logged in that area.")
 		area_access_record.delete()
 		older_resa_still_ongoing.delete()
 
 		# test move reservation 10 min earlier
 		response = self.client.post(reverse('move_reservation'), {'delta': -10, 'id': reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		old_reservation = Reservation.objects.get(pk=reservation.id)
 		self.assertTrue(old_reservation.cancelled)
-		self.assertEquals(old_reservation.cancelled_by, consumer)
-		self.assertEquals(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
+		self.assertEqual(old_reservation.cancelled_by, consumer)
+		self.assertEqual(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
 		new_reservation = list(Reservation.objects.filter(area=area, cancelled=False))[0]
-		self.assertEquals(new_reservation.end, old_reservation.end - timedelta(minutes=10))
-		self.assertEquals(new_reservation.start, old_reservation.start - timedelta(minutes=10))
+		self.assertEqual(new_reservation.end, old_reservation.end - timedelta(minutes=10))
+		self.assertEqual(new_reservation.start, old_reservation.start - timedelta(minutes=10))
 
 		# test move cancelled reservation
 		reservation = Reservation.objects.get(pk=reservation.id)
@@ -408,14 +408,14 @@ class AreaReservationTestCase(TransactionTestCase):
 
 		# test move new reservation 10 min later
 		response = self.client.post(reverse('move_reservation'), {'delta': 10, 'id': new_reservation.id}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		old_reservation = Reservation.objects.get(pk=new_reservation.id)
 		self.assertTrue(old_reservation.cancelled)
-		self.assertEquals(old_reservation.cancelled_by, consumer)
-		self.assertEquals(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
+		self.assertEqual(old_reservation.cancelled_by, consumer)
+		self.assertEqual(Reservation.objects.filter(area=area, cancelled=False).count(), 1)
 		new_reservation = list(Reservation.objects.filter(area=area, cancelled=False))[0]
-		self.assertEquals(new_reservation.end, old_reservation.end + timedelta(minutes=10))
-		self.assertEquals(new_reservation.start, old_reservation.start + timedelta(minutes=10))
+		self.assertEqual(new_reservation.end, old_reservation.end + timedelta(minutes=10))
+		self.assertEqual(new_reservation.start, old_reservation.start + timedelta(minutes=10))
 
 	def test_cancel_reservation(self):
 		# create reservation
@@ -425,54 +425,54 @@ class AreaReservationTestCase(TransactionTestCase):
 
 		login_as(self.client, consumer)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		reservation = Reservation.objects.get(area=area)
 		self.assertTrue(reservation.id)
 
 		# get should fail
 		response = self.client.get(reverse('cancel_reservation', kwargs={'reservation_id': 999}), {}, follow=True)
-		self.assertEquals(response.status_code, 405)
+		self.assertEqual(response.status_code, 405)
 
 		# test wrong id
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': 999}), {}, follow=True)
-		self.assertEquals(response.status_code, 404)
+		self.assertEqual(response.status_code, 404)
 
 		# test non staff user trying to cancel reservation
 		login_as_user(self.client)
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': reservation.id}), {}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals("You must provide a reason when cancelling someone else's reservation.", response.content.decode())
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual("You must provide a reason when cancelling someone else's reservation.", response.content.decode())
 
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': reservation.id}), {'reason':'reason'}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals("You may not cancel reservations that you do not own.", response.content.decode())
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual("You may not cancel reservations that you do not own.", response.content.decode())
 
 		login_as(self.client, consumer)
 
 		# test cancel missed reservation
 		missed_resa = Reservation.objects.create(area=area, start=(start+timedelta(days=1)).astimezone(), end=(end+timedelta(days=1)).astimezone(), user=consumer, creator=consumer, missed=True, short_notice=False)
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': missed_resa.id}), {}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "This reservation was missed and cannot be modified.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "This reservation was missed and cannot be modified.")
 
 		# test cancel already ended reservation
 		already_ended_resa = Reservation.objects.create(area=area, start=(start - timedelta(days=1)).astimezone(), end=(end - timedelta(days=1)).astimezone(), user=consumer, creator=consumer, missed=False, short_notice=False)
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': already_ended_resa.id}), {}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "You may not cancel reservations that have already ended.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "You may not cancel reservations that have already ended.")
 
 		# test cancel reservation while logged in area
 		older_resa_still_ongoing = Reservation.objects.create(area=area, start=timezone.now() - timedelta(hours=1), end=timezone.now() + timedelta(hours=1), user=consumer, creator=consumer, missed=False, short_notice=False)
 		AreaAccessRecord.objects.create(area=area, customer=consumer, start=timezone.now(), project=project)
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': older_resa_still_ongoing.id}), {}, follow=True)
-		self.assertEquals(response.status_code, 400)
-		self.assertEquals(response.content.decode(), "You may not cancel an area reservation while logged in that area.")
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.content.decode(), "You may not cancel an area reservation while logged in that area.")
 
 		# cancel reservation
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': reservation.id}), {}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue(Reservation.objects.get(pk=reservation.id).cancelled)
-		self.assertEquals(Reservation.objects.get(pk=reservation.id).cancelled_by, consumer)
+		self.assertEqual(Reservation.objects.get(pk=reservation.id).cancelled_by, consumer)
 
 		# test cancel already cancelled reservation
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': reservation.id}), {}, follow=True)
@@ -485,9 +485,9 @@ class AreaReservationTestCase(TransactionTestCase):
 		self.assertContains(response, "You must provide a reason when cancelling someone else's reservation.", status_code=400)
 
 		response = self.client.post(reverse('cancel_reservation', kwargs={'reservation_id': other_resa.id}), {'reason': 'reason'}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		self.assertTrue(Reservation.objects.get(pk=other_resa.id).cancelled)
-		self.assertEquals(Reservation.objects.get(pk=other_resa.id).cancelled_by, staff)
+		self.assertEqual(Reservation.objects.get(pk=other_resa.id).cancelled_by, staff)
 
 	def test_reservation_details(self):
 		# create reservation
@@ -497,7 +497,7 @@ class AreaReservationTestCase(TransactionTestCase):
 
 		login_as(self.client, consumer)
 		response = self.client.post(reverse('create_reservation'), data, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 		reservation = Reservation.objects.get(area=area)
 		self.assertTrue(reservation.id)
 
@@ -506,14 +506,14 @@ class AreaReservationTestCase(TransactionTestCase):
 
 		# post should fail
 		response = self.client.post(reverse('reservation_details', kwargs={'reservation_id': 999}), {}, follow=True)
-		self.assertEquals(response.status_code, 405)
+		self.assertEqual(response.status_code, 405)
 
 		# test wrong id
 		response = self.client.get(reverse('reservation_details', kwargs={'reservation_id': 999}), {}, follow=True)
-		self.assertEquals(response.status_code, 404)
+		self.assertEqual(response.status_code, 404)
 
 		response = self.client.get(reverse('reservation_details', kwargs={'reservation_id': reservation.id}), {}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		self.assertEqual(response.status_code, 200)
 
 	def test_reservation_with_area_configuration(self):
 		# TODO: create those tests

@@ -36,6 +36,7 @@ INSTALLED_APPS = [
 	'NEMO.apps.sensors',
 	'NEMO.apps.contracts',
 	'rest_framework',
+	'rest_framework.authtoken',
 	'django_filters',
 	'mptt',
 	'auditlog',
@@ -76,11 +77,15 @@ TEMPLATES = [
 	},
 ]
 
+from rest_framework.settings import DEFAULTS
 REST_FRAMEWORK = {
-	'DEFAULT_PERMISSION_CLASSES': ('NEMO.permissions.DjangoModelPermissions',),
-	'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
-	'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-	'PAGE_SIZE': 1000,
+	"DEFAULT_PERMISSION_CLASSES": ("NEMO.permissions.DjangoModelPermissions",),
+	"DEFAULT_FILTER_BACKENDS": ("NEMO.rest_filter_backend.NEMOFilterBackend",),
+	"DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication", "rest_framework.authentication.TokenAuthentication"),
+	"DEFAULT_RENDERER_CLASSES": DEFAULTS["DEFAULT_RENDERER_CLASSES"] + ["drf_excel.renderers.XLSXRenderer"],
+	"DEFAULT_PARSER_CLASSES": DEFAULTS["DEFAULT_PARSER_CLASSES"] + ["NEMO.parsers.CSVParser"],
+	"DEFAULT_PAGINATION_CLASS": "NEMO.rest_pagination.NEMOPageNumberPagination",
+	"PAGE_SIZE": 1000,
 }
 
 SERVER_EMAIL = 'NEMO Server Administrator <nemo.admin@example.org>'

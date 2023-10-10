@@ -25,7 +25,7 @@
 					{% endif %}
 					<span>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
 				</td>
-				<td style="white-space: nowrap;width:25%">{{ o.start|date:"l @ "}} {{ o.start|time }}</td>
+				<td style="white-space: nowrap;width:25%">{{ o.start|date:"MONTH_DAY_FORMAT" }} @  {{ o.start|time }}</td>
 				<td><div style="width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ o.project }}</div></td>
 			</tr>
 		{% endfor %}

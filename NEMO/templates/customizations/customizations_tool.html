@@ -22,16 +22,15 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-sm-4 col-md-3">Tool problem updates</label>
+            <label class="control-label col-sm-4 col-md-3">Reservation policy</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
-                    <input type="hidden" name="tool_task_updates_facility_managers" value="off"/>
-                    <label><input type="checkbox" name="tool_task_updates_facility_managers" {% if tool_task_updates_facility_managers != 'off' %}checked{% endif %} value="">Send all tool problem updates to facility managers</label>
+                    <label><input type="checkbox" name="tool_reservation_policy_superusers_bypass" {% if tool_reservation_policy_superusers_bypass %}checked{% endif %} value="enabled"> Tool superusers are exempt from reservation policy rules</label>
                 </div>
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <h3 class="customization-section-title">Tool control</h3>
+        <h3 class="customization-section-title">Tool configuration</h3>
         <div class="form-group {% if errors.tool_control_configuration_setting_template %}has-error{% endif %}">
             <label class="control-label col-md-3" for="tool_control_configuration_setting_template">Configuration template</label>
             <div class="col-md-7">
@@ -45,11 +44,65 @@
                 {% endif %}
             </div>
         </div>
+        <div class="form-group {% if errors.tool_configuration_near_future_days %}has-error{% endif %}">
+            <label class="control-label col-sm-4 col-md-3" for="tool_configuration_near_future_days">Near future</label>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <input type="number" min="1" id="tool_configuration_near_future_days" name="tool_configuration_near_future_days" class="form-control text-right" value="{% if errors.tool_configuration_near_future_days %}{{ errors.tool_configuration_near_future_days.value }}{% else %}{{ tool_configuration_near_future_days }}{% endif %}"/>
+                    <span class="input-group-addon">day(s)</span>
+                </div>
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                {% if errors.tool_configuration_near_future_days %}
+                    {{ errors.tool_configuration_near_future_days.error }}
+                {% else %}
+                    The number of days for the "near future" configuration agenda (Weekend days are automatically included if the "near future" falls on the weekend).
+                {% endif %}
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Tool problems</h3>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">New problems</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="tool_problem_send_to_all_qualified_users" {% if tool_problem_send_to_all_qualified_users %}checked{% endif %} value="enabled">Send new tool problems to all qualified users</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Updates</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <input type="hidden" name="tool_task_updates_facility_managers" value="off"/>
+                    <label><input type="checkbox" name="tool_task_updates_facility_managers" {% if tool_task_updates_facility_managers != 'off' %}checked{% endif %} value="">Send all tool problem updates to facility managers</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3" for="tool_problem_max_image_size_pixels">Limit task images size</label>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <input type="number" min="0" id="tool_problem_max_image_size_pixels" name="tool_problem_max_image_size_pixels" class="form-control text-right" value="{% if errors.tool_problem_max_image_size_pixels %}{{ errors.tool_problem_max_image_size_pixels.value }}{% else %}{{ tool_problem_max_image_size_pixels }}{% endif %}"/>
+                    <span class="input-group-addon">pixels</span>
+                </div>
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Tool control</h3>
         <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">Usage data history</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
                     <label><input type="checkbox" id="tool_control_hide_data_history_users" name="tool_control_hide_data_history_users" {% if tool_control_hide_data_history_users %}checked{% endif %} value="enabled"> check to only show usage data history tab for staff members</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Email users with upcoming reservation</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="tool_control_broadcast_upcoming_reservation" name="tool_control_broadcast_upcoming_reservation" {% if tool_control_broadcast_upcoming_reservation %}checked{% endif %} value="enabled"> Allow qualified users on a tool to send a broadcast email to users with an upcoming reservation</label>
                 </div>
             </div>
         </div>

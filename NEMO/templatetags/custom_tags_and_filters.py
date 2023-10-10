@@ -183,7 +183,7 @@ def admin_edit_url(context, obj, redirect_url=None):
 	user = context["request"].user
 	try:
 		obj_type = content_type(obj)
-		permission = user.has_perm(f"{obj_type.app_label}.change_{obj_type.model}")
+		permission = user.has_perm(f"{obj_type.app_label}.change_{obj_type.model}", obj)
 		if permission:
 			url = reverse(f"admin:{obj_type.app_label}_{obj_type.model}_change", args=[obj.id])
 			if redirect_url:

@@ -1,6 +1,6 @@
 from django.core.management import BaseCommand
 
-from NEMO.views.calendar import do_create_closure_alerts
+from NEMO.views.timed_services import do_create_closure_alerts
 
 
 class Command(BaseCommand):

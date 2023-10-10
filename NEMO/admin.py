@@ -1,6 +1,4 @@
 import datetime
-import sys
-from json import loads
 
 from django import forms
 from django.contrib import admin
@@ -12,7 +10,6 @@ from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import Q
 from django.db.models.fields.files import FieldFile
 from django.forms import BaseInlineFormSet
-from django.shortcuts import redirect
 from django.template.defaultfilters import linebreaksbr, urlencode
 from django.utils.safestring import mark_safe
 from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFilter
@@ -21,13 +18,16 @@ from NEMO.actions import (
 	access_requests_export_csv,
 	adjustment_requests_export_csv,
 	create_next_interlock,
+	disable_selected_cards,
 	duplicate_tool_configuration,
+	enable_selected_cards,
 	lock_selected_interlocks,
 	rebuild_area_tree,
 	synchronize_with_tool_usage,
 	unlock_selected_interlocks,
 )
 from NEMO.forms import BuddyRequestForm, RecurringConsumableChargeForm, UserPreferencesForm
+from NEMO.mixins import ObjPermissionAdminMixin, ModelAdminRedirectMixin
 from NEMO.models import (
 	Account,
 	AccountType,
@@ -107,27 +107,14 @@ from NEMO.models import (
 	record_remote_many_to_many_changes_and_save,
 )
 from NEMO.utilities import admin_get_item, format_daterange
-from NEMO.views.constants import NEXT_PARAMETER_NAME
 from NEMO.views.customization import ProjectsAccountsCustomization
-from NEMO.widgets.dynamic_form import DynamicForm, PostUsageFloatFieldQuestion, PostUsageNumberFieldQuestion
-
-
-# Admin class to allow redirect after add or change
-class ModelAdminRedirect(admin.ModelAdmin):
-
-	def response_post_save_add(self, request, obj):
-		return self.response_redirect(request, super().response_post_save_add(request, obj))
-
-	def response_post_save_change(self, request, obj):
-		return self.response_redirect(request, super().response_post_save_change(request, obj))
-
-	def response_delete(self, request, obj_display, obj_id):
-		return self.response_redirect(request, super().response_delete(request, obj_display, obj_id))
-
-	def response_redirect(self, request, original_response):
-		if NEXT_PARAMETER_NAME in request.GET:
-			return redirect(request.GET[NEXT_PARAMETER_NAME])
-		return original_response
+from NEMO.widgets.dynamic_form import (
+	DynamicForm,
+	PostUsageFloatFieldQuestion,
+	PostUsageNumberFieldQuestion,
+	admin_render_dynamic_form_preview,
+	validate_dynamic_form_model,
+)
 
 
 # Formset to require at least one inline form
@@ -146,8 +133,8 @@ class ToolAdminForm(forms.ModelForm):
 		fields = "__all__"
 
 	class Media:
-		js = ("admin/tool/tool.js", "admin/questions_preview/questions_preview.js")
-		css = {"": ("admin/questions_preview/questions_preview.css",)}
+		js = ("admin/tool/tool.js", "admin/dynamic_form_preview/dynamic_form_preview.js")
+		css = {"": ("admin/dynamic_form_preview/dynamic_form_preview.css",)}
 
 	qualified_users = forms.ModelMultipleChoiceField(
 		queryset=User.objects.all(),
@@ -213,7 +200,7 @@ class ToolAdmin(admin.ModelAdmin):
 		"has_post_usage_questions",
 		"id",
 	)
-	filter_horizontal = ("_backup_owners", "_superusers")
+	filter_horizontal = ("_backup_owners", "_superusers", "_adjustment_request_reviewers")
 	search_fields = ("name", "_description", "_serial")
 	list_filter = ("visible", "_operational", "_category", "_location", ("_requires_area_access", admin.RelatedOnlyFieldListFilter))
 	readonly_fields = ("_post_usage_preview",)
@@ -249,6 +236,7 @@ class ToolAdmin(admin.ModelAdmin):
 				)
 			},
 		),
+		("Approval", {"fields": ("_adjustment_request_reviewers",)}),
 		("Reservation", {"fields": ("_reservation_horizon", "_missed_reservation_threshold")}),
 		(
 			"Usage policy",
@@ -281,18 +269,12 @@ class ToolAdmin(admin.ModelAdmin):
 		("Dependencies", {"fields": ("required_resources", "nonrequired_resources")}),
 	)
 
-	@admin.display(description="Questions", ordering="post_usage_questions", boolean=True)
+	@admin.display(description="Questions", ordering="_post_usage_questions", boolean=True)
 	def has_post_usage_questions(self, obj: Tool):
 		return True if obj.post_usage_questions else False
 
 	def _post_usage_preview(self, obj):
-		if obj.id:
-			form_validity_div = '<div id="form_validity"></div>' if obj.post_usage_questions else ""
-			return mark_safe(
-				'<div class="questions_preview">{}{}</div><div class="help questions_preview_help">Save form to preview post usage questions</div>'.format(
-					DynamicForm(obj.post_usage_questions).render("tool_usage_group_question", obj.id), form_validity_div
-				)
-			)
+		return admin_render_dynamic_form_preview(obj.post_usage_questions, "tool_usage_group_question", obj.id)
 
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):
 		""" We only want non children tool to be eligible as parents """
@@ -350,12 +332,13 @@ class AreaAdmin(DraggableMPTTAdmin):
 		"buddy_system_allowed",
 		"id",
 	)
+	filter_horizontal = ["adjustment_request_reviewers", "access_request_reviewers"]
 	fieldsets = (
 		(None, {"fields": ("name", "parent_area", "category", "reservation_email", "abuse_email")}),
 		("Additional Information", {"fields": ("area_calendar_color",)}),
 		(
 			"Area access",
-			{"fields": ("requires_reservation", "logout_grace_period", "welcome_message", "buddy_system_allowed")},
+			{"fields": ("requires_reservation", "logout_grace_period", "welcome_message", "auto_logout_time", "buddy_system_allowed")},
 		),
 		(
 			"Occupancy",
@@ -368,6 +351,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 				)
 			},
 		),
+		("Approval", {"fields": ("adjustment_request_reviewers", "access_request_reviewers")}),
 		("Reservation", {"fields": ("reservation_horizon", "missed_reservation_threshold")}),
 		(
 			"Policy",
@@ -411,7 +395,7 @@ class AreaAdmin(DraggableMPTTAdmin):
 
 
 @register(TrainingSession)
-class TrainingSessionAdmin(admin.ModelAdmin):
+class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
 	list_display = ("id", "trainer", "trainee", "tool", "project", "type", "date", "duration", "qualified")
 	list_filter = ("qualified", "date", "type", ("tool", admin.RelatedOnlyFieldListFilter), ("project", admin.RelatedOnlyFieldListFilter), ("trainer", admin.RelatedOnlyFieldListFilter), ("trainee", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "date"
@@ -424,14 +408,14 @@ class TrainingSessionAdmin(admin.ModelAdmin):
 
 
 @register(StaffCharge)
-class StaffChargeAdmin(ModelAdminRedirect):
+class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
 	list_display = ("id", "staff_member", "customer", "start", "end")
 	list_filter = ("start", ("customer", admin.RelatedOnlyFieldListFilter), ("staff_member", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "start"
 
 
 @register(AreaAccessRecord)
-class AreaAccessRecordAdmin(ModelAdminRedirect):
+class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
 	list_display = ("id", "customer", "area", "project", "start", "end")
 	list_filter = (("area", TreeRelatedFieldListFilter), "start")
 	date_hierarchy = "start"
@@ -547,7 +531,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
 
 @register(Reservation)
-class ReservationAdmin(ModelAdminRedirect):
+class ReservationAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
 	list_display = (
 		"id",
 		"user",
@@ -573,8 +557,8 @@ class ReservationQuestionsForm(forms.ModelForm):
 		fields = "__all__"
 
 	class Media:
-		js = ("admin/reservation_questions/reservation_questions.js", "admin/questions_preview/questions_preview.js")
-		css = {"": ("admin/questions_preview/questions_preview.css",)}
+		js = ("admin/dynamic_form_preview/dynamic_form_preview.js",)
+		css = {"": ("admin/dynamic_form_preview/dynamic_form_preview.css",)}
 
 	def clean(self):
 		cleaned_data = super().clean()
@@ -596,18 +580,9 @@ class ReservationQuestionsForm(forms.ModelForm):
 			)
 		# Validate reservation_questions JSON format
 		if reservation_questions:
-			try:
-				loads(reservation_questions)
-			except ValueError:
-				self.add_error("questions", "This field needs to be a valid JSON string")
-			try:
-				dynamic_form = DynamicForm(reservation_questions)
-				dynamic_form.validate("reservation_group_question", self.instance.id)
-			except KeyError as e:
-				self.add_error("questions", f"{e} property is required")
-			except Exception:
-				error_info = sys.exc_info()
-				self.add_error("questions", error_info[0].__name__ + ": " + str(error_info[1]))
+			errors = validate_dynamic_form_model(reservation_questions, "reservation_group_question", self.instance.id)
+			for error in errors:
+				self.add_error("questions", error)
 		return cleaned_data
 
 
@@ -635,23 +610,11 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 	)
 
 	def questions_preview(self, obj):
-		form_validity_div = ""
-		rendered_form = ""
-		try:
-			rendered_form = DynamicForm(obj.questions).render("reservation_group_question", obj.id)
-			if obj.questions:
-				form_validity_div = '<div id="form_validity"></div>'
-		except:
-			pass
-		return mark_safe(
-			'<div class="questions_preview">{}{}</div><div class="help questions_preview_help">Save form to preview reservation questions</div>'.format(
-				rendered_form, form_validity_div
-			)
-		)
+		return admin_render_dynamic_form_preview(obj.questions, "reservation_group_question", obj.id)
 
 
 @register(UsageEvent)
-class UsageEventAdmin(ModelAdminRedirect):
+class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
 	list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work")
 	list_filter = ("remote_work", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "start"
@@ -659,8 +622,8 @@ class UsageEventAdmin(ModelAdminRedirect):
 
 @register(Consumable)
 class ConsumableAdmin(admin.ModelAdmin):
-	list_display = ("name", "quantity", "category", "visible", "reusable", "reminder_threshold", "reminder_email", "id")
-	list_filter = ("visible", ("category", admin.RelatedOnlyFieldListFilter), "reusable")
+	list_display = ("name", "quantity", "category", "visible", "reusable", "allow_self_checkout", "reminder_threshold", "reminder_email", "id")
+	list_filter = ("visible", ("category", admin.RelatedOnlyFieldListFilter), "reusable", "allow_self_checkout")
 	search_fields = ("name",)
 	readonly_fields = ("reminder_threshold_reached",)
 
@@ -671,7 +634,7 @@ class ConsumableCategoryAdmin(admin.ModelAdmin):
 
 
 @register(ConsumableWithdraw)
-class ConsumableWithdrawAdmin(admin.ModelAdmin):
+class ConsumableWithdrawAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
 	list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date")
 	list_filter = ("date", ("consumable", admin.RelatedOnlyFieldListFilter))
 	date_hierarchy = "date"
@@ -709,6 +672,7 @@ class InterlockCardAdminForm(forms.ModelForm):
 class InterlockCardAdmin(admin.ModelAdmin):
 	form = InterlockCardAdminForm
 	list_display = ("name", "enabled", "server", "port", "number", "category", "even_port", "odd_port")
+	actions = [disable_selected_cards, enable_selected_cards]
 
 
 class InterlockAdminForm(forms.ModelForm):
@@ -872,7 +836,7 @@ class UserTypeAdmin(admin.ModelAdmin):
 class UserPreferencesAdmin(admin.ModelAdmin):
 	list_display = ("user",)
 	search_fields = ["user_preferences__user__first_name", "user_preferences__user__last_name", "user_preferences__user__username"]
-	filter_horizontal = ["tool_freed_time_notifications", "tool_adjustment_notifications", "area_adjustment_notifications"]
+	filter_horizontal = ["tool_freed_time_notifications", "tool_task_notifications"]
 	form = UserPreferencesForm
 
 

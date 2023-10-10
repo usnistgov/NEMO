@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import List, Set
+from typing import Iterable, List, Set
 
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -19,7 +19,7 @@ def delete_expired_notifications():
 	Notification.objects.filter(expiration__lt=timezone.now()).delete()
 
 
-def get_notifications(user: User, notification_type: Notification.Types, delete=True):
+def get_notifications(user: User, notification_type: str, delete=True):
 	notifications = Notification.objects.filter(user=user, notification_type=notification_type)
 	if notifications:
 		notification_ids = list(notifications.values_list("object_id", flat=True))
@@ -38,7 +38,7 @@ def get_notification_counts(user: User):
 	return counts
 
 
-def delete_notification(notification_type: Notification.Types, instance_id, users: List[User] = None):
+def delete_notification(notification_type: str, instance_id, users: Iterable[User] = None):
 	notifications = Notification.objects.filter(notification_type=notification_type, object_id=instance_id)
 	if users:
 		notifications = notifications.filter(user__in=users)
@@ -85,7 +85,7 @@ def create_buddy_request_notification(buddy_request: BuddyRequest):
 			)
 
 
-def create_request_message_notification(reply: RequestMessage, notification_type: Notification.Types, expiration: datetime):
+def create_request_message_notification(reply: RequestMessage, notification_type: str, expiration: datetime):
 	for user in reply.content_object.creator_and_reply_users():
 		if user != reply.author:
 			Notification.objects.update_or_create(
@@ -101,10 +101,8 @@ def create_access_request_notification(access_request: TemporaryPhysicalAccessRe
 	request_end = access_request.end_time
 	expiration = end_of_the_day(datetime(request_end.year, request_end.month, request_end.day))
 
-	reviewers: List[User] = User.objects.filter(is_active=True, is_facility_manager=True)
-
 	users_to_notify: Set[User] = set(access_request.other_users.all())
-	users_to_notify.update(reviewers)
+	users_to_notify.update(access_request.reviewers())
 	if access_request.last_updated_by and access_request.last_updated_by != access_request.creator:
 		users_to_notify.add(access_request.creator)
 	for user in users_to_notify:
@@ -117,7 +115,8 @@ def create_access_request_notification(access_request: TemporaryPhysicalAccessRe
 		)
 
 
-def create_adjustment_request_notification(adjustment_request: AdjustmentRequest, users_to_notify: Set[User]):
+def create_adjustment_request_notification(adjustment_request: AdjustmentRequest):
+	users_to_notify = set(adjustment_request.reviewers())
 	users_to_notify.add(adjustment_request.creator)
 	expiration = timezone.now() + timedelta(days=30)  # 30 days for adjustment requests to expire
 	for user in users_to_notify:

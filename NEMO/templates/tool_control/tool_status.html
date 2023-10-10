@@ -7,7 +7,7 @@
                 <li style="width:48%; text-align:center" class="active"><a href="#summary" style="padding: 10px 5px">Summary</a></li>
                 <li style="width:48%; text-align:center"><a href="#details" style="padding: 10px 5px">Details</a></li>
                 {% if configs %}<li style="width:48%; text-align:center"><a href="#config" style="padding: 10px 5px">Config History</a></li>{% endif %}
-                {% if tool.post_usage_questions and not hide_data_history or user.is_any_part_of_staff %}<li style="width: 48%; text-align: center"><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
+                {% if tool.post_usage_questions and not hide_data_history or tool.post_usage_questions and user.is_any_part_of_staff %}<li style="width: 48%; text-align: center"><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
                 <li style="width:48%; text-align:center"><a href="#problem" style="padding: 10px 5px">Report a problem</a></li>
                 <li style="width:48%; text-align:center"><a href="#comment" style="padding: 10px 5px">Post a comment</a></li>
             </ul>
@@ -17,7 +17,7 @@
                 <li class="active"><a href="#summary">Summary</a></li>
                 <li><a href="#details">Details</a></li>
                 {% if configs %}<li><a href="#config">Config History</a></li>{% endif %}
-                {% if tool.post_usage_questions and not hide_data_history or user.is_any_part_of_staff %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
+                {% if tool.post_usage_questions and not hide_data_history or tool.post_usage_questions and user.is_any_part_of_staff %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
                 <li><a href="#problem">Report a problem</a></li>
                 <li><a href="#comment">Post a comment</a></li>
             </ul>
@@ -46,7 +46,7 @@
 							{% if current_usage_event.operator.id != current_usage_event.user.id %}
 								on behalf of {{ current_usage_event.user }}
 							{% endif %}
-							for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"l @ " }}{{ current_usage_event.start|time }}.
+							for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"MONTH_DAY_FORMAT" }} @ {{ current_usage_event.start|time }}.
 						</h2>
 					{% endwith %}
 				</div>
@@ -443,6 +443,7 @@
 				{% endif %}
 				{% if tool.location %}<p>The {{ tool.name_or_child_in_use_name }} is located in room <span class="glyphicon glyphicon-map-marker small-icon"></span>{{ tool.location }}.</p>{% endif %}
 				{% if tool.phone_number %}<p>You may dial the phone that is closest to the {{ tool.name_or_child_in_use_name }} at extension <span class="glyphicon glyphicon-phone small-icon"></span>{{ tool.phone_number }}.</p>{% endif %}
+				{% if show_broadcast_upcoming_reservation %}<p>You can email <a href="{% url 'compose_email' %}?audience=tool-reservation&selection={{ tool.id }}"><span class="glyphicon glyphicon-send"></span> all users with an upcoming reservation</a>.</p>{% endif %}
 			</div>
 		</div>
 		{% if user.is_staff %}
@@ -563,8 +564,7 @@
 			{% csrf_token %}
 			<input type="hidden" name="action" value="create">
 			<input type="hidden" name="tool" value="{{ tool.id }}">
-			<p>Use this form to report a problem relating to the currently selected tool. The {{ facility_name }} staff will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</p>
-
+			<p>Use this form to report a problem relating to the currently selected tool. The {{ facility_name }} staff as well as anyone with an upcoming reservation will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</p>
 			{% if task_categories %}
 				<div class="form-group">
 					<label for="problem_category">Please choose a category that best describes this problem. If there is no appropriate category then leave this field blank.</label>
