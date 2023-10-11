@@ -156,7 +156,7 @@ function update_tool_list_display(item_function, qualified_tool_list)
 		let $item = $(item);
 		if (!qualified_tool_list.includes(parseInt($item.attr("data-item-id"))))
 		{
-			$item[item_function]();
+			$item.closest("li")[item_function]();
 		}
 	})
 }

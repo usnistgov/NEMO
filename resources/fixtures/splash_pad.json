@@ -498,7 +498,7 @@
     "fields": {
       "name": "2 inch wafer tray",
       "category": null,
-      "quantity": 10,
+      "quantity": 0,
       "reusable": false,
       "visible": true,
       "reminder_threshold": 5,

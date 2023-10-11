@@ -2,7 +2,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
 	name='NEMO',
-	version='4.7.0',
+	version='4.7.1',
 	python_requires='>=3.8, <4',
 	packages=find_namespace_packages(exclude=['NEMO.tests', 'NEMO.tests.*']),
 	include_package_data=True,
@@ -21,7 +21,7 @@ setup(
 		'License :: Public Domain',
 		'Natural Language :: English',
 		'Operating System :: OS Independent',
-		'Programming Language :: Python :: 3.8',
+		'Programming Language :: Python :: 3.10',
 	],
 	install_requires=[
 		'cryptography==41.0.4',
