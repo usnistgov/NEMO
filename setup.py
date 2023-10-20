@@ -3,7 +3,7 @@ from setuptools import find_namespace_packages, setup
 setup(
     name="NEMO",
     version="5.0.0",
-    python_requires=">=3.11, <4",
+    python_requires=">=3.8, <4",
     packages=find_namespace_packages(exclude=["NEMO.tests", "NEMO.tests.*"]),
     include_package_data=True,
     url="https://github.com/usnistgov/NEMO",
@@ -15,12 +15,15 @@ setup(
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
-        "Framework :: Django",
         "Intended Audience :: Science/Research",
         "Intended Audience :: System Administrators",
         "License :: Public Domain",
         "Natural Language :: English",
         "Operating System :: OS Independent",
+        "Framework :: Django :: 3.2",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
     ],
     install_requires=[
