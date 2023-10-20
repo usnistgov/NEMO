@@ -294,7 +294,7 @@ def create_comment(request):
     comment.author = request.user
     comment.expiration_date = (
         None
-        if form.cleaned_data["expiration"] == 0
+        if form.cleaned_data["expiration"] == -1
         else timezone.now() + timedelta(days=form.cleaned_data["expiration"])
     )
     comment.save()
@@ -462,6 +462,7 @@ def disable_tool(request, tool_id):
 @login_required
 @require_GET
 def past_comments_and_tasks(request):
+    user: User = request.user
     start, end = extract_optional_beginning_and_end_times(request.GET)
     search = request.GET.get("search")
     if not start and not end and not search:
@@ -469,7 +470,9 @@ def past_comments_and_tasks(request):
     tool_id = request.GET.get("tool_id")
     try:
         tasks = Task.objects.filter(tool_id=tool_id)
-        comments = Comment.objects.filter(tool_id=tool_id, staff_only=False)
+        comments = Comment.objects.filter(tool_id=tool_id)
+        if not user.is_staff:
+            comments = comments.filter(staff_only=False)
         if start:
             tasks = tasks.filter(creation_time__gt=start)
             comments = comments.filter(creation_date__gt=start)
@@ -492,8 +495,12 @@ def past_comments_and_tasks(request):
 @login_required
 @require_GET
 def ten_most_recent_past_comments_and_tasks(request, tool_id):
+    user: User = request.user
     tasks = Task.objects.filter(tool_id=tool_id).order_by("-creation_time")[:10]
-    comments = Comment.objects.filter(tool_id=tool_id, staff_only=False).order_by("-creation_date")[:10]
+    comments = Comment.objects.filter(tool_id=tool_id).order_by("-creation_date")[:10]
+    if not user.is_staff:
+        comments = comments.filter(staff_only=False)
+    comments = comments[:10]
     past = list(chain(tasks, comments))
     past.sort(key=lambda x: getattr(x, "creation_time", None) or getattr(x, "creation_date", None))
     past.reverse()
