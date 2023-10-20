@@ -6,15 +6,16 @@ import NEMO.utilities
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0040_version_4_2_0'),
+        ("NEMO", "0040_version_4_2_0"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='chemical',
-            name='document',
-            field=models.FileField(blank=True, max_length=500, null=True, upload_to=NEMO.utilities.get_chemical_document_filename),
+            model_name="chemical",
+            name="document",
+            field=models.FileField(
+                blank=True, max_length=500, null=True, upload_to=NEMO.utilities.get_chemical_document_filename
+            ),
         ),
     ]

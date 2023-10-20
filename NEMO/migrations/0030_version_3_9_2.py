@@ -4,9 +4,8 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0028_version_3_9_0'),
+        ("NEMO", "0028_version_3_9_0"),
     ]
 
     def copy_badge_number_data(apps, schema_editor):
@@ -17,18 +16,24 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameField(
-            model_name='user',
-            old_name='badge_number',
-            new_name='badge_number_tmp',
+            model_name="user",
+            old_name="badge_number",
+            new_name="badge_number_tmp",
         ),
         migrations.AddField(
-            model_name='user',
-            name='badge_number',
-            field=models.CharField(blank=True, help_text='The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.', max_length=50, null=True, unique=True),
+            model_name="user",
+            name="badge_number",
+            field=models.CharField(
+                blank=True,
+                help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.",
+                max_length=50,
+                null=True,
+                unique=True,
+            ),
         ),
         migrations.RunPython(copy_badge_number_data),
         migrations.RemoveField(
-            model_name='user',
-            name='badge_number_tmp',
+            model_name="user",
+            name="badge_number_tmp",
         ),
     ]

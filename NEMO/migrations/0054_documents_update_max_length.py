@@ -6,30 +6,53 @@ import NEMO.utilities
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0053_consumable_withdraw_add_usage_event_link'),
+        ("NEMO", "0053_consumable_withdraw_add_usage_event_link"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='projectdocuments',
-            name='document',
-            field=models.FileField(blank=True, max_length=255, null=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document'),
+            model_name="projectdocuments",
+            name="document",
+            field=models.FileField(
+                blank=True,
+                max_length=255,
+                null=True,
+                upload_to=NEMO.utilities.document_filename_upload,
+                verbose_name="Document",
+            ),
         ),
         migrations.AlterField(
-            model_name='safetyitemdocuments',
-            name='document',
-            field=models.FileField(blank=True, max_length=255, null=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document'),
+            model_name="safetyitemdocuments",
+            name="document",
+            field=models.FileField(
+                blank=True,
+                max_length=255,
+                null=True,
+                upload_to=NEMO.utilities.document_filename_upload,
+                verbose_name="Document",
+            ),
         ),
         migrations.AlterField(
-            model_name='tooldocuments',
-            name='document',
-            field=models.FileField(blank=True, max_length=255, null=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document'),
+            model_name="tooldocuments",
+            name="document",
+            field=models.FileField(
+                blank=True,
+                max_length=255,
+                null=True,
+                upload_to=NEMO.utilities.document_filename_upload,
+                verbose_name="Document",
+            ),
         ),
         migrations.AlterField(
-            model_name='userdocuments',
-            name='document',
-            field=models.FileField(blank=True, max_length=255, null=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document'),
+            model_name="userdocuments",
+            name="document",
+            field=models.FileField(
+                blank=True,
+                max_length=255,
+                null=True,
+                upload_to=NEMO.utilities.document_filename_upload,
+                verbose_name="Document",
+            ),
         ),
     ]

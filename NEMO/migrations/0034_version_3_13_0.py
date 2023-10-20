@@ -4,9 +4,8 @@ from NEMO.migrations_utils import create_news_for_version
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0033_version_3_12_0'),
+        ("NEMO", "0033_version_3_12_0"),
     ]
 
     def new_version_news(apps, schema_editor):

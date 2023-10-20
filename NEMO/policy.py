@@ -54,7 +54,9 @@ from NEMO.views.customization import (
 
 
 class NEMOPolicy:
-    def check_to_enable_tool(self, tool: Tool, operator: User, user: User, project: Project, staff_charge: bool, remote_work=False):
+    def check_to_enable_tool(
+        self, tool: Tool, operator: User, user: User, project: Project, staff_charge: bool, remote_work=False
+    ):
         """
         Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
         """
@@ -151,7 +153,9 @@ class NEMOPolicy:
 
         # Check if we are allowed to bill to project
         try:
-            self.check_billing_to_project(project, user, tool, UsageEvent(tool=tool, project=project, remote_work=remote_work, user=user))
+            self.check_billing_to_project(
+                project, user, tool, UsageEvent(tool=tool, project=project, remote_work=remote_work, user=user)
+            )
         except ProjectChargeException as e:
             return HttpResponseBadRequest(e.msg)
 
@@ -257,7 +261,9 @@ class NEMOPolicy:
 
         # Check if we are allowed to bill to project
         try:
-            self.check_billing_to_project(new_reservation.project, user, new_reservation.reservation_item, new_reservation)
+            self.check_billing_to_project(
+                new_reservation.project, user, new_reservation.reservation_item, new_reservation
+            )
         except ProjectChargeException as e:
             policy_problems.append(e.msg)
 
@@ -860,7 +866,11 @@ class NEMOPolicy:
                 raise ReservationRequiredUserError(user=user, area=area)
 
     def check_billing_to_project(
-        self, project: Project, user: User, item: Union[Tool, Area, Consumable, StaffCharge] = None, charge: Union[UsageEvent, AreaAccessRecord, ConsumableWithdraw, StaffCharge, Reservation] = None
+        self,
+        project: Project,
+        user: User,
+        item: Union[Tool, Area, Consumable, StaffCharge] = None,
+        charge: Union[UsageEvent, AreaAccessRecord, ConsumableWithdraw, StaffCharge, Reservation] = None,
     ):
         if project:
             if project not in user.active_projects():

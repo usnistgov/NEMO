@@ -4,10 +4,10 @@ from NEMO.views.timed_services import send_email_reservation_ending_reminders
 
 
 class Command(BaseCommand):
-	help = (
-		"Run every 15 minutes to trigger email reminder for reservations ending soon. "
-		"Reservation ending reminder email has to be set in customizations for this to work."
-	)
+    help = (
+        "Run every 15 minutes to trigger email reminder for reservations ending soon. "
+        "Reservation ending reminder email has to be set in customizations for this to work."
+    )
 
-	def handle(self, *args, **options):
-		send_email_reservation_ending_reminders()
+    def handle(self, *args, **options):
+        send_email_reservation_ending_reminders()

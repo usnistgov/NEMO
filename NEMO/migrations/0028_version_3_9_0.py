@@ -7,9 +7,8 @@ from NEMO.migrations_utils import create_news_for_version
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0027_version_3_8_0'),
+        ("NEMO", "0027_version_3_8_0"),
     ]
 
     def new_version_news(apps, schema_editor):
@@ -17,38 +16,59 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name='toolusagecounter',
-            options={'ordering': ['tool__name']},
+            name="toolusagecounter",
+            options={"ordering": ["tool__name"]},
         ),
         migrations.AlterField(
-            model_name='toolusagecounter',
-            name='last_reset_value',
-            field=models.FloatField(blank=True, help_text='The last value before the counter was reset', null=True),
+            model_name="toolusagecounter",
+            name="last_reset_value",
+            field=models.FloatField(blank=True, help_text="The last value before the counter was reset", null=True),
         ),
         migrations.AlterField(
-            model_name='toolusagecounter',
-            name='value',
-            field=models.FloatField(default=0, help_text='The current value of this counter'),
+            model_name="toolusagecounter",
+            name="value",
+            field=models.FloatField(default=0, help_text="The current value of this counter"),
         ),
         migrations.CreateModel(
-            name='ToolDocuments',
+            name="ToolDocuments",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('document', models.FileField(null=True, blank=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document')),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('name', models.CharField(blank=True, help_text='The optional name to display for this document', max_length=200, null=True)),
-                ('url', models.CharField(blank=True, max_length=200, null=True, verbose_name='URL')),
-                ('tool', models.ForeignKey(on_delete=models.deletion.CASCADE, to='NEMO.Tool')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "document",
+                    models.FileField(
+                        null=True,
+                        blank=True,
+                        upload_to=NEMO.utilities.document_filename_upload,
+                        verbose_name="Document",
+                    ),
+                ),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "name",
+                    models.CharField(
+                        blank=True,
+                        help_text="The optional name to display for this document",
+                        max_length=200,
+                        null=True,
+                    ),
+                ),
+                ("url", models.CharField(blank=True, max_length=200, null=True, verbose_name="URL")),
+                ("tool", models.ForeignKey(on_delete=models.deletion.CASCADE, to="NEMO.Tool")),
             ],
             options={
-                'verbose_name_plural': 'Tool documents',
-                'ordering': ['-uploaded_at'],
+                "verbose_name_plural": "Tool documents",
+                "ordering": ["-uploaded_at"],
             },
         ),
         migrations.AddField(
-            model_name='user',
-            name='managed_projects',
-            field=models.ManyToManyField(blank=True, help_text='Select the projects that this user is a PI for.', related_name='manager_set', to='NEMO.Project'),
+            model_name="user",
+            name="managed_projects",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text="Select the projects that this user is a PI for.",
+                related_name="manager_set",
+                to="NEMO.Project",
+            ),
         ),
         migrations.RunPython(new_version_news),
     ]

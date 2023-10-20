@@ -4,19 +4,32 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0022_version_3_3_0'),
+        ("NEMO", "0022_version_3_3_0"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BadgeReader',
+            name="BadgeReader",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200)),
-                ('send_key', models.CharField(help_text="The name of the key which submits the badge number ('F2', 'Shift', 'Meta', 'Enter', 'a' etc.)", max_length=20)),
-                ('record_key', models.CharField(blank=True, help_text='The name of the key which starts badge number recording. If left blank, badge number recording starts when any input is received.', max_length=20, null=True)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=200)),
+                (
+                    "send_key",
+                    models.CharField(
+                        help_text="The name of the key which submits the badge number ('F2', 'Shift', 'Meta', 'Enter', 'a' etc.)",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "record_key",
+                    models.CharField(
+                        blank=True,
+                        help_text="The name of the key which starts badge number recording. If left blank, badge number recording starts when any input is received.",
+                        max_length=20,
+                        null=True,
+                    ),
+                ),
             ],
         ),
     ]

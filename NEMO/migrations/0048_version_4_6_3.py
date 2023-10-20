@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0047_version_4_6_1'),
+        ("NEMO", "0047_version_4_6_1"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='userpreferences',
-            name='area_adjustment_notifications',
-            field=models.ManyToManyField(blank=True, help_text='Areas to see/receive adjustment notifications for. If empty all notifications will be received.', related_name='_NEMO_userpreferences_area_adjustment_notifications_+', to='NEMO.Area'),
+            model_name="userpreferences",
+            name="area_adjustment_notifications",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text="Areas to see/receive adjustment notifications for. If empty all notifications will be received.",
+                related_name="_NEMO_userpreferences_area_adjustment_notifications_+",
+                to="NEMO.Area",
+            ),
         ),
     ]
