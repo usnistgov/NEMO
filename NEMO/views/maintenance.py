@@ -18,7 +18,7 @@ def maintenance(request, sort_by=""):
         # Limit tools to preferences + tools user is the owner of + tools user is a backup owner of.
         limit_tools = set(user.get_preferences().tool_task_notifications.all())
         limit_tools.update(user.primary_tool_owner.all())
-        limit_tools.update(user.superuser_for_tools.all())
+        limit_tools.update(user.backup_for_tools.all())
         pending_tasks = pending_tasks.filter(tool__in=limit_tools)
     if sort_by in ["urgency", "force_shutdown", "tool", "problem_category", "last_updated", "creation_time"]:
         if sort_by == "last_updated":
