@@ -7,6 +7,7 @@ from django.conf import settings
 from django.test import TestCase
 
 from NEMO.interlocks import StanfordInterlock
+
 # This method will be used by the mock to replace socket.send
 # In the stanford interlock case, it will return a list of byte
 from NEMO.models import Interlock, InterlockCard, InterlockCardCategory, Tool, User

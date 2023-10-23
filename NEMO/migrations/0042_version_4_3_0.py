@@ -13,9 +13,8 @@ from NEMO.migrations_utils import create_news_for_version
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0041_version_4_2_1'),
+        ("NEMO", "0041_version_4_2_1"),
     ]
 
     def new_version_news(apps, schema_editor):
@@ -31,260 +30,468 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(new_version_news),
         migrations.AddField(
-            model_name='interlock',
-            name='unit_id',
+            model_name="interlock",
+            name="unit_id",
             field=models.PositiveIntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='interlock',
-            name='most_recent_reply_time',
+            model_name="interlock",
+            name="most_recent_reply_time",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='userpreferences',
-            name='email_send_access_expiration_emails',
-            field=models.BooleanField(default=True, help_text='Send access expiration emails to my alternate email'),
+            model_name="userpreferences",
+            name="email_send_access_expiration_emails",
+            field=models.BooleanField(default=True, help_text="Send access expiration emails to my alternate email"),
         ),
         migrations.AddField(
-            model_name='user',
-            name='notes',
+            model_name="user",
+            name="notes",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.CreateModel(
-            name='Qualification',
+            name="Qualification",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('qualified_on', models.DateField(default=datetime.date.today)),
-                ('tool', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='NEMO.tool')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("qualified_on", models.DateField(default=datetime.date.today)),
+                ("tool", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="NEMO.tool")),
+                ("user", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
         ),
         migrations.RunPython(migrate_qualifications),
         migrations.AddField(
-            model_name='user',
-            name='tool_qualifications',
-            field=models.ManyToManyField(blank=True, help_text='Select the tools that the user is qualified to use.', through='NEMO.Qualification', to='NEMO.Tool'),
+            model_name="user",
+            name="tool_qualifications",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text="Select the tools that the user is qualified to use.",
+                through="NEMO.Qualification",
+                to="NEMO.Tool",
+            ),
         ),
-        migrations.RemoveField(model_name='user', name='qualifications'),
+        migrations.RemoveField(model_name="user", name="qualifications"),
         migrations.RenameField(
-            model_name='user',
-            old_name='tool_qualifications',
-            new_name='qualifications',
+            model_name="user",
+            old_name="tool_qualifications",
+            new_name="qualifications",
         ),
         migrations.AlterModelTable(
-            name='qualification',
-            table='NEMO_user_qualifications',
+            name="qualification",
+            table="NEMO_user_qualifications",
         ),
         migrations.AddField(
-            model_name='userpreferences',
-            name='email_send_tool_qualification_expiration_emails',
-            field=models.BooleanField(default=True, help_text='Send tool qualification expiration emails to my alternate email'),
+            model_name="userpreferences",
+            name="email_send_tool_qualification_expiration_emails",
+            field=models.BooleanField(
+                default=True, help_text="Send tool qualification expiration emails to my alternate email"
+            ),
         ),
         migrations.AlterField(
-            model_name='alert',
-            name='contents',
+            model_name="alert",
+            name="contents",
             field=models.TextField(),
         ),
         migrations.AddField(
-            model_name='consumable',
-            name='reusable',
-            field=models.BooleanField(default=False, help_text='Check this box if this item is reusable. The quantity of reusable items will not decrease when orders are made (storage bins for example).'),
+            model_name="consumable",
+            name="reusable",
+            field=models.BooleanField(
+                default=False,
+                help_text="Check this box if this item is reusable. The quantity of reusable items will not decrease when orders are made (storage bins for example).",
+            ),
         ),
         migrations.AlterField(
-            model_name='consumable',
-            name='reminder_email',
-            field=models.EmailField(blank=True, help_text='An email will be sent to this address when the quantity of this item falls below the reminder threshold.', max_length=254, null=True),
+            model_name="consumable",
+            name="reminder_email",
+            field=models.EmailField(
+                blank=True,
+                help_text="An email will be sent to this address when the quantity of this item falls below the reminder threshold.",
+                max_length=254,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='consumable',
-            name='reminder_threshold',
-            field=models.IntegerField(blank=True, help_text='More of this item should be ordered when the quantity falls below this threshold.', null=True),
+            model_name="consumable",
+            name="reminder_threshold",
+            field=models.IntegerField(
+                blank=True,
+                help_text="More of this item should be ordered when the quantity falls below this threshold.",
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='training_required',
-            field=models.BooleanField(default=True, help_text='When selected, the user is blocked from all reservation and tool usage capabilities.', verbose_name='facility rules tutorial required'),
+            model_name="user",
+            name="training_required",
+            field=models.BooleanField(
+                default=True,
+                help_text="When selected, the user is blocked from all reservation and tool usage capabilities.",
+                verbose_name="facility rules tutorial required",
+            ),
         ),
         migrations.CreateModel(
-            name='RecurringConsumableCharge',
+            name="RecurringConsumableCharge",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='The name/identifier for this recurring charge.', max_length=200)),
-                ('last_updated', models.DateTimeField(help_text='The time this charge was last modified.')),
-                ('quantity', models.PositiveIntegerField(default=1, help_text='The number of consumables to charge.', validators=[django.core.validators.MinValueValidator(1)])),
-                ('last_charge', models.DateTimeField(blank=True, help_text='The date and time when the user was last charged.', null=True)),
-                ('rec_start', models.DateField(verbose_name='start', blank=True, help_text='Start date of the recurring charge.', null=True)),
-                ('rec_frequency', models.PositiveIntegerField(verbose_name='frequency', blank=True, choices=[(1, 'Day(s)'), (2, 'Week Day(s)'), (3, 'Weekend Day(s)'), (4, 'Week(s)'), (5, 'Month(s)'), (6, 'Year(s)')], help_text='The charge frequency.', null=True)),
-                ('rec_interval', models.PositiveIntegerField(verbose_name='interval', default=1, help_text='Recurring interval, i.e. every 5 days.', validators=[django.core.validators.MinValueValidator(1)])),
-                ('rec_until', models.DateField(verbose_name='until', blank=True, help_text='End date of the recurring charge.', null=True)),
-                ('rec_count', models.PositiveIntegerField(verbose_name='count', blank=True, help_text='The number of recurrences to charge for.', null=True, validators=[django.core.validators.MinValueValidator(1)])),
-                ('consumable', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='NEMO.consumable')),
-                ('customer', models.ForeignKey(blank=True, help_text='The user who will be charged.', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='recurring_charge_customer', to=settings.AUTH_USER_MODEL)),
-                ('last_updated_by', models.ForeignKey(help_text='The user who last modified this charge (and will be used as merchant on the charge).', on_delete=django.db.models.deletion.PROTECT, related_name='recurring_charge_updated', to=settings.AUTH_USER_MODEL)),
-                ('project', models.ForeignKey(blank=True, help_text='The project to bill.', null=True, on_delete=django.db.models.deletion.CASCADE, to='NEMO.project')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(help_text="The name/identifier for this recurring charge.", max_length=200)),
+                ("last_updated", models.DateTimeField(help_text="The time this charge was last modified.")),
+                (
+                    "quantity",
+                    models.PositiveIntegerField(
+                        default=1,
+                        help_text="The number of consumables to charge.",
+                        validators=[django.core.validators.MinValueValidator(1)],
+                    ),
+                ),
+                (
+                    "last_charge",
+                    models.DateTimeField(
+                        blank=True, help_text="The date and time when the user was last charged.", null=True
+                    ),
+                ),
+                (
+                    "rec_start",
+                    models.DateField(
+                        verbose_name="start", blank=True, help_text="Start date of the recurring charge.", null=True
+                    ),
+                ),
+                (
+                    "rec_frequency",
+                    models.PositiveIntegerField(
+                        verbose_name="frequency",
+                        blank=True,
+                        choices=[
+                            (1, "Day(s)"),
+                            (2, "Week Day(s)"),
+                            (3, "Weekend Day(s)"),
+                            (4, "Week(s)"),
+                            (5, "Month(s)"),
+                            (6, "Year(s)"),
+                        ],
+                        help_text="The charge frequency.",
+                        null=True,
+                    ),
+                ),
+                (
+                    "rec_interval",
+                    models.PositiveIntegerField(
+                        verbose_name="interval",
+                        default=1,
+                        help_text="Recurring interval, i.e. every 5 days.",
+                        validators=[django.core.validators.MinValueValidator(1)],
+                    ),
+                ),
+                (
+                    "rec_until",
+                    models.DateField(
+                        verbose_name="until", blank=True, help_text="End date of the recurring charge.", null=True
+                    ),
+                ),
+                (
+                    "rec_count",
+                    models.PositiveIntegerField(
+                        verbose_name="count",
+                        blank=True,
+                        help_text="The number of recurrences to charge for.",
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(1)],
+                    ),
+                ),
+                ("consumable", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="NEMO.consumable")),
+                (
+                    "customer",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="The user who will be charged.",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="recurring_charge_customer",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "last_updated_by",
+                    models.ForeignKey(
+                        help_text="The user who last modified this charge (and will be used as merchant on the charge).",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="recurring_charge_updated",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "project",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="The project to bill.",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="NEMO.project",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['name'],
+                "ordering": ["name"],
             },
         ),
         migrations.AddField(
-            model_name='userpreferences',
-            name='email_send_recurring_charges_reminder_emails',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only'), (3, 'Alternate email only'), (0, 'Off')], default=1, help_text='Recurring charges reminders'),
+            model_name="userpreferences",
+            name="email_send_recurring_charges_reminder_emails",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only"), (3, "Alternate email only"), (0, "Off")],
+                default=1,
+                help_text="Recurring charges reminders",
+            ),
         ),
         migrations.AddField(
-            model_name='userpreferences',
-            name='recurring_charges_reminder_days',
-            field=models.CharField(blank=True, default='60,7', help_text='The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.', max_length=200, null=True),
+            model_name="userpreferences",
+            name="recurring_charges_reminder_days",
+            field=models.CharField(
+                blank=True,
+                default="60,7",
+                help_text="The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.",
+                max_length=200,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='userpreferences',
-            name='email_send_access_expiration_emails',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Access expiration reminders'),
+            model_name="userpreferences",
+            name="email_send_access_expiration_emails",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only")], default=1, help_text="Access expiration reminders"
+            ),
         ),
         migrations.AlterField(
-            model_name='userpreferences',
-            name='email_send_access_request_updates',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Access request updates'),
+            model_name="userpreferences",
+            name="email_send_access_request_updates",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only")], default=1, help_text="Access request updates"
+            ),
         ),
         migrations.AlterField(
-            model_name='userpreferences',
-            name='email_send_broadcast_emails',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Broadcast emails'),
+            model_name="userpreferences",
+            name="email_send_broadcast_emails",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only")], default=1, help_text="Broadcast emails"
+            ),
         ),
         migrations.AlterField(
-            model_name='userpreferences',
-            name='email_send_buddy_request_replies',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Buddy request replies'),
+            model_name="userpreferences",
+            name="email_send_buddy_request_replies",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only")], default=1, help_text="Buddy request replies"
+            ),
         ),
         migrations.AlterField(
-            model_name='userpreferences',
-            name='email_send_reservation_emails',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Reservation emails'),
+            model_name="userpreferences",
+            name="email_send_reservation_emails",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only")], default=1, help_text="Reservation emails"
+            ),
         ),
         migrations.AlterField(
-            model_name='userpreferences',
-            name='email_send_task_updates',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Task updates'),
+            model_name="userpreferences",
+            name="email_send_task_updates",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only")], default=1, help_text="Task updates"
+            ),
         ),
         migrations.AlterField(
-            model_name='userpreferences',
-            name='email_send_reservation_ending_reminders',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only'), (3, 'Alternate email only'), (0, 'Off')], default=1, help_text='Reservation ending reminders'),
+            model_name="userpreferences",
+            name="email_send_reservation_ending_reminders",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only"), (3, "Alternate email only"), (0, "Off")],
+                default=1,
+                help_text="Reservation ending reminders",
+            ),
         ),
         migrations.AlterField(
-            model_name='userpreferences',
-            name='email_send_reservation_reminders',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only'), (3, 'Alternate email only'), (0, 'Off')], default=1, help_text='Reservation reminders'),
+            model_name="userpreferences",
+            name="email_send_reservation_reminders",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only"), (3, "Alternate email only"), (0, "Off")],
+                default=1,
+                help_text="Reservation reminders",
+            ),
         ),
         migrations.AlterField(
-            model_name='userpreferences',
-            name='email_send_tool_qualification_expiration_emails',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only')], default=1, help_text='Tool qualification expiration reminders'),
+            model_name="userpreferences",
+            name="email_send_tool_qualification_expiration_emails",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only")],
+                default=1,
+                help_text="Tool qualification expiration reminders",
+            ),
         ),
         migrations.AlterField(
-            model_name='userpreferences',
-            name='email_send_usage_reminders',
-            field=models.PositiveIntegerField(choices=[(1, 'Both emails'), (2, 'Main email only'), (3, 'Alternate email only'), (0, 'Off')], default=1, help_text='Usage reminders'),
+            model_name="userpreferences",
+            name="email_send_usage_reminders",
+            field=models.PositiveIntegerField(
+                choices=[(1, "Both emails"), (2, "Main email only"), (3, "Alternate email only"), (0, "Off")],
+                default=1,
+                help_text="Usage reminders",
+            ),
         ),
         migrations.CreateModel(
-            name='Discipline',
+            name="Discipline",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='The name of the discipline', max_length=200, unique=True)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(help_text="The name of the discipline", max_length=200, unique=True)),
+            ],
+            options={"abstract": False, "ordering": ["name"]},
+        ),
+        migrations.CreateModel(
+            name="SafetyTraining",
+            fields=[
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(help_text="The name of the training", max_length=200, unique=True)),
+                (
+                    "display_order",
+                    models.IntegerField(
+                        help_text="Safety trainings are sorted according to display order. The lowest value category is displayed first in the 'Users' page."
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
-                'ordering': ['name']
+                "abstract": False,
+                "ordering": ["display_order", "name"],
             },
         ),
         migrations.CreateModel(
-            name='SafetyTraining',
+            name="OnboardingPhase",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='The name of the training', max_length=200, unique=True)),
-                ('display_order', models.IntegerField(help_text="Safety trainings are sorted according to display order. The lowest value category is displayed first in the 'Users' page.")),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(help_text="The name of the onboarding phase", max_length=200, unique=True)),
+                (
+                    "display_order",
+                    models.IntegerField(
+                        help_text="Onboarding phases are sorted according to display order. The lowest value category is displayed first in the 'Users' page."
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
-                'ordering': ['display_order', 'name'],
+                "abstract": False,
+                "ordering": ["display_order", "name"],
             },
         ),
         migrations.CreateModel(
-            name='OnboardingPhase',
+            name="ProjectDocuments",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='The name of the onboarding phase', max_length=200, unique=True)),
-                ('display_order', models.IntegerField(help_text="Onboarding phases are sorted according to display order. The lowest value category is displayed first in the 'Users' page.")),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "document",
+                    models.FileField(
+                        blank=True,
+                        null=True,
+                        upload_to=NEMO.utilities.document_filename_upload,
+                        verbose_name="Document",
+                    ),
+                ),
+                ("url", models.CharField(blank=True, max_length=200, null=True, verbose_name="URL")),
+                (
+                    "name",
+                    models.CharField(
+                        blank=True,
+                        help_text="The optional name to display for this document",
+                        max_length=200,
+                        null=True,
+                    ),
+                ),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "project",
+                    models.ForeignKey(
+                        related_name="project_documents", on_delete=django.db.models.deletion.CASCADE, to="NEMO.project"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
-                'ordering': ['display_order', 'name'],
+                "verbose_name_plural": "Project documents",
+                "ordering": ["-uploaded_at"],
             },
+        ),
+        migrations.AddField(
+            model_name="project",
+            name="discipline",
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to="NEMO.discipline"
+            ),
         ),
         migrations.CreateModel(
-            name='ProjectDocuments',
+            name="UserDocuments",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('document', models.FileField(blank=True, null=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document')),
-                ('url', models.CharField(blank=True, max_length=200, null=True, verbose_name='URL')),
-                ('name', models.CharField(blank=True, help_text='The optional name to display for this document', max_length=200, null=True)),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('project', models.ForeignKey(related_name="project_documents", on_delete=django.db.models.deletion.CASCADE, to='NEMO.project')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "document",
+                    models.FileField(
+                        blank=True,
+                        null=True,
+                        upload_to=NEMO.utilities.document_filename_upload,
+                        verbose_name="Document",
+                    ),
+                ),
+                ("url", models.CharField(blank=True, max_length=200, null=True, verbose_name="URL")),
+                (
+                    "name",
+                    models.CharField(
+                        blank=True,
+                        help_text="The optional name to display for this document",
+                        max_length=200,
+                        null=True,
+                    ),
+                ),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        related_name="user_documents", on_delete=django.db.models.deletion.CASCADE, to="NEMO.user"
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Project documents',
-                'ordering': ['-uploaded_at'],
+                "verbose_name_plural": "User documents",
+                "ordering": ["-uploaded_at"],
             },
         ),
         migrations.AddField(
-            model_name='project',
-            name='discipline',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='NEMO.discipline'),
-        ),
-        migrations.CreateModel(
-            name='UserDocuments',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('document', models.FileField(blank=True, null=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document')),
-                ('url', models.CharField(blank=True, max_length=200, null=True, verbose_name='URL')),
-                ('name', models.CharField(blank=True, help_text='The optional name to display for this document', max_length=200, null=True)),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(related_name="user_documents", on_delete=django.db.models.deletion.CASCADE, to='NEMO.user')),
-            ],
-            options={
-                'verbose_name_plural': 'User documents',
-                'ordering': ['-uploaded_at'],
-            },
+            model_name="user",
+            name="discipline",
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to="NEMO.discipline"
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='discipline',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='NEMO.discipline'),
+            model_name="user",
+            name="onboarding_phases",
+            field=models.ManyToManyField(blank=True, to="NEMO.OnboardingPhase"),
         ),
         migrations.AddField(
-            model_name='user',
-            name='onboarding_phases',
-            field=models.ManyToManyField(blank=True, to='NEMO.OnboardingPhase'),
+            model_name="user",
+            name="safety_trainings",
+            field=models.ManyToManyField(blank=True, to="NEMO.SafetyTraining"),
         ),
         migrations.AddField(
-            model_name='user',
-            name='safety_trainings',
-            field=models.ManyToManyField(blank=True, to='NEMO.SafetyTraining'),
+            model_name="user",
+            name="is_accounting_officer",
+            field=models.BooleanField(
+                default=False,
+                help_text="Designates this user as Accounting officer. Accounting officers can manage projects, view user details, and check usage/billing.",
+                verbose_name="accounting officer",
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='is_accounting_officer',
-            field=models.BooleanField(default=False, help_text='Designates this user as Accounting officer. Accounting officers can manage projects, view user details, and check usage/billing.', verbose_name='accounting officer'),
-        ),
-        migrations.AddField(
-            model_name='user',
-            name='is_user_office',
-            field=models.BooleanField(default=False, help_text='Designates this user as part of the User Office. User Office staff can create and manage users and projects, charge supplies, check usage etc.', verbose_name='user office'),
+            model_name="user",
+            name="is_user_office",
+            field=models.BooleanField(
+                default=False,
+                help_text="Designates this user as part of the User Office. User Office staff can create and manage users and projects, charge supplies, check usage etc.",
+                verbose_name="user office",
+            ),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='is_staff',
-            field=models.BooleanField(default=False, help_text='Designates this user as technical staff. Technical staff can start remote projects, check maintenance, change configuration, train users etc.', verbose_name='staff'),
+            model_name="user",
+            name="is_staff",
+            field=models.BooleanField(
+                default=False,
+                help_text="Designates this user as technical staff. Technical staff can start remote projects, check maintenance, change configuration, train users etc.",
+                verbose_name="staff",
+            ),
         ),
     ]

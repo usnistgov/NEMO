@@ -361,7 +361,14 @@ AUDITLOG_INCLUDE_TRACKING_MODELS = (
     # Track changes to user access expiration, roles and managed projects
     {
         "model": "NEMO.User",
-        "include_fields": ["access_expiration", "is_staff", "is_service_personnel", "is_technician", "is_facility_manager", "is_superuser"],
+        "include_fields": [
+            "access_expiration",
+            "is_staff",
+            "is_service_personnel",
+            "is_technician",
+            "is_facility_manager",
+            "is_superuser",
+        ],
         "m2m_fields": ["managed_projects"],
     },
     # Track all project, account and Customization changes
@@ -373,9 +380,9 @@ AUDITLOG_INCLUDE_TRACKING_MODELS = (
 # List of compiled regular expression objects describing URLs that should be ignored
 # when reporting HTTP 404 errors via email
 IGNORABLE_404_URLS = [
-    re.compile(r'\.(php|cgi)$'),
-    re.compile(r'^/phpmyadmin/'),
-    re.compile(r'^/robots.txt$'),
+    re.compile(r"\.(php|cgi)$"),
+    re.compile(r"^/phpmyadmin/"),
+    re.compile(r"^/robots.txt$"),
     re.compile(r"^/apple-touch-icon.*\.png$"),
     re.compile(r"^/favicon\.ico$"),
 ]

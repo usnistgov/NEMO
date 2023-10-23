@@ -7,9 +7,8 @@ from NEMO.migrations_utils import create_news_for_version
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0039_version_4_1_0'),
+        ("NEMO", "0039_version_4_1_0"),
     ]
 
     def new_version_news(apps, schema_editor):
@@ -18,39 +17,61 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(new_version_news),
         migrations.AddField(
-            model_name='staffabsence',
-            name='manager_note',
-            field=models.TextField(blank=True, help_text='A note only visible to managers.', null=True),
+            model_name="staffabsence",
+            name="manager_note",
+            field=models.TextField(blank=True, help_text="A note only visible to managers.", null=True),
         ),
         migrations.AlterField(
-            model_name='staffabsence',
-            name='description',
-            field=models.TextField(blank=True, help_text='The absence description. This will be visible to anyone.', null=True),
+            model_name="staffabsence",
+            name="description",
+            field=models.TextField(
+                blank=True, help_text="The absence description. This will be visible to anyone.", null=True
+            ),
         ),
         migrations.CreateModel(
-            name='ChemicalHazard',
+            name="ChemicalHazard",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200)),
-                ('display_order', models.IntegerField(help_text="Chemical hazards are sorted according to display order. The lowest value category is displayed first in the 'Safety data sheet' page.")),
-                ('logo', models.ImageField(blank=True, help_text='The logo for this hazard', upload_to=NEMO.utilities.get_hazard_logo_filename)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=200)),
+                (
+                    "display_order",
+                    models.IntegerField(
+                        help_text="Chemical hazards are sorted according to display order. The lowest value category is displayed first in the 'Safety data sheet' page."
+                    ),
+                ),
+                (
+                    "logo",
+                    models.ImageField(
+                        blank=True,
+                        help_text="The logo for this hazard",
+                        upload_to=NEMO.utilities.get_hazard_logo_filename,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['display_order', 'name'],
+                "ordering": ["display_order", "name"],
             },
         ),
         migrations.CreateModel(
-            name='Chemical',
+            name="Chemical",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200)),
-                ('document', models.FileField(blank=True, null=True, upload_to=NEMO.utilities.get_chemical_document_filename)),
-                ('url', models.CharField(blank=True, max_length=200, null=True, verbose_name='URL')),
-                ('keywords', models.TextField(blank=True, null=True)),
-                ('hazards', models.ManyToManyField(blank=True, help_text='Select the hazards for this chemical.', to='NEMO.ChemicalHazard')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=200)),
+                (
+                    "document",
+                    models.FileField(blank=True, null=True, upload_to=NEMO.utilities.get_chemical_document_filename),
+                ),
+                ("url", models.CharField(blank=True, max_length=200, null=True, verbose_name="URL")),
+                ("keywords", models.TextField(blank=True, null=True)),
+                (
+                    "hazards",
+                    models.ManyToManyField(
+                        blank=True, help_text="Select the hazards for this chemical.", to="NEMO.ChemicalHazard"
+                    ),
+                ),
             ],
             options={
-                'ordering': ['name'],
+                "ordering": ["name"],
             },
         ),
     ]

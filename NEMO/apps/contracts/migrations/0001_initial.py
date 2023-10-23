@@ -7,93 +7,183 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='ContractorAgreement',
+            name="ContractorAgreement",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='The name of the contractor', max_length=255)),
-                ('start', models.DateField(blank=True, help_text='Start date of the contractor agreement', null=True)),
-                ('end', models.DateField(blank=True, help_text='The end date of this contractor agreement', null=True)),
-                ('reminder_date', models.DateField(blank=True, help_text='The reminder date for this contractor agreement', null=True)),
-                ('notes', models.TextField(blank=True, null=True)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(help_text="The name of the contractor", max_length=255)),
+                ("start", models.DateField(blank=True, help_text="Start date of the contractor agreement", null=True)),
+                ("end", models.DateField(blank=True, help_text="The end date of this contractor agreement", null=True)),
+                (
+                    "reminder_date",
+                    models.DateField(
+                        blank=True, help_text="The reminder date for this contractor agreement", null=True
+                    ),
+                ),
+                ("notes", models.TextField(blank=True, null=True)),
             ],
             options={
-                'ordering': ['contract', '-start'],
+                "ordering": ["contract", "-start"],
             },
         ),
         migrations.CreateModel(
-            name='Procurement',
+            name="Procurement",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='The name of the contract', max_length=255)),
-                ('submitted_date', models.DateField(blank=True, help_text='The date this contract was submitted', null=True)),
-                ('award_date', models.DateField(blank=True, help_text='The date this contract was awarded', null=True)),
-                ('contract_number', models.CharField(blank=True, help_text='The contract number', max_length=255, null=True)),
-                ('requisition_number', models.CharField(blank=True, help_text='The requisition number for this contract', max_length=255, null=True)),
-                ('cost', models.DecimalField(blank=True, decimal_places=2, help_text='The cost of this contract', max_digits=14, null=True)),
-                ('notes', models.TextField(blank=True, null=True)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(help_text="The name of the contract", max_length=255)),
+                (
+                    "submitted_date",
+                    models.DateField(blank=True, help_text="The date this contract was submitted", null=True),
+                ),
+                ("award_date", models.DateField(blank=True, help_text="The date this contract was awarded", null=True)),
+                (
+                    "contract_number",
+                    models.CharField(blank=True, help_text="The contract number", max_length=255, null=True),
+                ),
+                (
+                    "requisition_number",
+                    models.CharField(
+                        blank=True, help_text="The requisition number for this contract", max_length=255, null=True
+                    ),
+                ),
+                (
+                    "cost",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, help_text="The cost of this contract", max_digits=14, null=True
+                    ),
+                ),
+                ("notes", models.TextField(blank=True, null=True)),
             ],
             options={
-                'ordering': ['name'],
+                "ordering": ["name"],
             },
         ),
         migrations.CreateModel(
-            name='ServiceContract',
+            name="ServiceContract",
             fields=[
-                ('procurement_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='contracts.procurement')),
-                ('current_year', models.PositiveIntegerField(default=1, help_text='The total number of years of this service contract', validators=[django.core.validators.MinValueValidator(1)])),
-                ('total_years', models.PositiveIntegerField(default=1, help_text='The current year for this service contract', validators=[django.core.validators.MinValueValidator(1)])),
-                ('start', models.DateField(blank=True, help_text='The start date of this service contract', null=True)),
-                ('end', models.DateField(blank=True, help_text='The end date of this service contract', null=True)),
-                ('reminder_date', models.DateField(blank=True, help_text='The reminder date for this service contract', null=True)),
+                (
+                    "procurement_ptr",
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to="contracts.procurement",
+                    ),
+                ),
+                (
+                    "current_year",
+                    models.PositiveIntegerField(
+                        default=1,
+                        help_text="The total number of years of this service contract",
+                        validators=[django.core.validators.MinValueValidator(1)],
+                    ),
+                ),
+                (
+                    "total_years",
+                    models.PositiveIntegerField(
+                        default=1,
+                        help_text="The current year for this service contract",
+                        validators=[django.core.validators.MinValueValidator(1)],
+                    ),
+                ),
+                ("start", models.DateField(blank=True, help_text="The start date of this service contract", null=True)),
+                ("end", models.DateField(blank=True, help_text="The end date of this service contract", null=True)),
+                (
+                    "reminder_date",
+                    models.DateField(blank=True, help_text="The reminder date for this service contract", null=True),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
-            bases=('contracts.procurement',),
+            bases=("contracts.procurement",),
         ),
         migrations.CreateModel(
-            name='ProcurementDocuments',
+            name="ProcurementDocuments",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('document', models.FileField(blank=True, null=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document')),
-                ('url', models.CharField(blank=True, max_length=200, null=True, verbose_name='URL')),
-                ('name', models.CharField(blank=True, help_text='The optional name to display for this document', max_length=200, null=True)),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('procurement', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contracts.procurement')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "document",
+                    models.FileField(
+                        blank=True,
+                        null=True,
+                        upload_to=NEMO.utilities.document_filename_upload,
+                        verbose_name="Document",
+                    ),
+                ),
+                ("url", models.CharField(blank=True, max_length=200, null=True, verbose_name="URL")),
+                (
+                    "name",
+                    models.CharField(
+                        blank=True,
+                        help_text="The optional name to display for this document",
+                        max_length=200,
+                        null=True,
+                    ),
+                ),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "procurement",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="contracts.procurement"),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Procurement documents',
-                'ordering': ['-uploaded_at'],
-                'abstract': False,
+                "verbose_name_plural": "Procurement documents",
+                "ordering": ["-uploaded_at"],
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='ContractorAgreementDocuments',
+            name="ContractorAgreementDocuments",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('document', models.FileField(blank=True, null=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document')),
-                ('url', models.CharField(blank=True, max_length=200, null=True, verbose_name='URL')),
-                ('name', models.CharField(blank=True, help_text='The optional name to display for this document', max_length=200, null=True)),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('contractor_agreement', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contracts.contractoragreement')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "document",
+                    models.FileField(
+                        blank=True,
+                        null=True,
+                        upload_to=NEMO.utilities.document_filename_upload,
+                        verbose_name="Document",
+                    ),
+                ),
+                ("url", models.CharField(blank=True, max_length=200, null=True, verbose_name="URL")),
+                (
+                    "name",
+                    models.CharField(
+                        blank=True,
+                        help_text="The optional name to display for this document",
+                        max_length=200,
+                        null=True,
+                    ),
+                ),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "contractor_agreement",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="contracts.contractoragreement"),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Contractor agreement documents',
-                'ordering': ['-uploaded_at'],
-                'abstract': False,
+                "verbose_name_plural": "Contractor agreement documents",
+                "ordering": ["-uploaded_at"],
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='contractoragreement',
-            name='contract',
-            field=models.ForeignKey(blank=True, help_text='The contract this contractor is linked to', null=True, on_delete=django.db.models.deletion.CASCADE, to='contracts.procurement'),
+            model_name="contractoragreement",
+            name="contract",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="The contract this contractor is linked to",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="contracts.procurement",
+            ),
         ),
     ]

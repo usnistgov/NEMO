@@ -200,8 +200,12 @@ def get_contractors_table_display(contractor_agreement_list: QuerySetType[Contra
                 "name": contractor_agreement.name,
                 "contract_name": contractor_agreement.contract_name,
                 "contract_number": contractor_agreement.contract_number,
-                "start": format_datetime(contractor_agreement.start, "SHORT_DATE_FORMAT") if contractor_agreement.start else "",
-                "end": format_datetime(contractor_agreement.end, "SHORT_DATE_FORMAT") if contractor_agreement.end else "",
+                "start": format_datetime(contractor_agreement.start, "SHORT_DATE_FORMAT")
+                if contractor_agreement.start
+                else "",
+                "end": format_datetime(contractor_agreement.end, "SHORT_DATE_FORMAT")
+                if contractor_agreement.end
+                else "",
                 "reminder_date": format_datetime(contractor_agreement.reminder_date, "SHORT_DATE_FORMAT")
                 if contractor_agreement.reminder_date
                 else "",
@@ -215,7 +219,9 @@ def get_contractors_table_display(contractor_agreement_list: QuerySetType[Contra
 
 
 def send_email_contract_reminders():
-    sc_table = get_procurements_table_display(ServiceContract.objects.filter(reminder_date=datetime.date.today()), procurement_only=False)
+    sc_table = get_procurements_table_display(
+        ServiceContract.objects.filter(reminder_date=datetime.date.today()), procurement_only=False
+    )
     ca_table = get_contractors_table_display(ContractorAgreement.objects.filter(reminder_date=datetime.date.today()))
     send_reminder(sc_table, "service contracts")
     send_reminder(ca_table, "contractor agreements")

@@ -36,7 +36,7 @@ from NEMO.utilities import (
     render_email_template,
     send_mail,
 )
-from NEMO.views.customization import (EmailsCustomization, UserRequestsCustomization, get_media_file_contents)
+from NEMO.views.customization import EmailsCustomization, UserRequestsCustomization, get_media_file_contents
 from NEMO.views.notifications import (
     create_adjustment_request_notification,
     create_request_message_notification,
@@ -76,11 +76,13 @@ def adjustment_requests(request):
         "adjustment_requests_description": UserRequestsCustomization.get("adjustment_requests_description"),
         "request_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST, delete=False),
         "reply_notifications": get_notifications(request.user, Notification.Types.ADJUSTMENT_REQUEST_REPLY),
-        "user_is_reviewer": user_is_reviewer
+        "user_is_reviewer": user_is_reviewer,
     }
 
     # Delete notifications for seen requests
-    Notification.objects.filter(user=request.user, notification_type=Notification.Types.ADJUSTMENT_REQUEST, object_id__in=my_requests).delete()
+    Notification.objects.filter(
+        user=request.user, notification_type=Notification.Types.ADJUSTMENT_REQUEST, object_id__in=my_requests
+    ).delete()
     return render(request, "requests/adjustment_requests/adjustment_requests.html", dictionary)
 
 
@@ -348,7 +350,11 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
             .filter(**end_filter)
             .order_by("-end")[:item_number]
         )
-        items.extend(StaffCharge.objects.filter(end__isnull=False, staff_member=user).filter(**end_filter).order_by("-end")[:item_number])
+        items.extend(
+            StaffCharge.objects.filter(end__isnull=False, staff_member=user)
+            .filter(**end_filter)
+            .order_by("-end")[:item_number]
+        )
     if current_item and current_item in items:
         items.remove(current_item)
     # Remove already adjusted charges. filter by id first

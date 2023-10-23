@@ -8,21 +8,26 @@ from django.db.models import Q
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0050_consumable_add_self_checkout_and_notes'),
+        ("NEMO", "0050_consumable_add_self_checkout_and_notes"),
     ]
 
     def migrate_adjustment_request_reviewers_forward(apps, schema_editor):
-        Tool = apps.get_model('NEMO', 'Tool')
-        Area = apps.get_model('NEMO', 'Area')
-        User = apps.get_model('NEMO', 'User')
-        UserPreferences = apps.get_model('NEMO', 'UserPreferences')
+        Tool = apps.get_model("NEMO", "Tool")
+        Area = apps.get_model("NEMO", "Area")
+        User = apps.get_model("NEMO", "User")
+        UserPreferences = apps.get_model("NEMO", "UserPreferences")
         tool_adjustments: Dict[int, Set] = defaultdict(set)
         area_adjustments: Dict[int, Set] = defaultdict(set)
-        managers_all_tool_adjustments = User.objects.filter(is_active=True, is_facility_manager=True, preferences__tool_adjustment_notifications__isnull=True)
-        managers_all_area_adjustments = User.objects.filter(is_active=True, is_facility_manager=True, preferences__area_adjustment_notifications__isnull=True)
-        for user_preference in UserPreferences.objects.filter(Q(tool_adjustment_notifications__isnull=False) | Q(area_adjustment_notifications__isnull=False)):
+        managers_all_tool_adjustments = User.objects.filter(
+            is_active=True, is_facility_manager=True, preferences__tool_adjustment_notifications__isnull=True
+        )
+        managers_all_area_adjustments = User.objects.filter(
+            is_active=True, is_facility_manager=True, preferences__area_adjustment_notifications__isnull=True
+        )
+        for user_preference in UserPreferences.objects.filter(
+            Q(tool_adjustment_notifications__isnull=False) | Q(area_adjustment_notifications__isnull=False)
+        ):
             for tool in user_preference.tool_adjustment_notifications.all():
                 tool_adjustments[tool.id].add(user_preference.user)
                 # Add managers who want to receive all
@@ -37,8 +42,8 @@ class Migration(migrations.Migration):
             area.adjustment_request_reviewers.set(area_adjustments[area.id])
 
     def migrate_adjustment_request_reviewers_reverse(apps, schema_editor):
-        Tool = apps.get_model('NEMO', 'Tool')
-        Area = apps.get_model('NEMO', 'Area')
+        Tool = apps.get_model("NEMO", "Tool")
+        Area = apps.get_model("NEMO", "Area")
         for tool in Tool.objects.all():
             for user in tool._adjustment_request_reviewers.all():
                 if user.preferences:
@@ -50,37 +55,98 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='area',
-            name='access_request_reviewers',
-            field=models.ManyToManyField(blank=True, help_text='Users who can approve/deny access requests for this area. Defaults to facility managers if left blank.', related_name='access_request_reviewer_on_areas', to=settings.AUTH_USER_MODEL),
+            model_name="area",
+            name="access_request_reviewers",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text="Users who can approve/deny access requests for this area. Defaults to facility managers if left blank.",
+                related_name="access_request_reviewer_on_areas",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='area',
-            name='adjustment_request_reviewers',
-            field=models.ManyToManyField(blank=True, help_text='Users who can approve/deny adjustment requests for this area. Defaults to facility managers if left blank.', related_name='adjustment_request_reviewer_on_areas', to=settings.AUTH_USER_MODEL),
+            model_name="area",
+            name="adjustment_request_reviewers",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text="Users who can approve/deny adjustment requests for this area. Defaults to facility managers if left blank.",
+                related_name="adjustment_request_reviewer_on_areas",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='tool',
-            name='_adjustment_request_reviewers',
-            field=models.ManyToManyField(blank=True, db_table='NEMO_tool_adjustment_request_reviewers', help_text='Users who can approve/deny adjustment requests for this tool. Defaults to facility managers if left blank.', related_name='adjustment_request_reviewer_on_tools', to=settings.AUTH_USER_MODEL),
+            model_name="tool",
+            name="_adjustment_request_reviewers",
+            field=models.ManyToManyField(
+                blank=True,
+                db_table="NEMO_tool_adjustment_request_reviewers",
+                help_text="Users who can approve/deny adjustment requests for this tool. Defaults to facility managers if left blank.",
+                related_name="adjustment_request_reviewer_on_tools",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
-        migrations.RunPython(migrate_adjustment_request_reviewers_forward, migrate_adjustment_request_reviewers_reverse),
-        migrations.RemoveField(
-            model_name='userpreferences',
-            name='area_adjustment_notifications',
+        migrations.RunPython(
+            migrate_adjustment_request_reviewers_forward, migrate_adjustment_request_reviewers_reverse
         ),
         migrations.RemoveField(
-            model_name='userpreferences',
-            name='tool_adjustment_notifications',
+            model_name="userpreferences",
+            name="area_adjustment_notifications",
+        ),
+        migrations.RemoveField(
+            model_name="userpreferences",
+            name="tool_adjustment_notifications",
         ),
         migrations.AlterField(
-            model_name='landingpagechoice',
-            name='notifications',
-            field=models.CharField(blank=True, choices=[('news', 'News creation and updates - notifies all users'), ('safetyissue', 'New safety issues - notifies staff only'), ('buddyrequest', 'New buddy request - notifies all users'), ('buddyrequestmessage', 'New buddy request reply - notifies request creator and users who have replied'), ('adjustmentrequest', 'New adjustment request - notifies reviewers only'), ('adjustmentrequestmessage', 'New adjustment request reply - notifies request creator and users who have replied'), ('temporaryphysicalaccessrequest', 'New access request - notifies other users on request and reviewers')], help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.", max_length=100, null=True),
+            model_name="landingpagechoice",
+            name="notifications",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("news", "News creation and updates - notifies all users"),
+                    ("safetyissue", "New safety issues - notifies staff only"),
+                    ("buddyrequest", "New buddy request - notifies all users"),
+                    (
+                        "buddyrequestmessage",
+                        "New buddy request reply - notifies request creator and users who have replied",
+                    ),
+                    ("adjustmentrequest", "New adjustment request - notifies reviewers only"),
+                    (
+                        "adjustmentrequestmessage",
+                        "New adjustment request reply - notifies request creator and users who have replied",
+                    ),
+                    (
+                        "temporaryphysicalaccessrequest",
+                        "New access request - notifies other users on request and reviewers",
+                    ),
+                ],
+                help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.",
+                max_length=100,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='notification',
-            name='notification_type',
-            field=models.CharField(choices=[('news', 'News creation and updates - notifies all users'), ('safetyissue', 'New safety issues - notifies staff only'), ('buddyrequest', 'New buddy request - notifies all users'), ('buddyrequestmessage', 'New buddy request reply - notifies request creator and users who have replied'), ('adjustmentrequest', 'New adjustment request - notifies reviewers only'), ('adjustmentrequestmessage', 'New adjustment request reply - notifies request creator and users who have replied'), ('temporaryphysicalaccessrequest', 'New access request - notifies other users on request and reviewers')], max_length=100),
+            model_name="notification",
+            name="notification_type",
+            field=models.CharField(
+                choices=[
+                    ("news", "News creation and updates - notifies all users"),
+                    ("safetyissue", "New safety issues - notifies staff only"),
+                    ("buddyrequest", "New buddy request - notifies all users"),
+                    (
+                        "buddyrequestmessage",
+                        "New buddy request reply - notifies request creator and users who have replied",
+                    ),
+                    ("adjustmentrequest", "New adjustment request - notifies reviewers only"),
+                    (
+                        "adjustmentrequestmessage",
+                        "New adjustment request reply - notifies request creator and users who have replied",
+                    ),
+                    (
+                        "temporaryphysicalaccessrequest",
+                        "New access request - notifies other users on request and reviewers",
+                    ),
+                ],
+                max_length=100,
+            ),
         ),
     ]

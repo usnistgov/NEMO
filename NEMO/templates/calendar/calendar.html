@@ -162,12 +162,11 @@ function update_event_sources()
 {# Adds an event source feed to an event source list #}
 function add_item_to_event_feed_list(item_event_source_list, url, event_type, data)
 {
+    let new_data = {event_type};
+    Object.assign(new_data, data);
     item_event_source_list.push({
         url,
-        data: {
-            event_type,
-            ...data,
-        },
+        data: new_data,
     });
 }
 
@@ -544,7 +543,7 @@ function login_to_area()
 	let item = get_selected_item();
 	if (item && item !== "personal_schedule" && item !== "all_tools" && item !== "all_areas" && item !== "all_areastools")
 	{
-		item = JSON.parse(item)
+		item = JSON.parse(item);
 		let event_changes =
 		{
 			"area": item.id,

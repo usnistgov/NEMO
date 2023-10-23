@@ -7,9 +7,8 @@ from NEMO.migrations_utils import create_news_for_version
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0043_version_4_3_2'),
+        ("NEMO", "0043_version_4_3_2"),
     ]
 
     def new_version_news(apps, schema_editor):
@@ -18,97 +17,142 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(new_version_news),
         migrations.RemoveField(
-            model_name='user',
-            name='discipline',
+            model_name="user",
+            name="discipline",
         ),
         migrations.AlterField(
-            model_name='chemicalhazard',
-            name='display_order',
-            field=models.IntegerField(help_text='The display order is used to sort these items. The lowest value category is displayed first.'),
+            model_name="chemicalhazard",
+            name="display_order",
+            field=models.IntegerField(
+                help_text="The display order is used to sort these items. The lowest value category is displayed first."
+            ),
         ),
         migrations.AlterField(
-            model_name='chemicalhazard',
-            name='name',
-            field=models.CharField(help_text='The unique name for this item', max_length=200, unique=True),
+            model_name="chemicalhazard",
+            name="name",
+            field=models.CharField(help_text="The unique name for this item", max_length=200, unique=True),
         ),
         migrations.AlterField(
-            model_name='contactinformationcategory',
-            name='display_order',
-            field=models.IntegerField(help_text='The display order is used to sort these items. The lowest value category is displayed first.'),
+            model_name="contactinformationcategory",
+            name="display_order",
+            field=models.IntegerField(
+                help_text="The display order is used to sort these items. The lowest value category is displayed first."
+            ),
         ),
         migrations.AlterField(
-            model_name='contactinformationcategory',
-            name='name',
-            field=models.CharField(help_text='The unique name for this item', max_length=200, unique=True),
+            model_name="contactinformationcategory",
+            name="name",
+            field=models.CharField(help_text="The unique name for this item", max_length=200, unique=True),
         ),
         migrations.AlterField(
-            model_name='onboardingphase',
-            name='display_order',
-            field=models.IntegerField(help_text='The display order is used to sort these items. The lowest value category is displayed first.'),
+            model_name="onboardingphase",
+            name="display_order",
+            field=models.IntegerField(
+                help_text="The display order is used to sort these items. The lowest value category is displayed first."
+            ),
         ),
         migrations.AlterField(
-            model_name='onboardingphase',
-            name='name',
-            field=models.CharField(help_text='The unique name for this item', max_length=200, unique=True),
+            model_name="onboardingphase",
+            name="name",
+            field=models.CharField(help_text="The unique name for this item", max_length=200, unique=True),
         ),
         migrations.AlterField(
-            model_name='safetytraining',
-            name='display_order',
-            field=models.IntegerField(help_text='The display order is used to sort these items. The lowest value category is displayed first.'),
+            model_name="safetytraining",
+            name="display_order",
+            field=models.IntegerField(
+                help_text="The display order is used to sort these items. The lowest value category is displayed first."
+            ),
         ),
         migrations.AlterField(
-            model_name='safetytraining',
-            name='name',
-            field=models.CharField(help_text='The unique name for this item', max_length=200, unique=True),
+            model_name="safetytraining",
+            name="name",
+            field=models.CharField(help_text="The unique name for this item", max_length=200, unique=True),
         ),
         migrations.AlterField(
-            model_name='staffavailabilitycategory',
-            name='display_order',
-            field=models.IntegerField(help_text='The display order is used to sort these items. The lowest value category is displayed first.'),
+            model_name="staffavailabilitycategory",
+            name="display_order",
+            field=models.IntegerField(
+                help_text="The display order is used to sort these items. The lowest value category is displayed first."
+            ),
         ),
         migrations.AlterField(
-            model_name='staffavailabilitycategory',
-            name='name',
-            field=models.CharField(help_text='The unique name for this item', max_length=200, unique=True),
+            model_name="staffavailabilitycategory",
+            name="name",
+            field=models.CharField(help_text="The unique name for this item", max_length=200, unique=True),
         ),
         migrations.CreateModel(
-            name='SafetyCategory',
+            name="SafetyCategory",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200, unique=True, help_text='The unique name for this item')),
-                ('display_order', models.IntegerField(help_text='The display order is used to sort these items. The lowest value category is displayed first.')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=200, unique=True, help_text="The unique name for this item")),
+                (
+                    "display_order",
+                    models.IntegerField(
+                        help_text="The display order is used to sort these items. The lowest value category is displayed first."
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Safety categories',
-                'ordering': ['display_order', 'name'],
-                'abstract': False,
+                "verbose_name_plural": "Safety categories",
+                "ordering": ["display_order", "name"],
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='SafetyItem',
+            name="SafetyItem",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='The safety item name.', max_length=200)),
-                ('description', models.TextField(blank=True, help_text='The description for this safety item. HTML can be used.', null=True)),
-                ('category', models.ForeignKey(blank=True, help_text='The category for this safety item.', null=True, on_delete=django.db.models.deletion.SET_NULL, to='NEMO.safetycategory')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(help_text="The safety item name.", max_length=200)),
+                (
+                    "description",
+                    models.TextField(
+                        blank=True, help_text="The description for this safety item. HTML can be used.", null=True
+                    ),
+                ),
+                (
+                    "category",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="The category for this safety item.",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="NEMO.safetycategory",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='SafetyItemDocuments',
+            name="SafetyItemDocuments",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('document', models.FileField(blank=True, null=True, upload_to=NEMO.utilities.document_filename_upload, verbose_name='Document')),
-                ('url', models.CharField(blank=True, max_length=200, null=True, verbose_name='URL')),
-                ('name', models.CharField(blank=True, help_text='The optional name to display for this document', max_length=200, null=True)),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('safety_item', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='NEMO.safetyitem')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "document",
+                    models.FileField(
+                        blank=True,
+                        null=True,
+                        upload_to=NEMO.utilities.document_filename_upload,
+                        verbose_name="Document",
+                    ),
+                ),
+                ("url", models.CharField(blank=True, max_length=200, null=True, verbose_name="URL")),
+                (
+                    "name",
+                    models.CharField(
+                        blank=True,
+                        help_text="The optional name to display for this document",
+                        max_length=200,
+                        null=True,
+                    ),
+                ),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
+                ("safety_item", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="NEMO.safetyitem")),
             ],
             options={
-                'verbose_name_plural': 'Safety item documents',
-                'ordering': ['-uploaded_at'],
+                "verbose_name_plural": "Safety item documents",
+                "ordering": ["-uploaded_at"],
             },
         ),
     ]

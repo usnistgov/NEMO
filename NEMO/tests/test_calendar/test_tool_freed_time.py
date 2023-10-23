@@ -57,7 +57,7 @@ class ReservationTestCase(TransactionTestCase):
         self.assertTrue(Reservation.objects.get(id=reservation.id).cancelled, True)
         self.assertEqual(
             EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,
-            email_subject(self.tool, minutes, start_of_freed_time)
+            email_subject(self.tool, minutes, start_of_freed_time),
         )
 
     def test_cancel_reservation_same_user(self):
@@ -169,7 +169,7 @@ class ReservationTestCase(TransactionTestCase):
         self.assertTrue(Reservation.objects.get(id=reservation.id).cancelled, True)
         self.assertEqual(
             EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,
-            email_subject(self.tool, minutes, start_of_freed_time)
+            email_subject(self.tool, minutes, start_of_freed_time),
         )
 
     def test_extend_reservation(self):
@@ -225,7 +225,7 @@ class ReservationTestCase(TransactionTestCase):
         self.assertTrue(Reservation.objects.get(id=reservation.id).cancelled, True)
         self.assertEqual(
             EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,
-            email_subject(self.tool, minutes, start_of_freed_time)
+            email_subject(self.tool, minutes, start_of_freed_time),
         )
 
     def test_move_reservation_past(self):
@@ -252,7 +252,8 @@ class ReservationTestCase(TransactionTestCase):
         start_of_freed_time = end + timedelta(minutes=minutes)
         self.assertTrue(Reservation.objects.get(id=reservation.id).cancelled, True)
         self.assertEqual(
-            EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject, email_subject(self.tool, minutes, start_of_freed_time)
+            EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,
+            email_subject(self.tool, minutes, start_of_freed_time),
         )
 
 
