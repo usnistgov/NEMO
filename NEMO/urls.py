@@ -237,6 +237,7 @@ urlpatterns += [
     path("change_outage_title/<int:outage_id>/", calendar.change_outage_title, name="change_outage_title"),
     path("change_outage_details/<int:outage_id>/", calendar.change_outage_details, name="change_outage_details"),
     path("change_reservation_date/", calendar.change_reservation_date, name="change_reservation_date"),
+    path("change_outage_date/", calendar.change_outage_date, name="change_outage_date"),
     path(
         "change_reservation_project/<int:reservation_id>/",
         calendar.change_reservation_project,

@@ -746,7 +746,8 @@ def modify_outage(request, start_delta, end_delta):
         return HttpResponseNotFound("The outage that you wish to modify doesn't exist!")
     if start_delta:
         outage.start += start_delta
-    outage.end += end_delta
+    if end_delta:
+        outage.end += end_delta
     policy_problem = policy.check_to_create_outage(outage)
     if policy_problem:
         return HttpResponseBadRequest(policy_problem)
@@ -844,6 +845,36 @@ def change_reservation_date(request):
         end_delta = (new_end - reservation.end) if new_end else None
     if start_delta or end_delta:
         return modify_reservation(request, request.user, start_delta, end_delta)
+    else:
+        return HttpResponseBadRequest("Invalid delta")
+
+
+@staff_member_required
+@require_POST
+def change_outage_date(request):
+    """Change an outage's start or end date."""
+    outage = get_object_or_404(ScheduledOutage, id=request.POST["id"])
+    start_delta, end_delta = None, None
+    new_start = request.POST.get("new_start", None)
+    if new_start:
+        try:
+            new_start = make_aware(datetime.strptime(new_start, datetime_input_format))
+            if new_start.time().minute not in [0, 15, 30, 45]:
+                return HttpResponseBadRequest("Outage time only works with 15 min increments")
+        except ValueError:
+            return HttpResponseBadRequest("Invalid date format for start date")
+        start_delta = new_start - outage.start
+    new_end = request.POST.get("new_end", None)
+    if new_end:
+        try:
+            new_end = make_aware(datetime.strptime(new_end, datetime_input_format))
+            if new_end.time().minute not in [0, 15, 30, 45]:
+                return HttpResponseBadRequest("Outage time only works with 15 min increments")
+        except ValueError:
+            return HttpResponseBadRequest("Invalid date format for end date")
+        end_delta = (new_end - outage.end) if new_end else None
+    if start_delta or end_delta:
+        return modify_outage(request, start_delta, end_delta)
     else:
         return HttpResponseBadRequest("Invalid delta")
 

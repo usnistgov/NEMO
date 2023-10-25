@@ -3688,6 +3688,12 @@ class ScheduledOutage(BaseModel):
         else:
             return {self.outage_item_type.value: self.outage_item}
 
+    def has_not_ended(self):
+        return False if self.end < timezone.now() else True
+
+    def has_not_started(self):
+        return False if self.start <= timezone.now() else True
+
     def __str__(self):
         return str(self.title)
 
