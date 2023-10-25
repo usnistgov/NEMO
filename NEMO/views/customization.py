@@ -167,6 +167,7 @@ class ApplicationCustomization(CustomizationBase):
         "area_logout_already_logged_in": "",
         "default_badge_reader_id": "",
         "consumable_user_self_checkout": "",
+        "consumable_category_collapse": "",
         "area_in_usage_reminders": "enabled",
     }
 

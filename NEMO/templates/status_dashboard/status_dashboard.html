@@ -64,7 +64,7 @@
         {# Set a global click handler to dismiss manual tooltips #}
         $('html').on('click', function(e)
         {
-            {# Only dimiss tooltips when clicking outside of them #}
+            {# Only dismiss tooltips when clicking outside of them #}
             let target_id = $(e.target).parents('.tooltip').attr('id');
             if (typeof $(e.target).data('original-title') == 'undefined')
             {

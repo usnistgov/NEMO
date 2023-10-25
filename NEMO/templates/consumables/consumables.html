@@ -46,31 +46,35 @@
             <div class="form-group">
                 <div class="col-sm-12">
                     <table class="table">
-                        {% regroup consumables by category as categories %}
-                        {% for category in categories %}
-                            {% if categories|length > 1 or category.grouper %}
-                                <tr><th>{{ category.grouper|default_if_none:"Uncategorized" }}</th></tr>
-                            {% endif %}
-                            {% for item in category.list %}
-                                <tr><td {% if categories|length > 1 or category.grouper %}style="padding-left: 15px;"{% endif %}>
-                                    <div class="consumable-row">
-                                        {% if item.notes %}<span data-toggle="notes-tooltip" title="{{ item.notes|linebreaksbr }}" class="glyphicon glyphicon-info-sign primary-highlight"></span>{% endif %}
-                                        <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}
-                                            {% if not item.reusable %}
-                                                {% if item.quantity > 0 %}
-                                                    <span>({{ item.quantity }} left)</span>
-                                                {% else %}
-                                                    <span class="danger-highlight">(sold-out)</span>
-                                                {% endif %}
-                                            {% endif %}
-                                            {% if item.reusable or item.quantity > 0 %}
-                                                <span class="glyphicon glyphicon-plus-sign success-highlight" style="vertical-align: text-top"></span>
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                </td></tr>
+                        {% with category_collapse="application"|customization:"consumable_category_collapse" %}
+                            {% regroup consumables by category as categories %}
+                            {% for category in categories %}
+                                {% if categories|length > 1 or category.grouper %}
+                                    <tr onclick="toggle_details('#chevron_{{ category.grouper.id }}')" data-toggle="collapse" data-target="#category_{{ category.grouper.id }}_details"><th id="chevron_{{ category.grouper.id }}"><span class="glyphicon glyphicon-chevron-{% if category_collapse %}right{% else %}down{% endif %} pull-left chevron"></span>{{ category.grouper|default_if_none:"Uncategorized" }}</th></tr>
+                                {% endif %}
+                                <tbody id="category_{{ category.grouper.id }}_details" class="collapse {% if not category_collapse %}in{% endif %}">
+                                    {% for item in category.list %}
+                                        <tr><td {% if categories|length > 1 or category.grouper %}style="padding-left: 45px;"{% endif %}>
+                                            <div class="consumable-row">
+                                                {% if item.notes %}<span data-toggle="notes-tooltip" title="{{ item.notes|linebreaksbr }}" class="glyphicon glyphicon-info-sign primary-highlight"></span>{% endif %}
+                                                <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}
+                                                    {% if not item.reusable %}
+                                                        {% if item.quantity > 0 %}
+                                                            <span>({{ item.quantity }} left)</span>
+                                                        {% else %}
+                                                            <span class="danger-highlight">(sold-out)</span>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                    {% if item.reusable or item.quantity > 0 %}
+                                                        <span class="glyphicon glyphicon-plus-sign success-highlight" style="vertical-align: text-top"></span>
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        </td></tr>
+                                    {% endfor %}
+                                </tbody>
                             {% endfor %}
-                        {% endfor %}
+                        {% endwith %}
                     </table>
                 </div>
             </div>
@@ -137,7 +141,7 @@
 		}
         window.addEventListener("load", function ()
         {
-			$('[data-toggle="notes-tooltip"]').tooltip({"html": true});
+			$('[data-toggle="notes-tooltip"]').tooltip({"html": true, container: 'body'});
             $('#customer_search').autocomplete('users', fetch_projects, {{ users|json_search_base }}).focus();
             let withdrawal_order_form = $('#withdrawal_form_order');
             withdrawal_order_form.on('shown.bs.tooltip', function(e)
@@ -146,7 +150,7 @@
             });
             $(document).on('click', function(e)
             {
-                {# Dimiss tooltip when clicking on everything outside the tooltip itself #}
+                {# Dismiss tooltip when clicking on everything outside the tooltip itself #}
                 if($(e.target).closest(".tooltip").length === 0 )
                 {
                     $('#withdrawal_form_order .tooltip').remove();
