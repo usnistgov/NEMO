@@ -66,7 +66,7 @@
             <label class="control-label col-sm-4 col-md-3">New problems</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="tool_problem_send_to_all_qualified_users" {% if tool_problem_send_to_all_qualified_users %}checked{% endif %} value="enabled">Send new tool problems to all qualified users</label>
+                    <label><input type="checkbox" name="tool_problem_send_to_all_qualified_users" {% if tool_problem_send_to_all_qualified_users %}checked{% endif %} value="enabled">Send new tool problems to all qualified users (but not updates)</label>
                 </div>
             </div>
         </div>
@@ -75,7 +75,8 @@
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
                     <input type="hidden" name="tool_task_updates_facility_managers" value="off"/>
-                    <label><input type="checkbox" name="tool_task_updates_facility_managers" {% if tool_task_updates_facility_managers != 'off' %}checked{% endif %} value="">Send all tool problem updates to facility managers</label>
+                    <label><input type="checkbox" name="tool_task_updates_facility_managers" {% if tool_task_updates_facility_managers != 'off' %}checked{% endif %} value="">Send all tool problem & updates to facility managers</label><br>
+                    <label><input type="checkbox" name="tool_task_updates_superusers" {% if tool_task_updates_superusers %}checked{% endif %} value="enabled">Send all tool problem & updates to tool superusers</label>
                 </div>
             </div>
         </div>

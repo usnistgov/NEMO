@@ -391,6 +391,8 @@ def get_task_email_recipients(task: Task) -> List[str]:
     recipient_users: Set[User] = {task.tool.primary_owner}
     # Add backup owners
     recipient_users.update(task.tool.backup_owners.all())
+    if ToolCustomization.get_bool("tool_task_updates_superusers"):
+        recipient_users.update(task.tool.superusers.all())
     # Add facility managers and take into account their preferences
     if ToolCustomization.get_bool("tool_task_updates_facility_managers"):
         recipient_users.update(
