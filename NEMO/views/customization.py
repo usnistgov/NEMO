@@ -139,7 +139,7 @@ class CustomizationBase(ABC):
         for item in cls.get_list(name, raise_exception):
             if item:
                 integer = quiet_int(item.strip(), None)
-                if integer:
+                if integer is not None:
                     result.append(integer)
         return result
 
