@@ -497,7 +497,7 @@ def past_comments_and_tasks(request):
 def ten_most_recent_past_comments_and_tasks(request, tool_id):
     user: User = request.user
     tasks = Task.objects.filter(tool_id=tool_id).order_by("-creation_time")[:10]
-    comments = Comment.objects.filter(tool_id=tool_id).order_by("-creation_date")[:10]
+    comments = Comment.objects.filter(tool_id=tool_id).order_by("-creation_date")
     if not user.is_staff:
         comments = comments.filter(staff_only=False)
     comments = comments[:10]
