@@ -47,6 +47,7 @@
 			<div id="default_content">
 				<h1>Scan your badge to control tools</h1>
 				<div id="occupancy"></div>
+                <div id="usage"></div>
 			</div>
 			<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1></div>
             <div id="interlock_error" style="display: none">
@@ -90,6 +91,7 @@
 		let timeout_handle = null;
 		let countdown_handle = null;
 		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
+        let usage = new URLSearchParams(window.location.search).get('usage');
 
 		let default_content_element = $("#default_content");
 		let status_element = $("#status");
@@ -118,6 +120,11 @@
 		{
 			fetch_occupancy();
 			set_interval_when_visible(document, fetch_occupancy, 30000);
+		}
+        if(usage)
+		{
+			fetch_usage();
+			set_interval_when_visible(document, fetch_usage, 30000);
 		}
 
 		function load_complete(response, status, xml_http_request)
@@ -152,6 +159,7 @@
 		function revert_to_default_content()
 		{
 			fetch_occupancy();
+            fetch_usage();
 			clear_timeout();
 			close_numpads();
 			close_keyboards();
@@ -321,6 +329,10 @@
 		function fetch_occupancy()
 		{
 			ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
+		}
+        function fetch_usage()
+		{
+			ajax_get('{% url 'kiosk_usage' %}', {'interest': 'tools'}, function(response) { $("#usage").html(response); });
 		}
 		function close_numpads()
 		{
