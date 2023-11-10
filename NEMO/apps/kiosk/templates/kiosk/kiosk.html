@@ -330,9 +330,25 @@
 		{
 			ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
 		}
+        {# This function modifies the contents of a style sheet after the page has been loaded. #}
+        function set_style(css_text)
+        {
+            let sheet = document.createElement('style');
+            sheet.type = 'text/css';
+            (document.head || document.getElementsByTagName('head')[0]).appendChild(sheet);
+            return (set_style = function(css_text, node)
+            {
+                if(!node || node.parentNode !== sheet)
+                    return sheet.appendChild(document.createTextNode(css_text));
+                node.nodeValue = css_text;
+                return node;
+            })(css_text);
+        }
+
         function fetch_usage()
 		{
 			ajax_get('{% url 'kiosk_usage' %}', {'interest': 'tools'}, function(response) { $("#usage").html(response); });
+            set_style('.in_use { display: table-row; } .idle { display: none; }');
 		}
 		function close_numpads()
 		{
