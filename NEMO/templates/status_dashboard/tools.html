@@ -1,3 +1,10 @@
+<p>
+    Staff members are highlighted in <span class="bg-success">&nbsp;green&nbsp;</span><br>
+    Service personnel are highlighted in <span class="bg-warning">&nbsp;orange&nbsp;</span><br>
+    {% if reservations_can_expire %}
+    Users with expired reservations are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
+    {% endif %}
+</p>
 <table class="table table-bordered table-condensed">
 	<thead>
 	<tr>
