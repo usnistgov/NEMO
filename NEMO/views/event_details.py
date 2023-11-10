@@ -2,8 +2,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseNotFound
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET
+from django.db.models import Q
+from django.utils import timezone
 
-from NEMO.models import AreaAccessRecord, Reservation, ScheduledOutage, UsageEvent
+from NEMO.models import AreaAccessRecord, Reservation, ScheduledOutage, UsageEvent, User
 from NEMO.utilities import format_datetime
 
 
@@ -24,10 +26,51 @@ def reservation_details(request, reservation_id):
         and reservation.user.active_project_count() > 1
     )
 
+    group_name = ""
+    users = User.objects.none()
+    if request.user.groups is not None:
+        r_user_groups = request.user.groups.all()
+        r_user_groups_list = list(r_user_groups)
+        for user_group in r_user_groups:
+            if reservation.tool.name in user_group.name:
+                group_name = user_group.name
+
+    if reservation.tool is not None:
+        if "24/7 User" in group_name:
+            if reservation.daytimeusergroup_policy_check():
+                # if reservation is in the daytime range, include daytime users in the list
+                users = (
+                    User.objects.filter(is_active=True)
+                    .filter(
+                        Q(groups__name__contains=group_name)
+                        | (
+                            Q(groups__name__istartswith=reservation.tool.name)
+                            & Q(groups__name__iendswith="Daytime User")
+                        )
+                    )
+                    .exclude(username=request.user.username)
+                )
+            else:
+                users = (
+                    User.objects.filter(is_active=True)
+                    .filter(Q(groups__name__contains=group_name))
+                    .exclude(username=request.user.username)
+                )
+        else:
+            users = (
+                User.objects.filter(is_active=True)
+                .filter(
+                    Q(groups__name__contains=group_name)
+                    | (Q(groups__name__istartswith=reservation.tool.name) & Q(groups__name__iendswith="24/7 User"))
+                )
+                .exclude(username=request.user.username)
+            )
+
     template_data = {
         "reservation": reservation,
         "reservation_project_can_be_changed": reservation_project_can_be_changed,
         "popup_view": popup_view,
+        "users": users,
     }
 
     return render(request, "event_details/reservation_details.html", template_data)

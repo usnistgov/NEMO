@@ -391,6 +391,16 @@ function set_reservation_title(url, reservation_id, title)
 	ajax_post(url, {'title': title}, refresh_calendar_and_sidebar, [failure_dialog, refresh_calendar_and_sidebar]);
 }
 
+function set_reservation_user(url, new_reservation_user_id, failure_dialog)
+{
+	ajax_post(url, {'new_reservation_user_id': new_reservation_user_id}, set_reservation_user_success, [failure_dialog, refresh_calendar_and_sidebar]);
+}
+
+function set_reservation_user_success() {
+	refresh_calendar_and_sidebar();
+	$('#dialog').modal('hide');
+}
+
 function change_outage_title(url, title)
 {
     let failure_dialog = ajax_failure_callback("Unable to change outage title");

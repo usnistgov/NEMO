@@ -2520,6 +2520,12 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     def has_not_started(self):
         return False if self.start <= timezone.now() else True
 
+    def can_swap_user(self):
+        time_period = timedelta(hours=72)
+        if self.tool is not None and "TEM-" in self.tool.name:
+            time_period = timedelta(hours=24)
+        return self.start >= timezone.now() + time_period
+
     def save_and_notify(self):
         self.save()
         from NEMO.views.calendar import (
@@ -2546,6 +2552,36 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         if new_reservation.tool:
             new_reservation.short_notice = new_reservation.tool.determine_insufficient_notice(new_reservation.start)
         return new_reservation
+
+    def daytimeusergroup_policy_check(self):
+        """
+        reservation start
+        AND 8am with 30 or 45 minutes on or after 9am with any min
+        reservation end
+        AND 5pm with 00, 15, or 30 minutes on or before 4pm with any min
+
+        reservation start (AND)
+        OR hr == 08 and min in (30, 45)
+        OR hr >= 09
+        reservation end (AND)
+        OR hr == 17 and min in (00, 15, 30)
+        OR hr <= 16
+        """
+
+        res_start_tz = timezone.localtime(self.start)
+        res_end_tz = timezone.localtime(self.end)
+
+        res_start_hr = res_start_tz.strftime("%H")
+        res_end_hr = res_end_tz.strftime("%H")
+
+        res_start_min = res_start_tz.strftime("%M")
+        res_end_min = res_end_tz.strftime("%M")
+
+        # If user is not a 24/7 user, then must have a reservation between 8:30am - 5:30pm
+        # for all scenario check if their reservation is outside of allowed timeframe
+        return (res_start_hr >= "09" or (res_start_hr == "08" and res_start_min in ["30", "45"])) and (
+            res_end_hr <= "16" or (res_end_hr == "17" and res_end_min in ["00", "15", "30"])
+        )
 
     class Meta:
         ordering = ["-start"]

@@ -800,6 +800,25 @@ def set_reservation_title(request, reservation_id):
     return HttpResponse()
 
 
+@login_required
+@require_POST
+def set_reservation_user(request, reservation_id):
+    """Change user assigned to reservation."""
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+
+    if reservation.user != request.user and not request.user.is_staff:
+        return HttpResponseBadRequest("You cannot change the user for someone else's reservation.")
+
+    if not reservation.can_swap_user() and not request.user.is_staff:
+        return HttpResponseBadRequest("You cannot swap users within 72 hours of the reservation starting.")
+
+    new_reservation_user_id = request.POST.get("new_reservation_user_id")
+    reservation.user = User.objects.get(pk=new_reservation_user_id)
+    reservation.save()
+
+    return HttpResponse()
+
+
 @staff_member_required
 @require_POST
 def change_outage_title(request, outage_id):
