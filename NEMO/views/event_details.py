@@ -27,10 +27,8 @@ def reservation_details(request, reservation_id):
     )
 
     group_name = ""
-    users = User.objects.none()
     if request.user.groups is not None:
         r_user_groups = request.user.groups.all()
-        r_user_groups_list = list(r_user_groups)
         for user_group in r_user_groups:
             if reservation.tool.name in user_group.name:
                 group_name = user_group.name
@@ -43,10 +41,7 @@ def reservation_details(request, reservation_id):
                     User.objects.filter(is_active=True)
                     .filter(
                         Q(groups__name__contains=group_name)
-                        | (
-                            Q(groups__name__istartswith=reservation.tool.name)
-                            & Q(groups__name__iendswith="Daytime User")
-                        )
+                        | (Q(groups__name__istartswith=reservation.tool.name) & Q(groups__name__iendswith="Daytime User"))
                     )
                     .exclude(username=request.user.username)
                 )
@@ -65,6 +60,8 @@ def reservation_details(request, reservation_id):
                 )
                 .exclude(username=request.user.username)
             )
+    else:
+        users = User.objects.all()
 
     template_data = {
         "reservation": reservation,
