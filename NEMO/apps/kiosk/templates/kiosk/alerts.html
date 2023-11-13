@@ -1,0 +1,32 @@
+{% if alerts or disabled_resources %}
+    <div class="{% if areas_exist and tools_exist %}col-lg-4{% else %}col-lg-6{% endif %}" style="text-align:center">
+        <h2>Alerts and outages</h2>
+        <p>{# For spacing #}&nbsp;</p>
+        {% for a in alerts %}
+            <div class="alert alert-danger">
+                <table style="width:100%">
+                    <tr>
+                        <td style="width:100px"><span class="glyphicon glyphicon-alert danger-highlight" style="font-size:64px"></span></td>
+                        <td>
+                            {% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
+                            {{ a.contents|linebreaks }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        {% endfor %}
+        {% for r in disabled_resources %}
+            <div class="alert alert-danger">
+                <table style="width:100%">
+                    <tr>
+                        <td style="width:100px"><span class="glyphicon glyphicon-leaf danger-highlight" style="font-size:64px"></span></td>
+                        <td>
+                            <span style="font-weight:bold">Resource outage: {{ r }}</span><br>
+                            {{ r.restriction_message }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

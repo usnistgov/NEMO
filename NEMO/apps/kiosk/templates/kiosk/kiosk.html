@@ -51,7 +51,10 @@
                 <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container" id="tools">
                     <div id="usage"></div>
                 </div>
+                <div id="alerts">
+                </div>
 			</div>
+
 			<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1></div>
             <div id="interlock_error" style="display: none">
                 <h1 class="text-center">
@@ -95,7 +98,7 @@
 		let countdown_handle = null;
 		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
         let usage = new URLSearchParams(window.location.search).get('usage');
-
+        let alerts = new URLSearchParams(window.location.search).get('alerts');
 		let default_content_element = $("#default_content");
 		let status_element = $("#status");
 		let error_element = $("#error");
@@ -128,6 +131,11 @@
 		{
 			fetch_usage();
 			set_interval_when_visible(document, fetch_usage, 30000);
+		}
+        if(alerts)
+		{
+			fetch_alerts();
+			set_interval_when_visible(document, fetch_alerts, 30000);
 		}
 
 		function load_complete(response, status, xml_http_request)
@@ -163,6 +171,7 @@
 		{
 			fetch_occupancy();
             fetch_usage();
+            fetch_alerts();
 			clear_timeout();
 			close_numpads();
 			close_keyboards();
@@ -353,7 +362,11 @@
             $("#usage_title").html("<h2>Tools in use</h2>")
 			ajax_get('{% url 'kiosk_usage' %}', {'interest': 'tools'}, function(response) { $("#usage").html(response); });
             set_style('.in_use { display: table-row; } .idle { display: none; }');
-		}
+        }
+        function fetch_alerts()
+        {
+            $("#alerts").load("{% url 'kiosk_alerts' %}");
+        }
 		function close_numpads()
 		{
 			$.each($('[data-numpad]'), function (index, item)
