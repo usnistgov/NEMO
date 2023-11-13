@@ -1,6 +1,7 @@
 import socket
 import struct
 from abc import ABC, abstractmethod
+from collections import namedtuple
 from logging import getLogger
 from time import sleep
 from typing import Dict, Optional
@@ -486,6 +487,88 @@ class ModbusTcpInterlock(Interlock):
             client.close()
 
 
+class WebApiInterlock(Interlock):
+    """Set Channel/Relay/Coil in the interlock to specify which tool to turn on/off."""
+    ToolState = namedtuple("ToolState", ["name", "endpoint", "interlock_state"])
+    OFF = ToolState("off", getattr(settings, "WEB_API_OFF_ENDPOINT"), Interlock_model.State.LOCKED)  # Start with /
+    ON = ToolState("on", getattr(settings, "WEB_API_ON_ENDPOINT"), Interlock_model.State.UNLOCKED)  # Start with /
+
+    API_METHOD = getattr(settings, "WEB_API_METHOD", "put")  # Either "put" (default) or "post"
+    API_USERNAME = getattr(settings, "WEB_API_USERNAME", None)  # Optional, can be obtained from interlock.card.username
+    API_PASSWORD = getattr(settings, "WEB_API_PASSWORD", None)  # Optional, can be obtained from interlock.card.password
+
+    def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
+        username = interlock_card_form.cleaned_data["username"]
+        password = interlock_card_form.cleaned_data["password"]
+        error = {}
+        if username and not password:
+            error["password"] = _("password is required when using a username.")
+        if error:
+            raise ValidationError(error)
+
+    def clean_interlock(self, interlock_form: InterlockAdminForm):
+        channel = interlock_form.cleaned_data["channel"]
+        error = {}
+        if not channel:
+            error["channel"] = _("This field is required.")
+        if error:
+            raise ValidationError(error)
+
+    def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
+        state = Interlock_model.State.UNKNOWN
+        try:
+            if command_type == self.OFF.interlock_state:
+                state = self.set_tool_state(interlock, self.OFF)
+            elif command_type == self.ON.interlock_state:
+                state = self.set_tool_state(interlock, self.ON)
+        except Exception as error:
+            raise InterlockError(interlock=interlock, msg="General exception: " + str(error))
+        return state
+
+    @classmethod
+    def set_tool_state(cls, interlock: Interlock_model, tool_state: ToolState) -> Interlock_model.State:
+        status = cls._call_api(interlock, tool_state.endpoint)
+
+        if status == cls.OFF.name:
+            return cls.OFF.interlock_state
+        elif status == cls.ON.name:
+            return cls.ON.interlock_state
+        else:
+            raise Exception(f"Unexpected status received from API: {status}")
+
+    @classmethod
+    def _call_api(cls, interlock: Interlock_model, endpoint: str) -> str:
+        """Calls API with the specified endpoint to turn the tool off or on. Returns the status 'off' or 'on'."""
+        username = cls.API_USERNAME if cls.API_USERNAME is not None else interlock.card.username
+        password = cls.API_PASSWORD if cls.API_PASSWORD is not None else interlock.card.password
+
+        headers = {"username": username, "password": password}
+        url = f"{interlock.card.server}:{interlock.card.port}{endpoint}/{interlock.channel}"
+
+        if cls.API_METHOD == "post":
+            response = requests.post(url, headers=headers)
+        else:
+            response = requests.put(url, headers=headers)
+
+        response_error = cls.check_response_error(response)
+        if response_error:
+            raise Exception(f"Communication error: {response_error}")
+
+        response_data = response.json()
+        return response_data["status"]
+
+    @staticmethod
+    def check_response_error(response) -> Optional[str]:
+        try:
+            response.raise_for_status()
+            if "404 Error" in response.text:
+                raise Exception("File not found")
+            elif "401 Error" in response.text:
+                raise Exception("Authentication failed")
+        except Exception as e:
+            return str(e)
+
+
 def get(category: InterlockCardCategory, raise_exception=True):
     """Returns the corresponding interlock implementation, and raises an exception if not found."""
     interlock_impl = interlocks.get(category.key, False)
@@ -505,4 +588,5 @@ interlocks: Dict[str, Interlock] = {
     "web_relay_http": WebRelayHttpInterlock(),
     "modbus_tcp": ModbusTcpInterlock(),
     "proxr": ProXrInterlock(),
+    "web_api": WebApiInterlock(),
 }

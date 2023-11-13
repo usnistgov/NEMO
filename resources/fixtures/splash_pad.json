@@ -623,6 +623,14 @@
     }
   },
   {
+    "model": "NEMO.interlockcardcategory",
+    "pk": 5,
+    "fields": {
+      "name": "WebAPI",
+      "key": "web_api"
+    }
+  },
+  {
     "model": "NEMO.taskcategory",
     "pk": 1,
     "fields": {
