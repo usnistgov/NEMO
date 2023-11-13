@@ -28,6 +28,11 @@
         ajax_post(url, {'title': title}, callback_success, [failure_dialog]);
     }
 
+    function set_reservation_user(url, new_reservation_user_id, failure_dialog)
+    {
+        ajax_post(url, {'new_reservation_user_id': new_reservation_user_id}, callback_success, [failure_dialog]);
+    }
+
     function change_reservation_date(url, reservation_id, param, value)
     {
         let failure_dialog = ajax_failure_callback("Unable to change reservation date");
@@ -87,6 +92,22 @@
         <td>User:</td>
         <td><a title="Click to email this user" href="{% url 'get_email_form_for_user' reservation.user.id %}">{{ reservation.user }}</a></td>
     </tr>
+
+    {% if reservation.has_not_started %}
+        {% if reservation.user.id == user.id or user.is_staff %}
+            <tr>
+                <td>Swap user:</td>
+                <td>
+                    {% if reservation.can_swap_user or user.is_staff %}
+                        <input type="text" id="reservation_user_search" placeholder="Search for a user" class="form-control" style="width: 270px">
+                    {% else %}
+                        Please contact staff to swap users
+                    {% endif %}
+                </td>
+            </tr>
+        {% endif %}
+    {% endif %}
+
     <tr>
         <td>Created by:</td>
         <td>{{ reservation.creator }}</td>
@@ -241,4 +262,14 @@
     {% if popup_view and reservation.question_data_json.items %}
         <script>$('#dialog .modal-dialog').addClass('modal-lg');</script>
     {% endif %}
+
+     <script>
+        function reservation_user_selected(jquery_event, search_selection)
+        {
+            let failure_dialog = ajax_failure_callback("Unable to set reservation user");
+            set_reservation_user('{% url 'set_reservation_user' reservation.id %}', search_selection.id, failure_dialog)
+        }
+
+        $('#reservation_user_search').autocomplete('users', reservation_user_selected, {{ users|json_search_base }}).focus();
+    </script>
 {% endblock %}
