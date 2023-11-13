@@ -47,6 +47,7 @@
 			<div id="default_content">
 				<h1>Scan your badge to control tools</h1>
 				<div id="occupancy"></div>
+                <div id="usage_title"></div>
                 <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container" id="tools">
                     <div id="usage"></div>
                 </div>
@@ -349,6 +350,7 @@
 
         function fetch_usage()
 		{
+            $("#usage_title").html("<h2>Tools in use</h2>")
 			ajax_get('{% url 'kiosk_usage' %}', {'interest': 'tools'}, function(response) { $("#usage").html(response); });
             set_style('.in_use { display: table-row; } .idle { display: none; }');
 		}
