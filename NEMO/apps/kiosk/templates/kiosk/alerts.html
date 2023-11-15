@@ -1,5 +1,5 @@
 {% if alerts or disabled_resources %}
-    <div class="{% if areas_exist and tools_exist %}col-lg-4{% else %}col-lg-6{% endif %}" style="text-align:center">
+    <div style="text-align:center">
         <h2>Alerts and outages</h2>
         <p>{# For spacing #}&nbsp;</p>
         {% for a in alerts %}
