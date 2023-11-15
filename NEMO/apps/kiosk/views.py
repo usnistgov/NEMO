@@ -9,7 +9,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.models import BadgeReader, Project, Reservation, ReservationItemType, Tool, UsageEvent, User, Alert, Resource
+from NEMO.models import BadgeReader, Project, Reservation, ReservationItemType, Tool, UsageEvent, User
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int
 from NEMO.views.calendar import (
@@ -364,11 +364,3 @@ def get_badge_reader(request) -> BadgeReader:
     except BadgeReader.DoesNotExist:
         badge_reader = BadgeReader.default()
     return badge_reader
-
-
-def get_alerts(request):
-    dictionary = {
-        "alerts": Alert.objects.filter(user=None, debut_time__lte=timezone.now(), expired=False, deleted=False),
-        "disabled_resources": Resource.objects.filter(available=False),
-    }
-    return render(request, "kiosk/alerts.html", dictionary)
