@@ -360,8 +360,13 @@
         function fetch_usage()
 		{
             $("#usage_title").html("<h2>Tools in use</h2>")
-			ajax_get('{% url 'kiosk_usage' %}', {'interest': 'tools'}, function(response) { $("#usage").html(response); });
-            set_style('.in_use { display: table-row; } .idle { display: none; }');
+			ajax_get('{% url 'kiosk_usage' %}', {'interest': 'tools'},
+                function(response) {
+                    $("#usage").html(response);
+                    $(".in_use").css("display", "table-row");
+                    $(".idle").hide();
+                }
+            );
         }
         function fetch_alerts()
         {
