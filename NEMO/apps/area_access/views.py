@@ -30,6 +30,8 @@ from NEMO.models import (
     Project,
     UsageEvent,
     User,
+    Alert,
+    Resource,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.views.area_access import log_in_user_to_area, log_out_user
@@ -323,3 +325,11 @@ def get_badge_reader(request) -> BadgeReader:
     except BadgeReader.DoesNotExist:
         badge_reader = BadgeReader.default()
     return badge_reader
+
+
+def get_alerts(request):
+    dictionary = {
+        "alerts": Alert.objects.filter(user=None, debut_time__lte=timezone.now(), expired=False, deleted=False),
+        "disabled_resources": Resource.objects.filter(available=False),
+    }
+    return render(request, "area_access/alerts.html", dictionary)
