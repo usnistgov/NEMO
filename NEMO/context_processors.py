@@ -2,6 +2,7 @@ from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.utilities import date_input_js_format, datetime_input_js_format, time_input_js_format
 from NEMO.views.customization import (
     ApplicationCustomization,
+    CalendarCustomization,
     RecurringChargesCustomization,
     SafetyCustomization,
     UserRequestsCustomization,
@@ -89,9 +90,13 @@ def base_context(request):
     except:
         safety_menu_item = True
     try:
-        safety_main_menu_text = SafetyCustomization.get("safety_main_menu_text")
+        calendar_navbar_text = CalendarCustomization.get("calendar_navbar_text")
     except:
-        safety_main_menu_text = ""
+        calendar_navbar_text = ""
+    try:
+        safety_navbar_text = SafetyCustomization.get("safety_navbar_text")
+    except:
+        safety_navbar_text = ""
     return {
         "facility_name": facility_name,
         "recurring_charges_name": recurring_charges_name,
@@ -113,5 +118,6 @@ def base_context(request):
         "datetime_input_js_format": datetime_input_js_format,
         "no_header": request.session.get("no_header", False),
         "safety_menu_item": safety_menu_item,
-        "safety_main_menu_text": safety_main_menu_text,
+        "calendar_navbar_text": calendar_navbar_text,
+        "safety_navbar_text": safety_navbar_text,
     }

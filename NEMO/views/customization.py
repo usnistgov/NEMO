@@ -252,6 +252,7 @@ class CalendarCustomization(CustomizationBase):
         "calendar_all_areastools": "",
         "calendar_outage_recurrence_limit": "90",
         "calendar_qualified_tools": "",
+        "calendar_navbar_text": "Calendar",
     }
 
 
@@ -443,12 +444,12 @@ class ToolCustomization(CustomizationBase):
 class SafetyCustomization(CustomizationBase):
     variables = {
         "safety_main_menu": "enabled",
-        "safety_main_menu_text": "Safety",
         "safety_show_safety": "enabled",
         "safety_show_safety_issues": "enabled",
         "safety_show_safety_data_sheets": "enabled",
         "safety_data_sheets_keywords_default": "",
         "safety_items_expand_categories": "",
+        "safety_navbar_text": "Safety",
     }
 
 

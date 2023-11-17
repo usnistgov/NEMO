@@ -13,7 +13,7 @@
 		<div class="navbar-collapse collapse" id="site-navigation">
 			<ul class="nav navbar-nav">
                 {% block navbar_main %}
-				    <li><a href="{% url 'calendar' %}">Calendar</a></li>
+				    <li><a href="{% url 'calendar' %}">{{ calendar_navbar_text }}</a></li>
                     {% if tools_exist %}<li><a href="{% url 'tool_control' %}">Tool control</a></li>{% endif %}
                     {% if tools_exist or areas_exist %}
                         {% if areas_exist %}
@@ -32,7 +32,7 @@
                     {% endif %}
                     {% if safety_menu_item %}
                         <li><a href="{% url 'safety' %}">
-                            {{ safety_main_menu_text }}
+                            {{ safety_navbar_text }}
                             {% if safety_notification_count %}
                                 <span class="badge active">{{ safety_notification_count }}</span>
                             {% endif %}
