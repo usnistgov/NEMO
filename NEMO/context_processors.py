@@ -93,15 +93,15 @@ def base_context(request):
     try:
         calendar_navbar_text = CalendarCustomization.get("calendar_navbar_text")
     except:
-        calendar_navbar_text = ""
+        calendar_navbar_text = "Calendar"
     try:
         tool_control_navbar_text = ToolCustomization.get("tool_control_navbar_text")
     except:
-        tool_control_navbar_text = ""
+        tool_control_navbar_text = "Tool control"
     try:
         safety_navbar_text = SafetyCustomization.get("safety_navbar_text")
     except:
-        safety_navbar_text = ""
+        safety_navbar_text = "Safety"
     return {
         "facility_name": facility_name,
         "recurring_charges_name": recurring_charges_name,
