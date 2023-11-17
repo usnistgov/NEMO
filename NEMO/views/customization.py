@@ -443,6 +443,7 @@ class ToolCustomization(CustomizationBase):
 class SafetyCustomization(CustomizationBase):
     variables = {
         "safety_main_menu": "enabled",
+        "safety_main_menu_text": "Safety",
         "safety_show_safety": "enabled",
         "safety_show_safety_issues": "enabled",
         "safety_show_safety_data_sheets": "enabled",

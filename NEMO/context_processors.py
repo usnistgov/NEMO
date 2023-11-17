@@ -88,6 +88,10 @@ def base_context(request):
         safety_menu_item = SafetyCustomization.get_bool("safety_main_menu")
     except:
         safety_menu_item = True
+    try:
+        safety_main_menu_text = SafetyCustomization.get("safety_main_menu_text")
+    except:
+        safety_main_menu_text = ""
     return {
         "facility_name": facility_name,
         "recurring_charges_name": recurring_charges_name,
@@ -109,4 +113,5 @@ def base_context(request):
         "datetime_input_js_format": datetime_input_js_format,
         "no_header": request.session.get("no_header", False),
         "safety_menu_item": safety_menu_item,
+        "safety_main_menu_text": safety_main_menu_text,
     }

@@ -32,7 +32,7 @@
                     {% endif %}
                     {% if safety_menu_item %}
                         <li><a href="{% url 'safety' %}">
-                            Safety
+                            {{ safety_main_menu_text }}
                             {% if safety_notification_count %}
                                 <span class="badge active">{{ safety_notification_count }}</span>
                             {% endif %}
