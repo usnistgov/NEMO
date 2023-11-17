@@ -68,7 +68,6 @@
             format: "{{ datetime_input_js_format }}",
 			sideBySide: true
 		};
-		$('#start').datetimepicker(timepicker_properties);
-		$('#end').datetimepicker(timepicker_properties);
+        set_start_end_datetime_pickers($('#start'), $('#end'), timepicker_properties);
 	</script>
 {% endblock %}
