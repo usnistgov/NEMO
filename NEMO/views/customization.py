@@ -413,6 +413,7 @@ class ToolCustomization(CustomizationBase):
         "tool_problem_send_to_all_qualified_users": "",
         "tool_configuration_near_future_days": "1",
         "tool_reservation_policy_superusers_bypass": "",
+        "tool_control_navbar_text": "Tool control",
     }
 
     def validate(self, name, value):

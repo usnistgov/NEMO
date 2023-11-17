@@ -14,7 +14,7 @@
 			<ul class="nav navbar-nav">
                 {% block navbar_main %}
 				    <li><a href="{% url 'calendar' %}">{{ calendar_navbar_text }}</a></li>
-                    {% if tools_exist %}<li><a href="{% url 'tool_control' %}">Tool control</a></li>{% endif %}
+                    {% if tools_exist %}<li><a href="{% url 'tool_control' %}">{{ tool_control_navbar_text }}</a></li>{% endif %}
                     {% if tools_exist or areas_exist %}
                         {% if areas_exist %}
                             <li><a href="{% url 'status_dashboard' %}">Status dashboard</a></li>

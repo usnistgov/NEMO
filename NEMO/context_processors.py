@@ -5,6 +5,7 @@ from NEMO.views.customization import (
     CalendarCustomization,
     RecurringChargesCustomization,
     SafetyCustomization,
+    ToolCustomization,
     UserRequestsCustomization,
 )
 from NEMO.views.notifications import get_notification_counts
@@ -93,6 +94,10 @@ def base_context(request):
         calendar_navbar_text = CalendarCustomization.get("calendar_navbar_text")
     except:
         calendar_navbar_text = ""
+    try:
+        tool_control_navbar_text = ToolCustomization.get("tool_control_navbar_text")
+    except:
+        tool_control_navbar_text = ""
     try:
         safety_navbar_text = SafetyCustomization.get("safety_navbar_text")
     except:
