@@ -5,6 +5,7 @@ from NEMO.views.customization import (
     CalendarCustomization,
     RecurringChargesCustomization,
     SafetyCustomization,
+    StatusDashboardCustomization,
     ToolCustomization,
     UserRequestsCustomization,
 )
@@ -102,6 +103,10 @@ def base_context(request):
         safety_navbar_text = SafetyCustomization.get("safety_navbar_text")
     except:
         safety_navbar_text = "Safety"
+    try:
+        dashboard_navbar_text = SafetyCustomization.get("dashboard_navbar_text")
+    except:
+        dashboard_navbar_text = "Status dashboard"
     return {
         "facility_name": facility_name,
         "recurring_charges_name": recurring_charges_name,
@@ -124,5 +129,7 @@ def base_context(request):
         "no_header": request.session.get("no_header", False),
         "safety_menu_item": safety_menu_item,
         "calendar_navbar_text": calendar_navbar_text,
+        "tool_control_navbar_text": tool_control_navbar_text,
         "safety_navbar_text": safety_navbar_text,
+        "dashboard_navbar_text": dashboard_navbar_text,
     }

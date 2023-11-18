@@ -17,7 +17,7 @@
                     {% if tools_exist %}<li><a href="{% url 'tool_control' %}">{{ tool_control_navbar_text }}</a></li>{% endif %}
                     {% if tools_exist or areas_exist %}
                         {% if areas_exist %}
-                            <li><a href="{% url 'status_dashboard' %}">Status dashboard</a></li>
+                            <li><a href="{% url 'status_dashboard' %}">{{ dashboard_navbar_text }}</a></li>
                         {% else %}
                             <li><a href="{% url 'status_dashboard_tab' 'tools' %}">Status dashboard</a></li>
                         {% endif %}
