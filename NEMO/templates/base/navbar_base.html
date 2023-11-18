@@ -24,7 +24,7 @@
                     {% endif %}
                     {% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist or adjustment_request_allowed and facility_managers_exist %}
                         <li><a href="{% url 'user_requests' %}">
-                            Requests
+                            {{ requests_navbar_text }}
                             {% if buddy_notification_count or temporary_access_notification_count or adjustment_notification_count %}
                                 <span class="badge active">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count }}</span>
                             {% endif %}

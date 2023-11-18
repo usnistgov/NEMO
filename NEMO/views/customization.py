@@ -310,6 +310,7 @@ class UserRequestsCustomization(CustomizationBase):
         "weekend_access_notification_emails": "",
         "weekend_access_notification_cutoff_hour": "",
         "weekend_access_notification_cutoff_day": "",
+        "requests_navbar_text": "Requests",
     }
 
     @classmethod
