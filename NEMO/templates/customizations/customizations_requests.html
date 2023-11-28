@@ -3,15 +3,6 @@
     <form method="POST" action="{% url 'customize' 'requests' %}" class="form-horizontal">
         {% csrf_token %}
         <h3 class="customization-section-title">General settings</h3>
-        <div class="form-group">
-            <label class="control-label col-md-4" for="requests_navbar_text">Navbar text</label>
-            <div class="col-md-8">
-                <input type="text" id="requests_navbar_text" name="requests_navbar_text" class="form-control" value="{{ requests_navbar_text }}">
-            </div>
-            <div class="col-md-offset-4 col-md-8 help-block light-grey">
-                The display text in the navbar for the "Requests" link.
-            </div>
-        </div>
         <h3 class="customization-section-title">Adjustment requests settings</h3>
         <div class="form-group">
             <label class="control-label col-md-4">Enable adjustment requests</label>

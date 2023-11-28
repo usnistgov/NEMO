@@ -169,6 +169,11 @@ class ApplicationCustomization(CustomizationBase):
         "consumable_user_self_checkout": "",
         "consumable_category_collapse": "",
         "area_in_usage_reminders": "enabled",
+        "calendar_navbar_text": "Calendar",
+        "tool_control_navbar_text": "Tool control",
+        "dashboard_navbar_text": "Status dashboard",
+        "requests_navbar_text": "Requests",
+        "safety_navbar_text": "Safety",
     }
 
     def context(self) -> Dict:
@@ -252,7 +257,6 @@ class CalendarCustomization(CustomizationBase):
         "calendar_all_areastools": "",
         "calendar_outage_recurrence_limit": "90",
         "calendar_qualified_tools": "",
-        "calendar_navbar_text": "Calendar",
     }
 
 
@@ -271,7 +275,6 @@ class StatusDashboardCustomization(CustomizationBase):
         "dashboard_staff_status_absence_view_staff": "",
         "dashboard_staff_status_absence_view_user_office": "",
         "dashboard_staff_status_absence_view_accounting_officer": "",
-        "dashboard_navbar_text": "Status dashboard",
     }
 
 
@@ -310,7 +313,6 @@ class UserRequestsCustomization(CustomizationBase):
         "weekend_access_notification_emails": "",
         "weekend_access_notification_cutoff_hour": "",
         "weekend_access_notification_cutoff_day": "",
-        "requests_navbar_text": "Requests",
     }
 
     @classmethod
@@ -415,7 +417,6 @@ class ToolCustomization(CustomizationBase):
         "tool_problem_send_to_all_qualified_users": "",
         "tool_configuration_near_future_days": "1",
         "tool_reservation_policy_superusers_bypass": "",
-        "tool_control_navbar_text": "Tool control",
     }
 
     def validate(self, name, value):
@@ -452,7 +453,6 @@ class SafetyCustomization(CustomizationBase):
         "safety_show_safety_data_sheets": "enabled",
         "safety_data_sheets_keywords_default": "",
         "safety_items_expand_categories": "",
-        "safety_navbar_text": "Safety",
     }
 
 

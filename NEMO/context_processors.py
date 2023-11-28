@@ -92,23 +92,23 @@ def base_context(request):
     except:
         safety_menu_item = True
     try:
-        calendar_navbar_text = CalendarCustomization.get("calendar_navbar_text")
+        calendar_navbar_text = ApplicationCustomization.get("calendar_navbar_text")
     except:
         calendar_navbar_text = "Calendar"
     try:
-        tool_control_navbar_text = ToolCustomization.get("tool_control_navbar_text")
+        tool_control_navbar_text = ApplicationCustomization.get("tool_control_navbar_text")
     except:
         tool_control_navbar_text = "Tool control"
     try:
-        dashboard_navbar_text = StatusDashboardCustomization.get("dashboard_navbar_text")
+        dashboard_navbar_text = ApplicationCustomization.get("dashboard_navbar_text")
     except:
         dashboard_navbar_text = "Status dashboard"
     try:
-        requests_navbar_text = UserRequestsCustomization.get("requests_navbar_text")
+        requests_navbar_text = ApplicationCustomization.get("requests_navbar_text")
     except:
         requests_navbar_text = "Requests"
     try:
-        safety_navbar_text = SafetyCustomization.get("safety_navbar_text")
+        safety_navbar_text = ApplicationCustomization.get("safety_navbar_text")
     except:
         safety_navbar_text = "Safety"
     return {
