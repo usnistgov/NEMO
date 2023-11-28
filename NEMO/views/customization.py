@@ -169,11 +169,11 @@ class ApplicationCustomization(CustomizationBase):
         "consumable_user_self_checkout": "",
         "consumable_category_collapse": "",
         "area_in_usage_reminders": "enabled",
-        "calendar_navbar_text": "Calendar",
-        "tool_control_navbar_text": "Tool control",
-        "dashboard_navbar_text": "Status dashboard",
-        "requests_navbar_text": "Requests",
-        "safety_navbar_text": "Safety",
+        "calendar_page_title": "Calendar",
+        "tool_control_page_title": "Tool control",
+        "status_dashboard_page_title": "Status dashboard",
+        "requests_page_title": "Requests",
+        "safety_page_title": "Safety",
     }
 
     def context(self) -> Dict:

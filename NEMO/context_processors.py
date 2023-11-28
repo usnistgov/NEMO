@@ -89,25 +89,25 @@ def base_context(request):
     except:
         safety_menu_item = True
     try:
-        calendar_navbar_text = ApplicationCustomization.get("calendar_navbar_text")
+        calendar_page_title = ApplicationCustomization.get("calendar_page_title")
     except:
-        calendar_navbar_text = "Calendar"
+        calendar_page_title = "Calendar"
     try:
-        tool_control_navbar_text = ApplicationCustomization.get("tool_control_navbar_text")
+        tool_control_page_title = ApplicationCustomization.get("tool_control_page_title")
     except:
-        tool_control_navbar_text = "Tool control"
+        tool_control_page_title = "Tool control"
     try:
-        dashboard_navbar_text = ApplicationCustomization.get("dashboard_navbar_text")
+        status_dashboard_page_title = ApplicationCustomization.get("status_dashboard_page_title")
     except:
-        dashboard_navbar_text = "Status dashboard"
+        status_dashboard_page_title = "Status dashboard"
     try:
-        requests_navbar_text = ApplicationCustomization.get("requests_navbar_text")
+        requests_page_title = ApplicationCustomization.get("requests_page_title")
     except:
-        requests_navbar_text = "Requests"
+        requests_page_title = "Requests"
     try:
-        safety_navbar_text = ApplicationCustomization.get("safety_navbar_text")
+        safety_page_title = ApplicationCustomization.get("safety_page_title")
     except:
-        safety_navbar_text = "Safety"
+        safety_page_title = "Safety"
     return {
         "facility_name": facility_name,
         "recurring_charges_name": recurring_charges_name,
@@ -129,9 +129,9 @@ def base_context(request):
         "datetime_input_js_format": datetime_input_js_format,
         "no_header": request.session.get("no_header", False),
         "safety_menu_item": safety_menu_item,
-        "calendar_navbar_text": calendar_navbar_text,
-        "tool_control_navbar_text": tool_control_navbar_text,
-        "dashboard_navbar_text": dashboard_navbar_text,
-        "requests_navbar_text": requests_navbar_text,
-        "safety_navbar_text": safety_navbar_text,
+        "calendar_page_title": calendar_page_title,
+        "tool_control_page_title": tool_control_page_title,
+        "status_dashboard_page_title": status_dashboard_page_title,
+        "requests_page_title": requests_page_title,
+        "safety_page_title": safety_page_title,
     }

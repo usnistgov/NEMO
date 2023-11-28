@@ -1,7 +1,7 @@
 {% extends 'safety/safety_base.html' %}
 {% load custom_tags_and_filters %}
-{% block title %}{{ safety_navbar_text }}{% endblock %}
-{% block safety_title %}{{ safety_navbar_text }}{% endblock %}
+{% block title %}{{ safety_page_title }}{% endblock %}
+{% block safety_title %}{{ safety_page_title }}{% endblock %}
 {% block tab_content %}
     {% if safety_categories or safety_items %}
         <div class="row" style="margin-bottom: 25px">
