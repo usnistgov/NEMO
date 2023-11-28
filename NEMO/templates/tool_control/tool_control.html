@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
-{% block title %}Tool control{% endblock %}
+{% block title %}{{ tool_control_navbar_text }}{% endblock %}
 {% block extrahead %}
 	{% load static %}
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>

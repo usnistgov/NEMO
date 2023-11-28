@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Status dashboard{% endblock %}
+{% block title %}{{ dashboard_navbar_text }}{% endblock %}
 {% load static %}
 {% block extrahead %}
     {# We need this for staff absence form popup #}
@@ -8,7 +8,7 @@
 {% endblock %}
 {% block content %}
 
-<h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">Status dashboard</h1>
+<h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">{{ dashboard_navbar_text }}</h1>
 <ul class="nav nav-pills" id="tabs" {% if no_header %}style="display:none"{% endif %}>
     {% if areas_exist %}<li {% if tab == 'occupancy' %}class="active"{% endif %}><a href="#occupancy">Area occupancy</a></li>{% endif %}
     {% if tools_exist %}<li {% if tab == 'tools' %}class="active"{% endif %}><a href="#tools">Tool status & usage</a></li>{% endif %}
