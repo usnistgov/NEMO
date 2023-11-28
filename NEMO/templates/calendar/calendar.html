@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
-{% block title %}Calendar{% endblock %}
+{% block title %}{{ calendar_page_title }}{% endblock %}
 {% block extrahead %}
 	{% load static %}
 	<link rel="stylesheet" type="text/css" href="{% static "fullcalendar/fullcalendar.min.css" %}" />
