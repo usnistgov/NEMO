@@ -2,11 +2,8 @@ from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.utilities import date_input_js_format, datetime_input_js_format, time_input_js_format
 from NEMO.views.customization import (
     ApplicationCustomization,
-    CalendarCustomization,
     RecurringChargesCustomization,
     SafetyCustomization,
-    StatusDashboardCustomization,
-    ToolCustomization,
     UserRequestsCustomization,
 )
 from NEMO.views.notifications import get_notification_counts
