@@ -1,0 +1,24 @@
+[
+{% for x in events %}
+    {
+    {% if all_tools and x.tool %}
+        "title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }})\n
+        {{ x.get_configuration_options_display|escapejs }}",
+    {% else %}
+        "title": "{{ x.user|escapejs }})\n{{ x.get_configuration_options_display|escapejs }}",
+    {% endif %}
+    {% if x.creator.id == x.user.id %}
+        "tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user }}",
+    {% else %}
+        "tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user }}, created by {{ x.creator }}",
+    {% endif %}
+    "colors": ["{{ x.get_configuration_options_colors|join:'","' }}"],
+    "id": "Reservation {{ x.id }}",
+    {# The reservation creator or staff may edit the event: #}
+    {% if user.id == x.user.id or user.is_staff %}"editable": true,{% endif %}
+    "start": "{{ x.start|date:"c" }}",
+    "end": "{{ x.get_visual_end|date:"c" }}",
+    "details_url": "{% url 'reservation_details' x.id %}"
+    }{% if not forloop.last %},{% endif %}
+{% endfor %}
+]

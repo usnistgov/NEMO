@@ -824,3 +824,28 @@ function wait_for_element(selector)
 		});
     });
 }
+
+function set_multiple_colors(element, colors) {
+	// Create a vertical gradient with every color given, evenly distributed
+	if (Array.isArray(colors)) {
+		if (colors.length === 1) {
+			element.css({"background-color": colors[0]});
+		} else {
+			const interval = 100 / colors.length;
+			let percentage = interval;
+			let css_background = "linear-gradient(";
+			colors.forEach(function (color, index) {
+				css_background += color + " " + percentage + "%";
+				if (index !== colors.length - 1) {
+					css_background += ", ";
+				}
+				if (index !== 0 && index !== colors.length - 1) {
+					percentage += interval
+					css_background += color + " " + percentage + "%, ";
+				}
+			});
+			css_background += ")";
+			element.css({"background-image": css_background});
+		}
+	}
+}

@@ -14,6 +14,8 @@ from NEMO.models import (
     AccountType,
     Area,
     AreaAccessRecord,
+    Configuration,
+    ConfigurationOption,
     Consumable,
     ConsumableCategory,
     ConsumableWithdraw,
@@ -174,8 +176,28 @@ class AreaSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         expandable_fields = {"parent_area": "NEMO.serializers.AreaSerializer"}
 
 
+class ConfigurationOptionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = ConfigurationOption
+        fields = "__all__"
+        expandable_fields = {
+            "reservation": "NEMO.serializers.ReservationSerializer",
+            "configuration": "NEMO.serializers.ConfigurationSerializer",
+        }
+
+
+class ConfigurationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = Configuration
+        fields = "__all__"
+        expandable_fields = {
+            "tool": "NEMO.serializers.ToolSerializer",
+        }
+
+
 class ReservationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     question_data = serializers.JSONField(source="question_data_json")
+    configuration_options = ConfigurationOptionSerializer(source="configurationoption_set", many=True, read_only=True)
 
     class Meta:
         model = Reservation
@@ -188,6 +210,7 @@ class ReservationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "area": "NEMO.serializers.AreaSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
             "descendant": "NEMO.serializers.ReservationSerializer",
+            "configuration_options": ("NEMO.serializers.ConfigurationOptionSerializer", {"many": True}),
         }
 
 

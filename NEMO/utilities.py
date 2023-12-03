@@ -246,9 +246,9 @@ def month_list(since=datetime(year=2013, month=11, day=1)):
     return result
 
 
-def get_month_timeframe(date=None):
-    if date:
-        start = parse(date)
+def get_month_timeframe(date_str: str = None):
+    if date_str:
+        start = parse(date_str)
     else:
         start = timezone.now()
     first_of_the_month = localize(datetime(start.year, start.month, 1))

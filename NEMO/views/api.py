@@ -16,6 +16,8 @@ from NEMO.models import (
     AccountType,
     Area,
     AreaAccessRecord,
+    Configuration,
+    ConfigurationOption,
     Consumable,
     ConsumableCategory,
     ConsumableWithdraw,
@@ -39,6 +41,8 @@ from NEMO.serializers import (
     AreaAccessRecordSerializer,
     AreaSerializer,
     BillableItemSerializer,
+    ConfigurationOptionSerializer,
+    ConfigurationSerializer,
     ConsumableCategorySerializer,
     ConsumableSerializer,
     ConsumableWithdrawSerializer,
@@ -245,6 +249,38 @@ class ResourceViewSet(ModelViewSet):
         "fully_dependent_tools": ["in"],
         "partially_dependent_tools": ["in"],
         "dependent_areas": ["in"],
+    }
+
+
+class ConfigurationViewSet(ModelViewSet):
+    filename = "configurations"
+    queryset = Configuration.objects.all()
+    serializer_class = ConfigurationSerializer
+    filterset_fields = {
+        "id": ["exact", "in"],
+        "name": ["exact", "iexact", "in"],
+        "tool_id": ["exact", "in", "isnull"],
+        "tool": ["exact", "in", "isnull"],
+        "advance_notice_limit": ["exact", "in", "gte", "gt", "lte", "lt"],
+        "display_order": ["exact", "in", "gte", "gt", "lte", "lt"],
+        "maintainers": ["exact", "in", "isnull"],
+        "qualified_users_are_maintainers": ["exact"],
+        "exclude_from_configuration_agenda": ["exact"],
+        "enabled": ["exact"],
+    }
+
+
+class ConfigurationOptionViewSet(ModelViewSet):
+    filename = "reservation_configuration_options"
+    queryset = ConfigurationOption.objects.all()
+    serializer_class = ConfigurationOptionSerializer
+    filterset_fields = {
+        "id": ["exact", "in"],
+        "name": ["exact", "iexact", "in"],
+        "reservation_id": ["exact", "in", "isnull"],
+        "reservation": ["exact", "in", "isnull"],
+        "configuration_id": ["exact", "in", "isnull"],
+        "configuration": ["exact", "in", "isnull"],
     }
 
 

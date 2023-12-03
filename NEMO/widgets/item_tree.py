@@ -131,7 +131,7 @@ class ItemTreeHelper:
         """
         item_type = f"'{self.item_type.value}'"
         result = (
-            f'<fieldset class="item_tree_fieldset"><legend align="center" onclick="toggle_item_categories({item_type})">{self.item_type.value.capitalize()}s</legend>'
+            f'<fieldset id="item-tree-{self.item_type.value}" class="item_tree_fieldset"><legend align="center" onclick="toggle_item_categories({item_type})">{self.item_type.value.capitalize()}s</legend>'
             if legend
             else ""
         )

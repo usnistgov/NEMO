@@ -20,6 +20,12 @@
 				<strong>This reservation was created on short notice. Tool configuration is not guaranteed upon start time.</strong><br>
 			{% endif %}
 		{% endif %}
+        {% if reservation.configurationoption_set.exists %}
+            Configuration:<br>
+            {% for config_option in reservation.configurationoption_set.all %}
+                {{ config_option.name }}: {{ config_option.current_setting }}<br>
+            {% endfor %}
+        {% endif %}
 		{% if reservation.additional_information %}
 			Additional information:<br>
 			{{ reservation.additional_information|linebreaksbr }}

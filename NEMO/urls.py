@@ -77,6 +77,7 @@ router.register(r"accounts", api.AccountViewSet)
 router.register(r"area_access_records", api.AreaAccessRecordViewSet)
 router.register(r"areas", api.AreaViewSet)
 router.register(r"billing", api.BillingViewSet, basename="billing")
+router.register(r"configurations", api.ConfigurationViewSet)
 router.register(r"consumable_categories", api.ConsumableCategoryViewSet)
 router.register(r"consumable_withdrawals", api.ConsumableWithdrawViewSet)
 router.register(r"consumables", api.ConsumableViewSet)
@@ -85,6 +86,7 @@ router.register(r"project_disciplines", api.ProjectDisciplineViewSet)
 router.register(r"projects", api.ProjectViewSet)
 router.register(r"qualifications", api.QualificationViewSet)
 router.register(r"reservations", api.ReservationViewSet)
+router.register(r"reservation_configuration_options", api.ConfigurationOptionViewSet)
 router.register(r"resources", api.ResourceViewSet)
 router.register(r"scheduled_outages", api.ScheduledOutageViewSet)
 router.register(r"staff_charges", api.StaffChargeViewSet)
@@ -156,6 +158,7 @@ urlpatterns += [
         name="enable_tool",
     ),
     path("disable_tool/<int:tool_id>/", tool_control.disable_tool, name="disable_tool"),
+    path("tool_config_history/<int:tool_id>/", tool_control.tool_config_history, name="tool_config_history"),
     path("usage_data_history/<int:tool_id>/", tool_control.usage_data_history, name="usage_data_history"),
     path("past_comments_and_tasks/", tool_control.past_comments_and_tasks, name="past_comments_and_tasks"),
     path(

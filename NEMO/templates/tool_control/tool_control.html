@@ -318,6 +318,11 @@
 			}
 		}
 
+        function load_config_history(tool_id) {
+            let failure_dialog = ajax_complete_callback("Unable to find the configuration history", "There was a problem looking up the configuration history.");
+            $("#config").load("{% url 'tool_config_history' 999 %}".replace('999', tool_id), undefined, failure_dialog);
+        }
+
 		function refresh_sidebar_tool_icons()
 		{
 		    $.getScript('{% url 'refresh_sidebar_icons' item_type='tool' %}')

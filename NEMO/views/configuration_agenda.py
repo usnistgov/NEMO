@@ -45,7 +45,7 @@ def configuration_agenda(request, time_period="today"):
             missed=False,
             shortened=False,
         )
-        .exclude(additional_information="")
+        .exclude(configurationoption_set__isnull=True)
         .order_by("start")
     )
     tools = Tool.objects.filter(id__in=reservations.values_list("tool", flat=True))

@@ -208,6 +208,16 @@
             <td>{{ reservation.user }} has opted to perform the tool configuration</td>
         </tr>
     {% endif %}
+        {% if reservation.configurationoption_set.exists %}
+            <tr>
+                <td>Configuration:</td>
+                <td>
+                    {% for config_option in reservation.configurationoption_set.all %}
+                        {{ config_option.name }}: {{ config_option.current_setting }}<br>
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endif %}
     {% if reservation.additional_information %}
         <tr>
             <td>Additional information:</td>

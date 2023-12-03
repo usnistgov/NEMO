@@ -36,14 +36,25 @@
 					{% if t.grouper.id == tool.id %}
 						{% for reservation in t.list %}
 							<tr style="border:2px solid black">
-								<td style="width:50%;border:2px solid black" {% if reservation.short_notice %}class="danger"{% endif %}>
-									<p>
-										{{ reservation.user }}<br>
-										{% if reservation.project %}{{ reservation.project }}<br>{% endif %}
-										{{ reservation.start }}<br>
-										{{ reservation.end }}<br>
-										{{ reservation.additional_information|linebreaksbr }}
-									</p>
+                                <td style="padding-bottom: 0; width:50%;border:2px solid black"
+                                    {% if reservation.short_notice %}class="danger"{% endif %}>
+                                    {{ reservation.user }}<br>
+                                    {% if reservation.project %}{{ reservation.project }}<br>{% endif %}
+                                    {{ reservation.start }}<br>
+                                    {{ reservation.end }}<br>
+                                    {{ reservation.additional_information|linebreaksbr }}
+                                    {% for config_option in reservation.configurationoption_set.all %}
+                                        {% if forloop.first %}
+                                            {% if reservation.additional_information %}
+                                                <br>
+                                            {% endif %}
+                                            <br>
+                                        {% endif %}
+                                        <div class="configuration-agenda-option"
+                                             style="{% if config_option.get_color %}background-color:
+                                                 {{ config_option.get_color }}{% else %}color: initial{% endif %}">{{ config_option.name }}
+                                            needs to be set to {{ config_option.current_setting }}</div>
+                                    {% endfor %}
 									{% if not reservation.tool.in_use and reservation.project %}
                                         {% url 'enable_tool' tool_id=reservation.tool.id user_id=reservation.user.id project_id=reservation.project.id staff_charge='false' as enable_tool_for_user_url %}
                                         {% button type="info" icon="glyphicon-play" value="Enable the tool on behalf of "|concat:reservation.user.first_name onclick="enable_tool('"|concat:enable_tool_for_user_url|concat:"');" %}
