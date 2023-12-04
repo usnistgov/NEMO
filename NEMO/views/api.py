@@ -1,5 +1,3 @@
-from typing import List
-
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
@@ -64,14 +62,8 @@ from NEMO.serializers import (
 )
 from NEMO.utilities import export_format_datetime
 from NEMO.views.api_billing import (
-    BillableItem,
     BillingFilterForm,
-    get_area_access_for_billing,
-    get_consumables_for_billing,
-    get_missed_reservations_for_billing,
-    get_staff_charges_for_billing,
-    get_training_sessions_for_billing,
-    get_usage_events_for_billing,
+    get_billing_charges,
 )
 
 
@@ -539,18 +531,7 @@ class BillingViewSet(XLSXFileMixin, viewsets.GenericViewSet):
             self.permission_denied(request)
 
     def get_queryset(self):
-        billing_form = BillingFilterForm(self.request.GET)
-        billing_form.full_clean()
-        data: List[BillableItem] = []
-        data.extend(get_usage_events_for_billing(billing_form))
-        data.extend(get_area_access_for_billing(billing_form))
-        data.extend(get_consumables_for_billing(billing_form))
-        data.extend(get_missed_reservations_for_billing(billing_form))
-        data.extend(get_staff_charges_for_billing(billing_form))
-        data.extend(get_training_sessions_for_billing(billing_form))
-
-        data.sort(key=lambda x: x.start, reverse=True)
-        return data
+        return get_billing_charges(self.request.GET)
 
     def get_filename(self, *args, **kwargs):
         return f"billing-{export_format_datetime()}.xlsx"

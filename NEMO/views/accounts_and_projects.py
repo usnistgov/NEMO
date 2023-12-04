@@ -1,13 +1,59 @@
+from datetime import datetime
+from typing import List
+
+from django import forms
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseBadRequest, HttpResponseForbidden
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.http import HttpResponseBadRequest, HttpResponseForbidden, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from NEMO.decorators import accounting_or_user_office_or_manager_required
+from NEMO.decorators import accounting_or_manager_required, accounting_or_user_office_or_manager_required
 from NEMO.forms import AccountForm, ProjectForm
-from NEMO.models import Account, AccountType, ActivityHistory, MembershipHistory, Project, ProjectDocuments, User
+from NEMO.models import (
+    Account,
+    AccountType,
+    ActivityHistory,
+    AreaAccessRecord,
+    ConsumableWithdraw,
+    MembershipHistory,
+    Project,
+    ProjectDocuments,
+    Reservation,
+    StaffCharge,
+    TrainingSession,
+    UsageEvent,
+    User,
+)
+from NEMO.utilities import date_input_format, queryset_search_filter
+from NEMO.views.api_billing import BillableItem, BillingFilterForm, get_billing_charges
 from NEMO.views.customization import ProjectsAccountsCustomization
 from NEMO.views.pagination import SortedPaginator
+
+
+class ProjectTransferForm(BillingFilterForm):
+    end = forms.DateField(required=False)
+    project_id = forms.IntegerField(required=True)
+    new_project_id = forms.IntegerField(required=False)
+    user_id = forms.IntegerField(required=False)
+
+    def clean(self):
+        errors = {}
+        project_id = self.cleaned_data.get("project_id")
+        new_project_id = self.cleaned_data.get("new_project_id")
+        start = self.cleaned_data.get("start")
+        end = self.cleaned_data.get("end")
+        if project_id and project_id == new_project_id:
+            errors["project_id"] = _("The projects have to be different")
+            errors["new_project_id"] = _("The projects have to be different")
+        if end and end < start:
+            errors["end"] = _("The end date must be on or after the start date")
+        if errors:
+            raise ValidationError(errors)
+        return self.cleaned_data
 
 
 @accounting_or_user_office_or_manager_required
@@ -208,3 +254,75 @@ def is_user_allowed(user: User, project):
     else:
         project_manager = user in project.manager_set.all()
         return is_active and (project_manager or accounting_or_user_office_or_manager)
+
+
+@accounting_or_manager_required
+@require_http_methods(["GET", "POST"])
+def transfer_charges(request):
+    if not ProjectsAccountsCustomization.get_bool("project_allow_transferring_charges"):
+        return redirect("landing")
+    form = ProjectTransferForm(request.POST or None)
+    project = Project.objects.filter(pk=form.data.get("project_id")).first()
+    new_project_id = form.data.get("new_project_id")
+    new_project = Project.objects.filter(pk=new_project_id).first() if new_project_id else None
+    user_id = form.data.get("user_id")
+    customer = User.objects.filter(id=user_id).first() if user_id else None
+    dictionary = {"form": form, "project": project, "new_project": new_project, "customer": customer}
+
+    if request.method == "POST":
+        if form.is_valid():
+            charges = get_charges_for_project_and_user(request.POST, customer.username if customer else None)
+            confirm = "confirm" in request.POST
+            if confirm:
+                if not new_project_id:
+                    dictionary["charges"] = charges
+                    form.add_error("new_project_id", _("This field is required"))
+                else:
+                    do_transfer_charges(charges, new_project.id)
+                    messages.success(request, f"{len(charges)} charges were transfered from {project} to {new_project}")
+            else:
+                dictionary["charges"] = charges
+    return render(request, "accounts_and_projects/transfer_charges.html", dictionary)
+
+
+def get_charges_for_project_and_user(params: QueryDict, username: str = None) -> List[BillableItem]:
+    dictionary = params.copy()
+    dictionary["username"] = username
+    if not dictionary.get("end"):
+        dictionary["end"] = datetime.now().strftime(date_input_format)
+    return get_billing_charges(dictionary)
+
+
+@transaction.atomic
+def do_transfer_charges(charges: List[BillableItem], new_project_id: int):
+    usage_event_ids = []
+    area_access_record_ids = []
+    consumable_withdrawal_ids = []
+    missed_reservation_ids = []
+    staff_charge_ids = []
+    training_session_ids = []
+    for charge in charges:
+        if charge.type == "tool_usage":
+            usage_event_ids.append(charge.item_id)
+        elif charge.type == "area_access":
+            area_access_record_ids.append(charge.item_id)
+        elif charge.type == "consumable":
+            consumable_withdrawal_ids.append(charge.item_id)
+        elif charge.type == "missed_reservation":
+            missed_reservation_ids.append(charge.item_id)
+        elif charge.type == "staff_charge":
+            staff_charge_ids.append(charge.item_id)
+        elif charge.type == "training_session":
+            training_session_ids.append(charge.item_id)
+    UsageEvent.objects.filter(id__in=usage_event_ids).update(project_id=new_project_id)
+    AreaAccessRecord.objects.filter(id__in=area_access_record_ids).update(project_id=new_project_id)
+    ConsumableWithdraw.objects.filter(id__in=consumable_withdrawal_ids).update(project_id=new_project_id)
+    Reservation.objects.filter(id__in=missed_reservation_ids).update(project_id=new_project_id)
+    StaffCharge.objects.filter(id__in=staff_charge_ids).update(project_id=new_project_id)
+    TrainingSession.objects.filter(id__in=training_session_ids).update(project_id=new_project_id)
+
+
+@accounting_or_manager_required
+@require_GET
+def search_project_for_transfer(request):
+    return queryset_search_filter(Project.objects.all(), ["name", "application_identifier"], request)

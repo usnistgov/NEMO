@@ -583,6 +583,12 @@ if settings.ALLOW_CONDITIONAL_URLS:
             accounts_and_projects.add_document_to_project,
             name="add_document_to_project",
         ),
+        path("projects/transfer_charges/", accounts_and_projects.transfer_charges, name="transfer_charges"),
+        path(
+            "projects/search_project_for_transfer/",
+            accounts_and_projects.search_project_for_transfer,
+            name="search_project_for_transfer",
+        ),
         # Account, project, and user history
         re_path(r"^history/(?P<item_type>account|project|user)/(?P<item_id>\d+)/$", history.history, name="history"),
         # Site customization:
