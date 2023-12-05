@@ -2,10 +2,9 @@
 {% for x in events %}
     {
     {% if all_tools and x.tool %}
-        "title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }})\n
-        {{ x.get_configuration_options_display|escapejs }}",
+        "title": "{{ x.reservation_item.name|escapejs }} ({{ x.user.username|escapejs }})\n{{ x.get_configuration_options_display|escapejs }}",
     {% else %}
-        "title": "{{ x.user|escapejs }})\n{{ x.get_configuration_options_display|escapejs }}",
+        "title": "{{ x.user|escapejs }}\n{{ x.get_configuration_options_display|escapejs }}",
     {% endif %}
     {% if x.creator.id == x.user.id %}
         "tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user }}",
