@@ -9160,6 +9160,7 @@
       "prompt": "What blade type do you need to use?",
       "current_settings": "SiC Blade",
       "available_settings": "Metal Blade, Resin Blade, SiC Blade",
+      "calendar_colors": "#222, #666, #aaa",
       "qualified_users_are_maintainers": false,
       "exclude_from_configuration_agenda": false,
       "absence_string": null,

@@ -159,7 +159,7 @@ def event_feed(request):
     elif event_type == "specific user" and request.user.is_staff:
         user = get_object_or_404(User, id=request.GET.get("user"))
         return specific_user_feed(request, user, start, end)
-    elif event_type == "configuration agenda" and request.user.is_staff:
+    elif event_type == "configuration agenda":
         return configuration_agenda_event_feed(request, start, end)
     else:
         return HttpResponseBadRequest("Invalid event type or operation not authorized.")
