@@ -14,6 +14,20 @@
     </p>
     <div style="height: 20px"></div>
     <form class="form-horizontal" role="form" method="post">
+        {% if form.errors %}
+            <div class="form-group">
+                <div class="col-sm-8 col-lg-6">
+                    <div class="alert alert-danger">
+                        Oops! Something went wrong. Please correct the errors highlighted below:
+                        {% if form.non_field_errors %}
+                        <br><br>
+                        <ul><li>{{ form.non_field_errors }}</li></ul>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-sm-4 col-lg-6"></div>
+            </div>
+        {% endif %}
         {% csrf_token %}
         <div class="form-group">
             <div class="control-label col-sm-1">
@@ -84,12 +98,14 @@
                     <div class="col-sm-offset-1 col-sm-7 col-log-5 form-control-static danger-highlight">{{ form.new_project_id.errors|striptags }}</div>
                 {% endif %}
             </div>
+            {% with number_of_charges=charges|length %}
             <div class="form-group">
                 <div class="col-sm-offset-1 col-sm-11">
-                    {% button type="save" value="Confirm" name="confirm" %}
+                    {% button type="save" submit=False value="Confirm" name="confirm" onclick="if (this.form.reportValidity()){ if(window.confirm('Are you sure you want to transfer these "|concat:number_of_charges|concat:" charges?')){submit_and_disable(this)}}" %}
                 </div>
             </div>
-            <div class="danger-highlight" style="margin-top: 25px;">{{ charges|length }} charges were found:</div>
+            <div class="danger-highlight" style="margin-top: 25px;">{{ number_of_charges }} charges were found:</div>
+            {% endwith %}
 
             <table class="table table-striped">
                 <thead>
