@@ -1013,6 +1013,13 @@
   },
   {
     "model": "NEMO.customization",
+    "pk": "project_allow_transferring_charges",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
     "pk": "recurring_charges_category",
     "fields": {
       "value": "1"
@@ -9160,7 +9167,7 @@
       "prompt": "What blade type do you need to use?",
       "current_settings": "SiC Blade",
       "available_settings": "Metal Blade, Resin Blade, SiC Blade",
-      "calendar_colors": "#222, #666, #aaa",
+      "calendar_colors": "#670862, #075e21, #878014",
       "qualified_users_are_maintainers": false,
       "exclude_from_configuration_agenda": false,
       "absence_string": null,
