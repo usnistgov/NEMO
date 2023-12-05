@@ -27,12 +27,14 @@
             {% endif %}
         {% endif %}
         {% if reservation.configurationoption_set.exists %}
+            <div style="height:10px">{# Vertical spacer #}</div>
             Configuration:<br>
             {% for config_option in reservation.configurationoption_set.all %}
-                {{ config_option.name }}: {{ config_option.current_setting }}<br>
+                {{ config_option.name }}: {% if config_option.get_color %}<span class="configuration-reservation-option" style="background-color: {{ config_option.get_color }}">{{ config_option.current_setting }}</span>{% else %}{{ config_option.current_setting }}{% endif %}<br>
             {% endfor %}
         {% endif %}
         {% if reservation.additional_information %}
+            <div style="height:10px">{# Vertical spacer #}</div>
             Additional information:<br>
             {{ reservation.additional_information|linebreaksbr }}
         {% endif %}

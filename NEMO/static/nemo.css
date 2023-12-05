@@ -1186,8 +1186,14 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	text-align: left!important;
 }
 
-.configuration-agenda-option {
+.configuration-agenda-option
+{
 	padding: 8px;
-	margin: 0 -8px;
+	color: white;
+}
+
+.configuration-reservation-option
+{
+	padding:2px;
 	color: white;
 }
