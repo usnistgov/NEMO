@@ -375,6 +375,12 @@ AUDITLOG_INCLUDE_TRACKING_MODELS = (
     "NEMO.Project",
     "NEMO.Account",
     "NEMO.Customization",
+    # Track all changes in charges
+    "NEMO.UsageEvent",
+    "NEMO.AreaAccessRecord",
+    "NEMO.ConsumableWithdrawal",
+    "NEMO.StaffCharge",
+    "NEMO.TrainingSession",
 )
 
 # List of compiled regular expression objects describing URLs that should be ignored
