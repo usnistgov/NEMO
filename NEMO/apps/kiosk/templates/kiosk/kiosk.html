@@ -96,7 +96,7 @@
 		let kiosk_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}" {% if badge_reader.record_key %}, "{{ badge_reader.record_key }}"{% endif %});
 		let timeout_handle = null;
 		let countdown_handle = null;
-		let occupancy = new URLSearchParams(window.location.search).get('occupancy') !== null;
+		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
         let usage = new URLSearchParams(window.location.search).get('usage') !== null;
         let alerts = new URLSearchParams(window.location.search).get('alerts') !== null;
 		let default_content_element = $("#default_content");
