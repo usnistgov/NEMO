@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from django import forms
 
@@ -58,6 +58,7 @@ class BillableItem(object):
         self.type: Optional[str] = item_type
         self.name: Optional[str] = None
         self.details: Optional[str] = ""
+        self.item_id: Optional[int] = None
         if project:
             self.account: Optional[str] = project.account.name
             self.account_id: Optional[int] = project.account.id
@@ -71,6 +72,21 @@ class BillableItem(object):
         self.start: Optional[datetime] = None
         self.end: Optional[datetime] = None
         self.quantity: Optional[Decimal] = None
+
+
+def get_billing_charges(request_params: Dict) -> List[BillableItem]:
+    billing_form = BillingFilterForm(request_params)
+    billing_form.full_clean()
+    data: List[BillableItem] = []
+    data.extend(get_usage_events_for_billing(billing_form))
+    data.extend(get_area_access_for_billing(billing_form))
+    data.extend(get_consumables_for_billing(billing_form))
+    data.extend(get_missed_reservations_for_billing(billing_form))
+    data.extend(get_staff_charges_for_billing(billing_form))
+    data.extend(get_training_sessions_for_billing(billing_form))
+
+    data.sort(key=lambda x: x.start, reverse=True)
+    return data
 
 
 def get_usage_events_for_billing(billing_form: BillingFilterForm) -> List[BillableItem]:

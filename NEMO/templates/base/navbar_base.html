@@ -13,18 +13,18 @@
 		<div class="navbar-collapse collapse" id="site-navigation">
 			<ul class="nav navbar-nav">
                 {% block navbar_main %}
-				    <li><a href="{% url 'calendar' %}">Calendar</a></li>
-                    {% if tools_exist %}<li><a href="{% url 'tool_control' %}">Tool control</a></li>{% endif %}
+				    <li><a href="{% url 'calendar' %}">{{ calendar_page_title }}</a></li>
+                    {% if tools_exist %}<li><a href="{% url 'tool_control' %}">{{ tool_control_page_title }}</a></li>{% endif %}
                     {% if tools_exist or areas_exist %}
                         {% if areas_exist %}
-                            <li><a href="{% url 'status_dashboard' %}">Status dashboard</a></li>
+                            <li><a href="{% url 'status_dashboard' %}">{{ status_dashboard_page_title }}</a></li>
                         {% else %}
-                            <li><a href="{% url 'status_dashboard_tab' 'tools' %}">Status dashboard</a></li>
+                            <li><a href="{% url 'status_dashboard_tab' 'tools' %}">{{ status_dashboard_page_title }}</a></li>
                         {% endif %}
                     {% endif %}
                     {% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist or adjustment_request_allowed and facility_managers_exist %}
                         <li><a href="{% url 'user_requests' %}">
-                            Requests
+                            {{ requests_page_title }}
                             {% if buddy_notification_count or temporary_access_notification_count or adjustment_notification_count %}
                                 <span class="badge active">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count }}</span>
                             {% endif %}
@@ -32,7 +32,7 @@
                     {% endif %}
                     {% if safety_menu_item %}
                         <li><a href="{% url 'safety' %}">
-                            Safety
+                            {{ safety_page_title }}
                             {% if safety_notification_count %}
                                 <span class="badge active">{{ safety_notification_count }}</span>
                             {% endif %}
@@ -70,6 +70,9 @@
                                     {% navigation_url 'consumables' 'Supplies' user.is_staff user.is_user_office user.is_superuser %}
                                     {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_staff user.is_superuser %}{% endif %}
                                     {% navigation_url 'users' 'Users' %}
+                                    {% if "projects_and_accounts"|customization:"project_allow_transferring_charges" == "enabled" %}
+                                        {% navigation_url 'transfer_charges' 'Transfer charges' user.is_accounting_officer user.is_facility_manager user.is_superuser %}
+                                    {% endif %}
                                 {% elif user.is_tool_superuser or user.is_project_pi %}
                                     {% navigation_url 'projects' 'Projects' user.is_project_pi %}
                                     {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_tool_superuser %}{% endif %}

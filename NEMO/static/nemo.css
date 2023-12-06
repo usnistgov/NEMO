@@ -1185,3 +1185,9 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 {
 	text-align: left!important;
 }
+
+.configuration-reservation-option
+{
+	padding: 2px;
+	color: white;
+}

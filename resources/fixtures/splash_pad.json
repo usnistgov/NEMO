@@ -1013,6 +1013,13 @@
   },
   {
     "model": "NEMO.customization",
+    "pk": "project_allow_transferring_charges",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
     "pk": "recurring_charges_category",
     "fields": {
       "value": "1"
@@ -9160,6 +9167,7 @@
       "prompt": "What blade type do you need to use?",
       "current_settings": "SiC Blade",
       "available_settings": "Metal Blade, Resin Blade, SiC Blade",
+      "calendar_colors": "#670862, #075e21, #878014",
       "qualified_users_are_maintainers": false,
       "exclude_from_configuration_agenda": false,
       "absence_string": null,
@@ -9175,6 +9183,28 @@
           "professor"
         ]
       ]
+    }
+  },
+  {
+    "model": "NEMO.configuration",
+    "pk": 2,
+    "fields": {
+      "name": "Wafer",
+      "tool": [
+        "CMP"
+      ],
+      "configurable_item_name": "Wafer chuck",
+      "advance_notice_limit": 18,
+      "display_order": 0,
+      "prompt": "Please choose a wafer size you will need for your reservation.",
+      "current_settings": "4\"",
+      "available_settings": "3\", 4\"",
+      "calendar_colors": "#0c0b55, #530202",
+      "qualified_users_are_maintainers": false,
+      "exclude_from_configuration_agenda": false,
+      "absence_string": null,
+      "enabled": true,
+      "maintainers": []
     }
   },
   {

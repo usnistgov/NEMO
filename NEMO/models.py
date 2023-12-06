@@ -33,7 +33,7 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from NEMO import fields
-from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, RecurrenceMixin
+from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, ConfigurationMixin, RecurrenceMixin
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
     EmailCategory,
@@ -53,6 +53,7 @@ from NEMO.utilities import (
     send_mail,
     supported_embedded_extensions,
 )
+from NEMO.validators import color_hex_list_validator, color_hex_validator
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH, CHAR_FIELD_MAXIMUM_LENGTH
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
@@ -1096,6 +1097,7 @@ class Tool(SerializationByNameModel):
         max_length=9,
         default="#33ad33",
         help_text="Color for tool reservations in calendar overviews",
+        validators=[color_hex_validator],
     )
     _category = models.CharField(
         db_column="category",
@@ -1896,7 +1898,7 @@ class Qualification(BaseModel):
         db_table = "NEMO_user_qualifications"
 
 
-class Configuration(BaseModel):
+class Configuration(BaseModel, ConfigurationMixin):
     name = models.CharField(
         max_length=200,
         help_text="The name of this overall configuration. This text is displayed as a label on the tool control page.",
@@ -1929,6 +1931,15 @@ class Configuration(BaseModel):
         null=True,
         help_text="The available choices to select for this configuration option. Multiple values are separated by commas.",
     )
+    calendar_colors = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Comma separated list of html colors for each available setting. E.g. #ffffff, #eeeeee",
+        validators=[color_hex_list_validator],
+    )
+    absence_string = models.CharField(
+        max_length=100, blank=True, null=True, help_text="The text that appears to indicate absence of a choice."
+    )
     maintainers = models.ManyToManyField(
         User, blank=True, help_text="Select the users that are allowed to change this configuration."
     )
@@ -1939,9 +1950,6 @@ class Configuration(BaseModel):
     exclude_from_configuration_agenda = models.BooleanField(
         default=False,
         help_text="Reservations containing this configuration will be excluded from the Configuration Agenda page.",
-    )
-    absence_string = models.CharField(
-        max_length=100, blank=True, null=True, help_text="The text that appears to indicate absence of a choice."
     )
     enabled = models.BooleanField(
         default=True, help_text="Only active configurations will show up for the selected tool"
@@ -1960,17 +1968,6 @@ class Configuration(BaseModel):
             )
         return self.current_settings_as_list()[slot]
 
-    def current_settings_as_list(self):
-        return [x.strip() for x in self.current_settings.split(",")]
-
-    def available_settings_as_list(self):
-        return [x.strip() for x in self.available_settings.split(",")]
-
-    def get_available_setting(self, choice):
-        choice = int(choice)
-        available_settings = self.available_settings_as_list()
-        return available_settings[choice]
-
     def replace_current_setting(self, slot, choice):
         slot = int(slot)
         current_settings = self.current_settings_as_list()
@@ -1979,6 +1976,14 @@ class Configuration(BaseModel):
 
     def range_of_configurable_items(self):
         return range(0, len(self.current_settings.split(",")))
+
+    def get_color(self, setting):
+        index = (
+            self.available_settings_as_list().index(setting) if setting in self.available_settings_as_list() else None
+        )
+        if index is not None:
+            color_list = self.calendar_colors_as_list()
+            return color_list[index] if color_list and len(color_list) > index else None
 
     def user_is_maintainer(self, user):
         if user in self.maintainers.all() or user.is_staff:
@@ -1992,6 +1997,61 @@ class Configuration(BaseModel):
 
     def __str__(self):
         return str(self.tool.name) + ": " + str(self.name)
+
+
+class ConfigurationOption(BaseModel, ConfigurationMixin):
+    name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    configuration = models.ForeignKey(
+        Configuration,
+        null=True,
+        blank=True,
+        help_text="The configuration this option applies to",
+        on_delete=models.SET_NULL,
+    )
+    reservation = models.ForeignKey(
+        "Reservation",
+        help_text="The reservation this option is set on",
+        on_delete=models.CASCADE,
+        related_name="configurationoption_set",
+    )
+    current_setting = models.CharField(
+        null=True,
+        blank=True,
+        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        help_text="The current value for this configuration option",
+    )
+    available_settings = models.TextField(
+        blank=True,
+        null=True,
+        help_text="The available choices to select for this configuration option. Multiple values are separated by commas.",
+    )
+    calendar_colors = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Comma separated list of html colors for each available setting. E.g. #ffffff, #eeeeee",
+        validators=[color_hex_list_validator],
+    )
+    absence_string = models.CharField(
+        max_length=100, blank=True, null=True, help_text="The text that appears to indicate absence of a choice."
+    )
+
+    def get_color(self):
+        # if the underlying configuration has not changed (same available settings), use color from config
+        same_config = self.configuration and self.configuration.available_settings == self.available_settings
+        if same_config:
+            return self.configuration.get_color(self.current_setting)
+        index = (
+            self.available_settings_as_list().index(self.current_setting)
+            if self.current_setting in self.available_settings_as_list()
+            else None
+        )
+        if index is not None:
+            color_list = self.calendar_colors_as_list()
+            return color_list[index] if color_list and len(color_list) > index else None
+
+    def __str__(self):
+        selected = f", current value: {self.current_setting}" if self.current_setting else ""
+        return f"{self.name}, options: {self.available_settings_as_list()}{selected}"
 
 
 class TrainingSession(BaseModel, BillableItemMixin):
@@ -2088,7 +2148,10 @@ class Area(MPTTModel):
 
     # Additional information
     area_calendar_color = models.CharField(
-        max_length=9, default="#88B7CD", help_text="Color for tool reservations in calendar overviews"
+        max_length=9,
+        default="#88B7CD",
+        help_text="Color for tool reservations in calendar overviews",
+        validators=[color_hex_validator],
     )
 
     # Area access
@@ -2332,6 +2395,7 @@ class ConfigurationHistory(BaseModel):
     configuration = models.ForeignKey(Configuration, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     modification_time = models.DateTimeField(default=timezone.now)
+    item_name = models.CharField(null=True, blank=False, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
     slot = models.PositiveIntegerField()
     setting = models.TextField()
 
@@ -2520,6 +2584,25 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     def has_not_started(self):
         return False if self.start <= timezone.now() else True
 
+    def get_configuration_options_display(self):
+        result = ""
+        for config_option in self.configurationoption_set.all():
+            result += f"{config_option.name}: {config_option.current_setting}\n"
+        return result
+
+    def get_configuration_options_colors(self):
+        colors = []
+        for config_option in self.configurationoption_set.all():
+            colors.append(config_option.get_color() or "#5561ec")
+        return colors
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        super().save(force_insert, force_update, using, update_fields)
+        deferred_related_models = getattr(self, "_deferred_related_models", None)
+        if deferred_related_models:
+            for deferred_related_model in deferred_related_models:
+                deferred_related_model.save()
+
     def save_and_notify(self):
         self.save()
         from NEMO.views.calendar import (
@@ -2545,6 +2628,15 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
             new_reservation.end = new_end
         if new_reservation.tool:
             new_reservation.short_notice = new_reservation.tool.determine_insufficient_notice(new_reservation.start)
+        # If we have configuration options, we have to save them later since this copy does not save the reservation
+        # In the reservation save method, it will check for the existence of this
+        if self.configurationoption_set.exists():
+            deferred_related_models = []
+            for config_option in self.configurationoption_set.all():
+                config_option.pk = None
+                config_option.reservation = new_reservation
+                deferred_related_models.append(config_option)
+            new_reservation._deferred_related_models = deferred_related_models
         return new_reservation
 
     class Meta:
@@ -3687,6 +3779,24 @@ class ScheduledOutage(BaseModel):
             return {"tool": None, "area": None}
         else:
             return {self.outage_item_type.value: self.outage_item}
+
+    def has_not_ended(self):
+        return False if self.end < timezone.now() else True
+
+    def has_not_started(self):
+        return False if self.start <= timezone.now() else True
+
+    def clean(self):
+        if self.start and self.end and self.start >= self.end:
+            raise ValidationError(
+                {
+                    "start": "Outage start time ("
+                    + format_datetime(self.start)
+                    + ") must be before the end time ("
+                    + format_datetime(self.end)
+                    + ")."
+                }
+            )
 
     def __str__(self):
         return str(self.title)

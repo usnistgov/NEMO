@@ -1,9 +1,9 @@
+import re
 from datetime import datetime, timedelta
 from http import HTTPStatus
 from json import dumps, loads
 from logging import getLogger
-from re import match
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -21,6 +21,7 @@ from NEMO.models import (
     Area,
     AreaAccessRecord,
     Configuration,
+    ConfigurationOption,
     Project,
     Reservation,
     ReservationItemType,
@@ -158,6 +159,8 @@ def event_feed(request):
     elif event_type == "specific user" and request.user.is_staff:
         user = get_object_or_404(User, id=request.GET.get("user"))
         return specific_user_feed(request, user, start, end)
+    elif event_type == "configuration agenda":
+        return configuration_agenda_event_feed(request, start, end)
     else:
         return HttpResponseBadRequest("Invalid event type or operation not authorized.")
 
@@ -340,6 +343,38 @@ def specific_user_feed(request, user, start, end):
     return render(request, "calendar/specific_user_feed.html", dictionary)
 
 
+def configuration_agenda_event_feed(request, start, end):
+    events = Reservation.objects.filter(
+        cancelled=False, missed=False, shortened=False, configurationoption_set__isnull=False
+    ).distinct()
+    # Exclude events for which the following is true:
+    # The event starts and ends before the time-window, and...
+    # The event starts and ends after the time-window.
+    events = events.exclude(start__lt=start, end__lt=start)
+    events = events.exclude(start__gt=end, end__gt=end)
+    all_tools = request.GET.get("all_tools")
+
+    # Filter events that only have to do with the relevant tool/area.
+    item_type = request.GET.get("item_type")
+    if all_tools:
+        events = events.filter(area=None)
+    if item_type:
+        item_type = ReservationItemType(item_type)
+        item_id = request.GET.get("item_id")
+        if item_id and not all_tools:
+            events = events.filter(**{f"{item_type.value}__id": item_id})
+
+    # TODO: Filter events that only have to do with the current user's primary, backup and superuser tools.
+    personal_schedule = request.GET.get("personal_schedule")
+
+    dictionary = {
+        "events": events,
+        "personal_schedule": personal_schedule,
+        "all_tools": all_tools,
+    }
+    return render(request, "calendar/configuration_event_feed.html", dictionary)
+
+
 @login_required
 @require_POST
 def create_reservation(request):
@@ -465,7 +500,7 @@ def create_item_reservation(request, current_user, start, end, item_type: Reserv
 
         # If a reservation is requested and configuration information is present also...
         elif item.is_configurable() and configured:
-            new_reservation.additional_information, new_reservation.self_configuration = extract_configuration(request)
+            set_reservation_configuration(new_reservation, request)
             # Reservation can't be short notice if the user is configuring the tool themselves.
             if new_reservation.self_configuration:
                 new_reservation.short_notice = False
@@ -525,42 +560,45 @@ def reservation_success(request, reservation: Reservation):
         return HttpResponse()
 
 
-def extract_configuration(request):
-    cleaned_configuration = []
+def set_reservation_configuration(reservation: Reservation, request):
+    configuration_options = []
     for key, value in request.POST.items():
-        entry = parse_configuration_entry(key, value)
+        entry = parse_configuration_entry(reservation, key, value)
         if entry:
-            cleaned_configuration.append(entry)
-    # Sort by configuration display priority and join the results:
-    result = ""
-    for config in sorted(cleaned_configuration):
-        result += config[1] + "\n"
+            configuration_options.append(entry)
+    # Sort by configuration display priority and add config options to the list to save later:
+    if configuration_options:
+        reservation._deferred_related_models = []
+        for config in sorted(configuration_options, key=lambda x: x[0]):
+            reservation._deferred_related_models.append(config[1])
     if "additional_information" in request.POST:
-        result += request.POST["additional_information"][:ADDITIONAL_INFORMATION_MAXIMUM_LENGTH].strip()
-    self_configuration = True if request.POST.get("self_configuration") == "on" else False
-    return result, self_configuration
+        reservation.additional_information = request.POST["additional_information"][
+            :ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
+        ].strip()
+    reservation.self_configuration = True if request.POST.get("self_configuration") == "on" else False
 
 
-def parse_configuration_entry(key, value):
-    if value == "" or not match("^configuration_[0-9]+__slot_[0-9]+__display_order_[0-9]+$", key):
+def parse_configuration_entry(reservation: Reservation, key, value) -> Optional[Tuple[int, ConfigurationOption]]:
+    if value == "" or not re.match("^configuration_[0-9]+__slot_[0-9]+__display_order_[0-9]+$", key):
         return None
     config_id, slot, display_order = [int(s) for s in key.split("_") if s.isdigit()]
     configuration = Configuration.objects.get(pk=config_id)
     if not configuration.enabled:
         return None
-    available_setting = configuration.get_available_setting(value)
+    setting = configuration.get_available_setting(value)
+
+    option_value = ConfigurationOption()
+    option_value.current_setting = setting
+    option_value.available_settings = configuration.available_settings
+    option_value.calendar_colors = configuration.calendar_colors
+    option_value.absence_string = configuration.absence_string
+    option_value.reservation = reservation
+    option_value.configuration = configuration
     if len(configuration.current_settings_as_list()) == 1:
-        return display_order, configuration.name + " needs to be set to " + available_setting + "."
+        option_value.name = configuration.configurable_item_name or configuration.name
     else:
-        return (
-            display_order,
-            configuration.configurable_item_name
-            + " #"
-            + str(slot + 1)
-            + " needs to be set to "
-            + available_setting
-            + ".",
-        )
+        option_value.name = f"{configuration.configurable_item_name or configuration.name} #{str(slot + 1)}"
+    return display_order, option_value
 
 
 @staff_member_required
@@ -746,7 +784,8 @@ def modify_outage(request, start_delta, end_delta):
         return HttpResponseNotFound("The outage that you wish to modify doesn't exist!")
     if start_delta:
         outage.start += start_delta
-    outage.end += end_delta
+    if end_delta:
+        outage.end += end_delta
     policy_problem = policy.check_to_create_outage(outage)
     if policy_problem:
         return HttpResponseBadRequest(policy_problem)
@@ -827,7 +866,7 @@ def change_reservation_date(request):
     new_start = request.POST.get("new_start", None)
     if new_start:
         try:
-            new_start = make_aware(datetime.strptime(new_start, datetime_input_format))
+            new_start = make_aware(datetime.strptime(new_start, datetime_input_format), is_dst=False)
             if new_start.time().minute not in [0, 15, 30, 45]:
                 return HttpResponseBadRequest("Reservation time only works with 15 min increments")
         except ValueError:
@@ -836,7 +875,7 @@ def change_reservation_date(request):
     new_end = request.POST.get("new_end", None)
     if new_end:
         try:
-            new_end = make_aware(datetime.strptime(new_end, datetime_input_format))
+            new_end = make_aware(datetime.strptime(new_end, datetime_input_format), is_dst=False)
             if new_end.time().minute not in [0, 15, 30, 45]:
                 return HttpResponseBadRequest("Reservation time only works with 15 min increments")
         except ValueError:
@@ -844,6 +883,36 @@ def change_reservation_date(request):
         end_delta = (new_end - reservation.end) if new_end else None
     if start_delta or end_delta:
         return modify_reservation(request, request.user, start_delta, end_delta)
+    else:
+        return HttpResponseBadRequest("Invalid delta")
+
+
+@staff_member_required
+@require_POST
+def change_outage_date(request):
+    """Change an outage's start or end date."""
+    outage = get_object_or_404(ScheduledOutage, id=request.POST["id"])
+    start_delta, end_delta = None, None
+    new_start = request.POST.get("new_start", None)
+    if new_start:
+        try:
+            new_start = make_aware(datetime.strptime(new_start, datetime_input_format), is_dst=False)
+            if new_start.time().minute not in [0, 15, 30, 45]:
+                return HttpResponseBadRequest("Outage time only works with 15 min increments")
+        except ValueError:
+            return HttpResponseBadRequest("Invalid date format for start date")
+        start_delta = new_start - outage.start
+    new_end = request.POST.get("new_end", None)
+    if new_end:
+        try:
+            new_end = make_aware(datetime.strptime(new_end, datetime_input_format), is_dst=False)
+            if new_end.time().minute not in [0, 15, 30, 45]:
+                return HttpResponseBadRequest("Outage time only works with 15 min increments")
+        except ValueError:
+            return HttpResponseBadRequest("Invalid date format for end date")
+        end_delta = (new_end - outage.end) if new_end else None
+    if start_delta or end_delta:
+        return modify_outage(request, start_delta, end_delta)
     else:
         return HttpResponseBadRequest("Invalid delta")
 

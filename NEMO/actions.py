@@ -3,7 +3,7 @@ from django.db.models import Max
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
-from NEMO.models import Area, Interlock, InterlockCard, Tool, User
+from NEMO.models import Area, Configuration, Interlock, InterlockCard, Tool, User
 from NEMO.typing import QuerySetType
 from NEMO.views.access_requests import access_csv_export
 from NEMO.views.adjustment_requests import adjustments_csv_export
@@ -137,3 +137,36 @@ def adjustment_requests_export_csv(modeladmin, request, queryset):
 @admin.action(description="Export selected access requests in CSV")
 def access_requests_export_csv(modeladmin, request, queryset):
     return access_csv_export(queryset.all())
+
+
+@admin.action(description="Duplicate selected configuration")
+def duplicate_configuration(model_admin, request, queryset: QuerySetType[Configuration]):
+    for configuration in queryset:
+        original_name = configuration.name
+        new_name = "Copy of " + configuration.name
+        try:
+            if Configuration.objects.filter(name=new_name).exists():
+                messages.error(
+                    request,
+                    mark_safe(
+                        f'There is already a copy of {original_name} as <a href="{reverse("admin:NEMO_configuration_change", args=[configuration.id])}">{new_name}</a>. Change the copy\'s name and try again'
+                    ),
+                )
+                continue
+            else:
+                old_maintainers = configuration.maintainers.all()
+                configuration.pk = None
+                configuration.name = new_name
+                configuration.save()
+                for maintainer in old_maintainers:
+                    configuration.maintainers.add(maintainer)
+                messages.success(
+                    request,
+                    mark_safe(
+                        f'A duplicate of {original_name} has been made as <a href="{reverse("admin:NEMO_configuration_change", args=[configuration.id])}">{configuration.name}</a>'
+                    ),
+                )
+        except Exception as error:
+            messages.error(
+                request, f"{original_name} could not be duplicated because of the following error: {str(error)}"
+            )

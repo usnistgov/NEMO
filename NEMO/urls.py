@@ -77,6 +77,7 @@ router.register(r"accounts", api.AccountViewSet)
 router.register(r"area_access_records", api.AreaAccessRecordViewSet)
 router.register(r"areas", api.AreaViewSet)
 router.register(r"billing", api.BillingViewSet, basename="billing")
+router.register(r"configurations", api.ConfigurationViewSet)
 router.register(r"consumable_categories", api.ConsumableCategoryViewSet)
 router.register(r"consumable_withdrawals", api.ConsumableWithdrawViewSet)
 router.register(r"consumables", api.ConsumableViewSet)
@@ -85,6 +86,7 @@ router.register(r"project_disciplines", api.ProjectDisciplineViewSet)
 router.register(r"projects", api.ProjectViewSet)
 router.register(r"qualifications", api.QualificationViewSet)
 router.register(r"reservations", api.ReservationViewSet)
+router.register(r"reservation_configuration_options", api.ConfigurationOptionViewSet)
 router.register(r"resources", api.ResourceViewSet)
 router.register(r"scheduled_outages", api.ScheduledOutageViewSet)
 router.register(r"staff_charges", api.StaffChargeViewSet)
@@ -156,6 +158,7 @@ urlpatterns += [
         name="enable_tool",
     ),
     path("disable_tool/<int:tool_id>/", tool_control.disable_tool, name="disable_tool"),
+    path("tool_config_history/<int:tool_id>/", tool_control.tool_config_history, name="tool_config_history"),
     path("usage_data_history/<int:tool_id>/", tool_control.usage_data_history, name="usage_data_history"),
     path("past_comments_and_tasks/", tool_control.past_comments_and_tasks, name="past_comments_and_tasks"),
     path(
@@ -237,6 +240,7 @@ urlpatterns += [
     path("change_outage_title/<int:outage_id>/", calendar.change_outage_title, name="change_outage_title"),
     path("change_outage_details/<int:outage_id>/", calendar.change_outage_details, name="change_outage_details"),
     path("change_reservation_date/", calendar.change_reservation_date, name="change_reservation_date"),
+    path("change_outage_date/", calendar.change_outage_date, name="change_outage_date"),
     path(
         "change_reservation_project/<int:reservation_id>/",
         calendar.change_reservation_project,
@@ -578,6 +582,12 @@ if settings.ALLOW_CONDITIONAL_URLS:
             "projects/<int:project_id>/add_document/",
             accounts_and_projects.add_document_to_project,
             name="add_document_to_project",
+        ),
+        path("projects/transfer_charges/", accounts_and_projects.transfer_charges, name="transfer_charges"),
+        path(
+            "projects/search_project_for_transfer/",
+            accounts_and_projects.search_project_for_transfer,
+            name="search_project_for_transfer",
         ),
         # Account, project, and user history
         re_path(r"^history/(?P<item_type>account|project|user)/(?P<item_id>\d+)/$", history.history, name="history"),

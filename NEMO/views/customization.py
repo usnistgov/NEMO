@@ -139,7 +139,7 @@ class CustomizationBase(ABC):
         for item in cls.get_list(name, raise_exception):
             if item:
                 integer = quiet_int(item.strip(), None)
-                if integer:
+                if integer is not None:
                     result.append(integer)
         return result
 
@@ -167,7 +167,13 @@ class ApplicationCustomization(CustomizationBase):
         "area_logout_already_logged_in": "",
         "default_badge_reader_id": "",
         "consumable_user_self_checkout": "",
+        "consumable_category_collapse": "",
         "area_in_usage_reminders": "enabled",
+        "calendar_page_title": "Calendar",
+        "tool_control_page_title": "Tool control",
+        "status_dashboard_page_title": "Status dashboard",
+        "requests_page_title": "Requests",
+        "safety_page_title": "Safety",
     }
 
     def context(self) -> Dict:
@@ -191,6 +197,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
         "project_list_active_only": "",
         "account_list_collapse": "",
         "project_allow_pi_manage_users": "",
+        "project_allow_transferring_charges": "",
     }
 
     def validate(self, name, value):
@@ -399,6 +406,7 @@ class ToolCustomization(CustomizationBase):
         "tool_phone_number_required": "enabled",
         "tool_location_required": "enabled",
         "tool_task_updates_facility_managers": "enabled",
+        "tool_task_updates_superusers": "",
         "tool_control_hide_data_history_users": "",
         "tool_control_configuration_setting_template": "{{ current_setting }}",
         "tool_control_broadcast_upcoming_reservation": "",

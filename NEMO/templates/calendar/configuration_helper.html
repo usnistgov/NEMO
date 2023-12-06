@@ -19,7 +19,9 @@
 		{% else %}
 			{{ config.name }}:<br>
 			{% for slot in config.range_of_configurable_items %}
-				<label for="configuration_{{ config.id }}__slot_{{ slot }}__display_order_{{ config.display_order }}">{{ config.configurable_item_name }}:</label>
+                <label for="configuration_{{ config.id }}__slot_{{ slot }}__display_order_{{ config.display_order }}">
+                    {% if config.configurable_item_name %}{{ config.configurable_item_name }}{% else %}
+                        {{ config.name }}{% endif %} #{{ slot|add:1 }}:</label>
 				<select class="form-control" name="configuration_{{ config.id }}__slot_{{ slot }}__display_order_{{ config.display_order }}" id="configuration_{{ config.id }}__slot_{{ slot }}__display_order_{{ config.display_order }}">
 					{% if config.absence_string %}
 						<option value="">{{ config.absence_string }}</option>

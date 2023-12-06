@@ -88,6 +88,26 @@ def base_context(request):
         safety_menu_item = SafetyCustomization.get_bool("safety_main_menu")
     except:
         safety_menu_item = True
+    try:
+        calendar_page_title = ApplicationCustomization.get("calendar_page_title")
+    except:
+        calendar_page_title = "Calendar"
+    try:
+        tool_control_page_title = ApplicationCustomization.get("tool_control_page_title")
+    except:
+        tool_control_page_title = "Tool control"
+    try:
+        status_dashboard_page_title = ApplicationCustomization.get("status_dashboard_page_title")
+    except:
+        status_dashboard_page_title = "Status dashboard"
+    try:
+        requests_page_title = ApplicationCustomization.get("requests_page_title")
+    except:
+        requests_page_title = "Requests"
+    try:
+        safety_page_title = ApplicationCustomization.get("safety_page_title")
+    except:
+        safety_page_title = "Safety"
     return {
         "facility_name": facility_name,
         "recurring_charges_name": recurring_charges_name,
@@ -109,4 +129,9 @@ def base_context(request):
         "datetime_input_js_format": datetime_input_js_format,
         "no_header": request.session.get("no_header", False),
         "safety_menu_item": safety_menu_item,
+        "calendar_page_title": calendar_page_title,
+        "tool_control_page_title": tool_control_page_title,
+        "status_dashboard_page_title": status_dashboard_page_title,
+        "requests_page_title": requests_page_title,
+        "safety_page_title": safety_page_title,
     }

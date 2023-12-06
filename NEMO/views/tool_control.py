@@ -104,7 +104,6 @@ def tool_status(request, tool_id):
         "mobile": request.device == "mobile",
         "task_statuses": TaskStatus.objects.all(),
         "post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
-        "configs": get_tool_full_config_history(tool),
         "show_broadcast_upcoming_reservation": user_is_staff
         or (user_is_qualified and tool_control_broadcast_upcoming_reservation_enabled),
     }
@@ -138,25 +137,28 @@ def use_tool_for_other(request):
     return render(request, "tool_control/use_tool_for_other.html", dictionary)
 
 
-def get_tool_full_config_history(tool: Tool):
+@login_required
+@require_GET
+def tool_config_history(request, tool_id):
     # tool config by user and tool and time
     configs = []
-    config_history = ConfigurationHistory.objects.filter(configuration__tool_id=tool.id).order_by("-modification_time")[
+    config_history = ConfigurationHistory.objects.filter(configuration__tool_id=tool_id).order_by("-modification_time")[
         :20
     ]
-    configurations = tool.current_ordered_configurations()
-    for c in config_history:
-        for co in configurations:
-            if co == c.configuration:
-                current_settings = co.current_settings_as_list()
-                current_settings[c.slot] = c.setting
-                co.current_settings = ", ".join(current_settings)
-        config_input = {"configurations": configurations, "render_as_form": False}
+    for history in config_history:
         configuration = ConfigurationEditor()
+        conf = history.configuration
+        conf.name = history.item_name
+        conf.current_settings = history.setting
         configs.append(
-            {"modification_time": c.modification_time, "user": c.user, "html": configuration.render(None, config_input)}
+            {
+                "modification_time": history.modification_time,
+                "configuration": history.configuration,
+                "user": history.user,
+                "html": mark_safe(configuration._render_for_one(conf, render_as_form=False)),
+            }
         )
-    return configs
+    return render(request, "tool_control/config_history.html", {"configs": configs})
 
 
 @login_required
@@ -276,6 +278,7 @@ def tool_configuration(request):
     configuration.save()
     history = ConfigurationHistory()
     history.configuration = configuration
+    history.item_name = configuration.configurable_item_name or configuration.name
     history.slot = slot
     history.user = request.user
     history.setting = configuration.get_current_setting(slot)
@@ -294,7 +297,7 @@ def create_comment(request):
     comment.author = request.user
     comment.expiration_date = (
         None
-        if form.cleaned_data["expiration"] == 0
+        if form.cleaned_data["expiration"] == -1
         else timezone.now() + timedelta(days=form.cleaned_data["expiration"])
     )
     comment.save()
@@ -462,6 +465,7 @@ def disable_tool(request, tool_id):
 @login_required
 @require_GET
 def past_comments_and_tasks(request):
+    user: User = request.user
     start, end = extract_optional_beginning_and_end_times(request.GET)
     search = request.GET.get("search")
     if not start and not end and not search:
@@ -469,7 +473,9 @@ def past_comments_and_tasks(request):
     tool_id = request.GET.get("tool_id")
     try:
         tasks = Task.objects.filter(tool_id=tool_id)
-        comments = Comment.objects.filter(tool_id=tool_id, staff_only=False)
+        comments = Comment.objects.filter(tool_id=tool_id)
+        if not user.is_staff:
+            comments = comments.filter(staff_only=False)
         if start:
             tasks = tasks.filter(creation_time__gt=start)
             comments = comments.filter(creation_date__gt=start)
@@ -492,8 +498,12 @@ def past_comments_and_tasks(request):
 @login_required
 @require_GET
 def ten_most_recent_past_comments_and_tasks(request, tool_id):
+    user: User = request.user
     tasks = Task.objects.filter(tool_id=tool_id).order_by("-creation_time")[:10]
-    comments = Comment.objects.filter(tool_id=tool_id, staff_only=False).order_by("-creation_date")[:10]
+    comments = Comment.objects.filter(tool_id=tool_id).order_by("-creation_date")
+    if not user.is_staff:
+        comments = comments.filter(staff_only=False)
+    comments = comments[:10]
     past = list(chain(tasks, comments))
     past.sort(key=lambda x: getattr(x, "creation_time", None) or getattr(x, "creation_date", None))
     past.reverse()

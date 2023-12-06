@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
-{% block title %}Calendar{% endblock %}
+{% block title %}{{ calendar_page_title }}{% endblock %}
 {% block extrahead %}
 	{% load static %}
 	<link rel="stylesheet" type="text/css" href="{% static "fullcalendar/fullcalendar.min.css" %}" />
@@ -18,6 +18,9 @@
 			<li class="dropdown-header" id="event_type_help">Which type of events would you like<br>to view on the calendar?</li>
 			<li data-toggle="tooltip" data-placement="right" title="Displays {% if tools and areas %}tool and area{% elif tools %}tool{% elif areas %}area{% endif %} reservations. While viewing reservations, the 'Personal schedule' link shows your reservations for all {% if tools and areas %}tools and areas{% elif tools %}tools{% elif areas %}areas{% endif %}. Select a {% if tools and areas %}tool or area{% elif tools %}tool{% elif areas %}area{% endif %} to view everyone's reservations for that {% if tools and areas %}tool or area{% elif tools %}tool{% elif areas %}area{% endif %}."><a aria-describedby="event_type_help" href="javascript:void(0)" onclick="change_calendar_event_type(this)">Reservations</a></li>
 			<li data-toggle="tooltip" data-placement="right" title="Displays your {{ facility_name }} usage. This includes{% if areas %} area access,{% endif %}{% if tools %} tool usage,{% endif %} and missed reservations (which are all billable items)."><a aria-describedby="event_type_help" href="javascript:void(0)" onclick="change_calendar_event_type(this)">{{ facility_name }} usage</a></li>
+                <li data-toggle="tooltip" data-placement="right" title="Displays the tool configuration agenda."><a
+                        aria-describedby="event_type_help" href="javascript:void(0)"
+                        onclick="change_calendar_event_type(this)">Configuration agenda</a></li>
 			{% if user.is_staff %}
 				<li data-toggle="tooltip" data-placement="right" title="Displays {{ facility_name }} reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations."><a aria-describedby="event_type_help" href="javascript:void(0)" onclick="change_calendar_event_type(this)">Specific user</a></li>
 			{% endif %}
@@ -37,15 +40,19 @@
 
 	{# The following menu tree code was take from an example at http://www.bootply.com/120625 #}
 	<ul id="extra-links" class="nav nav-list" style="margin-top: 10px; margin-bottom: 8px;">
-		<li><a href="javascript:void(0)" class="selected personal_schedule" data-item-id="personal_schedule" onclick="on_extra_link_click(this)">Personal schedule</a></li>
+        <li><a href="javascript:void(0)" id="extra-links-personal-schedule" class="selected personal_schedule"
+               data-item-id="personal_schedule" onclick="on_extra_link_click(this)">Personal schedule</a></li>
 		{% if calendar_all_tools %}
-		<li><a href="javascript:void(0)" class="all_tools" data-item-id="all_tools" onclick="on_extra_link_click(this)">All tools</a></li>
+            <li><a href="javascript:void(0)" id="extra-links-all-tools" class="all_tools" data-item-id="all_tools"
+                   onclick="on_extra_link_click(this)">All tools</a></li>
 		{% endif %}
 		{% if calendar_all_areas %}
-		<li><a href="javascript:void(0)" class="all_areas" data-item-id="all_areas" onclick="on_extra_link_click(this)">All areas</a></li>
+            <li><a href="javascript:void(0)" id="extra-links-all-areas" class="all_areas" data-item-id="all_areas"
+                   onclick="on_extra_link_click(this)">All areas</a></li>
 		{% endif %}
 		{% if calendar_all_areastools %}
-		<li><a href="javascript:void(0)" class="all_areastools" data-item-id="all_areastools" onclick="on_extra_link_click(this)">All areas and tools</a></li>
+            <li><a href="javascript:void(0)" id="extra-links-all-areastools" class="all_areastools"
+                   data-item-id="all_areastools" onclick="on_extra_link_click(this)">All areas and tools</a></li>
 		{% endif %}
 	</ul>
     <button style="width: 100%" id="clear-selection-btn" class="btn btn-default" onclick="on_clear_selection_click();">
@@ -88,7 +95,7 @@ function update_event_sources()
     let item_event_source_list = [];
     let url = "{% url 'event_feed' %}";
 
-	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage')
+    if (event_type === 'reservations' || event_type === 'configuration agenda' || event_type === '{{ facility_name|lower }} usage')
 	{
 		let item = get_selected_item();
 		let scheduled_outage_button = $(".fc-scheduledOutage-button")[0];
@@ -232,6 +239,9 @@ function event_render(event, element)
 		element.attr('title', event.tooltip)
 	else if ('title' in event)
 		element.attr('title', event.title)
+    if ("colors" in event) {
+        set_multiple_colors($(element), event["colors"]);
+    }
 }
 
 function event_after_all_render()
@@ -651,9 +661,13 @@ function change_calendar_event_type(calling_element)
 	set_event_type(calling_element.text);
 	let expand_collapse = $("#expand-collapse").hide();
 	let item_search = $("#item_search").hide();
-	let item_tree = $(".item_tree, .item_tree_fieldset").hide();
+    let item_tree_tools = $("#item-tree-tool");
+    let item_tree_areas = $("#item-tree-area");
 	let event_type = get_event_type();
-	let extra_links = $("#extra-links");
+    let extra_links_personal_schedule = $("#extra-links-personal-schedule");
+    let extra_links_all_tools = $("#extra-links-all-tools");
+    let extra_links_all_areas = $("#extra-links-all-areas");
+    let extra_links_all_areastools = $("#extra-links-all-areastools");
 	let user_search = $("#user_search").hide();
 	let chosen_user_button = $("#chosen_user_button").show();
 	let proxy_reservation_button = $(".fc-proxyReservation-button")[0];
@@ -662,22 +676,44 @@ function change_calendar_event_type(calling_element)
 	{
 		user_search.hide();
 		chosen_user_button.hide();
-		extra_links.show();
+        extra_links_personal_schedule.show();
+        extra_links_all_tools.show();
+        extra_links_all_areas.show();
+        extra_links_all_areastools.show();
 		expand_collapse.show();
 		item_search.show();
-		item_tree.show();
+        item_tree_tools.show();
+        item_tree_areas.show();
 		$(proxy_reservation_button).show();
 		$(scheduled_outage_button).show();
 		update_event_sources();
+    } else if (event_type === "configuration agenda") {
+        user_search.hide();
+        chosen_user_button.hide();
+        extra_links_personal_schedule.hide();
+        extra_links_all_tools.show();
+        extra_links_all_areas.hide();
+        extra_links_all_areastools.hide();
+        expand_collapse.show();
+        item_search.show();
+        item_tree_tools.show();
+        item_tree_areas.hide();
+        $(proxy_reservation_button).hide();
+        $(scheduled_outage_button).hide();
+        update_event_sources();
 	}
 	else if(event_type === "{{ facility_name|lower }} usage")
 	{
 		user_search.hide();
 		chosen_user_button.hide();
-		extra_links.show();
+        extra_links_personal_schedule.show();
+        extra_links_all_tools.show();
+        extra_links_all_areas.show();
+        extra_links_all_areastools.show();
 		expand_collapse.show();
 		item_search.show();
-		item_tree.show();
+        item_tree_tools.show();
+        item_tree_areas.show();
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
 		update_event_sources();
@@ -686,10 +722,14 @@ function change_calendar_event_type(calling_element)
 	{
 		user_search.show();
 		chosen_user_button.show();
-		extra_links.hide();
+        extra_links_personal_schedule.hide();
+        extra_links_all_tools.hide();
+        extra_links_all_areas.hide();
+        extra_links_all_areastools.hide();
 		expand_collapse.hide();
 		item_search.hide();
-		item_tree.hide();
+        item_tree_tools.hide();
+        item_tree_areas.hide();
 		$(proxy_reservation_button).hide();
 		$(scheduled_outage_button).hide();
 		clear_specific_user();

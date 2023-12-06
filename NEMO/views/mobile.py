@@ -14,9 +14,9 @@ from NEMO.models import Area, Project, Reservation, ReservationItemType, Schedul
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import beginning_of_the_day, end_of_the_day, localize
 from NEMO.views.calendar import (
-    extract_configuration,
     extract_reservation_questions,
     render_reservation_questions,
+    set_reservation_configuration,
 )
 from NEMO.views.customization import CalendarCustomization
 
@@ -139,7 +139,7 @@ def make_reservation(request):
         if not request.user.is_staff:
             return render(request, "mobile/error.html", {"message": "You must specify a project for your reservation"})
 
-    reservation.additional_information, reservation.self_configuration = extract_configuration(request)
+    set_reservation_configuration(reservation, request)
     # Reservation can't be short notice if the user is configuring the tool themselves.
     if reservation.self_configuration:
         reservation.short_notice = False

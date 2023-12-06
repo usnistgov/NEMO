@@ -10,7 +10,7 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.shortcuts import redirect
 from django.utils import timezone
 
-from NEMO.utilities import beginning_of_the_day, format_datetime, get_recurring_rule, RecurrenceFrequency
+from NEMO.utilities import RecurrenceFrequency, beginning_of_the_day, format_datetime, get_recurring_rule
 from NEMO.views.constants import NEXT_PARAMETER_NAME
 
 if TYPE_CHECKING:
@@ -296,3 +296,19 @@ class ObjPermissionAdminMixin:
         return request.user.has_perm("%s.%s" % (opts.app_label, codename_view), obj) or request.user.has_perm(
             "%s.%s" % (opts.app_label, codename_change), obj
         )
+
+
+class ConfigurationMixin:
+    def calendar_colors_as_list(self):
+        return [x.strip() for x in self.calendar_colors.split(",")] if self.calendar_colors else []
+
+    def get_available_setting(self, choice):
+        choice = int(choice)
+        available_settings = self.available_settings_as_list()
+        return available_settings[choice]
+
+    def current_settings_as_list(self):
+        return [x.strip() for x in self.current_settings.split(",")]
+
+    def available_settings_as_list(self):
+        return [x.strip() for x in self.available_settings.split(",")] if self.available_settings else []

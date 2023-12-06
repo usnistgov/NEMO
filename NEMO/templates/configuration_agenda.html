@@ -36,22 +36,32 @@
 					{% if t.grouper.id == tool.id %}
 						{% for reservation in t.list %}
 							<tr style="border:2px solid black">
-								<td style="width:50%;border:2px solid black" {% if reservation.short_notice %}class="danger"{% endif %}>
-									<p>
-										{{ reservation.user }}<br>
-										{% if reservation.project %}{{ reservation.project }}<br>{% endif %}
-										{{ reservation.start }}<br>
-										{{ reservation.end }}<br>
-										{{ reservation.additional_information|linebreaksbr }}
-									</p>
-									{% if not reservation.tool.in_use and reservation.project %}
-                                        {% url 'enable_tool' tool_id=reservation.tool.id user_id=reservation.user.id project_id=reservation.project.id staff_charge='false' as enable_tool_for_user_url %}
-                                        {% button type="info" icon="glyphicon-play" value="Enable the tool on behalf of "|concat:reservation.user.first_name onclick="enable_tool('"|concat:enable_tool_for_user_url|concat:"');" %}
-                                        {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
-                                            <div style="margin-top: 5px">
-                                                {% button type="info" icon="glyphicon-play" value="Enable the tool on behalf of "|concat:reservation.user.first_name|concat:" for remote work" onclick="enable_tool('"|concat:enable_tool_for_user_url|concat:"', true);" %}
-                                            </div>
+                                <td style="width:50%;border:2px solid black"
+                                    {% if reservation.short_notice %}class="danger"{% endif %}>
+                                    {{ reservation.user }}<br>
+                                    {% if reservation.project %}{{ reservation.project }}<br>{% endif %}
+                                    {{ reservation.start }}<br>
+                                    {{ reservation.end }}<br>
+                                    {{ reservation.additional_information|linebreaksbr }}
+                                    {% for config_option in reservation.configurationoption_set.all %}
+                                        {% if forloop.first %}
+                                            {% if reservation.additional_information %}
+                                                <br>
+                                            {% endif %}
+                                            <br>
                                         {% endif %}
+                                        <div>{{ config_option.name }} needs to be set to <span {% if config_option.get_color %}class="configuration-reservation-option" style="display: inline-block;background-color: {{ config_option.get_color }}" {% else %}style="color: inherit"{% endif %}>{{ config_option.current_setting }}</span></div>
+                                    {% endfor %}
+									{% if not reservation.tool.in_use and reservation.project %}
+                                        <div style="margin-top: 8px">
+                                            {% url 'enable_tool' tool_id=reservation.tool.id user_id=reservation.user.id project_id=reservation.project.id staff_charge='false' as enable_tool_for_user_url %}
+                                            {% button type="info" icon="glyphicon-play" value="Enable the tool on behalf of "|concat:reservation.user.first_name onclick="enable_tool('"|concat:enable_tool_for_user_url|concat:"');" %}
+                                            {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
+                                                <div style="margin-top: 5px">
+                                                    {% button type="info" icon="glyphicon-play" value="Enable the tool on behalf of "|concat:reservation.user.first_name|concat:" for remote work" onclick="enable_tool('"|concat:enable_tool_for_user_url|concat:"', true);" %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
 									{% endif %}
 								</td>
 								{% if forloop.first %}
@@ -62,27 +72,31 @@
 											{% endif %}
 										{% endfor %}
 										{% if reservation.tool.in_use %}
-											{% if reservation.tool.get_current_usage_event.operator.id == user.id %}
-                                                {% url 'disable_tool' reservation.tool.id as disable_tool_url %}
-                                                {% button type="delete" id="interlock" icon="glyphicon-stop" onclick="disable_tool('"|concat:disable_tool_url|concat:"')" value="Disable tool" %}
-											{% else %}
-                                                {% button type="warn" disabled="disabled" icon="glyphicon-ban-circle" value="Tool in use" %}
-											{% endif %}
+                                            <div style="margin-top: 8px">
+                                                {% if reservation.tool.get_current_usage_event.operator.id == user.id %}
+                                                    {% url 'disable_tool' reservation.tool.id as disable_tool_url %}
+                                                    {% button type="delete" id="interlock" icon="glyphicon-stop" onclick="disable_tool('"|concat:disable_tool_url|concat:"')" value="Disable tool" %}
+                                                {% else %}
+                                                    {% button type="warn" disabled="disabled" icon="glyphicon-ban-circle" value="Tool in use" %}
+                                                {% endif %}
+                                            </div>
 										{% else %}
-											{% if user.active_project_count == 1 %}
-                                                {% url 'enable_tool' tool_id=reservation.tool.id user_id=user.id project_id=user.active_projects.0.id staff_charge='false' as enable_tool_one_project %}
-                                                {% button id="interlock" type="save" onclick="enable_tool('"|concat:enable_tool_one_project|concat:"');" value="Enable the tool for myself" icon="glyphicon-play" %}
-											{% elif user.active_project_count > 1 %}
-												<div class="btn-group">
-													<button id="interlock" type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown"><i class="glyphicon glyphicon-play"></i> Enable the tool for myself <span class="caret"></span></button>
-													<ul class="dropdown-menu">
-														<li class="dropdown-header">Using which project?</li>
-														{% for project in user.active_projects %}
-															<li><a href="javascript:void(0)" onclick="enable_tool('{% url 'enable_tool' tool_id=reservation.tool.id user_id=user.id project_id=project.id staff_charge='false' %}')">{% project_selection_display project %}</a></li>
-														{% endfor %}
-													</ul>
-												</div>
-											{% endif %}
+                                            <div style="margin-top: 8px">
+                                                {% if user.active_project_count == 1 %}
+                                                    {% url 'enable_tool' tool_id=reservation.tool.id user_id=user.id project_id=user.active_projects.0.id staff_charge='false' as enable_tool_one_project %}
+                                                    {% button id="interlock" type="save" onclick="enable_tool('"|concat:enable_tool_one_project|concat:"');" value="Enable the tool for myself" icon="glyphicon-play" %}
+                                                {% elif user.active_project_count > 1 %}
+                                                    <div class="btn-group">
+                                                        <button id="interlock" type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown"><i class="glyphicon glyphicon-play"></i> Enable the tool for myself <span class="caret"></span></button>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-header">Using which project?</li>
+                                                            {% for project in user.active_projects %}
+                                                                <li><a href="javascript:void(0)" onclick="enable_tool('{% url 'enable_tool' tool_id=reservation.tool.id user_id=user.id project_id=project.id staff_charge='false' %}')">{% project_selection_display project %}</a></li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
 										{% endif %}
 									</td>
 								{% endif %}

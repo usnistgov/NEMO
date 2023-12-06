@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
-{% block title %}Tool control{% endblock %}
+{% block title %}{{ tool_control_page_title }}{% endblock %}
 {% block extrahead %}
 	{% load static %}
 	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
@@ -317,6 +317,11 @@
 				$('#usage_data_form').submit();
 			}
 		}
+
+        function load_config_history(tool_id) {
+            let failure_dialog = ajax_complete_callback("Unable to find the configuration history", "There was a problem looking up the configuration history.");
+            $("#config").load("{% url 'tool_config_history' 999 %}".replace('999', tool_id), undefined, failure_dialog);
+        }
 
 		function refresh_sidebar_tool_icons()
 		{

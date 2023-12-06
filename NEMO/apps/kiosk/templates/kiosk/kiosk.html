@@ -47,7 +47,14 @@
 			<div id="default_content">
 				<h1>Scan your badge to control tools</h1>
 				<div id="occupancy"></div>
+                <div id="usage_title"></div>
+                <div class="tab-pane{% if tools_exist and tab == 'tools' %} active{% endif %} info-tooltip-container" id="tools">
+                    <div id="usage"></div>
+                </div>
+                <div id="alerts">
+                </div>
 			</div>
+
 			<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1></div>
             <div id="interlock_error" style="display: none">
                 <h1 class="text-center">
@@ -90,7 +97,8 @@
 		let timeout_handle = null;
 		let countdown_handle = null;
 		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
-
+        let usage = new URLSearchParams(window.location.search).get('usage') !== null;
+        let alerts = new URLSearchParams(window.location.search).get('alerts') !== null;
 		let default_content_element = $("#default_content");
 		let status_element = $("#status");
 		let error_element = $("#error");
@@ -118,6 +126,16 @@
 		{
 			fetch_occupancy();
 			set_interval_when_visible(document, fetch_occupancy, 30000);
+		}
+        if(usage)
+		{
+			fetch_usage();
+			set_interval_when_visible(document, fetch_usage, 30000);
+		}
+        if(alerts)
+		{
+			fetch_alerts();
+			set_interval_when_visible(document, fetch_alerts, 30000);
 		}
 
 		function load_complete(response, status, xml_http_request)
@@ -152,6 +170,8 @@
 		function revert_to_default_content()
 		{
 			fetch_occupancy();
+            fetch_usage();
+            fetch_alerts();
 			clear_timeout();
 			close_numpads();
 			close_keyboards();
@@ -320,8 +340,34 @@
 		}
 		function fetch_occupancy()
 		{
-			ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
+            if(occupancy)
+            {
+			    ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
+            }
 		}
+
+        function fetch_usage()
+		{
+            if(usage)
+            {
+                $("#usage_title").html("<h2>Tools in use</h2>")
+                ajax_get('{% url 'kiosk_usage' %}', {'interest': 'tools'},
+                    function(response) {
+                        $("#usage").html(response);
+                        $(".in_use").css("display", "table-row");
+                        $(".idle").hide();
+                        $(".glyphicon-remove-circle").hide();
+                    }
+                );
+            }
+        }
+        function fetch_alerts()
+        {
+            if(alerts)
+            {
+                $("#alerts").load("{% url 'area_access_alerts' %}");
+            }
+        }
 		function close_numpads()
 		{
 			$.each($('[data-numpad]'), function (index, item)

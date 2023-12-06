@@ -62,7 +62,7 @@
 		<div class="alert alert-danger">This reservation was automatically removed from the calendar due to {{ reservation.reservation_item_type.value }} inactivity.</div>
 	{% endif %}
 
-    <table class="table table-striped">
+    <table class="table table-striped" style="margin-bottom: 0">
 
 	{% if user.is_staff %}
     <tr>
@@ -208,6 +208,16 @@
             <td>{{ reservation.user }} has opted to perform the tool configuration</td>
         </tr>
     {% endif %}
+        {% if reservation.configurationoption_set.exists %}
+            <tr>
+                <td>Configuration:</td>
+                <td>
+                    {% for config_option in reservation.configurationoption_set.all %}
+                        {{ config_option.name }}: {% if config_option.get_color %}<span class="configuration-reservation-option" style="background-color: {{ config_option.get_color }}">{{ config_option.current_setting }}</span>{% else %}{{ config_option.current_setting }}{% endif %}<br>
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endif %}
     {% if reservation.additional_information %}
         <tr>
             <td>Additional information:</td>
