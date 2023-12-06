@@ -833,7 +833,7 @@ function set_multiple_colors(element, colors) {
 		} else {
 			const interval = 100 / colors.length;
 			let percentage = interval;
-			let css_background = "linear-gradient(";
+			let css_background = "linear-gradient(90deg, ";
 			colors.forEach(function (color, index) {
 				css_background += color + " " + percentage + "%";
 				if (index !== colors.length - 1) {
