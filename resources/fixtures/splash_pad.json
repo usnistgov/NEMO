@@ -9186,6 +9186,28 @@
     }
   },
   {
+    "model": "NEMO.configuration",
+    "pk": 2,
+    "fields": {
+      "name": "Wafer",
+      "tool": [
+        "CMP"
+      ],
+      "configurable_item_name": "Wafer chuck",
+      "advance_notice_limit": 18,
+      "display_order": 0,
+      "prompt": "Please choose a wafer size you will need for your reservation.",
+      "current_settings": "4\"",
+      "available_settings": "3\", 4\"",
+      "calendar_colors": "#0c0b55, #530202",
+      "qualified_users_are_maintainers": false,
+      "exclude_from_configuration_agenda": false,
+      "absence_string": null,
+      "enabled": true,
+      "maintainers": []
+    }
+  },
+  {
     "model": "NEMO.project",
     "fields": {
       "name": "Cleanroom Eng",
