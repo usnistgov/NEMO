@@ -595,7 +595,7 @@ def parse_configuration_entry(reservation: Reservation, key, value) -> Optional[
     option_value.reservation = reservation
     option_value.configuration = configuration
     if len(configuration.current_settings_as_list()) == 1:
-        option_value.name = configuration.name
+        option_value.name = configuration.configurable_item_name or configuration.name
     else:
         option_value.name = f"{configuration.configurable_item_name or configuration.name} #{str(slot + 1)}"
     return display_order, option_value
