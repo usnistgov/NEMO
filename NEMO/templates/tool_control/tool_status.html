@@ -171,13 +171,13 @@
 							{% else %}
 								<span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight" title="Click to toggle details about this task"></span>
 							{% endif %}
-							<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+							<span class="glyphicon glyphicon-chevron-{% if tool_control_show_task_details %}down{% else %}right{% endif %} pull-left chevron"></span>
 						</a>
 						<div class="media-body">
 							{% if t.problem_category %}<span class="media-heading">{{ t.problem_category }}</span>{% endif %}
 							<span class="media-middle">{{ t.problem_description }}</span>
 							{% if t.estimated_resolution_time %}<span class="media-middle">Estimated resolution time is {{ t.estimated_resolution_time }}.</span>{% endif %}
-							<div id="task_{{ t.id }}_details" class="collapse">
+							<div id="task_{{ t.id }}_details" class="collapse{% if tool_control_show_task_details %} in{% endif %}">
 								<span class="media-bottom">
 									This task was created by {{ t.creator }} on {{ t.creation_time }}.
 									{% if user.is_staff %}

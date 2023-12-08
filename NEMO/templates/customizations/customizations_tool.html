@@ -107,6 +107,14 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Show task details by default</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="tool_control_show_task_details" name="tool_control_show_task_details" {% if tool_control_show_task_details %}checked{% endif %} value="enabled"> Show task details, such as who created the task and when, by default (click on the task to collapse/hide)</label>
+                </div>
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool qualification expiration</h3>
         <p>If active, this feature will remove tool qualification from a user if the user has not used the tool after a while or never used it since qualified (configured separately).

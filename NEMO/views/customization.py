@@ -410,6 +410,7 @@ class ToolCustomization(CustomizationBase):
         "tool_control_hide_data_history_users": "",
         "tool_control_configuration_setting_template": "{{ current_setting }}",
         "tool_control_broadcast_upcoming_reservation": "",
+        "tool_control_show_task_details": "",
         "tool_qualification_reminder_days": "",
         "tool_qualification_expiration_days": "",
         "tool_qualification_expiration_never_used_days": "",
