@@ -19,7 +19,7 @@ from NEMO.views.calendar import (
     set_reservation_configuration,
     shorten_reservation,
 )
-from NEMO.views.customization import ApplicationCustomization
+from NEMO.views.customization import ApplicationCustomization, ToolCustomization
 from NEMO.views.status_dashboard import create_tool_summary
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
@@ -329,6 +329,7 @@ def tool_information(request, tool_id, user_id, back):
             "tool_usage_group_question", tool.id, virtual_inputs=True
         ),
         "back": back,
+        "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
     }
     try:
         current_reservation = Reservation.objects.get(
