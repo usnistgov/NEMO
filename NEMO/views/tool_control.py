@@ -106,6 +106,7 @@ def tool_status(request, tool_id):
         "post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
         "show_broadcast_upcoming_reservation": user_is_staff
         or (user_is_qualified and tool_control_broadcast_upcoming_reservation_enabled),
+        "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
     }
 
     try:
