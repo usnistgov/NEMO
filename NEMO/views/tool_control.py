@@ -280,6 +280,8 @@ def tool_configuration(request):
     history = ConfigurationHistory()
     history.configuration = configuration
     history.item_name = configuration.configurable_item_name or configuration.name
+    if len(configuration.range_of_configurable_items()) > 1:
+        history.item_name += f" #{slot + 1}"
     history.slot = slot
     history.user = request.user
     history.setting = configuration.get_current_setting(slot)
