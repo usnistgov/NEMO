@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import validators
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
-from rest_framework.fields import CharField, ChoiceField, DateTimeField, DecimalField, IntegerField
+from rest_framework.fields import BooleanField, CharField, ChoiceField, DateTimeField, DecimalField, IntegerField
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.utils import model_meta
 
@@ -33,6 +33,7 @@ from NEMO.models import (
     UsageEvent,
     User,
 )
+from NEMO.views.constants import CHAR_FIELD_MAXIMUM_LENGTH
 
 
 # Overriding validate to call model full_clean
@@ -374,6 +375,58 @@ class BillableItemSerializer(serializers.Serializer):
     start = DateTimeField(read_only=True)
     end = DateTimeField(read_only=True)
     quantity = DecimalField(read_only=True, decimal_places=2, max_digits=8)
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+    class Meta:
+        fields = "__all__"
+
+
+class ToolStatusSerializer(serializers.Serializer):
+    id = IntegerField(read_only=True)
+    name = CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, read_only=True)
+    category = CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, read_only=True)
+    in_use = BooleanField(read_only=True)
+    visible = BooleanField(read_only=True)
+    operational = BooleanField(read_only=True)
+    problematic = BooleanField(read_only=True)
+    problem_descriptions = CharField(default=None, max_length=1000, read_only=True)
+    customer_id = IntegerField(default=None, source="get_current_usage_event.user.id", read_only=True)
+    customer_name = CharField(
+        default=None,
+        source="get_current_usage_event.user.get_name",
+        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        read_only=True,
+    )
+    customer_username = CharField(
+        default=None,
+        source="get_current_usage_event.user.username",
+        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        read_only=True,
+    )
+    operator_id = IntegerField(default=None, source="get_current_usage_event.operator.id", read_only=True)
+    operator_name = CharField(
+        default=None,
+        source="get_current_usage_event.operator.get_name",
+        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        read_only=True,
+    )
+    operator_username = CharField(
+        default=None,
+        source="get_current_usage_event.operator.username",
+        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        read_only=True,
+    )
+    current_usage_id = IntegerField(default=None, source="get_current_usage_event.id", read_only=True)
+    current_usage_start = DateTimeField(default=None, source="get_current_usage_event.start", read_only=True)
+    outages = CharField(default=None, max_length=2000, read_only=True)
+    partial_outages = CharField(default=None, max_length=2000, read_only=True)
+    required_resources_unavailable = CharField(default=None, max_length=2000, read_only=True)
+    optional_resources_unavailable = CharField(default=None, max_length=2000, read_only=True)
 
     def update(self, instance, validated_data):
         pass
