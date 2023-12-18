@@ -911,9 +911,9 @@ class UserTypeAdmin(admin.ModelAdmin):
 class UserPreferencesAdmin(admin.ModelAdmin):
     list_display = ("user",)
     search_fields = [
-        "user_preferences__user__first_name",
-        "user_preferences__user__last_name",
-        "user_preferences__user__username",
+        "user__first_name",
+        "user__last_name",
+        "user__username",
     ]
     filter_horizontal = ["tool_freed_time_notifications", "tool_task_notifications"]
     form = UserPreferencesForm
