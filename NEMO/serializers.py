@@ -349,11 +349,14 @@ class PermissionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
 
 class GroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    users = PrimaryKeyRelatedField(source="user_set.all", many=True, read_only=True)
+
     class Meta:
         model = Group
         fields = "__all__"
         expandable_fields = {
             "permissions": ("NEMO.serializers.PermissionSerializer", {"many": True}),
+            "users": ("NEMO.serializers.UserSerializer", {"source": "user_set", "many": True}),
         }
 
 
