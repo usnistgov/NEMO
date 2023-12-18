@@ -340,11 +340,14 @@ class ContentTypeSerializer(ModelSerializer):
 
 
 class PermissionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    users = PrimaryKeyRelatedField(source="user_set.all", many=True, read_only=True)
+
     class Meta:
         model = Permission
         fields = "__all__"
         expandable_fields = {
             "content_type": "NEMO.serializers.ContentTypeSerializer",
+            "users": ("NEMO.serializers.UserSerializer", {"source": "user_set", "many": True}),
         }
 
 

@@ -1707,6 +1707,35 @@ class CustomGroupAdmin(GroupAdmin):
     form = CustomGroupAdminForm
 
 
+class PermissionAdminForm(forms.ModelForm):
+    users = ModelMultipleChoiceField(
+        queryset=User.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple(verbose_name="Users", is_stacked=False),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["users"].initial = self.instance.user_set.all()
+
+    def _save_m2m(self):
+        super()._save_m2m()
+        exclude = self._meta.exclude
+        fields = self._meta.fields
+        # Check for fields and exclude
+        if fields and "users" not in fields or exclude and "users" in exclude:
+            return
+        if "users" in self.cleaned_data:
+            self.instance.user_set.set(self.cleaned_data["users"])
+
+
+@admin.register(Permission)
+class PermissionAdmin(admin.ModelAdmin):
+    search_fields = ("name", "codename")
+    form = PermissionAdminForm
+
+
 def iframe_content(content, extra_style="padding-bottom: 75%") -> str:
     return mark_safe(
         f'<div style="position: relative; display: block; overflow: hidden; {extra_style}"><iframe style="position: absolute; width:100%; height:100%; border:none" src="data:text/html,{urlencode(content)}"></iframe></div>'
@@ -1731,6 +1760,5 @@ admin.site.has_permission = has_admin_site_permission
 admin.site.register(ProjectDiscipline)
 admin.site.register(AccountType)
 admin.site.register(ResourceCategory)
-admin.site.register(Permission)
 admin.site.unregister(Group)
 admin.site.register(Group, CustomGroupAdmin)
