@@ -246,6 +246,7 @@ def reservation_event_feed(request, start, end):
         "all_areas": all_areas,
         "all_areastools": all_areastools,
         "display_name": display_name,
+        "display_configuration": CalendarCustomization.get_bool("calendar_configuration_in_reservations"),
     }
     return render(request, "calendar/reservation_event_feed.html", dictionary)
 
