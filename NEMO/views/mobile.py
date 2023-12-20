@@ -14,9 +14,9 @@ from NEMO.models import Area, Project, Reservation, ReservationItemType, Schedul
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import beginning_of_the_day, end_of_the_day, localize
 from NEMO.views.calendar import (
-	extract_reservation_questions,
-	render_reservation_questions,
-	set_reservation_configuration,
+    extract_reservation_questions,
+    render_reservation_questions,
+    set_reservation_configuration,
 )
 from NEMO.views.customization import CalendarCustomization
 
