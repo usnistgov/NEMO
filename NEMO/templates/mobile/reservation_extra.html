@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_tags_and_filters %}
+{% block title %}Extra information needed{% endblock %}
+{% block content %}
+    <h3>Extra information needed</h3>
+    <form method="post" action="{% url 'make_reservation' %}">
+        {% csrf_token %}
+        <input type="hidden" name="date" value="{{ request_date }}">
+        <input type="hidden" name="start" value="{{ request_start }}">
+        <input type="hidden" name="end" value="{{ request_end }}">
+        <input type="hidden" name="item_id" value="{{ reservation.reservation_item.id }}">
+        <input type="hidden" name="item_type" value="{{ reservation.reservation_item_type.value }}">
+        <input type="hidden" name="project_id" value="{{ reservation.project_id }}">
+        <input type="hidden" name="configured" value="true">
+        {% if reservation_questions %}
+            <div id="reservation_questions">
+                <h4>Please answer the following questions</h4>
+                {{ reservation_questions }}
+            </div>
+        {% endif %}
+        {% if configurations %}
+            <h4>Choose tool configuration settings</h4>
+            {% if notice_limit > 0 %}
+                <div class="alert alert-info">
+                    <strong>Please note:</strong> {{ notice_limit }} hours of advance notice is required when reserving
+                    this tool in order to configure it properly. A tool is not guaranteed to be configured properly if a
+                    reservation is created or modified on short notice.
+                </div>
+            {% endif %}
+            {% include 'calendar/configuration_helper.html' %}
+        {% endif %}
+        <div class="form-group text-center" style="margin-top:40px">
+            {% button type="save" value="Create the reservation" %}
+        </div>
+    </form>
+    <div style="height:350px"></div>
+{% endblock %}
