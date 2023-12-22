@@ -956,6 +956,13 @@ class User(BaseModel, PermissionsMixin):
         except AreaAccessRecord.DoesNotExist:
             return None
 
+    def is_logged_in_area_outside_authorized_schedule(self) -> bool:
+        # Checks whether a user is logged in past his allowed schedule time
+        access_record = self.area_access_record()
+        if access_record:
+            area = access_record.area
+            return not any([access_level.accessible() for access_level in self.accessible_access_levels_for_area(area)])
+
     def is_logged_in_area_without_reservation(self) -> bool:
         access_record = self.area_access_record()
         if access_record:

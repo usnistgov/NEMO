@@ -18,7 +18,7 @@
 		</thead>
 		<tbody>
 		{% for o in occupants %}
-			<tr {% if o.customer.is_any_part_of_staff %}class="success" {% elif o.customer.is_service_personnel %}class="warning" {% elif o.customer.is_logged_in_area_without_reservation %}class="danger" {% endif %}>
+			<tr {% if o.customer.is_any_part_of_staff %}class="success" {% elif o.customer.is_service_personnel %}class="warning" {% elif o.customer.is_logged_in_area_without_reservation or o.customer.is_logged_in_area_outside_authorized_schedule %}class="danger" {% endif %}>
 				<td style="white-space: nowrap;width:20%">
 					{% if show_force_logout and user.is_staff or show_force_logout and user.is_user_office %}
 						<span class="glyphicon glyphicon-remove-circle grey pointer" onclick="force_user_out_of_the_area('{% url 'force_area_logout' o.customer_id %}')" title="Force {{ o.customer }} to log out of the {{ o.area }}"></span>
