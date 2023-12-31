@@ -197,7 +197,7 @@ class ConfigurationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
 
 class ReservationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    question_data = serializers.JSONField(source="question_data_json")
+    question_data = serializers.JSONField(source="question_data_json", allow_null=True, required=False)
     configuration_options = ConfigurationOptionSerializer(source="configurationoption_set", many=True, read_only=True)
 
     class Meta:
