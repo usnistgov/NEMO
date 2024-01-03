@@ -166,7 +166,7 @@ class ProjectViewSet(ModelViewSet):
     filterset_fields = {
         "id": ["exact", "in"],
         "name": ["exact", "iexact"],
-        "application_identifier": ["exact"],
+        "application_identifier": ["exact", "iexact"],
         "active": ["exact"],
         "account_id": ["exact", "in"],
         "account": ["exact", "in"],
