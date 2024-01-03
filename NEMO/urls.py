@@ -8,6 +8,7 @@ from django.conf.urls import include
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LogoutView
+from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import path, re_path
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.generic import RedirectView
@@ -463,6 +464,8 @@ urlpatterns += [
     path("news/update/<int:story_id>/", news.news_update_form, name="news_update_form"),
     path("news/publish/", news.publish, name="publish_new_news"),
     path("news/publish/<int:story_id>/", news.publish, name="publish_news_update"),
+    # User Preferences
+    path("user_preferences/", users.user_preferences, name="user_preferences"),
     # Media
     re_path(
         r"^media/" + MEDIA_PROTECTED + "/(?P<path>.*)$",
@@ -487,8 +490,11 @@ urlpatterns += [
         name="media_list_view",
     ),
     path("media_zip/", documents.media_zip, name="media_zip"),
-    # User Preferences
-    path("user_preferences/", users.user_preferences, name="user_preferences"),
+    # Favicon
+    path(
+        "favicon.ico",
+        RedirectView.as_view(url=staticfiles_storage.url("favicon.ico")),
+    ),
 ]
 
 if settings.ALLOW_CONDITIONAL_URLS:
