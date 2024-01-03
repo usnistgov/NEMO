@@ -118,7 +118,8 @@ class ProjectDisciplineSerializer(ModelSerializer):
 
 
 class ProjectSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    principal_investigators = PrimaryKeyRelatedField(source="manager_set.all", many=True, read_only=True)
+    principal_investigators = PrimaryKeyRelatedField(source="manager_set", many=True, queryset=User.objects.all())
+    users = PrimaryKeyRelatedField(source="user_set", many=True, queryset=User.objects.all())
 
     class Meta:
         model = Project
@@ -127,6 +128,7 @@ class ProjectSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "account": "NEMO.serializers.AccountSerializer",
             "only_allow_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
             "principal_investigators": ("NEMO.serializers.UserSerializer", {"source": "manager_set", "many": True}),
+            "users": ("NEMO.serializers.UserSerializer", {"source": "user_set", "many": True}),
         }
 
 
@@ -340,7 +342,7 @@ class ContentTypeSerializer(ModelSerializer):
 
 
 class PermissionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    users = PrimaryKeyRelatedField(source="user_set.all", many=True, read_only=True)
+    users = PrimaryKeyRelatedField(source="user_set", many=True, queryset=User.objects.all())
 
     class Meta:
         model = Permission
@@ -352,7 +354,7 @@ class PermissionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
 
 class GroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    users = PrimaryKeyRelatedField(source="user_set.all", many=True, read_only=True)
+    users = PrimaryKeyRelatedField(source="user_set", many=True, queryset=User.objects.all())
 
     class Meta:
         model = Group
