@@ -215,6 +215,16 @@ def billable_display(item: BillableItemMixin, user: User):
     return item.get_display(user) if item else ""
 
 
+@register.filter(name="last_index")
+def last_index(value, arg):
+    return value.rfind(arg)
+
+
+@register.filter(name="index")
+def index_filter(value, arg):
+    return value.find(arg)
+
+
 @register.inclusion_tag("snippets/button.html")
 def button(
     value, type="default", size="", icon=None, onclick=None, dismiss="", submit=None, title=None, url="", **kwargs
