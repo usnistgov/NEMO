@@ -961,7 +961,11 @@ class User(BaseModel, PermissionsMixin):
         access_record = self.area_access_record()
         if access_record:
             area = access_record.area
-            return not any([access_level.accessible() for access_level in self.accessible_access_levels_for_area(area)])
+            physical_access_exist = PhysicalAccessLevel.objects.filter(area=area, user__isnull=False).exists()
+            if physical_access_exist:
+                return not any(
+                    [access_level.accessible() for access_level in self.accessible_access_levels_for_area(area)]
+                )
 
     def is_logged_in_area_without_reservation(self) -> bool:
         access_record = self.area_access_record()
