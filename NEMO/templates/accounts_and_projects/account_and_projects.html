@@ -87,7 +87,7 @@
 		</div>
 	{% endif %}
 	<script>
-		function get_account(jquery_event, search_selection, dataset_name)
+		function get_project_or_account(jquery_event, search_selection, dataset_name)
 		{
 			if(search_selection.type === 'project')
 				window.location.href = "{% url 'project' 999 %}".replace('999', search_selection.id);
@@ -122,7 +122,7 @@
         }
 		function on_load()
 		{
-			$('#search').autocomplete('accounts_and_projects', get_account, {% json_search_base_with_extra_fields accounts_and_projects 'application_identifier' %});
+			$('#search').autocomplete('accounts_and_projects', get_project_or_account, {% json_search_base_with_extra_fields accounts_and_projects 'application_identifier' display='display_with_status' %});
             reset_autocomplete();
 		}
 		window.addEventListener('load', on_load, true);
