@@ -1,3 +1,4 @@
+{% load custom_tags_and_filters %}
 {# Panel is used to make table borders rounded. #}
 <div class="panel panel-default" {% if transparent_bg %}style="background:transparent"{% endif %}>
 	<table class="table table-bordered table-condensed" {% if transparent_bg %}style="background:transparent"{% endif %}>
@@ -13,7 +14,7 @@
 			<tr>
 				<th {% if center_th %}style="text-align:center;"{% endif %}>User</th>
 				<th {% if center_th %}style="text-align:center;"{% endif %}>Since</th>
-				<th {% if center_th %}style="text-align:center;"{% endif %}>Working on project...</th>
+				{% if "dashboard"|customization:"dashboard_hide_project" != "enabled" %}<th {% if center_th %}style="text-align:center;"{% endif %}>Working on project...</th>{% endif %}
 			</tr>
 		</thead>
 		<tbody>
@@ -26,7 +27,7 @@
 					<span>{{ o.customer.first_name }} {{ o.customer.last_name }}</span>
 				</td>
 				<td style="white-space: nowrap;width:25%">{{ o.start|date:"MONTH_DAY_FORMAT" }} @  {{ o.start|time }}</td>
-				<td><div style="width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ o.project }}</div></td>
+				{% if "dashboard"|customization:"dashboard_hide_project" != "enabled" %}<td><div style="width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ o.project }}</div></td>{% endif %}
 			</tr>
 		{% endfor %}
 		</tbody>

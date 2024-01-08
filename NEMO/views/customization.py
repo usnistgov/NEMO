@@ -266,6 +266,7 @@ class CalendarCustomization(CustomizationBase):
 class StatusDashboardCustomization(CustomizationBase):
     variables = {
         "dashboard_display_not_qualified_areas": "",
+        "dashboard_hide_project": "",
         "dashboard_staff_status_first_day_of_week": "1",
         "dashboard_staff_status_staff_only": "",
         "dashboard_staff_status_weekdays_only": "",

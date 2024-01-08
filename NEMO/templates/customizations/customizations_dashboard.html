@@ -16,6 +16,14 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-md-3">Projects</label>
+            <div class="col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="dashboard_hide_project" {% if dashboard_hide_project %}checked{% endif %} value="enabled">Hide projects the users are working on in occupancy</label><br/>
+                </div>
+            </div>
+        </div>
         <div class="form-group" style="margin-bottom: 0; border-top: dotted 1px #ddd">
             <div class="col-md-5">
                 <h5>Staff status</h5>
