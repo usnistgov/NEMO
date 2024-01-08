@@ -130,6 +130,10 @@ class AtLeastOneRequiredInlineFormSet(BaseInlineFormSet):
             raise forms.ValidationError("A minimum of one item is required.")
 
 
+class DocumentModelAdmin(admin.TabularInline):
+    extra = 1
+
+
 class ToolAdminForm(forms.ModelForm):
     class Meta:
         model = Tool
@@ -186,9 +190,8 @@ class ToolAdminForm(forms.ModelForm):
         return cleaned_data
 
 
-class ToolDocumentsInline(admin.TabularInline):
+class ToolDocumentsInline(DocumentModelAdmin):
     model = ToolDocuments
-    extra = 1
 
 
 @register(Tool)
@@ -511,9 +514,8 @@ class ProjectAdminForm(forms.ModelForm):
             self.fields["principal_investigators"].initial = self.instance.manager_set.all()
 
 
-class ProjectDocumentsInline(admin.TabularInline):
+class ProjectDocumentsInline(DocumentModelAdmin):
     model = ProjectDocuments
-    extra = 1
 
 
 @register(Project)
@@ -951,9 +953,8 @@ class UserAdminForm(forms.ModelForm):
             self.fields["superuser_on_tools"].initial = self.instance.superuser_for_tools.all()
 
 
-class UserDocumentsInline(admin.TabularInline):
+class UserDocumentsInline(DocumentModelAdmin):
     model = UserDocuments
-    extra = 1
 
 
 @register(User)
@@ -1099,9 +1100,8 @@ class SafetyCategoryAdmin(admin.ModelAdmin):
     list_display = ("name", "display_order")
 
 
-class SafetyItemDocumentsInline(admin.TabularInline):
+class SafetyItemDocumentsInline(DocumentModelAdmin):
     model = SafetyItemDocuments
-    extra = 1
 
 
 @register(SafetyItem)

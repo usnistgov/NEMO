@@ -1829,9 +1829,6 @@ class Tool(SerializationByNameModel):
     def active_counters(self):
         return self.toolusagecounter_set.filter(is_active=True)
 
-    def tool_documents(self):
-        return ToolDocuments.objects.filter(tool=self).order_by()
-
     def get_tool_info_html(self):
         content = escape(loader.render_to_string("snippets/tool_info.html", {"tool": self}))
         return f'<a href="javascript:;" data-title="{content}" data-tooltip-id="tooltip-tool-{self.id}" data-placement="bottom" class="tool-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.name_or_child_in_use_name()}</a>'
