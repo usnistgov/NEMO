@@ -961,7 +961,11 @@ class User(BaseModel, PermissionsMixin):
         access_record = self.area_access_record()
         if access_record:
             area = access_record.area
-            return not any([access_level.accessible() for access_level in self.accessible_access_levels_for_area(area)])
+            physical_access_exist = PhysicalAccessLevel.objects.filter(area=area, user__isnull=False).exists()
+            if physical_access_exist:
+                return not any(
+                    [access_level.accessible() for access_level in self.accessible_access_levels_for_area(area)]
+                )
 
     def is_logged_in_area_without_reservation(self) -> bool:
         access_record = self.area_access_record()
@@ -2433,6 +2437,9 @@ class Account(SerializationByNameModel):
     def sorted_projects(self):
         return self.project_set.all().order_by("-active", "name")
 
+    def display_with_status(self):
+        return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
+
     def __str__(self):
         return str(self.name)
 
@@ -2465,6 +2472,9 @@ class Project(SerializationByNameModel):
         pis = ", ".join([pi.get_name() for pi in self.manager_set.all()])
         pis = f" (PI{'s' if self.manager_set.count() > 1 else ''}: {pis})" if pis else ""
         return f"{self.name}{pis}"
+
+    def display_with_status(self):
+        return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
 
     def __str__(self):
         return str(self.name)
