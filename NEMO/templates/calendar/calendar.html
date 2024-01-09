@@ -300,7 +300,13 @@ function create(start, end, jsEvent, view)
 		"type": "POST",
 		"dataType": "html"
 	};
-	ajax_post(url, event_properties, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [unselect_and_refresh, ajax_failure_callback("Oops! Something went wrong")])
+
+    let name = item.data('item-name');
+    if(can_create_reservation(name, start, end)) {
+	    ajax_post(url, event_properties, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [unselect_and_refresh, ajax_failure_callback("Oops! Something went wrong")])
+    } else {
+        unselect_and_refresh();
+    }
 }
 
 {# This function is called when the user clicks and drags on the calendar to resize a reservation. #}
@@ -801,6 +807,30 @@ function update_clear_selection_btn_display()
     } else {
         $('#clear-selection-btn').hide();
     }
+}
+
+function can_create_reservation(name, start, end) {
+    {% if reservation_confirmation %}
+        return reservation_confirmation(name, start, end);
+    {% else %}
+        return true;
+    {% endif %}
+}
+
+function reservation_confirmation(name, start, end) {
+    let start_day = start.format("{{ reservation_confirmation_date_format }}");
+    let end_day = end.format("{{ reservation_confirmation_date_format }}");
+    let start_time = start.format("{{ reservation_confirmation_time_format }}");
+    let end_time = end.format("{{ reservation_confirmation_time_format }}");
+
+    let message = "Are you sure you want to make a reservation for " + name;
+    if (start.day() === end.day()) {
+        message += " on " + start_day + " from " + start_time + " to " + end_time;
+    } else {
+        message += " from " + start_day + " at " + start_time + " to " + end_day + " at " + end_time;
+    }
+    message += "?";
+    return confirm(message);
 }
 
 function on_load()

@@ -99,6 +99,9 @@ def calendar(request, item_type=None, item_id=None):
     calendar_all_areas = CalendarCustomization.get("calendar_all_areas")
     calendar_all_areastools = CalendarCustomization.get("calendar_all_areastools")
     calendar_qualified_tools = CalendarCustomization.get("calendar_qualified_tools")
+    reservation_confirmation = CalendarCustomization.get_bool("reservation_confirmation")
+    reservation_confirmation_date_format = CalendarCustomization.get("reservation_confirmation_date_format")
+    reservation_confirmation_time_format = CalendarCustomization.get("reservation_confirmation_time_format")
 
     dictionary = {
         "rendered_item_tree_html": rendered_item_tree_html,
@@ -118,6 +121,9 @@ def calendar(request, item_type=None, item_id=None):
         "calendar_all_areas": calendar_all_areas,
         "calendar_all_areastools": calendar_all_areastools,
         "calendar_qualified_tools": calendar_qualified_tools,
+        "reservation_confirmation": reservation_confirmation,
+        "reservation_confirmation_date_format": reservation_confirmation_date_format,
+        "reservation_confirmation_time_format": reservation_confirmation_time_format,
         "self_login": False,
         "self_logout": False,
     }
