@@ -225,6 +225,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "_category",
                     "qualified_users",
                     "_qualifications_never_expire",
+                    "_pre_usage_questions",
                     "_post_usage_questions",
                     "_post_usage_preview",
                 )
