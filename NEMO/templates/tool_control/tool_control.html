@@ -89,7 +89,12 @@
 			$(".project-choice").removeClass('active');
 			$(element).addClass('active');
 			$("#project_id").val(project_id);
-			$("#start").show();
+            let hasPreUsageQuestions =$("#has_pre_usage_questions").val();
+            if (hasPreUsageQuestions === "True"){
+                //$("#start button").prop("disabled", true);
+                $("#pre_usage_questions").show();
+            }
+            $("#start").show();
 		}
 
 		function load_projects(jquery_event, search_selection, dataset_name)
@@ -180,7 +185,8 @@
 			else
 				success_callbacks = [refresh_tool_status, ajax_success_callback];
 			let enable_start_button = function() { $("#start button").prop("disabled", false); };
-            let data = "remote_work=" + $("#remote_work").val();
+            //let data = "remote_work=" + $("#remote_work").val();
+            let data = $("#tool_control").serialize();
 			try_post_catch_interlock_error(url, data, success_callbacks, enable_start_button);
 		}
 
@@ -201,6 +207,7 @@
 			{
                 $("#remote_work").val(remote_work || "");
 				$("#start").hide();
+                $("#pre_usage_questions").hide();
 				$("#project_choice").html("Fetching user list...").show().load("{% url 'use_tool_for_other' %}", undefined, load_projects_completion_callback);
 			}
 
@@ -209,6 +216,7 @@
 				$("#customer").text("").hide();
 				$("#customer_project").html("").hide();
 				$("#start").hide();
+                $("#pre_usage_questions").hide();
 				$("#user_search").show().focus();
 			}
 

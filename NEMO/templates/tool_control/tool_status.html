@@ -10,7 +10,7 @@
                     <li style="width:48%; text-align:center"><a href="#config" style="padding: 10px 5px"
                                                                 onclick="load_config_history('{{ tool.id }}');">Config
                         History</a></li>{% endif %}
-                {% if tool.post_usage_questions and not hide_data_history or tool.post_usage_questions and user.is_any_part_of_staff %}<li style="width: 48%; text-align: center"><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
+                {% if has_usage_questions and not hide_data_history or has_usage_questions and user.is_any_part_of_staff %}<li style="width: 48%; text-align: center"><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
                 <li style="width:48%; text-align:center"><a href="#problem" style="padding: 10px 5px">Report a problem</a></li>
                 <li style="width:48%; text-align:center"><a href="#comment" style="padding: 10px 5px">Post a comment</a></li>
             </ul>
@@ -22,7 +22,7 @@
                 {% if tool.configuration_set.exists %}
                     <li><a href="#config" onclick="load_config_history('{{ tool.id }}');">Config History</a>
                     </li>{% endif %}
-                {% if tool.post_usage_questions and not hide_data_history or tool.post_usage_questions and user.is_any_part_of_staff %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
+                {% if has_usage_questions and not hide_data_history or has_usage_questions and user.is_any_part_of_staff %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
                 <li><a href="#problem">Report a problem</a></li>
                 <li><a href="#comment">Post a comment</a></li>
             </ul>
@@ -343,6 +343,7 @@
                         {% endif %}
                     </div>
 					<div id="project_choice"></div>
+                    <div id="pre_usage_questions" style="display:none">{{ pre_usage_questions }}<input type="hidden" id="has_pre_usage_questions" name="has_pre_usage_questions" value="{{ has_pre_usage_questions }}"></div>
 				{% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
 					{% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
 				{% endif %}

@@ -103,9 +103,12 @@ def tool_status(request, tool_id):
         "rendered_configuration_html": tool.configuration_widget(request.user),
         "mobile": request.device == "mobile",
         "task_statuses": TaskStatus.objects.all(),
+        "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render("tool_usage_group_question", tool_id),
         "post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
         "show_broadcast_upcoming_reservation": user_is_staff
         or (user_is_qualified and tool_control_broadcast_upcoming_reservation_enabled),
+        "has_pre_usage_questions": True if tool.pre_usage_questions else False,
+        "has_usage_questions": True if tool.pre_usage_questions or tool.post_usage_questions else False,
     }
 
     try:
@@ -388,6 +391,20 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     new_usage_event.project = project
     new_usage_event.tool = tool
     new_usage_event.remote_work = remote_work
+
+    # Collect pre-usage questions
+    dynamic_form = DynamicForm(tool.pre_usage_questions)
+
+    try:
+        new_usage_event.pre_run_data = dynamic_form.extract(request)
+    except RequiredUnansweredQuestionsException as e:
+        if (user.is_staff or user.is_user_office) and user != new_usage_event.operator and new_usage_event.user != user:
+            # if a staff is forcing somebody off the tool and there are required questions, send an email and proceed
+            new_usage_event.pre_run_data = e.pre_run_data
+            # email_managers_required_questions_disable_tool(new_usage_event.operator, user, tool, e.questions)
+        else:
+            return HttpResponseBadRequest(str(e))
+
     new_usage_event.save()
 
     return response
