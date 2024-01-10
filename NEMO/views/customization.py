@@ -261,7 +261,7 @@ class CalendarCustomization(CustomizationBase):
         "calendar_configuration_in_reservations": "",
         "reservation_confirmation_create": "",
         "reservation_confirmation_change": "",
-        "reservation_confirmation_date_format": "MMMM d, yyyy",
+        "reservation_confirmation_date_format": "MMMM D, yyyy",
         "reservation_confirmation_time_format": "h:mma",
     }
 

@@ -822,6 +822,7 @@ function update_clear_selection_btn_display()
 
 function confirm_reservation_create(name, start, end) {
     {% if reservation_confirmation_create %}
+        console.log(start.toString(), end.toString());
         let message = "Are you sure you want to book a reservation for " + name + " " + format_time_window(start, end) + "?";
         return confirm(message);
     {% else %}
