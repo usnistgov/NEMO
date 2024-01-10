@@ -2710,6 +2710,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE
     )
     remote_work = models.BooleanField(default=False)
+    pre_run_data = models.TextField(null=True, blank=True)
     run_data = models.TextField(null=True, blank=True)
 
     def duration(self):
