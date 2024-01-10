@@ -21,6 +21,7 @@
 					<th>{% include 'pagination/pagination_column.html' with order_by='username' name='Username' %}</th>
 					{% if user_types %}<th>{% include 'pagination/pagination_column.html' with order_by='type' name='Type' %}</th>{% endif %}
 					<th>{% include 'pagination/pagination_column.html' with order_by='is_active' name='Active' %}</th>
+					<th>{% include 'pagination/pagination_column.html' with order_by='access_expiration' name='Expiration' %}</th>
 					<th>{% include 'pagination/pagination_column.html' with order_by='is_staff' name='Staff' %}</th>
 					<th>{% include 'pagination/pagination_column.html' with order_by='is_user_office' name='User Office' %}</th>
 					<th>{% include 'pagination/pagination_column.html' with order_by='is_accounting_officer' name='Accounting' %}</th>
@@ -29,6 +30,7 @@
 				</tr>
 			</thead>
 			<tbody>
+                {% now "Y-m-d" as today %}
 				{% for user in page %}
 					<tr>
 						<td>{{ user.first_name }}</td>
@@ -36,6 +38,7 @@
 						<td>{{ user.username }}</td>
 						{% if user_types %}<td>{{ user.type|default_if_none:"" }}</td>{% endif %}
 						<td><span class="glyphicon {% if user.is_active %}glyphicon-ok success-highlight{% else %}glyphicon-remove danger-highlight{% endif %}"></span></td>
+						<td class="text-center"><span class="{% if user.access_expiration and user.access_expiration|date:"Y-m-d" < today %}danger-highlight{% endif %}">{{ user.access_expiration|date:"SHORT_DATE_FORMAT" }}</span></td>
 						<td><span class="glyphicon {% if user.is_staff %}glyphicon-ok success-highlight{% endif %}"></span></td>
 						<td><span class="glyphicon {% if user.is_user_office %}glyphicon-ok success-highlight{% endif %}"></span></td>
 						<td><span class="glyphicon {% if user.is_accounting_officer %}glyphicon-ok success-highlight{% endif %}"></span></td>
