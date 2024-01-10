@@ -122,18 +122,26 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <h3 class="customization-section-title">Reservation confirmation</h3>
+        <h3 class="customization-section-title">Reservation booking confirmations</h3>
         <div class="form-group">
-            <label class="control-label col-md-3">Reservation confirmation</label>
+            <label class="control-label col-md-3">On create</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="reservation_confirmation" {% if reservation_confirmation %}checked{% endif %} value="enabled">Enable the reservation confirmation to show when users create and edit reservations (this setting can be overwritten by users).</label><br/>
+                    <label><input type="checkbox" name="reservation_confirmation_create" {% if reservation_confirmation_create %}checked{% endif %} value="enabled">Require users to confirm the <i>creation</i> of a reservation by clicking 'Ok' (this setting can be overwritten by users).</label><br/>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3">On change</label>
+            <div class="col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="reservation_confirmation_change" {% if reservation_confirmation_change %}checked{% endif %} value="enabled">Require users to confirm the <i>change of a reservation's time window</i> by clicking 'Ok' (this setting can be overwritten by users).</label><br/>
                 </div>
             </div>
         </div>
         <div class="form-group">
             <div class="col-md-12" style="margin-top: 15px">
-                The following settings allow to customize the date format for the reservation confirmation. See <a href="https://fullcalendar.io/docs/v1/formatDate" target="_blank">FullCalendar documentation</a> for more information on the syntax.
+                The following settings allow to customize the date format for the reservation booking confirmations. See <a href="https://fullcalendar.io/docs/v1/formatDate" target="_blank">FullCalendar documentation</a> for more information on the syntax.
             </div>
         </div>
         <div class="form-group">
@@ -142,7 +150,7 @@
                 <input type="text" id="reservation_confirmation_date_format" name="reservation_confirmation_date_format" class="form-control" value="{{ reservation_confirmation_date_format }}"  placeholder="MMM d, yyyy">
             </div>
             <div class="col-md-6 help-block light-grey">
-                The date format (not including time) for the reservation confirmation.
+                The date format (not including time) displayed on reservation booking confirmations.
             </div>
         </div>
         <div class="form-group">
@@ -151,7 +159,7 @@
                 <input type="text" id="reservation_confirmation_time_format" name="reservation_confirmation_time_format" class="form-control" value="{{ reservation_confirmation_time_format }}"  placeholder="h:mma">
             </div>
             <div class="col-md-6 help-block light-grey">
-                The time format for the reservation confirmation.
+                The time format displayed on reservation booking confirmations.
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>

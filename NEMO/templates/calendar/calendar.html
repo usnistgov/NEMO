@@ -301,8 +301,7 @@ function create(start, end, jsEvent, view)
 		"dataType": "html"
 	};
 
-    let name = item.data('item-name');
-    if(can_create_reservation(name, start, end)) {
+    if(confirm_reservation_create(item.data('item-name'), start, end)) {
 	    ajax_post(url, event_properties, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [unselect_and_refresh, ajax_failure_callback("Oops! Something went wrong")])
     } else {
         unselect_and_refresh();
@@ -331,7 +330,13 @@ function resize(event, delta, revertFunc, jsEvent, ui, view)
 			"type": "POST",
 			"dataType": "html"
 		};
-		ajax_post(url, event_changes, function(response, status, xml_http_request){return event_creation_success_callback(response, status, xml_http_request, post_data)}, [revertFunc, ajax_failure_callback("Reservation resize failed")], refresh_calendar_and_sidebar);
+        if (confirm_reservation_resize(delta)) {
+            ajax_post(url, event_changes, function (response, status, xml_http_request) {
+                return event_creation_success_callback(response, status, xml_http_request, post_data)
+            }, [revertFunc, ajax_failure_callback("Reservation resize failed")], refresh_calendar_and_sidebar);
+        } else {
+            refresh_calendar_and_sidebar();
+        }
 	}
 	else if(type === "Outage")
 	{
@@ -361,7 +366,13 @@ function move(event, delta, revertFunc, jsEvent, ui, view)
 			"type": "POST",
 			"dataType": "html"
 		};
-		ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data) }, [revertFunc, ajax_failure_callback("Reservation move failed")], refresh_calendar_and_sidebar)
+        if (confirm_reservation_move(delta)) {
+            ajax_post(url, event_changes, function (response, status, xml_http_request) {
+                return event_creation_success_callback(response, status, xml_http_request, post_data)
+            }, [revertFunc, ajax_failure_callback("Reservation move failed")], refresh_calendar_and_sidebar)
+        } else {
+            refresh_calendar_and_sidebar();
+        }
 	}
 	else if(type === "Outage")
 	{
@@ -809,28 +820,67 @@ function update_clear_selection_btn_display()
     }
 }
 
-function can_create_reservation(name, start, end) {
-    {% if reservation_confirmation %}
-        return reservation_confirmation(name, start, end);
+function confirm_reservation_create(name, start, end) {
+    {% if reservation_confirmation_create %}
+        let start_day = start.format("{{ reservation_confirmation_date_format }}");
+        let end_day = end.format("{{ reservation_confirmation_date_format }}");
+        let start_time = start.format("{{ reservation_confirmation_time_format }}");
+        let end_time = end.format("{{ reservation_confirmation_time_format }}");
+
+        let time_window = "from " + start_day + " at " + start_time + " to " + end_day + " at " + end_time;
+        if (start.day() === end.day()) {
+            time_window = "on " + start_day + " from " + start_time + " to " + end_time;
+        }
+
+        let message = "Are you sure you want to book a reservation for " + name + " " + time_window + "?";
+        return confirm(message);
     {% else %}
         return true;
     {% endif %}
 }
 
-function reservation_confirmation(name, start, end) {
-    let start_day = start.format("{{ reservation_confirmation_date_format }}");
-    let end_day = end.format("{{ reservation_confirmation_date_format }}");
-    let start_time = start.format("{{ reservation_confirmation_time_format }}");
-    let end_time = end.format("{{ reservation_confirmation_time_format }}");
+function confirm_reservation_move(delta) {
+    {% if reservation_confirmation_change %}
+        let direction = delta.asMinutes() > 0 ? "forward" : "back";
+        let message = "Are you sure you want to move this reservation " + direction + " by " + humanize_duration(delta) + "?";
+        return confirm(message);
+    {% else %}
+        return true;
+    {% endif %}
+}
 
-    let message = "Are you sure you want to make a reservation for " + name;
-    if (start.day() === end.day()) {
-        message += " on " + start_day + " from " + start_time + " to " + end_time;
-    } else {
-        message += " from " + start_day + " at " + start_time + " to " + end_day + " at " + end_time;
+function confirm_reservation_resize(delta) {
+    {% if reservation_confirmation_change %}
+        let direction = delta.asMinutes() > 0 ? "increase" : "decrease";
+        let message = "Are you sure you want to " + direction + " the duration of this reservation by " + humanize_duration(delta) + "?";
+        return confirm(message);
+    {% else %}
+        return true;
+    {% endif %}
+}
+
+function humanize_duration(duration) {
+    let days = Math.abs(duration.days());
+    let hours = Math.abs(duration.hours());
+    let minutes = Math.abs(duration.minutes());
+
+    let days_humanized = days + " day" + (days > 1 ? "s" : "");
+    let hours_humanized = hours + " hour" + (hours > 1 ? "s" : "");
+    let minutes_humanized = minutes + " minute" + (minutes > 1 ? "s" : "");
+
+    if (days >= 1) {
+        return days_humanized;
     }
-    message += "?";
-    return confirm(message);
+
+    if (hours >= 1) {
+        let humanized = hours_humanized;
+        if (minutes > 0) {
+            humanized += " and " + minutes_humanized;
+        }
+        return humanized;
+    }
+
+    return minutes_humanized;
 }
 
 function on_load()
