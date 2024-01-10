@@ -122,26 +122,26 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <h3 class="customization-section-title">Reservation booking confirmations</h3>
+        <h3 class="customization-section-title">Confirmations</h3>
         <div class="form-group">
-            <label class="control-label col-md-3">On create</label>
+            <label class="control-label col-md-3">Create</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="reservation_confirmation_create" {% if reservation_confirmation_create %}checked{% endif %} value="enabled">Require users to confirm the <i>creation</i> of a reservation by clicking 'Ok' (this setting can be overwritten by users).</label><br/>
+                    <label><input type="checkbox" name="reservation_confirmation_create" {% if reservation_confirmation_create %}checked{% endif %} value="enabled">Require users to confirm by clicking 'Ok' when creating a reservation (this setting can be overwritten by users).</label><br/>
                 </div>
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-3">On change</label>
+            <label class="control-label col-md-3">Move/Resize</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="reservation_confirmation_change" {% if reservation_confirmation_change %}checked{% endif %} value="enabled">Require users to confirm the <i>change of a reservation's time window</i> by clicking 'Ok' (this setting can be overwritten by users).</label><br/>
+                    <label><input type="checkbox" name="reservation_confirmation_change" {% if reservation_confirmation_change %}checked{% endif %} value="enabled">Require users to confirm by clicking 'Ok' when moving/resizing a reservation (this setting can be overwritten by users).</label><br/>
                 </div>
             </div>
         </div>
         <div class="form-group">
             <div class="col-md-12" style="margin-top: 15px">
-                The following settings allow to customize the date format for the reservation booking confirmations. See <a href="https://fullcalendar.io/docs/v1/formatDate" target="_blank">FullCalendar documentation</a> for more information on the syntax.
+                The following settings allow to customize the date and time formats displayed on confirmations when <i>creating</i> a reservation.
             </div>
         </div>
         <div class="form-group">
@@ -150,7 +150,7 @@
                 <input type="text" id="reservation_confirmation_date_format" name="reservation_confirmation_date_format" class="form-control" value="{{ reservation_confirmation_date_format }}"  placeholder="MMMM D, yyyy">
             </div>
             <div class="col-md-6 help-block light-grey">
-                The date format (not including time) displayed on reservation booking confirmations.
+                The date format (not including time).
             </div>
         </div>
         <div class="form-group">
@@ -159,7 +159,7 @@
                 <input type="text" id="reservation_confirmation_time_format" name="reservation_confirmation_time_format" class="form-control" value="{{ reservation_confirmation_time_format }}"  placeholder="h:mma">
             </div>
             <div class="col-md-6 help-block light-grey">
-                The time format displayed on reservation booking confirmations.
+                The time format.
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
