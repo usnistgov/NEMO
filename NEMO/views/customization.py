@@ -259,8 +259,8 @@ class CalendarCustomization(CustomizationBase):
         "calendar_outage_recurrence_limit": "90",
         "calendar_qualified_tools": "",
         "calendar_configuration_in_reservations": "",
-        "reservation_confirmation_create": "",
-        "reservation_confirmation_change": "",
+        "create_reservation_confirmation": "",
+        "change_reservation_confirmation": "",
         "reservation_confirmation_date_format": "MMMM D, yyyy",
         "reservation_confirmation_time_format": "h:mma",
     }

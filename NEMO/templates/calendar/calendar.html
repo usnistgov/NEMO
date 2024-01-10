@@ -821,7 +821,7 @@ function update_clear_selection_btn_display()
 }
 
 function confirm_reservation_create(name, start, end) {
-    {% if reservation_confirmation_create %}
+    {% if create_reservation_confirmation %}
         console.log(start.toString(), end.toString());
         let message = "Are you sure you want to book a reservation for " + name + " " + format_time_window(start, end) + "?";
         return confirm(message);
@@ -831,7 +831,7 @@ function confirm_reservation_create(name, start, end) {
 }
 
 function confirm_reservation_move(duration) {
-    {% if reservation_confirmation_change %}
+    {% if change_reservation_confirmation %}
         let direction = duration.asMinutes() > 0 ? "forward" : "back";
         let message = "Are you sure you want to move this reservation " + direction + " by " + format_duration(duration) + "?";
         return confirm(message);
@@ -841,7 +841,7 @@ function confirm_reservation_move(duration) {
 }
 
 function confirm_reservation_resize(duration) {
-    {% if reservation_confirmation_change %}
+    {% if change_reservation_confirmation %}
         let direction = duration.asMinutes() > 0 ? "increase" : "decrease";
         let message = "Are you sure you want to " + direction + " the duration of this reservation by " + format_duration(duration) + "?";
         return confirm(message);

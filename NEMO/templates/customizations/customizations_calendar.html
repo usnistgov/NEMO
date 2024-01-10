@@ -122,12 +122,12 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <h3 class="customization-section-title">Confirmations</h3>
+        <h3 class="customization-section-title">Reservation confirmations</h3>
         <div class="form-group">
             <label class="control-label col-md-3">Create</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="reservation_confirmation_create" {% if reservation_confirmation_create %}checked{% endif %} value="enabled">Require users to confirm by clicking 'Ok' when creating a reservation (this setting can be overwritten by users).</label><br/>
+                    <label><input type="checkbox" name="create_reservation_confirmation" {% if create_reservation_confirmation %}checked{% endif %} value="enabled">Require users to confirm by clicking 'Ok' when creating a reservation (this setting can be overwritten by users).</label><br/>
                 </div>
             </div>
         </div>
@@ -135,7 +135,7 @@
             <label class="control-label col-md-3">Move/Resize</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="reservation_confirmation_change" {% if reservation_confirmation_change %}checked{% endif %} value="enabled">Require users to confirm by clicking 'Ok' when moving/resizing a reservation (this setting can be overwritten by users).</label><br/>
+                    <label><input type="checkbox" name="change_reservation_confirmation" {% if change_reservation_confirmation %}checked{% endif %} value="enabled">Require users to confirm by clicking 'Ok' when moving/resizing a reservation (this setting can be overwritten by users).</label><br/>
                 </div>
             </div>
         </div>
