@@ -878,7 +878,7 @@ function format_duration(duration) {
     if (hours >= 1) {
         let formatted = hours_formatted;
         if (minutes > 0) {
-            formatted += " and " + formatted;
+            formatted += " and " + minutes_formatted;
         }
         return formatted;
     }
