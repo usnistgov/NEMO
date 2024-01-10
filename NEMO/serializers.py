@@ -19,6 +19,9 @@ from NEMO.models import (
     Consumable,
     ConsumableCategory,
     ConsumableWithdraw,
+    Interlock,
+    InterlockCard,
+    InterlockCardCategory,
     Project,
     ProjectDiscipline,
     Qualification,
@@ -339,6 +342,30 @@ class ContentTypeSerializer(ModelSerializer):
     class Meta:
         model = ContentType
         fields = "__all__"
+
+
+class InterlockCardCategorySerializer(ModelSerializer):
+    class Meta:
+        model = InterlockCardCategory
+        fields = "__all__"
+
+
+class InterlockCardSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = InterlockCard
+        fields = "__all__"
+        expandable_fields = {
+            "category": "NEMO.serializers.InterlockCardCategorySerializer",
+        }
+
+
+class InterlockSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = Interlock
+        fields = "__all__"
+        expandable_fields = {
+            "card": "NEMO.serializers.InterlockCardSerializer",
+        }
 
 
 class PermissionSerializer(FlexFieldsSerializerMixin, ModelSerializer):

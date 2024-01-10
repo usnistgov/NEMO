@@ -19,6 +19,9 @@ from NEMO.models import (
     Consumable,
     ConsumableCategory,
     ConsumableWithdraw,
+    Interlock,
+    InterlockCard,
+    InterlockCardCategory,
     Project,
     ProjectDiscipline,
     Qualification,
@@ -46,6 +49,9 @@ from NEMO.serializers import (
     ConsumableWithdrawSerializer,
     ContentTypeSerializer,
     GroupSerializer,
+    InterlockCardCategorySerializer,
+    InterlockCardSerializer,
+    InterlockSerializer,
     PermissionSerializer,
     ProjectDisciplineSerializer,
     ProjectSerializer,
@@ -489,6 +495,44 @@ class ContentTypeViewSet(XLSXFileMixin, viewsets.ReadOnlyModelViewSet):
 
     def get_filename(self, *args, **kwargs):
         return f"{self.filename}-{export_format_datetime()}.xlsx"
+
+
+class InterlockCardCategoryViewSet(ModelViewSet):
+    filename = "interlock_card_categories"
+    queryset = InterlockCardCategory.objects.all()
+    serializer_class = InterlockCardCategorySerializer
+    filterset_fields = {
+        "name": ["exact", "iexact", "in"],
+        "key": ["exact", "iexact", "in"],
+    }
+
+
+class InterlockCardViewSet(ModelViewSet):
+    filename = "interlock_cards"
+    queryset = InterlockCard.objects.all()
+    serializer_class = InterlockCardSerializer
+    filterset_fields = {
+        "name": ["exact", "iexact", "in"],
+        "server": ["exact", "iexact", "in"],
+        "number": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "even_port": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "odd_port": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "category": ["exact", "in"],
+        "enabled": ["exact"],
+    }
+
+
+class InterlockViewSet(ModelViewSet):
+    filename = "interlocks"
+    queryset = Interlock.objects.all()
+    serializer_class = InterlockSerializer
+    filterset_fields = {
+        "card": ["exact", "in"],
+        "channel": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "unit_id": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "state": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "most_recent_reply_time": ["exact", "in", "gte", "lte", "gt", "lt"],
+    }
 
 
 class GroupViewSet(ModelViewSet):
