@@ -382,6 +382,16 @@ class UserPreferences(BaseModel):
         max_length=200,
         help_text="The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.",
     )
+    create_reservation_confirmation_override = models.BooleanField(
+        "create_reservation_confirmation_override",
+        default=False,
+        help_text="Override default create reservation confirmation setting",
+    )
+    change_reservation_confirmation_override = models.BooleanField(
+        "change_reservation_confirmation_override",
+        default=False,
+        help_text="Override default move/resize reservation confirmation setting",
+    )
     email_send_recurring_charges_reminder_emails = models.PositiveIntegerField(
         default=EmailNotificationType.BOTH_EMAILS,
         choices=EmailNotificationType.Choices,

@@ -12,6 +12,8 @@
 						<div class="checkbox">
 							<label><input name="attach_created_reservation" type="checkbox" {% if user_preferences.attach_created_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when creating reservation</label>
 							<br><label><input name="attach_cancelled_reservation" type="checkbox" {% if user_preferences.attach_cancelled_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when cancelling a reservation</label>
+                            <br><label><input name="create_reservation_confirmation_override" type="checkbox" {% if user_preferences.create_reservation_confirmation_override %}checked{% endif %}>Check this box to override the default create reservation confirmation setting</label>
+                            <br><label><input name="change_reservation_confirmation_override" type="checkbox" {% if user_preferences.change_reservation_confirmation_override %}checked{% endif %}>Check this box to override the default move/resize reservation confirmation setting</label>
 						</div>
 					</div>
 				</div>
