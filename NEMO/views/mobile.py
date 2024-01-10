@@ -65,27 +65,17 @@ def new_reservation(request, item_type, item_id, date=None):
 
     item_type = ReservationItemType(item_type)
     item = get_object_or_404(item_type.get_object_class(), id=item_id)
-    if item_type == ReservationItemType.TOOL:
-        dictionary = item.get_configuration_information(user=request.user, start=None)
-    else:
-        dictionary = {}
-    dictionary["item"] = item
-    dictionary["item_type"] = item_type.value
-    dictionary["date"] = date
-    dictionary["item_reservation_times"] = list(
-        Reservation.objects.filter(**{item_type.value: item}).filter(
-            cancelled=False, missed=False, shortened=False, start__gte=timezone.now()
-        )
-    )
 
-    # Reservation questions if applicable
-    if not user.is_staff:
-        reservation_question_dict = {}
-        for project in user.active_projects():
-            reservation_questions = render_reservation_questions(item_type, item_id, project)
-            if reservation_questions:
-                reservation_question_dict[project.id] = reservation_questions
-        dictionary["reservation_questions"] = reservation_question_dict
+    dictionary = {
+        "item": item,
+        "item_type": item_type.value,
+        "date": date,
+        "item_reservation_times": list(
+            Reservation.objects.filter(**{item_type.value: item}).filter(
+                cancelled=False, missed=False, shortened=False, start__gte=timezone.now()
+            )
+        ),
+    }
 
     return render(request, "mobile/new_reservation.html", dictionary)
 
@@ -94,6 +84,7 @@ def new_reservation(request, item_type, item_id, date=None):
 @require_POST
 def make_reservation(request):
     """Create a reservation for a user."""
+    user: User = request.user
     try:
         date = parse_date(request.POST["date"])
         start = localize(datetime.combine(date, parse_time(request.POST["start"])))
@@ -108,8 +99,8 @@ def make_reservation(request):
     item = get_object_or_404(item_type.get_object_class(), id=request.POST.get("item_id"))
     # Create the new reservation:
     reservation = Reservation()
-    reservation.user = request.user
-    reservation.creator = request.user
+    reservation.user = user
+    reservation.creator = user
     reservation.reservation_item = item
     reservation.start = start
     reservation.end = end
@@ -120,7 +111,7 @@ def make_reservation(request):
     policy_problems, overridable = policy.check_to_save_reservation(
         cancelled_reservation=None,
         new_reservation=reservation,
-        user_creating_reservation=request.user,
+        user_creating_reservation=user,
         explicit_policy_override=False,
     )
 
@@ -132,12 +123,27 @@ def make_reservation(request):
     try:
         reservation.project = Project.objects.get(id=request.POST["project_id"])
         # Check if we are allowed to bill to project
-        policy.check_billing_to_project(reservation.project, request.user, reservation.reservation_item, reservation)
+        policy.check_billing_to_project(reservation.project, user, reservation.reservation_item, reservation)
     except ProjectChargeException as e:
         return render(request, "mobile/error.html", {"message": e.msg})
     except:
-        if not request.user.is_staff:
+        if not user.is_staff:
             return render(request, "mobile/error.html", {"message": "You must specify a project for your reservation"})
+
+    reservation_questions = render_reservation_questions(item_type, item.id, reservation.project)
+    tool_config = item_type == ReservationItemType.TOOL and item.is_configurable()
+    needs_extra_config = reservation_questions or tool_config
+    if needs_extra_config and not request.POST.get("configured") == "true":
+        dictionary = {
+            "request_date": request.POST["date"],
+            "request_start": request.POST["start"],
+            "request_end": request.POST["end"],
+            "reservation": reservation,
+        }
+        if item_type == ReservationItemType.TOOL:
+            dictionary.update(item.get_configuration_information(user=user, start=reservation.start))
+        dictionary["reservation_questions"] = reservation_questions
+        return render(request, "mobile/reservation_extra.html", dictionary)
 
     set_reservation_configuration(reservation, request)
     # Reservation can't be short notice if the user is configuring the tool themselves.

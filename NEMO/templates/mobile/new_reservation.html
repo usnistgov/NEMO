@@ -22,30 +22,11 @@
 			{% elif user.active_project_count > 1 %}
 				<h4>Which project is this for?</h4>
 				{% for project in user.active_projects %}
-					<div class="radio"><label><input type="radio" name="project_id" value="{{ project.id }}" required onclick="set_reservation_questions('{{ project.id }}')">{% project_selection_display project %}</label></div>
+                    <div class="radio"><label><input type="radio" name="project_id" value="{{ project.id }}"
+                                                     required>{% project_selection_display project %}</label></div>
 				{% endfor %}
 			{% endif %}
 		{% endif %}
-		{% if configurations %}
-			<h4>Choose tool configuration settings</h4>
-			{% if notice_limit > 0 %}
-				<div class="alert alert-info">
-					<strong>Please note:</strong> {{ notice_limit }} hours of advance notice is required when reserving this tool in order to configure it properly. A tool is not guaranteed to be configured properly if a reservation is created or modified on short notice.
-				</div>
-			{% endif %}
-			{% include 'calendar/configuration_helper.html' %}
-		{% endif %}
-        {% if reservation_questions %}
-            {% if user.active_project_count == 1 %}
-                <div id="reservation_questions">
-                    <h4>Please answer the following questions</h4>
-                    {{ reservation_questions|get_item:user.active_projects.0.id }}
-                </div>
-            {% else %}
-                <div id="reservation_questions">
-                </div>
-            {% endif %}
-        {% endif %}
 		<h4>When would you like to reserve the {{ item }}?</h4>
 		<div class="form-group">
 			<input type="text" id="date" name="date" class="form-control" aria-label="Reservation day" placeholder="Choose a date">
@@ -61,15 +42,6 @@
 		</div>
 	</form>
 	<div style="height:350px"></div>
-    {# We are using this div as storage for all possible reservation questions per projects #}
-    <div id="reservation_questions_storage" style="display: none">
-        {% for project_id, reservation_question in reservation_questions.items %}
-            <div id="reservation_questions__{{ project_id }}" style="display: none">
-            <h4>Please answer the following questions</h4>
-            {{ reservation_question }}
-            </div>
-        {% endfor %}
-    </div>
 	<script>
         window.addEventListener('load', function () {
             $('input[type=radio][name=project_id]').prop('checked', false);
@@ -107,12 +79,6 @@
                 }
 			}
 		    return "h:i A";
-        }
-		function set_reservation_questions(project_id)
-        {
-            let reservation_questions = $('#reservation_questions');
-            reservation_questions.empty();
-            reservation_questions.append($('#reservation_questions__'+project_id).html())
         }
 	</script>
 {% endblock %}

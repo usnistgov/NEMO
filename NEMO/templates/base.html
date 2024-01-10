@@ -49,6 +49,7 @@
     {% endblock %}
 
 	{# NEMO #}
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}"/>
 	<script type="text/javascript" src="{% static "nemo.js" %}"></script>
 	<link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}"/>
 
@@ -82,6 +83,7 @@
 			{% endif %}
             {# Content goes here #}
             {% block content %}{% endblock %}
+            <div class="modal-footer">{% block footer %}{% endblock %}</div>
         </div>
         {% block extra_whitespace %}
             <div style="height: 200px"></div>

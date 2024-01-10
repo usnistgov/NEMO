@@ -19,6 +19,9 @@ from NEMO.models import (
     Consumable,
     ConsumableCategory,
     ConsumableWithdraw,
+    Interlock,
+    InterlockCard,
+    InterlockCardCategory,
     Project,
     ProjectDiscipline,
     Qualification,
@@ -46,6 +49,9 @@ from NEMO.serializers import (
     ConsumableWithdrawSerializer,
     ContentTypeSerializer,
     GroupSerializer,
+    InterlockCardCategorySerializer,
+    InterlockCardSerializer,
+    InterlockSerializer,
     PermissionSerializer,
     ProjectDisciplineSerializer,
     ProjectSerializer,
@@ -56,10 +62,12 @@ from NEMO.serializers import (
     StaffChargeSerializer,
     TaskSerializer,
     ToolSerializer,
+    ToolStatusSerializer,
     TrainingSessionSerializer,
     UsageEventSerializer,
     UserSerializer,
 )
+from NEMO.typing import QuerySetType
 from NEMO.utilities import export_format_datetime
 from NEMO.views.api_billing import (
     BillingFilterForm,
@@ -164,7 +172,7 @@ class ProjectViewSet(ModelViewSet):
     filterset_fields = {
         "id": ["exact", "in"],
         "name": ["exact", "iexact"],
-        "application_identifier": ["exact"],
+        "application_identifier": ["exact", "iexact"],
         "active": ["exact"],
         "account_id": ["exact", "in"],
         "account": ["exact", "in"],
@@ -489,6 +497,44 @@ class ContentTypeViewSet(XLSXFileMixin, viewsets.ReadOnlyModelViewSet):
         return f"{self.filename}-{export_format_datetime()}.xlsx"
 
 
+class InterlockCardCategoryViewSet(ModelViewSet):
+    filename = "interlock_card_categories"
+    queryset = InterlockCardCategory.objects.all()
+    serializer_class = InterlockCardCategorySerializer
+    filterset_fields = {
+        "name": ["exact", "iexact", "in"],
+        "key": ["exact", "iexact", "in"],
+    }
+
+
+class InterlockCardViewSet(ModelViewSet):
+    filename = "interlock_cards"
+    queryset = InterlockCard.objects.all()
+    serializer_class = InterlockCardSerializer
+    filterset_fields = {
+        "name": ["exact", "iexact", "in"],
+        "server": ["exact", "iexact", "in"],
+        "number": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "even_port": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "odd_port": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "category": ["exact", "in"],
+        "enabled": ["exact"],
+    }
+
+
+class InterlockViewSet(ModelViewSet):
+    filename = "interlocks"
+    queryset = Interlock.objects.all()
+    serializer_class = InterlockSerializer
+    filterset_fields = {
+        "card": ["exact", "in"],
+        "channel": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "unit_id": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "state": ["exact", "in", "gte", "lte", "gt", "lt"],
+        "most_recent_reply_time": ["exact", "in", "gte", "lte", "gt", "lt"],
+    }
+
+
 class GroupViewSet(ModelViewSet):
     filename = "groups"
     queryset = Group.objects.all()
@@ -535,3 +581,38 @@ class BillingViewSet(XLSXFileMixin, viewsets.GenericViewSet):
 
     def get_filename(self, *args, **kwargs):
         return f"billing-{export_format_datetime()}.xlsx"
+
+
+class ToolStatusViewSet(XLSXFileMixin, viewsets.GenericViewSet):
+    serializer_class = ToolStatusSerializer
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)
+
+    def check_permissions(self, request):
+        if not request or not request.user.has_perm("NEMO.use_billing_api"):
+            self.permission_denied(request)
+
+    def get_queryset(self) -> QuerySetType[Tool]:
+        tools: QuerySetType[Tool] = Tool.objects.all()
+        for tool in tools:
+            pbs = tool.problems()
+            outages = tool.scheduled_outages()
+            partial_outages = tool.scheduled_partial_outages()
+            rss_unavailable = tool.unavailable_required_resources()
+            partial_rss_unavailable = tool.unavailable_nonrequired_resources()
+            tool.problem_descriptions = ", ".join(pb.problem_description for pb in pbs) if pbs else None
+            tool.outages = ", ".join(outage.title for outage in outages) if outages else None
+            tool.partial_outages = ", ".join(outage.title for outage in partial_outages) if partial_outages else None
+            tool.required_resources_unavailable = (
+                ", ".join(res.name for res in rss_unavailable) if rss_unavailable else None
+            )
+            tool.optional_resources_unavailable = (
+                ", ".join(res.name for res in partial_rss_unavailable) if partial_rss_unavailable else None
+            )
+        return tools
+
+    def get_filename(self, *args, **kwargs):
+        return f"tool_status-{export_format_datetime()}.xlsx"

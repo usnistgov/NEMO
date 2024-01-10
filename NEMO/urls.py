@@ -8,6 +8,7 @@ from django.conf.urls import include
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LogoutView
+from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import path, re_path
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.generic import RedirectView
@@ -82,6 +83,9 @@ router.register(r"consumable_categories", api.ConsumableCategoryViewSet)
 router.register(r"consumable_withdrawals", api.ConsumableWithdrawViewSet)
 router.register(r"consumables", api.ConsumableViewSet)
 router.register(r"content_types", api.ContentTypeViewSet)
+router.register(r"interlock_card_categories", api.InterlockCardCategoryViewSet)
+router.register(r"interlock_cards", api.InterlockCardViewSet)
+router.register(r"interlocks", api.InterlockViewSet)
 router.register(r"project_disciplines", api.ProjectDisciplineViewSet)
 router.register(r"projects", api.ProjectViewSet)
 router.register(r"qualifications", api.QualificationViewSet)
@@ -92,6 +96,7 @@ router.register(r"scheduled_outages", api.ScheduledOutageViewSet)
 router.register(r"staff_charges", api.StaffChargeViewSet)
 router.register(r"tasks", api.TaskViewSet)
 router.register(r"tools", api.ToolViewSet)
+router.register(r"tool_status", api.ToolStatusViewSet, basename="tool_status")
 router.register(r"training_sessions", api.TrainingSessionViewSet)
 router.register(r"usage_events", api.UsageEventViewSet)
 router.register(r"users", api.UserViewSet)
@@ -337,7 +342,7 @@ urlpatterns += [
     path("send_email/", email.send_email, name="send_email"),
     path("email_broadcast/", email.email_broadcast, name="email_broadcast"),
     re_path(
-        r"^email_broadcast/(?P<audience>tool|area|account|project|user|tool-reservation)/$",
+        r"^email_broadcast/(?P<audience>tool|area|account|project|project-pis|user|tool-reservation)/$",
         email.email_broadcast,
         name="email_broadcast",
     ),
@@ -462,6 +467,8 @@ urlpatterns += [
     path("news/update/<int:story_id>/", news.news_update_form, name="news_update_form"),
     path("news/publish/", news.publish, name="publish_new_news"),
     path("news/publish/<int:story_id>/", news.publish, name="publish_news_update"),
+    # User Preferences
+    path("user_preferences/", users.user_preferences, name="user_preferences"),
     # Media
     re_path(
         r"^media/" + MEDIA_PROTECTED + "/(?P<path>.*)$",
@@ -486,8 +493,11 @@ urlpatterns += [
         name="media_list_view",
     ),
     path("media_zip/", documents.media_zip, name="media_zip"),
-    # User Preferences
-    path("user_preferences/", users.user_preferences, name="user_preferences"),
+    # Favicon
+    path(
+        "favicon.ico",
+        RedirectView.as_view(url=staticfiles_storage.url("favicon.ico")),
+    ),
 ]
 
 if settings.ALLOW_CONDITIONAL_URLS:

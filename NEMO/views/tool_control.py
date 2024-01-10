@@ -106,6 +106,7 @@ def tool_status(request, tool_id):
         "post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
         "show_broadcast_upcoming_reservation": user_is_staff
         or (user_is_qualified and tool_control_broadcast_upcoming_reservation_enabled),
+        "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
     }
 
     try:
@@ -279,6 +280,8 @@ def tool_configuration(request):
     history = ConfigurationHistory()
     history.configuration = configuration
     history.item_name = configuration.configurable_item_name or configuration.name
+    if len(configuration.range_of_configurable_items()) > 1:
+        history.item_name += f" #{slot + 1}"
     history.slot = slot
     history.user = request.user
     history.setting = configuration.get_current_setting(slot)

@@ -69,7 +69,7 @@ def accounts_and_projects(request):
     dictionary = {
         "page": page,
         "account_types": AccountType.objects.all(),
-        "accounts_and_projects": set(Account.objects.all()) | set(Project.objects.all()),
+        "accounts_and_projects": get_accounts_and_projects(),
         "project_list_active_only": ProjectsAccountsCustomization.get_bool("project_list_active_only"),
         "account_list_collapse": ProjectsAccountsCustomization.get_bool("account_list_collapse"),
     }
@@ -93,7 +93,7 @@ def select_accounts_and_projects(request, kind=None, identifier=None):
     dictionary = {
         "account": account,
         "selected_project": selected_project,
-        "accounts_and_projects": set(Account.objects.all()) | set(Project.objects.all()),
+        "accounts_and_projects": set(get_accounts_and_projects()),
         "users": User.objects.all(),
         "allow_document_upload": ProjectsAccountsCustomization.get_bool("project_allow_document_upload"),
     }
@@ -326,3 +326,8 @@ def do_transfer_charges(charges: List[BillableItem], new_project_id: int):
 @require_GET
 def search_project_for_transfer(request):
     return queryset_search_filter(Project.objects.all(), ["name", "application_identifier"], request)
+
+
+def get_accounts_and_projects():
+    items = set(Account.objects.all()) | set(Project.objects.all())
+    return sorted(items, key=lambda x: (-x.active, x.name.lower()))

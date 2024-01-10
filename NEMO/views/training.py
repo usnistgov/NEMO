@@ -106,7 +106,9 @@ def charge_training(request):
     except User.DoesNotExist:
         return HttpResponseBadRequest("Please select a trainee from the list")
     except Tool.DoesNotExist:
-        return HttpResponseBadRequest("Please select a tool from the list")
+        return HttpResponseBadRequest("Please select a tool/group from the list")
+    except ToolQualificationGroup.DoesNotExist:
+        return HttpResponseBadRequest("Please select a tool/group from the list")
     except Project.DoesNotExist:
         return HttpResponseBadRequest("Please select a project from the list")
     except Exception as e:

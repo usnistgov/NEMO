@@ -5,6 +5,7 @@
         {% if reservations_can_expire %}
         Users with expired reservations are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
         {% endif %}
+        Users logged in outside of their allowed schedule are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
 	</p>
 	{% include 'occupancy/occupancy_content.html' with area=area occupants=occupants %}
 {% endif %}

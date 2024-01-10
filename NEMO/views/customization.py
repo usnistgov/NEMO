@@ -258,6 +258,7 @@ class CalendarCustomization(CustomizationBase):
         "calendar_all_areastools": "",
         "calendar_outage_recurrence_limit": "90",
         "calendar_qualified_tools": "",
+        "calendar_configuration_in_reservations": "",
     }
 
 
@@ -265,6 +266,7 @@ class CalendarCustomization(CustomizationBase):
 class StatusDashboardCustomization(CustomizationBase):
     variables = {
         "dashboard_display_not_qualified_areas": "",
+        "dashboard_hide_project": "",
         "dashboard_staff_status_first_day_of_week": "1",
         "dashboard_staff_status_staff_only": "",
         "dashboard_staff_status_weekdays_only": "",
@@ -410,6 +412,7 @@ class ToolCustomization(CustomizationBase):
         "tool_control_hide_data_history_users": "",
         "tool_control_configuration_setting_template": "{{ current_setting }}",
         "tool_control_broadcast_upcoming_reservation": "",
+        "tool_control_show_task_details": "",
         "tool_qualification_reminder_days": "",
         "tool_qualification_expiration_days": "",
         "tool_qualification_expiration_never_used_days": "",

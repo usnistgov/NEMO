@@ -56,9 +56,7 @@ def history(request, item_type, item_id):
         message += " belongs to " + o.parent_content_type.name + ' "' + o.get_parent_content_object() + '".'
         action_list.add_row({"date": o.date, "authorizer": str(o.authorizer), "message": message})
     if apps.is_installed("auditlog"):
-        from auditlog.models import LogEntry
-
-        logentries: List[LogEntry] = LogEntry.objects.filter(content_type=content_type, object_id=item_id)
+        logentries: List = get_log_entries(item, content_type)
         for log_entry in logentries:
             action_list.add_row(
                 {
@@ -77,6 +75,12 @@ def history(request, item_type, item_id):
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
     return render(request, "history.html", {"action_list": action_list, "name": str(item)})
+
+
+def get_log_entries(item, content_type):
+    from auditlog.models import LogEntry
+
+    return LogEntry.objects.filter(content_type=content_type, object_id=item.id)
 
 
 def audit_log_message(logentry, separator: str = "\n"):

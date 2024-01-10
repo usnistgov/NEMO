@@ -1191,3 +1191,10 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	padding: 2px;
 	color: white;
 }
+
+.modal-footer:empty
+{
+	padding: inherit;
+	text-align: inherit;
+	border-top: inherit;
+}

@@ -13,11 +13,10 @@ class ConfigurationEditor(Widget):
     def render(self, name, value, attrs=None, **kwargs):
         result = ""
         for config in value["configurations"]:
-            current_settings = config.current_settings_as_list()
             render_as_form = value.get("render_as_form", None)
             if render_as_form is None:
                 render_as_form = not config.tool.in_use() and config.user_is_maintainer(value["user"])
-            if len(current_settings) == 1:
+            if len(config.range_of_configurable_items()) == 1:
                 result += self._render_for_one(config, render_as_form)
             else:
                 result += self._render_for_multiple(config, render_as_form)

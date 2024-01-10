@@ -6,12 +6,12 @@
 	{% load custom_tags_and_filters %}
 
 	{# jQuery #}
-	<script type="text/javascript" src="{% static "jquery.js" %}"></script>
+    <script type="text/javascript" src="{% static "jquery.min.js" %}"></script>
 
 	{# Bootstrap #}
-	<script type="text/javascript" src="{% static "bootstrap/js/bootstrap.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.css" %}"/>
-	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.css" %}"/>
+    <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.min.css" %}"/>
 
 	{# Numpad #}
 	<script type="text/javascript" src="{% static "numpad/custom_numpad.jquery.js" %}"></script>
@@ -22,6 +22,7 @@
 	<link rel="stylesheet" type="text/css" href="{% static "virtualkeyboard/keyboard-basic.min.css" %}"/>
 
 	{# NEMO #}
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}"/>
 	<script type="text/javascript" src="{% static "nemo.js" %}"></script>
 	<link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}"/>
 
