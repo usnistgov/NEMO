@@ -686,9 +686,26 @@
 		}
 	}
 
+    function update_start_button()
+	{
+        let hasPreUsageQuestions =$("#has_pre_usage_questions").val();
+        if (hasPreUsageQuestions === "True"){
+            if(document.querySelector('#tool_control').checkValidity())
+            {
+                $("#start button").prop("disabled", false);
+            }
+            else
+            {
+                $("#start button").prop("disabled", true);
+            }
+        }
+	}
+
     show_alerts();
 	update_stop_button();
+    update_start_button();
 	$('body').on('question-group-changed', update_stop_button);
+    $('body').on('question-group-changed', update_start_button);
 	$('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_stop_button);
-
+    $('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_start_button);
 </script>

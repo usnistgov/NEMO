@@ -91,7 +91,7 @@
 			$("#project_id").val(project_id);
             let hasPreUsageQuestions =$("#has_pre_usage_questions").val();
             if (hasPreUsageQuestions === "True"){
-                //$("#start button").prop("disabled", true);
+                $("#start button").prop("disabled", true);
                 $("#pre_usage_questions").show();
             }
             $("#start").show();
@@ -185,7 +185,6 @@
 			else
 				success_callbacks = [refresh_tool_status, ajax_success_callback];
 			let enable_start_button = function() { $("#start button").prop("disabled", false); };
-            //let data = "remote_work=" + $("#remote_work").val();
             let data = $("#tool_control").serialize();
 			try_post_catch_interlock_error(url, data, success_callbacks, enable_start_button);
 		}
