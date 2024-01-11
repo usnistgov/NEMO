@@ -37,12 +37,12 @@
 						<td>{{ user.last_name }}</td>
 						<td>{{ user.username }}</td>
 						{% if user_types %}<td>{{ user.type|default_if_none:"" }}</td>{% endif %}
-						<td><span class="glyphicon {% if user.is_active %}glyphicon-ok success-highlight{% else %}glyphicon-remove danger-highlight{% endif %}"></span></td>
+						<td class="text-center"><span class="glyphicon {% if user.is_active %}glyphicon-ok success-highlight{% else %}glyphicon-remove danger-highlight{% endif %}"></span></td>
 						<td class="text-center"><span class="{% if user.access_expiration and user.access_expiration|date:"Y-m-d" < today %}danger-highlight{% endif %}">{{ user.access_expiration|date:"SHORT_DATE_FORMAT" }}</span></td>
-						<td><span class="glyphicon {% if user.is_staff %}glyphicon-ok success-highlight{% endif %}"></span></td>
-						<td><span class="glyphicon {% if user.is_user_office %}glyphicon-ok success-highlight{% endif %}"></span></td>
-						<td><span class="glyphicon {% if user.is_accounting_officer %}glyphicon-ok success-highlight{% endif %}"></span></td>
-						<td><span class="glyphicon {% if user.is_superuser %}glyphicon-ok success-highlight{% endif %}"></span></td>
+						<td class="text-center"><span class="glyphicon {% if user.is_staff %}glyphicon-ok success-highlight{% endif %}"></span></td>
+						<td class="text-center"><span class="glyphicon {% if user.is_user_office %}glyphicon-ok success-highlight{% endif %}"></span></td>
+						<td class="text-center"><span class="glyphicon {% if user.is_accounting_officer %}glyphicon-ok success-highlight{% endif %}"></span></td>
+						<td class="text-center"><span class="glyphicon {% if user.is_superuser %}glyphicon-ok success-highlight{% endif %}"></span></td>
 						<td class="text-center button-column-minimum">
                             {% url 'create_or_modify_user' user.id as edit_url %}
                             {% if not readonly %}
