@@ -83,7 +83,7 @@
 					<div class="form-group">
 						<input name="attachments" type="file" multiple>
 					</div>
-                    {% button type="view" onclick="update_preview()" value="Preview" %}
+                    {% button type="view" onclick="update_preview();document.getElementById('email_preview').scrollIntoView();" value="Preview" %}
 					{% button type="save" value="Send" icon="glyphicon-send" %}
                     {% if user.is_any_part_of_staff and user_emails %}
                         {% if active_user_emails|length > 2000 %}

@@ -1024,6 +1024,7 @@ class UserAdmin(admin.ModelAdmin):
         "last_name",
         "email",
         "is_active",
+        "access_expiration",
         "domain",
         "is_staff",
         "is_user_office",
@@ -1037,6 +1038,7 @@ class UserAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "is_active",
+        "access_expiration",
         "domain",
         "is_staff",
         "is_user_office",
