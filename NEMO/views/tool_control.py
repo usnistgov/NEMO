@@ -173,6 +173,8 @@ def usage_data_history(request, tool_id):
     last = request.POST.get("data_history_last")
     user_id = request.POST.get("data_history_user_id")
     show_project_info = request.POST.get("show_project_info")
+    show_run_data = request.POST.get("show_run_data")
+
     if not last and not start and not end:
         # Default to last 25 records
         last = 25
@@ -198,12 +200,18 @@ def usage_data_history(request, tool_id):
         table_result.add_header(("project", "Project"))
     table_result.add_header(("date", "Date"))
     for usage_event in usage_events:
-        if usage_event.run_data:
+
+        if show_run_data == "pre":
+            usage_run_data = usage_event.pre_run_data
+        else:
+            usage_run_data = usage_event.run_data
+
+        if usage_run_data:
             usage_data = {}
             try:
                 user_data = f"{usage_event.user.first_name} {usage_event.user.last_name}"
                 date_data = format_datetime(usage_event.end, "SHORT_DATETIME_FORMAT")
-                run_data: Dict = loads(usage_event.run_data)
+                run_data: Dict = loads(usage_run_data)
                 for question_key, question in run_data.items():
                     if "user_input" in question:
                         if question["type"] == "group":
@@ -235,7 +243,7 @@ def usage_data_history(request, tool_id):
                         usage_data["project"] = usage_event.project.name
                     table_result.add_row(usage_data)
             except JSONDecodeError:
-                tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
+                tool_control_logger.debug("error decoding run_data: " + usage_run_data)
     if csv_export:
         response = table_result.to_csv()
         filename = f"tool_usage_data_export_{export_format_datetime()}.csv"
@@ -250,6 +258,7 @@ def usage_data_history(request, tool_id):
             "usage_data_table": table_result,
             "data_history_user": User.objects.get(id=user_id) if user_id else None,
             "show_project_info": show_project_info or False,
+            "show_run_data": show_run_data,
             "users": User.objects.filter(is_active=True),
         }
         return render(request, "tool_control/usage_data.html", dictionary)

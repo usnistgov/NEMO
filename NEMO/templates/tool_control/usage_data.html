@@ -38,7 +38,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="row">
+                <div class="row" style="margin-bottom: 15px">
                     <div class="container">
                         <div class="form-group extra-side-padding">
                             <label for="user_search">Filter by user:</label>
@@ -50,6 +50,16 @@
                         </div>
                         <div class="checkbox">
                             <label style="padding-left: 20px"><input type="checkbox" name="show_project_info" {% if show_project_info %}checked{% endif %}> Show project information</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="container">
+                        <div class="radio extra-side-padding">
+                            <label><input type="radio" name="show_run_data" value="pre" {% if show_run_data == "pre" %}checked{% endif %}> Show Pre-Run Data</label>
+                        </div>
+                        <div class="radio extra-side-padding">
+                            <label><input type="radio" name="show_run_data" value="post" {% if show_run_data != "pre" %}checked{% endif %}> Show Run Data</label>
                         </div>
                     </div>
                 </div>
