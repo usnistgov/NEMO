@@ -263,7 +263,7 @@ class ConfigurationViewSet(ModelViewSet):
         "tool": ["exact", "in", "isnull"],
         "advance_notice_limit": ["exact", "in", "gte", "gt", "lte", "lt"],
         "display_order": ["exact", "in", "gte", "gt", "lte", "lt"],
-        "maintainers": ["exact", "in", "isnull"],
+        "maintainers": ["exact", "isnull"],
         "qualified_users_are_maintainers": ["exact"],
         "exclude_from_configuration_agenda": ["exact"],
         "enabled": ["exact"],
