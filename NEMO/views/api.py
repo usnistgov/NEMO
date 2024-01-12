@@ -246,9 +246,9 @@ class ResourceViewSet(ModelViewSet):
         "id": ["exact", "in"],
         "name": ["exact", "iexact"],
         "available": ["exact"],
-        "fully_dependent_tools": ["in"],
-        "partially_dependent_tools": ["in"],
-        "dependent_areas": ["in"],
+        "fully_dependent_tools": ["exact"],
+        "partially_dependent_tools": ["exact"],
+        "dependent_areas": ["exact"],
     }
 
 
@@ -306,7 +306,7 @@ class ReservationViewSet(ModelViewSet):
         "missed": ["exact"],
         "validated": ["exact"],
         "validated_by": ["exact", "in", "isnull"],
-        "question_data": ["isempty"],
+        "question_data": ["isnull", "isempty"],
     }
 
 
