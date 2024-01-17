@@ -100,6 +100,20 @@ def calendar(request, item_type=None, item_id=None):
     calendar_all_areastools = CalendarCustomization.get("calendar_all_areastools")
     calendar_qualified_tools = CalendarCustomization.get("calendar_qualified_tools")
 
+    # Create reservation confirmation setting
+    create_reservation_confirmation_default = CalendarCustomization.get_bool("create_reservation_confirmation")
+    create_reservation_confirmation_override = user.get_preferences().create_reservation_confirmation_override
+    create_reservation_confirmation = create_reservation_confirmation_default ^ create_reservation_confirmation_override
+
+    # Change reservation confirmation setting
+    change_reservation_confirmation_default = CalendarCustomization.get_bool("change_reservation_confirmation")
+    change_reservation_confirmation_override = user.get_preferences().change_reservation_confirmation_override
+    change_reservation_confirmation = change_reservation_confirmation_default ^ change_reservation_confirmation_override
+
+    # Reservation confirmation date and time settings
+    reservation_confirmation_date_format = CalendarCustomization.get("reservation_confirmation_date_format")
+    reservation_confirmation_time_format = CalendarCustomization.get("reservation_confirmation_time_format")
+
     dictionary = {
         "rendered_item_tree_html": rendered_item_tree_html,
         "tools": list(tools),
@@ -118,6 +132,10 @@ def calendar(request, item_type=None, item_id=None):
         "calendar_all_areas": calendar_all_areas,
         "calendar_all_areastools": calendar_all_areastools,
         "calendar_qualified_tools": calendar_qualified_tools,
+        "create_reservation_confirmation": create_reservation_confirmation,
+        "change_reservation_confirmation": change_reservation_confirmation,
+        "reservation_confirmation_date_format": reservation_confirmation_date_format,
+        "reservation_confirmation_time_format": reservation_confirmation_time_format,
         "self_login": False,
         "self_logout": False,
     }
