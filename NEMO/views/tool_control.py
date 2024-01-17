@@ -107,8 +107,7 @@ def tool_status(request, tool_id):
         "post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
         "show_broadcast_upcoming_reservation": user_is_staff
         or (user_is_qualified and tool_control_broadcast_upcoming_reservation_enabled),
-        "has_pre_usage_questions": True if tool.pre_usage_questions else False,
-        "has_usage_questions": True if tool.pre_usage_questions or tool.post_usage_questions else False,
+        "has_usage_questions": True if tool.pre_usage_questions or tool.post_usage_questions else False
     }
 
     try:
@@ -178,7 +177,7 @@ def usage_data_history(request, tool_id):
     if not last and not start and not end:
         # Default to last 25 records
         last = 25
-    usage_events = UsageEvent.objects.filter(tool_id=tool_id, end__isnull=False).order_by("-end")
+    usage_events = UsageEvent.objects.filter(tool_id=tool_id).order_by("-start")
     if start:
         usage_events = usage_events.filter(end__gte=start)
     if end:
@@ -407,12 +406,13 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     try:
         new_usage_event.pre_run_data = dynamic_form.extract(request)
     except RequiredUnansweredQuestionsException as e:
-        if (user.is_staff or user.is_user_office) and user != new_usage_event.operator and new_usage_event.user != user:
-            # if a staff is forcing somebody off the tool and there are required questions, send an email and proceed
-            new_usage_event.pre_run_data = e.pre_run_data
-            # email_managers_required_questions_disable_tool(new_usage_event.operator, user, tool, e.questions)
-        else:
             return HttpResponseBadRequest(str(e))
+
+    try:
+        dynamic_form.charge_for_consumables(new_usage_event, new_usage_event.pre_run_data, request)
+    except Exception as e:
+        return HttpResponseBadRequest(str(e))
+    dynamic_form.update_tool_counters(new_usage_event.pre_run_data, tool.id)
 
     new_usage_event.save()
 
@@ -471,7 +471,7 @@ def disable_tool(request, tool_id):
             return HttpResponseBadRequest(str(e))
 
     try:
-        dynamic_form.charge_for_consumables(current_usage_event, request)
+        dynamic_form.charge_for_consumables(current_usage_event, current_usage_event.run_data, request)
     except Exception as e:
         return HttpResponseBadRequest(str(e))
     dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)

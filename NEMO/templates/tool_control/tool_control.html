@@ -89,11 +89,7 @@
 			$(".project-choice").removeClass('active');
 			$(element).addClass('active');
 			$("#project_id").val(project_id);
-            let hasPreUsageQuestions =$("#has_pre_usage_questions").val();
-            if (hasPreUsageQuestions === "True"){
-                $("#start button").prop("disabled", true);
-                $("#pre_usage_questions").show();
-            }
+            $("#pre_usage_questions").show();
             $("#start").show();
 		}
 

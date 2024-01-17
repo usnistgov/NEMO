@@ -6,11 +6,7 @@
 	<h4>Tool usage will be billed to the project named &quot;{{ active_projects.0 }}&quot;.</h4>
 	<input type="hidden" id="project_id" value="{{ active_projects.0.id }}">
 	<script>
-		let hasPreUsageQuestions =$("#has_pre_usage_questions").val();
-            if (hasPreUsageQuestions === "True"){
-                $("#start button").prop("disabled", true);
-                $("#pre_usage_questions").show();
-            }
+        $("#pre_usage_questions").show();
         $("#start").show();
 	</script>
 {% else %}
