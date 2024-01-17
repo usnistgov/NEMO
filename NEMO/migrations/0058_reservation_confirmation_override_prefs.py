@@ -4,20 +4,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0057_version_5_3_0'),
+        ("NEMO", "0057_version_5_3_0"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='userpreferences',
-            name='change_reservation_confirmation_override',
-            field=models.BooleanField(default=False, help_text='Override default move/resize reservation confirmation setting', verbose_name='change_reservation_confirmation_override'),
+            model_name="userpreferences",
+            name="change_reservation_confirmation_override",
+            field=models.BooleanField(
+                default=False,
+                help_text="Override default move/resize reservation confirmation setting",
+            ),
         ),
         migrations.AddField(
-            model_name='userpreferences',
-            name='create_reservation_confirmation_override',
-            field=models.BooleanField(default=False, help_text='Override default create reservation confirmation setting', verbose_name='create_reservation_confirmation_override'),
+            model_name="userpreferences",
+            name="create_reservation_confirmation_override",
+            field=models.BooleanField(
+                default=False,
+                help_text="Override default create reservation confirmation setting",
+            ),
         ),
     ]
