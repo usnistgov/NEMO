@@ -349,22 +349,17 @@
 
     function update_start_button()
 	{
-        console.log('update_start_button');
 		if(document.querySelector('#tool_control').checkValidity())
 		{
-			//$('#answer_to_proceed').hide();
-            console.log('gtg');
 			$("#start_reserve").show();
 		}
 		else
 		{
-			//$('#answer_to_proceed').show();
 			$("#start_reserve").hide();
 		}
 	}
 
 	update_stop_button();
-    //update_start_button();
 	$('body').on('question-group-changed', update_stop_button);
 	$('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_stop_button);
     $('body').on('question-group-changed', update_start_button);
