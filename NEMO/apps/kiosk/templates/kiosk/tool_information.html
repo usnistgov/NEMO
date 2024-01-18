@@ -258,7 +258,11 @@
 	{% else %}
 		{% if customer.is_staff or customer.is_service_personnel and tool in customer.qualifications.all or tool.ready_to_use and tool in customer.qualifications.all %}
 			{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
-			<div id="start_reserve" style="display:none; margin-top:20px">
+			{% if pre_usage_questions %}
+				<h2>Pre usage questions</h2>
+				{{ pre_usage_questions }}
+			{% endif %}
+            <div id="start_reserve" style="display:none; margin-top:20px">
 				{% if tool.is_parent_tool %}
 					<h4>You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:</h4>
 					<div class="col-xs-6" style="margin-top: 15px">
@@ -343,9 +347,28 @@
 		}
 	}
 
+    function update_start_button()
+	{
+        console.log('update_start_button');
+		if(document.querySelector('#tool_control').checkValidity())
+		{
+			//$('#answer_to_proceed').hide();
+            console.log('gtg');
+			$("#start_reserve").show();
+		}
+		else
+		{
+			//$('#answer_to_proceed').show();
+			$("#start_reserve").hide();
+		}
+	}
+
 	update_stop_button();
+    //update_start_button();
 	$('body').on('question-group-changed', update_stop_button);
 	$('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_stop_button);
+    $('body').on('question-group-changed', update_start_button);
+	$('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_start_button);
 	$('#downtime').numpad({'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': true});
 	$('#delayed_logoff_help').popover();
 	revert(60);

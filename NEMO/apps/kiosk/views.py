@@ -66,7 +66,23 @@ def do_enable_tool(request, tool_id):
     new_usage_event.user = customer
     new_usage_event.project = project
     new_usage_event.tool = tool
+
+    # Collect post-usage questions
+    dynamic_form = DynamicForm(tool.pre_usage_questions)
+
+    try:
+        new_usage_event.pre_run_data = dynamic_form.extract(request)
+    except RequiredUnansweredQuestionsException as e:
+            dictionary = {"message": str(e), "delay": 10}
+            return render(request, "kiosk/acknowledgement.html", dictionary)
     new_usage_event.save()
+
+    try:
+        dynamic_form.charge_for_consumables(new_usage_event, new_usage_event.pre_run_data,request)
+    except Exception as e:
+        dictionary = {"message": str(e), "delay": 10}
+        return render(request, "kiosk/acknowledgement.html", dictionary)
+    dynamic_form.update_tool_counters(new_usage_event.pre_run_data, tool.id)
 
     dictionary = {"message": "You can now use the {}".format(tool), "badge_number": customer.badge_number}
     return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -325,6 +341,9 @@ def tool_information(request, tool_id, user_id, back):
         "customer": customer,
         "tool": tool,
         "rendered_configuration_html": tool.configuration_widget(customer),
+        "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render(
+            "tool_usage_group_question", tool.id, virtual_inputs=True
+        ),
         "post_usage_questions": DynamicForm(tool.post_usage_questions).render(
             "tool_usage_group_question", tool.id, virtual_inputs=True
         ),
