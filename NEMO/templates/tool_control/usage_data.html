@@ -5,6 +5,7 @@
 	<input type="hidden" name="start" id="hidden_data_start"/>
 	<input type="hidden" name="end" id="hidden_data_end"/>
     <div class="container-fluid">
+
         <div class="row">
             <div class="col-md-8">
                 <div class="row" style="margin-bottom: 15px">
@@ -53,51 +54,97 @@
                         </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="container">
-                        <div class="radio extra-side-padding">
-                            <label><input type="radio" name="show_run_data" value="pre" {% if show_run_data == "pre" %}checked{% endif %}> Show Pre-Run Data</label>
-                        </div>
-                        <div class="radio extra-side-padding">
-                            <label><input type="radio" name="show_run_data" value="post" {% if show_run_data != "pre" %}checked{% endif %}> Show Run Data</label>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="col-md-4">
-                <div class="form-group pull-right extra-side-padding">
-                    {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', true);" %}
-                </div>
                 <div class="form-group pull-right extra-side-padding">
                     {% button type="save" submit=False value="Update" onclick="load_usage_data('"|concat:tool_id|concat:"');" icon="glyphicon-refresh" %}
                 </div>
             </div>
         </div>
+
     </div>
 </form>
-
-{% if usage_data_table.rows %}
-	<table class="table table-bordered table-condensed" style="margin-top: 10px">
-		<thead>
-			<tr>
-				{% for header in usage_data_table.flat_headers %}
-					<th>{{ header }}</th>
-				{% endfor %}
-			</tr>
-		</thead>
-		<tbody>
-			{% for row in usage_data_table.flat_rows %}
-				<tr>
-					{% for item in row %}
-						<td>{% if item|class_name == "list" %}{{ item|join:", " }}{% else %}{{ item }}{% endif %}</td>
-					{% endfor %}
-				</tr>
-			{% endfor %}
-		</tbody>
-	</table>
+{% if run_data_table.rows or pre_run_data_table.rows %}
+<ul class="nav nav-tabs" id="usage-tabs">
+    {% if pre_run_data_table.rows  %}
+    <li class="{% if pre_run_data_table.rows %}active{% endif %}">
+        <a  data-toggle="tab" href="#pre-run-data-tab">Pre-Run Data</a>
+    </li>
+    {% endif %}
+    {% if run_data_table.rows  %}
+    <li class="{% if not pre_run_data_table.rows %}active{% endif %}">
+        <a data-toggle="tab" href="#run-data-tab">Run Data</a>
+    </li>
+    {% endif %}
+</ul>
+<div class="tab-content" style="margin-bottom: 0;">
+    <div class="tab-pane {% if pre_run_data_table.rows %}active{% endif %}" id="pre-run-data-tab">
+        <div class="col-md-12">
+            <div class="form-group pull-right extra-side-padding" style="padding-top: 10px">
+                {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', 'pre-run');" %}
+            </div>
+        </div>
+        <div class="panel-body">
+            {% if pre_run_data_table.rows %}
+                <table class="table table-bordered table-condensed" style="margin-top: 10px">
+                    <thead>
+                        <tr>
+                            {% for header in pre_run_data_table.flat_headers %}
+                                <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in pre_run_data_table.flat_rows %}
+                            <tr>
+                                {% for item in row %}
+                                    <td>{% if item|class_name == "list" %}{{ item|join:", " }}{% else %}{{ item }}{% endif %}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <span class="italic">No pre-run data was found between these dates</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="tab-pane {% if not pre_run_data_table.rows %}active{% endif %}" id="run-data-tab">
+        <div class="col-md-12">
+            <div class="form-group pull-right extra-side-padding" style="padding-top: 10px">
+                {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', 'run');" %}
+            </div>
+        </div>
+        <div class="panel-body">
+            {% if run_data_table.rows %}
+                <table class="table table-bordered table-condensed" style="margin-top: 10px">
+                    <thead>
+                        <tr>
+                            {% for header in run_data_table.flat_headers %}
+                                <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in run_data_table.flat_rows %}
+                            <tr>
+                                {% for item in row %}
+                                    <td>{% if item|class_name == "list" %}{{ item|join:", " }}{% else %}{{ item }}{% endif %}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <span class="italic">No run data was found between these dates</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% else %}
-	<span class="italic">No usage data was found between these dates</span>
+    <span class="italic">No usage data was found between these dates</span>
 {% endif %}
+
 
 <script>
     function clear_selected_user()

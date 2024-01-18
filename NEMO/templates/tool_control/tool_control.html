@@ -314,7 +314,7 @@
 			$("#usage_data").load("{% url 'usage_data_history' 999 %}".replace('999', tool_id), data, failure_dialog);
 			if (csv_export)
 			{
-				$('#hidden_data_csv').val('true');
+				$('#hidden_data_csv').val(csv_export);
 				$('#hidden_data_start').val(data.start);
 				$('#hidden_data_end').val(data.end);
 				$('#usage_data_form').submit();
