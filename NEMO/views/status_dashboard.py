@@ -427,7 +427,10 @@ def create_area_summary(area_tree: ModelTreeHelper = None, add_resources=True, a
                 customer_display = f'<span class="success-highlight">{str(occupant.customer)}</span>'
             elif occupant.customer.is_service_personnel:
                 customer_display = f'<span class="warning-highlight">{str(occupant.customer)}</span>'
-            elif occupant.customer.is_logged_in_area_without_reservation():
+            elif (
+                occupant.customer.is_logged_in_area_without_reservation()
+                or occupant.customer.is_logged_in_area_outside_authorized_schedule()
+            ):
                 customer_display = f'<span class="danger-highlight">{str(occupant.customer)}</span>'
             else:
                 customer_display = str(occupant.customer)

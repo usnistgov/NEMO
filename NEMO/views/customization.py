@@ -20,7 +20,15 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
-from NEMO.models import BadgeReader, ConsumableCategory, Customization, Notification, Project, RecurringConsumableCharge
+from NEMO.models import (
+    BadgeReader,
+    ConsumableCategory,
+    Customization,
+    Notification,
+    Project,
+    RecurringConsumableCharge,
+    UserPreferences,
+)
 from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
 
@@ -258,13 +266,34 @@ class CalendarCustomization(CustomizationBase):
         "calendar_all_areastools": "",
         "calendar_outage_recurrence_limit": "90",
         "calendar_qualified_tools": "",
+        "calendar_configuration_in_reservations": "",
+        "create_reservation_confirmation": "",
+        "change_reservation_confirmation": "",
+        "reservation_confirmation_date_format": "MMMM D, yyyy",
+        "reservation_confirmation_time_format": "h:mma",
     }
+
+    @classmethod
+    def set(cls, name: str, value):
+        if name == "create_reservation_confirmation" or name == "change_reservation_confirmation":
+            value_changed = value != cls.get(name)
+            if value_changed:
+                if name == "create_reservation_confirmation":
+                    UserPreferences.objects.filter(create_reservation_confirmation_override=True).update(
+                        create_reservation_confirmation_override=False
+                    )
+                elif name == "change_reservation_confirmation":
+                    UserPreferences.objects.filter(change_reservation_confirmation_override=True).update(
+                        change_reservation_confirmation_override=False
+                    )
+        super().set(name, value)
 
 
 @customization(key="dashboard", title="Status dashboard")
 class StatusDashboardCustomization(CustomizationBase):
     variables = {
         "dashboard_display_not_qualified_areas": "",
+        "dashboard_hide_project": "",
         "dashboard_staff_status_first_day_of_week": "1",
         "dashboard_staff_status_staff_only": "",
         "dashboard_staff_status_weekdays_only": "",
@@ -410,11 +439,13 @@ class ToolCustomization(CustomizationBase):
         "tool_control_hide_data_history_users": "",
         "tool_control_configuration_setting_template": "{{ current_setting }}",
         "tool_control_broadcast_upcoming_reservation": "",
+        "tool_control_show_task_details": "",
         "tool_qualification_reminder_days": "",
         "tool_qualification_expiration_days": "",
         "tool_qualification_expiration_never_used_days": "",
         "tool_qualification_cc": "",
         "tool_problem_max_image_size_pixels": "750",
+        "tool_control_show_qualified_users_to_all": "",
         "tool_problem_send_to_all_qualified_users": "",
         "tool_configuration_near_future_days": "1",
         "tool_reservation_policy_superusers_bypass": "",

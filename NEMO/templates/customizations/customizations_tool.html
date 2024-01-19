@@ -100,10 +100,26 @@
             </div>
         </div>
         <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Qualified users list</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="tool_control_show_qualified_users_to_all" name="tool_control_show_qualified_users_to_all" {% if tool_control_show_qualified_users_to_all %}checked{% endif %} value="enabled"> check to allow everyone to see who is qualified on a tool</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">Email users with upcoming reservation</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
                     <label><input type="checkbox" id="tool_control_broadcast_upcoming_reservation" name="tool_control_broadcast_upcoming_reservation" {% if tool_control_broadcast_upcoming_reservation %}checked{% endif %} value="enabled"> Allow qualified users on a tool to send a broadcast email to users with an upcoming reservation</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Show task details by default</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="tool_control_show_task_details" name="tool_control_show_task_details" {% if tool_control_show_task_details %}checked{% endif %} value="enabled"> Show task details, such as who created the task and when, by default (click on the task to collapse/hide)</label>
                 </div>
             </div>
         </div>

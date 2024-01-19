@@ -480,6 +480,7 @@ class DynamicForm:
         # This method will check for required unanswered questions and if some are found, will fill them with blank and return them
         required_unanswered_questions = []
         user_input = results[question.name].get("user_input")
+        user_input = user_input.strip() if user_input and isinstance(user_input, str) else user_input
         if not isinstance(question, PostUsageGroupQuestion) and question.required and not user_input:
             results[question.name]["user_input"] = ""
             required_unanswered_questions.append(question)

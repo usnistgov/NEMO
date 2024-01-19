@@ -17,7 +17,8 @@
             {% if display_name %}
 			    "title": "{{x.reservation_item.name|escapejs}} ({{x.user.username|escapejs}})\n{{ x.title|escapejs }}",
             {% else %}
-                "title": "{{ x.title|default:x.user|escapejs }}",
+                "title": "{{ x.title|default:x.user|escapejs }}{% if display_configuration %}\n{{ x.get_configuration_options_display|escapejs }}{% endif %}",
+                {% if display_configuration %}"colors": ["{{ x.get_configuration_options_colors|join:'","' }}"],{% endif %}
             {% endif %}
 			"color": {% if x.user.id == user.id %}"#3a87ad"{% else %}"#88B7CD"{% endif %},
 		{% endif %}

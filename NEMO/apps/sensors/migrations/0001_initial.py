@@ -128,7 +128,7 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "ordering": ["server"],
+                "ordering": ["name"],
             },
         ),
         migrations.AddField(

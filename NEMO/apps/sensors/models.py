@@ -45,7 +45,7 @@ class SensorCard(BaseModel):
     enabled = models.BooleanField(blank=False, null=False, default=True)
 
     class Meta:
-        ordering = ["server"]
+        ordering = ["name"]
 
     def __str__(self):
         card_name = self.name + ": " if self.name else ""

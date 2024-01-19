@@ -382,6 +382,14 @@ class UserPreferences(BaseModel):
         max_length=200,
         help_text="The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.",
     )
+    create_reservation_confirmation_override = models.BooleanField(
+        default=False,
+        help_text="Override default create reservation confirmation setting",
+    )
+    change_reservation_confirmation_override = models.BooleanField(
+        default=False,
+        help_text="Override default move/resize reservation confirmation setting",
+    )
     email_send_recurring_charges_reminder_emails = models.PositiveIntegerField(
         default=EmailNotificationType.BOTH_EMAILS,
         choices=EmailNotificationType.Choices,
@@ -955,6 +963,17 @@ class User(BaseModel, PermissionsMixin):
             return AreaAccessRecord.objects.get(customer=self, staff_charge=None, end=None)
         except AreaAccessRecord.DoesNotExist:
             return None
+
+    def is_logged_in_area_outside_authorized_schedule(self) -> bool:
+        # Checks whether a user is logged in past his allowed schedule time
+        access_record = self.area_access_record()
+        if access_record:
+            area = access_record.area
+            physical_access_exist = PhysicalAccessLevel.objects.filter(area=area, user__isnull=False).exists()
+            if physical_access_exist:
+                return not any(
+                    [access_level.accessible() for access_level in self.accessible_access_levels_for_area(area)]
+                )
 
     def is_logged_in_area_without_reservation(self) -> bool:
         access_record = self.area_access_record()
@@ -1832,9 +1851,6 @@ class Tool(SerializationByNameModel):
     def active_counters(self):
         return self.toolusagecounter_set.filter(is_active=True)
 
-    def tool_documents(self):
-        return ToolDocuments.objects.filter(tool=self).order_by()
-
     def get_tool_info_html(self):
         content = escape(loader.render_to_string("snippets/tool_info.html", {"tool": self}))
         return f'<a href="javascript:;" data-title="{content}" data-tooltip-id="tooltip-tool-{self.id}" data-placement="bottom" class="tool-info-tooltip info-tooltip-container"><span class="glyphicon glyphicon-send small-icon"></span>{self.name_or_child_in_use_name()}</a>'
@@ -2447,6 +2463,9 @@ class Account(SerializationByNameModel):
     def sorted_projects(self):
         return self.project_set.all().order_by("-active", "name")
 
+    def display_with_status(self):
+        return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
+
     def __str__(self):
         return str(self.name)
 
@@ -2479,6 +2498,9 @@ class Project(SerializationByNameModel):
         pis = ", ".join([pi.get_name() for pi in self.manager_set.all()])
         pis = f" (PI{'s' if self.manager_set.count() > 1 else ''}: {pis})" if pis else ""
         return f"{self.name}{pis}"
+
+    def display_with_status(self):
+        return f"{'[INACTIVE] ' if not self.active else ''}{self.name}"
 
     def __str__(self):
         return str(self.name)

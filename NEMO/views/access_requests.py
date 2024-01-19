@@ -47,7 +47,9 @@ def access_requests(request):
     user: User = request.user
     max_requests = quiet_int(UserRequestsCustomization.get("access_requests_display_max"), None)
     physical_access_requests = TemporaryPhysicalAccessRequest.objects.filter(deleted=False)
-    physical_access_requests = physical_access_requests.order_by("-end_time")
+    physical_access_requests = physical_access_requests.order_by("-end_time").prefetch_related(
+        "creator", "other_users", "reviewer", "physical_access_level__area"
+    )
 
     # For some reason doing an "or" filtering with manytomany field returns duplicates, and using distinct() returns nothing...
     other_user_physical_access_requests = physical_access_requests.filter(other_users__in=[user]).distinct()

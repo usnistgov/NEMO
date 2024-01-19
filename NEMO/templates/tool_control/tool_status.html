@@ -171,13 +171,13 @@
 							{% else %}
 								<span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight" title="Click to toggle details about this task"></span>
 							{% endif %}
-							<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+							<span class="glyphicon glyphicon-chevron-{% if tool_control_show_task_details %}down{% else %}right{% endif %} pull-left chevron"></span>
 						</a>
 						<div class="media-body">
 							{% if t.problem_category %}<span class="media-heading">{{ t.problem_category }}</span>{% endif %}
 							<span class="media-middle">{{ t.problem_description }}</span>
 							{% if t.estimated_resolution_time %}<span class="media-middle">Estimated resolution time is {{ t.estimated_resolution_time }}.</span>{% endif %}
-							<div id="task_{{ t.id }}_details" class="collapse">
+							<div id="task_{{ t.id }}_details" class="collapse{% if tool_control_show_task_details %} in{% endif %}">
 								<span class="media-bottom">
 									This task was created by {{ t.creator }} on {{ t.creation_time }}.
 									{% if user.is_staff %}
@@ -375,7 +375,7 @@
             {% endfor %}
         {% endif %}
 		
-		{% if tool.description or tool.image or tool.tool_documents %}
+		{% if tool.description or tool.image or tool.tooldocuments_set.all %}
 			<div style="background-color: #f5f5f5;">
 				<div class="row" style="margin:0; padding: 15px 0">
 					{% if tool.description %}
@@ -388,11 +388,11 @@
 						<img src="{{ tool.image.url }}" alt="Tool image" class="img-fluid img-thumbnail" style="max-width:300px ;max-height:300px" >
 					</div>
 				{% endif %}
-                {% if tool.tool_documents %}
+                {% if tool.tooldocuments_set.all %}
                     <div class="col-md-12">
                         Documents:
                         <ul>
-                        {% for tool_doc in tool.tool_documents %}
+                        {% for tool_doc in tool.tooldocuments_set.all %}
                             <li><a href="{{ tool_doc.link }}" target="_blank">{{ tool_doc.filename }}</a></li>
                         {% endfor %}
                         </ul>
@@ -456,6 +456,35 @@
 			<div id="qualified_users_container" class="media">
 				{% include 'tool_control/qualified_users.html' %}
 			</div>
+		{% elif user in tool.superusers.all or "tool"|customization:"tool_control_show_qualified_users_to_all" == "enabled" %}
+            {% with tool.user_set.all as qualified_users %}
+                {% if qualified_users %}
+                    <div id="qualified_users_container" class="media">
+                        <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#qualified_users" class="pointer">
+                            <span class="glyphicon glyphicon-user pull-left notification-icon primary-highlight"></span>
+                            <span class="glyphicon {% if expanded %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
+                        </a>
+                        <div class="media-body">
+                            <h4 class="media-heading">Qualified users</h4>
+                            <div id="qualified_users" class="collapse {% if expanded %}in{% endif %}">
+                                <p>Only qualified users are able to operate the {{ tool.name }}.</p>
+                                <p>
+                                    Current qualified users are listed below. Inactive qualified users are <span class="strikethrough light-grey">crossed out</span>.<br>
+                                </p>
+                                    <ul>
+                                        {% for u in qualified_users %}
+                                            {% if u.is_active %}
+                                                <li class="">{{ u }}</li>
+                                            {% else %}
+                                                <li class="grey"><span class="strikethrough light-grey">{{ u }}</span></li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endwith %}
 		{% endif %}
 		{% if tool.required_resource_set.exists %}
 			<div class="media">
