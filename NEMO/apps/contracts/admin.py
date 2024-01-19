@@ -1,7 +1,6 @@
 from django import forms
 from django.contrib import admin
 
-from NEMO.mixins import ModelAdminRedirectMixin
 from NEMO.apps.contracts.customization import ContractsCustomization
 from NEMO.apps.contracts.models import (
     ContractorAgreement,
@@ -11,6 +10,7 @@ from NEMO.apps.contracts.models import (
     ServiceContract,
 )
 from NEMO.apps.contracts.views.contracts import export_contractor_agreements, export_procurements
+from NEMO.mixins import ModelAdminRedirectMixin
 
 
 @admin.action(description="Export selected procurements in CSV")
@@ -88,7 +88,10 @@ class ContractorAgreementDocumentsInline(admin.TabularInline):
 class ContractorAgreementAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["contract"].empty_label = ContractsCustomization.get("contracts_contractors_default_empty_label")
+        if "contract" in self.fields:
+            self.fields["contract"].empty_label = ContractsCustomization.get(
+                "contracts_contractors_default_empty_label"
+            )
 
 
 @admin.register(ContractorAgreement)

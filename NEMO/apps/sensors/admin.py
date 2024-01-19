@@ -163,7 +163,10 @@ class SensorCategoryAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
             children_ids = [child.id for child in self.instance.all_children()]
-            self.fields["parent"].queryset = SensorCategory.objects.exclude(id__in=[self.instance.pk, *children_ids])
+            if "parent" in self.fields:
+                self.fields["parent"].queryset = SensorCategory.objects.exclude(
+                    id__in=[self.instance.pk, *children_ids]
+                )
 
 
 @register(SensorCategory)
