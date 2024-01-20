@@ -250,7 +250,7 @@
 		<div style="width: 100%;padding-top: 40px;border-bottom: 1px dashed lightgray"></div>
 		<h1>Make a reservation</h1>
 		{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
-		<div id="start_reserve" class="col-xs-offset-3 col-xs-6" style="display: none;margin-top:30px">
+		<div id="stop_reserve" class="col-xs-offset-3 col-xs-6" style="margin-top:30px">
 			<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
 				<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }}
 			</div>
@@ -259,8 +259,10 @@
 		{% if customer.is_staff or customer.is_service_personnel and tool in customer.qualifications.all or tool.ready_to_use and tool in customer.qualifications.all %}
 			{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
 			{% if pre_usage_questions %}
-				<h2>Pre usage questions</h2>
+				<div id="pre_usage_questions" style="display:none">
+                <h2>Pre usage questions</h2>
 				{{ pre_usage_questions }}
+                </div>
 			{% endif %}
             <div id="start_reserve" style="display:none; margin-top:20px">
 				{% if tool.is_parent_tool %}
