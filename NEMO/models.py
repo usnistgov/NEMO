@@ -1551,6 +1551,7 @@ class Tool(SerializationByNameModel):
     def pre_usage_questions(self, value):
         self.raise_setter_error_if_child_tool("pre_usage_questions")
         self._pre_usage_questions = value
+
     @property
     def post_usage_questions(self):
         return self.parent_tool.post_usage_questions if self.is_child_tool() else self._post_usage_questions

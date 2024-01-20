@@ -206,6 +206,7 @@ class ToolViewSet(ModelViewSet):
         "_location": ["exact", "iexact"],
         "_requires_area_access": ["exact", "isnull"],
         "_post_usage_questions": ["isempty"],
+        "_pre_usage_questions": ["isempty"],
     }
 
 

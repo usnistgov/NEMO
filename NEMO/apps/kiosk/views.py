@@ -73,12 +73,12 @@ def do_enable_tool(request, tool_id):
     try:
         new_usage_event.pre_run_data = dynamic_form.extract(request)
     except RequiredUnansweredQuestionsException as e:
-            dictionary = {"message": str(e), "delay": 10}
-            return render(request, "kiosk/acknowledgement.html", dictionary)
+        dictionary = {"message": str(e), "delay": 10}
+        return render(request, "kiosk/acknowledgement.html", dictionary)
     new_usage_event.save()
 
     try:
-        dynamic_form.charge_for_consumables(new_usage_event, new_usage_event.pre_run_data,request)
+        dynamic_form.charge_for_consumables(new_usage_event, new_usage_event.pre_run_data, request)
     except Exception as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -138,7 +138,7 @@ def do_disable_tool(request, tool_id):
             return render(request, "kiosk/acknowledgement.html", dictionary)
 
     try:
-        dynamic_form.charge_for_consumables(current_usage_event, current_usage_event.run_data,request)
+        dynamic_form.charge_for_consumables(current_usage_event, current_usage_event.run_data, request)
     except Exception as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -198,7 +198,6 @@ def reserve_tool(request):
     tool_config = tool.is_configurable()
     needs_extra_config = reservation_questions or tool_config
     if needs_extra_config and not request.POST.get("configured") == "true":
-
         dictionary.update(tool.get_configuration_information(user=customer, start=reservation.start))
         dictionary.update(
             {

@@ -204,6 +204,7 @@ class ToolAdmin(admin.ModelAdmin):
         "operational_display",
         "problematic",
         "is_configurable",
+        "has_pre_usage_questions",
         "has_post_usage_questions",
         "id",
     )
@@ -283,7 +284,11 @@ class ToolAdmin(admin.ModelAdmin):
         ("Dependencies", {"fields": ("required_resources", "nonrequired_resources")}),
     )
 
-    @admin.display(description="Questions", ordering="_post_usage_questions", boolean=True)
+    @admin.display(description="Pre Questions", ordering="_pre_usage_questions", boolean=True)
+    def has_pre_usage_questions(self, obj: Tool):
+        return True if obj.pre_usage_questions else False
+
+    @admin.display(description="Post Questions", ordering="_post_usage_questions", boolean=True)
     def has_post_usage_questions(self, obj: Tool):
         return True if obj.post_usage_questions else False
 

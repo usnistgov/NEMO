@@ -343,10 +343,10 @@
                         {% endif %}
                     </div>
 					<div id="project_choice"></div>
-                    <div id="pre_usage_questions" style="display:none">{{ pre_usage_questions }}</div>
 				{% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
 					{% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
 				{% endif %}
+                    <div id="pre_usage_questions" style="display:none">{{ pre_usage_questions }}</div>
 				{% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}
 					<div id="start" style="display:none">
 						{% if tool.is_parent_tool %}
