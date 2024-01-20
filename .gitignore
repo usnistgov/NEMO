@@ -13,4 +13,4 @@ nemo.log
 .DS_Store
 conf/
 *.log
-/.vs/NEMO
+.vs/
