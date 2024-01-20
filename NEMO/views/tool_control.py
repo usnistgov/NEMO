@@ -108,7 +108,7 @@ def tool_status(request, tool_id):
         "show_broadcast_upcoming_reservation": user_is_staff
         or (user_is_qualified and tool_control_broadcast_upcoming_reservation_enabled),
         "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
-        "has_usage_questions": True if tool.pre_usage_questions or tool.post_usage_questions else False
+        "has_usage_questions": True if tool.pre_usage_questions or tool.post_usage_questions else False,
     }
 
     try:
@@ -177,7 +177,7 @@ def usage_data_history(request, tool_id):
     if not last and not start and not end:
         # Default to last 25 records
         last = 25
-    usage_events = UsageEvent.objects.filter(tool_id=tool_id).order_by("-start")
+    usage_events = UsageEvent.objects.filter(tool_id=tool_id)
 
     if start:
         usage_events = usage_events.filter(end__gte=start)
@@ -188,12 +188,16 @@ def usage_data_history(request, tool_id):
             usage_events = usage_events.filter(user_id=int(user_id))
         except ValueError:
             pass
+
+    pre_usage_events = usage_events.order_by("-start")
+    post_usage_events = usage_events.filter(end__isnull=False).order_by("-end")
     if last:
         try:
             last = int(last)
         except ValueError:
             last = 25
-        usage_events = usage_events[:last]
+        pre_usage_events = pre_usage_events[:last]
+        post_usage_events = post_usage_events[:last]
 
     table_pre_run_data = BasicDisplayTable()
     table_pre_run_data.add_header(("user", "User"))
@@ -207,12 +211,15 @@ def usage_data_history(request, tool_id):
         table_run_data.add_header(("project", "Project"))
     table_run_data.add_header(("date", "Date"))
 
-    for usage_event in usage_events:
+    for usage_event in pre_usage_events:
         if usage_event.pre_run_data:
-            usage_data = format_usage_data(table_pre_run_data,usage_event, usage_event.pre_run_data, usage_event.start, show_project_info)
+            format_usage_data(
+                table_pre_run_data, usage_event, usage_event.pre_run_data, usage_event.start, show_project_info
+            )
 
+    for usage_event in post_usage_events:
         if usage_event.run_data:
-            usage_data = format_usage_data(table_run_data,usage_event, usage_event.run_data, usage_event.end, show_project_info)
+            format_usage_data(table_run_data, usage_event, usage_event.run_data, usage_event.end, show_project_info)
 
     if csv_export:
         response = table_run_data.to_csv() if csv_export == "run" else table_pre_run_data.to_csv()
@@ -379,7 +386,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     try:
         new_usage_event.pre_run_data = dynamic_form.extract(request)
     except RequiredUnansweredQuestionsException as e:
-            return HttpResponseBadRequest(str(e))
+        return HttpResponseBadRequest(str(e))
 
     new_usage_event.save()
 
@@ -661,7 +668,15 @@ def send_tool_usage_counter_email(counter: ToolUsageCounter):
             to=counter.warning_email,
             email_category=EmailCategory.SYSTEM,
         )
-def format_usage_data(table_result: BasicDisplayTable, usage_event: UsageEvent, usage_run_data: str, date_field: datetime, show_project_info: str):
+
+
+def format_usage_data(
+    table_result: BasicDisplayTable,
+    usage_event: UsageEvent,
+    usage_run_data: str,
+    date_field: datetime,
+    show_project_info: str,
+):
     usage_data = {}
     date_data = format_datetime(date_field, "SHORT_DATETIME_FORMAT")
 
@@ -700,4 +715,3 @@ def format_usage_data(table_result: BasicDisplayTable, usage_event: UsageEvent, 
             table_result.add_row(usage_data)
     except JSONDecodeError:
         tool_control_logger.debug("error decoding run_data: " + usage_run_data)
-    return usage_data
