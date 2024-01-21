@@ -168,9 +168,10 @@ class ToolAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ToolAdminForm, self).__init__(*args, **kwargs)
         # Limit interlock selection to ones not already linked (make sure to include current one)
-        self.fields["_interlock"].queryset = Interlock.objects.filter(
-            Q(id=self.instance._interlock_id) | Q(tool__isnull=True, door__isnull=True)
-        )
+        if "_interlock" in self.fields:
+            self.fields["_interlock"].queryset = Interlock.objects.filter(
+                Q(id=self.instance._interlock_id) | Q(tool__isnull=True, door__isnull=True)
+            )
         if self.instance.pk:
             self.fields["qualified_users"].initial = self.instance.user_set.all()
             self.fields["required_resources"].initial = self.instance.required_resource_set.all()
@@ -512,9 +513,10 @@ class ProjectAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(ProjectAdminForm, self).__init__(*args, **kwargs)
-        self.fields["application_identifier"].label = ProjectsAccountsCustomization.get(
-            "project_application_identifier_name"
-        )
+        if "application_identifier" in self.fields:
+            self.fields["application_identifier"].label = ProjectsAccountsCustomization.get(
+                "project_application_identifier_name"
+            )
         if self.instance.pk:
             self.fields["members"].initial = self.instance.user_set.all()
             self.fields["principal_investigators"].initial = self.instance.manager_set.all()
@@ -1127,9 +1129,10 @@ class DoorAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(DoorAdminForm, self).__init__(*args, **kwargs)
         # Limit interlock selection to ones not already linked (and exclude current one)
-        self.fields["interlock"].queryset = Interlock.objects.filter(
-            Q(id=self.instance.interlock_id) | Q(tool__isnull=True, door__isnull=True)
-        )
+        if "interlock" in self.fields:
+            self.fields["interlock"].queryset = Interlock.objects.filter(
+                Q(id=self.instance.interlock_id) | Q(tool__isnull=True, door__isnull=True)
+            )
 
 
 @register(Door)

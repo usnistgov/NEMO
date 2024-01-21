@@ -241,7 +241,7 @@
 				if (selected_item && selected_item !== 'personal_schedule')
 				{
 					let item = JSON.parse(selected_item)
-				    let url = "{% url 'get_qualified_users' %}?tool_id=" + item.id;
+				    let url = "{% url 'get_qualified_users' %}?tool_id=" + {% if device == 'mobile' %} selected_item {% else %} item.id {% endif %};
 					$("#qualified_users_container").load(url);
 				}
 			}
