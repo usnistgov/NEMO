@@ -268,13 +268,13 @@
 				{% if tool.is_parent_tool %}
 					<h4>You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:</h4>
 					<div class="col-xs-6" style="margin-top: 15px">
-						<div class="alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="enable_tool()">
+						<div class="start_button alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large; display:none" onclick="enable_tool()">
 							<span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}
 						</div>
 					</div>
 					{% for alternate_tool in tool.tool_children_set.all %}
 						<div class="col-xs-6" style="margin-top: 15px">
-							<div class="alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="enable_tool('{{ alternate_tool.id }}')">
+							<div class="start_button alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large; display:none" onclick="enable_tool('{{ alternate_tool.id }}')">
 								<span class="glyphicon glyphicon-play"></span> Start using the {{ alternate_tool.name }}
 							</div>
 						</div>
@@ -286,7 +286,7 @@
 					</div>
 				{% else %}
 					<div class="col-xs-offset-1 col-xs-5">
-						<div class="alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="enable_tool()">
+						<div class="start_button alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large; display:none" onclick="enable_tool()">
 							<span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}
 						</div>
 					</div>
@@ -351,17 +351,20 @@
 
     function update_start_button()
 	{
+		$("#start_reserve").show();
+
 		if(document.querySelector('#tool_control').checkValidity())
 		{
-			$("#start_reserve").show();
+			$(".start_button").show();
 		}
 		else
 		{
-			$("#start_reserve").hide();
+			$(".start_button").hide();
 		}
 	}
 
 	update_stop_button();
+	update_start_button();
 	$('body').on('question-group-changed', update_stop_button);
 	$('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_stop_button);
     $('body').on('question-group-changed', update_start_button);

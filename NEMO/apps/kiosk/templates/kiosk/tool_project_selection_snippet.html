@@ -7,7 +7,7 @@
 	<input type="hidden" name="project_id" value="{{ active_projects.0.id }}">
 	<script>
         $("#pre_usage_questions").show();
-		update_start_button();
+		$("#start_reserve").show();
 	</script>
 {% else %}
 	<h2>{% if tool.in_use %}Associate tool reservation{% else %}Charge tool usage{% endif %} to which project?</h2>
