@@ -197,7 +197,8 @@
 			$(".project-choice").removeClass('active');
 			$(element).addClass('active');
 			$("#project_id").val(project_id);
-			$("#start_reserve").show();
+            $("#pre_usage_questions").show();
+			update_start_button();
 		}
 		function load_choices(badge_number)
 		{

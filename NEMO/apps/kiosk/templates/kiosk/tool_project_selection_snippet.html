@@ -6,6 +6,7 @@
 	<h2>Tool {% if tool.in_use %}reservation will be associated with{% else %}usage will be billed to{% endif %} the project named &quot;{{ active_projects.0 }}&quot;.</h2>
 	<input type="hidden" name="project_id" value="{{ active_projects.0.id }}">
 	<script>
+        $("#pre_usage_questions").show();
 		$("#start_reserve").show();
 	</script>
 {% else %}

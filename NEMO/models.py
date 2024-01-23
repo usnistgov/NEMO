@@ -1250,6 +1250,12 @@ class Tool(SerializationByNameModel):
         default=False,
         help_text='Upon logging off users may enter a delay before another user may use the tool. Some tools require "spin-down" or cleaning time after use.',
     )
+    _pre_usage_questions = models.TextField(
+        db_column="pre_usage_questions",
+        null=True,
+        blank=True,
+        help_text="Before using a tool, questions can be asked. This field will only accept JSON format",
+    )
     _post_usage_questions = models.TextField(
         db_column="post_usage_questions",
         null=True,
@@ -1536,6 +1542,15 @@ class Tool(SerializationByNameModel):
     def allow_delayed_logoff(self, value):
         self.raise_setter_error_if_child_tool("allow_delayed_logoff")
         self._allow_delayed_logoff = value
+
+    @property
+    def pre_usage_questions(self):
+        return self.parent_tool.pre_usage_questions if self.is_child_tool() else self._pre_usage_questions
+
+    @pre_usage_questions.setter
+    def pre_usage_questions(self, value):
+        self.raise_setter_error_if_child_tool("pre_usage_questions")
+        self._pre_usage_questions = value
 
     @property
     def post_usage_questions(self):
@@ -1859,6 +1874,13 @@ class Tool(SerializationByNameModel):
             if not self._primary_owner_id:
                 errors["_primary_owner"] = "This field is required."
 
+            # Validate _pre_usage_questions JSON format
+            if self._pre_usage_questions:
+                dynamic_form_errors = validate_dynamic_form_model(
+                    self._pre_usage_questions, "tool_usage_group_question", self.id
+                )
+                if dynamic_form_errors:
+                    errors["_pre_usage_questions"] = dynamic_form_errors
             # Validate _post_usage_questions JSON format
             if self._post_usage_questions:
                 dynamic_form_errors = validate_dynamic_form_model(
@@ -2711,6 +2733,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE
     )
     remote_work = models.BooleanField(default=False)
+    pre_run_data = models.TextField(null=True, blank=True)
     run_data = models.TextField(null=True, blank=True)
 
     def duration(self):

@@ -505,11 +505,10 @@ class DynamicForm:
                         results.append(sub_question)
         return results
 
-    def charge_for_consumables(self, usage_event, request=None):
+    def charge_for_consumables(self, usage_event, run_data: str, request=None):
         customer = usage_event.user
         merchant = usage_event.operator
         project = usage_event.project
-        run_data = usage_event.run_data
         try:
             run_data_json = loads(run_data)
         except Exception as error:
