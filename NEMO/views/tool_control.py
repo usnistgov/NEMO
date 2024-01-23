@@ -223,7 +223,7 @@ def usage_data_history(request, tool_id):
 
     if csv_export:
         response = table_run_data.to_csv() if csv_export == "run" else table_pre_run_data.to_csv()
-        filename = f"tool_usage_data_export_{export_format_datetime()}.csv"
+        filename = f"tool{'' if csv_export == 'run' else '_pre'}_usage_data_export_{export_format_datetime()}.csv"
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
     else:
