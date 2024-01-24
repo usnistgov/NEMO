@@ -81,6 +81,16 @@
 						</ul>
 					</li>
 				{% endif %}
+                {% if user.is_staff and user.charging_staff_time %}
+					<li class="visible-xs visible-sm">
+                        <a href="{% url 'staff_charges' %}" style="color:red; text-decoration: none">
+                            <span id="staff_charge_link" data-container="body" data-toggle="tooltip" data-placement="right" title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">Charging staff time</span>
+                        </a>
+						<script>
+							$("#staff_charge_link").tooltip();
+						</script>
+					</li>
+				{% endif %}
 				<li class="visible-xs visible-sm"><a href="{%  url 'user_preferences' %}">Preferences</a></li>
 				{% if logout_allowed %}
 					<li class="visible-xs visible-sm"><a href="{% url 'logout' %}">Logout</a></li>
