@@ -218,7 +218,7 @@ class ToolAdmin(admin.ModelAdmin):
         "_location",
         ("_requires_area_access", admin.RelatedOnlyFieldListFilter),
     )
-    readonly_fields = ("_post_usage_preview",)
+    readonly_fields = ("_post_usage_preview", "_pre_usage_preview")
     autocomplete_fields = [
         "_primary_owner",
         "_interlock",
@@ -238,6 +238,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "qualified_users",
                     "_qualifications_never_expire",
                     "_pre_usage_questions",
+                    "_pre_usage_preview",
                     "_post_usage_questions",
                     "_post_usage_preview",
                 )
@@ -299,7 +300,10 @@ class ToolAdmin(admin.ModelAdmin):
     def has_post_usage_questions(self, obj: Tool):
         return True if obj.post_usage_questions else False
 
-    def _post_usage_preview(self, obj):
+    def _pre_usage_preview(self, obj: Tool):
+        return admin_render_dynamic_form_preview(obj.pre_usage_questions, "tool_usage_group_question", obj.id)
+
+    def _post_usage_preview(self, obj: Tool):
         return admin_render_dynamic_form_preview(obj.post_usage_questions, "tool_usage_group_question", obj.id)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):

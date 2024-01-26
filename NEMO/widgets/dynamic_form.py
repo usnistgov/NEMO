@@ -364,7 +364,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			function remove_question_{self.group_name}(element)
 			{{
 				$(element).parents(".{self.group_name}_question").remove();
-				$("body").trigger("question-group-changed");
+				$("body").trigger("question-group-changed", ["{self.group_name}"]);
 				update_add_button_{self.group_name}();
 			}}
 			function add_question_{self.group_name}()
@@ -373,7 +373,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 				{{
 					{self.group_name}_question_index ++;
 					$("#{self.group_name}_container").append(response);
-					$("body").trigger("question-group-changed");
+					$("body").trigger("question-group-changed", ["{self.group_name}"]);
 					update_add_button_{self.group_name}();
 				}}
 				}});
@@ -644,7 +644,7 @@ def admin_render_dynamic_form_preview(dynamic_form_json: str, group_url: str, it
     try:
         rendered_form = DynamicForm(dynamic_form_json).render(group_url, item_id)
         if dynamic_form_json:
-            form_validity_div = '<div id="form_validity"></div>'
+            form_validity_div = '<div class="form_validity"></div>'
     except:
         pass
     return mark_safe(

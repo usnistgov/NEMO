@@ -412,91 +412,98 @@ Twitter Typeahead autocomplete dropdown menu isn't chopped off. */
 	margin-right: -170px;
 }
 
-/* Navbar customization, mainly size when switching */
-@media (max-width: 991px)
-{
-	.navbar-header
-	{
-		float: none;
-	}
-	.navbar-left,.navbar-right
-	{
-		float: none !important;
-	}
-	.navbar-toggle
-	{
-		display: block;
-	}
-	.navbar-collapse
-	{
-		border-top: 1px solid transparent;
-		box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
-	}
-	.navbar-fixed-top
-	{
-		top: 0;
-		border-width: 0 0 1px;
-	}
-	.navbar-collapse.collapse
-	{
-		display: none!important;
-	}
-	.navbar-nav
-	{
-		float: none!important;
-		margin: 7.5px -15px;
-	}
-	.navbar-nav>li
-	{
-		float: none;
-	}
-	.navbar-nav>li>a
-	{
-		padding-top: 10px;
-		padding-bottom: 10px;
-	}
-	.collapse.in
-	{
-		display:block !important;
-	}
-	/* sub-menu */
-	.navbar-nav .open .dropdown-menu
-	{
-		position: static;
-		float: none;
-		width: auto;
-		margin-top: 0;
-		background-color: transparent;
-		border: 0;
-		-webkit-box-shadow: none;
-		box-shadow: none;
-	}
-	.navbar-nav .open .dropdown-menu > li > a,
-	.navbar-nav .open .dropdown-menu .dropdown-header
-	{
-		padding: 5px 15px 5px 25px;
-	}
-	.navbar-nav .open .dropdown-menu > li > a
-	{
-		line-height: 20px;
-	}
-	.navbar-nav .open .dropdown-menu > li > a:hover,
-	.navbar-nav .open .dropdown-menu > li > a:focus
-	{
-		background-image: none;
-	}
-	.navbar-default .navbar-nav .open .dropdown-menu > li > a
-	{
-		color: #777;
-	}
-}
-
+/* Navbar customization, to force collapse and hamburger menu */
 @media (min-width: 768px)
 {
 	.navbar-toggle
 	{
 		margin-right: 0;
 	}
+}
+
+.force-navbar-collapse .navbar-header
+{
+	float: none;
+}
+.force-navbar-collapse .navbar-left,
+.force-navbar-collapse .navbar-right
+{
+	float: none !important;
+}
+.force-navbar-collapse .navbar-toggle
+{
+	display: block;
+}
+.force-navbar-collapse .navbar-collapse
+{
+	border-top: 1px solid transparent;
+	box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+.force-navbar-collapse .navbar-fixed-top
+{
+	top: 0;
+	border-width: 0 0 1px;
+}
+.force-navbar-collapse .navbar-collapse.collapse
+{
+	display: none!important;
+}
+.force-navbar-collapse .navbar-nav
+{
+	float: none!important;
+	margin: 7.5px -15px;
+}
+.force-navbar-collapse .navbar-nav>li
+{
+	float: none;
+}
+.force-navbar-collapse .navbar-nav>li>a
+{
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+.force-navbar-collapse .collapse.in
+{
+	display:block !important;
+	border-color: #e7e7e7;
+}
+/* sub-menu */
+.force-navbar-collapse .navbar-nav .open .dropdown-menu
+{
+	position: static;
+	float: none;
+	width: auto;
+	margin-top: 0;
+	background-color: transparent;
+	border: 0;
+	-webkit-box-shadow: none;
+	box-shadow: none;
+}
+.force-navbar-collapse .navbar-nav .open .dropdown-menu > li > a,
+.force-navbar-collapse .navbar-nav .open .dropdown-menu .dropdown-header
+{
+	padding: 5px 15px 5px 25px;
+}
+.force-navbar-collapse .navbar-nav .open .dropdown-menu > li > a
+{
+	line-height: 20px;
+}
+.force-navbar-collapse .navbar-nav .open .dropdown-menu > li > a:hover,
+.force-navbar-collapse .navbar-nav .open .dropdown-menu > li > a:focus
+{
+	background-image: none;
+}
+.force-navbar-collapse .navbar-default .navbar-nav .open .dropdown-menu > li > a
+{
+	color: #777;
+}
+.force-navbar-collapse .nav.navbar-nav.hidden-sm
+{
+	display: none;
+}
+.force-navbar-collapse .nav.navbar-nav .visible-sm
+{
+	display: block !important;
 }
 
 .navbar-preferences > a

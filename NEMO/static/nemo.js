@@ -849,3 +849,17 @@ function set_multiple_colors(element, colors) {
 		}
 	}
 }
+
+function collapse_navbar(max_width, max_height)
+{
+	let width = max_width || 768; /* Bootstrap  */
+	let height = max_height || 52;
+	if (window.matchMedia('(max-width: ' + width + 'px)').matches)
+	{
+		$("body").removeClass("force-navbar-collapse");
+	}
+	else if ($("#site-navigation").height() > height)
+	{
+		$("body").addClass("force-navbar-collapse");
+	}
+}

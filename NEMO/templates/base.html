@@ -137,10 +137,12 @@
             }
 		});
 	}
-	{# Add an event listener on load for scripts. UseCapture is False so this is executed a bit later #}
+	$(window).on("resize", function() { collapse_navbar(); });
+    {# Add an event listener on load for scripts. UseCapture is False so this is executed a bit later #}
 	window.addEventListener("load", function ()
     {
         show_alerts();
+        collapse_navbar();
 
 	    {# Add a global AJAX completion callback if sessions are able to timeout. #}
         {# When an AJAX request receives an HTTP 403 (unauthorized) reply the user is #}
