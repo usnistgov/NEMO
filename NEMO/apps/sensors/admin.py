@@ -126,6 +126,7 @@ class SensorCardAdminForm(forms.ModelForm):
 
 @register(SensorCard)
 class SensorCardAdmin(admin.ModelAdmin):
+    search_fields = ["name", "server"]
     form = SensorCardAdminForm
     list_display = ("name", "enabled", "server", "port", "category")
     actions = [disable_selected_cards, enable_selected_cards]
@@ -202,6 +203,7 @@ class SensorCategoryAdmin(admin.ModelAdmin):
 
 @register(Sensor)
 class SensorAdmin(admin.ModelAdmin):
+    search_fields = ["name"]
     form = SensorAdminForm
     list_display = (
         "id",
@@ -224,6 +226,7 @@ class SensorAdmin(admin.ModelAdmin):
         ("sensor_category", admin.RelatedOnlyFieldListFilter),
     )
     actions = [duplicate_sensor_configuration, read_selected_sensors, hide_selected_sensors, show_selected_sensors]
+    autocomplete_fields = ["sensor_card", "interlock_card"]
 
     @display(boolean=True, ordering="sensor_card__enabled", description="Card Enabled")
     def get_card_enabled(self, obj: Sensor):
@@ -264,6 +267,7 @@ class SensorDataAdmin(admin.ModelAdmin):
         ("sensor", admin.RelatedOnlyFieldListFilter),
         ("sensor__sensor_category", admin.RelatedOnlyFieldListFilter),
     )
+    autocomplete_fields = ["sensor"]
 
     @display(ordering="sensor__data_prefix", description="Display value")
     def get_display_value(self, obj: SensorData):
@@ -274,6 +278,7 @@ class SensorDataAdmin(admin.ModelAdmin):
 class SensorAlertEmailAdmin(admin.ModelAdmin):
     list_display = ("sensor", "enabled", "trigger_condition", "trigger_no_data", "additional_emails", "triggered_on")
     actions = [disable_selected_alerts, enable_selected_alerts]
+    autocomplete_fields = ["sensor"]
 
 
 @register(SensorAlertLog)

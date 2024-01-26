@@ -219,6 +219,12 @@ class ToolAdmin(admin.ModelAdmin):
         ("_requires_area_access", admin.RelatedOnlyFieldListFilter),
     )
     readonly_fields = ("_post_usage_preview",)
+    autocomplete_fields = [
+        "_primary_owner",
+        "_interlock",
+        "parent_tool",
+        "_grant_physical_access_level_upon_qualification",
+    ]
     actions = [duplicate_tool_configuration]
     form = ToolAdminForm
     fieldsets = (
@@ -435,6 +441,7 @@ class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, adm
         ("trainee", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "date"
+    autocomplete_fields = ["trainer", "trainee", "tool", "project", "validated_by"]
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """We only want staff user and tool superusers to be possible trainers"""
@@ -452,6 +459,7 @@ class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
         ("staff_member", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "start"
+    autocomplete_fields = ["staff_member", "customer", "project", "validated_by"]
 
 
 @register(AreaAccessRecord)
@@ -459,6 +467,7 @@ class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, ad
     list_display = ("id", "customer", "area", "project", "start", "end")
     list_filter = (("area", TreeRelatedFieldListFilter), "start")
     date_hierarchy = "start"
+    autocomplete_fields = ["customer", "project", "validated_by"]
 
 
 @register(Configuration)
@@ -474,12 +483,14 @@ class ConfigurationAdmin(admin.ModelAdmin):
     )
     filter_horizontal = ("maintainers",)
     actions = [duplicate_configuration]
+    autocomplete_fields = ["tool"]
 
 
 @register(ConfigurationHistory)
 class ConfigurationHistoryAdmin(admin.ModelAdmin):
     list_display = ("id", "configuration", "user", "modification_time", "slot")
     date_hierarchy = "modification_time"
+    autocomplete_fields = ["user"]
 
 
 @register(Account)
@@ -534,6 +545,7 @@ class ProjectAdmin(admin.ModelAdmin):
     list_filter = ("active", ("account", admin.RelatedOnlyFieldListFilter), "start_date")
     inlines = [ProjectDocumentsInline]
     form = ProjectAdminForm
+    autocomplete_fields = ["account"]
 
     @display(ordering="application_identifier")
     def get_application_identifier(self, project: Project):
@@ -604,6 +616,7 @@ class ReservationAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
     )
     date_hierarchy = "start"
     inlines = [ConfigurationOptionInline]
+    autocomplete_fields = ["user", "creator", "tool", "project", "cancelled_by", "validated_by"]
 
 
 class ReservationQuestionsForm(forms.ModelForm):
@@ -673,6 +686,7 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
     list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work")
     list_filter = ("remote_work", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "start"
+    autocomplete_fields = ["tool", "user", "operator", "project", "validated_by"]
 
 
 @register(Consumable)
@@ -703,6 +717,7 @@ class ConsumableWithdrawAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, 
     list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date")
     list_filter = ("date", ("consumable", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "date"
+    autocomplete_fields = ["customer", "merchant", "consumable", "project", "validated_by"]
 
 
 @register(RecurringConsumableCharge)
@@ -711,6 +726,7 @@ class RecurringConsumableChargeAdmin(admin.ModelAdmin):
     list_display = ("name", "customer", "project", "get_recurrence_display", "last_charge", "next_charge")
     list_filter = (("customer", admin.RelatedOnlyFieldListFilter),)
     readonly_fields = ("last_charge", "last_updated", "last_updated_by")
+    autocomplete_fields = ["customer", "consumable", "project"]
 
     def save_model(self, request, obj: RecurringConsumableCharge, form, change):
         obj.save_with_user(request.user)
@@ -735,6 +751,7 @@ class InterlockCardAdminForm(forms.ModelForm):
 
 @register(InterlockCard)
 class InterlockCardAdmin(admin.ModelAdmin):
+    search_fields = ["name", "server"]
     form = InterlockCardAdminForm
     list_display = ("name", "enabled", "server", "port", "number", "category", "even_port", "odd_port")
     actions = [disable_selected_cards, enable_selected_cards]
@@ -758,6 +775,7 @@ class InterlockAdminForm(forms.ModelForm):
 
 @register(Interlock)
 class InterlockAdmin(admin.ModelAdmin):
+    search_fields = ["card__name", "card__server"]
     form = InterlockAdminForm
     list_display = (
         "id",
@@ -779,6 +797,7 @@ class InterlockAdmin(admin.ModelAdmin):
     )
     actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage, create_next_interlock]
     readonly_fields = ["state", "most_recent_reply", "most_recent_reply_time"]
+    autocomplete_fields = ["card"]
 
     @display(boolean=True, ordering="card__enabled", description="Card Enabled")
     def get_card_enabled(self, obj):
@@ -814,6 +833,7 @@ class TaskAdmin(admin.ModelAdmin):
         ("creator", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "creation_time"
+    autocomplete_fields = ["tool", "creator", "last_updated_by", "resolver"]
 
 
 @register(TaskCategory)
@@ -837,6 +857,7 @@ class TaskHistoryAdmin(admin.ModelAdmin):
     list_display = ("id", "task", "status", "time", "user")
     readonly_fields = ("time",)
     date_hierarchy = "time"
+    autocomplete_fields = ["user"]
 
 
 @register(TaskImages)
@@ -864,6 +885,7 @@ class CommentAdmin(admin.ModelAdmin):
     list_filter = ("visible", "creation_date", ("tool", admin.RelatedOnlyFieldListFilter), "staff_only")
     date_hierarchy = "creation_date"
     search_fields = ("content",)
+    autocomplete_fields = ["author", "tool", "hidden_by"]
 
 
 @register(Resource)
@@ -902,6 +924,7 @@ class MembershipHistoryAdmin(admin.ModelAdmin):
         ("child_content_type", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "date"
+    autocomplete_fields = ["authorizer"]
 
     @admin.display(description="Parent")
     def get_parent(self, obj: MembershipHistory):
@@ -1103,6 +1126,7 @@ class SafetyIssueAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("creation_time", "resolution_time")
     search_fields = ("location", "concern", "progress", "resolution")
+    autocomplete_fields = ["reporter", "resolver"]
 
 
 @register(SafetyCategory)
@@ -1139,6 +1163,7 @@ class DoorAdminForm(forms.ModelForm):
 class DoorAdmin(admin.ModelAdmin):
     list_display = ("name", "area", "interlock", "get_absolute_url", "id")
     form = DoorAdminForm
+    autocomplete_fields = ["interlock"]
 
 
 @register(AlertCategory)
@@ -1216,6 +1241,7 @@ class PhysicalAccessLevelForm(forms.ModelForm):
 
 @register(PhysicalAccessLevel)
 class PhysicalAccessLevelAdmin(admin.ModelAdmin):
+    search_fields = ["name", "area__name"]
     form = PhysicalAccessLevelForm
     list_display = ("name", "area", "get_schedule_display_with_times", "allow_staff_access", "allow_user_request")
     list_filter = (("area", TreeRelatedFieldListFilter), "allow_staff_access", "allow_user_request")
@@ -1351,6 +1377,7 @@ class TemporaryPhysicalAccessAdmin(admin.ModelAdmin):
         ("user", admin.RelatedOnlyFieldListFilter),
     )
     form = TemporaryPhysicalAccessAdminForm
+    autocomplete_fields = ["user", "physical_access_level"]
 
     @admin.display(ordering="physical_access_level__area", description="Area")
     def get_area_name(self, tpa: TemporaryPhysicalAccess) -> str:
@@ -1389,6 +1416,7 @@ class TemporaryPhysicalAccessRequestAdmin(admin.ModelAdmin):
     )
     filter_horizontal = ("other_users",)
     actions = [access_requests_export_csv]
+    autocomplete_fields = ["creator", "last_updated_by", "reviewer", "physical_access_level"]
 
     @admin.display(ordering="other_users", description="Buddies")
     def other_users_display(self, access_request: TemporaryPhysicalAccessRequest):
@@ -1407,6 +1435,7 @@ class ContactInformationCategoryAdmin(admin.ModelAdmin):
 @register(ContactInformation)
 class ContactInformationAdmin(admin.ModelAdmin):
     list_display = ("name", "category", "user")
+    autocomplete_fields = ["user"]
 
 
 @register(LandingPageChoice)
@@ -1442,6 +1471,7 @@ class ScheduledOutageAdmin(admin.ModelAdmin):
         ("resource", admin.RelatedOnlyFieldListFilter),
         ("creator", admin.RelatedOnlyFieldListFilter),
     )
+    autocomplete_fields = ["tool", "creator"]
 
 
 @register(News)
@@ -1457,6 +1487,7 @@ class NotificationAdmin(admin.ModelAdmin):
         ("content_type", admin.RelatedOnlyFieldListFilter),
         "notification_type",
     )
+    autocomplete_fields = ["user"]
 
     @admin.display(description="Item")
     def get_item(self, obj: Notification):
@@ -1468,7 +1499,7 @@ class BadgeReaderAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "send_key", "record_key")
 
 
-class CounterAdminForm(forms.ModelForm):
+class ToolUsageCounterAdminForm(forms.ModelForm):
     class Meta:
         model = ToolUsageCounter
         fields = "__all__"
@@ -1506,7 +1537,7 @@ class CounterAdminForm(forms.ModelForm):
 
 
 @register(ToolUsageCounter)
-class CounterAdmin(admin.ModelAdmin):
+class ToolUsageCounterAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "tool",
@@ -1519,12 +1550,14 @@ class CounterAdmin(admin.ModelAdmin):
     )
     list_filter = (("tool", admin.RelatedOnlyFieldListFilter), "last_reset")
     readonly_fields = ("warning_threshold_reached",)
-    form = CounterAdminForm
+    form = ToolUsageCounterAdminForm
+    autocomplete_fields = ["tool", "last_reset_by"]
 
 
 class RequestMessageInlines(GenericStackedInline):
     model = RequestMessage
     extra = 1
+    autocomplete_fields = ["author"]
 
 
 @register(BuddyRequest)
@@ -1538,6 +1571,7 @@ class BuddyRequestAdmin(admin.ModelAdmin):
         ("user", admin.RelatedOnlyFieldListFilter),
         ("area", TreeRelatedFieldListFilter),
     )
+    autocomplete_fields = ["user"]
 
     @admin.display(ordering="replies", description="Replies")
     def reply_count(self, buddy_request: BuddyRequest):
@@ -1590,8 +1624,15 @@ class StaffAvailabilityCategoryAdmin(admin.ModelAdmin):
 
 @register(StaffAvailability)
 class StaffAvailabilityAdmin(admin.ModelAdmin):
+    search_fields = (
+        "staff_member__first_name",
+        "staff_member__last_name",
+        "staff_member__username",
+        "staff_member__email",
+    )
     list_display = ("staff_member", "category", "visible", "start_time", "end_time", *StaffAvailability.DAYS)
     list_filter = ("category", *StaffAvailability.DAYS)
+    autocomplete_fields = ["staff_member"]
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """We only want active users here"""
@@ -1610,6 +1651,7 @@ class StaffAbsenceAdmin(admin.ModelAdmin):
         "end_date",
         "creation_time",
     )
+    autocomplete_fields = ["staff_member"]
 
 
 class ChemicalHazardAdminForm(forms.ModelForm):
