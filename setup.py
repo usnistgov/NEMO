@@ -4,7 +4,9 @@ setup(
     name="NEMO",
     version="5.3.0.dev",
     python_requires=">=3.8, <4",
-    packages=find_namespace_packages(exclude=["NEMO.tests", "NEMO.tests.*"]),
+    packages=find_namespace_packages(
+        exclude=["NEMO.tests", "NEMO.tests.*", "resources", "resources.*", "build", "build.*"]
+    ),
     include_package_data=True,
     url="https://github.com/usnistgov/NEMO",
     license="Public domain",
