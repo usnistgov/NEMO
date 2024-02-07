@@ -142,6 +142,9 @@
                                 {{ form.email_alternate.errors|striptags }}
                             </div>
 			            {% endif %}
+                        <div class="col-sm-offset-3 col-sm-9">
+                            Main email: {{ user.email }}
+                        </div>
                     </div>
                     {% for field_name, field in form.fields.items %}
                         {% if field|class_name == "TypedChoiceField" and field_name != "staff_status_view" and field_name != "email_send_recurring_charges_reminder_emails" %}
