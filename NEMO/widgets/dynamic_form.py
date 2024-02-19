@@ -44,6 +44,7 @@ class PostUsageQuestion:
         self.step = self._init_property("step")
         self.rows = self._init_property("rows")
         self.consumable = self._init_property("consumable")
+        self.consumable_id = self._init_property("consumable_id")
         self.required = self._init_property("required", True)
         # For backwards compatibility keep default choice
         self.default_value = self._init_property("default_value") or self._init_property("default_choice")
@@ -571,22 +572,29 @@ def render_group_questions(request, questions, group_question_url, group_item_id
 
 
 def validate_consumable_for_question(question: PostUsageQuestion):
-    if question.consumable:
+    if question.consumable or question.consumable_id:
         if not isinstance(question, PostUsageNumberFieldQuestion):
             raise Exception("Consumable withdrawals can only be used in questions of type number")
         else:
+            if question.consumable and question.consumable_id:
+                raise Exception("Use consumable or consumable_id but not both")
             try:
-                Consumable.objects.get(name=question.consumable)
-            except Consumable.DoesNotExist:
-                raise Exception(
-                    f"Consumable with name '{question.consumable}' could not be found. Make sure the names match."
+                Consumable.objects.get(pk=question.consumable_id) if question.consumable_id else Consumable.objects.get(
+                    name=question.consumable
                 )
+            except Consumable.DoesNotExist:
+                match = f"id '{question.consumable_id}'" if question.consumable_id else f"name '{question.consumable}'"
+                raise Exception(f"Consumable with {match} could not be found. Make sure the name/id matches.")
 
 
 def withdraw_consumable_for_question(question, input_data, customer, merchant, project, usage_event, request):
     if isinstance(question, PostUsageNumberFieldQuestion):
-        if question.consumable:
-            consumable = Consumable.objects.get(name=question.consumable)
+        if question.consumable or question.consumable_id:
+            consumable = (
+                Consumable.objects.get(pk=question.consumable_id)
+                if question.consumable_id
+                else Consumable.objects.get(name=question.consumable)
+            )
             quantity = 0
             if input_data and "user_input" in input_data and input_data["user_input"]:
                 if isinstance(input_data["user_input"], dict):
