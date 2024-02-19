@@ -13,8 +13,8 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from NEMO.apps.sensors.customizations import SensorCustomization
-from NEMO.apps.sensors.evaluators import evaluate_boolean_expression
 from NEMO.decorators import postpone
+from NEMO.evaluators import evaluate_boolean_expression
 from NEMO.fields import MultiEmailField
 from NEMO.models import BaseModel, InterlockCard
 from NEMO.typing import QuerySetType

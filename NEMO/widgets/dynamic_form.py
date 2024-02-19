@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Type
 from django.urls import NoReverseMatch, reverse
 from django.utils.safestring import mark_safe
 
+from NEMO.evaluators import evaluate_expression
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Consumable, ToolUsageCounter
 from NEMO.utilities import slugify_underscore

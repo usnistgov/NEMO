@@ -8,8 +8,9 @@ from pymodbus.client import ModbusTcpClient
 
 from NEMO.apps.sensors.admin import SensorAdminForm, SensorCardAdminForm
 from NEMO.apps.sensors.customizations import SensorCustomization
-from NEMO.apps.sensors.evaluators import evaluate_expression, evaluate_modbus_expression
+from NEMO.apps.sensors.evaluators import evaluate_modbus_expression
 from NEMO.apps.sensors.models import Sensor as Sensor_model, SensorAlert, SensorCardCategory, SensorData
+from NEMO.evaluators import evaluate_expression
 
 sensors_logger = getLogger(__name__)
 
