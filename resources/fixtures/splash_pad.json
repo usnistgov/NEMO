@@ -9582,6 +9582,36 @@
     }
   },
   {
+    "model": "NEMO.task",
+    "pk": 3,
+    "fields": {
+      "urgency": 1,
+      "tool": [
+        "PECVD"
+      ],
+      "force_shutdown": true,
+      "safety_hazard": false,
+      "creator": [
+        "ned"
+      ],
+      "creation_time": "2024-02-21T04:24:00.300Z",
+      "problem_category": null,
+      "problem_description": "Electrode temperature did not increase in the beginning of the 180 C cleaning recipe. Aborted job.",
+      "progress_description": "On Friday, December 29th, 2023 @ 8:57 AM Pierre Aronnax (professor) updated this task:\r\nTemperature will not go past 150C  with the setpoint being 180C. Chiller is showing \"Heater Alarm\" and will not rest. Tried to power cycle but the alarm returns. Currently troubleshooting\r\n\r\nOn Thursday, January 4th, 2024 @ 9:11 AM Pierre Aronnax (professor) updated this task:\r\nThe overtemp relay is faulty causing the temp to stop at 150 degrees when asking for 180 degrees.\r\nA new OT relay has been rush ordered.\r\n\r\nOn Thursday, January 11th, 2024 @ 11:38 AM Pierre Aronnax (professor) updated this task:\r\nThe new Relay has been installed and the alarm has stopped. However, now the relay contactor will not pull in to apply heat to the heaters. Continuing to troubleshoot control signals and voltages for the failure.\r\n\r\nOn Thursday, January 11th, 2024 @ 2:31 PM Pierre Aronnax (professor) updated this task:\r\nAfter further testing and troubleshooting it is determined that the Main heating element is bad and will need to be replaced. A call has been made to the vendor for replacement parts.\r\n\r\nOn Tuesday, February 6th, 2024 @ 1:43 PM Pierre Aronnax (professor) updated this task:\r\nExpecting the new heating element to arrive this Thursday, 2/8/24.\r\n\r\nOn Monday, February 12th, 2024 @ 2:33 PM Pierre Aronnax (professor) updated this task:\r\nThe new heater element has arrived. But in our attempts to remove the old heater it is apparent that this must be done by cutting and welding. We will be sending it to the vendor for major reworking of the heater element and its shroud. Package will be shipped to the vendor on tues 2/13/2024\r\n\r\nOn Thursday, February 15th, 2024 @ 2:46 PM Pierre Aronnax (professor) updated this task:\r\nThere was a short delay in shipping. The package is with shipping today.\r\nWe have news from the vendor that this type of repair requires one additional part which is a custom designed specification and the lead time is not until April before they receive the part and begin repairs. \" This repair is waiting on a part that currently has a delivery date of 4/4/24\" (from the vendor).",
+      "last_updated": "2024-02-05T09:46:00.200Z",
+      "last_updated_by": [
+        "professor"
+      ],
+      "estimated_resolution_time": null,
+      "cancelled": false,
+      "resolved": false,
+      "resolution_time": null,
+      "resolver": null,
+      "resolution_description": null,
+      "resolution_category": null
+    }
+  },
+  {
     "model": "NEMO.resource",
     "pk": 1,
     "fields": {
