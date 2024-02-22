@@ -1006,6 +1006,20 @@
   },
   {
     "model": "NEMO.customization",
+    "pk": "calendar_configuration_in_reservations",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "calendar_qualified_tools",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
     "pk": "project_allow_document_upload",
     "fields": {
       "value": "enabled"
