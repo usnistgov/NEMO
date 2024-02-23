@@ -1072,6 +1072,7 @@ class User(BaseModel, PermissionsMixin):
             ("trigger_timed_services", "Can trigger timed services"),
             ("use_billing_api", "Can use billing API"),
             ("kiosk", "Kiosk services"),
+            ("can_impersonate_users", "Can impersonate other users"),
         )
 
     def __str__(self):

@@ -59,7 +59,6 @@
                                     {% endif %}
                                     {% navigation_url 'customization' 'Customization' user.is_superuser %}
                                     {% navigation_url 'email_broadcast' 'Email' %}
-                                    {% navigation_url 'impersonate' 'Impersonate' user.is_superuser %}
                                     {% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' user.is_staff  user.is_superuser %}{% endif %}
                                     {% navigation_url 'project_billing' 'Project billing' user.is_accounting_officer user.is_user_office user.is_superuser %}
                                     {% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' user.is_staff user.is_superuser %}{% endif %}
@@ -76,6 +75,9 @@
                                 {% elif user.is_tool_superuser or user.is_project_pi %}
                                     {% navigation_url 'projects' 'Projects' user.is_project_pi %}
                                     {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_tool_superuser %}{% endif %}
+                                {% endif %}
+                                {% if perms.NEMO.can_impersonate_users %}
+                                    {% navigation_url 'impersonate' 'Impersonate' %}
                                 {% endif %}
                             {% endblock %}
 						</ul>
