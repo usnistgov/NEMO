@@ -547,6 +547,7 @@ function create_calendar()
 		}
 	};
 	$("#calendar").fullCalendar(calendar_properties);
+    $(".fc-view-container").prepend('<div class="label label-primary" id="calendar-selected-tool"></div>');
 }
 
 function reserve_for_someone_else()

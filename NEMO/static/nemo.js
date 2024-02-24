@@ -88,10 +88,9 @@ function on_item_search_selection(jquery_event, search_selection, dataset_name)
 // This function toggles all parent categories of a tool/area and selects the tool.
 function expand_to_item(id, type)
 {
-	$("#sidebar a").removeClass('selected');
-	$("#"+type+"-"+id).addClass('selected').click().parents('ul.tree').show();
-	$("#sidebar").attr("aria-expanded", true);
-	save_sidebar_state();
+	let item = $("#"+type+"-"+id);
+	item.click().parents('ul.tree').show();
+	set_selected_item(item, true);
 }
 
 function toggle_categories()
@@ -278,11 +277,16 @@ function get_selected_item()
 }
 
 // This function visually highlights a clicked link with a gray background.
-function set_selected_item(element)
+function set_selected_item(element, save_state)
 {
+	save_state = save_state || false
 	$("#sidebar a").removeClass('selected');
 	$(element).addClass('selected');
-	save_sidebar_state();
+	if (save_state)
+	{
+		save_sidebar_state();
+	}
+	$("#calendar-selected-tool").html($(element).data("item-name") || $(element).text());
 }
 
 function set_selected_item_by_id(item_id, item_type)
@@ -290,8 +294,7 @@ function set_selected_item_by_id(item_id, item_type)
 	let item = $("#" + item_type + "-" + item_id);
 	if(item.length === 1)
 	{
-		$("#sidebar a").removeClass('selected');
-		item.addClass('selected');
+		set_selected_item(item);
 	}
 }
 
@@ -300,8 +303,7 @@ function set_selected_item_by_class(item_class)
 	let item = $("."+item_class);
 	if(item.length === 1)
 	{
-		$("#sidebar a").removeClass('selected');
-		item.addClass('selected');
+		set_selected_item(item);
 	}
 }
 

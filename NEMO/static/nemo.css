@@ -144,6 +144,12 @@ body.impersonating .application-sidebar, body.impersonating .application-content
 	opacity: .4;
 }
 
+#calendar-selected-tool
+{
+	padding-bottom: 2px;
+	font-size: 13px;
+}
+
 .status-icon
 {
 	font-size: 1.5em;
