@@ -3111,7 +3111,6 @@ class Interlock(BaseModel):
         return interlocks.get(self.card.category).lock(self)
 
     class Meta:
-        unique_together = ("card", "channel")
         ordering = ["card__server", "card__number", "channel"]
 
     def __str__(self):
