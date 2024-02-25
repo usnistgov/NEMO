@@ -19,43 +19,43 @@ from NEMO.decorators import staff_member_required, synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import (
-    AreaAccessRecord,
-    Comment,
-    Configuration,
-    ConfigurationHistory,
-    EmailNotificationType,
-    Project,
-    Reservation,
-    StaffCharge,
-    Task,
-    TaskCategory,
-    TaskStatus,
-    Tool,
-    ToolUsageCounter,
-    UsageEvent,
-    User,
+	AreaAccessRecord,
+	Comment,
+	Configuration,
+	ConfigurationHistory,
+	EmailNotificationType,
+	Project,
+	Reservation,
+	StaffCharge,
+	Task,
+	TaskCategory,
+	TaskStatus,
+	Tool,
+	ToolUsageCounter,
+	UsageEvent,
+	User,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import (
-    BasicDisplayTable,
-    EmailCategory,
-    export_format_datetime,
-    extract_optional_beginning_and_end_times,
-    format_datetime,
-    get_email_from_settings,
-    quiet_int,
-    render_email_template,
-    send_mail,
+	BasicDisplayTable,
+	EmailCategory,
+	export_format_datetime,
+	extract_optional_beginning_and_end_times,
+	format_datetime,
+	get_email_from_settings,
+	quiet_int,
+	render_email_template,
+	send_mail,
 )
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import (
-    ApplicationCustomization,
-    CalendarCustomization,
-    EmailsCustomization,
-    InterlockCustomization,
-    RemoteWorkCustomization,
-    ToolCustomization,
-    get_media_file_contents,
+	ApplicationCustomization,
+	CalendarCustomization,
+	EmailsCustomization,
+	InterlockCustomization,
+	RemoteWorkCustomization,
+	ToolCustomization,
+	get_media_file_contents,
 )
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 from NEMO.widgets.dynamic_form import DynamicForm, PostUsageQuestion, render_group_questions
@@ -90,25 +90,27 @@ def tool_status(request, tool_id):
     """Gets the current status of the tool (that is, whether it is currently in use or not)."""
     from NEMO.rates import rate_class
 
+    user: User = request.user
     tool = get_object_or_404(Tool, id=tool_id, visible=True)
-    user_is_qualified = tool.user_set.filter(id=request.user.id).exists()
-    user_is_staff = request.user.is_staff
-    tool_control_broadcast_upcoming_reservation_enabled = ToolCustomization.get_bool(
-        "tool_control_broadcast_upcoming_reservation"
-    )
+    user_is_qualified = tool.user_set.filter(id=user.id).exists()
+    broadcast_upcoming_reservation = ToolCustomization.get("tool_control_broadcast_upcoming_reservation")
     dictionary = {
         "tool": tool,
-        "tool_rate": rate_class.get_tool_rate(tool, request.user),
+        "tool_rate": rate_class.get_tool_rate(tool, user),
         "task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
-        "rendered_configuration_html": tool.configuration_widget(request.user),
+        "rendered_configuration_html": tool.configuration_widget(user),
         "mobile": request.device == "mobile",
         "task_statuses": TaskStatus.objects.all(),
         "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render("tool_usage_group_question", tool_id),
         "post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
-        "show_broadcast_upcoming_reservation": user_is_staff
-        or (user_is_qualified and tool_control_broadcast_upcoming_reservation_enabled),
+        "show_broadcast_upcoming_reservation": user.is_any_part_of_staff
+        or (user_is_qualified and broadcast_upcoming_reservation == "qualified")
+        or broadcast_upcoming_reservation == "all",
         "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
         "has_usage_questions": True if tool.pre_usage_questions or tool.post_usage_questions else False,
+        "user_can_see_documents": user.is_any_part_of_staff
+        or not ToolCustomization.get_bool("tool_control_show_documents_only_qualified_users")
+        or user_is_qualified,
     }
 
     try:
@@ -118,16 +120,16 @@ def tool_status(request, tool_id):
             cancelled=False,
             missed=False,
             shortened=False,
-            user=request.user,
+            user=user,
             tool=tool,
         )
-        if request.user == current_reservation.user:
+        if user == current_reservation.user:
             dictionary["time_left"] = current_reservation.end
     except Reservation.DoesNotExist:
         pass
 
     # Staff need the user list to be able to qualify users for the tool.
-    if request.user.is_staff:
+    if user.is_staff:
         dictionary["users"] = User.objects.filter(is_active=True)
 
     return render(request, "tool_control/tool_status.html", dictionary)
