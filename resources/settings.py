@@ -76,7 +76,7 @@ EXPORT_TIME_FORMAT = "h_i_s"
 # See allowed formats at https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
 DATETIME_INPUT_FORMATS = ["%m/%d/%Y %I:%M %p", *global_settings.DATE_INPUT_FORMATS]
 DATE_INPUT_FORMATS = ["%m/%d/%Y", *global_settings.DATE_INPUT_FORMATS]
-TIME_INPUT_FORMATS = ["%I:%M %p", *global_settings.TIME_INPUT_FORMATS]
+TIME_INPUT_FORMATS = ["%I:%M:%S %p", *global_settings.TIME_INPUT_FORMATS]
 
 # -------------------- Internationalization and localization --------------------
 # A boolean that specifies whether Django’s translation system should be enabled.
