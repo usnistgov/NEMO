@@ -30,8 +30,10 @@
                                         <div class="buddy-list-item-buttons">
                                             {% url 'edit_buddy_request' br.id as edit_buddy_request_url %}
                                             {% button type="edit" size="small" url=edit_buddy_request_url value="Edit" %}
-                                            {% url 'delete_buddy_request' br.id as delete_buddy_request_url %}
-                                            {% button type="delete" size="small" url=delete_buddy_request_url value="Delete" %}
+                                            <form style="display: inline-block" action="{% url 'delete_buddy_request' br.id %}" method="post">
+                                                {% csrf_token %}
+                                                {% button type="delete" size="small" submit=True value="Delete" %}
+                                            </form>
                                         </div>
                                     {% endif %}
                                 </div>

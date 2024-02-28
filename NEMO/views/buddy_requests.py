@@ -82,7 +82,7 @@ def create_buddy_request(request, request_id=None):
 
 
 @login_required
-@require_GET
+@require_POST
 def delete_buddy_request(request, request_id):
     buddy_request = get_object_or_404(BuddyRequest, id=request_id)
 
