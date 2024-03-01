@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from NEMO.apps.sensors.evaluators import evaluate_modbus_expression, modbus_functions
-from NEMO.evaluators import evaluate_boolean_expression, evaluate_expression, list_expression_variables
+from NEMO.evaluators import evaluate_boolean_expression, evaluate_expression, get_expression_variables
 
 
 class TestAstEval(TestCase):
@@ -78,4 +78,4 @@ class TestAstEval(TestCase):
         self.assertFalse(evaluate_boolean_expression("value > abs(-110)", value=100))
 
     def test_variable_list(self):
-        self.assertEqual(list_expression_variables("value > abs(-110) + round(value2) * 2"), ["value", "value2"])
+        self.assertSetEqual(get_expression_variables("value > abs(-110) + round(value2) * 2"), {"value", "value2"})

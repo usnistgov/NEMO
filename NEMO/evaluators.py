@@ -1,6 +1,7 @@
 import ast
 import operator
 from math import ceil, floor, sqrt, trunc
+from typing import Set
 
 # supported operators
 base_operators = {
@@ -150,9 +151,9 @@ def evaluate_boolean_expression(expr, **kwargs):
     return v.visit(ast.parse(expr, mode="eval").body)
 
 
-def list_expression_variables(source):
-    variables = []
+def get_expression_variables(source) -> Set:
+    variables = set()
     for node in ast.walk(ast.parse(source)):
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load) and node.id not in base_functions:
-            variables.append(node.id)
+            variables.add(node.id)
     return variables
