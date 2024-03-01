@@ -98,7 +98,7 @@
                         {% for row in pre_run_data_table.flat_rows %}
                             <tr>
                                 {% for item in row %}
-                                    <td>{% if item|class_name == "list" %}{{ item|join:", " }}{% else %}{{ item }}{% endif %}</td>
+                                    <td>{% if item|class_name == "list" %}{{ item|join:", " }}{% else %}{{ item|default_if_none:"" }}{% endif %}</td>
                                 {% endfor %}
                             </tr>
                         {% endfor %}
@@ -129,7 +129,7 @@
                         {% for row in run_data_table.flat_rows %}
                             <tr>
                                 {% for item in row %}
-                                    <td>{% if item|class_name == "list" %}{{ item|join:", " }}{% else %}{{ item }}{% endif %}</td>
+                                    <td>{% if item|class_name == "list" %}{{ item|join:", " }}{% else %}{{ item|default_if_none:"" }}{% endif %}</td>
                                 {% endfor %}
                             </tr>
                         {% endfor %}
