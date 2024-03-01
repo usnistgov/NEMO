@@ -1517,9 +1517,7 @@ class ToolUsageCounterAdminForm(forms.ModelForm):
             if tool.post_usage_questions:
                 post_usage_form = DynamicForm(tool.post_usage_questions)
                 tool_question = post_usage_form.filter_questions(
-                    lambda x: (
-                        isinstance(x, PostUsageNumberFieldQuestion) or isinstance(x, PostUsageFloatFieldQuestion)
-                    )
+                    lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
                     and x.name == tool_usage_question_name
                 )
                 if not tool_question:
