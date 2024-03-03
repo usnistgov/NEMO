@@ -763,7 +763,7 @@ function change_calendar_event_type(calling_element)
 function get_specific_user_activity(jquery_event, search_selection, dataset_name)
 {
 	$("#user_search").typeahead('val', search_selection.id).hide();
-	$("#chosen_user_button").text(search_selection.name).show();
+    set_selected_item($("#chosen_user_button").text(search_selection.name).show());
 	update_event_sources();
 }
 
