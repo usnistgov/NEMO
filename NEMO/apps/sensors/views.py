@@ -55,6 +55,11 @@ def sensor_details(request, sensor_id, tab: str = None):
         "end": end,
         "refresh_rate": refresh_rate,
         "chart_step": chart_step,
+        "sensor_date_formats": {
+            variable.replace("sensor_format_", ""): SensorCustomization.get(variable)
+            for variable in SensorCustomization.variables.keys()
+            if variable.startswith("sensor_format_")
+        },
     }
     return render(request, "sensors/sensor_data.html", dictionary)
 

@@ -1,4 +1,10 @@
+{% load static %}
 {% load custom_tags_and_filters %}
+{% block extrahead %}
+    {# Chart.js #}
+    <script type="text/javascript" src="{% static "sensors/chart.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "sensors/chartjs-adapter-moment.js" %}"></script>
+{% endblock %}
 <div class="panel-body">
     <h3 class="customization-section-title">Sensor data settings</h3>
     <form method="POST" action="{% url 'customize' 'sensors' %}" class="form-horizontal">
@@ -58,8 +64,41 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Date formats</h3>
+        <div class="col-sm-12 form-group help-block light-grey">
+            These formats are used in charts to display the date/time on the x-axis. See <a
+                href="https://momentjs.com/docs/#/displaying/format/">moment.js format</a> for more details.
+        </div>
+        {% with date_format_list="millisecond second minute hour day week month quarter year" %}
+            {% for date_format in date_format_list.split %}
+                <div class="form-group">
+                    {% with date_format_variable="sensor_format_"|concat:date_format %}
+                        <label class="control-label col-md-3"
+                               for="{{ date_format_variable }}">{{ date_format|capfirst }}:</label>
+                        <div class="col-md-4">
+                            <input type="text" id="{{ date_format_variable }}" name="{{ date_format_variable }}"
+                                   class="form-control"
+                                   value="{{ "sensors"|customization:date_format_variable|default_if_none:"" }}"
+                                   placeholder=""/>
+                        </div>
+                    {% endwith %}
+                </div>
+            {% endfor %}
+        {% endwith %}
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">
             {% button type="save" value="Save settings" %}
         </div>
+        {# add a "fake" chart to get the adapter's formats and use them as placeholders for the inputs #}
+        <canvas class="hidden" id="customization_chart"></canvas>
+        <script>
+            const customization_chart = new Chart(document.getElementById('customization_chart').getContext('2d'),
+                {
+                    options: {scales: {x: {type: 'time'}}}
+                });
+            for (let [key, value] of Object.entries(customization_chart.scales['x']._adapter.formats())) {
+                $('#sensor_format_' + key).attr('placeholder', value);
+            }
+        </script>
     </form>
 </div>
