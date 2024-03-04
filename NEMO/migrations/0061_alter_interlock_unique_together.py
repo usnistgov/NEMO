@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('NEMO', '0060_add_impersonate_permission'),
+        ("NEMO", "0060_add_impersonate_permission"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='interlock',
+            name="interlock",
             unique_together=set(),
         ),
     ]
