@@ -4095,6 +4095,18 @@ class AdjustmentRequest(BaseModel):
             return area_reviewers or facility_managers
         return facility_managers
 
+    def delete(self, using=None, keep_parents=False):
+        adjustment_id = self.id
+        super().delete(using, keep_parents)
+        # If adjustment requests is being deleted, remove associated notifications
+        Notification.objects.filter(
+            object_id=adjustment_id,
+            notification_type__in=[
+                Notification.Types.ADJUSTMENT_REQUEST,
+                Notification.Types.ADJUSTMENT_REQUEST_REPLY,
+            ],
+        ).delete()
+
     def clean(self):
         if not self.description:
             raise ValidationError({"description": _("This field is required.")})

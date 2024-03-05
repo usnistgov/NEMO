@@ -1613,6 +1613,10 @@ class AdjustmentRequestAdmin(admin.ModelAdmin):
     def get_item(self, adjustment_request: AdjustmentRequest):
         return admin_get_item(adjustment_request.item_type, adjustment_request.item_id)
 
+    def delete_queryset(self, request, queryset):
+        for obj in queryset:
+            obj.delete()
+
 
 @register(StaffAbsenceType)
 class StaffAbsenceTypeAdmin(admin.ModelAdmin):
