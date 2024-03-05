@@ -54,7 +54,7 @@ from NEMO.utilities import (
     supported_embedded_extensions,
 )
 from NEMO.validators import color_hex_list_validator, color_hex_validator
-from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH, CHAR_FIELD_MAXIMUM_LENGTH
+from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH, CHAR_FIELD_MAXIMUM_LENGTH, MEDIA_PROTECTED
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
 models_logger = getLogger(__name__)
@@ -199,7 +199,7 @@ class BaseDocumentModel(BaseModel):
 def auto_delete_file_on_document_delete(sender, instance: BaseDocumentModel, **kwargs):
     if not issubclass(sender, BaseDocumentModel):
         return
-    """	Deletes file from filesystem when corresponding `SafetyItemDocuments` object is deleted.	"""
+    """	Deletes file from filesystem when corresponding object is deleted.	"""
     if instance.document:
         if os.path.isfile(instance.document.path):
             os.remove(instance.document.path)
@@ -209,7 +209,7 @@ def auto_delete_file_on_document_delete(sender, instance: BaseDocumentModel, **k
 def auto_delete_file_on_document_change(sender, instance: BaseDocumentModel, **kwargs):
     if not issubclass(sender, BaseDocumentModel):
         return
-    """	Deletes old file from filesystem when corresponding `SafetyItemDocuments` object is updated with new file. """
+    """	Deletes old file from filesystem when corresponding object is updated with new file. """
     if not instance.pk:
         return False
 
@@ -4325,6 +4325,72 @@ def auto_delete_file_on_chemical_change(sender, instance: Chemical, **kwargs):
         if not old_file == new_file:
             if os.path.isfile(old_file.path):
                 os.remove(old_file.path)
+
+
+class StaffKnowledgeBaseCategory(BaseCategory):
+    class Meta(BaseCategory.Meta):
+        verbose_name_plural = "Staff knowledge base categories"
+
+
+class StaffKnowledgeBaseItem(BaseModel):
+    name = models.CharField(max_length=200, help_text="The item name.")
+    description = models.TextField(null=True, blank=True, help_text="The description for this item. HTML can be used.")
+    category = models.ForeignKey(
+        StaffKnowledgeBaseCategory,
+        null=True,
+        blank=True,
+        help_text="The category for this item.",
+        on_delete=models.SET_NULL,
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class StaffKnowledgeBaseItemDocuments(BaseDocumentModel):
+    item = models.ForeignKey(StaffKnowledgeBaseItem, on_delete=models.CASCADE)
+
+    def get_filename_upload(self, filename):
+        from django.template.defaultfilters import slugify
+
+        item_name = slugify(self.item.name)
+        return f"{MEDIA_PROTECTED}/knowledge_base/{item_name}/{filename}"
+
+    class Meta(BaseDocumentModel.Meta):
+        verbose_name_plural = "Staff knowledge base item documents"
+
+
+class UserKnowledgeBaseCategory(BaseCategory):
+    class Meta(BaseCategory.Meta):
+        verbose_name_plural = "User knowledge base categories"
+
+
+class UserKnowledgeBaseItem(BaseModel):
+    name = models.CharField(max_length=200, help_text="The item name.")
+    description = models.TextField(null=True, blank=True, help_text="The description for this item. HTML can be used.")
+    category = models.ForeignKey(
+        UserKnowledgeBaseCategory,
+        null=True,
+        blank=True,
+        help_text="The category for this item.",
+        on_delete=models.SET_NULL,
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class UserKnowledgeBaseItemDocuments(BaseDocumentModel):
+    item = models.ForeignKey(UserKnowledgeBaseItem, on_delete=models.CASCADE)
+
+    def get_filename_upload(self, filename):
+        from django.template.defaultfilters import slugify
+
+        item_name = slugify(self.item.name)
+        return f"knowledge_base/{item_name}/{filename}"
+
+    class Meta(BaseDocumentModel.Meta):
+        verbose_name_plural = "User knowledge base item documents"
 
 
 class EmailLog(BaseModel):

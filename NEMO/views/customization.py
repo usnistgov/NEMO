@@ -489,6 +489,14 @@ class SafetyCustomization(CustomizationBase):
     }
 
 
+@customization(key="knowledge_base", title="Knowledge base")
+class KnowledgeBaseCustomization(CustomizationBase):
+    variables = {
+        "knowledge_base_user_expand_categories": "",
+        "knowledge_base_staff_expand_categories": "",
+    }
+
+
 @customization(key="remote_work", title="Remote work")
 class RemoteWorkCustomization(CustomizationBase):
     variables = {

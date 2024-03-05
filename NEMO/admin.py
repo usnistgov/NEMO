@@ -88,6 +88,9 @@ from NEMO.models import (
     StaffAvailability,
     StaffAvailabilityCategory,
     StaffCharge,
+    StaffKnowledgeBaseCategory,
+    StaffKnowledgeBaseItem,
+    StaffKnowledgeBaseItemDocuments,
     Task,
     TaskCategory,
     TaskHistory,
@@ -103,6 +106,9 @@ from NEMO.models import (
     UsageEvent,
     User,
     UserDocuments,
+    UserKnowledgeBaseCategory,
+    UserKnowledgeBaseItem,
+    UserKnowledgeBaseItemDocuments,
     UserPreferences,
     UserType,
     record_active_state,
@@ -1151,6 +1157,46 @@ class SafetyItemAdmin(admin.ModelAdmin):
     @display(description="Documents")
     def get_documents_number(self, obj: SafetyItem):
         return SafetyItemDocuments.objects.filter(safety_item=obj).count()
+
+
+@register(StaffKnowledgeBaseCategory)
+class StaffKnowledgeBaseCategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "display_order")
+
+
+class StaffKnowledgeBaseItemDocumentsInline(DocumentModelAdmin):
+    model = StaffKnowledgeBaseItemDocuments
+
+
+@register(StaffKnowledgeBaseItem)
+class StaffKnowledgeBaseItemAdmin(admin.ModelAdmin):
+    inlines = [StaffKnowledgeBaseItemDocumentsInline]
+    list_display = ("name", "category", "get_documents_number")
+    list_filter = (("category", admin.RelatedOnlyFieldListFilter),)
+
+    @display(description="Documents")
+    def get_documents_number(self, obj: StaffKnowledgeBaseItem):
+        return StaffKnowledgeBaseItemDocuments.objects.filter(item=obj).count()
+
+
+@register(UserKnowledgeBaseCategory)
+class UserKnowledgeBaseCategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "display_order")
+
+
+class UserKnowledgeBaseItemDocumentsInline(DocumentModelAdmin):
+    model = UserKnowledgeBaseItemDocuments
+
+
+@register(UserKnowledgeBaseItem)
+class UserKnowledgeBaseItemAdmin(admin.ModelAdmin):
+    inlines = [UserKnowledgeBaseItemDocumentsInline]
+    list_display = ("name", "category", "get_documents_number")
+    list_filter = (("category", admin.RelatedOnlyFieldListFilter),)
+
+    @display(description="Documents")
+    def get_documents_number(self, obj: UserKnowledgeBaseItem):
+        return UserKnowledgeBaseItemDocuments.objects.filter(item=obj).count()
 
 
 class DoorAdminForm(forms.ModelForm):
