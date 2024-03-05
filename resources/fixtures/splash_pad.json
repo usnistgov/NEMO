@@ -923,8 +923,8 @@
     "pk": 9,
     "fields": {
       "image": "library.png",
-      "name": "Google",
-      "url": "https://www.google.com/",
+      "name": "Knowledge base",
+      "url": "/knowledge_base/user",
       "display_order": 8,
       "open_in_new_tab": true,
       "secure_referral": true,
@@ -2238,7 +2238,9 @@
       "preferences": null,
       "onboarding_phases": [],
       "safety_trainings": [],
-      "physical_access_levels": [1],
+      "physical_access_levels": [
+        1
+      ],
       "groups": [],
       "user_permissions": [],
       "projects": [
@@ -10064,6 +10066,42 @@
       "end": "2024-07-01",
       "reminder_date": "2024-05-01",
       "notes": ""
+    }
+  },
+  {
+    "model": "NEMO.staffknowledgebasecategory",
+    "fields": {
+      "name": "Staff procedures",
+      "display_order": 1
+    }
+  },
+  {
+    "model": "NEMO.userknowledgebasecategory",
+    "fields": {
+      "name": "User training",
+      "display_order": 1
+    }
+  },
+  {
+    "model": "NEMO.staffknowledgebaseitem",
+    "pk": 1,
+    "fields": {
+      "name": "Cleaning equipment",
+      "description": "Please refer to the SOP for equipment and safety rules",
+      "category": [
+        "Staff procedures"
+      ]
+    }
+  },
+  {
+    "model": "NEMO.userknowledgebaseitem",
+    "pk": 1,
+    "fields": {
+      "name": "Equipment training",
+      "description": "Please contact the tool owner or tool superusers for equipment training.<br>This information is available in the tool control page, under the details tab.",
+      "category": [
+        "User training"
+      ]
     }
   }
 ]
