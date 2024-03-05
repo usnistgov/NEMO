@@ -1244,6 +1244,7 @@ class AlertAdmin(admin.ModelAdmin):
         "deleted",
     )
     list_filter = ("category", "dismissible", "expired", "deleted")
+    date_hierarchy = "creation_time"
     form = AlertAdminForm
 
 
