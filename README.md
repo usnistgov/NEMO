@@ -7,7 +7,7 @@
 The NEMO web application is laboratory logistics software that strives to be intuitive and easy to use, making life easier in the lab. NEMO manages tool reservations, control access to tools, and streamline logistics and communication. The code is open source and free so that other labs can benefit.
 
 # Online demo
-An online version of the splash pad is available at [https://nemo.nist.gov/demo](https://nemo.nist.gov/demo).
+An online version of the splash pad is available on a third party website at [https://nemo-demo.atlantislabs.io](https://nemo-demo.atlantislabs.io).
 
 ### User roles
 You will be automatically logged in as superadmin "captain".<br>
