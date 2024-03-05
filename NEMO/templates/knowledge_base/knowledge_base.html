@@ -51,7 +51,7 @@
             {% with knowledge_base_url='admin:NEMO_'|concat:kind|concat:'knowledgebaseitem_changelist' %}
                 <p>
                     Please go to <a href="{% url knowledge_base_url %}">Administration -> Detailed Administration
-                    -> {{ kind|capfirst }}KnowledgeBaseItems</a>
+                    -> {{ kind|capfirst }} knowledge base items</a>
                 </p>
             {% endwith %}
         {% endif %}
