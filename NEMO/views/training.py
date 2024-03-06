@@ -1,3 +1,4 @@
+import datetime
 from logging import getLogger
 from re import search
 from urllib.parse import urljoin
@@ -14,6 +15,8 @@ from NEMO.decorators import staff_member_or_tool_superuser_required
 from NEMO.exceptions import ProjectChargeException
 from NEMO.models import MembershipHistory, Project, Tool, ToolQualificationGroup, TrainingSession, User
 from NEMO.policy import policy_class as policy
+from NEMO.utilities import datetime_input_format
+from NEMO.views.customization import TrainingCustomization
 from NEMO.views.users import get_identity_service
 
 training_logger = getLogger(__name__)
@@ -33,6 +36,11 @@ def training(request):
         tool_groups = (
             tool_groups.annotate(num_tools=Count("tools")).filter(tools__in=tools).filter(num_tools=len(tools))
         )
+    training_types = TrainingSession.Type.Choices
+    training_only_type = TrainingCustomization.get_int("training_only_type")
+    if training_only_type is not None:
+        # only keep the one type
+        training_types = [training_type for training_type in training_types if training_type[0] == training_only_type]
     return render(
         request,
         "training/training.html",
@@ -40,7 +48,7 @@ def training(request):
             "users": users,
             "tools": list(tools),
             "tool_groups": list(tool_groups),
-            "charge_types": TrainingSession.Type.Choices,
+            "charge_types": training_types,
         },
     )
 
@@ -57,13 +65,17 @@ def training_entry(request):
 
 
 def is_valid_field(field):
-    return search("^(chosen_user|chosen_tool|chosen_project|duration|charge_type|qualify)__[0-9]+$", field) is not None
+    return (
+        search("^(chosen_user|chosen_tool|chosen_project|date|duration|charge_type|qualify)__[0-9]+$", field)
+        is not None
+    )
 
 
 @staff_member_or_tool_superuser_required
 @require_POST
 def charge_training(request):
     trainer: User = request.user
+    date_allowed = TrainingCustomization.get_bool("training_allow_date")
     try:
         charges = {}
         for key, value in request.POST.items():
@@ -94,6 +106,8 @@ def charge_training(request):
                     charges[index].project = Project.objects.get(id=to_int_or_negative(value))
                 if attribute == "duration":
                     charges[index].duration = int(value)
+                if value and attribute == "date" and date_allowed:
+                    charges[index].date = datetime.datetime.strptime(value, datetime_input_format).astimezone()
                 if attribute == "charge_type":
                     charges[index].type = int(value)
                 if attribute == "qualify":

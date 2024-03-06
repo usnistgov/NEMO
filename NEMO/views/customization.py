@@ -27,6 +27,7 @@ from NEMO.models import (
     Notification,
     Project,
     RecurringConsumableCharge,
+    TrainingSession,
     UserPreferences,
 )
 from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
@@ -504,6 +505,23 @@ class RemoteWorkCustomization(CustomizationBase):
         "remote_work_start_area_access_automatically": "enabled",
         "remote_work_ask_explicitly": "",
     }
+
+
+@customization(key="training", title="Training")
+class TrainingCustomization(CustomizationBase):
+    variables = {"training_only_type": "", "training_allow_date": ""}
+
+    def context(self) -> Dict:
+        dictionary = super().context()
+        dictionary["training_types"] = TrainingSession.Type.Choices
+        return dictionary
+
+    def save(self, request, element=None) -> Dict[str, Dict[str, str]]:
+        errors = super().save(request, element)
+        training_types = request.POST.getlist("training_type_list", [])
+        if training_types and len(training_types) == 1:
+            type(self).set("training_only_type", training_types[0])
+        return errors
 
 
 @customization(key="templates", title="File & email templates")
