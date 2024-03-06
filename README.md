@@ -11,7 +11,7 @@ An online version of the splash pad is available on a third party website at [ht
 
 ### User roles
 You will be automatically logged in as superadmin "captain".<br>
-Use the [impersonate](https://nemo.nist.gov/demo/impersonate) feature to switch between user roles:
+Use the [impersonate](https://nemo-demo.atlantislabs.io/impersonate) feature to switch between user roles:
 * `Ned Land`: regular user
 * `Pierre Aronnax`: staff member
 * `Assistant Conseil`: user office
@@ -19,13 +19,13 @@ Use the [impersonate](https://nemo.nist.gov/demo/impersonate) feature to switch 
 * `Captain Nemo`: super admin
 
 ### Jumbotron
-The jumbotron is available at [https://nemo.nist.gov/demo/jumbotron/](https://nemo.nist.gov/demo/jumbotron/)
+The jumbotron is available at [https://nemo-demo.atlantislabs.io/jumbotron/](https://nemo-demo.atlantislabs.io/jumbotron/)
 
 ### Kiosk/Area access
 You can test the kiosk and area access features by going to the following URLs:
-* [entry door](https://nemo.nist.gov/demo/welcome_screen/1/?occupancy=Cleanroom)
-* [exit door](https://nemo.nist.gov/demo/farewell_screen/1/?occupancy=Cleanroom)
-* [kiosk](https://nemo.nist.gov/demo/kiosk/NanoFab/?occupancy=Cleanroom)
+* [entry door](https://nemo-demo.atlantislabs.io/welcome_screen/1/?occupancy=Cleanroom)
+* [exit door](https://nemo-demo.atlantislabs.io/farewell_screen/1/?occupancy=Cleanroom)
+* [kiosk](https://nemo-demo.atlantislabs.io/kiosk/NanoFab/?occupancy=Cleanroom)
 
 To simulate the badge reader, press `F2` then the badge number (`1` for captain, `2` for professor, `3` for ned) and press `F2` again.
 
