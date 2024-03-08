@@ -65,7 +65,7 @@ def consumables(request):
             "self_checkout": is_self_checkout,
         }
         if is_self_checkout:
-            dictionary["projects"] = user.active_projects()
+            dictionary["projects"] = user.active_projects().filter(allow_consumable_withdrawals=True)
         return render(request, "consumables/consumables.html", dictionary)
     elif request.method == "POST":
         updated_post_data = request.POST.copy()
