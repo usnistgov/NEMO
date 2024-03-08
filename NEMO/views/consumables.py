@@ -4,6 +4,7 @@ from typing import List
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
@@ -56,7 +57,9 @@ def consumables(request):
         rate_dict = rate_class.get_consumable_rates(Consumable.objects.all())
         consumable_list = Consumable.objects.filter(visible=True).order_by("category", "name")
         if is_self_checkout:
-            consumable_list = consumable_list.filter(allow_self_checkout=True)
+            consumable_list = consumable_list.filter(allow_self_checkout=True).filter(
+                Q(self_checkout_only_users__isnull=True) | Q(self_checkout_only_users__in=[user])
+            )
 
         dictionary = {
             "users": User.objects.filter(is_active=True),
@@ -74,7 +77,11 @@ def consumables(request):
         form = ConsumableWithdrawForm(updated_post_data)
         if form.is_valid():
             withdraw = form.save(commit=False)
-            if is_self_checkout and not withdraw.consumable.allow_self_checkout:
+            customer_allowed = (
+                not withdraw.consumable.self_checkout_only_users.exists()
+                or withdraw.customer in withdraw.consumable.self_checkout_only_users.all()
+            )
+            if is_self_checkout and (not withdraw.consumable.allow_self_checkout or not customer_allowed):
                 return HttpResponseBadRequest("You can not self checkout this consumable")
             try:
                 policy.check_billing_to_project(withdraw.project, withdraw.customer, withdraw.consumable, withdraw)

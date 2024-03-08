@@ -2761,6 +2761,11 @@ class Consumable(BaseModel):
         default=True,
         help_text="Allow users to self checkout this consumable, only applicable when self checkout customization is enabled.",
     )
+    self_checkout_only_users = models.ManyToManyField(
+        User,
+        blank=True,
+        help_text="Selected users will be the only ones allowed to self checkout this consumable. Leave blank for all.",
+    )
     notes = models.TextField(null=True, blank=True, help_text="Notes about the consumable.")
     reminder_threshold = models.IntegerField(
         null=True,

@@ -713,6 +713,7 @@ class ConsumableAdmin(admin.ModelAdmin):
         "id",
     )
     list_filter = ("visible", ("category", admin.RelatedOnlyFieldListFilter), "reusable", "allow_self_checkout")
+    filter_horizontal = ["self_checkout_only_users"]
     search_fields = ("name",)
     readonly_fields = ("reminder_threshold_reached",)
 
