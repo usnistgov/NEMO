@@ -1,7 +1,8 @@
-BadgeReader = function (on_success, send_key, record_key)
+BadgeReader = function (on_success, send_key, record_key, show_number)
 {
 
     $(window).keypress(on_keypress).keydown(on_keydown);
+    let display_number = show_number || false;
     let record_badge_number = false;
     let badge_number = "";
 
@@ -13,7 +14,7 @@ BadgeReader = function (on_success, send_key, record_key)
         if (event.key !== send_key && event.key !== record_key && (record_key && record_badge_number || !record_key))
         {
             badge_number += String.fromCharCode(event.which);
-            $("#badge_number").html(badge_number);
+            if (display_number) $("#badge_number").html(badge_number);
         }
     }
 
@@ -24,7 +25,7 @@ BadgeReader = function (on_success, send_key, record_key)
         {
             // Sending badge number
             on_success(badge_number);
-            $("#badge_number").html(badge_number + ", sent");
+            if (display_number) $("#badge_number").html(badge_number + ", sent");
             badge_number = "";
             record_badge_number = false;
         }

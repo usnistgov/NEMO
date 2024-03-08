@@ -99,7 +99,9 @@
 	</div>
 	{% include 'base/footer.html' %}
 	<script type="text/javascript">
-		let kiosk_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}" {% if badge_reader.record_key %}, "{{ badge_reader.record_key }}"{% endif %});
+        {% with show_badge_number="application"|customization:"show_badge_number" %}
+		let kiosk_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}" {% if badge_reader.record_key %}, "{{ badge_reader.record_key }}"{% endif %}, {{ show_badge_number|yesno:"true,false" }});
+        {% endwith %}
 		let timeout_handle = null;
 		let countdown_handle = null;
 		let occupancy = new URLSearchParams(window.location.search).get('occupancy');

@@ -174,6 +174,7 @@ class ApplicationCustomization(CustomizationBase):
         "self_log_out": "",
         "calendar_login_logout": "",
         "area_logout_already_logged_in": "",
+        "show_badge_number": "",
         "default_badge_reader_id": "",
         "consumable_user_self_checkout": "",
         "consumable_category_collapse": "",
