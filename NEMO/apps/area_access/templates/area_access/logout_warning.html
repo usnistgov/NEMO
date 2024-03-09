@@ -18,4 +18,9 @@
 		</ul>
 	{% endif %}
 </h2>
+{% if door.adjacent_area %}
+    <a href="javascript:void(0)" role="button" class="btn btn-default btn-lg btn-block btn-extra-large" onclick="enter_area('{{ badge_number }}', undefined, true);">
+		Login to the {{ door.adjacent_area }}
+	</a>
+{% endif %}
 <script>revert(15);</script>

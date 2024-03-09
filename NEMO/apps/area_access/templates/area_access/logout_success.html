@@ -1,4 +1,9 @@
 <script>$('body').removeClass().addClass('logout-success')</script>
 <h1><p>{% now "h:i A" %}</p>You're now logged out of the {{ area }}, {{ name }}.</h1>
 <audio src="{% url 'media' 'success.mp3' %}" autoplay></audio>
-<script>revert(7);</script>
+{% if door.adjacent_area %}
+    <a href="javascript:void(0)" role="button" class="btn btn-default btn-lg btn-block btn-extra-large" onclick="enter_area('{{ badge_number }}', undefined, true);">
+		Login to the {{ door.adjacent_area }}
+	</a>
+{% endif %}
+<script>{% if door.adjacent_area %}revert(15){% else %}revert(7){% endif %};</script>

@@ -3524,6 +3524,14 @@ def calculate_duration(start, end, unfinished_reason):
 class Door(BaseModel):
     name = models.CharField(max_length=100)
     area = TreeForeignKey(Area, related_name="doors", on_delete=models.PROTECT)
+    adjacent_area = TreeForeignKey(
+        Area,
+        null=True,
+        blank=True,
+        related_name="adjacent_doors",
+        on_delete=models.SET_NULL,
+        help_text="When logging out, the user will be asked if they want to log in to this adjacent area",
+    )
     interlock = models.OneToOneField(Interlock, null=True, blank=True, on_delete=models.PROTECT)
 
     def __str__(self):
