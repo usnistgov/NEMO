@@ -2,14 +2,14 @@ from datetime import datetime, timedelta
 from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.models import BadgeReader, Project, Reservation, ReservationItemType, Tool, UsageEvent, User
+from NEMO.models import BadgeReader, Project, Reservation, ReservationItemType, Tool, ToolWaitList, UsageEvent, User
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int
 from NEMO.views.calendar import (
@@ -67,6 +67,11 @@ def do_enable_tool(request, tool_id):
     new_usage_event.project = project
     new_usage_event.tool = tool
     new_usage_event.save()
+
+    # Remove wait list entry if it exists
+    wait_list_entry = ToolWaitList.objects.filter(tool=tool, expired=False, deleted=False, user=customer)
+    if wait_list_entry.count() > 0:
+        wait_list_entry.update(deleted=True, date_exited=timezone.now())
 
     dictionary = {"message": "You can now use the {}".format(tool), "badge_number": customer.badge_number}
     return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -136,6 +141,66 @@ def do_disable_tool(request, tool_id):
 @login_required
 @permission_required("NEMO.kiosk")
 @require_POST
+def enter_wait_list(request):
+    tool = Tool.objects.get(id=request.POST["tool_id"])
+    customer = User.objects.get(id=request.POST["customer_id"])
+
+    if not tool.allow_wait_list():
+        dictionary = {
+            "message": "{} does not operate in wait list mode. ".format(tool),
+            "delay": 10,
+        }
+        return render(request, "kiosk/acknowledgement.html", dictionary)
+
+    wait_list_other_users = ToolWaitList.objects.filter(tool=tool, expired=False, deleted=False).exclude(user=customer)
+    wait_list_user_entry = ToolWaitList.objects.filter(tool=tool, expired=False, deleted=False, user=customer)
+
+    # User must not be in the wait list
+    if wait_list_user_entry.count() > 0:
+        dictionary = {"message": "You are already in the wait list.", "delay": 10}
+        return render(request, "kiosk/acknowledgement.html", dictionary)
+
+    # The tool must be in use or have a wait list
+    current_usage_event = tool.get_current_usage_event()
+    if not current_usage_event and wait_list_other_users.count() == 0:
+        dictionary = {"message": "The tool is free to use.", "delay": 10}
+        return render(request, "kiosk/acknowledgement.html", dictionary)
+
+    # The user must be qualified to use the tool itself, or the parent tool in case of alternate tool.
+    tool_to_check_qualifications = tool.parent_tool if tool.is_child_tool() else tool
+    if tool_to_check_qualifications not in customer.qualifications.all() and not customer.is_staff:
+        dictionary = {"message": "You are not qualified to use this tool.", "delay": 10}
+        return render(request, "kiosk/acknowledgement.html", dictionary)
+
+    entry = ToolWaitList()
+    entry.user = customer
+    entry.tool = tool
+    entry.save()
+
+    return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back="back_to_category")
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def exit_wait_list(request):
+    tool = Tool.objects.get(id=request.POST["tool_id"])
+    customer = User.objects.get(id=request.POST["customer_id"])
+    wait_list_entry = ToolWaitList.objects.filter(tool=tool, expired=False, deleted=False, user=customer)
+    if wait_list_entry.count() == 0:
+        dictionary = {"message": "You are not in the wait list.", "delay": 10}
+        return render(request, "kiosk/acknowledgement.html", dictionary)
+    do_exit_wait_list(wait_list_entry, timezone.now())
+    return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back="back_to_category")
+
+
+def do_exit_wait_list(entry, time):
+    entry.update(deleted=True, date_exited=time)
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
 def reserve_tool(request):
     tool = Tool.objects.get(id=request.POST["tool_id"])
     customer = User.objects.get(id=request.POST["customer_id"])
@@ -182,7 +247,6 @@ def reserve_tool(request):
     tool_config = tool.is_configurable()
     needs_extra_config = reservation_questions or tool_config
     if needs_extra_config and not request.POST.get("configured") == "true":
-
         dictionary.update(tool.get_configuration_information(user=customer, start=reservation.start))
         dictionary.update(
             {
@@ -338,6 +402,20 @@ def category_choices(request, category, user_id):
 def tool_information(request, tool_id, user_id, back):
     tool = Tool.objects.get(id=tool_id, visible=True)
     customer = User.objects.get(id=user_id)
+    wait_list = tool.current_wait_list()
+    user_wait_list_entry = wait_list.filter(user=user_id).first()
+    user_wait_list_position = (
+        (
+            ToolWaitList.objects.filter(
+                tool=tool, date_entered__lte=user_wait_list_entry.date_entered, expired=False, deleted=False
+            )
+            .exclude(user=customer)
+            .count()
+            + 1
+        )
+        if user_wait_list_entry
+        else 0
+    )
     dictionary = {
         "customer": customer,
         "tool": tool,
@@ -347,6 +425,19 @@ def tool_information(request, tool_id, user_id, back):
         ),
         "back": back,
         "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
+        "wait_list_position": user_wait_list_position,  # 0 if not in wait list
+        "wait_list": wait_list,
+        "show_wait_list": (
+            tool.allow_wait_list()
+            and (
+                not (
+                    tool.get_current_usage_event().operator.id == customer.id
+                    or tool.get_current_usage_event().user.id == customer.id
+                )
+                if tool.in_use()
+                else wait_list.count() > 0
+            )
+        ),
     }
     try:
         current_reservation = Reservation.objects.get(

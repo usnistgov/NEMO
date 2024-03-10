@@ -1,7 +1,7 @@
 import datetime
 
 from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.admin import register
 from django.contrib.admin.decorators import display
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -99,6 +99,7 @@ from NEMO.models import (
     ToolDocuments,
     ToolQualificationGroup,
     ToolUsageCounter,
+    ToolWaitList,
     TrainingSession,
     UsageEvent,
     User,
@@ -227,6 +228,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "name",
                     "parent_tool",
                     "_category",
+                    "_operation_mode",
                     "qualified_users",
                     "_qualifications_never_expire",
                     "_post_usage_questions",
@@ -299,6 +301,10 @@ class ToolAdmin(admin.ModelAdmin):
         """
         Explicitly record any project membership changes on non-child tools.
         """
+        if not obj.allow_wait_list() and obj.current_wait_list():
+            obj.current_wait_list().update(deleted=True)
+            messages.warning(request, f"The wait list for {obj} has been deleted because the current operation mode does not allow it.")
+
         if obj.parent_tool:
             super(ToolAdmin, self).save_model(request, obj, form, change)
         else:
@@ -309,6 +315,12 @@ class ToolAdmin(admin.ModelAdmin):
                 obj.required_resource_set.set(form.cleaned_data["required_resources"])
             if "nonrequired_resources" in form.changed_data:
                 obj.nonrequired_resource_set.set(form.cleaned_data["nonrequired_resources"])
+
+
+@register(ToolWaitList)
+class ToolWaitList(admin.ModelAdmin):
+    list_display = ["tool", "user", "date_entered", "date_exited", "expired", "deleted"]
+    list_filter = ["deleted", "expired", "tool"]
 
 
 @register(ToolQualificationGroup)

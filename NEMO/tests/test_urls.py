@@ -146,6 +146,11 @@ urls_to_skip = [
     "remove_document_from_project",
     "adjustment_request_reply",
     "delete_adjustment_request",
+    "enter_wait_list_from_kiosk",
+    "exit_wait_list_from_kiosk",
+    "enter_wait_list",
+    "exit_wait_list",
+    "check_and_update_wait_list",
 ]
 
 

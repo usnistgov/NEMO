@@ -316,51 +316,102 @@
                         {% endif %}
                     </div>
 				{% endif %}
-			{% else %}
-				{% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all %}
-					<h4 id="what_to_do_label">What would you like to do?</h4>
-                    <input type="hidden" id="remote_work" name="remote_work" value="">
-					<div class="radio" role="group" aria-labelledby="what_to_do_label">
-                        <label><input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">Use this tool for my own project</label>
-                        {% if user.is_staff %}
-                            <br><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="false">Use this tool on behalf of another user{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (no remote){% endif %}</label>
-                            {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
-                                <br><label><input type="radio" onchange="use_tool_for_other(true)" name="staff_charge" value="false">Use this tool for a remote project</label>
-                            {% endif %}
-                            {% if user.charging_staff_time %}
-                                {% with user.get_staff_charge as staff_charge %}
-                                    <br><label id="staff_charge_tooltip_container" class="strikethrough light-grey" data-toggle="tooltip" data-placement="right" title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
-                                        <input type="radio" onchange="use_tool_for_other()" disabled>
-                                        <span id="staff_charge_tooltip_location">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</span>
-                                    </label>
-                                    <script>
-                                        $("#staff_charge_tooltip_container").tooltip();
-                                    </script>
-                                {% endwith %}
-                            {% else %}
-                                <br><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</label>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-					<div id="project_choice"></div>
-				{% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
-					{% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
+			{%  endif %}
+			{% if not tool.in_use %}
+				{% if show_wait_list and not wait_list_position == 1 %}
+					<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#use-tool" class="pointer" style="margin-bottom: 10px; margin-top: 10px; display: block; color: darkgrey;" >
+						<span class="glyphicon glyphicon-chevron-right chevron"></span> Skip Wait List
+					</a>
 				{% endif %}
-				{% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}
-					<div id="start" style="display:none">
-						{% if tool.is_parent_tool %}
-							You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:<br>
-							<div style="height: 5px"></div>
-						{% endif %}
-                        {% button type="save" submit=False icon="glyphicon-play" value="Start using the "|concat:tool.name onclick="enable_tool('"|concat:tool.id|concat:"'); return false;" %}
-						{% if tool.is_parent_tool %}
-							{% for alternate_tool in tool.tool_children_set.all %}
-                                {% button style="margin-left: 10px" type="save" submit=False icon="glyphicon-play" value="Start using the "|concat:alternate_tool.name onclick="enable_tool('"|concat:alternate_tool.id|concat:"'); return false;" %}
-							{% endfor %}
+				<div id="use-tool" class="{% if show_wait_list and not wait_list_position == 1 %}collapse{% endif %}">
+					{% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all %}
+						<h4 id="what_to_do_label">What would you like to do?</h4>
+						<input type="hidden" id="remote_work" name="remote_work" value="">
+						<div class="radio" role="group" aria-labelledby="what_to_do_label">
+							<label><input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">Use this tool for my own project</label>
+							{% if user.is_staff %}
+								<br><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="false">Use this tool on behalf of another user{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (no remote){% endif %}</label>
+								{% if "remote_work"|customization:"remote_work_ask_explicitly" %}
+									<br><label><input type="radio" onchange="use_tool_for_other(true)" name="staff_charge" value="false">Use this tool for a remote project</label>
+								{% endif %}
+								{% if user.charging_staff_time %}
+									{% with user.get_staff_charge as staff_charge %}
+										<br><label id="staff_charge_tooltip_container" class="strikethrough light-grey" data-toggle="tooltip" data-placement="right" title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
+											<input type="radio" onchange="use_tool_for_other()" disabled>
+											<span id="staff_charge_tooltip_location">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</span>
+										</label>
+										<script>
+											$("#staff_charge_tooltip_container").tooltip();
+										</script>
+									{% endwith %}
+								{% else %}
+									<br><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</label>
+								{% endif %}
+							{% endif %}
+						</div>
+						<div id="project_choice"></div>
+					{% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
+						{% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
+					{% endif %}
+					{% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}
+						<div id="start" style="display:none">
+							{% if tool.is_parent_tool %}
+								You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:<br>
+								<div style="height: 5px"></div>
+							{% endif %}
+							{% button type="save" submit=False icon="glyphicon-play" value="Start using the "|concat:tool.name onclick="enable_tool('"|concat:tool.id|concat:"'); return false;" %}
+							{% if tool.is_parent_tool %}
+								{% for alternate_tool in tool.tool_children_set.all %}
+									{% button style="margin-left: 10px" type="save" submit=False icon="glyphicon-play" value="Start using the "|concat:alternate_tool.name onclick="enable_tool('"|concat:alternate_tool.id|concat:"'); return false;" %}
+								{% endfor %}
+							{% endif %}
+						</div>
+					{% endif %}
+				</div>
+			{% endif %}
+			{% if show_wait_list %}
+				<div>
+					<div style="margin-bottom: 10px;">
+						<span>This tool has a wait list. There are <strong>{{ wait_list.count }}</strong> people in line to use this tool.</span>
+						{% if not wait_list_position == 0 %}
+							<br><span>You are number <strong>{{ wait_list_position }}</strong> in line to use this tool.</span>
 						{% endif %}
 					</div>
-				{% endif %}
+					<div id="wait-list">
+						{% if wait_list_position == 0 %}
+							{% button type="save" style="margin-right: 20px;" submit=False icon="glyphicon-list" value="Enter Wait List for "|concat:tool.name onclick="enter_wait_list('"|concat:tool.id|concat:"'); return false;" %}
+						{% else %}
+							{% button type="delete" style="margin-right: 20px;" submit=False icon="glyphicon-trash" value="Exit Wait List for "|concat:tool.name onclick="exit_wait_list('"|concat:tool.id|concat:"'); return false;" %}
+						{% endif %}
+						{% if wait_list.count > 0 %}
+							<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#wait-list-content" class="pointer" style="display: block; margin-top: 10px;">
+								<span class="glyphicon glyphicon-chevron-right chevron"></span> Show Wait List
+							</a>
+						{% endif %}
+					</div>
+					{% if wait_list.count > 0 %}
+						<div id="wait-list-content"  style="margin-top: 10px;" class="collapse">
+							<table style="margin-top: 10px;" class="table table-condensed table-striped table-bordered">
+								<thead>
+									<tr>
+										<th>Position</th>
+										<th>User</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for entry in wait_list %}
+										<tr class="{% if user.id == entry.user.id %}success{% endif %}">
+											<td>{{ forloop.counter }}</td>
+											<td>{{ entry.user.get_full_name }}</td>
+										</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					{% endif %}
+				</div>
 			{% endif %}
+
 		</form>
 
         <div style="height:15px">{# Spacer #}</div>
