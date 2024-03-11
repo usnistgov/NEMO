@@ -164,6 +164,18 @@
             }
         }
 
+        function enter_wait_list(tool_id)
+        {
+			let failure_dialog = ajax_failure_callback("Failed to enter the wait list", "There was a problem entering the wait list.");
+			ajax_post("{% url 'enter_wait_list' %}", { tool_id }, reload_page, failure_dialog);
+		}
+
+		function exit_wait_list(tool_id)
+        {
+			let failure_dialog = ajax_failure_callback("Failed to exit the wait list", "There was a problem exiting the wait list.");
+			ajax_post("{% url 'exit_wait_list' %}", { tool_id }, reload_page, failure_dialog);
+		}
+
 		function enable_tool(tool_id)
 		{
 			$("#start button").prop("disabled", true);

@@ -54,12 +54,18 @@ class ToolTestCase(TestCase):
             "_policy_off_end_time": "4:00 PM",
             "_policy_off_weekend": True,
             "visible": True,
+            "_operation_mode": Tool.OperationMode.REGULAR,
         }
         area_door = Door.objects.create(name="cleanroom door", area=cleanroom, interlock=cleanroom_interlock)
         tool_form = ToolAdminForm(tool_data)
         self.assertTrue(tool_form.is_valid(), tool_form.errors.as_text())
         tool = tool_form.save()
-        alternate_tool_data = {"name": "alt_test_tool", "parent_tool": tool.id, "visible": True}
+        alternate_tool_data = {
+            "name": "alt_test_tool",
+            "parent_tool": tool.id,
+            "visible": True,
+            "_operation_mode": Tool.OperationMode.REGULAR,
+        }
         alternate_tool_form = ToolAdminForm(alternate_tool_data)
         self.assertTrue(alternate_tool_form.is_valid(), alternate_tool_form.errors.as_text())
         alternate_tool = alternate_tool_form.save()

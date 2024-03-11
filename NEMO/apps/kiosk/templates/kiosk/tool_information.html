@@ -248,90 +248,153 @@
 			</div>
 		{% endif %}
 		<div style="width: 100%;padding-top: 40px;border-bottom: 1px dashed lightgray"></div>
-		<h1>Make a reservation</h1>
-		{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
-		<div id="start_reserve" class="col-xs-offset-3 col-xs-6" style="display:none;margin-top:30px">
-			<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
-				<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }}
-			</div>
-		</div>
-	{% else %}
-		{% if customer.is_staff or customer.is_service_personnel and tool in customer.qualifications.all or tool.ready_to_use and tool in customer.qualifications.all %}
+		{% if tool.allow_reservation %}
+			<h1>Make a reservation</h1>
 			{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
-			{% if pre_usage_questions %}
-				<div id="pre_usage_questions" style="display:none">
-                <h2>Pre usage questions</h2>
-				{{ pre_usage_questions }}
-                </div>
-			{% endif %}
-            <div id="start_reserve" style="display:none; margin-top:20px">
-				{% if tool.is_parent_tool %}
-					<h4>You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:</h4>
-					<div class="col-xs-6" style="margin-top: 15px">
-						<div class="start_button alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large; display:none" onclick="enable_tool()">
-							<span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}
-						</div>
-					</div>
-					{% for alternate_tool in tool.tool_children_set.all %}
-						<div class="col-xs-6" style="margin-top: 15px">
-							<div class="start_button alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large; display:none" onclick="enable_tool('{{ alternate_tool.id }}')">
-								<span class="glyphicon glyphicon-play"></span> Start using the {{ alternate_tool.name }}
-							</div>
-						</div>
-					{% endfor %}
-					<div class="col-xs-offset-3 col-xs-5" style="margin-top: 15px">
-						<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
-							<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }}
-						</div>
-					</div>
-				{% else %}
-					<div class="col-xs-offset-1 col-xs-5">
-						<div class="start_button alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large; display:none" onclick="enable_tool()">
-							<span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}
-						</div>
-					</div>
-					<div class="col-xs-5">
-						<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
-							<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }}
-						</div>
+			<div id="start_reserve" class="col-xs-offset-3 col-xs-6" style="display:none;margin-top:30px">
+				<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
+					<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }}
+				</div>
+			</div>
+		{% endif %}
+	{% else %}
+		{% if show_wait_list and not wait_list_position == 1 %}
+			<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#use-tool" class="pointer" style="margin-bottom: 10px; margin-top: 10px; display: block; color: darkgrey; font-size: large;" >
+				<span class="glyphicon glyphicon-chevron-right chevron"></span> Skip Wait List
+			</a>
+		{% endif %}
+		<div id="use-tool" class="{% if show_wait_list and not wait_list_position == 1 %}collapse{% endif %}">
+			{% if customer.is_staff or customer.is_service_personnel and tool in customer.qualifications.all or tool.ready_to_use and tool in customer.qualifications.all %}
+				{% include 'kiosk/tool_project_selection_snippet.html' with active_projects=customer.active_projects tool=tool %}
+				{% if pre_usage_questions %}
+					<div id="pre_usage_questions" style="display:none">
+                		<h2>Pre usage questions</h2>
+						{{ pre_usage_questions }}
 					</div>
 				{% endif %}
-			</div>
-		{% elif tool not in customer.qualifications.all %}
-			<h2>
-				<p>You have not been qualified to use this tool yet.</p>
-                <p>Please contact the primary tool owner, {{ tool.primary_owner }}, if you would like to receive training for tool qualification.</p>
-				{% if tool.backup_owners.all.exists %}
-                    <p>
-					{% if tool.backup_owners.all.count == 1 %}
-						If you are unable to reach {{ tool.primary_owner }} then please contact the backup tool owner, {{ tool.backup_owners.all|first }}.
-					{% elif tool.backup_owners.all.count > 1 %}
-						If you are unable to reach {{ tool.primary_owner }} then please contact one of the backup tool owners:
+				<div id="start_reserve" style="display:none; margin-top:20px">
+					{% if tool.is_parent_tool %}
+						<h4>You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:</h4>
+						<div class="col-xs-6" style="margin-top: 15px">
+							<div class="start_button alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large; display:none" onclick="enable_tool()">
+								<span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}
+							</div>
+						</div>
+						{% for alternate_tool in tool.tool_children_set.all %}
+							<div class="col-xs-6" style="margin-top: 15px">
+								<div class="start_button alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large; display:none" onclick="enable_tool('{{ alternate_tool.id }}')">
+									<span class="glyphicon glyphicon-play"></span> Start using the {{ alternate_tool.name }}
+								</div>
+							</div>
+						{% endfor %}
+						{% if tool.allow_reservation %}
+							<div class="col-xs-offset-3 col-xs-5" style="margin-top: 15px">
+								<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
+									<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }}
+								</div>
+							</div>
+						{% endif %}
+					{% else %}
+						<div class="{% if tool.allow_reservation %} col-xs-offset-1 col-xs-5 {% else %} col-xs-offset-3 col-xs-6 {% endif %}">
+							<div class="start_button alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large; display:none" onclick="enable_tool()">
+								<span class="glyphicon glyphicon-play"></span> Start using the {{ tool.name }}
+							</div>
+						</div>
+						{% if tool.allow_reservation %}
+							<div class="col-xs-5">
+								<div class=" alert alert-info" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
+									<span class="glyphicon glyphicon-calendar"></span> Reserve the {{ tool.name }}
+								</div>
+							</div>
+						{% endif %}
+					{% endif %}
+				</div>
+			{% elif tool not in customer.qualifications.all %}
+				<h2>
+					<p>You have not been qualified to use this tool yet.</p>
+					<p>Please contact the primary tool owner, {{ tool.primary_owner }}, if you would like to receive training for tool qualification.</p>
+					{% if tool.backup_owners.all.exists %}
+						<p>
+						{% if tool.backup_owners.all.count == 1 %}
+							If you are unable to reach {{ tool.primary_owner }} then please contact the backup tool owner, {{ tool.backup_owners.all|first }}.
+						{% elif tool.backup_owners.all.count > 1 %}
+							If you are unable to reach {{ tool.primary_owner }} then please contact one of the backup tool owners:
+							<ul>
+							{% for x in tool.backup_owners.all %}
+								<li>{{ x }}</li>
+							{% endfor %}
+							</ul>
+						{% endif %}
+						</p>
+					{% endif %}
+					{% if tool.superusers.all.count == 1 %}
+						{% with tool.superusers.all|first as superuser %}
+							<p>For equipment training, you can contact the primary, backup or the superuser, {{ superuser.get_contact_info_html|safe }}.</p>
+						{% endwith %}
+					{% elif tool.superusers.all.count > 1 %}
+						<p>For equipment training, you can contact the primary, backup or one of the superusers:
 						<ul>
-						{% for x in tool.backup_owners.all %}
+						{% for x in tool.superusers.all %}
 							<li>{{ x }}</li>
 						{% endfor %}
 						</ul>
+						</p>
 					{% endif %}
-                    </p>
-				{% endif %}
-                {% if tool.superusers.all.count == 1 %}
-					{% with tool.superusers.all|first as superuser %}
-						<p>For equipment training, you can contact the primary, backup or the superuser, {{ superuser.get_contact_info_html|safe }}.</p>
-					{% endwith %}
-				{% elif tool.superusers.all.count > 1 %}
-					<p>For equipment training, you can contact the primary, backup or one of the superusers:
-                    <ul>
-					{% for x in tool.superusers.all %}
-						<li>{{ x }}</li>
-					{% endfor %}
-                    </ul>
-                    </p>
-				{% endif %}
-			</h2>
-		{% endif %}
+				</h2>
+			{% endif %}
+		</div>
 	{% endif %}
 </form>
+
+{% if show_wait_list %}
+	<div style="margin-top: 15px; display: inline-block; width: 100%;">
+		<div style="margin-bottom: 10px; font-size: x-large; width: 100%;">
+			<span>This tool has a wait list. There are <strong>{{ wait_list.count }}</strong> people in line to use this tool.</span>
+			{% if not wait_list_position == 0 %}
+				<br><span>You are number <strong>{{ wait_list_position }}</strong> in line to use this tool.</span>
+			{% endif %}
+		</div>
+		<div id="wait-list" style="margin-top: 20px;">
+			{% if wait_list_position == 0 %}
+				<div class="alert alert-success" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="enter_wait_list('{{ tool.id }}', '{{ customer.id }}'); return false;">
+					<span class="glyphicon glyphicon-save"></span> Enter Wait List for {{ tool.name }}
+				</div>
+			{% else %}
+				<div class="alert alert-danger" style="text-align:center; margin-bottom:0; font-size:x-large" onclick="exit_wait_list('{{ tool.id }}', '{{ customer.id }}'); return false;">
+					<span class="glyphicon glyphicon-trash"></span> Exit Wait List for {{ tool.name }}
+				</div>
+			{% endif %}
+			{% if wait_list.count > 0 %}
+				<div style="margin-top: 20px;">
+					<a onclick="toggle_details(this)" style="font-size: x-large;" data-toggle="collapse" data-target="#wait-list-content" class="pointer" >
+						<span class="glyphicon glyphicon-chevron-right chevron"></span> Show Wait List
+					</a>
+				</div>
+			{% endif %}
+		</div>
+		{% if wait_list.count > 0 %}
+			<div id="wait-list-content"  style="margin-top: 10px;" class="collapse">
+				<table style="margin-top: 10px;" class="table table-condensed table-striped table-bordered">
+					<thead>
+						<tr style="font-size: x-large;">
+							<th>Position</th>
+							<th>User</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for entry in wait_list %}
+							<tr class="{% if customer.id == entry.user.id %}success{% endif %}" style="font-size: large;">
+								<td>{{ forloop.counter }}</td>
+								<td>{{ entry.user.get_full_name }}</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{% endif %}
+	</div>
+{% endif %}
+
 <div style="height:150px">{# Spacer #}</div>
 
 <script>
