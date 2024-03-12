@@ -239,8 +239,14 @@ function event_render(event, element)
 		element.attr('title', event.tooltip)
 	else if ('title' in event)
 		element.attr('title', event.title)
-    if ("colors" in event) {
+    if ("colors" in event)
+    {
         set_multiple_colors($(element), event["colors"]);
+    }
+    {# Reset the background color so the current user's reservations look darker #}
+    if ("own-reservation" in event && event["own-reservation"])
+    {
+        $(element).find(".fc-bg").css("background-color", "inherit");
     }
 }
 

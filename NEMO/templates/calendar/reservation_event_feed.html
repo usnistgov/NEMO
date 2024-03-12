@@ -18,9 +18,10 @@
 			    "title": "{{x.reservation_item.name|escapejs}} ({{x.user.username|escapejs}})\n{{ x.title|escapejs }}",
             {% else %}
                 "title": "{{ x.title|default:x.user|escapejs }}{% if display_configuration %}\n{{ x.get_configuration_options_display|escapejs }}{% endif %}",
-                {% if display_configuration %}"colors": ["{{ x.get_configuration_options_colors|join:'","' }}"],{% endif %}
+                {% if display_configuration and x.get_configuration_options_colors %}"colors": ["{{ x.get_configuration_options_colors|join:'","' }}"],{% endif %}
             {% endif %}
-			"color": {% if x.user.id == user.id %}"#3a87ad"{% else %}"#88B7CD"{% endif %},
+            "color": "{% if x.tool %}{% if x.reservation_item.tool_calendar_color|lower == "#33ad33" %}#88B7CD{% else %}{{ x.reservation_item.tool_calendar_color|default:"#88B7CD"|escapejs }}{% endif %}{% else %}{{ x.reservation_item.area_calendar_color|default:"#88B7CD"|escapejs }}{% endif %}",
+			{% if x.user.id == user.id %}"own-reservation": true,{% endif %}
 		{% endif %}
 		{% if x.creator.id == x.user.id %}
 			"tooltip": "{{ x.reservation_item.name }} reservation for {{ x.user }}",
