@@ -142,11 +142,7 @@ class SensorAdminForm(forms.ModelForm):
             return
         cleaned_data = super().clean()
 
-        card = (
-            self.cleaned_data["sensor_card"]
-            if "sensor_card" in self.cleaned_data
-            else self.cleaned_data["interlock_card"]
-        )
+        card = self.cleaned_data.get("sensor_card", None) or self.cleaned_data.get("interlock_card")
         if card:
             category = card.category
             from NEMO.apps.sensors import sensors

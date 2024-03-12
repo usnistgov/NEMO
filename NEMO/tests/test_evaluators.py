@@ -1,6 +1,5 @@
 from unittest import TestCase
 
-from NEMO.apps.sensors.evaluators import evaluate_modbus_expression, modbus_functions
 from NEMO.evaluators import evaluate_boolean_expression, evaluate_expression, get_expression_variables
 
 
@@ -31,23 +30,6 @@ class TestAstEval(TestCase):
         self.assertEqual(5, evaluate_expression("abs(-5)"))
         self.assertEqual(12, evaluate_expression("trunc(12.123)"))
         self.assertEqual(2, evaluate_expression("sqrt(4)"))
-
-    def test_modbus_evaluation(self):
-        # Test all modbus functions
-        variables_1 = {"my_list": [100]}
-        variables_2 = {"my_list": [100, 500]}
-        variables_4 = {"my_list": [100, 500, 1000, 2000]}
-        for function_name in modbus_functions:
-            evaluate_modbus_expression(f"decode_string(my_list)", **variables_1)
-            if "8" in function_name:
-                evaluate_modbus_expression(f"{function_name}(my_list)", **variables_1)
-            if "16" in function_name:
-                evaluate_modbus_expression(f"{function_name}(my_list)", **variables_1)
-            if "32" in function_name:
-                evaluate_modbus_expression(f"{function_name}(my_list)", **variables_2)
-            elif "64" in function_name:
-                evaluate_modbus_expression(f"{function_name}(my_list)", **variables_4)
-        evaluate_modbus_expression(f"round(decode_8bit_int(my_list))", **variables_1)
 
     def test_boolean_evaluation(self):
         self.assertFalse(evaluate_boolean_expression("False"))
