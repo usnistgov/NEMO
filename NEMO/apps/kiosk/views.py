@@ -7,9 +7,21 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
+import settings
 from NEMO.decorators import synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.models import BadgeReader, Project, Reservation, ReservationItemType, Tool, UsageEvent, User
+from NEMO.forms import CommentForm, nice_errors, TaskImagesForm, TaskForm
+from NEMO.models import (
+    BadgeReader,
+    Project,
+    Reservation,
+    ReservationItemType,
+    Tool,
+    UsageEvent,
+    User,
+    Interlock,
+    SafetyIssue,
+)
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int
 from NEMO.views.calendar import (
@@ -20,7 +32,9 @@ from NEMO.views.calendar import (
     shorten_reservation,
 )
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization
+from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.status_dashboard import create_tool_summary
+from NEMO.views.tasks import save_task_images, send_new_task_emails, set_task_status
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
     interlock_bypass_allowed,
@@ -400,3 +414,125 @@ def get_badge_reader(request) -> BadgeReader:
     except BadgeReader.DoesNotExist:
         badge_reader = BadgeReader.default()
     return badge_reader
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def tool_report_problem(request, tool_id, user_id, back):
+    tool = Tool.objects.get(id=tool_id, visible=True)
+    customer = User.objects.get(id=user_id)
+
+    dictionary = {
+        "tool": tool,
+        "date": None,
+        "customer": customer,
+        "back": back,
+    }
+
+    return render(request, "kiosk/tool_report_problem.html", dictionary)
+
+
+@permission_required("NEMO.kiosk")
+@require_POST
+def report_problem(request):
+    tool = Tool.objects.get(id=request.POST["tool"])
+    customer = User.objects.get(id=request.POST["customer_id"])
+    back = request.POST["back"]
+
+    dictionary = {"back": back, "tool": tool, "customer": customer}
+
+    """ Report a problem for a tool. """
+    images_form = TaskImagesForm(request.POST, request.FILES)
+    form = TaskForm(request.user, data=request.POST)
+
+    if not form.is_valid() or not images_form.is_valid():
+        errors = nice_errors(form)
+        errors.update(nice_errors(images_form))
+
+        dictionary["message"] = errors.as_ul()
+        return render(request, "kiosk/error.html", dictionary)
+
+    task = form.save()
+    task_images = save_task_images(request, task)
+
+    if not settings.ALLOW_CONDITIONAL_URLS and task.force_shutdown:
+        site_title = ApplicationCustomization.get("site_title")
+
+        dictionary[
+            "message"
+        ] = f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus."
+        return render(request, "kiosk/error.html", dictionary)
+
+    if task.force_shutdown:
+        # Shut down the tool.
+        task.tool.operational = False
+        task.tool.save()
+        # End any usage events in progress for the tool or the tool's children.
+        UsageEvent.objects.filter(tool_id__in=task.tool.get_family_tool_ids(), end=None).update(end=timezone.now())
+        # Lock the interlock for this tool.
+        try:
+            tool_interlock = Interlock.objects.get(tool__id=task.tool.id)
+            tool_interlock.lock()
+        except Interlock.DoesNotExist:
+            pass
+
+    if task.safety_hazard:
+        concern = (
+            "This safety issue was automatically created because a "
+            + str(task.tool).lower()
+            + " problem was identified as a safety hazard.\n\n"
+        )
+        concern += task.problem_description
+        issue = SafetyIssue.objects.create(reporter=request.user, location=task.tool.location, concern=concern)
+        send_safety_email_notification(request, issue)
+
+    send_new_task_emails(request, task, task_images)
+    set_task_status(request, task, request.POST.get("status"), request.user)
+
+    return render(request, "kiosk/success.html", {"customer": customer})
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def tool_post_comment(request, tool_id, user_id, back):
+    tool = Tool.objects.get(id=tool_id, visible=True)
+    customer = User.objects.get(id=user_id)
+
+    dictionary = {
+        "tool": tool,
+        "date": None,
+        "customer": customer,
+        "back": back,
+    }
+
+    return render(request, "kiosk/tool_post_comment.html", dictionary)
+
+
+@permission_required("NEMO.kiosk")
+@require_POST
+def post_comment(request):
+    tool = Tool.objects.get(id=request.POST["tool"])
+    customer = User.objects.get(id=request.POST["customer_id"])
+    back = request.POST["back"]
+
+    dictionary = {"back": back, "tool": tool, "customer": customer}
+
+    """ Post a comment for a tool. """
+    form = CommentForm(request.POST)
+    if not form.is_valid():
+        dictionary["message"] = nice_errors(form).as_ul()
+        return render(request, "kiosk/error.html", dictionary)
+
+    comment = form.save(commit=False)
+    comment.content = comment.content.strip()
+    comment.author = request.user
+    comment.expiration_date = (
+        None
+        if form.cleaned_data["expiration"] == -1
+        else timezone.now() + timedelta(days=form.cleaned_data["expiration"])
+    )
+    comment.save()
+
+    return render(request, "kiosk/success.html", {"customer": customer})
