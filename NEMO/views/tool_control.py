@@ -47,6 +47,7 @@ from NEMO.utilities import (
     render_email_template,
     send_mail,
 )
+from NEMO.views.area_access import able_to_self_log_out_of_area
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import (
     ApplicationCustomization,
@@ -466,6 +467,10 @@ def disable_tool(request, tool_id):
             and existing_staff_charge.project == current_usage_event.project
         ):
             response = render(request, "staff_charges/reminder.html", {"tool": tool})
+
+    area_record = user.area_access_record()
+    if area_record and tool.ask_to_leave_area_when_done_using and able_to_self_log_out_of_area(user):
+        response = render(request, "tool_control/logout_user.html", {"area": area_record.area, "tool": tool})
 
     return response
 

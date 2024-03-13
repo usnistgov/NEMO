@@ -34,6 +34,7 @@ urlpatterns = [
                     views.tool_reservation,
                     name="kiosk_tool_reservation",
                 ),
+                path("logout_user/<int:tool_id>", views.logout_user, name="kiosk_logout_user"),
                 # Keeping for backwards compatibility (bookmarked links with location)
                 re_path(r"^(?P<location>.+)/$", views.kiosk, name="kiosk"),
                 path("", views.kiosk, name="kiosk"),

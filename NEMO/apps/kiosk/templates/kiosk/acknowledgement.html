@@ -1,7 +1,16 @@
 <h1>{{ message }}</h1>
 
 {% if badge_number %}
-	<script>load_choices('{{ badge_number }}')</script>
+    {% if not delay %}
+	    <script>load_choices('{{ badge_number }}')</script>
+    {% else %}
+	    <script>revert({{ delay }}, function(){load_choices('{{ badge_number }}')});</script>
+    {% endif %}
 {% else %}
 	<script>revert({{ delay|default:5 }});</script>
+{% endif %}
+{% if ask_logout %}
+    <a href="javascript:void(0)" role="button" class="btn btn-default btn-lg btn-block btn-extra-large" onclick="logout_user('{{ tool.id }}', '{{ badge_number }}');">
+		Log out to the {{ area.name }}
+	</a>
 {% endif %}

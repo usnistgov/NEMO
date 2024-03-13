@@ -1,0 +1,19 @@
+{% load custom_tags_and_filters %}
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-label="Modal close button">&times;</button>
+	<h4 id="modal-description-label" class="modal-title">Would you like to log out of the {{ area.name }}?</h4>
+</div>
+
+<div class="modal-body">
+    You are currently logged in the {{ area.name }}.<br>
+    Now that you have finished using the {{ tool.name_or_child_in_use_name }}, would you
+    like to also log out of the {{ area.name }}?
+</div>
+
+<div class="modal-footer">
+    {% url 'self_log_out' user.id as area_logout_url %}
+    {% with button_name="Log out of the "|concat:area.name onclick_js="$('#dialog').one('hidden.bs.modal', ajax_get('"|concat:area_logout_url|concat:"'));" %}
+        {% button type="save" submit=False dismiss="modal" value="Continue without logging out" icon="glyphicon-time" %}
+        {% button type="delete" submit=False dismiss="modal" value=button_name icon="glyphicon-stop" onclick=onclick_js %}
+    {% endwith %}
+</div>

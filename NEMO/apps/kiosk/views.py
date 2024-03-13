@@ -12,6 +12,7 @@ from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import BadgeReader, Project, Reservation, ReservationItemType, Tool, UsageEvent, User
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int
+from NEMO.views.area_access import log_out_user
 from NEMO.views.calendar import (
     cancel_the_reservation,
     extract_reservation_questions,
@@ -98,7 +99,7 @@ def disable_tool(request):
 @synchronized("tool_id")
 def do_disable_tool(request, tool_id):
     tool = Tool.objects.get(id=tool_id)
-    customer = User.objects.get(id=request.POST["customer_id"])
+    customer: User = User.objects.get(id=request.POST["customer_id"])
     downtime = timedelta(minutes=quiet_int(request.POST.get("downtime")))
     bypass_interlock = request.POST.get("bypass", "False") == "True"
     response = policy.check_to_disable_tool(tool, customer, downtime)
@@ -145,7 +146,18 @@ def do_disable_tool(request, tool_id):
     dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
 
     current_usage_event.save()
-    dictionary = {"message": "You are no longer using the {}".format(tool), "badge_number": customer.badge_number}
+    dictionary = {
+        "message": "You are no longer using the {}".format(tool),
+        "badge_number": customer.badge_number,
+        "delay": 1,
+    }
+    record = customer.area_access_record()
+    if record and tool.ask_to_leave_area_when_done_using:
+        dictionary["tool"] = tool
+        dictionary["area"] = record.area
+        dictionary["delay"] = 5
+        dictionary["ask_logout"] = True
+        return render(request, "kiosk/acknowledgement.html", dictionary)
     return render(request, "kiosk/acknowledgement.html", dictionary)
 
 
@@ -391,6 +403,28 @@ def tool_information(request, tool_id, user_id, back):
 @require_GET
 def kiosk(request, location=None):
     return render(request, "kiosk/kiosk.html", {"badge_reader": get_badge_reader(request)})
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_GET
+def logout_user(request, tool_id):
+    tool = Tool.objects.get(pk=tool_id)
+    if not tool.ask_to_leave_area_when_done_using:
+        dictionary = {"message": "You are not allowed to logout of the area from this page"}
+        return render(request, "kiosk/acknowledgement.html", dictionary)
+    customer = User.objects.get(badge_number=request.GET["badge_number"])
+    record = customer.area_access_record()
+    if record is None:
+        dictionary = {"message": "You are not logged into any areas"}
+        return render(request, "kiosk/acknowledgement.html", dictionary)
+    log_out_user(customer)
+    dictionary = {
+        "message": f"You have been successfully logged out of the {record.area}",
+        "badge_number": customer.badge_number,
+        "delay": 1,
+    }
+    return render(request, "kiosk/acknowledgement.html", dictionary)
 
 
 def get_badge_reader(request) -> BadgeReader:
