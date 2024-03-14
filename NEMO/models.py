@@ -2511,6 +2511,9 @@ class Project(SerializationByNameModel):
     allow_consumable_withdrawals = models.BooleanField(
         default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project"
     )
+    allow_staff_charges = models.BooleanField(
+        default=True, help_text="Uncheck this box if staff charges are forbidden for this project"
+    )
 
     class Meta:
         ordering = ["name"]

@@ -16,7 +16,7 @@ from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_required, synchronized
-from NEMO.exceptions import RequiredUnansweredQuestionsException
+from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import (
     AreaAccessRecord,
@@ -363,6 +363,11 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
         new_staff_charge.staff_member = request.user
         new_staff_charge.customer = user
         new_staff_charge.project = project
+        try:
+            # Check that staff charge is actually allowed
+            policy.check_billing_to_project(project, user, new_staff_charge, new_staff_charge)
+        except ProjectChargeException as e:
+            return HttpResponseBadRequest(e.msg)
         new_staff_charge.save()
         # If the tool requires area access, start charging area access time
         if tool.requires_area_access and RemoteWorkCustomization.get_bool(
