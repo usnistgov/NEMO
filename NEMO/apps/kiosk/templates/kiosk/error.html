@@ -5,20 +5,12 @@
 	</form>
 {% endif %}
 <div class="row" style="margin:30px 0">
-	{% if back  %}
-		{% if project %}
+	{% if back %}
 		<div class="col-xs-offset-1 col-xs-5" onclick="tool_reservation('{% url 'kiosk_tool_reservation' tool.id customer.id back %}')">
 			<div class="alert alert-info" style="text-align:center; margin-bottom:0">
 				<span style="font-size:x-large">Go back to reservation</span>
 			</div>
 		</div>
-		{% else %}
-		<div class="col-xs-offset-1 col-xs-5" onclick="tool_post_comment('{% url 'kiosk_tool_post_comment' tool.id customer.id back %}')">
-			<div class="alert alert-info" style="text-align:center; margin-bottom:0">
-				<span style="font-size:x-large">Go back</span>
-			</div>
-		</div>
-		{% endif %}
 	{% else %}
 		<div class="col-xs-offset-1 col-xs-5" onclick="load_choices('{{ customer.badge_number }}')">
 			<div class="alert alert-info" style="text-align:center; margin-bottom:0">
