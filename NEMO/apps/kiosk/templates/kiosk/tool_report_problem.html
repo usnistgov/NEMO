@@ -17,6 +17,12 @@
 </div>
 <h2>Report a problem</h2>
 <h4>Use this form to report a problem relating to the currently selected tool. The {{ facility_name }} staff as well as anyone with an upcoming reservation will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</h4>
+{% if message %}
+<div class="alert alert-danger">
+	<h4>Please correct the following errors:</h4>
+	<h4>{{ message }}</h4>
+</div>
+{% endif %}
 <form id="tool_report_problem" method="post" enctype="multipart/form-data">
 	{% csrf_token %}
 	<input type="hidden" name="action" value="create">
@@ -48,31 +54,24 @@
 	{% endif %}
 
 	<div class="form-group">
-		<label for="description" style="font-size:18px;">Please provide a <strong>detailed</strong> description of the problem so that the {{ facility_name }} staff have enough information to resolve the problem efficiently.</label>
-		<textarea id="description" name="description" class="form-control" rows="7" required></textarea>
+		<label for="description">Please provide a <strong>detailed</strong> description of the problem so that the {{ facility_name }} staff have enough information to resolve the problem efficiently.</label>
+		<textarea id="description" name="description" class="form-control" rows="7" required>{{description}}</textarea>
 	</div>
 	{% if user.is_staff %}
 		<div class="form-group">
 			<div style="position:relative">
-				<label for="estimated_resolution_time" class="control-label" style="font-size:18px;">What is your best estimate of when the problem will be resolved? Leave this field blank if you are unsure.</label>
-				<input id="estimated_resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off">
-				<script>
-					let timepicker_properties =
-					{
-						format: "{{ datetime_input_js_format }}",
-						sideBySide: true
-					};
-					$('#estimated_resolution_time').pickadate(timepicker_properties);
-				</script>
+				<label for="estimated_resolution_tm" class="control-label">What is your best estimate of when the problem will be resolved? Leave this field blank if you are unsure.</label>
+				<input id="estimated_resolution_dt" name="estimated_resolution_dt" type="text" class="form-control" autocomplete="off" placeholder="Choose a date" value="{{ estimated_resolution_dt }}"><br/>
+				<input id="estimated_resolution_tm" name="estimated_resolution_tm" type="text" class="form-control" autocomplete="off" placeholder="Choose a time" value="{{ estimated_resolution_tm }}">
 			</div>
 		</div>
 	{% endif %}
 	<div class="form-group">
-		<div class="checkbox"><label style="font-size:18px;"><input name="safety_hazard" id="safety_hazard" type="checkbox" style="padding-left:10px;scale:2.5"/><span style="padding-left:10px;">This problem represents a safety hazard to the {{ facility_name }} and should be regarded as urgent.Notify the {{ facility_name }} safety officer of this issue.</span></label></div>
-		<div class="checkbox"><label style="font-size:18px;"><input name="force_shutdown" id="force_shutdown" type="checkbox" style="scale: 2.5"/><span style="padding-left:10px;">Shut down the tool so that it may not be used until this problem is resolved.</span></label></div>
+		<div class="checkbox"><label><input name="safety_hazard" id="safety_hazard" type="checkbox"  {% if safety_hazard %}checked{% endif %}/><span style="padding-left:10px;">This problem represents a safety hazard to the {{ facility_name }} and should be regarded as urgent.Notify the {{ facility_name }} safety officer of this issue.</span></label></div>
+		<div class="checkbox"><label><input name="force_shutdown" id="force_shutdown" type="checkbox"  {% if force_shutdown %}checked{% endif %}/><span style="padding-left:10px;">Shut down the tool so that it may not be used until this problem is resolved.</span></label></div>
 	</div>
 	<div class="form-group">
-		<input aria-label="File upload" id="fileupload" type="file" name="image" multiple style="font-size:18px;">
+		<input aria-label="File upload" id="fileupload" type="file" name="image" multiple>
 	</div>
 	<div class="form-group text-center" style="margin-top:40px" >
         {% button type="delete" submit=False style="text-align:center; margin-bottom:0; font-size:x-large" icon="glyphicon-send" onclick="report_problem()" value="Report problem" %}
@@ -80,4 +79,14 @@
 </form>
 <script>
 	$('#description').keyboard();
+	{% if task_categories %}
+		$('#problem_category option[value="{{problem_category}}"]').prop('selected', true);
+	{% endif %}
+
+	let date_picker = $('#estimated_resolution_dt').pickadate({format: "yyyy-mm-dd", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true});
+	let start_time_picker = $('#estimated_resolution_tm').pickatime({interval: 15, format: "H:i",formatSubmit: "H:i", hiddenName: true});
+	// set initial date
+	if ('{{ date|default_if_none:'' }}') {
+		date_picker.pickadate('picker').set('select', '{{ date }}', {format: 'MM/DD/YYYY'})
+	}
 </script>

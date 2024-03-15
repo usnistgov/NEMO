@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
@@ -21,6 +21,8 @@ from NEMO.models import (
     User,
     Interlock,
     SafetyIssue,
+    TaskCategory,
+    TaskStatus,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int
@@ -428,6 +430,8 @@ def tool_report_problem(request, tool_id, user_id, back):
         "date": None,
         "customer": customer,
         "back": back,
+        "task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
+        "task_statuses": TaskStatus.objects.all(),
     }
 
     return render(request, "kiosk/tool_report_problem.html", dictionary)
@@ -440,21 +444,47 @@ def report_problem(request):
     customer = User.objects.get(id=request.POST["customer_id"])
     back = request.POST["back"]
 
-    dictionary = {"back": back, "tool": tool, "customer": customer}
+    dictionary = {
+        "tool": tool,
+        "customer": customer,
+        "back": back,
+        "task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
+        "task_statuses": TaskStatus.objects.all(),
+    }
 
     """ Report a problem for a tool. """
     images_form = TaskImagesForm(request.POST, request.FILES)
     form = TaskForm(request.user, data=request.POST)
+
+    try:
+        date = parse_date(request.POST["estimated_resolution_dt"])
+        estimated_resolution_time = localize(
+            datetime.combine(date, parse_time(request.POST["estimated_resolution_tm"]))
+        )
+    except:
+        estimated_resolution_time = None
 
     if not form.is_valid() or not images_form.is_valid():
         errors = nice_errors(form)
         errors.update(nice_errors(images_form))
 
         dictionary["message"] = errors.as_ul()
-        return render(request, "kiosk/error.html", dictionary)
+        dictionary["estimated_resolution_dt"] = request.POST["estimated_resolution_dt"]
+        dictionary["estimated_resolution_tm"] = request.POST["estimated_resolution_tm"]
+        if "problem_category" in form.cleaned_data:
+            dictionary["problem_category"] = form.cleaned_data["problem_category"].id
+        if "description" in form.cleaned_data:
+            dictionary["description"] = form.cleaned_data["description"]
+        if "safety_hazard" in form.cleaned_data:
+            dictionary["safety_hazard"] = form.cleaned_data["safety_hazard"]
+        if "force_shutdown" in form.cleaned_data:
+            dictionary["force_shutdown"] = form.cleaned_data["force_shutdown"]
+        return render(request, "kiosk/tool_report_problem.html", dictionary)
 
     task = form.save()
     task_images = save_task_images(request, task)
+    task.estimated_resolution_time = estimated_resolution_time
+    task.save()
 
     if not settings.ALLOW_CONDITIONAL_URLS and task.force_shutdown:
         site_title = ApplicationCustomization.get("site_title")
@@ -462,7 +492,7 @@ def report_problem(request):
         dictionary[
             "message"
         ] = f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus."
-        return render(request, "kiosk/error.html", dictionary)
+        return render(request, "kiosk/tool_report_problem.html", dictionary)
 
     if task.force_shutdown:
         # Shut down the tool.
@@ -490,7 +520,7 @@ def report_problem(request):
     send_new_task_emails(request, task, task_images)
     set_task_status(request, task, request.POST.get("status"), request.user)
 
-    return render(request, "kiosk/success.html", {"customer": customer})
+    return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
 
 
 @login_required
@@ -523,7 +553,13 @@ def post_comment(request):
     form = CommentForm(request.POST)
     if not form.is_valid():
         dictionary["message"] = nice_errors(form).as_ul()
-        return render(request, "kiosk/error.html", dictionary)
+        if "content" in form.cleaned_data:
+            dictionary["content"] = form.cleaned_data["content"]
+        if "expiration" in form.cleaned_data:
+            dictionary["expiration"] = form.cleaned_data["expiration"]
+        if "staff_only" in form.cleaned_data:
+            dictionary["staff_only"] = form.cleaned_data["staff_only"]
+        return render(request, "kiosk/tool_post_comment.html", dictionary)
 
     comment = form.save(commit=False)
     comment.content = comment.content.strip()
@@ -535,4 +571,4 @@ def post_comment(request):
     )
     comment.save()
 
-    return render(request, "kiosk/success.html", {"customer": customer})
+    return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
