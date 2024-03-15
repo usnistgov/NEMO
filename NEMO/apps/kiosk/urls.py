@@ -36,6 +36,7 @@ urlpatterns = [
                     views.tool_reservation,
                     name="kiosk_tool_reservation",
                 ),
+                path("logout_user/<int:tool_id>", views.logout_user, name="kiosk_logout_user"),
                 re_path(
                     r"^tool_report_problem/(?P<tool_id>\d+)/(?P<user_id>\d+)/(?P<back>back_to_start|back_to_category)/$",
                     views.tool_report_problem,

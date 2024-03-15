@@ -163,12 +163,13 @@
 			$("#badge_number").html("");
 			show_alerts();
 		}
-		function revert(delay)
+		function revert(delay, callback)
 		{
+            callback = callback || revert_to_default_content;
 			clear_timeout();
 			let countdown = delay;
 			delay = delay * 1000;
-			timeout_handle = setTimeout(revert_to_default_content, delay);
+			timeout_handle = setTimeout(callback, delay);
 			countdown_handle = setInterval(function()
             {
 				$('#countdown').html(countdown);
@@ -390,7 +391,11 @@
 			    ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
             }
 		}
-
+        function logout_user(tool_id, badge_number)
+		{
+			status_element.html("<h1>Logging you out...</h1>").show();
+            ajax_get('{% url 'kiosk_logout_user' '999' %}'.replace('999', tool_id), {"badge_number": badge_number}, load_complete);
+		}
         function fetch_usage()
 		{
             if(usage)

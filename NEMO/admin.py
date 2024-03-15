@@ -227,7 +227,6 @@ class ToolAdmin(admin.ModelAdmin):
     readonly_fields = ("_post_usage_preview", "_pre_usage_preview")
     autocomplete_fields = [
         "_primary_owner",
-        "_interlock",
         "parent_tool",
         "_grant_physical_access_level_upon_qualification",
     ]
@@ -292,6 +291,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "_grant_badge_reader_access_upon_qualification",
                     "_interlock",
                     "_allow_delayed_logoff",
+                    "_ask_to_leave_area_when_done_using",
                 )
             },
         ),
@@ -1214,7 +1214,6 @@ class DoorAdminForm(forms.ModelForm):
 class DoorAdmin(admin.ModelAdmin):
     list_display = ("name", "area", "interlock", "get_absolute_url", "id")
     form = DoorAdminForm
-    autocomplete_fields = ["interlock"]
 
 
 @register(AlertCategory)

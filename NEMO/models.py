@@ -1189,6 +1189,11 @@ class Tool(SerializationByNameModel):
         help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.",
         on_delete=models.PROTECT,
     )
+    _ask_to_leave_area_when_done_using = models.BooleanField(
+        default=False,
+        db_column="ask_to_leave_area_when_done_using",
+        help_text="Check this box to ask the user if they want to log out of the area when they are done using the tool.",
+    )
     _grant_physical_access_level_upon_qualification = models.ForeignKey(
         "PhysicalAccessLevel",
         db_column="grant_physical_access_level_upon_qualification_id",
@@ -1430,6 +1435,19 @@ class Tool(SerializationByNameModel):
     def requires_area_access(self, value):
         self.raise_setter_error_if_child_tool("requires_area_access")
         self._requires_area_access = value
+
+    @property
+    def ask_to_leave_area_when_done_using(self):
+        return (
+            self.parent_tool.ask_to_leave_area_when_done_using
+            if self.is_child_tool()
+            else self._ask_to_leave_area_when_done_using
+        )
+
+    @ask_to_leave_area_when_done_using.setter
+    def ask_to_leave_area_when_done_using(self, value):
+        self.raise_setter_error_if_child_tool("ask_to_leave_area_when_done_using")
+        self.ask_to_leave_area_when_done_using = value
 
     @property
     def grant_physical_access_level_upon_qualification(self):
@@ -2492,6 +2510,9 @@ class Project(SerializationByNameModel):
     )
     allow_consumable_withdrawals = models.BooleanField(
         default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project"
+    )
+    allow_staff_charges = models.BooleanField(
+        default=True, help_text="Uncheck this box if staff charges are forbidden for this project"
     )
 
     class Meta:
