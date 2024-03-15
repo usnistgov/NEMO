@@ -82,6 +82,9 @@
 	{% if task_categories %}
 		$('#problem_category option[value="{{problem_category}}"]').prop('selected', true);
 	{% endif %}
+	{% if task_statuses and user.is_staff %}
+		$('#status option[value="{{status}}"]').prop('selected', true);
+	{% endif %}
 
 	let date_picker = $('#estimated_resolution_dt').pickadate({format: "yyyy-mm-dd", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true});
 	let start_time_picker = $('#estimated_resolution_tm').pickatime({interval: 15, format: "H:i",formatSubmit: "H:i", hiddenName: true});

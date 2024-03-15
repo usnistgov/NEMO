@@ -473,6 +473,8 @@ def report_problem(request):
         dictionary["estimated_resolution_tm"] = request.POST["estimated_resolution_tm"]
         if "problem_category" in form.cleaned_data:
             dictionary["problem_category"] = form.cleaned_data["problem_category"].id
+        if "status" in form.cleaned_data:
+            dictionary["status"] = form.cleaned_data["status"].id
         if "description" in form.cleaned_data:
             dictionary["description"] = form.cleaned_data["description"]
         if "safety_hazard" in form.cleaned_data:
