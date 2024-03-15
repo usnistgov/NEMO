@@ -155,7 +155,7 @@ def do_disable_tool(request, tool_id):
     if record and tool.ask_to_leave_area_when_done_using:
         dictionary["tool"] = tool
         dictionary["area"] = record.area
-        dictionary["delay"] = 5
+        dictionary["delay"] = 10
         dictionary["ask_logout"] = True
         return render(request, "kiosk/acknowledgement.html", dictionary)
     return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -421,7 +421,6 @@ def logout_user(request, tool_id):
     log_out_user(customer)
     dictionary = {
         "message": f"You have been successfully logged out of the {record.area}",
-        "badge_number": customer.badge_number,
         "delay": 1,
     }
     return render(request, "kiosk/acknowledgement.html", dictionary)
