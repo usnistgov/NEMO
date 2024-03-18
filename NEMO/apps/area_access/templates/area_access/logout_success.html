@@ -2,8 +2,18 @@
 <h1><p>{% now "h:i A" %}</p>You're now logged out of the {{ area }}, {{ name }}.</h1>
 <audio src="{% url 'media' 'success.mp3' %}" autoplay></audio>
 {% if door.adjacent_area %}
-    <a href="javascript:void(0)" role="button" class="btn btn-default btn-lg btn-block btn-extra-large" onclick="enter_area('{{ badge_number }}', undefined, true);">
-		Login to the {{ door.adjacent_area }}
-	</a>
+    <div class="alert alert-success clearfix" style="margin-top: 55px;">
+        <h3 class="col-sm-12" style="margin-bottom: 0">This door is adjacent to the {{ door.adjacent_area.name }}, what would you like to do?</h3>
+        <div class="col-sm-6">
+            <a href="javascript:void(0)" role="button" class="btn btn-default btn-lg btn-block btn-extra-large" onclick="revert()">
+                Exit (<span class="countdown">15</span>)
+            </a>
+        </div>
+        <div class="col-sm-6">
+            <a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area('{{ badge_number }}', undefined, true);">
+                Login to the {{ door.adjacent_area.name }}
+            </a>
+        </div>
+    </div>
 {% endif %}
 <script>{% if door.adjacent_area %}revert(15){% else %}revert(7){% endif %};</script>

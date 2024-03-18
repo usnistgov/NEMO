@@ -239,7 +239,7 @@ def usage_data_history(request, tool_id):
             "pre_run_data_table": table_pre_run_data,
             "data_history_user": User.objects.get(id=user_id) if user_id else None,
             "show_project_info": show_project_info or False,
-            "users": User.objects.filter(is_active=True),
+            "users": User.objects.all(),
         }
         return render(request, "tool_control/usage_data.html", dictionary)
 
