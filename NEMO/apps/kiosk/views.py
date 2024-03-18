@@ -10,7 +10,7 @@ from django.views.decorators.http import require_GET, require_POST
 import settings
 from NEMO.decorators import synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.forms import CommentForm, nice_errors, TaskImagesForm, TaskForm
+from NEMO.forms import CommentForm, nice_errors, TaskForm
 from NEMO.models import (
     BadgeReader,
     Project,
@@ -37,7 +37,7 @@ from NEMO.views.calendar import (
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization
 from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.status_dashboard import create_tool_summary
-from NEMO.views.tasks import save_task_images, send_new_task_emails, set_task_status
+from NEMO.views.tasks import send_new_task_emails, set_task_status
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
     interlock_bypass_allowed,
@@ -487,7 +487,6 @@ def report_problem(request):
     }
 
     """ Report a problem for a tool. """
-    images_form = TaskImagesForm(request.POST, request.FILES)
     form = TaskForm(request.user, data=request.POST)
 
     try:
@@ -498,9 +497,8 @@ def report_problem(request):
     except:
         estimated_resolution_time = None
 
-    if not form.is_valid() or not images_form.is_valid():
+    if not form.is_valid():
         errors = nice_errors(form)
-        errors.update(nice_errors(images_form))
 
         dictionary["message"] = errors.as_ul()
         dictionary["estimated_resolution_dt"] = request.POST["estimated_resolution_dt"]
@@ -518,16 +516,16 @@ def report_problem(request):
         return render(request, "kiosk/tool_report_problem.html", dictionary)
 
     task = form.save()
-    task_images = save_task_images(request, task)
     task.estimated_resolution_time = estimated_resolution_time
     task.save()
 
     if not settings.ALLOW_CONDITIONAL_URLS and task.force_shutdown:
         site_title = ApplicationCustomization.get("site_title")
 
-        dictionary[
-            "message"
-        ] = f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus."
+        dictionary["message"] = (
+            f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while "
+            f"using {site_title} off campus."
+        )
         return render(request, "kiosk/tool_report_problem.html", dictionary)
 
     if task.force_shutdown:
@@ -553,7 +551,7 @@ def report_problem(request):
         issue = SafetyIssue.objects.create(reporter=request.user, location=task.tool.location, concern=concern)
         send_safety_email_notification(request, issue)
 
-    send_new_task_emails(request, task, task_images)
+    send_new_task_emails(request, task, None)
     set_task_status(request, task, request.POST.get("status"), request.user)
 
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)

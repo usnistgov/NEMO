@@ -34,7 +34,7 @@
 	<input type="hidden" name="tool" value="{{ tool.id }}">
 	<input type="hidden" name="customer_id" value="{{ customer.id }}">
 	<div class="form-group">
-		<label class="form-inline" style="font-size:18px;">
+		<label class="form-inline">
 			How many days would you like the comment to be visible?
 			<select name="expiration" id="expiration" class="form-control" style="width:250px;font-size:18px;" required>
 				<option value="" disabled selected></option>
@@ -49,13 +49,13 @@
 		</label>
 	</div>
 	<div class="form-group">
-		<label for="content-area" style="font-size:18px;">What would you like to say?</label>
+		<label for="content-area">What would you like to say?</label>
 		<textarea name="content" id="content-area" class="form-control" rows="6" required>{{content}}</textarea>
 	</div>
 	{% if user.is_staff %}
 		<div class="form-group">
-			<input type="checkbox" id="staff_only" name="staff_only" style="scale: 2.5" {% if staff_only %}checked{% endif %}/>
-			<label for="staff_only" style="padding-left: 10px;font-size:18px">Make this comment only visible to staff users</label>
+			<input type="checkbox" id="staff_only" name="staff_only" {% if staff_only %}checked{% endif %}/>
+			<label for="staff_only">Make this comment only visible to staff users</label>
 		</div>
 	{% endif %}
 	<div class="form-group text-center" style="margin-top:40px" >
@@ -65,4 +65,6 @@
 <script>
 	$('#content-area').keyboard();
 	$('#expiration option[value="{{expiration}}"]').prop('selected', true);
+
+	revert(90);
 </script>

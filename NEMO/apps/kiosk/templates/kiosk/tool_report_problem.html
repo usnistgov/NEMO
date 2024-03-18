@@ -23,7 +23,7 @@
 	<h4>{{ message }}</h4>
 </div>
 {% endif %}
-<form id="tool_report_problem" method="post" enctype="multipart/form-data">
+<form id="tool_report_problem" method="post">
 	{% csrf_token %}
 	<input type="hidden" name="action" value="create">
 	<input type="hidden" name="back" value="{{ back }}">
@@ -70,9 +70,6 @@
 		<div class="checkbox"><label><input name="safety_hazard" id="safety_hazard" type="checkbox"  {% if safety_hazard %}checked{% endif %}/><span style="padding-left:10px;">This problem represents a safety hazard to the {{ facility_name }} and should be regarded as urgent.Notify the {{ facility_name }} safety officer of this issue.</span></label></div>
 		<div class="checkbox"><label><input name="force_shutdown" id="force_shutdown" type="checkbox"  {% if force_shutdown %}checked{% endif %}/><span style="padding-left:10px;">Shut down the tool so that it may not be used until this problem is resolved.</span></label></div>
 	</div>
-	<div class="form-group">
-		<input aria-label="File upload" id="fileupload" type="file" name="image" multiple>
-	</div>
 	<div class="form-group text-center" style="margin-top:40px" >
         {% button type="delete" submit=False style="text-align:center; margin-bottom:0; font-size:x-large" icon="glyphicon-send" onclick="report_problem()" value="Report problem" %}
 	</div>
@@ -92,4 +89,6 @@
 	if ('{{ date|default_if_none:'' }}') {
 		date_picker.pickadate('picker').set('select', '{{ date }}', {format: 'MM/DD/YYYY'})
 	}
+
+	revert(90);
 </script>

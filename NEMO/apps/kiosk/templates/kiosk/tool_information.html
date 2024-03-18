@@ -6,9 +6,10 @@
 	</div>
 </div>
 
+
 <h1 style="display:inline-block">{{ tool.name_or_child_in_use_name }}</h1>
-<button class="btn btn-default" style="text-align:center; margin-bottom:10px; margin-left:10px; font-size:x-large;" onclick="tool_report_problem('{% url 'kiosk_tool_report_problem' tool.id customer.id back %}')">Report a problem</button>
-<button class="btn btn-default" style="text-align:center; margin-bottom:10px; margin-left:10px; font-size:x-large;" onclick="tool_post_comment('{% url 'kiosk_tool_post_comment' tool.id customer.id back %}')">Post a comment</button>
+<button class="btn btn-default" style="text-align:center; margin-bottom:10px; margin-left:30px; vertical-align:super; font-size:x-large;" onclick="tool_report_problem('{% url 'kiosk_tool_report_problem' tool.id customer.id back %}')">Report a problem</button>
+<button class="btn btn-default" style="text-align:center; margin-bottom:10px; margin-left:10px; vertical-align:super; font-size:x-large;" onclick="tool_post_comment('{% url 'kiosk_tool_post_comment' tool.id customer.id back %}')">Post a comment</button>
 
 {# Display tool status... #}
 <div class="tool-status">
