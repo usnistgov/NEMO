@@ -348,6 +348,21 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     if response.status_code != HTTPStatus.OK:
         return response
 
+    # Create a new usage event to track how long the user uses the tool.
+    new_usage_event = UsageEvent()
+    new_usage_event.operator = operator
+    new_usage_event.user = user
+    new_usage_event.project = project
+    new_usage_event.tool = tool
+
+    # Collect pre-usage questions and validate them
+    dynamic_form = DynamicForm(tool.pre_usage_questions)
+
+    try:
+        new_usage_event.pre_run_data = dynamic_form.extract(request)
+    except RequiredUnansweredQuestionsException as e:
+        return HttpResponseBadRequest(str(e))
+
     # All policy checks passed so enable the tool for the user.
     if tool.interlock and not tool.interlock.unlock():
         if bypass_interlock and interlock_bypass_allowed(user):
@@ -380,22 +395,8 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
             area_access.project = new_staff_charge.project
             area_access.save()
 
-    # Create a new usage event to track how long the user uses the tool.
-    new_usage_event = UsageEvent()
-    new_usage_event.operator = operator
-    new_usage_event.user = user
-    new_usage_event.project = project
-    new_usage_event.tool = tool
+    # Now we can safely save the usage event
     new_usage_event.remote_work = remote_work
-
-    # Collect pre-usage questions
-    dynamic_form = DynamicForm(tool.pre_usage_questions)
-
-    try:
-        new_usage_event.pre_run_data = dynamic_form.extract(request)
-    except RequiredUnansweredQuestionsException as e:
-        return HttpResponseBadRequest(str(e))
-
     new_usage_event.save()
 
     try:
