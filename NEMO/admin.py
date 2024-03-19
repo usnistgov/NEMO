@@ -1561,25 +1561,32 @@ class ToolUsageCounterAdminForm(forms.ModelForm):
         tool_usage_question_name = cleaned_data.get("tool_usage_question")
         if tool and tool_usage_question_name:
             error = None
-            if tool.post_usage_questions:
-                post_usage_form = DynamicForm(tool.post_usage_questions)
-                tool_question = post_usage_form.filter_questions(
-                    lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
-                    and x.name == tool_usage_question_name
-                )
-                if not tool_question:
-                    candidates = [
-                        question.name
-                        for question in post_usage_form.filter_questions(
-                            lambda x: isinstance(x, PostUsageNumberFieldQuestion)
-                            or isinstance(x, PostUsageFloatFieldQuestion)
+            if tool.post_usage_questions or tool.pre_usage_questions:
+                candidate_questions = []
+                if tool.post_usage_questions:
+                    usage_form = DynamicForm(tool.post_usage_questions)
+                    candidate_questions.extend(
+                        usage_form.filter_questions(
+                            lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
                         )
-                    ]
-                    error = "The tool has no post usage question of type Number or Float with this name."
+                    )
+                if tool.pre_usage_questions:
+                    usage_form = DynamicForm(tool.pre_usage_questions)
+                    candidate_questions.extend(
+                        usage_form.filter_questions(
+                            lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
+                        )
+                    )
+                matching_tool_question = any(
+                    question for question in candidate_questions if question.name == tool_usage_question_name
+                )
+                if not matching_tool_question:
+                    candidates = {question.name for question in candidate_questions}
+                    error = "The tool has no pre/post usage question of type Number or Float with this name."
                     if candidates:
                         error += f" Valid question names are: {', '.join(candidates)}"
             else:
-                error = "The tool does not have any post usage questions."
+                error = "The tool does not have any pre/post usage questions."
             if error:
                 self.add_error("tool_usage_question", error)
         return cleaned_data
