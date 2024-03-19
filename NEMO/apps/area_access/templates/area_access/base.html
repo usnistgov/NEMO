@@ -69,7 +69,7 @@
         </div>
 		<div id="status" style="display: none"></div>
 		<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
-        <div class="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
+        <div id="countdown" class="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
 	</div>
 	{% include 'base/footer.html' %}
 	<script type="text/javascript">
@@ -140,35 +140,30 @@
 			if (countdown_handle != null)
 				clearInterval(countdown_handle);
 			countdown_handle = null;
-			$(".countdown").html("");
+			$("#countdown").html("");
 		}
 		function try_post_catch_interlock_error(url, data)
         {
             ajax_post(url, data, function(response, status, xml_http_request) {interlock_success_callback(response, status, xml_http_request)}, function(response, status, xml_http_request) { return interlock_failure_callback(response, status, xml_http_request, url, data) });
         }
-		function just_open_the_door(badge_number)
+		function just_open_the_door(badge_number, area_id)
 		{
-			let data = 'door_id={{ door.id }}&csrfmiddlewaretoken={{ csrf_token }}&badge_number=' + badge_number;
+			let data = 'door_id={{ door.id }}&csrfmiddlewaretoken={{ csrf_token }}&badge_number=' + badge_number + '&area_id=' + area_id;
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
 			status_element.html("<h1>Opening the door...</h1>").show();
             try_post_catch_interlock_error('{% url 'open_door' door.id %}', data);
 		}
-		function enter_area(badge_number, project_id, adjacent_login)
+		function enter_area(badge_number, project_id, area_id)
 		{
-            let area = "{{ area.name }}"; 
             let data = 'door_id={{ door.id }}&csrfmiddlewaretoken={{ csrf_token }}&badge_number=' + badge_number;
 			if(project_id) data += '&project_id=' + project_id;
-            if(adjacent_login && {{ door.adjacent_area|yesno:"true,false" }})
-            {
-                data += '&adjacent_area_login=True';
-                area = "{{ door.adjacent_area.name }}";
-            }
+            if(area_id) data += '&area_id='+area_id;
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
-			status_element.html("<h1>Logging you in to the " + area + "...</h1>").show();
+			status_element.html("<h1>Logging you in...</h1>").show();
 			try_post_catch_interlock_error('{% url 'login_to_area' door.id %}', data);
 		}
 		function exit_area(badge_number)
@@ -177,7 +172,7 @@
 			default_content_element.hide();
 			error_element.hide();
 			error_interlock_element.hide();
-			status_element.html("<h1>Logging you out of the {{ area }}...</h1>").show();
+			status_element.html("<h1>Logging you out...</h1>").show();
 			try_post_catch_interlock_error('{% url 'logout_of_area' door.id %}', data);
 		}
 		function csrf_token()
