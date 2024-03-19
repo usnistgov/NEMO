@@ -336,7 +336,6 @@
       "abuse_email": "",
       "reservation_email": "",
       "area_calendar_color": "#88B7CD",
-      "welcome_message": "<h2><center>Welcome to the cleanroom!</center></h2>",
       "requires_reservation": true,
       "logout_grace_period": null,
       "buddy_system_allowed": true,
@@ -371,7 +370,6 @@
       "abuse_email": "",
       "reservation_email": "",
       "area_calendar_color": "#88B7CD",
-      "welcome_message": "",
       "requires_reservation": false,
       "logout_grace_period": null,
       "buddy_system_allowed": false,
@@ -406,7 +404,6 @@
       "abuse_email": "",
       "reservation_email": "",
       "area_calendar_color": "#88b7cd",
-      "welcome_message": "",
       "requires_reservation": true,
       "logout_grace_period": null,
       "buddy_system_allowed": false,
@@ -673,7 +670,8 @@
     "pk": 1,
     "fields": {
       "name": "Cleanroom door",
-      "area": 1,
+      "welcome_message": "<h2><center>Welcome to the cleanroom!</center></h2>",
+      "areas": [1],
       "interlock": 1
     }
   },
