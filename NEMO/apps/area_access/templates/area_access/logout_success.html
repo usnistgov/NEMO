@@ -1,19 +1,23 @@
 <script>$('body').removeClass().addClass('logout-success')</script>
-<h1><p>{% now "h:i A" %}</p>You're now logged out of the {{ area }}, {{ name }}.</h1>
+<h1><p>{% now "h:i A" %}</p>You're now logged out of the {{ area }}, {{ badge_user.first_name }}.</h1>
 <audio src="{% url 'media' 'success.mp3' %}" autoplay></audio>
-{% if door.adjacent_area %}
+{% if door.areas.count > 1 %}
     <div class="alert alert-success clearfix" style="margin-top: 55px;">
-        <h3 class="col-sm-12" style="margin-bottom: 0">This door is adjacent to the {{ door.adjacent_area.name }}, what would you like to do?</h3>
-        <div class="col-sm-6">
-            <a href="javascript:void(0)" role="button" class="btn btn-default btn-lg btn-block btn-extra-large" onclick="revert()">
+        <h3 style="margin-bottom: 0">Would you like to log in into another area?</h3>
+        <p>
+            <button role="button" class="btn btn-default btn-lg btn-block btn-extra-large" onclick="revert_to_default_content()">
                 Exit (<span class="countdown">15</span>)
-            </a>
-        </div>
-        <div class="col-sm-6">
-            <a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area('{{ badge_number }}', undefined, true);">
-                Login to the {{ door.adjacent_area.name }}
-            </a>
-        </div>
+            </button>
+        </p>
+        {% for other_area in door.areas.all %}
+            {% if other_area != area %}
+                <p>
+                    <button type="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area('{{ badge_user.badge_number }}', undefined, {{ other_area.id }})">
+                        Login to the {{ other_area.name }}
+                    </button>
+                </p>
+            {% endif %}
+        {% endfor %}
     </div>
 {% endif %}
-<script>{% if door.adjacent_area %}revert(15){% else %}revert(7){% endif %};</script>
+<script>{% if door.areas.count > 1 %}revert(15){% else %}revert(7){% endif %};</script>

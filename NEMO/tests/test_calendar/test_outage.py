@@ -19,7 +19,7 @@ class OutageTestCase(TestCase):
         global tool, area, owner
         owner = User.objects.create(username="mctest", first_name="Testy", last_name="McTester")
         tool = Tool.objects.create(name="test_tool", primary_owner=owner)
-        area = Area.objects.create(name="Cleanroom", welcome_message="")
+        area = Area.objects.create(name="Cleanroom")
 
     @staticmethod
     def get_outage_data(

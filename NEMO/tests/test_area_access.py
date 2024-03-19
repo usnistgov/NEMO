@@ -57,8 +57,9 @@ class KioskAreaAccess(TestCase):
             server="server.com", port=80, number=1, even_port=1, odd_port=2, category=interlock_card_category
         )
         interlock = Interlock.objects.create(card=interlock_card, channel=1)
-        area = Area.objects.create(name="Cleanroom", welcome_message="Welcome to the cleanroom")
-        door = Door.objects.create(name="test_door", area=area, interlock=interlock)
+        area = Area.objects.create(name="Cleanroom")
+        door = Door.objects.create(name="test_door", interlock=interlock)
+        door.areas.set([area])
 
     def test_welcome_screen_fails(self):
         response = self.client.post(reverse("welcome_screen", kwargs={"door_id": door.id}), follow=True)
@@ -127,17 +128,18 @@ class KioskAreaAccess(TestCase):
         self.assertContains(
             response=response, text="Physical access denied", status_code=200
         )  # user does not have access
+        area = door.areas.first()
         user.physical_access_levels.add(
             PhysicalAccessLevel.objects.create(
-                name="cleanroom access", area=door.area, schedule=PhysicalAccessLevel.Schedule.ALWAYS
+                name="cleanroom access", area=area, schedule=PhysicalAccessLevel.Schedule.ALWAYS
             )
         )
         user.save()
-        door.area.maximum_capacity = 1
-        door.area.save()
+        area.maximum_capacity = 1
+        area.save()
         # add a logged in person so capacity is reached
         AreaAccessRecord.objects.create(
-            area=door.area,
+            area=area,
             customer=User.objects.create(
                 username="test_staff2", first_name="Test", last_name="Staff", is_staff=True, badge_number=2222
             ),
@@ -154,7 +156,7 @@ class KioskAreaAccess(TestCase):
         response = self.client.post(
             reverse("login_to_area", kwargs={"door_id": door.id}), data={"badge_number": user.badge_number}, follow=True
         )
-        self.assertContains(response, f"The {door.area} has reached its maximum capacity.")
+        self.assertContains(response, f"The {area} has reached its maximum capacity.")
         # staff can still login
         response = self.client.post(
             reverse("login_to_area", kwargs={"door_id": door.id}),
@@ -165,17 +167,17 @@ class KioskAreaAccess(TestCase):
         self.assertContains(response=response, text="You're logged in to the ", status_code=200)
         self.assertTrue(
             AreaAccessRecord.objects.filter(
-                area=door.area, customer=User.objects.get(badge_number=staff.badge_number)
+                area=area, customer=User.objects.get(badge_number=staff.badge_number)
             ).exists()
         )
         # try again user, should fail
         response = self.client.post(
             reverse("login_to_area", kwargs={"door_id": door.id}), data={"badge_number": user.badge_number}, follow=True
         )
-        self.assertContains(response, f"The {door.area} has reached its maximum capacity.")
+        self.assertContains(response, f"The {area} has reached its maximum capacity.")
         # increase capacity so user can login
-        door.area.maximum_capacity = 5
-        door.area.save()
+        area.maximum_capacity = 5
+        area.save()
         response = self.client.post(
             reverse("login_to_area", kwargs={"door_id": door.id}), data={"badge_number": user.badge_number}, follow=True
         )
@@ -183,7 +185,7 @@ class KioskAreaAccess(TestCase):
         self.assertContains(response=response, text="You're logged in to the ", status_code=200)
         self.assertTrue(
             AreaAccessRecord.objects.filter(
-                area=door.area, customer=User.objects.get(badge_number=user.badge_number)
+                area=area, customer=User.objects.get(badge_number=user.badge_number)
             ).exists()
         )
 
@@ -210,10 +212,11 @@ class KioskAreaAccess(TestCase):
         )
         self.assertTrue("Physical access denied" in str(response.content))
         # create an area an allow staff access without granting it to them
+        area = door.areas.first()
         access = PhysicalAccessLevel.objects.create(
             allow_staff_access=True,
             name="cleanroom access",
-            area=door.area,
+            area=area,
             schedule=PhysicalAccessLevel.Schedule.ALWAYS,
         )
         response = self.client.post(
@@ -230,7 +233,7 @@ class KioskAreaAccess(TestCase):
             data={"badge_number": staff.badge_number},
             follow=True,
         )
-        self.assertTrue("already logged into" in str(response.content))  # user already logged in
+        self.assertTrue("already logged in the" in str(response.content))  # user already logged in
         response = self.client.post(
             reverse("logout_of_area", kwargs={"door_id": door.id}),
             data={"badge_number": staff.badge_number},
@@ -268,7 +271,7 @@ class KioskAreaAccess(TestCase):
         self.assertTrue("You're logged in to the " in str(response.content))
         self.assertTrue(
             AreaAccessRecord.objects.filter(
-                area=door.area, customer=User.objects.get(badge_number=staff.badge_number), end__isnull=True
+                area=area, customer=User.objects.get(badge_number=staff.badge_number), end__isnull=True
             ).exists()
         )
 
@@ -283,8 +286,9 @@ class SelfLoginAreaAccessTestCase(TestCase):
             server="server.com", port=80, number=1, even_port=1, odd_port=2, category=interlock_card_category
         )
         interlock = Interlock.objects.create(card=interlock_card, channel=1)
-        area = Area.objects.create(name="Cleanroom", welcome_message="Welcome to the cleanroom")
-        door = Door.objects.create(name="test_door", area=area, interlock=interlock)
+        area = Area.objects.create(name="Cleanroom")
+        door = Door.objects.create(name="test_door", interlock=interlock)
+        door.areas.set([area])
 
     def test_login_to_area(self):
         self.client.post(reverse("self_log_in"), data={"area": area.id}, follow=True)
@@ -362,8 +366,9 @@ class NewAreaAccessTestCase(TestCase):
             server="server.com", port=80, number=1, even_port=1, odd_port=2, category=interlock_card_category
         )
         interlock = Interlock.objects.create(card=interlock_card, channel=1)
-        area = Area.objects.create(name="Cleanroom", welcome_message="Welcome to the cleanroom")
-        door = Door.objects.create(name="test_door", area=area, interlock=interlock)
+        area = Area.objects.create(name="Cleanroom")
+        door = Door.objects.create(name="test_door", interlock=interlock)
+        door.areas.set([area])
 
     def test_new_area_record_get(self):
         user = login_as_user(self.client)
@@ -487,7 +492,7 @@ class NewAreaAccessTestCase(TestCase):
         access = PhysicalAccessLevel.objects.create(
             allow_staff_access=True,
             name="cleanroom access",
-            area=door.area,
+            area=area,
             schedule=PhysicalAccessLevel.Schedule.ALWAYS,
         )
         response = self.client.post(
@@ -504,7 +509,7 @@ class NewAreaAccessTestCase(TestCase):
             data={"badge_number": staff.badge_number},
             follow=True,
         )
-        self.assertTrue("already logged into" in str(response.content))  # user already logged in
+        self.assertTrue("already logged in the" in str(response.content))  # user already logged in
         response = self.client.post(
             reverse("logout_of_area", kwargs={"door_id": door.id}),
             data={"badge_number": staff.badge_number},
@@ -542,7 +547,7 @@ class NewAreaAccessTestCase(TestCase):
         self.assertTrue("You're logged in to the " in str(response.content))
         self.assertTrue(
             AreaAccessRecord.objects.filter(
-                area=door.area, customer=User.objects.get(badge_number=staff.badge_number)
+                area=area, customer=User.objects.get(badge_number=staff.badge_number)
             ).exists()
         )
 
@@ -558,8 +563,9 @@ class DoorInterlockTestCase(TestCase):
             server="server.com", port=80, number=1, even_port=1, odd_port=2, category=interlock_card_category
         )
         interlock = Interlock.objects.create(card=interlock_card, channel=1)
-        area = Area.objects.create(name="Test Area", welcome_message="Welcome")
-        door = Door.objects.create(name="test_door", area=area, interlock=interlock)
+        area = Area.objects.create(name="Test Area")
+        door = Door.objects.create(name="test_door", interlock=interlock)
+        door.areas.set([area])
 
     def test_door(self):
         self.assertEqual(door.interlock.state, Interlock.State.UNKNOWN)
@@ -569,7 +575,7 @@ class DoorInterlockTestCase(TestCase):
 class AreaAutoLogoutTestCase(TestCase):
     def testAutoLogout(self):
         user = login_as_user(self.client)
-        area = Area.objects.create(name="Cleanroom", welcome_message="Welcome to the cleanroom")
+        area = Area.objects.create(name="Cleanroom")
         project = Project.objects.create(name="Project1", account=Account.objects.create(name="Account1"))
         start = timezone.now() - datetime.timedelta(minutes=5)
         record = AreaAccessRecord.objects.create(area=area, customer=user, project=project, start=start)

@@ -24,7 +24,7 @@ class ToolTestCase(TestCase):
         interlock = Interlock.objects.create(card=interlock_card, channel=1)
         cleanroom_interlock = Interlock.objects.create(card=interlock_card, channel=2)
         owner = User.objects.create(username="mctest", first_name="Testy", last_name="McTester")
-        cleanroom = Area.objects.create(name="cleanroom", welcome_message="Welcome")
+        cleanroom = Area.objects.create(name="cleanroom")
         tool_data = {
             "name": "test_tool",
             "_category": "test",
@@ -55,7 +55,8 @@ class ToolTestCase(TestCase):
             "_policy_off_weekend": True,
             "visible": True,
         }
-        area_door = Door.objects.create(name="cleanroom door", area=cleanroom, interlock=cleanroom_interlock)
+        area_door = Door.objects.create(name="cleanroom door", interlock=cleanroom_interlock)
+        area_door.areas.set([cleanroom])
         tool_form = ToolAdminForm(tool_data)
         self.assertTrue(tool_form.is_valid(), tool_form.errors.as_text())
         tool = tool_form.save()

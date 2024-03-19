@@ -378,7 +378,6 @@ class AreaAdmin(DraggableMPTTAdmin):
                 "fields": (
                     "requires_reservation",
                     "logout_grace_period",
-                    "welcome_message",
                     "auto_logout_time",
                     "buddy_system_allowed",
                 )
@@ -1212,8 +1211,13 @@ class DoorAdminForm(forms.ModelForm):
 
 @register(Door)
 class DoorAdmin(admin.ModelAdmin):
-    list_display = ("name", "area", "interlock", "get_absolute_url", "id")
+    list_display = ("name", "get_areas", "interlock", "get_absolute_url", "id")
     form = DoorAdminForm
+    filter_horizontal = ["areas"]
+
+    @display(description="Areas", ordering="areas")
+    def get_areas(self, door: Door):
+        return mark_safe("<br>".join([area.name for area in door.areas.order_by("name")]))
 
 
 @register(AlertCategory)
