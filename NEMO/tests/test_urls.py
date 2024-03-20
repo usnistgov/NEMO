@@ -124,6 +124,10 @@ url_kwargs_get_post = {
         },
     },
     "compose_email": {"login_id": 1},
+    "knowledge_base_item": {"kwargs": {"kind": "user", "item_id": 1}},
+    "knowledge_base_items_search": {"kwargs": {"kind": "user"}},
+    "knowledge_base_categories": {"kwargs": {"kind": "user"}},
+    "knowledge_base_all_in_one": {"kwargs": {"kind": "user"}},
 }
 
 urls_to_skip = [

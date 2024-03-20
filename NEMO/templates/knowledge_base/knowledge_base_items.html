@@ -1,0 +1,50 @@
+{% load custom_tags_and_filters %}
+<div class="tab-content panel panel-default">
+    {% if category %}
+        <div class="panel-heading pointer" data-toggle="collapse" data-target="#items-{{ category.id }}"
+             onclick="toggle_details($(this).children(':first'))">
+            <h3 class="panel-title pointer"><i class="glyphicon glyphicon-chevron-down chevron"></i> {{ category }}</h3>
+        </div>
+        <div class="collapse in" id="items-{{ category.id }}">
+        <div class="panel-body">
+    {% endif %}
+    <div class="tab-pane active" style="padding: 15px">
+        <ul style="padding-left: 15px">
+            {% for item in items %}
+                <li id="knowledge_base_item_{{ item.id }}" style="margin-bottom: 15px"><u>{{ item.name }}:</u>
+                    {% if item.description %}
+                        <div style="margin: 5px 0">{{ item.description|safe|linebreaksbr }}</div>
+                    {% endif %}
+                    <ul>
+                        {% if kind == "user" %}
+                            {% for doc in item.userknowledgebaseitemdocuments_set.all %}
+                                {% if doc.can_be_embedded %}
+                                    {% with content_type=doc|content_type %}
+                                        <li><a href="#"
+                                               onclick="open_doc('{% url 'media_view' 'true' content_type.id doc.id %}')">{{ doc.filename }}</a>
+                                        </li>
+                                    {% endwith %}
+                                {% else %}
+                                    <li><a href="{{ doc.link }}" target="_blank">{{ doc.filename }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {% for doc in item.staffknowledgebaseitemdocuments_set.all %}
+                                {% if doc.can_be_embedded %}
+                                    {% with content_type=doc|content_type %}
+                                        <li><a href="#"
+                                               onclick="open_doc('{% url 'media_view' 'true' content_type.id doc.id %}')">{{ doc.filename }}</a>
+                                        </li>
+                                    {% endwith %}
+                                {% else %}
+                                    <li><a href="{{ doc.link }}" target="_blank">{{ doc.filename }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% if category %}</div></div>{% endif %}
+</div>

@@ -56,7 +56,7 @@ def safety_categories(request, category_id=None):
     try:
         safety_item_id = request.GET.get("safety_item_id")
         if safety_item_id:
-            category_id = SafetyItem.objects.get(pk=safety_item_id).category.id
+            category_id = SafetyItem.objects.get(pk=safety_item_id).category_id
         SafetyCategory.objects.get(pk=category_id)
     except SafetyCategory.DoesNotExist:
         pass

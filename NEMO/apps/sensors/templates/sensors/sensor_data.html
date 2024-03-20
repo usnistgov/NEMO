@@ -209,7 +209,18 @@
                     {
                         x:
                         {
-                            type: 'time'
+                            type: 'time',
+                            time:
+                                {
+                                    displayFormats:
+                                        {
+                                            {% for key, value in sensor_date_formats.items %}
+                                                {% if value %}
+                                                    {{ key }}: "{{ value }}",
+                                                {% endif %}
+                                            {% endfor %}
+                                        }
+                                }
                         },
                         y:
                         {

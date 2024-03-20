@@ -1,7 +1,26 @@
 <h1>{{ message }}</h1>
 
 {% if badge_number %}
-	<script>load_choices('{{ badge_number }}')</script>
+    {% if not delay %}
+	    <script>load_choices('{{ badge_number }}')</script>
+    {% else %}
+	    <script>revert({{ delay }}, function(){load_choices('{{ badge_number }}')});</script>
+    {% endif %}
 {% else %}
 	<script>revert({{ delay|default:5 }});</script>
+{% endif %}
+{% if ask_logout %}
+    <div class="alert alert-info clearfix" style="margin-top: 55px;">
+        <h3 class="col-sm-12" style="margin-bottom: 0">Now that you have finished using the {{ tool.name_or_child_in_use_name }}, would you like to also log out of the {{ area.name }}?</h3>
+        <div class="col-sm-6">
+            <a href="javascript:void(0)" role="button" class="btn btn-default btn-lg btn-block btn-extra-large" onclick="revert(null, function(){load_choices('{{ badge_number }}')});">
+                Continue without logging out (<span class="countdown">{{ delay }}</span>)
+            </a>
+        </div>
+        <div class="col-sm-6">
+            <a href="javascript:void(0)" role="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="logout_user('{{ tool.id }}', '{{ badge_number }}');">
+                Log out to the {{ area.name }}
+            </a>
+        </div>
+    </div>
 {% endif %}

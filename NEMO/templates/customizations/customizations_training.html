@@ -1,0 +1,30 @@
+{% load custom_tags_and_filters %}
+<div class="panel-body">
+    <h3 class="customization-section-title">Training</h3>
+    <form method="POST" action="{% url 'customize' 'training' %}" class="form-horizontal">
+        {% csrf_token %}
+		<div class="form-group">
+            <label class="control-label col-lg-3 col-md-4 col-sm-5">Training types allowed</label>
+            <div class="col-lg-9 col-md-8 col-sm-7">
+				<div class="checkbox">
+                {% for val, name in training_types %}
+                    <label><input type="checkbox" name="training_type_list" {% if not training_only_type or training_only_type == val|stringformat:'i' %}checked{% endif %} value="{{ val }}">{{ name }}</label><br/>
+                {% endfor %}
+				</div>
+			</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-lg-3 col-md-4 col-sm-5">Training date</label>
+            <div class="col-lg-9 col-md-8 col-sm-7">
+				<div class="checkbox">
+                    <label><input type="checkbox" id="training_allow_date" name="training_allow_date" {% if training_allow_date %}checked{% endif %} value="enabled">Allow trainer to pick the training date for each entry</label>
+				</div>
+                <div class="help-block light-grey" style="margin-bottom: 0">Qualifications will still happen in real time</div>
+			</div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <div class="text-center">
+            {% button type="save" value="Save settings" %}
+        </div>
+    </form>
+</div>

@@ -13,8 +13,8 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from NEMO.apps.sensors.customizations import SensorCustomization
-from NEMO.apps.sensors.evaluators import evaluate_boolean_expression
 from NEMO.decorators import postpone
+from NEMO.evaluators import evaluate_boolean_expression
 from NEMO.fields import MultiEmailField
 from NEMO.models import BaseModel, InterlockCard
 from NEMO.typing import QuerySetType
@@ -45,7 +45,7 @@ class SensorCard(BaseModel):
     enabled = models.BooleanField(blank=False, null=False, default=True)
 
     class Meta:
-        ordering = ["server"]
+        ordering = ["name"]
 
     def __str__(self):
         card_name = self.name + ": " if self.name else ""
@@ -156,18 +156,6 @@ class Sensor(BaseModel):
             and self.number_of_values > 1
         ):
             raise ValidationError({"formula": "This field is required when reading multiple values"})
-        if self.formula:
-            # Use random values to test the formula
-            registers = []
-            if self.read_address is not None and self.number_of_values:
-                for i in range(self.number_of_values):
-                    registers.append(random.randint(0, 1000))
-            else:
-                registers = [random.randint(0, 1000)]
-            try:
-                sensors.get(self.card.category, raise_exception=True).evaluate_expression(self.formula, registers)
-            except Exception as e:
-                raise ValidationError({"formula": str(e)})
 
     def alert_triggered(self) -> bool:
         for alert_qs in SensorAlert.sensor_alert_filter(sensor=self):

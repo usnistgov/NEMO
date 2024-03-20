@@ -166,7 +166,7 @@ div.dynamic_form_preview:empty
     padding: 0;
 }
 
-#form_validity
+.form_validity
 {
     margin-top: 15px;
     padding: 5px;
@@ -175,7 +175,7 @@ div.dynamic_form_preview:empty
     background-color: #5cb85c;
 }
 
-#form_validity.invalid
+.form_validity.invalid
 {
     color: whitesmoke;
     background-color: #ac2925;

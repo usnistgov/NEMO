@@ -30,7 +30,7 @@
                     <td>{{ procurement.display_cost|default_if_none:"" }}</td>
                     <td class="text-right text-nowrap">
                         {% if procurement.notes %}
-                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=procurement.notes|default_if_none:""|linebreaksbr data_toggle="tooltip" %}
+                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=procurement.notes|default_if_none:""|linebreaksbr data_toggle="tooltip-notes" %}
                         {% endif %}
                         {% if procurement.procurementdocuments_set.all %}
                             <form method="post" style="display: inline">

@@ -20,7 +20,16 @@ from django.views.decorators.http import require_GET, require_POST
 from NEMO import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
-from NEMO.models import BadgeReader, ConsumableCategory, Customization, Notification, Project, RecurringConsumableCharge
+from NEMO.models import (
+    BadgeReader,
+    ConsumableCategory,
+    Customization,
+    Notification,
+    Project,
+    RecurringConsumableCharge,
+    TrainingSession,
+    UserPreferences,
+)
 from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
 
@@ -165,6 +174,7 @@ class ApplicationCustomization(CustomizationBase):
         "self_log_out": "",
         "calendar_login_logout": "",
         "area_logout_already_logged_in": "",
+        "show_badge_number": "",
         "default_badge_reader_id": "",
         "consumable_user_self_checkout": "",
         "consumable_category_collapse": "",
@@ -259,7 +269,26 @@ class CalendarCustomization(CustomizationBase):
         "calendar_outage_recurrence_limit": "90",
         "calendar_qualified_tools": "",
         "calendar_configuration_in_reservations": "",
+        "create_reservation_confirmation": "",
+        "change_reservation_confirmation": "",
+        "reservation_confirmation_date_format": "MMMM D, yyyy",
+        "reservation_confirmation_time_format": "h:mma",
     }
+
+    @classmethod
+    def set(cls, name: str, value):
+        if name == "create_reservation_confirmation" or name == "change_reservation_confirmation":
+            value_changed = value != cls.get(name)
+            if value_changed:
+                if name == "create_reservation_confirmation":
+                    UserPreferences.objects.filter(create_reservation_confirmation_override=True).update(
+                        create_reservation_confirmation_override=False
+                    )
+                elif name == "change_reservation_confirmation":
+                    UserPreferences.objects.filter(change_reservation_confirmation_override=True).update(
+                        change_reservation_confirmation_override=False
+                    )
+        super().set(name, value)
 
 
 @customization(key="dashboard", title="Status dashboard")
@@ -413,6 +442,8 @@ class ToolCustomization(CustomizationBase):
         "tool_control_configuration_setting_template": "{{ current_setting }}",
         "tool_control_broadcast_upcoming_reservation": "",
         "tool_control_show_task_details": "",
+        "tool_control_show_qualified_users_to_all": "",
+        "tool_control_show_documents_only_qualified_users": "",
         "tool_qualification_reminder_days": "",
         "tool_qualification_expiration_days": "",
         "tool_qualification_expiration_never_used_days": "",
@@ -460,6 +491,14 @@ class SafetyCustomization(CustomizationBase):
     }
 
 
+@customization(key="knowledge_base", title="Knowledge base")
+class KnowledgeBaseCustomization(CustomizationBase):
+    variables = {
+        "knowledge_base_user_expand_categories": "",
+        "knowledge_base_staff_expand_categories": "",
+    }
+
+
 @customization(key="remote_work", title="Remote work")
 class RemoteWorkCustomization(CustomizationBase):
     variables = {
@@ -467,6 +506,23 @@ class RemoteWorkCustomization(CustomizationBase):
         "remote_work_start_area_access_automatically": "enabled",
         "remote_work_ask_explicitly": "",
     }
+
+
+@customization(key="training", title="Training")
+class TrainingCustomization(CustomizationBase):
+    variables = {"training_only_type": "", "training_allow_date": ""}
+
+    def context(self) -> Dict:
+        dictionary = super().context()
+        dictionary["training_types"] = TrainingSession.Type.Choices
+        return dictionary
+
+    def save(self, request, element=None) -> Dict[str, Dict[str, str]]:
+        errors = super().save(request, element)
+        training_types = request.POST.getlist("training_type_list", [])
+        if training_types and len(training_types) == 1:
+            type(self).set("training_only_type", training_types[0])
+        return errors
 
 
 @customization(key="templates", title="File & email templates")

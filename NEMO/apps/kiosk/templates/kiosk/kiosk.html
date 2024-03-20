@@ -32,7 +32,7 @@
 	{# Badge Reader #}
 	<script type="text/javascript" src="{% static "badge_reader.js" %}"></script>
 
-	<!--suppress CssUnusedSymbol -->
+    <!--suppress CssUnusedSymbol -->
 	<style>
 		.btn-extra-large
 		{
@@ -40,6 +40,11 @@
 			margin-bottom: 50px;
 			font-size: 36px;
 		}
+        {# Prevent links in tooltips #}
+        .tooltip .tooltip-inner a
+        {
+            pointer-events: none;
+        }
 	</style>
 </head>
 <body>
@@ -90,11 +95,13 @@
 			<div id="status" style="display: none"></div>
 			<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
 		</div>
-		<div id="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
+		<div class="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
 	</div>
 	{% include 'base/footer.html' %}
 	<script type="text/javascript">
-		let kiosk_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}" {% if badge_reader.record_key %}, "{{ badge_reader.record_key }}"{% endif %});
+        {% with show_badge_number="application"|customization:"show_badge_number" %}
+		let kiosk_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}", {% if badge_reader.record_key %}"{{ badge_reader.record_key }}"{% else %}undefined{% endif %}, {{ show_badge_number|yesno:"true,false" }});
+        {% endwith %}
 		let timeout_handle = null;
 		let countdown_handle = null;
 		let occupancy = new URLSearchParams(window.location.search).get('occupancy');
@@ -156,15 +163,16 @@
 			$("#badge_number").html("");
 			show_alerts();
 		}
-		function revert(delay)
+		function revert(delay, callback)
 		{
+            callback = callback || revert_to_default_content;
 			clear_timeout();
-			let countdown = delay;
+			let countdown = delay - 1;
 			delay = delay * 1000;
-			timeout_handle = setTimeout(revert_to_default_content, delay);
+			timeout_handle = setTimeout(callback, delay);
 			countdown_handle = setInterval(function()
             {
-				$('#countdown').html(countdown);
+				$('.countdown').html(countdown);
 				countdown --;
 			}, 1000);
 		}
@@ -190,14 +198,15 @@
 			if (countdown_handle != null)
 				clearInterval(countdown_handle);
 			countdown_handle = null;
-			$("#countdown").html("");
+			$(".countdown").html("");
 		}
 		function select_project(element, project_id)
 		{
 			$(".project-choice").removeClass('active');
 			$(element).addClass('active');
 			$("#project_id").val(project_id);
-			$("#start_reserve").show();
+            $("#pre_usage_questions").show();
+			update_start_button();
 		}
 		function load_choices(badge_number)
 		{
@@ -346,7 +355,11 @@
 			    ajax_get('{% url 'kiosk_occupancy' %}', {'occupancy': occupancy}, function(response) { $("#occupancy").html(response); });
             }
 		}
-
+        function logout_user(tool_id, badge_number)
+		{
+			status_element.html("<h1>Logging you out...</h1>").show();
+            ajax_get('{% url 'kiosk_logout_user' '999' %}'.replace('999', tool_id), {"badge_number": badge_number}, load_complete);
+		}
         function fetch_usage()
 		{
             if(usage)

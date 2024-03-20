@@ -1,0 +1,39 @@
+{% load custom_tags_and_filters %}
+<div class="panel-body">
+    <h3 class="customization-section-title">Knowledge base settings</h3>
+    <form method="POST" action="{% url 'customize' 'knowledge_base' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">User view</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="radio">
+                    <label><input type="radio" id="knowledge_base_user_expand_categories"
+                                  name="knowledge_base_user_expand_categories"
+                                  {% if not knowledge_base_user_expand_categories %}checked{% endif %} value=""> Side
+                        category panel</label>
+                    <label><input type="radio" name="knowledge_base_user_expand_categories"
+                                  {% if knowledge_base_user_expand_categories %}checked{% endif %} value="enabled"> All
+                        expanded categories</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Staff view</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="radio">
+                    <label><input type="radio" id="knowledge_base_staff_expand_categories"
+                                  name="knowledge_base_staff_expand_categories"
+                                  {% if not knowledge_base_staff_expand_categories %}checked{% endif %} value=""> Side
+                        category panel</label>
+                    <label><input type="radio" name="knowledge_base_staff_expand_categories"
+                                  {% if knowledge_base_staff_expand_categories %}checked{% endif %} value="enabled"> All
+                        expanded categories</label>
+                </div>
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <div class="text-center">
+            {% button type="save" value="Save settings" %}
+        </div>
+    </form>
+</div>

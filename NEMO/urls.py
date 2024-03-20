@@ -41,6 +41,7 @@ from NEMO.views import (
     get_projects,
     history,
     jumbotron,
+    knowledge_base,
     landing,
     maintenance,
     mobile,
@@ -419,6 +420,36 @@ urlpatterns += [
     path("safety/safety_data_sheets/export/", safety.export_safety_data_sheets, name="export_safety_data_sheets"),
     # For backwards compatibility
     path("safety_data_sheets/", RedirectView.as_view(pattern_name="safety_data_sheets", permanent=True)),
+    # Knowledge base
+    path("knowledge_base/", knowledge_base.knowledge_base, name="knowledge_base"),
+    re_path(
+        r"^knowledge_base/(?P<kind>user|staff)/",
+        include(
+            [
+                path("", knowledge_base.knowledge_base, name="knowledge_base"),
+                path("items/<int:item_id>/", knowledge_base.knowledge_base_item, name="knowledge_base_item"),
+                path("items/search/", knowledge_base.knowledge_base_items_search, name="knowledge_base_items_search"),
+                path(
+                    "items/categories/",
+                    include(
+                        [
+                            path("", knowledge_base.knowledge_base_categories, name="knowledge_base_categories"),
+                            path(
+                                "<int:category_id>/",
+                                knowledge_base.knowledge_base_categories,
+                                name="knowledge_base_categories",
+                            ),
+                            path(
+                                "all_in_one/",
+                                knowledge_base.knowledge_base_all_in_one,
+                                name="knowledge_base_all_in_one",
+                            ),
+                        ]
+                    ),
+                ),
+            ]
+        ),
+    ),
     # Mobile:
     re_path(r"^choose_item/then/(?P<next_page>view_calendar|tool_control)/$", mobile.choose_item, name="choose_item"),
     re_path(

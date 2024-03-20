@@ -293,7 +293,7 @@ def impersonate(request):
         del request.session["impersonate_id"]
         del request.session["impersonated_user"]
         return redirect(reverse("landing"))
-    if not request.user.is_superuser:
+    if not request.user.has_perm("NEMO.can_impersonate_users"):
         return HttpResponseForbidden()
     if request.method == "POST":
         user_id = request.POST["user_id"]

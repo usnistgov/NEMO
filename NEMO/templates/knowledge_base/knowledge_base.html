@@ -1,0 +1,74 @@
+{% extends 'knowledge_base/knowledge_base_base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}{{ kind|capfirst }} knowledge base{% endblock %}
+{% block knowledge_base_title %}{{ kind|capfirst }} knowledge base{% endblock %}
+{% block tab_content %}
+    {% if categories or items %}
+        <div class="row" style="margin-bottom: 25px">
+            <div class="col-sm-6">
+                <input id="search" type="text" aria-label="Search" placeholder="Search" class="form-control">
+            </div>
+        </div>
+        <div class="row">
+            {% if not expand_categories %}
+                {% if categories %}
+                    <div class="col-sm-3">
+                        <ul class="nav nav-pills nav-stacked">
+                            {% if general %}
+                                <li class="{% if category_id is None %}active{% endif %}">
+                                    <a href="{% url 'knowledge_base_categories' kind %}">General</a>
+                                </li>
+                            {% endif %}
+                            {% for category in categories %}
+                                <li class="{% if category_id and category.id == category_id %}active{% endif %}">
+                                    <a href="{% url 'knowledge_base_categories' kind category.id %}">{{ category.name }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                <div class="col-sm-{% if categories %}9{% else %}12{% endif %}">
+                    {% include 'knowledge_base/knowledge_base_items.html' %}
+                </div>
+            {% else %}
+                <div class="col-sm-12">
+                    {% if general %}
+                        {% include 'knowledge_base/knowledge_base_items.html' with items=general category="General" %}
+                    {% endif %}
+                    {% for category in categories %}
+                        {% if kind == "user" %}
+                            {% include 'knowledge_base/knowledge_base_items.html' with items=category.userknowledgebaseitem_set.all %}
+                        {% else %}
+                            {% include 'knowledge_base/knowledge_base_items.html' with items=category.staffknowledgebaseitem_set.all %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    {% else %}
+        <p>There are currently no knowledge base items.</p>
+        {% if user.is_superuser and "django.contrib.admin"|app_installed %}
+            {% with knowledge_base_url='admin:NEMO_'|concat:kind|concat:'knowledgebaseitem_changelist' %}
+                <p>
+                    Please go to <a href="{% url knowledge_base_url %}">Administration -> Detailed Administration
+                    -> {{ kind|capfirst }} knowledge base items</a>
+                </p>
+            {% endwith %}
+        {% endif %}
+    {% endif %}
+    <script>
+        function get_knowledge_base_item(jquery_event, search_selection, dataset_name) {
+            window.location.href = "{% url 'knowledge_base_item' kind 999 %}".replace('999', search_selection.id);
+        }
+
+        function on_load() {
+            $("#search").autocomplete('knowledge_base_items', get_knowledge_base_item, '{% url 'knowledge_base_items_search' kind %}', true);
+        }
+
+        function open_doc(url) {
+            ajax_get(url, undefined, ajax_success_callback, ajax_failure_callback("Unable to display document"));
+        }
+
+        window.addEventListener('load', on_load, true);
+    </script>
+{% endblock %}

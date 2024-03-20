@@ -1,5 +1,5 @@
 <script>$('body').removeClass().addClass('logout-warning')</script>
-<h1><p>{% now "h:i A" %}</p>You're now logged out of the {{ area }}, {{ name }}.</h1>
+<h1><p>{% now "h:i A" %}</p>You're now logged out of the {{ area }}, {{ badge_user.first_name }}.</h1>
 <audio src="{% url 'media' 'warning.mp3' %}" autoplay></audio>
 <h2>
 	{% if tools_in_use %}
@@ -18,4 +18,23 @@
 		</ul>
 	{% endif %}
 </h2>
+{% if door.areas.count != 1 %}
+    <div class="alert alert-warning clearfix" style="margin-top: 55px;">
+        <h3 class="" style="margin-bottom: 0">Would you like to log into another area?</h3>
+        <p>
+            <button role="button" class="btn btn-default btn-lg btn-block btn-extra-large" onclick="revert_to_default_content()">
+                Exit (<span class="countdown">15</span>)
+            </button>
+        </p>
+        {% for other_area in door.areas.all %}
+            {% if other_area != area %}
+                <p>
+                    <button type="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area('{{ badge_user.badge_number }}', undefined, {{ other_area.id }})">
+                        Login to the {{ other_area.name }}
+                    </button>
+                </p>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endif %}
 <script>revert(15);</script>

@@ -29,7 +29,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from mptt.fields import TreeForeignKey
+from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from NEMO import fields
@@ -54,7 +54,7 @@ from NEMO.utilities import (
     supported_embedded_extensions,
 )
 from NEMO.validators import color_hex_list_validator, color_hex_validator
-from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH, CHAR_FIELD_MAXIMUM_LENGTH
+from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH, CHAR_FIELD_MAXIMUM_LENGTH, MEDIA_PROTECTED
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
 models_logger = getLogger(__name__)
@@ -199,7 +199,7 @@ class BaseDocumentModel(BaseModel):
 def auto_delete_file_on_document_delete(sender, instance: BaseDocumentModel, **kwargs):
     if not issubclass(sender, BaseDocumentModel):
         return
-    """	Deletes file from filesystem when corresponding `SafetyItemDocuments` object is deleted.	"""
+    """	Deletes file from filesystem when corresponding object is deleted.	"""
     if instance.document:
         if os.path.isfile(instance.document.path):
             os.remove(instance.document.path)
@@ -209,7 +209,7 @@ def auto_delete_file_on_document_delete(sender, instance: BaseDocumentModel, **k
 def auto_delete_file_on_document_change(sender, instance: BaseDocumentModel, **kwargs):
     if not issubclass(sender, BaseDocumentModel):
         return
-    """	Deletes old file from filesystem when corresponding `SafetyItemDocuments` object is updated with new file. """
+    """	Deletes old file from filesystem when corresponding object is updated with new file. """
     if not instance.pk:
         return False
 
@@ -381,6 +381,14 @@ class UserPreferences(BaseModel):
         default="60,7",
         max_length=200,
         help_text="The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.",
+    )
+    create_reservation_confirmation_override = models.BooleanField(
+        default=False,
+        help_text="Override default create reservation confirmation setting",
+    )
+    change_reservation_confirmation_override = models.BooleanField(
+        default=False,
+        help_text="Override default move/resize reservation confirmation setting",
     )
     email_send_recurring_charges_reminder_emails = models.PositiveIntegerField(
         default=EmailNotificationType.BOTH_EMAILS,
@@ -875,10 +883,11 @@ class User(BaseModel, PermissionsMixin):
         emails = []
         if email_notification in [EmailNotificationType.BOTH_EMAILS, EmailNotificationType.MAIN_EMAIL]:
             emails.append(self.email)
-        if self.get_preferences().email_alternate and email_notification in [
-            EmailNotificationType.BOTH_EMAILS,
-            EmailNotificationType.ALTERNATE_EMAIL,
-        ]:
+        if (
+            self.get_preferences().email_alternate
+            and email_notification in [EmailNotificationType.BOTH_EMAILS, EmailNotificationType.ALTERNATE_EMAIL]
+            and self.preferences.email_alternate not in emails
+        ):
             emails.append(self.preferences.email_alternate)
         return emails
 
@@ -1063,6 +1072,7 @@ class User(BaseModel, PermissionsMixin):
             ("trigger_timed_services", "Can trigger timed services"),
             ("use_billing_api", "Can use billing API"),
             ("kiosk", "Kiosk services"),
+            ("can_impersonate_users", "Can impersonate other users"),
         )
 
     def __str__(self):
@@ -1179,6 +1189,11 @@ class Tool(SerializationByNameModel):
         help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.",
         on_delete=models.PROTECT,
     )
+    _ask_to_leave_area_when_done_using = models.BooleanField(
+        default=False,
+        db_column="ask_to_leave_area_when_done_using",
+        help_text="Check this box to ask the user if they want to log out of the area when they are done using the tool.",
+    )
     _grant_physical_access_level_upon_qualification = models.ForeignKey(
         "PhysicalAccessLevel",
         db_column="grant_physical_access_level_upon_qualification_id",
@@ -1241,6 +1256,12 @@ class Tool(SerializationByNameModel):
         db_column="allow_delayed_logoff",
         default=False,
         help_text='Upon logging off users may enter a delay before another user may use the tool. Some tools require "spin-down" or cleaning time after use.',
+    )
+    _pre_usage_questions = models.TextField(
+        db_column="pre_usage_questions",
+        null=True,
+        blank=True,
+        help_text="Before using a tool, questions can be asked. This field will only accept JSON format",
     )
     _post_usage_questions = models.TextField(
         db_column="post_usage_questions",
@@ -1416,6 +1437,19 @@ class Tool(SerializationByNameModel):
         self._requires_area_access = value
 
     @property
+    def ask_to_leave_area_when_done_using(self):
+        return (
+            self.parent_tool.ask_to_leave_area_when_done_using
+            if self.is_child_tool()
+            else self._ask_to_leave_area_when_done_using
+        )
+
+    @ask_to_leave_area_when_done_using.setter
+    def ask_to_leave_area_when_done_using(self, value):
+        self.raise_setter_error_if_child_tool("ask_to_leave_area_when_done_using")
+        self.ask_to_leave_area_when_done_using = value
+
+    @property
     def grant_physical_access_level_upon_qualification(self):
         return (
             self.parent_tool.grant_physical_access_level_upon_qualification
@@ -1528,6 +1562,15 @@ class Tool(SerializationByNameModel):
     def allow_delayed_logoff(self, value):
         self.raise_setter_error_if_child_tool("allow_delayed_logoff")
         self._allow_delayed_logoff = value
+
+    @property
+    def pre_usage_questions(self):
+        return self.parent_tool.pre_usage_questions if self.is_child_tool() else self._pre_usage_questions
+
+    @pre_usage_questions.setter
+    def pre_usage_questions(self, value):
+        self.raise_setter_error_if_child_tool("pre_usage_questions")
+        self._pre_usage_questions = value
 
     @property
     def post_usage_questions(self):
@@ -1851,6 +1894,13 @@ class Tool(SerializationByNameModel):
             if not self._primary_owner_id:
                 errors["_primary_owner"] = "This field is required."
 
+            # Validate _pre_usage_questions JSON format
+            if self._pre_usage_questions:
+                dynamic_form_errors = validate_dynamic_form_model(
+                    self._pre_usage_questions, "tool_usage_group_question", self.id
+                )
+                if dynamic_form_errors:
+                    errors["_pre_usage_questions"] = dynamic_form_errors
             # Validate _post_usage_questions JSON format
             if self._post_usage_questions:
                 dynamic_form_errors = validate_dynamic_form_model(
@@ -2163,11 +2213,6 @@ class Area(MPTTModel):
     )
 
     # Area access
-    welcome_message = models.TextField(
-        null=True,
-        blank=True,
-        help_text="The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.",
-    )
     requires_reservation = models.BooleanField(
         default=False, help_text="Check this box to require a reservation for this area before a user can login."
     )
@@ -2461,6 +2506,9 @@ class Project(SerializationByNameModel):
     allow_consumable_withdrawals = models.BooleanField(
         default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project"
     )
+    allow_staff_charges = models.BooleanField(
+        default=True, help_text="Uncheck this box if staff charges are forbidden for this project"
+    )
 
     class Meta:
         ordering = ["name"]
@@ -2703,6 +2751,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE
     )
     remote_work = models.BooleanField(default=False)
+    pre_run_data = models.TextField(null=True, blank=True)
     run_data = models.TextField(null=True, blank=True)
 
     def duration(self):
@@ -2727,6 +2776,11 @@ class Consumable(BaseModel):
     allow_self_checkout = models.BooleanField(
         default=True,
         help_text="Allow users to self checkout this consumable, only applicable when self checkout customization is enabled.",
+    )
+    self_checkout_only_users = models.ManyToManyField(
+        User,
+        blank=True,
+        help_text="Selected users will be the only ones allowed to self checkout this consumable. Leave blank for all.",
     )
     notes = models.TextField(null=True, blank=True, help_text="Notes about the consumable.")
     reminder_threshold = models.IntegerField(
@@ -3078,7 +3132,6 @@ class Interlock(BaseModel):
         return interlocks.get(self.card.category).lock(self)
 
     class Meta:
-        unique_together = ("card", "channel")
         ordering = ["card__server", "card__number", "channel"]
 
     def __str__(self):
@@ -3486,7 +3539,12 @@ def calculate_duration(start, end, unfinished_reason):
 
 class Door(BaseModel):
     name = models.CharField(max_length=100)
-    area = TreeForeignKey(Area, related_name="doors", on_delete=models.PROTECT)
+    welcome_message = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.",
+    )
+    areas = TreeManyToManyField(Area, related_name="doors", blank=False)
     interlock = models.OneToOneField(Interlock, null=True, blank=True, on_delete=models.PROTECT)
 
     def __str__(self):
@@ -4063,6 +4121,18 @@ class AdjustmentRequest(BaseModel):
             return area_reviewers or facility_managers
         return facility_managers
 
+    def delete(self, using=None, keep_parents=False):
+        adjustment_id = self.id
+        super().delete(using, keep_parents)
+        # If adjustment requests is being deleted, remove associated notifications
+        Notification.objects.filter(
+            object_id=adjustment_id,
+            notification_type__in=[
+                Notification.Types.ADJUSTMENT_REQUEST,
+                Notification.Types.ADJUSTMENT_REQUEST_REPLY,
+            ],
+        ).delete()
+
     def clean(self):
         if not self.description:
             raise ValidationError({"description": _("This field is required.")})
@@ -4281,6 +4351,72 @@ def auto_delete_file_on_chemical_change(sender, instance: Chemical, **kwargs):
         if not old_file == new_file:
             if os.path.isfile(old_file.path):
                 os.remove(old_file.path)
+
+
+class StaffKnowledgeBaseCategory(BaseCategory):
+    class Meta(BaseCategory.Meta):
+        verbose_name_plural = "Staff knowledge base categories"
+
+
+class StaffKnowledgeBaseItem(BaseModel):
+    name = models.CharField(max_length=200, help_text="The item name.")
+    description = models.TextField(null=True, blank=True, help_text="The description for this item. HTML can be used.")
+    category = models.ForeignKey(
+        StaffKnowledgeBaseCategory,
+        null=True,
+        blank=True,
+        help_text="The category for this item.",
+        on_delete=models.SET_NULL,
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class StaffKnowledgeBaseItemDocuments(BaseDocumentModel):
+    item = models.ForeignKey(StaffKnowledgeBaseItem, on_delete=models.CASCADE)
+
+    def get_filename_upload(self, filename):
+        from django.template.defaultfilters import slugify
+
+        item_name = slugify(self.item.name)
+        return f"{MEDIA_PROTECTED}/knowledge_base/{item_name}/{filename}"
+
+    class Meta(BaseDocumentModel.Meta):
+        verbose_name_plural = "Staff knowledge base item documents"
+
+
+class UserKnowledgeBaseCategory(BaseCategory):
+    class Meta(BaseCategory.Meta):
+        verbose_name_plural = "User knowledge base categories"
+
+
+class UserKnowledgeBaseItem(BaseModel):
+    name = models.CharField(max_length=200, help_text="The item name.")
+    description = models.TextField(null=True, blank=True, help_text="The description for this item. HTML can be used.")
+    category = models.ForeignKey(
+        UserKnowledgeBaseCategory,
+        null=True,
+        blank=True,
+        help_text="The category for this item.",
+        on_delete=models.SET_NULL,
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class UserKnowledgeBaseItemDocuments(BaseDocumentModel):
+    item = models.ForeignKey(UserKnowledgeBaseItem, on_delete=models.CASCADE)
+
+    def get_filename_upload(self, filename):
+        from django.template.defaultfilters import slugify
+
+        item_name = slugify(self.item.name)
+        return f"knowledge_base/{item_name}/{filename}"
+
+    class Meta(BaseDocumentModel.Meta):
+        verbose_name_plural = "User knowledge base item documents"
 
 
 class EmailLog(BaseModel):

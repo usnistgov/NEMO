@@ -22,16 +22,17 @@ from NEMO.exceptions import (
     UnavailableResourcesUserError,
 )
 from NEMO.models import (
+    Alert,
+    Area,
     AreaAccessRecord,
     BadgeReader,
     Door,
     PhysicalAccessLog,
     PhysicalAccessType,
     Project,
+    Resource,
     UsageEvent,
     User,
-    Alert,
-    Resource,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.views.area_access import log_in_user_to_area, log_out_user
@@ -44,7 +45,7 @@ from NEMO.views.tool_control import interlock_bypass_allowed
 @require_GET
 def welcome_screen(request, door_id):
     door = get_object_or_404(Door, id=door_id)
-    dictionary = {"area": door.area, "door": door, "badge_reader": get_badge_reader(request)}
+    dictionary = {"door": door, "badge_reader": get_badge_reader(request)}
     return render(
         request,
         "area_access/welcome_screen.html",
@@ -57,7 +58,7 @@ def welcome_screen(request, door_id):
 @require_GET
 def farewell_screen(request, door_id):
     door = get_object_or_404(Door, id=door_id)
-    dictionary = {"area": door.area, "door": door, "badge_reader": get_badge_reader(request)}
+    dictionary = {"door": door, "badge_reader": get_badge_reader(request)}
     return render(request, "area_access/farewell_screen.html", dictionary)
 
 
@@ -68,6 +69,11 @@ def login_to_area(request, door_id):
     door = get_object_or_404(Door, id=door_id)
 
     badge_number = request.POST.get("badge_number")
+    area_id = request.POST.get("area_id", 0)
+    if door.areas.count() == 1:
+        area = door.areas.first()
+    else:
+        area = Area.objects.filter(id=area_id).first()
     bypass_interlock = request.POST.get("bypass", "False") == "True"
     if not badge_number:
         return render(request, "area_access/badge_not_found.html")
@@ -75,6 +81,15 @@ def login_to_area(request, door_id):
         user = User.objects.get(badge_number=badge_number)
     except User.DoesNotExist:
         return render(request, "area_access/badge_not_found.html")
+
+    current_area_access_record = user.area_access_record()
+    if current_area_access_record:
+        if ApplicationCustomization.get_bool("area_logout_already_logged_in"):
+            return logout_of_area(request, door_id)
+
+    if not area:
+        # Multiple areas but none were chosen, ask the user
+        return render(request, "area_access/choose_area.html", {"door": door, "badge_user": user})
 
     log = PhysicalAccessLog()
     log.user = user
@@ -114,7 +129,7 @@ def login_to_area(request, door_id):
     scheduled_outage_in_progress = False
     # Check policy to enter this area
     try:
-        policy.check_to_enter_area(area=door.area, user=user)
+        policy.check_to_enter_area(area=area, user=user)
     except NoAccessiblePhysicalAccessUserError as error:
         if error.closure_time:
             log.details = (
@@ -146,10 +161,7 @@ def login_to_area(request, door_id):
         # deal with this error after checking if the user is already logged in
         reservation_requirement_failed = True
 
-    current_area_access_record = user.area_access_record()
-    if current_area_access_record and current_area_access_record.area == door.area:
-        if ApplicationCustomization.get_bool("area_logout_already_logged_in"):
-            return logout_of_area(request, door_id)
+    if current_area_access_record and current_area_access_record.area == area:
         # No log entry necessary here because all validation checks passed.
         # The log entry is captured when the subsequent choice is made by the user.
         return render(
@@ -157,7 +169,7 @@ def login_to_area(request, door_id):
             "area_access/already_logged_in.html",
             {
                 "door": door,
-                "area": door.area,
+                "area": area,
                 "project": current_area_access_record.project,
                 "badge_number": user.badge_number,
                 "reservation_requirement_failed": reservation_requirement_failed,
@@ -181,7 +193,7 @@ def login_to_area(request, door_id):
         return render(request, "area_access/physical_access_denied.html", {"message": message})
 
     if reservation_requirement_failed:
-        log.details = f"The user was blocked from entering this area because the user does not have a current reservation for the {door.area}."
+        log.details = f"The user was blocked from entering this area because the user does not have a current reservation for the {area}."
         log.save()
         message = "You do not have a current reservation for this area. Please make a reservation before trying to access this area."
         return render(request, "area_access/physical_access_denied.html", {"message": message})
@@ -194,12 +206,16 @@ def login_to_area(request, door_id):
             if not project_id:
                 # No log entry necessary here because all validation checks passed, and the user must indicate which project
                 # the wish to login under. The log entry is captured when the subsequent choice is made by the user.
-                return render(request, "area_access/choose_project.html", {"area": door.area, "user": user})
+                return render(
+                    request,
+                    "area_access/choose_project.html",
+                    {"area": area, "badge_user": user, "area_id": area_id},
+                )
             else:
                 project = get_object_or_404(Project, id=project_id)
                 try:
                     policy.check_billing_to_project(
-                        project, user, door.area, AreaAccessRecord(area=door.area, project=project, customer=user)
+                        project, user, area, AreaAccessRecord(area=area, project=project, customer=user)
                     )
                 except ProjectChargeException as e:
                     log.details = "The user attempted to bill the project named {} but got error: {}".format(
@@ -227,11 +243,11 @@ def login_to_area(request, door_id):
 
             delay_lock_door(door.id)
 
-        log_in_user_to_area(door.area, user, project)
+        log_in_user_to_area(area, user, project)
 
         dictionary = {
             "door": door,
-            "area": door.area,
+            "area": area,
             "name": user.first_name,
             "project": project,
             "previous_area": previous_area,
@@ -251,6 +267,7 @@ def delay_lock_door(door_id):
 @permission_required("NEMO.change_areaaccessrecord")
 @require_POST
 def logout_of_area(request, door_id):
+    door = get_object_or_404(Door, id=door_id)
     badge_number = request.POST.get("badge_number")
     if not badge_number:
         return render(request, "area_access/badge_not_found.html")
@@ -269,13 +286,19 @@ def logout_of_area(request, door_id):
                 "area_access/logout_warning.html",
                 {
                     "area": record.area,
-                    "name": user.first_name,
+                    "door": door,
+                    "badge_user": user,
                     "tools_in_use": busy_tools,
                     "staff_charge": staff_charge,
+                    "badge_number": user.badge_number,
                 },
             )
         else:
-            return render(request, "area_access/logout_success.html", {"area": record.area, "name": user.first_name})
+            return render(
+                request,
+                "area_access/logout_success.html",
+                {"area": record.area, "door": door, "badge_user": user, "badge_number": user.badge_number},
+            )
     else:
         return render(request, "area_access/not_logged_in.html")
 
@@ -286,13 +309,15 @@ def logout_of_area(request, door_id):
 def open_door(request, door_id):
     door = get_object_or_404(Door, id=door_id)
     badge_number = request.POST.get("badge_number")
+    area_id = request.POST.get("area_id", 0)
+    area = door.areas.first() if door.areas.count() == 1 else get_object_or_404(Area, id=area_id)
     if not badge_number:
         return render(request, "area_access/badge_not_found.html")
     try:
         user = User.objects.get(badge_number=badge_number)
     except User.DoesNotExist:
         return render(request, "area_access/badge_not_found.html")
-    if user.area_access_record() and user.area_access_record().area == door.area:
+    if user.area_access_record() and user.area_access_record().area == area:
         log = PhysicalAccessLog(
             user=user,
             door=door,
@@ -308,7 +333,7 @@ def open_door(request, door_id):
                 return interlock_error(bypass_allowed=False)
             delay_lock_door(door.id)
         return render(request, "area_access/door_is_open.html")
-    return render(request, "area_access/not_logged_in.html", {"area": door.area})
+    return render(request, "area_access/not_logged_in.html")
 
 
 def interlock_error(action: str = None, user: User = None, bypass_allowed: bool = None):

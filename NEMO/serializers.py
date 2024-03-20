@@ -5,7 +5,15 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import validators
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
-from rest_framework.fields import BooleanField, CharField, ChoiceField, DateTimeField, DecimalField, IntegerField
+from rest_framework.fields import (
+    BooleanField,
+    CharField,
+    ChoiceField,
+    DateTimeField,
+    DecimalField,
+    IntegerField,
+    JSONField,
+)
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.utils import model_meta
 
@@ -121,8 +129,12 @@ class ProjectDisciplineSerializer(ModelSerializer):
 
 
 class ProjectSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    principal_investigators = PrimaryKeyRelatedField(source="manager_set", many=True, queryset=User.objects.all())
-    users = PrimaryKeyRelatedField(source="user_set", many=True, queryset=User.objects.all())
+    principal_investigators = PrimaryKeyRelatedField(
+        source="manager_set", many=True, queryset=User.objects.all(), allow_null=True, required=False
+    )
+    users = PrimaryKeyRelatedField(
+        source="user_set", many=True, queryset=User.objects.all(), allow_null=True, required=False
+    )
 
     class Meta:
         model = Project
@@ -202,7 +214,7 @@ class ConfigurationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
 
 class ReservationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    question_data = serializers.JSONField(source="question_data_json", allow_null=True, required=False)
+    question_data = JSONField(source="question_data_json", allow_null=True, required=False)
     configuration_options = ConfigurationOptionSerializer(source="configurationoption_set", many=True, read_only=True)
 
     class Meta:
@@ -369,7 +381,9 @@ class InterlockSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
 
 class PermissionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    users = PrimaryKeyRelatedField(source="user_set", many=True, queryset=User.objects.all())
+    users = PrimaryKeyRelatedField(
+        source="user_set", many=True, queryset=User.objects.all(), allow_null=True, required=False
+    )
 
     class Meta:
         model = Permission
@@ -381,7 +395,9 @@ class PermissionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
 
 class GroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    users = PrimaryKeyRelatedField(source="user_set", many=True, queryset=User.objects.all())
+    users = PrimaryKeyRelatedField(
+        source="user_set", many=True, queryset=User.objects.all(), allow_null=True, required=False
+    )
 
     class Meta:
         model = Group

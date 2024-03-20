@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import Iterable, List, Set
 
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Count
 from django.utils import timezone
 
 from NEMO.models import (
@@ -31,11 +32,9 @@ def get_notifications(user: User, notification_type: str, delete=True):
 
 
 def get_notification_counts(user: User):
-    counts = {}
-    for t in Notification.Types.Choices:
-        notification_type = t[0]
-        counts[notification_type] = Notification.objects.filter(user=user, notification_type=notification_type).count()
-    return counts
+    notifications = Notification.objects.filter(user=user)
+    counts = notifications.values("notification_type").annotate(total=Count("notification_type"))
+    return {item["notification_type"]: item["total"] for item in counts}
 
 
 def delete_notification(notification_type: str, instance_id, users: Iterable[User] = None):

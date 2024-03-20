@@ -60,21 +60,31 @@
                 Check this box to collapse consumable categories by default.
             </div>
         </div>
-		{% if "NEMO.apps.area_access"|app_installed or "NEMO.apps.kiosk"|app_installed and badge_readers %}
-			<div class="form-group">
-				<label class="control-label col-md-3" for="default_badge_reader_id">Default badge reader</label>
-				<div class="col-md-4">
-					<select id="default_badge_reader_id" name="default_badge_reader_id" class="form-control">
-						<option value="" label="Default badge reader"></option>
-						{% for badge_reader in badge_readers %}
-							<option value="{{ badge_reader.id }}" label="{{ badge_reader.name }}" {% if default_badge_reader_id|to_int == badge_reader.id %}selected{% endif %}></option>
-						{% endfor %}
-					</select>
-				</div>
-				<div class="col-md-5 help-block light-grey">
-					The default badge reader to use for the area access and kiosk tablets.
-				</div>
-			</div>
+		{% if "NEMO.apps.area_access"|app_installed or "NEMO.apps.kiosk"|app_installed %}
+            {% if badge_readers %}
+                <div class="form-group">
+                    <label class="control-label col-md-3" for="default_badge_reader_id">Default badge reader</label>
+                    <div class="col-md-4">
+                        <select id="default_badge_reader_id" name="default_badge_reader_id" class="form-control">
+                            <option value="" label="Default badge reader"></option>
+                            {% for badge_reader in badge_readers %}
+                                <option value="{{ badge_reader.id }}" label="{{ badge_reader.name }}" {% if default_badge_reader_id|to_int == badge_reader.id %}selected{% endif %}></option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5 help-block light-grey">
+                        The default badge reader to use for the area access and kiosk tablets.
+                    </div>
+                </div>
+            {% endif %}
+            <div class="form-group">
+                <label class="control-label col-md-3" for="show_badge_number">Badge number scan</label>
+                <div class="col-md-9">
+                    <div class="checkbox">
+                        <label><input type="checkbox" id="show_badge_number" name="show_badge_number" {% if show_badge_number %}checked{% endif %} value="enabled"> Display badge number when badging in kiosk and area access</label>
+                    </div>
+                </div>
+            </div>
 		{% endif %}
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Page title settings</h3>

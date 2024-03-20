@@ -10,14 +10,16 @@
 				<input type="hidden" name="customer" value="{{ customer.id }}">
 			</div>
 			<div class="form-group">
-				{% if customer.active_project_count == 1 %}
+				{% if customer.active_project_count == 1 and customer.active_projects.0.allow_staff_charges %}
 					Staff time will be billed to the customer's only project, &quot;{{ customer.active_projects.0 }}&quot;
 					<input type="hidden" name="project" value="{{ customer.active_projects.0.id }}">
 				{% else %}
 					Which of the customer's projects would you like to bill?
 					<div class="radio">
 						{% for p in customer.active_projects %}
-							<label class="control-label"><input type="radio" name="project" value="{{ p.id }}" required> {% project_selection_display p %}</label><br>
+                            {% if p.allow_staff_charges %}
+							    <label class="control-label"><input type="radio" name="project" value="{{ p.id }}" required> {% project_selection_display p %}</label><br>
+                            {% endif %}
 						{% endfor %}
 					</div>
 				{% endif %}

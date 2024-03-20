@@ -43,7 +43,7 @@ class BillingAPITestCase(TestCase):
         )
 
         # create a few area access records
-        area = Area.objects.create(name="Cleanroom", welcome_message="")
+        area = Area.objects.create(name="Cleanroom")
         AreaAccessRecord.objects.create(
             area=area, customer=owner2, project=project, end=datetime.now().astimezone(timezone.get_current_timezone())
         )

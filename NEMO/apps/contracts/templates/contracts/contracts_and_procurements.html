@@ -75,6 +75,17 @@
             $(this).removeData('bs.tooltip');
             $(".tooltip").remove();
             $(this).tooltip({trigger: 'manual', html: 'true', container: '#contract-panel-content'}).tooltip('toggle');
+        }).on("shown.bs.tooltip", function (e)
+        {
+            // This function will be executed when the tooltip is completely shown
+            let tooltipEl = $(e.target).data('bs.tooltip').$tip;
+            let top = tooltipEl.offset().top;
+            let height = tooltipEl.height();
+            if (top < 0) {
+                tooltipEl.css("top", "0px");
+                tooltipEl.css("max-height", String(height + top - 5) + "px");
+                tooltipEl.css("overflow-y", "auto");
+            }
         });
         $("[data-toggle='tooltip']").tooltip({html: 'true'});
 

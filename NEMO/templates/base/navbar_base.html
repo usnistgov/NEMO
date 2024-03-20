@@ -59,7 +59,6 @@
                                     {% endif %}
                                     {% navigation_url 'customization' 'Customization' user.is_superuser %}
                                     {% navigation_url 'email_broadcast' 'Email' %}
-                                    {% navigation_url 'impersonate' 'Impersonate' user.is_superuser %}
                                     {% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' user.is_staff  user.is_superuser %}{% endif %}
                                     {% navigation_url 'project_billing' 'Project billing' user.is_accounting_officer user.is_user_office user.is_superuser %}
                                     {% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' user.is_staff user.is_superuser %}{% endif %}
@@ -67,6 +66,11 @@
                                     {% navigation_url 'staff_charges' 'Remote work' user.is_staff user.is_superuser %}
                                     {% navigation_url 'resources' 'Resources' user.is_staff user.is_superuser %}
                                     {% navigation_url 'sensors' 'Sensor data' %}
+                                    {# we can't use args with navigation url so let's check that the regular one exists and then use staff in <li> #}
+                                    {% navigation_url 'knowledge_base' '' as knowledge_base_url %}
+                                    {% if knowledge_base_url %}
+                                        <li><a href="{% url 'knowledge_base' 'staff' %}">Staff knowledge base</a></li>
+                                    {% endif %}
                                     {% navigation_url 'consumables' 'Supplies' user.is_staff user.is_user_office user.is_superuser %}
                                     {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_staff user.is_superuser %}{% endif %}
                                     {% navigation_url 'users' 'Users' %}
@@ -77,8 +81,21 @@
                                     {% navigation_url 'projects' 'Projects' user.is_project_pi %}
                                     {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_tool_superuser %}{% endif %}
                                 {% endif %}
+                                {% if perms.NEMO.can_impersonate_users %}
+                                    {% navigation_url 'impersonate' 'Impersonate' %}
+                                {% endif %}
                             {% endblock %}
 						</ul>
+					</li>
+				{% endif %}
+                {% if user.is_staff and user.charging_staff_time %}
+					<li class="visible-xs visible-sm">
+                        <a href="{% url 'staff_charges' %}" style="color:red; text-decoration: none">
+                            <span id="staff_charge_link" data-container="body" data-toggle="tooltip" data-placement="right" title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">Charging staff time</span>
+                        </a>
+						<script>
+							$("#staff_charge_link").tooltip();
+						</script>
 					</li>
 				{% endif %}
 				<li class="visible-xs visible-sm"><a href="{%  url 'user_preferences' %}">Preferences</a></li>

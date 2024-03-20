@@ -10,7 +10,7 @@
                     <li style="width:48%; text-align:center"><a href="#config" style="padding: 10px 5px"
                                                                 onclick="load_config_history('{{ tool.id }}');">Config
                         History</a></li>{% endif %}
-                {% if tool.post_usage_questions and not hide_data_history or tool.post_usage_questions and user.is_any_part_of_staff %}<li style="width: 48%; text-align: center"><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
+                {% if has_usage_questions and not hide_data_history or has_usage_questions and user.is_any_part_of_staff %}<li style="width: 48%; text-align: center"><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
                 <li style="width:48%; text-align:center"><a href="#problem" style="padding: 10px 5px">Report a problem</a></li>
                 <li style="width:48%; text-align:center"><a href="#comment" style="padding: 10px 5px">Post a comment</a></li>
             </ul>
@@ -22,7 +22,7 @@
                 {% if tool.configuration_set.exists %}
                     <li><a href="#config" onclick="load_config_history('{{ tool.id }}');">Config History</a>
                     </li>{% endif %}
-                {% if tool.post_usage_questions and not hide_data_history or tool.post_usage_questions and user.is_any_part_of_staff %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
+                {% if has_usage_questions and not hide_data_history or has_usage_questions and user.is_any_part_of_staff %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
                 <li><a href="#problem">Report a problem</a></li>
                 <li><a href="#comment">Post a comment</a></li>
             </ul>
@@ -346,6 +346,7 @@
 				{% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
 					{% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
 				{% endif %}
+                    <div id="pre_usage_questions" style="display:none">{{ pre_usage_questions }}</div>
 				{% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}
 					<div id="start" style="display:none">
 						{% if tool.is_parent_tool %}
@@ -369,17 +370,17 @@
             {% for message in messages %}
                 <div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
                     <button type="button" class="close" data-dismiss="alert" aria-label="Modal close button">&times;</button>
-                    {{message}}
+                    {{ message }}
                 </div>
             {% endfor %}
         {% endif %}
 		
-		{% if tool.description or tool.image or tool.tooldocuments_set.all %}
+		{% if tool.description or tool.image or tool.tooldocuments_set.all and user_can_see_documents %}
 			<div style="background-color: #f5f5f5;">
 				<div class="row" style="margin:0; padding: 15px 0">
 					{% if tool.description %}
 					<div class="col-md-8">
-						<p> {{tool.description| safe }} </p>
+						<p> {{ tool.description|safe }} </p>
 					</div>
 				{% endif %}
 				{% if tool.image %}
@@ -387,7 +388,7 @@
 						<img src="{{ tool.image.url }}" alt="Tool image" class="img-fluid img-thumbnail" style="max-width:300px ;max-height:300px" >
 					</div>
 				{% endif %}
-                {% if tool.tooldocuments_set.all %}
+                {% if tool.tooldocuments_set.all and user_can_see_documents %}
                     <div class="col-md-12">
                         Documents:
                         <ul>
@@ -455,6 +456,35 @@
 			<div id="qualified_users_container" class="media">
 				{% include 'tool_control/qualified_users.html' %}
 			</div>
+		{% elif user in tool.superusers.all or "tool"|customization:"tool_control_show_qualified_users_to_all" == "enabled" %}
+            {% with tool.user_set.all as qualified_users %}
+                {% if qualified_users %}
+                    <div id="qualified_users_container" class="media">
+                        <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#qualified_users" class="pointer">
+                            <span class="glyphicon glyphicon-user pull-left notification-icon primary-highlight"></span>
+                            <span class="glyphicon {% if expanded %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
+                        </a>
+                        <div class="media-body">
+                            <h4 class="media-heading">Qualified users</h4>
+                            <div id="qualified_users" class="collapse {% if expanded %}in{% endif %}">
+                                <p>Only qualified users are able to operate the {{ tool.name }}.</p>
+                                <p>
+                                    Current qualified users are listed below. Inactive qualified users are <span class="strikethrough light-grey">crossed out</span>.<br>
+                                </p>
+                                    <ul>
+                                        {% for u in qualified_users %}
+                                            {% if u.is_active %}
+                                                <li class="">{{ u }}</li>
+                                            {% else %}
+                                                <li class="grey"><span class="strikethrough light-grey">{{ u }}</span></li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endwith %}
 		{% endif %}
 		{% if tool.required_resource_set.exists %}
 			<div class="media">
@@ -685,9 +715,25 @@
 		}
 	}
 
+    function update_start_button()
+	{
+        if ({{ tool.pre_usage_questions|yesno:"true,false" }}){
+            if(document.querySelector('#tool_control').checkValidity())
+            {
+                $("#start button").prop("disabled", false);
+            }
+            else
+            {
+                $("#start button").prop("disabled", true);
+            }
+        }
+	}
+
     show_alerts();
 	update_stop_button();
+    update_start_button();
 	$('body').on('question-group-changed', update_stop_button);
+    $('body').on('question-group-changed', update_start_button);
 	$('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_stop_button);
-
+    $('body').on('change keyup', '#tool_control input, #tool_control select, #tool_control textarea, #downtime', update_start_button);
 </script>

@@ -1,11 +1,6 @@
 from unittest import TestCase
 
-from NEMO.apps.sensors.evaluators import (
-    evaluate_boolean_expression,
-    evaluate_expression,
-    evaluate_modbus_expression,
-    modbus_functions,
-)
+from NEMO.evaluators import evaluate_boolean_expression, evaluate_expression, get_expression_variables
 
 
 class TestAstEval(TestCase):
@@ -36,23 +31,6 @@ class TestAstEval(TestCase):
         self.assertEqual(12, evaluate_expression("trunc(12.123)"))
         self.assertEqual(2, evaluate_expression("sqrt(4)"))
 
-    def test_modbus_evaluation(self):
-        # Test all modbus functions
-        variables_1 = {"my_list": [100]}
-        variables_2 = {"my_list": [100, 500]}
-        variables_4 = {"my_list": [100, 500, 1000, 2000]}
-        for function_name in modbus_functions:
-            evaluate_modbus_expression(f"decode_string(my_list)", **variables_1)
-            if "8" in function_name:
-                evaluate_modbus_expression(f"{function_name}(my_list)", **variables_1)
-            if "16" in function_name:
-                evaluate_modbus_expression(f"{function_name}(my_list)", **variables_1)
-            if "32" in function_name:
-                evaluate_modbus_expression(f"{function_name}(my_list)", **variables_2)
-            elif "64" in function_name:
-                evaluate_modbus_expression(f"{function_name}(my_list)", **variables_4)
-        evaluate_modbus_expression(f"round(decode_8bit_int(my_list))", **variables_1)
-
     def test_boolean_evaluation(self):
         self.assertFalse(evaluate_boolean_expression("False"))
         self.assertFalse(evaluate_boolean_expression("10 < 5"))
@@ -80,3 +58,6 @@ class TestAstEval(TestCase):
         self.assertFalse(evaluate_boolean_expression("True and True and True and False"))
         self.assertFalse(evaluate_boolean_expression("value > 56 and value < 76", value=100))
         self.assertFalse(evaluate_boolean_expression("value > abs(-110)", value=100))
+
+    def test_variable_list(self):
+        self.assertSetEqual(get_expression_variables("value > abs(-110) + round(value2) * 2"), {"value", "value2"})

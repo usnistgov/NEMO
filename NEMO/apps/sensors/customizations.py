@@ -11,6 +11,15 @@ class SensorCustomization(CustomizationBase):
         "sensor_default_refresh_rate": "0",
         "sensor_alert_emails": "",
         "sensor_read_retries": "1",
+        "sensor_format_millisecond": "",
+        "sensor_format_second": "",
+        "sensor_format_minute": "",
+        "sensor_format_hour": "",
+        "sensor_format_day": "",
+        "sensor_format_week": "",
+        "sensor_format_month": "",
+        "sensor_format_quarter": "",
+        "sensor_format_year": "",
     }
 
     def validate(self, name, value):

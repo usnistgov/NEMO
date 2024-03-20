@@ -12,6 +12,8 @@
 						<div class="checkbox">
 							<label><input name="attach_created_reservation" type="checkbox" {% if user_preferences.attach_created_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when creating reservation</label>
 							<br><label><input name="attach_cancelled_reservation" type="checkbox" {% if user_preferences.attach_cancelled_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when cancelling a reservation</label>
+                            <br><label><input name="create_reservation_confirmation_override" type="checkbox" {% if user_preferences.create_reservation_confirmation_override %}checked{% endif %}>Check this box to {% if "calendar"|customization:"create_reservation_confirmation" == "enabled" %}not be asked to confirm before making a reservation{% else %}be asked to confirm before making a reservation{% endif %}</label>
+                            <br><label><input name="change_reservation_confirmation_override" type="checkbox" {% if user_preferences.change_reservation_confirmation_override %}checked{% endif %}>Check this box to {% if "calendar"|customization:"change_reservation_confirmation" == "enabled" %}not be asked to confirm before moving or resizing a reservation{% else %}be asked to confirm before moving or resizing a reservation{% endif %}</label>
 						</div>
 					</div>
 				</div>
@@ -140,6 +142,9 @@
                                 {{ form.email_alternate.errors|striptags }}
                             </div>
 			            {% endif %}
+                        <div class="col-sm-offset-3 col-sm-9">
+                            Main email: {{ user.email }}
+                        </div>
                     </div>
                     {% for field_name, field in form.fields.items %}
                         {% if field|class_name == "TypedChoiceField" and field_name != "staff_status_view" and field_name != "email_send_recurring_charges_reminder_emails" %}

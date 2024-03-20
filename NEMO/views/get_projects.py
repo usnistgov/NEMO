@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET
@@ -16,13 +17,14 @@ def get_projects_for_training(request):
 @any_staff_required
 @require_GET
 def get_projects_for_consumables(request):
-    return get_projects(request)
+    # Only return project for which consumable withdrawals are allowed
+    return get_projects(request, Q(allow_consumable_withdrawals=True))
 
 
-def get_projects(request):
+def get_projects(request, project_filter=Q()):
     """Gets a list of all active projects for a specific user. This is only accessible by staff members."""
     user = get_object_or_404(User, id=request.GET.get("user_id", None))
-    projects = user.active_projects()
+    projects = user.active_projects().filter(project_filter)
     source_template = request.GET.get("source_template")
     if source_template == "training":
         entry_number = int(request.GET["entry_number"])

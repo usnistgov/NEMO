@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import random
+import re
 import sys
 from collections import Counter
 from copy import copy
@@ -6,12 +10,14 @@ from json import dumps, loads
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Optional, Type
 
+from django.http import QueryDict
 from django.urls import NoReverseMatch, reverse
 from django.utils.safestring import mark_safe
 
+from NEMO.evaluators import evaluate_expression, get_expression_variables
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Consumable, ToolUsageCounter
-from NEMO.utilities import slugify_underscore
+from NEMO.utilities import EmptyHttpRequest, quiet_int, slugify_underscore
 from NEMO.views.consumables import make_withdrawal
 
 dynamic_form_logger = getLogger(__name__)
@@ -44,24 +50,38 @@ class PostUsageQuestion:
         self.step = self._init_property("step")
         self.rows = self._init_property("rows")
         self.consumable = self._init_property("consumable")
+        self.consumable_id = self._init_property("consumable_id")
         self.required = self._init_property("required", True)
         # For backwards compatibility keep default choice
         self.default_value = self._init_property("default_value") or self._init_property("default_choice")
         self.choices = self._init_property("choices")
         self.labels = self._init_property("labels")
+        self.formula = self._init_property("formula")
         self.group_add_button_name = self._init_property("group_add_button_name") or "Add"
         self.index = index
         if index and not isinstance(self, PostUsageGroupQuestion):
             self.name = f"{self.name}_{index}"
         # form_name is used in forms and extraction to avoid potential conflicts with other data
-        self.form_name = f"df_{self.name}"
-        pass
+        self.form_name = f"df_{slugify_underscore(self.name)}"
+        self.all_questions: List[PostUsageQuestion] = []
+        self.is_sub_question: bool = False
 
     def _init_property(self, prop: str, boolean: bool = False) -> Any:
         if boolean:
             return True if prop in self.properties and self.properties[prop] is True else False
         else:
             return self.properties[prop] if prop in self.properties else None
+
+    @property
+    def has_consumable(self):
+        return self.consumable_id or self.consumable
+
+    def get_consumable(self) -> Consumable:
+        return (
+            Consumable.objects.get(pk=self.consumable_id)
+            if self.consumable_id
+            else Consumable.objects.get(name=self.consumable)
+        )
 
     def validate(self):
         self.validate_property_exists("name")
@@ -92,6 +112,10 @@ class PostUsageQuestion:
         if user_input:
             answered_question["user_input"] = user_input
         return answered_question
+
+    def extract_for_formula(self, request, index=None) -> Any:
+        extracted = self.extract(request, index)
+        return extracted["user_input"] if "user_input" in extracted else None
 
     def validate_property_exists(self, prop: str):
         try:
@@ -290,6 +314,10 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
             result += ")"
         return result
 
+    def extract_for_formula(self, request, index=None) -> Any:
+        value = super().extract_for_formula(request, index)
+        return int(value) if value is not None else None
+
 
 class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
     question_type = "Question of type float"
@@ -304,6 +332,107 @@ class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
             return f"<script>$('#{self.form_name}').numpad({{'readonly': false, 'hidePlusMinusButton': true, 'hideDecimalButton': false}});</script>"
         return super().render_script(virtual_inputs, group_question_url, item_id)
 
+    def extract_for_formula(self, request, index=None) -> Any:
+        value = super().extract_for_formula(request, index)
+        return float(value) if value is not None else None
+
+
+class PostUsageFormulaQuestion(PostUsageQuestion):
+    question_type = "Question of type formula"
+
+    @property
+    def all_questions_by_name(self):
+        return {question.name: question for question in self.all_questions}
+
+    @property
+    def all_questions_by_form_name(self):
+        return {question.form_name: question for question in self.all_questions}
+
+    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+        return f'<input type="hidden" id="{self.form_name}" name="{self.form_name}">'
+
+    def validate(self):
+        super().validate()
+        self.validate_property_exists("formula")
+        # Now validate variables
+        formula_variables = get_expression_variables(self.formula)
+        valid_question_names = {
+            q.form_name: q.name
+            for q in self.all_questions
+            if not isinstance(q, PostUsageGroupQuestion) and not q == self
+        }
+        diff = formula_variables.difference(set(valid_question_names.values()).union(valid_question_names.keys()))
+        if diff:
+            if len(diff) == 1:
+                raise Exception(
+                    f"formula variable {next(iter(diff))} is not a valid question name, valid choices are: {', '.join(valid_question_names.values())}"
+                )
+            else:
+                raise Exception(
+                    f"formula variables {list(diff)} are not valid question names, valid choices are: {', '.join(valid_question_names.values())}"
+                )
+        if self.has_consumable:
+            # The result of the formula must be an int, so let's add some random variables and check
+            formula_and_values = {}
+            for var in formula_variables:
+                if isinstance(self.all_questions_by_name[var], PostUsageNumberFieldQuestion):
+                    formula_and_values[var] = str(random.randint(1, 100))
+                elif isinstance(self.all_questions_by_name[var], PostUsageFloatFieldQuestion):
+                    formula_and_values[var] = str(random.uniform(1.0, 100.0))
+            http_request = EmptyHttpRequest()
+            http_request.POST = QueryDict(mutable=True)
+            http_request.POST.update(formula_and_values)
+            int(self.extract_for_formula(http_request))
+
+    def extract(self, request, index=None) -> Dict:
+        answered_question = copy(self.properties)
+        value = self.extract_for_formula(request, index)
+        if value is not None:
+            answered_question["user_input"] = str(value)
+        return answered_question
+
+    def extract_for_formula(self, request, index=None) -> Any:
+        formula_variables = get_expression_variables(self.formula)
+        # we need to substitute variables with their real form name
+        # i.e. name="test Variable" becomes "df_test_variable" in the form
+        formula = self.formula
+        form_name_variables = {}
+        for variable in formula_variables:
+            # we still want to allow using directly "df_test_variable" in formula
+            if variable in self.all_questions_by_form_name:
+                question_form_name = variable
+            else:
+                question_form_name = self.all_questions_by_name[variable].form_name
+            form_key_variable = question_form_name if index is None else f"{question_form_name}_{index}"
+            form_name_variables[question_form_name] = form_key_variable
+            formula = re.sub(r"\b" + re.escape(variable) + r"\b", form_key_variable, formula)
+        # extract values from questions and use them in formula
+        extracted_form_values = {}
+        for form_name, form_key in form_name_variables.items():
+            matching_question = self.all_questions_by_form_name[form_name]
+            # For formulas outside of groups using a group question,
+            # the variable should contain the list of values from the groups
+            formula_outside_group_using_group = not self.is_sub_question and matching_question.is_sub_question
+            if formula_outside_group_using_group:
+                pattern = match_group_index(form_key)
+                # let's grab indexes just like we do for group questions
+                indexes = [
+                    quiet_int(pattern.match(key).group(2), None) for key in request.POST.keys() if pattern.match(key)
+                ]
+                # now extract all the values from the group into a list
+                value = [
+                    matching_question.extract_for_formula(request, index)
+                    for index in indexes
+                    if matching_question.extract_for_formula(request, index) is not None
+                ]
+            else:
+                value = matching_question.extract_for_formula(request, index)
+            extracted_form_values[form_key] = value
+        # Allow everything other than None as valid value. If None is present
+        # we skip the whole formula evaluation
+        all_valid = all([val is not None for val in extracted_form_values.values()])
+        return evaluate_expression(formula, **extracted_form_values) if all_valid else None
+
 
 class PostUsageGroupQuestion(PostUsageQuestion):
     question_type = "Question of type group"
@@ -316,6 +445,8 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         self.sub_questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(
             self._init_property("questions"), index
         )
+        for sub_question in self.sub_questions:
+            sub_question.is_sub_question = True
 
     def validate(self):
         super().validate()
@@ -364,7 +495,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 			function remove_question_{self.group_name}(element)
 			{{
 				$(element).parents(".{self.group_name}_question").remove();
-				$("body").trigger("question-group-changed");
+				$("body").trigger("question-group-changed", ["{self.group_name}"]);
 				update_add_button_{self.group_name}();
 			}}
 			function add_question_{self.group_name}()
@@ -373,7 +504,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 				{{
 					{self.group_name}_question_index ++;
 					$("#{self.group_name}_container").append(response);
-					$("body").trigger("question-group-changed");
+					$("body").trigger("question-group-changed", ["{self.group_name}"]);
 					update_add_button_{self.group_name}();
 				}}
 				}});
@@ -392,22 +523,16 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         # The result of the extraction will be a dictionary, with the keys being the group number,
         # and the values the user inputs for all questions of the group.
         sub_results = copy(self.properties)
-        user_inputs = {}
-        question_form_names = [sub_question.form_name for sub_question in self.sub_questions]
+        inputs = {}
         for key in request.POST.keys():
-            if key in question_form_names:
-                for sub_question in self.sub_questions:
-                    if key == sub_question.form_name:
-                        user_inputs.setdefault(0, {})
-                        user_inputs[0][sub_question.name] = sub_question.extract(request).get("user_input")
-            else:
-                for sub_question in self.sub_questions:
-                    name = sub_question.form_name
-                    if key.startswith(name + "_"):
-                        index = int(key.rsplit("_", 1)[1])
-                        user_inputs.setdefault(index, {})
-                        user_inputs[index][sub_question.name] = sub_question.extract(request, index).get("user_input")
-        sub_results["user_input"] = user_inputs
+            for sub_question in self.sub_questions:
+                match = match_group_index(sub_question.form_name).match(key)
+                if match:
+                    index = quiet_int(match.group(2), None)  # extract index
+                    index_string = str(index or 0)
+                    inputs.setdefault(index_string, {})
+                    inputs[index_string][sub_question.name] = sub_question.extract(request, index).get("user_input")
+        sub_results["user_input"] = inputs
         return sub_results
 
 
@@ -418,6 +543,14 @@ class DynamicForm:
         if questions:
             self.untreated_questions = loads(questions)
             self.questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(self.untreated_questions)
+        # Add all the questions to each question, for extra processing if needed (in Formula for example)
+        subs = [sub_q for q in self.questions if isinstance(q, PostUsageGroupQuestion) for sub_q in q.sub_questions]
+        all_questions = self.questions + subs
+        for initialized_question in self.questions:
+            initialized_question.all_questions = all_questions
+            if isinstance(initialized_question, PostUsageGroupQuestion):
+                for sub_question in initialized_question.sub_questions:
+                    sub_question.all_questions = all_questions
 
     def render(self, group_question_url: str, group_item_id: int, virtual_inputs: bool = False):
         result = ""
@@ -431,11 +564,13 @@ class DynamicForm:
         # We need to validate the raw json for types
         for question in self.untreated_questions:
             if question["type"] not in question_types.keys():
-                raise Exception(f"type has to be one of {', '.join(question_types.keys())}")
+                raise Exception(f"type has to be one of {', '.join(question_types.keys())}, not {question['type']}")
             if question["type"] == GROUP_TYPE_FIELD_KEY and "questions" in question:
                 for sub_question in question["questions"]:
                     if sub_question["type"] not in question_types.keys():
-                        raise Exception(f"type has to be one of {', '.join(question_types.keys())}")
+                        raise Exception(
+                            f"type has to be one of {', '.join(question_types.keys())}, not {sub_question['type']}"
+                        )
         for question in self.questions:
             question.validate()
         # Test the rendering, but catch reverse exception if this the item doesn't have an id yet
@@ -446,22 +581,18 @@ class DynamicForm:
             if group_item_id:
                 raise
             pass
-        # Check for duplicate names
+        # Check for duplicate names, and that if consumable exists they are linked to a number question
         names = []
         for question in self.questions:
             names.append(question.name)
-            if isinstance(question, PostUsageGroupQuestion):
-                for sub_question in question.sub_questions:
-                    names.append(sub_question.name)
-        duplicate_names = [k for k, v in Counter(names).items() if v > 1]
-        if duplicate_names:
-            raise Exception(f"Question names need to be unique. Duplicates were found: {duplicate_names}")
-        # Check that consumable exists and is linked to a number question
-        for question in self.questions:
             validate_consumable_for_question(question)
             if isinstance(question, PostUsageGroupQuestion):
                 for sub_question in question.sub_questions:
+                    names.append(sub_question.name)
                     validate_consumable_for_question(sub_question)
+        duplicate_names = [k for k, v in Counter(names).items() if v > 1]
+        if duplicate_names:
+            raise Exception(f"Question names need to be unique. Duplicates were found: {duplicate_names}")
 
     def extract(self, request) -> str:
         results = {}
@@ -485,10 +616,10 @@ class DynamicForm:
             results[question.name]["user_input"] = ""
             required_unanswered_questions.append(question)
         elif isinstance(question, PostUsageGroupQuestion):
-            blank_user_input = {0: {}}
+            blank_user_input = {"0": {}}
             for sub_question in question.sub_questions:
-                if sub_question.required and (not user_input or not user_input.get(0, {}).get(sub_question.name)):
-                    blank_user_input[0][sub_question.name] = ""
+                if sub_question.required and (not user_input or not user_input.get("0", {}).get(sub_question.name)):
+                    blank_user_input["0"][sub_question.name] = ""
                     required_unanswered_questions.append(sub_question)
             if required_unanswered_questions:
                 results[question.name]["user_input"] = blank_user_input
@@ -505,11 +636,10 @@ class DynamicForm:
                         results.append(sub_question)
         return results
 
-    def charge_for_consumables(self, usage_event, request=None):
+    def charge_for_consumables(self, usage_event, run_data: str, request=None):
         customer = usage_event.user
         merchant = usage_event.operator
         project = usage_event.project
-        run_data = usage_event.run_data
         try:
             run_data_json = loads(run_data)
         except Exception as error:
@@ -554,10 +684,11 @@ def get_submitted_user_inputs(user_data: str) -> Dict:
     user_input = {}
     user_data_json = loads(user_data)
     for field_name, data in user_data_json.items():
-        if data["type"] != "group":
-            user_input[field_name] = data["user_input"]
-        else:
-            user_input[field_name] = data["user_input"].values()
+        if "user_input" in data:
+            if data["type"] != "group":
+                user_input[field_name] = data["user_input"]
+            else:
+                user_input[field_name] = data["user_input"].values()
     return user_input
 
 
@@ -572,22 +703,25 @@ def render_group_questions(request, questions, group_question_url, group_item_id
 
 
 def validate_consumable_for_question(question: PostUsageQuestion):
-    if question.consumable:
-        if not isinstance(question, PostUsageNumberFieldQuestion):
-            raise Exception("Consumable withdrawals can only be used in questions of type number")
+    if question.has_consumable:
+        if not isinstance(question, (PostUsageNumberFieldQuestion, PostUsageFormulaQuestion)):
+            raise Exception("Consumable withdrawals can only be used in questions of type number or formula")
         else:
+            if question.consumable and question.consumable_id:
+                raise Exception("Use consumable or consumable_id but not both")
             try:
-                Consumable.objects.get(name=question.consumable)
-            except Consumable.DoesNotExist:
-                raise Exception(
-                    f"Consumable with name '{question.consumable}' could not be found. Make sure the names match."
+                Consumable.objects.get(pk=question.consumable_id) if question.consumable_id else Consumable.objects.get(
+                    name=question.consumable
                 )
+            except Consumable.DoesNotExist:
+                match = f"id '{question.consumable_id}'" if question.consumable_id else f"name '{question.consumable}'"
+                raise Exception(f"Consumable with {match} could not be found. Make sure the name/id matches.")
 
 
 def withdraw_consumable_for_question(question, input_data, customer, merchant, project, usage_event, request):
-    if isinstance(question, PostUsageNumberFieldQuestion):
-        if question.consumable:
-            consumable = Consumable.objects.get(name=question.consumable)
+    if isinstance(question, (PostUsageNumberFieldQuestion, PostUsageFormulaQuestion)):
+        if question.has_consumable:
+            consumable: Consumable = question.get_consumable()
             quantity = 0
             if input_data and "user_input" in input_data and input_data["user_input"]:
                 if isinstance(input_data["user_input"], dict):
@@ -610,7 +744,7 @@ def withdraw_consumable_for_question(question, input_data, customer, merchant, p
 
 def get_counter_increment_for_question(question, input_data, counter_question):
     additional_value = 0
-    if isinstance(question, PostUsageNumberFieldQuestion) or isinstance(question, PostUsageFloatFieldQuestion):
+    if isinstance(question, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion)):
         if question.name == counter_question and "user_input" in input_data and input_data["user_input"]:
             if isinstance(input_data["user_input"], dict):
                 for user_input in input_data["user_input"].values():
@@ -645,7 +779,7 @@ def admin_render_dynamic_form_preview(dynamic_form_json: str, group_url: str, it
     try:
         rendered_form = DynamicForm(dynamic_form_json).render(group_url, item_id)
         if dynamic_form_json:
-            form_validity_div = '<div id="form_validity"></div>'
+            form_validity_div = '<div class="form_validity"></div>'
     except:
         pass
     return mark_safe(
@@ -653,6 +787,11 @@ def admin_render_dynamic_form_preview(dynamic_form_json: str, group_url: str, it
             rendered_form, form_validity_div
         )
     )
+
+
+def match_group_index(form_name: str) -> Optional[re.Pattern]:
+    # This will match form_name or any combination of form_name_1, form_name_2 etc.
+    return re.compile("^" + form_name + "(_(\d+))?$")
 
 
 question_types: Dict[str, Type[PostUsageQuestion]] = {
@@ -663,5 +802,6 @@ question_types: Dict[str, Type[PostUsageQuestion]] = {
     "radio": PostUsageRadioQuestion,
     "checkbox": PostUsageCheckboxQuestion,
     "dropdown": PostUsageDropdownQuestion,
+    "formula": PostUsageFormulaQuestion,
     "group": PostUsageGroupQuestion,
 }

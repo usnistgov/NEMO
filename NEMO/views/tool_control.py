@@ -16,7 +16,7 @@ from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_required, synchronized
-from NEMO.exceptions import RequiredUnansweredQuestionsException
+from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors
 from NEMO.models import (
     AreaAccessRecord,
@@ -47,6 +47,7 @@ from NEMO.utilities import (
     render_email_template,
     send_mail,
 )
+from NEMO.views.area_access import able_to_self_log_out_of_area
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import (
     ApplicationCustomization,
@@ -90,23 +91,27 @@ def tool_status(request, tool_id):
     """Gets the current status of the tool (that is, whether it is currently in use or not)."""
     from NEMO.rates import rate_class
 
+    user: User = request.user
     tool = get_object_or_404(Tool, id=tool_id, visible=True)
-    user_is_qualified = tool.user_set.filter(id=request.user.id).exists()
-    user_is_staff = request.user.is_staff
-    tool_control_broadcast_upcoming_reservation_enabled = ToolCustomization.get_bool(
-        "tool_control_broadcast_upcoming_reservation"
-    )
+    user_is_qualified = tool.user_set.filter(id=user.id).exists()
+    broadcast_upcoming_reservation = ToolCustomization.get("tool_control_broadcast_upcoming_reservation")
     dictionary = {
         "tool": tool,
-        "tool_rate": rate_class.get_tool_rate(tool, request.user),
+        "tool_rate": rate_class.get_tool_rate(tool, user),
         "task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
-        "rendered_configuration_html": tool.configuration_widget(request.user),
+        "rendered_configuration_html": tool.configuration_widget(user),
         "mobile": request.device == "mobile",
         "task_statuses": TaskStatus.objects.all(),
+        "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render("tool_usage_group_question", tool_id),
         "post_usage_questions": DynamicForm(tool.post_usage_questions).render("tool_usage_group_question", tool_id),
-        "show_broadcast_upcoming_reservation": user_is_staff
-        or (user_is_qualified and tool_control_broadcast_upcoming_reservation_enabled),
+        "show_broadcast_upcoming_reservation": user.is_any_part_of_staff
+        or (user_is_qualified and broadcast_upcoming_reservation == "qualified")
+        or broadcast_upcoming_reservation == "all",
         "tool_control_show_task_details": ToolCustomization.get_bool("tool_control_show_task_details"),
+        "has_usage_questions": True if tool.pre_usage_questions or tool.post_usage_questions else False,
+        "user_can_see_documents": user.is_any_part_of_staff
+        or not ToolCustomization.get_bool("tool_control_show_documents_only_qualified_users")
+        or user_is_qualified,
     }
 
     try:
@@ -116,16 +121,16 @@ def tool_status(request, tool_id):
             cancelled=False,
             missed=False,
             shortened=False,
-            user=request.user,
+            user=user,
             tool=tool,
         )
-        if request.user == current_reservation.user:
+        if user == current_reservation.user:
             dictionary["time_left"] = current_reservation.end
     except Reservation.DoesNotExist:
         pass
 
     # Staff need the user list to be able to qualify users for the tool.
-    if request.user.is_staff:
+    if user.is_staff:
         dictionary["users"] = User.objects.filter(is_active=True)
 
     return render(request, "tool_control/tool_status.html", dictionary)
@@ -166,15 +171,17 @@ def tool_config_history(request, tool_id):
 @require_POST
 def usage_data_history(request, tool_id):
     """This method return a dictionary of headers and rows containing run_data information for Usage Events"""
-    csv_export = bool(request.POST.get("csv", False))
+    csv_export = request.POST.get("csv")
     start, end = extract_optional_beginning_and_end_times(request.POST)
     last = request.POST.get("data_history_last")
     user_id = request.POST.get("data_history_user_id")
     show_project_info = request.POST.get("show_project_info")
+
     if not last and not start and not end:
         # Default to last 25 records
         last = 25
-    usage_events = UsageEvent.objects.filter(tool_id=tool_id, end__isnull=False).order_by("-end")
+    usage_events = UsageEvent.objects.filter(tool_id=tool_id)
+
     if start:
         usage_events = usage_events.filter(end__gte=start)
     if end:
@@ -184,59 +191,42 @@ def usage_data_history(request, tool_id):
             usage_events = usage_events.filter(user_id=int(user_id))
         except ValueError:
             pass
+
+    pre_usage_events = usage_events.order_by("-start")
+    post_usage_events = usage_events.filter(end__isnull=False).order_by("-end")
     if last:
         try:
             last = int(last)
         except ValueError:
             last = 25
-        usage_events = usage_events[:last]
-    table_result = BasicDisplayTable()
-    table_result.add_header(("user", "User"))
+        pre_usage_events = pre_usage_events[:last]
+        post_usage_events = post_usage_events[:last]
+
+    table_pre_run_data = BasicDisplayTable()
+    table_pre_run_data.add_header(("user", "User"))
     if show_project_info:
-        table_result.add_header(("project", "Project"))
-    table_result.add_header(("date", "Date"))
-    for usage_event in usage_events:
+        table_pre_run_data.add_header(("project", "Project"))
+    table_pre_run_data.add_header(("date", "Date"))
+
+    table_run_data = BasicDisplayTable()
+    table_run_data.add_header(("user", "User"))
+    if show_project_info:
+        table_run_data.add_header(("project", "Project"))
+    table_run_data.add_header(("date", "Date"))
+
+    for usage_event in pre_usage_events:
+        if usage_event.pre_run_data:
+            format_usage_data(
+                table_pre_run_data, usage_event, usage_event.pre_run_data, usage_event.start, show_project_info
+            )
+
+    for usage_event in post_usage_events:
         if usage_event.run_data:
-            usage_data = {}
-            try:
-                user_data = f"{usage_event.user.first_name} {usage_event.user.last_name}"
-                date_data = format_datetime(usage_event.end, "SHORT_DATETIME_FORMAT")
-                run_data: Dict = loads(usage_event.run_data)
-                for question_key, question in run_data.items():
-                    if "user_input" in question:
-                        if question["type"] == "group":
-                            for sub_question in question["questions"]:
-                                table_result.add_header((sub_question["name"], sub_question["title"]))
-                            for index, user_inputs in question["user_input"].items():
-                                if index == "0":
-                                    # Special case here the "initial" group of user inputs will go along with the rest of the non-group user inputs
-                                    for name, user_input in user_inputs.items():
-                                        usage_data[name] = user_input
-                                else:
-                                    # For the other groups of user inputs, we have to add a whole new row
-                                    group_usage_data = {}
-                                    for name, user_input in user_inputs.items():
-                                        group_usage_data[name] = user_input
-                                    if group_usage_data:
-                                        group_usage_data["user"] = user_data
-                                        group_usage_data["date"] = date_data
-                                        if show_project_info:
-                                            group_usage_data["project"] = usage_event.project.name
-                                        table_result.add_row(group_usage_data)
-                        else:
-                            table_result.add_header((question_key, question["title"]))
-                            usage_data[question_key] = question["user_input"]
-                if usage_data:
-                    usage_data["user"] = user_data
-                    usage_data["date"] = date_data
-                    if show_project_info:
-                        usage_data["project"] = usage_event.project.name
-                    table_result.add_row(usage_data)
-            except JSONDecodeError:
-                tool_control_logger.debug("error decoding run_data: " + usage_event.run_data)
+            format_usage_data(table_run_data, usage_event, usage_event.run_data, usage_event.end, show_project_info)
+
     if csv_export:
-        response = table_result.to_csv()
-        filename = f"tool_usage_data_export_{export_format_datetime()}.csv"
+        response = table_run_data.to_csv() if csv_export == "run" else table_pre_run_data.to_csv()
+        filename = f"tool{'' if csv_export == 'run' else '_pre'}_usage_data_export_{export_format_datetime()}.csv"
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
     else:
@@ -245,10 +235,11 @@ def usage_data_history(request, tool_id):
             "data_history_start": start.date() if start else None,
             "data_history_end": end.date() if end else None,
             "data_history_last": str(last),
-            "usage_data_table": table_result,
+            "run_data_table": table_run_data,
+            "pre_run_data_table": table_pre_run_data,
             "data_history_user": User.objects.get(id=user_id) if user_id else None,
             "show_project_info": show_project_info or False,
-            "users": User.objects.filter(is_active=True),
+            "users": User.objects.all(),
         }
         return render(request, "tool_control/usage_data.html", dictionary)
 
@@ -357,6 +348,21 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     if response.status_code != HTTPStatus.OK:
         return response
 
+    # Create a new usage event to track how long the user uses the tool.
+    new_usage_event = UsageEvent()
+    new_usage_event.operator = operator
+    new_usage_event.user = user
+    new_usage_event.project = project
+    new_usage_event.tool = tool
+
+    # Collect pre-usage questions and validate them
+    dynamic_form = DynamicForm(tool.pre_usage_questions)
+
+    try:
+        new_usage_event.pre_run_data = dynamic_form.extract(request)
+    except RequiredUnansweredQuestionsException as e:
+        return HttpResponseBadRequest(str(e))
+
     # All policy checks passed so enable the tool for the user.
     if tool.interlock and not tool.interlock.unlock():
         if bypass_interlock and interlock_bypass_allowed(user):
@@ -372,6 +378,11 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
         new_staff_charge.staff_member = request.user
         new_staff_charge.customer = user
         new_staff_charge.project = project
+        try:
+            # Check that staff charge is actually allowed
+            policy.check_billing_to_project(project, user, new_staff_charge, new_staff_charge)
+        except ProjectChargeException as e:
+            return HttpResponseBadRequest(e.msg)
         new_staff_charge.save()
         # If the tool requires area access, start charging area access time
         if tool.requires_area_access and RemoteWorkCustomization.get_bool(
@@ -384,14 +395,15 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
             area_access.project = new_staff_charge.project
             area_access.save()
 
-    # Create a new usage event to track how long the user uses the tool.
-    new_usage_event = UsageEvent()
-    new_usage_event.operator = operator
-    new_usage_event.user = user
-    new_usage_event.project = project
-    new_usage_event.tool = tool
+    # Now we can safely save the usage event
     new_usage_event.remote_work = remote_work
     new_usage_event.save()
+
+    try:
+        dynamic_form.charge_for_consumables(new_usage_event, new_usage_event.pre_run_data, request)
+    except Exception as e:
+        return HttpResponseBadRequest(str(e))
+    dynamic_form.update_tool_counters(new_usage_event.pre_run_data, tool.id)
 
     return response
 
@@ -448,7 +460,7 @@ def disable_tool(request, tool_id):
             return HttpResponseBadRequest(str(e))
 
     try:
-        dynamic_form.charge_for_consumables(current_usage_event, request)
+        dynamic_form.charge_for_consumables(current_usage_event, current_usage_event.run_data, request)
     except Exception as e:
         return HttpResponseBadRequest(str(e))
     dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
@@ -461,6 +473,10 @@ def disable_tool(request, tool_id):
             and existing_staff_charge.project == current_usage_event.project
         ):
             response = render(request, "staff_charges/reminder.html", {"tool": tool})
+
+    area_record = user.area_access_record()
+    if area_record and tool.ask_to_leave_area_when_done_using and able_to_self_log_out_of_area(user):
+        response = render(request, "tool_control/logout_user.html", {"area": area_record.area, "tool": tool})
 
     return response
 
@@ -665,3 +681,50 @@ def send_tool_usage_counter_email(counter: ToolUsageCounter):
             to=counter.warning_email,
             email_category=EmailCategory.SYSTEM,
         )
+
+
+def format_usage_data(
+    table_result: BasicDisplayTable,
+    usage_event: UsageEvent,
+    usage_run_data: str,
+    date_field: datetime,
+    show_project_info: str,
+):
+    usage_data = {}
+    date_data = format_datetime(date_field, "SHORT_DATETIME_FORMAT")
+
+    try:
+        user_data = f"{usage_event.user.first_name} {usage_event.user.last_name}"
+        run_data: Dict = loads(usage_run_data)
+        for question_key, question in run_data.items():
+            if "user_input" in question:
+                if question["type"] == "group":
+                    for sub_question in question["questions"]:
+                        table_result.add_header((sub_question["name"], sub_question["title"]))
+                    for index, user_inputs in question["user_input"].items():
+                        if index == "0":
+                            # Special case here the "initial" group of user inputs will go along with the rest of the non-group user inputs
+                            for name, user_input in user_inputs.items():
+                                usage_data[name] = user_input
+                        else:
+                            # For the other groups of user inputs, we have to add a whole new row
+                            group_usage_data = {}
+                            for name, user_input in user_inputs.items():
+                                group_usage_data[name] = user_input
+                            if group_usage_data:
+                                group_usage_data["user"] = user_data
+                                group_usage_data["date"] = date_data
+                                if show_project_info:
+                                    group_usage_data["project"] = usage_event.project.name
+                                table_result.add_row(group_usage_data)
+                else:
+                    table_result.add_header((question_key, question["title"]))
+                    usage_data[question_key] = question["user_input"]
+        if usage_data:
+            usage_data["user"] = user_data
+            usage_data["date"] = date_data
+            if show_project_info:
+                usage_data["project"] = usage_event.project.name
+            table_result.add_row(usage_data)
+    except JSONDecodeError:
+        tool_control_logger.debug("error decoding run_data: " + usage_run_data)

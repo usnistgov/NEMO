@@ -122,6 +122,47 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Reservation confirmations</h3>
+        <div class="form-group">
+            <label class="control-label col-md-3">Create</label>
+            <div class="col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="create_reservation_confirmation" {% if create_reservation_confirmation %}checked{% endif %} value="enabled">Require users to confirm by clicking 'Ok' when creating a reservation (this setting can be overwritten by users).</label><br/>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3">Move/Resize</label>
+            <div class="col-md-9">
+                <div class="checkbox">
+                    <label><input type="checkbox" name="change_reservation_confirmation" {% if change_reservation_confirmation %}checked{% endif %} value="enabled">Require users to confirm by clicking 'Ok' when moving/resizing a reservation (this setting can be overwritten by users).</label><br/>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-md-12" style="margin-top: 15px">
+                The following settings allow to customize the date and time formats displayed on confirmations when <i>creating</i> a reservation.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="reservation_confirmation_date_format">Date format</label>
+            <div class="col-md-3">
+                <input type="text" id="reservation_confirmation_date_format" name="reservation_confirmation_date_format" class="form-control" value="{{ reservation_confirmation_date_format }}"  placeholder="MMMM D, yyyy">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                The date format (not including time).
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="reservation_confirmation_time_format">Time format</label>
+            <div class="col-md-3">
+                <input type="text" id="reservation_confirmation_time_format" name="reservation_confirmation_time_format" class="form-control" value="{{ reservation_confirmation_time_format }}"  placeholder="h:mma">
+            </div>
+            <div class="col-md-6 help-block light-grey">
+                The time format.
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">
             {% button type="save" value="Save settings" %}
         </div>
