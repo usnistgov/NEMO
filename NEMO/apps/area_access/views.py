@@ -310,7 +310,7 @@ def open_door(request, door_id):
     door = get_object_or_404(Door, id=door_id)
     badge_number = request.POST.get("badge_number")
     area_id = request.POST.get("area_id", 0)
-    area = get_object_or_404(Area, id=area_id)
+    area = door.areas.first() if door.areas.count() == 1 else get_object_or_404(Area, id=area_id)
     if not badge_number:
         return render(request, "area_access/badge_not_found.html")
     try:
