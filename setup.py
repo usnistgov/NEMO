@@ -31,7 +31,7 @@ setup(
         "cryptography==42.0.5",
         "Django==3.2.25",
         "django-auditlog==2.3.0",
-        "django-filter==24.1",
+        "django-filter==23.5",
         "django-mptt==0.14.0",
         "djangorestframework==3.14.0",
         "drf-excel==2.4.0",
