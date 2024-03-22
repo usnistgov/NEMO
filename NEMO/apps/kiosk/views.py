@@ -470,6 +470,7 @@ def tool_report_problem(request, tool_id, user_id, back):
     return render(request, "kiosk/tool_report_problem.html", dictionary)
 
 
+@login_required
 @permission_required("NEMO.kiosk")
 @require_POST
 def report_problem(request):
@@ -502,16 +503,8 @@ def report_problem(request):
         dictionary["message"] = errors.as_ul()
         dictionary["estimated_resolution_dt"] = request.POST["estimated_resolution_dt"]
         dictionary["estimated_resolution_tm"] = request.POST["estimated_resolution_tm"]
-        if "problem_category" in form.cleaned_data:
-            dictionary["problem_category"] = form.cleaned_data["problem_category"].id
-        if "status" in form.cleaned_data:
-            dictionary["status"] = form.cleaned_data["status"].id
-        if "description" in form.cleaned_data:
-            dictionary["description"] = form.cleaned_data["description"]
-        if "safety_hazard" in form.cleaned_data:
-            dictionary["safety_hazard"] = form.cleaned_data["safety_hazard"]
-        if "force_shutdown" in form.cleaned_data:
-            dictionary["force_shutdown"] = form.cleaned_data["force_shutdown"]
+        dictionary["form"] = form
+
         return render(request, "kiosk/tool_report_problem.html", dictionary)
 
     task = form.save()
@@ -573,6 +566,7 @@ def tool_post_comment(request, tool_id, user_id, back):
     return render(request, "kiosk/tool_post_comment.html", dictionary)
 
 
+@login_required
 @permission_required("NEMO.kiosk")
 @require_POST
 def post_comment(request):
@@ -586,12 +580,8 @@ def post_comment(request):
     form = CommentForm(request.POST)
     if not form.is_valid():
         dictionary["message"] = nice_errors(form).as_ul()
-        if "content" in form.cleaned_data:
-            dictionary["content"] = form.cleaned_data["content"]
-        if "expiration" in form.cleaned_data:
-            dictionary["expiration"] = form.cleaned_data["expiration"]
-        if "staff_only" in form.cleaned_data:
-            dictionary["staff_only"] = form.cleaned_data["staff_only"]
+        dictionary["form"] = form
+
         return render(request, "kiosk/tool_post_comment.html", dictionary)
 
     comment = form.save(commit=False)

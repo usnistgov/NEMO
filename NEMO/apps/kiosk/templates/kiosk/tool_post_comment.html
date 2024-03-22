@@ -50,11 +50,11 @@
 	</div>
 	<div class="form-group">
 		<label for="content-area">What would you like to say?</label>
-		<textarea name="content" id="content-area" class="form-control" rows="6" required>{{content}}</textarea>
+		<textarea name="content" id="content-area" class="form-control" rows="6" required>{{form.content.value}}</textarea>
 	</div>
 	{% if user.is_staff %}
 		<div class="form-group">
-			<input type="checkbox" id="staff_only" name="staff_only" {% if staff_only %}checked{% endif %}/>
+			<input type="checkbox" id="staff_only" name="staff_only" {% if form.staff_only.value %}checked{% endif %}/>
 			<label for="staff_only">Make this comment only visible to staff users</label>
 		</div>
 	{% endif %}
@@ -64,7 +64,7 @@
 </form>
 <script>
 	$('#content-area').keyboard();
-	$('#expiration option[value="{{expiration}}"]').prop('selected', true);
+	$('#expiration option[value="{{form.expiration.value}}"]').prop('selected', true);
 
 	revert(90);
 </script>
