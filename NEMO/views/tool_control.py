@@ -472,13 +472,13 @@ def disable_tool(request, tool_id):
             existing_staff_charge.customer == current_usage_event.user
             and existing_staff_charge.project == current_usage_event.project
         ):
-            response = render(request, "staff_charges/reminder.html", {"tool": tool})
+            return render(request, "staff_charges/reminder.html", {"tool": tool})
 
     area_record = user.area_access_record()
     if area_record and tool.ask_to_leave_area_when_done_using and able_to_self_log_out_of_area(user):
-        response = render(request, "tool_control/logout_user.html", {"area": area_record.area, "tool": tool})
+        return render(request, "tool_control/logout_user.html", {"area": area_record.area, "tool": tool})
 
-    return response
+    return HttpResponse()
 
 
 @login_required

@@ -89,8 +89,8 @@ function on_item_search_selection(jquery_event, search_selection, dataset_name)
 function expand_to_item(id, type)
 {
 	let item = $("#"+type+"-"+id);
-	item.click().parents('ul.tree').show();
 	set_selected_item(item, true);
+	item.click().parents('ul.tree').show();
 }
 
 function toggle_categories()
