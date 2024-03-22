@@ -10,13 +10,14 @@ from json import dumps, loads
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Optional, Type
 
+from django.http import QueryDict
 from django.urls import NoReverseMatch, reverse
 from django.utils.safestring import mark_safe
 
 from NEMO.evaluators import evaluate_expression, get_expression_variables
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Consumable, ToolUsageCounter
-from NEMO.utilities import quiet_int, slugify_underscore
+from NEMO.utilities import EmptyHttpRequest, quiet_int, slugify_underscore
 from NEMO.views.consumables import make_withdrawal
 
 dynamic_form_logger = getLogger(__name__)
@@ -378,7 +379,10 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
                     formula_and_values[var] = str(random.randint(1, 100))
                 elif isinstance(self.all_questions_by_name[var], PostUsageFloatFieldQuestion):
                     formula_and_values[var] = str(random.uniform(1.0, 100.0))
-            int(evaluate_expression(self.formula, **formula_and_values))
+            http_request = EmptyHttpRequest()
+            http_request.POST = QueryDict(mutable=True)
+            http_request.POST.update(formula_and_values)
+            int(self.extract_for_formula(http_request))
 
     def extract(self, request, index=None) -> Dict:
         answered_question = copy(self.properties)
@@ -387,7 +391,7 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
             answered_question["user_input"] = str(value)
         return answered_question
 
-    def extract_for_formula(self, request, index=None) -> Dict:
+    def extract_for_formula(self, request, index=None) -> Any:
         formula_variables = get_expression_variables(self.formula)
         # we need to substitute variables with their real form name
         # i.e. name="test Variable" becomes "df_test_variable" in the form

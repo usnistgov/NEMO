@@ -228,7 +228,6 @@ class ToolAdmin(admin.ModelAdmin):
     readonly_fields = ("_post_usage_preview", "_pre_usage_preview")
     autocomplete_fields = [
         "_primary_owner",
-        "_interlock",
         "parent_tool",
         "_grant_physical_access_level_upon_qualification",
     ]
@@ -294,6 +293,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "_grant_badge_reader_access_upon_qualification",
                     "_interlock",
                     "_allow_delayed_logoff",
+                    "_ask_to_leave_area_when_done_using",
                 )
             },
         ),
@@ -390,7 +390,6 @@ class AreaAdmin(DraggableMPTTAdmin):
                 "fields": (
                     "requires_reservation",
                     "logout_grace_period",
-                    "welcome_message",
                     "auto_logout_time",
                     "buddy_system_allowed",
                 )
@@ -1224,9 +1223,13 @@ class DoorAdminForm(forms.ModelForm):
 
 @register(Door)
 class DoorAdmin(admin.ModelAdmin):
-    list_display = ("name", "area", "interlock", "get_absolute_url", "id")
+    list_display = ("name", "get_areas", "interlock", "get_absolute_url", "id")
     form = DoorAdminForm
-    autocomplete_fields = ["interlock"]
+    filter_horizontal = ["areas"]
+
+    @display(description="Areas", ordering="areas")
+    def get_areas(self, door: Door):
+        return mark_safe("<br>".join([area.name for area in door.areas.order_by("name")]))
 
 
 @register(AlertCategory)
@@ -1574,25 +1577,32 @@ class ToolUsageCounterAdminForm(forms.ModelForm):
         tool_usage_question_name = cleaned_data.get("tool_usage_question")
         if tool and tool_usage_question_name:
             error = None
-            if tool.post_usage_questions:
-                post_usage_form = DynamicForm(tool.post_usage_questions)
-                tool_question = post_usage_form.filter_questions(
-                    lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
-                    and x.name == tool_usage_question_name
-                )
-                if not tool_question:
-                    candidates = [
-                        question.name
-                        for question in post_usage_form.filter_questions(
-                            lambda x: isinstance(x, PostUsageNumberFieldQuestion)
-                            or isinstance(x, PostUsageFloatFieldQuestion)
+            if tool.post_usage_questions or tool.pre_usage_questions:
+                candidate_questions = []
+                if tool.post_usage_questions:
+                    usage_form = DynamicForm(tool.post_usage_questions)
+                    candidate_questions.extend(
+                        usage_form.filter_questions(
+                            lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
                         )
-                    ]
-                    error = "The tool has no post usage question of type Number or Float with this name."
+                    )
+                if tool.pre_usage_questions:
+                    usage_form = DynamicForm(tool.pre_usage_questions)
+                    candidate_questions.extend(
+                        usage_form.filter_questions(
+                            lambda x: isinstance(x, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion))
+                        )
+                    )
+                matching_tool_question = any(
+                    question for question in candidate_questions if question.name == tool_usage_question_name
+                )
+                if not matching_tool_question:
+                    candidates = {question.name for question in candidate_questions}
+                    error = "The tool has no pre/post usage question of type Number or Float with this name."
                     if candidates:
                         error += f" Valid question names are: {', '.join(candidates)}"
             else:
-                error = "The tool does not have any post usage questions."
+                error = "The tool does not have any pre/post usage questions."
             if error:
                 self.add_error("tool_usage_question", error)
         return cleaned_data

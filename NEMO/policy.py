@@ -56,7 +56,7 @@ from NEMO.views.customization import (
 class NEMOPolicy:
     def check_to_enable_tool(
         self, tool: Tool, operator: User, user: User, project: Project, staff_charge: bool, remote_work=False
-    ):
+    ) -> HttpResponse:
         """
         Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
         """
@@ -900,7 +900,11 @@ class NEMOPolicy:
                 if isinstance(item, Consumable) and isinstance(charge, ConsumableWithdraw):
                     if not charge.tool_usage and not project.allow_consumable_withdrawals:
                         msg = f"Consumable withdrawals are not allowed for project {project.name}"
-                        raise ItemNotAllowedForProjectException(project, user, "Staff Charges", msg)
+                        raise ItemNotAllowedForProjectException(project, user, "Consumable withdrawals", msg)
+                # Check if staff charges are allowed
+                if isinstance(item, StaffCharge) and not project.allow_staff_charges:
+                    msg = f"Staff charges are not allowed for project {project.name}"
+                    raise ItemNotAllowedForProjectException(project, user, "Staff Charges", msg)
 
     def check_maximum_users_in_overlapping_reservations(self, reservations: List[Reservation]) -> (int, datetime):
         """

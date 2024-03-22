@@ -697,7 +697,16 @@ def get_class_from_settings(setting_name: str, default_value: str):
     return ret()
 
 
-def create_ics(identifier, event_name, start: datetime, end: datetime, user, organizer=None, cancelled: bool = False):
+def create_ics(
+    identifier,
+    event_name,
+    start: datetime,
+    end: datetime,
+    user,
+    organizer=None,
+    cancelled: bool = False,
+    description: str = None,
+) -> MIMEBase:
     from NEMO.views.customization import ApplicationCustomization
 
     site_title = ApplicationCustomization.get("site_title")
@@ -727,6 +736,7 @@ def create_ics(identifier, event_name, start: datetime, end: datetime, user, org
         f'ATTENDEE;CN="{user.get_name()}";RSVP=TRUE:mailto:{user.email}\n',
         f'ORGANIZER;CN="{organizer}":mailto:{organizer_email}\n',
         f"SUMMARY:[{site_title}] {event_name}\n",
+        f"DESCRIPTION:{description or ''}\n",
         f"STATUS:{'CANCELLED' if cancelled else 'CONFIRMED'}\n",
         "END:VEVENT\n",
         "END:VCALENDAR\n",

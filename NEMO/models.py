@@ -29,7 +29,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from mptt.fields import TreeForeignKey
+from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from NEMO import fields
@@ -1201,6 +1201,11 @@ class Tool(SerializationByNameModel):
         help_text="Indicates that this tool is physically located in a billable area and requires an active area access record in order to be operated.",
         on_delete=models.PROTECT,
     )
+    _ask_to_leave_area_when_done_using = models.BooleanField(
+        default=False,
+        db_column="ask_to_leave_area_when_done_using",
+        help_text="Check this box to ask the user if they want to log out of the area when they are done using the tool.",
+    )
     _grant_physical_access_level_upon_qualification = models.ForeignKey(
         "PhysicalAccessLevel",
         db_column="grant_physical_access_level_upon_qualification_id",
@@ -1447,6 +1452,19 @@ class Tool(SerializationByNameModel):
     def requires_area_access(self, value):
         self.raise_setter_error_if_child_tool("requires_area_access")
         self._requires_area_access = value
+
+    @property
+    def ask_to_leave_area_when_done_using(self):
+        return (
+            self.parent_tool.ask_to_leave_area_when_done_using
+            if self.is_child_tool()
+            else self._ask_to_leave_area_when_done_using
+        )
+
+    @ask_to_leave_area_when_done_using.setter
+    def ask_to_leave_area_when_done_using(self, value):
+        self.raise_setter_error_if_child_tool("ask_to_leave_area_when_done_using")
+        self.ask_to_leave_area_when_done_using = value
 
     @property
     def grant_physical_access_level_upon_qualification(self):
@@ -2243,11 +2261,6 @@ class Area(MPTTModel):
     )
 
     # Area access
-    welcome_message = models.TextField(
-        null=True,
-        blank=True,
-        help_text="The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.",
-    )
     requires_reservation = models.BooleanField(
         default=False, help_text="Check this box to require a reservation for this area before a user can login."
     )
@@ -2540,6 +2553,9 @@ class Project(SerializationByNameModel):
     )
     allow_consumable_withdrawals = models.BooleanField(
         default=True, help_text="Uncheck this box if consumable withdrawals are forbidden under this project"
+    )
+    allow_staff_charges = models.BooleanField(
+        default=True, help_text="Uncheck this box if staff charges are forbidden for this project"
     )
 
     class Meta:
@@ -3571,15 +3587,12 @@ def calculate_duration(start, end, unfinished_reason):
 
 class Door(BaseModel):
     name = models.CharField(max_length=100)
-    area = TreeForeignKey(Area, related_name="doors", on_delete=models.PROTECT)
-    adjacent_area = TreeForeignKey(
-        Area,
+    welcome_message = models.TextField(
         null=True,
         blank=True,
-        related_name="adjacent_doors",
-        on_delete=models.SET_NULL,
-        help_text="When logging out, the user will be asked if they want to log in to this adjacent area",
+        help_text="The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.",
     )
+    areas = TreeManyToManyField(Area, related_name="doors", blank=False)
     interlock = models.OneToOneField(Interlock, null=True, blank=True, on_delete=models.PROTECT)
 
     def __str__(self):

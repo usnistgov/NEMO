@@ -1,17 +1,17 @@
 {% load custom_tags_and_filters %}
-<h1>Welcome to the {{ area }}, {{ user.first_name }}!</h1>
+<h1>Welcome to the {{ area }}, {{ badge_user.first_name }}!</h1>
 <h2>Please choose a project to bill for area access.</h2>
 <h2>You can always change your choice later.</h2>
-{% for project in user.active_projects %}
+{% for project in badge_user.active_projects %}
 	<p>
-		<button type="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area('{{ user.badge_number }}', {{ project.id }}, {{ adjacent_login|yesno:"true,false" }})">
+		<button type="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area('{{ badge_user.badge_number }}', {{ project.id }}, {{ area_id }})">
 			{% project_selection_display project %}
 		</button>
 	</p>
 {% endfor %}
 <p>
 	<button type="button" class="btn btn-warning btn-lg btn-block btn-extra-large" onclick="revert_to_default_content()">
-		Nevermind, don't log in
+		Nevermind, don't log in (<span class="countdown">30</span>)
 	</button>
 </p>
 <script>revert(30);</script>

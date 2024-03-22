@@ -44,6 +44,7 @@ urlpatterns = [
                     views.exit_wait_list,
                     name="exit_wait_list_from_kiosk",
                 ),
+                path("logout_user/<int:tool_id>", views.logout_user, name="kiosk_logout_user"),
                 # Keeping for backwards compatibility (bookmarked links with location)
                 re_path(r"^(?P<location>.+)/$", views.kiosk, name="kiosk"),
                 path("", views.kiosk, name="kiosk"),

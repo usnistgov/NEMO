@@ -279,7 +279,7 @@ function get_selected_item()
 // This function visually highlights a clicked link with a gray background.
 function set_selected_item(element, save_state)
 {
-	save_state = save_state || false
+	save_state = save_state || false;
 	$("#sidebar a").removeClass('selected');
 	$(element).addClass('selected');
 	if (save_state)
