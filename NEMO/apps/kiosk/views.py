@@ -42,6 +42,7 @@ from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
     interlock_bypass_allowed,
     interlock_error,
+    save_comment,
 )
 from NEMO.widgets.dynamic_form import DynamicForm
 
@@ -584,14 +585,6 @@ def post_comment(request):
 
         return render(request, "kiosk/tool_post_comment.html", dictionary)
 
-    comment = form.save(commit=False)
-    comment.content = comment.content.strip()
-    comment.author = request.user
-    comment.expiration_date = (
-        None
-        if form.cleaned_data["expiration"] == -1
-        else timezone.now() + timedelta(days=form.cleaned_data["expiration"])
-    )
-    comment.save()
+    save_comment(request.user, form)
 
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)

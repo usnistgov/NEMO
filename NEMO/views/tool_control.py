@@ -286,15 +286,8 @@ def create_comment(request):
     form = CommentForm(request.POST)
     if not form.is_valid():
         return HttpResponseBadRequest(nice_errors(form).as_ul())
-    comment = form.save(commit=False)
-    comment.content = comment.content.strip()
-    comment.author = request.user
-    comment.expiration_date = (
-        None
-        if form.cleaned_data["expiration"] == -1
-        else timezone.now() + timedelta(days=form.cleaned_data["expiration"])
-    )
-    comment.save()
+    save_comment(request.user, form)
+
     return redirect("tool_control")
 
 
@@ -309,6 +302,18 @@ def hide_comment(request, comment_id):
     comment.hide_date = timezone.now()
     comment.save()
     return redirect("tool_control")
+
+
+def save_comment(user, form):
+    comment = form.save(commit=False)
+    comment.content = comment.content.strip()
+    comment.author = user
+    comment.expiration_date = (
+        None
+        if form.cleaned_data["expiration"] == -1
+        else timezone.now() + timedelta(days=form.cleaned_data["expiration"])
+    )
+    comment.save()
 
 
 def determine_tool_status(tool):
