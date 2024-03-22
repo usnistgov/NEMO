@@ -37,7 +37,7 @@ from NEMO.views.calendar import (
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization
 from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.status_dashboard import create_tool_summary
-from NEMO.views.tasks import send_new_task_emails, set_task_status
+from NEMO.views.tasks import send_new_task_emails, set_task_status, save_task
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
     interlock_bypass_allowed,
@@ -512,40 +512,12 @@ def report_problem(request):
     task.estimated_resolution_time = estimated_resolution_time
     task.save()
 
-    if not settings.ALLOW_CONDITIONAL_URLS and task.force_shutdown:
-        site_title = ApplicationCustomization.get("site_title")
+    save_error = save_task(request, task, None)
 
-        dictionary["message"] = (
-            f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while "
-            f"using {site_title} off campus."
-        )
+    if save_error:
+        dictionary["message"] = save_error
+        dictionary["form"] = form
         return render(request, "kiosk/tool_report_problem.html", dictionary)
-
-    if task.force_shutdown:
-        # Shut down the tool.
-        task.tool.operational = False
-        task.tool.save()
-        # End any usage events in progress for the tool or the tool's children.
-        UsageEvent.objects.filter(tool_id__in=task.tool.get_family_tool_ids(), end=None).update(end=timezone.now())
-        # Lock the interlock for this tool.
-        try:
-            tool_interlock = Interlock.objects.get(tool__id=task.tool.id)
-            tool_interlock.lock()
-        except Interlock.DoesNotExist:
-            pass
-
-    if task.safety_hazard:
-        concern = (
-            "This safety issue was automatically created because a "
-            + str(task.tool).lower()
-            + " problem was identified as a safety hazard.\n\n"
-        )
-        concern += task.problem_description
-        issue = SafetyIssue.objects.create(reporter=request.user, location=task.tool.location, concern=concern)
-        send_safety_email_notification(request, issue)
-
-    send_new_task_emails(request, task, None)
-    set_task_status(request, task, request.POST.get("status"), request.user)
 
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
 
