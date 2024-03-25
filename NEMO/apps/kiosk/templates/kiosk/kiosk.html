@@ -228,6 +228,42 @@
 			status_element.html("<h1>Loading tool information...</h1>").show();
             ajax_get(url, undefined, load_complete);
 		}
+		function tool_report_problem(url)
+        {
+            default_content_element.hide();
+            error_element.hide();
+            error_interlock_element.hide();
+            let data = $('#tool_control').serialize();
+            status_element.html("<h1>Loading report a problem...</h1>").show();
+            ajax_post(url, data, load_complete);
+        }
+        function report_problem()
+        {
+            default_content_element.hide();
+            error_element.hide();
+            error_interlock_element.hide();
+            let data = $('#tool_report_problem').serialize();
+            status_element.html("<h1>Reporting problem...</h1>").show();
+            ajax_post('{% url 'report_problem_from_kiosk' %}', data, load_complete);
+        }
+        function tool_post_comment(url)
+        {
+            default_content_element.hide();
+            error_element.hide();
+            error_interlock_element.hide();
+            let data = $('#tool_control').serialize();
+            status_element.html("<h1>Loading post a comment...</h1>").show();
+            ajax_post(url, data, load_complete);
+        }
+        function post_comment()
+        {
+            default_content_element.hide();
+            error_element.hide();
+            error_interlock_element.hide();
+            let data = $('#tool_post_comment').serialize();
+            status_element.html("<h1>Posting comment...</h1>").show();
+            ajax_post('{% url 'post_comment_from_kiosk' %}', data, load_complete);
+        }
 		function view_category(url)
 		{
 			default_content_element.hide();

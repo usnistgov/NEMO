@@ -1,0 +1,94 @@
+{% load static %}
+{% load custom_tags_and_filters %}
+{% block extrahead %}
+	<script type="text/javascript" src="{% static "pickadate/picker.js" %}"></script>
+	<script type="text/javascript" src="{% static "pickadate/picker.date.js" %}"></script>
+	<script type="text/javascript" src="{% static "pickadate/picker.time.js" %}"></script>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.date.css" %}"/>
+	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.time.css" %}"/>
+{% endblock %}
+<div class="row" style="margin-top:30px">
+	<div class="col-xs-offset-3 col-xs-6" onclick="tool_information('{% url 'kiosk_tool_information' tool.id customer.id back %}')">
+		<div class="alert alert-warning" style="text-align:center; margin-bottom:0; font-size:x-large">
+			Go back
+		</div>
+	</div>
+</div>
+<h2>Report a problem</h2>
+<h4>Use this form to report a problem relating to the currently selected tool. The {{ facility_name }} staff as well as anyone with an upcoming reservation will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</h4>
+{% if message %}
+<div class="alert alert-danger">
+	<h4>Please correct the following errors:</h4>
+	<h4>{{ message }}</h4>
+</div>
+{% endif %}
+<form id="tool_report_problem" method="post">
+	{% csrf_token %}
+	<input type="hidden" name="action" value="create">
+	<input type="hidden" name="back" value="{{ back }}">
+	<input type="hidden" name="tool" value="{{ tool.id }}">
+	<input type="hidden" name="customer_id" value="{{ customer.id }}">
+	{% if task_categories %}
+		<div class="form-group">
+			<label for="problem_category">Please choose a category that best describes this problem. If there is no appropriate category then leave this field blank.</label>
+			<select id="problem_category" name="problem_category" class="form-control" style="max-width:300px">
+				<option value="">&nbsp;</option>
+				{% for c in task_categories %}
+					<option value="{{ c.id }}">{{ c.name }}</option>
+				{% endfor %}
+			</select>
+		</div>
+	{% endif %}
+
+	{% if task_statuses and user.is_staff %}
+		<div class="form-group">
+			<label for="status">What is the status of this task?</label>
+			<select id="status" name="status" class="form-control" style="max-width:300px">
+				<option value="">&nbsp;</option>
+				{% for s in task_statuses %}
+					<option>{{ s.name }}</option>
+				{% endfor %}
+			</select>
+		</div>
+	{% endif %}
+
+	<div class="form-group">
+		<label for="description">Please provide a <strong>detailed</strong> description of the problem so that the {{ facility_name }} staff have enough information to resolve the problem efficiently.</label>
+		<textarea id="description" name="description" class="form-control" rows="7" required>{{form.description.value}}</textarea>
+	</div>
+	{% if user.is_staff %}
+		<div class="form-group">
+			<div style="position:relative">
+				<label for="estimated_resolution_tm" class="control-label">What is your best estimate of when the problem will be resolved? Leave this field blank if you are unsure.</label>
+				<input id="estimated_resolution_dt" name="estimated_resolution_dt" type="text" class="form-control" autocomplete="off" placeholder="Choose a date" value="{{ estimated_resolution_dt }}"><br/>
+				<input id="estimated_resolution_tm" name="estimated_resolution_tm" type="text" class="form-control" autocomplete="off" placeholder="Choose a time" value="{{ estimated_resolution_tm }}">
+			</div>
+		</div>
+	{% endif %}
+	<div class="form-group">
+		<div class="checkbox"><label><input name="safety_hazard" id="safety_hazard" type="checkbox"  {% if form.safety_hazard.value %}checked{% endif %}/><span style="padding-left:10px;">This problem represents a safety hazard to the {{ facility_name }} and should be regarded as urgent.Notify the {{ facility_name }} safety officer of this issue.</span></label></div>
+		<div class="checkbox"><label><input name="force_shutdown" id="force_shutdown" type="checkbox"  {% if form.force_shutdown.value %}checked{% endif %}/><span style="padding-left:10px;">Shut down the tool so that it may not be used until this problem is resolved.</span></label></div>
+	</div>
+	<div class="form-group text-center" style="margin-top:40px" >
+        {% button type="delete" submit=False style="text-align:center; margin-bottom:0; font-size:x-large" icon="glyphicon-send" onclick="report_problem()" value="Report problem" %}
+	</div>
+</form>
+<script>
+	$('#description').keyboard();
+	{% if task_categories %}
+		$('#problem_category option[value="{{form.problem_category.value}}"]').prop('selected', true);
+	{% endif %}
+	{% if task_statuses and user.is_staff %}
+		$('#status option[value="{{form.status.value}}"]').prop('selected', true);
+	{% endif %}
+
+	let date_picker = $('#estimated_resolution_dt').pickadate({format: "yyyy-mm-dd", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true});
+	let start_time_picker = $('#estimated_resolution_tm').pickatime({interval: 15, format: "H:i",formatSubmit: "H:i", hiddenName: true});
+	// set initial date
+	if ('{{ date|default_if_none:'' }}') {
+		date_picker.pickadate('picker').set('select', '{{ date }}', {format: 'MM/DD/YYYY'})
+	}
+
+	revert(90);
+</script>
