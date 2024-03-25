@@ -279,7 +279,11 @@ def transfer_charges(request):
                     form.add_error("new_project_id", _("This field is required"))
                 else:
                     do_transfer_charges(charges, new_project.id)
-                    messages.success(request, f"{len(charges)} charges were transfered from {project} to {new_project}")
+                    messages.success(
+                        request,
+                        f"{len(charges)} charges were transferred from {project} to {new_project}",
+                        extra_tags="data-speed=25000",
+                    )
             else:
                 dictionary["charges"] = charges
     return render(request, "accounts_and_projects/transfer_charges.html", dictionary)
