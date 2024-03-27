@@ -262,15 +262,20 @@ def transfer_charges(request):
     if not ProjectsAccountsCustomization.get_bool("project_allow_transferring_charges"):
         return redirect("landing")
     form = ProjectTransferForm(request.POST or None)
-    project = Project.objects.filter(pk=form.data.get("project_id")).first()
-    new_project_id = form.data.get("new_project_id")
-    new_project = Project.objects.filter(pk=new_project_id).first() if new_project_id else None
-    user_id = form.data.get("user_id")
-    customer = User.objects.filter(id=user_id).first() if user_id else None
-    dictionary = {"form": form, "project": project, "new_project": new_project, "customer": customer}
+    project = None
+    new_project = None
+    customer = None
 
+    dictionary = {}
     if request.method == "POST":
         if form.is_valid():
+            project = Project.objects.filter(pk=form.cleaned_data.get("project_id")).first()
+            new_project_id = form.cleaned_data.get("new_project_id")
+            user_id = form.cleaned_data.get("user_id")
+            if new_project_id:
+                new_project = Project.objects.filter(pk=new_project_id).first()
+            if user_id:
+                customer = User.objects.filter(id=user_id).first()
             charges = get_charges_for_project_and_user(request.POST, customer.username if customer else None)
             confirm = "confirm" in request.POST
             if confirm:
@@ -286,6 +291,7 @@ def transfer_charges(request):
                     )
             else:
                 dictionary["charges"] = charges
+    dictionary.update({"form": form, "project": project, "new_project": new_project, "customer": customer})
     return render(request, "accounts_and_projects/transfer_charges.html", dictionary)
 
 
