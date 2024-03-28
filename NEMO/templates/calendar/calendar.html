@@ -494,15 +494,18 @@ function create_calendar()
 		"views": {
 			"day": {
 				"titleFormat": ' ',
-				"columnFormat": '{{ calendar_day_column_format }}'
+				"columnFormat": '{{ calendar_day_column_format }}',
+				"timeFormat": '{{ calendar_day_time_format }}'
 			},
 			"week": {
 				"titleFormat": ' ',
-				"columnFormat": '{{ calendar_week_column_format }}'
+				"columnFormat": '{{ calendar_week_column_format }}',
+				"timeFormat": '{{ calendar_week_time_format }}'
 			},
 			"month": {
 				"titleFormat": 'MMMM YYYY',
-				"columnFormat": '{{ calendar_month_column_format }}'
+				"columnFormat": '{{ calendar_month_column_format }}',
+				"timeFormat": '{{ calendar_month_time_format }}'
 			}
 		},
 		"firstDay": '{{ calendar_first_day_of_week }}',
