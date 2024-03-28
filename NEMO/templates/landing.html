@@ -54,7 +54,7 @@
                                 </form>
                             {% endif %}
                             {% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
-                            {{ a.contents|linebreaks }}
+                            {{ a.contents|safe|linebreaksbr }}
                         </div>
                     {% endfor %}
                     {% for r in disabled_resources %}

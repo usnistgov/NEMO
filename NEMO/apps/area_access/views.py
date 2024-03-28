@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.formats import localize
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO.decorators import postpone
+from NEMO.decorators import disable_session_expiry_refresh, postpone
 from NEMO.exceptions import (
     InactiveUserError,
     MaximumCapacityReachedError,
@@ -352,6 +352,9 @@ def get_badge_reader(request) -> BadgeReader:
     return badge_reader
 
 
+@login_required
+@disable_session_expiry_refresh
+@require_GET
 def get_alerts(request):
     dictionary = {
         "alerts": Alert.objects.filter(user=None, debut_time__lte=timezone.now(), expired=False, deleted=False),

@@ -9,7 +9,7 @@
                         <td style="width:100px"><span class="glyphicon glyphicon-alert danger-highlight" style="font-size:64px"></span></td>
                         <td>
                             {% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
-                            {{ a.contents|linebreaks }}
+                            {{ a.contents|safe|linebreaksbr }}
                         </td>
                     </tr>
                 </table>

@@ -14,7 +14,7 @@
 		</div>
 	{% endif %}
 	<p>
-		You can create and edit alerts that will be visible to everyone. The alert will only be visible after the debut time and will be deleted after the expiration time.
+		You can create and edit alerts that will be visible to everyone. The alert will only be visible after the debut time and will be deleted after the expiration time. (HTML syntax is allowed).
 	</p>
 	<form action="{% url 'alerts' %}" method="post" class="well">
 		<h4>{% if editing %}Edit this alert{% else %}Create a new alert{% endif %}</h4>
@@ -68,8 +68,8 @@
 						<input type="hidden" name="alert_id" value="{{ a.id }}">
 					</form>
 					{% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
-					{{ a.contents|linebreaks }}
-					Debuts on {{ a.debut_time }}<br>
+					{{ a.contents|safe|linebreaksbr }}
+					<br><br>Debuts on {{ a.debut_time }}<br>
 					{% if a.expiration_time %}Expires on {{ a.expiration_time }}{% else %}This alert will never expire{% endif %}<br>
 				</div>
 			</div>
