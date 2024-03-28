@@ -14,10 +14,16 @@ class Migration(migrations.Migration):
         if calendar_time_format:
             calendar_time_format.name = "calendar_axis_time_format"
             calendar_time_format.save()
-            calendar_time_format = Customization.objects.filter(name="calendar_time_format").first()
-            if calendar_time_format:
-                calendar_time_format.delete()
+            Customization.objects.filter(name="calendar_time_format").delete()
+
+    def reverse_calendar_axis_time_format(apps, schema_editor):
+        Customization = apps.get_model("NEMO", "Customization")
+        calendar_axis_time_format = Customization.objects.filter(name="calendar_axis_time_format").first()
+        if calendar_axis_time_format:
+            calendar_axis_time_format.name = "calendar_time_format"
+            calendar_axis_time_format.save()
+            Customization.objects.filter(name="calendar_axis_time_format").delete()
 
     operations = [
-        migrations.RunPython(migrate_calendar_axis_time_format),
+        migrations.RunPython(migrate_calendar_axis_time_format, reverse_calendar_axis_time_format),
     ]
