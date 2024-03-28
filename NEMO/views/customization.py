@@ -262,7 +262,7 @@ class CalendarCustomization(CustomizationBase):
         "calendar_week_column_format": "ddd M/DD",
         "calendar_week_time_format": "h:mm",
         "calendar_month_column_format": "ddd",
-        "calendar_month_time_format": "h:mmt",
+        "calendar_month_time_format": "h(:mm)t",
         "calendar_start_of_the_day": "07:00:00",
         "calendar_now_indicator": "",
         "calendar_display_not_qualified_areas": "",
