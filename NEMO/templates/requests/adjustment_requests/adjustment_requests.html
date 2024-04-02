@@ -63,7 +63,7 @@
     $(function ()
     {
         {# Scroll to msg id if available #}
-        let msg_id = window.location.hash.substr(1);
+        let msg_id = window.location.hash.substring(1);
         if (msg_id) document.getElementById(msg_id).scrollIntoView();
 
         $('[data-toggle="tooltip"]').tooltip();

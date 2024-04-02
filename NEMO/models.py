@@ -3659,6 +3659,10 @@ class Alert(BaseModel):
         default=False, help_text="Indicates the alert has been deleted and won't be shown anymore"
     )
 
+    def clean(self):
+        if self.dismissible and not self.user:
+            raise ValidationError({"dismissible": "Only a user-specific alert can be dismissed by the user"})
+
     class Meta:
         ordering = ["-debut_time"]
 
