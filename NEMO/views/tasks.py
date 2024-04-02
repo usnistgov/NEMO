@@ -80,7 +80,8 @@ def create(request):
     return redirect("tool_control")
 
 
-def save_task(request, task: Task, task_images: List[TaskImages]):
+def save_task(request, task: Task, task_images: List[TaskImages] = None):
+    task.save()
     if not settings.ALLOW_CONDITIONAL_URLS and task.force_shutdown:
         site_title = ApplicationCustomization.get("site_title")
 

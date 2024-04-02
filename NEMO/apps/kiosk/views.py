@@ -7,7 +7,6 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
-import settings
 from NEMO.decorators import synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.forms import CommentForm, nice_errors, TaskForm
@@ -19,8 +18,6 @@ from NEMO.models import (
     Tool,
     UsageEvent,
     User,
-    Interlock,
-    SafetyIssue,
     TaskCategory,
     TaskStatus,
 )
@@ -35,9 +32,8 @@ from NEMO.views.calendar import (
     shorten_reservation,
 )
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization
-from NEMO.views.safety import send_safety_email_notification
 from NEMO.views.status_dashboard import create_tool_summary
-from NEMO.views.tasks import send_new_task_emails, set_task_status, save_task
+from NEMO.views.tasks import save_task
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
     interlock_bypass_allowed,
@@ -510,9 +506,8 @@ def report_problem(request):
 
     task = form.save()
     task.estimated_resolution_time = estimated_resolution_time
-    task.save()
-
-    save_error = save_task(request, task, None)
+    
+    save_error = save_task(request, task)
 
     if save_error:
         dictionary["message"] = save_error
