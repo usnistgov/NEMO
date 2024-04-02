@@ -2,14 +2,25 @@ from datetime import datetime, timedelta
 from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.models import BadgeReader, Project, Reservation, ReservationItemType, Tool, UsageEvent, User
+from NEMO.forms import CommentForm, nice_errors, TaskForm
+from NEMO.models import (
+    BadgeReader,
+    Project,
+    Reservation,
+    ReservationItemType,
+    Tool,
+    UsageEvent,
+    User,
+    TaskCategory,
+    TaskStatus,
+)
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int
 from NEMO.views.area_access import log_out_user
@@ -22,10 +33,12 @@ from NEMO.views.calendar import (
 )
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization
 from NEMO.views.status_dashboard import create_tool_summary
+from NEMO.views.tasks import save_task
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
     interlock_bypass_allowed,
     interlock_error,
+    save_comment,
 )
 from NEMO.widgets.dynamic_form import DynamicForm
 
@@ -433,3 +446,112 @@ def get_badge_reader(request) -> BadgeReader:
     except BadgeReader.DoesNotExist:
         badge_reader = BadgeReader.default()
     return badge_reader
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def tool_report_problem(request, tool_id, user_id, back):
+    tool = Tool.objects.get(id=tool_id, visible=True)
+    customer = User.objects.get(id=user_id)
+
+    dictionary = {
+        "tool": tool,
+        "date": None,
+        "customer": customer,
+        "back": back,
+        "task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
+        "task_statuses": TaskStatus.objects.all(),
+    }
+
+    return render(request, "kiosk/tool_report_problem.html", dictionary)
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def report_problem(request):
+    tool = Tool.objects.get(id=request.POST["tool"])
+    customer = User.objects.get(id=request.POST["customer_id"])
+    back = request.POST["back"]
+
+    dictionary = {
+        "tool": tool,
+        "customer": customer,
+        "back": back,
+        "task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
+        "task_statuses": TaskStatus.objects.all(),
+    }
+
+    """ Report a problem for a tool. """
+    form = TaskForm(request.user, data=request.POST)
+
+    try:
+        date = parse_date(request.POST["estimated_resolution_dt"])
+        estimated_resolution_time = localize(
+            datetime.combine(date, parse_time(request.POST["estimated_resolution_tm"]))
+        )
+    except:
+        estimated_resolution_time = None
+
+    if not form.is_valid():
+        errors = nice_errors(form)
+
+        dictionary["message"] = errors.as_ul()
+        dictionary["estimated_resolution_dt"] = request.POST["estimated_resolution_dt"]
+        dictionary["estimated_resolution_tm"] = request.POST["estimated_resolution_tm"]
+        dictionary["form"] = form
+
+        return render(request, "kiosk/tool_report_problem.html", dictionary)
+
+    task = form.save()
+    task.estimated_resolution_time = estimated_resolution_time
+    
+    save_error = save_task(request, task)
+
+    if save_error:
+        dictionary["message"] = save_error
+        dictionary["form"] = form
+        return render(request, "kiosk/tool_report_problem.html", dictionary)
+
+    return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def tool_post_comment(request, tool_id, user_id, back):
+    tool = Tool.objects.get(id=tool_id, visible=True)
+    customer = User.objects.get(id=user_id)
+
+    dictionary = {
+        "tool": tool,
+        "date": None,
+        "customer": customer,
+        "back": back,
+    }
+
+    return render(request, "kiosk/tool_post_comment.html", dictionary)
+
+
+@login_required
+@permission_required("NEMO.kiosk")
+@require_POST
+def post_comment(request):
+    tool = Tool.objects.get(id=request.POST["tool"])
+    customer = User.objects.get(id=request.POST["customer_id"])
+    back = request.POST["back"]
+
+    dictionary = {"back": back, "tool": tool, "customer": customer}
+
+    """ Post a comment for a tool. """
+    form = CommentForm(request.POST)
+    if not form.is_valid():
+        dictionary["message"] = nice_errors(form).as_ul()
+        dictionary["form"] = form
+
+        return render(request, "kiosk/tool_post_comment.html", dictionary)
+
+    save_comment(request.user, form)
+
+    return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
