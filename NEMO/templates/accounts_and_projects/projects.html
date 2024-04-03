@@ -2,17 +2,25 @@
 {% load custom_tags_and_filters %}
 {% block title %}Projects{% endblock %}
 {% block content %}
-    <h1 style="margin-bottom: 30px">
-		Managed projects
-    </h1>
+    <h1 style="margin-bottom: 30px">Managed projects</h1>
     {% for project in managed_projects %}
         <h3>
-            <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#project_{{ project.id }}_details" class="pointer" style="text-decoration:none">
+            <a onclick="toggle_details(this)"
+               data-toggle="collapse"
+               data-target="#project_{{ project.id }}_details"
+               class="pointer"
+               style="text-decoration:none">
                 <span id="project_{{ project.id }}_chevron" class="glyphicon glyphicon-chevron-down pull-left chevron"></span>
                 {{ project }}
             </a>
-            <span class="label {% if project.active %}label-success{% else %}label-danger{% endif %}" style="vertical-align:50%; font-size:small">
-                {% if project.active %}Active{% else %}Inactive{% endif %}
+            <span class="label {% if project.active %}label-success{% else %}label-danger{% endif %}"
+                  style="vertical-align:50%;
+                         font-size:small">
+                {% if project.active %}
+                    Active
+                {% else %}
+                    Inactive
+                {% endif %}
             </span>
         </h3>
         <div style="margin-left:34px">
@@ -22,41 +30,41 @@
                 <br>
                 <label class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</label>
                 <span class="grey">{{ project.application_identifier }}</span>
-				{% if project.discipline %}
-					<br>
-					<label class="control-label">Discipline:</label>
-					<span class="grey">{{ project.discipline }}</span>
-				{% endif %}
+                {% if project.discipline %}
+                    <br>
+                    <label class="control-label">Discipline:</label>
+                    <span class="grey">{{ project.discipline }}</span>
+                {% endif %}
                 {% if project.start_date %}
                     <br>
                     <label class="control-label">Start date:</label>
                     <span class="grey">{{ project.start_date }}</span>
                 {% endif %}
-				{% if "projects_and_accounts"|customization:"project_allow_pi_manage_users" %}
-					<div style="height:10px"></div>
-					<div id="project_{{ project.id }}_users">
-						{% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
-					</div>
-				{% else %}
-					<div>
-						<label class="control-label">Users:</label>
-					</div>
-					<div>
-						{% if project.user_set.all %}
-							<ul>
-							{% for u in project.user_set.all %}
-								<li class="{% if not u.is_active %}strikethrough light-grey{% endif %}">{{ u }}</li>
-							{% endfor %}
-							</ul>
-						{% else %}
-							<span class="grey">This project does not have any members.</span>
-						{% endif %}
-					</div>
-				{% endif %}
+                {% if "projects_and_accounts"|customization:"project_allow_pi_manage_users" %}
+                    <div style="height:10px"></div>
+                    <div id="project_{{ project.id }}_users">
+                        {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
+                    </div>
+                {% else %}
+                    <div>
+                        <label class="control-label">Users:</label>
+                    </div>
+                    <div>
+                        {% if project.user_set.all %}
+                            <ul>
+                                {% for u in project.user_set.all %}
+                                    <li class="{% if not u.is_active %}strikethrough light-grey{% endif %}">{{ u }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <span class="grey">This project does not have any members.</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
             </div>
         </div>
     {% endfor %}
-	<script>
+    <script>
 		function add_user_to_project(jquery_event, search_selection, dataset_name)
 		{
 			let project_id = $(this).data('project-id');
@@ -74,5 +82,6 @@
 			$('.user_search').autocomplete('users', add_user_to_project, {{ users|json_search_base }});
 		}
 		window.addEventListener('load', reset_autocomplete, true);
-	</script>
+	
+    </script>
 {% endblock %}

@@ -2,95 +2,107 @@
 {% load humanize %}
 {% block title %}Reservation abuse{% endblock %}
 {% block extrahead %}
-	{% load static %}
+    {% load static %}
     {% load custom_tags_and_filters %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block content %}
-	<h1>Reservation abuse</h1>
-	<p>
-		This page ranks users that abuse reservation privileges. Abuse is defined as cancelling, moving, or extending
-		a reservation shortly before the reservation would have started. A point penalty is calculated per abuse.
-		Point penalties increase the shorter the notice of a reservation change. (That is, cancelling a reservation right
-		before it would have started will incur a high amount of points, while cancelling it 6 hours before would incur
-		fewer points).
-	</p>
-
-	<p>The weight & details of what constitutes abuse can be configured (though reasonable defaults have been chosen).</p>
-
-	<form class="form-horizontal" method="get" action="{% url 'abuse' %}">
-		<div class="form-group">
-			<label for="cancellation_horizon" class="col-sm-3 control-label">Cancellation horizon</label>
-			<div class="col-sm-2">
-				<div class="input-group">
-					<input id="cancellation_horizon" name="cancellation_horizon" type="text" class="form-control" value="{{ form.cancellation_horizon.value }}">
-					<span class="input-group-addon">hours</span>
-				</div>
-			</div>
-		</div>
-		<div class="form-group">
-			<label for="cancellation_penalty" class="col-sm-3 control-label">Cancellation penalty</label>
-			<div class="col-sm-2">
-				<div class="input-group">
-					<span class="input-group-addon">Up to</span>
-					<input id="cancellation_penalty" name="cancellation_penalty" type="text" class="form-control" value="{{ form.cancellation_penalty.value }}">
-					<span class="input-group-addon">points</span>
-				</div>
-			</div>
-		</div>
-		<div class="form-group">
-			<label for="target" class="col-sm-3 control-label">Evaluate for the</label>
-			<div class="col-sm-3">
-				<select id="target" name="target" class="form-control">
-					<option value="">Entire {{ facility_name }}</option>
-					{% for area in area_widget.choices %}
-						<option value="area|{{ area.0 }}" {% if item_type == 'area' and item_id == area.0 %}selected{% endif %}>{{ area.1 }} (Area)</option>
-					{% endfor %}
-					{% for tool in tools %}
-						<option value="tool|{{ tool.id }}" {% if item_type == 'tool' and item_id == tool.id %}selected{% endif %}>{{ tool.name }}</option>
-					{% endfor %}
-				</select>
-			</div>
-		</div>
-		<div class="form-group">
-			<label for="start" class="col-sm-3 control-label">Starting</label>
-			<div class="col-sm-3">
-				<input id="start" type="text" name="start" class="form-control" value="{{ form.start.value|input_date_format }}">
-			</div>
-			<label for="end" class="col-sm-1 control-label">Ending</label>
-			<div class="col-sm-3">
-				<input id="end" type="text" name="end" class="form-control" value="{{ form.end.value|input_date_format }}">
-			</div>
-		</div>
-		<div class="form-group">
-			<div class="col-sm-offset-3 col-sm-9">
-                {% button type="warn" submit=True value="Generate report" %}
-			</div>
-		</div>
-	</form>
-
-	{% if results %}
-		<div>
-			<table class="table">
-				<tr>
-					<th>User</th>
-					<th>Points</th>
-				</tr>
-				{% for user, score in results %}
-					<tr>
-						<td><a href="{% url 'user_drill_down' %}?user={{ user.id }}&cancellation_horizon={{ form.cancellation_horizon.value }}&cancellation_penalty={{ form.cancellation_penalty.value }}&target={{ form.target.value }}&start={{ form.start.value }}&end={{ form.end.value }}">{{ user }}</a></td>
-						<td>{{ score|intcomma }}</td>
-					</tr>
-				{% endfor %}
-			</table>
-		</div>
-	{% endif %}
-
-	<script>
+    <h1>Reservation abuse</h1>
+    <p>
+        This page ranks users that abuse reservation privileges. Abuse is defined as cancelling, moving, or extending
+        a reservation shortly before the reservation would have started. A point penalty is calculated per abuse.
+        Point penalties increase the shorter the notice of a reservation change. (That is, cancelling a reservation right
+        before it would have started will incur a high amount of points, while cancelling it 6 hours before would incur
+        fewer points).
+    </p>
+    <p>The weight & details of what constitutes abuse can be configured (though reasonable defaults have been chosen).</p>
+    <form class="form-horizontal" method="get" action="{% url 'abuse' %}">
+        <div class="form-group">
+            <label for="cancellation_horizon" class="col-sm-3 control-label">Cancellation horizon</label>
+            <div class="col-sm-2">
+                <div class="input-group">
+                    <input id="cancellation_horizon"
+                           name="cancellation_horizon"
+                           type="text"
+                           class="form-control"
+                           value="{{ form.cancellation_horizon.value }}">
+                    <span class="input-group-addon">hours</span>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="cancellation_penalty" class="col-sm-3 control-label">Cancellation penalty</label>
+            <div class="col-sm-2">
+                <div class="input-group">
+                    <span class="input-group-addon">Up to</span>
+                    <input id="cancellation_penalty"
+                           name="cancellation_penalty"
+                           type="text"
+                           class="form-control"
+                           value="{{ form.cancellation_penalty.value }}">
+                    <span class="input-group-addon">points</span>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="target" class="col-sm-3 control-label">Evaluate for the</label>
+            <div class="col-sm-3">
+                <select id="target" name="target" class="form-control">
+                    <option value="">Entire {{ facility_name }}</option>
+                    {% for area in area_widget.choices %}
+                        <option value="area|{{ area.0 }}" {% if item_type == 'area' and item_id == area.0 %}selected{% endif %}>
+                            {{ area.1 }} (Area)
+                        </option>
+                    {% endfor %}
+                    {% for tool in tools %}
+                        <option value="tool|{{ tool.id }}" {% if item_type == 'tool' and item_id == tool.id %}selected{% endif %}>
+                            {{ tool.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="start" class="col-sm-3 control-label">Starting</label>
+            <div class="col-sm-3">
+                <input id="start"
+                       type="text"
+                       name="start"
+                       class="form-control"
+                       value="{{ form.start.value|input_date_format }}">
+            </div>
+            <label for="end" class="col-sm-1 control-label">Ending</label>
+            <div class="col-sm-3">
+                <input id="end" type="text" name="end" class="form-control" value="{{ form.end.value|input_date_format }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-offset-3 col-sm-9">{% button type="warn" submit=True value="Generate report" %}</div>
+        </div>
+    </form>
+    {% if results %}
+        <div>
+            <table class="table">
+                <tr>
+                    <th>User</th>
+                    <th>Points</th>
+                </tr>
+                {% for user, score in results %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'user_drill_down' %}?user={{ user.id }}&cancellation_horizon={{ form.cancellation_horizon.value }}&cancellation_penalty={{ form.cancellation_penalty.value }}&target={{ form.target.value }}&start={{ form.start.value }}&end={{ form.end.value }}">{{ user }}</a>
+                        </td>
+                        <td>{{ score|intcomma }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+    <script>
 		let timepicker_properties = {format: '{{ date_input_js_format }}'};
 		$('#start').datetimepicker(timepicker_properties);
 		$('#end').datetimepicker(timepicker_properties);
-	</script>
-
+	
+    </script>
 {% endblock %}

@@ -1,27 +1,21 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
-	{% block before_pagination %}{% endblock %}
-	{% if page %}
-		{% with paginator=page.paginator %}
+    {% block before_pagination %}{% endblock %}
+    {% if page %}
+        {% with paginator=page.paginator %}
             {% block pagination_header %}
-                <div class="pagination pull-right">
-                    {% include "pagination/pagination_selector.html" %}
-                </div>
+                <div class="pagination pull-right">{% include "pagination/pagination_selector.html" %}</div>
             {% endblock %}
-
             <div class="table-responsive" style="width: 100%">
-			    {% block pagination_content %}{% endblock %}
+                {% block pagination_content %}{% endblock %}
             </div>
-
-			{% block pagination_footer %}
-                <div class="pagination pull-right">
-                    {% include "pagination/pagination_pages.html" %}
-                </div>
+            {% block pagination_footer %}
+                <div class="pagination pull-right">{% include "pagination/pagination_pages.html" %}</div>
             {% endblock %}
-		{% endwith %}
-	{% else %}
-		{% block table_empty_content %}{% endblock %}
-	{% endif %}
-	{% block after_pagination %}{% endblock %}
+        {% endwith %}
+    {% else %}
+        {% block table_empty_content %}{% endblock %}
+    {% endif %}
+    {% block after_pagination %}{% endblock %}
 {% endblock %}

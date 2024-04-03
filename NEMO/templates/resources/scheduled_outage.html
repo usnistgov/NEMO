@@ -1,73 +1,95 @@
 {% extends 'base.html' %}
 {% block extrahead %}
-	{% load static %}
-	{% load custom_tags_and_filters %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    {% load static %}
+    {% load custom_tags_and_filters %}
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block title %}Resource outages{% endblock %}
 {% block content %}
-	<h1>Schedule {{ resource }} outage</h1>
-	<p>
-		You can schedule a resource outage to occur for a specific time window. This prevents users from using
-		affected tools and areas, <strong>but will not kick users off if they're already logged in to an area or using a tool</strong>.
-		It is the staff's responsibility to ensure that all tools and areas that use the resource are properly shutdown.
-	</p>
-	<p>
-		When a resource is unavailable:
-		<ul>
-			<li>The status message will be displayed on the landing page and tool control page of each affected tool</li>
-			<li>Tools that fully depend on the resource will be <strong>unavailable to users</strong></li>
-			<li>Areas that depend on the resource will be <strong>unavailable to users</strong></li>
-			<li>Tools that partially depend on the resource will be available to users, however it is the user's responsibility to determine if their fabrication process will succeed without the resource available</li>
-		</ul>
-	</p>
-	{% if form.non_field_errors %}
-		<div class="alert alert-danger">
-			{{ form.non_field_errors }}
-		</div>
-	{% endif %}
-	<form action="{% url 'schedule_resource_outage' resource.id %}" method="post" class="well">
-		<h4>{% if editing %}Edit this outage{% else %}Create a new {{ resource }} outage{% endif %}</h4>
-		{% csrf_token %}
-		{% if form.instance.id %}<input type="hidden" name="outage_id" value="{{ form.instance.id }}">{% endif %}
-		{% if outage_categories %}
-			<div class="form-group">
-				<label for="category">Outage category</label><span class="grey"> - is there a category for this outage? This is useful for data and trend analysis</span>
-				<select class="form-control" name="category" id="category">
-					<option></option>
-					{% for oc in outage_categories %}
-						<option {% if oc.name == form.category.value %}selected{% endif %}>{{ oc }}</option>
-					{% endfor %}
-				</select>
-			</div>
-		{% endif %}
-		<div class="form-group">
-			<label for="details">Details</label>{% if form.details.errors %} - <span style="color:red">{{ form.details.errors|striptags }}</span>{% endif %}
-			<textarea aria-labelledby="outage_details_help" class="form-control" rows="3" name="details" id="details" maxlength="{{ form.fields.details.max_length }}">{{ form.details.value|default_if_none:"" }}</textarea>
-            <div class="light-grey" id="outage_details_help">What is the reason for the outage? What other details will be relevant for users to know?</div>
-		</div>
-		<div class="form-group">
-			<div class="row">
-				<div class="col-sm-6">
-					<label for="start">Start time</label>{% if form.start.errors %} - <span style="color:red">{{ form.start.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control" name="start" id="start" value="{{ form.start.value|input_date_format }}">
-				</div>
-				<div class="col-sm-6">
-					<label for="end">End time</label>{% if form.end.errors %} - <span style="color:red">{{ form.end.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control" name="end" id="end" value="{{ form.end.value|input_date_format }}">
-				</div>
-			</div>
-		</div>
-		<div class="form-group">
-            {% button type="save" value=editing|yesno:"Save changes,Create outage" %}
-		</div>
-	</form>
-	<script>
+    <h1>Schedule {{ resource }} outage</h1>
+    <p>
+        You can schedule a resource outage to occur for a specific time window. This prevents users from using
+        affected tools and areas, <strong>but will not kick users off if they're already logged in to an area or using a tool</strong>.
+        It is the staff's responsibility to ensure that all tools and areas that use the resource are properly shutdown.
+    </p>
+    <p>
+        When a resource is unavailable:
+        <ul>
+            <li>The status message will be displayed on the landing page and tool control page of each affected tool</li>
+            <li>
+                Tools that fully depend on the resource will be <strong>unavailable to users</strong>
+            </li>
+            <li>
+                Areas that depend on the resource will be <strong>unavailable to users</strong>
+            </li>
+            <li>
+                Tools that partially depend on the resource will be available to users, however it is the user's responsibility to determine if their fabrication process will succeed without the resource available
+            </li>
+        </ul>
+    </p>
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <form action="{% url 'schedule_resource_outage' resource.id %}" method="post" class="well">
+        <h4>
+            {% if editing %}
+                Edit this outage
+            {% else %}
+                Create a new {{ resource }} outage
+            {% endif %}
+        </h4>
+        {% csrf_token %}
+        {% if form.instance.id %}<input type="hidden" name="outage_id" value="{{ form.instance.id }}">{% endif %}
+        {% if outage_categories %}
+            <div class="form-group">
+                <label for="category">Outage category</label>
+                <span class="grey">- is there a category for this outage? This is useful for data and trend analysis</span>
+                <select class="form-control" name="category" id="category">
+                    <option></option>
+                    {% for oc in outage_categories %}
+                        <option {% if oc.name == form.category.value %}selected{% endif %}>{{ oc }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+        <div class="form-group">
+            <label for="details">Details</label>
+            {% if form.details.errors %}- <span style="color:red">{{ form.details.errors|striptags }}</span>{% endif %}
+            <textarea aria-labelledby="outage_details_help"
+                      class="form-control"
+                      rows="3"
+                      name="details"
+                      id="details"
+                      maxlength="{{ form.fields.details.max_length }}">{{ form.details.value|default_if_none:"" }}</textarea>
+            <div class="light-grey" id="outage_details_help">
+                What is the reason for the outage? What other details will be relevant for users to know?
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="row">
+                <div class="col-sm-6">
+                    <label for="start">Start time</label>
+                    {% if form.start.errors %}- <span style="color:red">{{ form.start.errors|striptags }}</span>{% endif %}
+                    <input type="text"
+                           class="form-control"
+                           name="start"
+                           id="start"
+                           value="{{ form.start.value|input_date_format }}">
+                </div>
+                <div class="col-sm-6">
+                    <label for="end">End time</label>
+                    {% if form.end.errors %}- <span style="color:red">{{ form.end.errors|striptags }}</span>{% endif %}
+                    <input type="text" class="form-control" name="end" id="end" value="{{ form.end.value|input_date_format }}">
+                </div>
+            </div>
+        </div>
+        <div class="form-group">{% button type="save" value=editing|yesno:"Save changes,Create outage" %}</div>
+    </form>
+    <script>
 		let timepicker_properties = {
             format: "{{ datetime_input_js_format }}",
 			sideBySide: true
 		};
         set_start_end_datetime_pickers($('#start'), $('#end'), timepicker_properties);
-	</script>
+	
+    </script>
 {% endblock %}

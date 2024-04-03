@@ -7,40 +7,78 @@
     </head>
     <body>
         <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
-        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+        <table align="center"
+               style="width:100%;
+                      max-width:600px;
+                      font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
             <tr>
-                <td align="center" style="color: white; background: {{ template_color }}; padding: 50px 0;" bgcolor="{{ template_color }}">
-                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
-                        ADJUSTMENT REQUEST {{ status|upper }}
-                    </h1>
+                <td align="center"
+                    style="color: white;
+                           background: {{ template_color }};
+                           padding: 50px 0"
+                    bgcolor="{{ template_color }}">
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">ADJUSTMENT REQUEST {{ status|upper }}</h1>
                 </td>
             </tr>
             <tr>
                 <td style="padding: 10px;">
-                    <p>Dear {% if user_office %}User Office{% else %}{{ adjustment_request.creator.first_name }}{% endif %},</p>
-                    <p>{% if user_office %}The following{% else %}Your{% endif %} adjustment request has been {{ status }}{% if adjustment_request.creator != adjustment_request.last_updated_by %} by {{ adjustment_request.last_updated_by.get_name }}{% endif %}.</p>
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 10px;">
-                    {% if manager_note %}<p>{{ manager_note }}</p>{% endif %}
-                    <p>Request details:
-                    {% if adjustment_request.item %}
-                        <br><u>Charge</u>: {{ adjustment_request.item.get_display }}
-                        <br><u>Start time</u>: {{ adjustment_request.item.start|date:"SHORT_DATETIME_FORMAT" }} {% if adjustment_request.get_new_start %}-> <b>{{ adjustment_request.get_new_start|date:"SHORT_DATETIME_FORMAT" }}</b>{% endif %}
-                        <br><u>End time</u>: {{ adjustment_request.item.end|date:"SHORT_DATETIME_FORMAT" }} {% if adjustment_request.get_new_end %}-> <b>{{ adjustment_request.get_new_end|date:"SHORT_DATETIME_FORMAT" }}</b>{% endif %}
-                        <br><u>Difference</u>: <b>{{ adjustment_request.get_time_difference|default_if_none:"" }}</b>
-                    {% endif %}
-                    {% if adjustment_request.description %}
-                        <br><u>Description</u>:
-                        <br>{{ adjustment_request.description|linebreaksbr }}
-                    {% endif %}
+                    <p>
+                        Dear
+                        {% if user_office %}
+                            User Office
+                        {% else %}
+                            {{ adjustment_request.creator.first_name }}
+                        {% endif %}
+                        ,
+                    </p>
+                    <p>
+                        {% if user_office %}
+                            The following
+                        {% else %}
+                            Your
+                        {% endif %}
+                        adjustment request has been {{ status }}
+                        {% if adjustment_request.creator != adjustment_request.last_updated_by %}
+                            by {{ adjustment_request.last_updated_by.get_name }}
+                        {% endif %}
+                        .
                     </p>
                 </td>
             </tr>
             <tr>
                 <td style="padding: 10px;">
-                    Visit the <a href="{{ adjustment_request_url }}">{{ site_title }} adjustment requests page</a> for more information.<br/>
+                    {% if manager_note %}<p>{{ manager_note }}</p>{% endif %}
+                    <p>
+                        Request details:
+                        {% if adjustment_request.item %}
+                            <br>
+                            <u>Charge</u>: {{ adjustment_request.item.get_display }}
+                            <br>
+                            <u>Start time</u>: {{ adjustment_request.item.start|date:"SHORT_DATETIME_FORMAT" }}
+                            {% if adjustment_request.get_new_start %}
+                                -> <b>{{ adjustment_request.get_new_start|date:"SHORT_DATETIME_FORMAT" }}</b>
+                            {% endif %}
+                            <br>
+                            <u>End time</u>: {{ adjustment_request.item.end|date:"SHORT_DATETIME_FORMAT" }}
+                            {% if adjustment_request.get_new_end %}
+                                -> <b>{{ adjustment_request.get_new_end|date:"SHORT_DATETIME_FORMAT" }}</b>
+                            {% endif %}
+                            <br>
+                            <u>Difference</u>: <b>{{ adjustment_request.get_time_difference|default_if_none:"" }}</b>
+                        {% endif %}
+                        {% if adjustment_request.description %}
+                            <br>
+                            <u>Description</u>:
+                            <br>
+                            {{ adjustment_request.description|linebreaksbr }}
+                        {% endif %}
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">
+                    Visit the <a href="{{ adjustment_request_url }}">{{ site_title }} adjustment requests page</a> for more information.
+                    <br />
                 </td>
             </tr>
         </table>

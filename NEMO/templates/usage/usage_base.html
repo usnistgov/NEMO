@@ -1,83 +1,130 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
 {% load static %}
-{% block title %}Usage{% if billing_service %} and billing information{% endif %}{% endblock %}
+{% block title %}
+    Usage
+    {% if billing_service %}and billing information{% endif %}
+{% endblock %}
 {% block extrahead %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block content %}
-	<h1>Usage{% if billing_service %} and billing information{% endif %}
-		<small class="light-grey"> between {{ start_date|date }} and {{ end_date|date }}</small>
-	</h1>
-	<p>
-		This page presents a monthly report of your {{ facility_name }} usage{% if billing_service %} and billing information{% endif %}. Approved adjustments are{% if not billing_service %} not{% endif %} reflected{% if billing_service %} in the billing information data but not{% endif %} in the usage data.
-	</p>
-	<div style="height: 20px"></div>
-	<form class="form-horizontal" role="form">
-		<div class="form-group">
-			<label for="month_list" class="control-label col-sm-2">Select month</label>
-			<div class="col-sm-3 col-md-3 col-lg-2">
-				<select id="month_list" class="form-control" style="margin-right: 5px;text-align-last:center" onchange="set_dates_from_month(this.value)">
-					<option selected></option>
-					{% for month in month_list %}
-						<option>{{ month|date:"F, Y" }}</option>
-					{% endfor %}
-				</select>
-			</div>
-		</div>
-		<div class="form-group">
-			<div class="control-label col-sm-2">
-				<label for="start_date">or from</label>
-			</div>
-			<div class="col-sm-3 col-md-3 col-lg-2">
-				<input type="text" id="start_date" name="start" class="form-control text-center" placeholder="Choose a date" value="{{ start_date.date|input_date_format }}">
-			</div>
-			<div class="control-label col-sm-1 col-sm-1 col-lg-1" style="text-align: center">
-				<label for="end_date">to</label>
-			</div>
-			<div class="col-sm-3 col-md-3 col-lg-2">
-				<input type="text" id="end_date" name="end" class="form-control text-center" placeholder="Choose a date" value="{{ end_date.date|input_date_format }}">
-			</div>
+    <h1>
+        Usage
+        {% if billing_service %}and billing information{% endif %}
+        <small class="light-grey">between {{ start_date|date }} and {{ end_date|date }}</small>
+    </h1>
+    <p>
+        This page presents a monthly report of your {{ facility_name }} usage
+        {% if billing_service %}and billing information{% endif %}
+        . Approved adjustments are
+        {% if not billing_service %}not{% endif %}
+        reflected
+        {% if billing_service %}in the billing information data but not{% endif %}
+        in the usage data.
+    </p>
+    <div style="height: 20px"></div>
+    <form class="form-horizontal" role="form">
+        <div class="form-group">
+            <label for="month_list" class="control-label col-sm-2">Select month</label>
+            <div class="col-sm-3 col-md-3 col-lg-2">
+                <select id="month_list"
+                        class="form-control"
+                        style="margin-right: 5px;
+                               text-align-last:center"
+                        onchange="set_dates_from_month(this.value)">
+                    <option selected></option>
+                    {% for month in month_list %}<option>{{ month|date:"F, Y" }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="control-label col-sm-2">
+                <label for="start_date">or from</label>
+            </div>
+            <div class="col-sm-3 col-md-3 col-lg-2">
+                <input type="text"
+                       id="start_date"
+                       name="start"
+                       class="form-control text-center"
+                       placeholder="Choose a date"
+                       value="{{ start_date.date|input_date_format }}">
+            </div>
+            <div class="control-label col-sm-1 col-sm-1 col-lg-1" style="text-align: center">
+                <label for="end_date">to</label>
+            </div>
+            <div class="col-sm-3 col-md-3 col-lg-2">
+                <input type="text"
+                       id="end_date"
+                       name="end"
+                       class="form-control text-center"
+                       placeholder="Choose a date"
+                       value="{{ end_date.date|input_date_format }}">
+            </div>
             {% if pi_projects %}
+            </div>
+            <div class="form-group">
+                <div class="control-label col-sm-2">
+                    <label for="pi_project">Managed project</label>
                 </div>
-                <div class="form-group">
-                    <div class="control-label col-sm-2">
-                        <label for="pi_project">Managed project</label>
-                    </div>
-                    <div class="col-sm-3 col-md-3 col-lg-2">
-                        <select {% if show_only_my_usage %}disabled{% endif %} name="pi_project" id="pi_project" class="form-control" style="text-align-last:center" title="Select a project you are the PI for to see all usage for that project">
-                            <option selected value="">All</option>
-                            {% for project in pi_projects %}
-                                <option value="{{ project.id }}" {% if selected_project and selected_project.id == project.id %}selected{% endif %}>{{ project.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-sm-3 col-md-3 col-lg-2">
-                        <div class="checkbox">
-                            <input type="hidden" name="show_only_my_usage" value="off">
-                            <label><input type="checkbox" {% if show_only_my_usage %}checked{% endif %} name="show_only_my_usage" value="enabled" onclick="$('#pi_project').attr('disabled', this.checked)">Show only my usage</label>
-                        </div>
-                    </div>
-            {% endif %}
-			{% if user.active_projects %}
+                <div class="col-sm-3 col-md-3 col-lg-2">
+                    <select {% if show_only_my_usage %}disabled{% endif %}
+                            name="pi_project"
+                            id="pi_project"
+                            class="form-control"
+                            style="text-align-last:center"
+                            title="Select a project you are the PI for to see all usage for that project">
+                        <option selected value="">All</option>
+                        {% for project in pi_projects %}
+                            <option value="{{ project.id }}"
+                                    {% if selected_project and selected_project.id == project.id %}selected{% endif %}>
+                                {{ project.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div class="form-group">
-                    <div class="control-label col-sm-2">
-                        <label for="project">Project</label>
+                <div class="col-sm-3 col-md-3 col-lg-2">
+                    <div class="checkbox">
+                        <input type="hidden" name="show_only_my_usage" value="off">
+                        <label>
+                            <input type="checkbox"
+                                   {% if show_only_my_usage %}checked{% endif %}
+                                   name="show_only_my_usage"
+                                   value="enabled"
+                                   onclick="$('#pi_project').attr('disabled', this.checked)">
+                            Show only my usage
+                        </label>
                     </div>
-                    <div class="col-sm-3 col-md-3 col-lg-2">
-                        <select name="project" id="project" class="form-control" style="text-align-last:center" title="Select a project to see usage for only that project">
-                            <option selected value="">All</option>
-                            {% for project in user.active_projects %}
-                                <option value="{{ project.id }}" {% if selected_user_project and selected_user_project.id == project.id %}selected{% endif %}>{{ project.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+                </div>
             {% endif %}
-			{% if not project_autocomplete %}
-				<div class="hidden-lg hidden-md {% if user.active_projects or pi_projects %}hidden-sm{% else %}col-sm-12{% endif %}">&nbsp;</div>
-				<div class="col-sm-4 col-lg-3 {% if user.active_projects or pi_projects %}text-right{% else %}col-md-3{% endif %}">
+            {% if user.active_projects %}
+            </div>
+            <div class="form-group">
+                <div class="control-label col-sm-2">
+                    <label for="project">Project</label>
+                </div>
+                <div class="col-sm-3 col-md-3 col-lg-2">
+                    <select name="project"
+                            id="project"
+                            class="form-control"
+                            style="text-align-last:center"
+                            title="Select a project to see usage for only that project">
+                        <option selected value="">All</option>
+                        {% for project in user.active_projects %}
+                            <option value="{{ project.id }}"
+                                    {% if selected_user_project and selected_user_project.id == project.id %}selected{% endif %}>
+                                {{ project.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            {% if not project_autocomplete %}
+                <div class="hidden-lg hidden-md {% if user.active_projects or pi_projects %}hidden-sm{% else %}col-sm-12{% endif %}">
+                    &nbsp;
+                </div>
+                <div class="col-sm-4 col-lg-3 {% if user.active_projects or pi_projects %}text-right{% else %}col-md-3{% endif %}">
                     {% button type="save" submit=False onclick="$('#csv_export').val('');this.form.submit();" value="Update" icon="glyphicon-refresh" %}
                     <input id="csv_export" type="hidden" name="csv" value="">
                     {% if not billing_service %}
@@ -88,13 +135,12 @@
                             {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
                         {% endif %}
                     {% endif %}
-				</div>
-			{% endif %}
-		</div>
-		<input id="type" name="type" type="hidden" value="{{ kind|default:'' }}"/>
-		<input id="id" name="id" type="hidden" value="{{ identifier|default:'' }}"/>
-
-		<script>
+                </div>
+            {% endif %}
+        </div>
+        <input id="type" name="type" type="hidden" value="{{ kind|default:'' }}" />
+        <input id="id" name="id" type="hidden" value="{{ identifier|default:'' }}" />
+        <script>
             const js_date_format = "{{ date_input_js_format }}";
 
 			let start_date_jq = $('#start_date');
@@ -126,24 +172,31 @@
 				}
 			}
 			$(set_dropdown_selected());
-		</script>
-
-		{% if project_autocomplete %}
-			<div class="form-group">
-				<label class="control-label col-sm-2" for="search"><strong>For</strong></label>
-				<div class="col-sm-7 col-md-7 col-lg-5" id="search_container">
-					<input id="search" type="text" class="form-control" style="width: 100%" autofocus {% if selection %}placeholder="{{ selection }}" {% else %}placeholder="Search for an account, project, application or user"{% endif %}>
-				</div>
-				<div class="hidden-lg hidden-md hidden-sm">&nbsp;</div>
-				<div class="col-md-3">
+		
+        </script>
+        {% if project_autocomplete %}
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="search">
+                    <strong>For</strong>
+                </label>
+                <div class="col-sm-7 col-md-7 col-lg-5" id="search_container">
+                    <input id="search"
+                           type="text"
+                           class="form-control"
+                           style="width: 100%"
+                           autofocus
+                           {% if selection %}placeholder="{{ selection }}" {% else %}placeholder="Search for an account, project, application or user"{% endif %}>
+                </div>
+                <div class="hidden-lg hidden-md hidden-sm">&nbsp;</div>
+                <div class="col-md-3">
                     {% button type="save" submit=False onclick="$('#csv_export').val('');this.form.submit();" value="Update" icon="glyphicon-refresh" %}
                     {% if can_export %}
                         <input id="csv_export" type="hidden" name="csv" value="">
                         {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
                     {% endif %}
-				</div>
-			</div>
-			<script>
+                </div>
+            </div>
+            <script>
 				function get_search_item(jquery_event, search_selection)
 				{
 					$('#type').val(search_selection.type);
@@ -154,22 +207,21 @@
 					$('#search').autocomplete('accounts_and_projects_for_usage', get_search_item, {% json_search_base_with_extra_fields search_items %});
 				}
 				$(on_load);
-			</script>
-
-			<style>
+			
+            </script>
+            <style>
 				#search_container .tt-dropdown-menu
 				{
 					min-width: 400px;
 					max-height: 600px;
 				}
-			</style>
-
-		{% endif %}
-
-	</form>
-
-	<div style="height: 5px; border-top: 1px dotted #eee"></div>
-	{% if not project_autocomplete or project_autocomplete and selection %}
-		{% block usage_content %}{% endblock %}
-	{% endif %}
+			
+            </style>
+        {% endif %}
+    </form>
+    <div style="height: 5px; border-top: 1px dotted #eee"></div>
+    {% if not project_autocomplete or project_autocomplete and selection %}
+        {% block usage_content %}
+        {% endblock %}
+    {% endif %}
 {% endblock %}

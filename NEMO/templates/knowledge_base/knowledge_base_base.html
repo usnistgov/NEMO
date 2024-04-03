@@ -2,7 +2,9 @@
 {% load custom_tags_and_filters %}
 {% block content %}
     <div id="knowledge-base-tabs" class="clearfix">
-        <h1 class="knowledge-base-title pull-left">{% block knowledge_base_title %}Knowledge base{% endblock %}</h1>
+        <h1 class="knowledge-base-title pull-left">
+            {% block knowledge_base_title %}Knowledge base{% endblock %}
+        </h1>
         {% if user.is_any_part_of_staff %}
             <ul class="nav nav-pills nav-pills-spacer knowledge-base-tabs-nav" id="tabs">
                 <li class="{% if kind == 'user' %}active{% endif %}">
@@ -19,7 +21,5 @@
             {% block tab_content %}{% endblock %}
         </div>
     </div>
-    <script>
-        $("#tabs").find("a").click(switch_tab);
-    </script>
+    <script>$("#tabs").find("a").click(switch_tab);</script>
 {% endblock %}

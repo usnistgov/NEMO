@@ -2,45 +2,65 @@
 {% load custom_tags_and_filters %}
 {% block title %}{{ tool_control_page_title }}{% endblock %}
 {% block extrahead %}
-	{% load static %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    {% load static %}
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block body %}
-<div id="main-content">
-	<style>
+    <div id="main-content">
+        <style>
 		h3
 		{
 			margin-top: 0;
 		}
-	</style>
-
-	{% if device == 'mobile' %}
-		<div id="content" class="container"></div>
-	{% else %}
-		<div id="sidebar" class="application-sidebar">
-			<div id="expand-collapse" class="btn-group sidebar-item">
-                {% if calendar_qualified_tools and not user.is_staff %}
-                    <button type="button" class="btn btn-default" style="width:50%" onclick="toggle_categories()" title="Expand/collapse all categories"><span id="expand_collapse_icon" class="glyphicon glyphicon"></span></button>
-                    <button type="button" class="btn btn-default" id="qualified_tools_btn" style="width:50%" onclick="toggle_qualified_tools(retrieve_user_qualifications())" title="Only show qualified tools"><span class="glyphicon glyphicon-check"></span></button>
-                {% else %}
-                    <button type="button" class="btn btn-default" style="width:100%" onclick="toggle_categories()" title="Expand/collapse all categories"><span id="expand_collapse_icon" class="glyphicon glyphicon"></span></button>
-                {% endif %}
-			</div>
-			<input aria-label="Search for a tool" type="search" id="item_search" placeholder="Search for a tool" class="form-control sidebar-item">
-			{{ rendered_item_tree_html }}
-			<div style="height:50px"></div>
-		</div>
-		<div id="content" class="application-content" style="padding-right: 20px; overflow-y:scroll"></div>
-		<div id="loading-div" class="application-content spinner-container" style="display: none">
-			<div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
-		</div>
-	{% endif %}
-        <div id="interlock_error_contents" style="display: none">
-            {% include 'tool_control/interlock_error.html' %}
-        </div>
-
-	<script>
+	
+        </style>
+        {% if device == 'mobile' %}
+            <div id="content" class="container"></div>
+        {% else %}
+            <div id="sidebar" class="application-sidebar">
+                <div id="expand-collapse" class="btn-group sidebar-item">
+                    {% if calendar_qualified_tools and not user.is_staff %}
+                        <button type="button"
+                                class="btn btn-default"
+                                style="width:50%"
+                                onclick="toggle_categories()"
+                                title="Expand/collapse all categories">
+                            <span id="expand_collapse_icon" class="glyphicon glyphicon"></span>
+                        </button>
+                        <button type="button"
+                                class="btn btn-default"
+                                id="qualified_tools_btn"
+                                style="width:50%"
+                                onclick="toggle_qualified_tools(retrieve_user_qualifications())"
+                                title="Only show qualified tools">
+                            <span class="glyphicon glyphicon-check"></span>
+                        </button>
+                    {% else %}
+                        <button type="button"
+                                class="btn btn-default"
+                                style="width:100%"
+                                onclick="toggle_categories()"
+                                title="Expand/collapse all categories">
+                            <span id="expand_collapse_icon" class="glyphicon glyphicon"></span>
+                        </button>
+                    {% endif %}
+                </div>
+                <input aria-label="Search for a tool"
+                       type="search"
+                       id="item_search"
+                       placeholder="Search for a tool"
+                       class="form-control sidebar-item">
+                {{ rendered_item_tree_html }}
+                <div style="height:50px"></div>
+            </div>
+            <div id="content" class="application-content" style="padding-right: 20px; overflow-y:scroll"></div>
+            <div id="loading-div" class="application-content spinner-container" style="display: none">
+                <div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
+            </div>
+        {% endif %}
+        <div id="interlock_error_contents" style="display: none">{% include 'tool_control/interlock_error.html' %}</div>
+        <script>
         let previous_tasks_and_comments_url;
 		function refresh_tool_status()
 		{
@@ -362,6 +382,7 @@
 
 		$(on_load);
 
-	</script>
-</div>
+	
+        </script>
+    </div>
 {% endblock %}

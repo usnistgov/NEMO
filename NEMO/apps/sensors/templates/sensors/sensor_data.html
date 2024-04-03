@@ -7,20 +7,26 @@
     <script type="text/javascript" src="{% static "sensors/chartjs-adapter-moment.js" %}"></script>
     {# Daterange picker #}
     <script type="text/javascript" src="{% static "sensors/daterangepicker.js" %}"></script>
-    <link rel="stylesheet" type="text/css" href="{% static "sensors/daterangepicker.css" %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static "sensors/daterangepicker.css" %}" />
     {# Sensors #}
-    <link rel="stylesheet" type="text/css" href="{% static "sensors/sensors.css" %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static "sensors/sensors.css" %}" />
 {% endblock %}
 {% block title %}{{ sensor.name }} data{% endblock %}
 {% block content %}
     <div class="well well-sensors-dashboard">
         <ol class="breadcrumb breadcrumb-sensors-dashboard">
-            <li class="active"><a href="{% url 'sensors' %}">Dashboard</a></li>
+            <li class="active">
+                <a href="{% url 'sensors' %}">Dashboard</a>
+            </li>
             {% if sensor.sensor_category %}
                 {% for ancestor in sensor.sensor_category.ancestors %}
-                    <li><a href="{% url 'sensors' ancestor.id %}">{{ ancestor.name }}</a></li>
+                    <li>
+                        <a href="{% url 'sensors' ancestor.id %}">{{ ancestor.name }}</a>
+                    </li>
                 {% endfor %}
-                <li><a href="{% url 'sensors' sensor.sensor_category.id %}">{{ sensor.sensor_category.name }}</a></li>
+                <li>
+                    <a href="{% url 'sensors' sensor.sensor_category.id %}">{{ sensor.sensor_category.name }}</a>
+                </li>
             {% endif %}
             <li class="active">{{ sensor.name }}</li>
         </ol>
@@ -30,16 +36,25 @@
                     <label class="control-label" for="start">Date range:</label>
                     <div class="input-group" style="margin-right: 10px">
                         <input class="form-control text-center" type="text" onchange="refresh_page()" id="start" name="start">
-                        <div id="picker-container" class="invisible" style="float: left;position: relative;height: 0;width: 100%"></div>
+                        <div id="picker-container"
+                             class="invisible"
+                             style="float: left;
+                                    position: relative;
+                                    height: 0;
+                                    width: 100%"></div>
                         <span class="daterange-calendar input-group-btn">
-                            <button type="button" class="btn btn-default btn-input-white" onclick="open_daterange_picker()"><i class="glyphicon glyphicon-calendar"></i></button>
+                            <button type="button" class="btn btn-default btn-input-white" onclick="open_daterange_picker()">
+                                <i class="glyphicon glyphicon-calendar"></i>
+                            </button>
                         </span>
                     </div>
                     <label class="control-label" for="end" style="margin-right: 10px;">to</label>
                     <div class="input-group" style="margin-right: 5px;">
                         <input class="form-control text-center" type="text" onchange="refresh_page()" id="end" name="end">
                         <span class="daterange-calendar input-group-btn">
-                            <button type="button" class="btn btn-default btn-input-white" onclick="open_daterange_picker()"><i class="glyphicon glyphicon-calendar"></i></button>
+                            <button type="button" class="btn btn-default btn-input-white" onclick="open_daterange_picker()">
+                                <i class="glyphicon glyphicon-calendar"></i>
+                            </button>
                         </span>
                     </div>
                     <div class="visible-sm visible-xs" style="margin-bottom: 15px;"></div>
@@ -65,19 +80,25 @@
                     <a href="#alert-tab">Alert log</a>
                 </li>
             </ul>
-            <div id="no-sensor-data" class="tab-content panel panel-default panel-tab-content" style="display: none;">
+            <div id="no-sensor-data" class="tab-content panel panel-default panel-tab-content" style="display: none">
                 <div class="panel-body">
                     <i>There is no data to display. Try selecting a different date range</i>
                 </div>
             </div>
-            <div id="sensor-data" class="tab-content panel panel-default panel-tab-content" style="margin-bottom: 0;">
+            <div id="sensor-data" class="tab-content panel panel-default panel-tab-content" style="margin-bottom: 0">
                 <div class="tab-pane{% if tab == 'chart' %} active{% endif %}" id="chart-tab">
                     <div class="panel-body">
                         <div class="text-right">
                             <div class="form-inline">
                                 <label class="control-label" for="chart-step">Display every</label>
-                                <input class="form-control input-sm" id="chart-step" type="number" value="{{ chart_step }}" onchange="refresh_page()" min="1" max="1440"/>
-                                <label class="control-label"> data point</label>
+                                <input class="form-control input-sm"
+                                       id="chart-step"
+                                       type="number"
+                                       value="{{ chart_step }}"
+                                       onchange="refresh_page()"
+                                       min="1"
+                                       max="1440" />
+                                <label class="control-label">data point</label>
                             </div>
                         </div>
                         <div>
@@ -106,13 +127,11 @@
                     </div>
                 </div>
                 <div class="tab-pane{% if tab == 'alert' %} active{% endif %}" id="alert-tab">
-                    <div id="alert-div" class="panel-body">
-                    </div>
+                    <div id="alert-div" class="panel-body"></div>
                 </div>
             </div>
         </div>
     </div>
-
     <script>
         {# Set a special date for 'now' so we can refresh real time data #}
         const now_moment_date = moment();
@@ -322,5 +341,4 @@
         set_dates(moment('{{ start|input_date_format }}', '{{ datetime_input_js_format }}'), {% if end %}moment('{{ end|input_date_format }}', '{{ datetime_input_js_format }}'){% else %}now_moment_date{% endif %});
         update_refresh_rate();
     </script>
-
 {% endblock %}

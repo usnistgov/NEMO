@@ -6,7 +6,12 @@
         <div class="form-group {% if errors.feedback_email_address %}has-error{% endif %}">
             <label class="control-label col-md-2" for="feedback_email_address">Feedback</label>
             <div class="col-md-3">
-                <input type="email" id="feedback_email_address" name="feedback_email_address" class="form-control" value="{% if errors.feedback_email_address %}{{ errors.feedback_email_address.value }}{% else %}{{ feedback_email_address }}{% endif %}" placeholder="feedback@example.org">
+                <input type="email"
+                       id="feedback_email_address"
+                       name="feedback_email_address"
+                       class="form-control"
+                       value="{% if errors.feedback_email_address %}{{ errors.feedback_email_address.value }}{% else %}{{ feedback_email_address }}{% endif %}"
+                       placeholder="feedback@example.org">
             </div>
             <div class="col-md-7 help-block light-grey">
                 {% if errors.feedback_email_address %}
@@ -19,7 +24,12 @@
         <div class="form-group {% if errors.safety_email_address %}has-error{% endif %}">
             <label class="control-label col-md-2" for="safety_email_address">Safety</label>
             <div class="col-md-3">
-                <input type="email" id="safety_email_address" name="safety_email_address" class="form-control" value="{% if errors.safety_email_address %}{{ errors.safety_email_address.value }}{% else %}{{ safety_email_address }}{% endif %}" placeholder="safety@example.org">
+                <input type="email"
+                       id="safety_email_address"
+                       name="safety_email_address"
+                       class="form-control"
+                       value="{% if errors.safety_email_address %}{{ errors.safety_email_address.value }}{% else %}{{ safety_email_address }}{% endif %}"
+                       placeholder="safety@example.org">
             </div>
             <div class="col-md-7 help-block light-grey">
                 {% if errors.safety_email_address %}
@@ -32,7 +42,12 @@
         <div class="form-group {% if errors.abuse_email_address %}has-error{% endif %}">
             <label class="control-label col-md-2" for="abuse_email_address">Abuse</label>
             <div class="col-md-3">
-                <input type="text" id="abuse_email_address" name="abuse_email_address" class="form-control" value="{% if errors.abuse_email_address %}{{ errors.abuse_email_address.value }}{% else %}{{ abuse_email_address }}{% endif %}" placeholder="abuse@example.org">
+                <input type="text"
+                       id="abuse_email_address"
+                       name="abuse_email_address"
+                       class="form-control"
+                       value="{% if errors.abuse_email_address %}{{ errors.abuse_email_address.value }}{% else %}{{ abuse_email_address }}{% endif %}"
+                       placeholder="abuse@example.org">
             </div>
             <div class="col-md-7 help-block light-grey">
                 {% if errors.abuse_email_address %}
@@ -45,7 +60,12 @@
         <div class="form-group {% if errors.user_office_email_address %}has-error{% endif %}">
             <label class="control-label col-md-2" for="user_office_email_address">User office</label>
             <div class="col-md-3">
-                <input type="email" id="user_office_email_address" name="user_office_email_address" class="form-control" value="{% if errors.user_office_email_address %}{{ errors.user_office_email_address.value }}{% else %}{{ user_office_email_address }}{% endif %}" placeholder="information@example.org">
+                <input type="email"
+                       id="user_office_email_address"
+                       name="user_office_email_address"
+                       class="form-control"
+                       value="{% if errors.user_office_email_address %}{{ errors.user_office_email_address.value }}{% else %}{{ user_office_email_address }}{% endif %}"
+                       placeholder="information@example.org">
             </div>
             <div class="col-md-7 help-block light-grey">
                 {% if errors.user_office_email_address %}
@@ -56,8 +76,6 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <div class="text-center">
-            {% button type="save" value="Save settings" %}
-        </div>
+        <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
 </div>

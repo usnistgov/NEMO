@@ -18,7 +18,10 @@
                 <td>{{ withdraw.consumable }}</td>
                 <td>{{ withdraw.quantity }}</td>
                 <td style="vertical-align: middle">
-                    <span class="glyphicon glyphicon-remove pull-right" style="cursor:pointer" onclick="$('#consumables_order').load('{% url 'remove_consumable' forloop.counter0 %}')" title="Remove this withdrawal"></span>
+                    <span class="glyphicon glyphicon-remove pull-right"
+                          style="cursor:pointer"
+                          onclick="$('#consumables_order').load('{% url 'remove_consumable' forloop.counter0 %}')"
+                          title="Remove this withdrawal"></span>
                 </td>
             </tr>
         {% endfor %}

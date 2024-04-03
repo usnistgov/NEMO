@@ -6,17 +6,26 @@
         <div class="form-group">
             <label class="control-label col-md-2" for="recurring_charges_name">Feature name</label>
             <div class="col-md-3">
-                <input type="text" id="recurring_charges_name" name="recurring_charges_name" class="form-control" value="{{ recurring_charges_name }}">
+                <input type="text"
+                       id="recurring_charges_name"
+                       name="recurring_charges_name"
+                       class="form-control"
+                       value="{{ recurring_charges_name }}">
             </div>
-            <div class="col-md-7 help-block light-grey">
-                The name to use for this feature throughout the application.
-            </div>
+            <div class="col-md-7 help-block light-grey">The name to use for this feature throughout the application.</div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-2">Lock {{ recurring_charges_name|lower }}</label>
             <div class="col-md-10">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="recurring_charges_lock" {% if recurring_charges_lock %}checked{% endif %} value="enabled">Check this box to lock {{ recurring_charges_name|lower }}, so staff members can only change customer and project fields.</label><br/>
+                    <label>
+                        <input type="checkbox"
+                               name="recurring_charges_lock"
+                               {% if recurring_charges_lock %}checked{% endif %}
+                               value="enabled">
+                        Check this box to lock {{ recurring_charges_name|lower }}, so staff members can only change customer and project fields.
+                    </label>
+                    <br />
                 </div>
             </div>
         </div>
@@ -24,7 +33,14 @@
             <label class="control-label col-md-2">Customer validation</label>
             <div class="col-md-10">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="recurring_charges_skip_customer_validation" {% if recurring_charges_skip_customer_validation %}checked{% endif %} value="enabled">Check this box to skip customer validation (inactive or access has expired).</label><br/>
+                    <label>
+                        <input type="checkbox"
+                               name="recurring_charges_skip_customer_validation"
+                               {% if recurring_charges_skip_customer_validation %}checked{% endif %}
+                               value="enabled">
+                        Check this box to skip customer validation (inactive or access has expired).
+                    </label>
+                    <br />
                 </div>
             </div>
         </div>
@@ -34,7 +50,10 @@
                 <select class="form-control" id="recurring_charges_category" name="recurring_charges_category">
                     <option selected>All categories</option>
                     {% for consumable_category in consumable_categories %}
-                        <option value="{{ consumable_category.id }}" {% if consumable_category.id == recurring_charges_category|to_int %}selected{% endif %}>{{ consumable_category.name }}</option>
+                        <option value="{{ consumable_category.id }}"
+                                {% if consumable_category.id == recurring_charges_category|to_int %}selected{% endif %}>
+                            {{ consumable_category.name }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
@@ -45,15 +64,18 @@
         <div class="form-group">
             <label class="control-label col-md-2" for="recurring_charges_force_quantity">Force quantity</label>
             <div class="col-md-3">
-                <input type="number" step="1" id="recurring_charges_force_quantity" name="recurring_charges_force_quantity" class="form-control" value="{{ recurring_charges_force_quantity }}">
+                <input type="number"
+                       step="1"
+                       id="recurring_charges_force_quantity"
+                       name="recurring_charges_force_quantity"
+                       class="form-control"
+                       value="{{ recurring_charges_force_quantity }}">
             </div>
             <div class="col-md-7 help-block light-grey">
                 [Optional] Define a quantity to be automatically set for every {{ recurring_charges_name|lower }}.
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <div class="text-center">
-            {% button type="save" value="Save settings" %}
-        </div>
+        <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
 </div>

@@ -2,10 +2,18 @@
 {% load custom_tags_and_filters %}
 {% block title %}Withdraw consumables{% endblock %}
 {% block content %}
-	<h1>Withdraw consumables</h1>
+    <h1>Withdraw consumables</h1>
     <div style="height: 15px"></div>
     <div class="col-md-5">
-        <p>Use this form to {% if self_checkout %}checkout{% else %}charge users for{% endif %} consumable items & supplies.</p>
+        <p>
+            Use this form to
+            {% if self_checkout %}
+                checkout
+            {% else %}
+                charge users for
+            {% endif %}
+            consumable items & supplies.
+        </p>
         <form id="withdrawal_form_order" action="{% url 'consumables' %}" class="form-horizontal" method="post">
             {% csrf_token %}
             {% if not self_checkout %}
@@ -13,12 +21,16 @@
                     <label class="control-label col-md-3" for="customer_search">Customer</label>
                     <div class="col-md-9">
                         <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer" required>
-                        <input type="button" id="chosen_customer" class="btn btn-default" style="display:none" onclick="clear_selected_customer()" aria-label="Selected customer">
+                        <input type="button"
+                               id="chosen_customer"
+                               class="btn btn-default"
+                               style="display:none"
+                               onclick="clear_selected_customer()"
+                               aria-label="Selected customer">
                         <input type="hidden" id="customer" name="customer">
                     </div>
                 </div>
             {% endif %}
-
             <div class="form-group">
                 <label class="control-label col-md-3" for="project">Project</label>
                 <div class="col-md-9">
@@ -29,20 +41,15 @@
                             <option value="{{ projects.0.id }}">{{ projects.0 }}</option>
                         {% elif projects %}
                             <option disabled selected value="">Choose a project to bill</option>
-                            {% for p in projects %}
-                                <option value="{{ p.id }}">{{ p }}</option>
-                            {% endfor %}
+                            {% for p in projects %}<option value="{{ p.id }}">{{ p }}</option>{% endfor %}
                         {% endif %}
                     </select>
                 </div>
             </div>
-
             <div class="form-group">
                 <label class="control-label col-md-3">Consumables</label>
-                <div class="col-md-9 control-label" style="text-align: left">
-                </div>
+                <div class="col-md-9 control-label" style="text-align: left"></div>
             </div>
-
             <div class="form-group">
                 <div class="col-sm-12">
                     <table class="table">
@@ -50,27 +57,41 @@
                             {% regroup consumables by category as categories %}
                             {% for category in categories %}
                                 {% if categories|length > 1 or category.grouper %}
-                                    <tr onclick="toggle_details('#chevron_{{ category.grouper.id }}')" data-toggle="collapse" data-target="#category_{{ category.grouper.id }}_details"><th id="chevron_{{ category.grouper.id }}"><span class="glyphicon glyphicon-chevron-{% if category_collapse %}right{% else %}down{% endif %} pull-left chevron"></span>{{ category.grouper|default_if_none:"Uncategorized" }}</th></tr>
+                                    <tr onclick="toggle_details('#chevron_{{ category.grouper.id }}')"
+                                        data-toggle="collapse"
+                                        data-target="#category_{{ category.grouper.id }}_details">
+                                        <th id="chevron_{{ category.grouper.id }}">
+                                            <span class="glyphicon glyphicon-chevron-{% if category_collapse %}right{% else %}down{% endif %} pull-left chevron"></span>{{ category.grouper|default_if_none:"Uncategorized" }}
+                                        </th>
+                                    </tr>
                                 {% endif %}
-                                <tbody id="category_{{ category.grouper.id }}_details" class="collapse {% if not category_collapse %}in{% endif %}">
+                                <tbody id="category_{{ category.grouper.id }}_details"
+                                       class="collapse {% if not category_collapse %}in{% endif %}">
                                     {% for item in category.list %}
-                                        <tr><td {% if categories|length > 1 or category.grouper %}style="padding-left: 45px;"{% endif %}>
-                                            <div class="consumable-row">
-                                                {% if item.notes %}<span data-toggle="notes-tooltip" title="{{ item.notes|linebreaksbr }}" class="glyphicon glyphicon-info-sign primary-highlight"></span>{% endif %}
-                                                <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}{% if rates and rates|get_item:item.name %} ({{ rates|get_item:item.name|safe }}){% endif %}
-                                                    {% if not item.reusable %}
-                                                        {% if item.quantity > 0 %}
-                                                            <span>({{ item.quantity }} left)</span>
-                                                        {% else %}
-                                                            <span class="danger-highlight">(sold-out)</span>
+                                        <tr>
+                                            <td {% if categories|length > 1 or category.grouper %}style="padding-left: 45px;"{% endif %}>
+                                                <div class="consumable-row">
+                                                    {% if item.notes %}
+                                                        <span data-toggle="notes-tooltip"
+                                                              title="{{ item.notes|linebreaksbr }}"
+                                                              class="glyphicon glyphicon-info-sign primary-highlight"></span>
+                                                    {% endif %}
+                                                    <span class="consumable_trigger" data-item-id="{{ item.id }}">{{ item.name }}
+                                                        {% if rates and rates|get_item:item.name %}({{ rates|get_item:item.name|safe }}){% endif %}
+                                                        {% if not item.reusable %}
+                                                            {% if item.quantity > 0 %}
+                                                                <span>({{ item.quantity }} left)</span>
+                                                            {% else %}
+                                                                <span class="danger-highlight">(sold-out)</span>
+                                                            {% endif %}
                                                         {% endif %}
-                                                    {% endif %}
-                                                    {% if item.reusable or item.quantity > 0 %}
-                                                        <span class="glyphicon glyphicon-plus-sign success-highlight" style="vertical-align: text-top"></span>
-                                                    {% endif %}
-                                                </span>
-                                            </div>
-                                        </td></tr>
+                                                        {% if item.reusable or item.quantity > 0 %}
+                                                            <span class="glyphicon glyphicon-plus-sign success-highlight" style="vertical-align: text-top"></span>
+                                                        {% endif %}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     {% endfor %}
                                 </tbody>
                             {% endfor %}
@@ -80,14 +101,10 @@
             </div>
         </form>
     </div>
-
     <div class="col-md-6">
-        <div id="consumables_order" class="affix">
-            {% include 'consumables/consumables_order.html' %}
-        </div>
+        <div id="consumables_order" class="affix">{% include 'consumables/consumables_order.html' %}</div>
     </div>
-
-	<script type="text/javascript">
+    <script type="text/javascript">
         function add_tooltip(element, consumable_id)
         {
             let consumable_tooltip_content =
@@ -122,12 +139,12 @@
 			let projects = response['projects'];
 
 			if(projects.length === 0)
-				project_selector.append($('<option/>', {text: "No active projects!"})).attr('disabled', 'disabled');
+				project_selector.append($('<option />', {text: "No active projects!"})).attr('disabled', 'disabled');
 			else if(projects.length === 1)
-				project_selector.append($('<option/>', {value: response['projects'][0].id, text: response['projects'][0].name}));
+				project_selector.append($('<option />', {value: response['projects'][0].id, text: response['projects'][0].name}));
 			else
 			{
-				project_selector.append($('<option/>', {
+				project_selector.append($('<option />', {
 					text: "Choose a project to bill",
 					disabled: true,
 					selected: true,
@@ -135,7 +152,7 @@
 				}));
 				$.each(projects, function(count, project)
 				{
-					project_selector.append($('<option/>', {value: project.id, text: project.name}));
+					project_selector.append($('<option />', {value: project.id, text: project.name}));
 				});
 			}
 		}
@@ -185,5 +202,6 @@
                 window.history.replaceState(null, null, window.location.href);
             }
         }, true);
-	</script>
+	
+    </script>
 {% endblock %}

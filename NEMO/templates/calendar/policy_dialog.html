@@ -1,28 +1,29 @@
 {% load custom_tags_and_filters %}
 <div class="modal-header">
-	<button type="button" class="close" data-dismiss="modal" aria-label="Modal close button">&times;</button>
-	<h4 id="modal-description-label" class="modal-title">{{ facility_name }} policy conflict</h4>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Modal close button">&times;</button>
+    <h4 id="modal-description-label" class="modal-title">{{ facility_name }} policy conflict</h4>
 </div>
-
 <div class="modal-body">
-	<p>This reservation conflicts with {{ facility_name }} policy.{% if overridable %} The policy <span style="font-weight:bold">can</span> be overridden.{% endif %}</p>
-	<ul>
-		{% for reason in policy_problems %}
-			<li>{{ reason }}</li>
-		{% endfor %}
-	</ul>
-	<input type="hidden" id="dialog_cancelled" value="true">
-	<form id="additional_event_parameters">
-		<input type="hidden" name="explicit_policy_override" value="true">
-	</form>
-	{% if overridable %}<p>What would you like to do?</p>{% endif %}
+    <p>
+        This reservation conflicts with {{ facility_name }} policy.
+        {% if overridable %}The policy <span style="font-weight:bold">can</span> be overridden.{% endif %}
+    </p>
+    <ul>
+        {% for reason in policy_problems %}<li>{{ reason }}</li>{% endfor %}
+    </ul>
+    <input type="hidden" id="dialog_cancelled" value="true">
+    <form id="additional_event_parameters">
+        <input type="hidden" name="explicit_policy_override" value="true">
+    </form>
+    {% if overridable %}<p>What would you like to do?</p>{% endif %}
 </div>
-
 <div class="modal-footer">
-	{% if overridable %}
-		<button type="button" class="btn btn-info pull-left" data-dismiss="modal"><i class="glyphicon glyphicon-ban-circle"></i> Don't create the reservation</button>
-		{% button type="save" submit=False dismiss="modal" onclick="$('#dialog_cancelled').val(false)" value="Override policy and "|concat:reservation_action|concat:" the reservation" %}
-	{% else %}
-		<button type="button" class="btn btn-warning" data-dismiss="modal">Continue</button>
-	{% endif %}
+    {% if overridable %}
+        <button type="button" class="btn btn-info pull-left" data-dismiss="modal">
+            <i class="glyphicon glyphicon-ban-circle"></i> Don't create the reservation
+        </button>
+        {% button type="save" submit=False dismiss="modal" onclick="$('#dialog_cancelled').val(false)" value="Override policy and "|concat:reservation_action|concat:" the reservation" %}
+    {% else %}
+        <button type="button" class="btn btn-warning" data-dismiss="modal">Continue</button>
+    {% endif %}
 </div>

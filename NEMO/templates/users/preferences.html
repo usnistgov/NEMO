@@ -2,190 +2,316 @@
 {% load custom_tags_and_filters %}
 {% block title %}Preferences{% endblock %}
 {% block content %}
-	<h1>User Preferences</h1>
-		<form class="form-horizontal" action="{% url 'user_preferences' %}" method="post">
-			{% csrf_token %}
-			<div class="panel panel-default">
-				<div class="panel-body">
-					<h3 id="reservations_label">Reservations</h3>
-					<div class="form-group col-sm-12" role="group" aria-labelledby="reservations_label">
-						<div class="checkbox">
-							<label><input name="attach_created_reservation" type="checkbox" {% if user_preferences.attach_created_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when creating reservation</label>
-							<br><label><input name="attach_cancelled_reservation" type="checkbox" {% if user_preferences.attach_cancelled_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when cancelling a reservation</label>
-                            <br><label><input name="create_reservation_confirmation_override" type="checkbox" {% if user_preferences.create_reservation_confirmation_override %}checked{% endif %}>Check this box to {% if "calendar"|customization:"create_reservation_confirmation" == "enabled" %}not be asked to confirm before making a reservation{% else %}be asked to confirm before making a reservation{% endif %}</label>
-                            <br><label><input name="change_reservation_confirmation_override" type="checkbox" {% if user_preferences.change_reservation_confirmation_override %}checked{% endif %}>Check this box to {% if "calendar"|customization:"change_reservation_confirmation" == "enabled" %}not be asked to confirm before moving or resizing a reservation{% else %}be asked to confirm before moving or resizing a reservation{% endif %}</label>
-						</div>
-					</div>
-				</div>
-			</div>
+    <h1>User Preferences</h1>
+    <form class="form-horizontal" action="{% url 'user_preferences' %}" method="post">
+        {% csrf_token %}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3 id="reservations_label">Reservations</h3>
+                <div class="form-group col-sm-12" role="group" aria-labelledby="reservations_label">
+                    <div class="checkbox">
+                        <label>
+                            <input name="attach_created_reservation"
+                                   type="checkbox"
+                                   {% if user_preferences.attach_created_reservation %}checked{% endif %}>
+                            Check this box to receive ICS calendar invitation when creating reservation
+                        </label>
+                        <br>
+                        <label>
+                            <input name="attach_cancelled_reservation"
+                                   type="checkbox"
+                                   {% if user_preferences.attach_cancelled_reservation %}checked{% endif %}>
+                            Check this box to receive ICS calendar invitation when cancelling a reservation
+                        </label>
+                        <br>
+                        <label>
+                            <input name="create_reservation_confirmation_override"
+                                   type="checkbox"
+                                   {% if user_preferences.create_reservation_confirmation_override %}checked{% endif %}>
+                            Check this box to
+                            {% if "calendar"|customization:"create_reservation_confirmation" == "enabled" %}
+                                not be asked to confirm before making a reservation
+                            {% else %}
+                                be asked to confirm before making a reservation
+                            {% endif %}
+                        </label>
+                        <br>
+                        <label>
+                            <input name="change_reservation_confirmation_override"
+                                   type="checkbox"
+                                   {% if user_preferences.change_reservation_confirmation_override %}checked{% endif %}>
+                            Check this box to
+                            {% if "calendar"|customization:"change_reservation_confirmation" == "enabled" %}
+                                not be asked to confirm before moving or resizing a reservation
+                            {% else %}
+                                be asked to confirm before moving or resizing a reservation
+                            {% endif %}
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3 id="tool_freed_time_label">Tool freed time notifications</h3>
+                <div class="form-group">
+                    <label class="col-xs-6 col-sm-3 col-lg-2 form-control-static" for="tool_freed_time_notifications_min_time">
+                        Minimum freed time
+                    </label>
+                    <div class="col-xs-6 col-sm-3">
+                        <div class="input-group">
+                            <input type="number"
+                                   step="15"
+                                   min="15"
+                                   id="tool_freed_time_notifications_min_time"
+                                   name="tool_freed_time_notifications_min_time"
+                                   class="form-control text-right"
+                                   value="{{ form.tool_freed_time_notifications_min_time.value }}" />
+                            <span class="input-group-addon">minutes</span>
+                        </div>
+                    </div>
+                    {% if form.tool_freed_time_notifications_min_time.errors %}
+                        <div class="col-sm-6 form-control-static danger-highlight">
+                            {{ form.tool_freed_time_notifications_min_time.errors|striptags }}
+                        </div>
+                    {% else %}
+                        <div class="col-sm-6 form-control-static">{{ form.tool_freed_time_notifications_min_time.help_text }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="col-xs-6 col-sm-3 col-lg-2 form-control-static"
+                           for="tool_freed_time_notifications_max_future_days">Maximum future days</label>
+                    <div class="col-sm-3 col-xs-6">
+                        <div class="input-group">
+                            <input type="number"
+                                   step="1"
+                                   min="1"
+                                   id="tool_freed_time_notifications_max_future_days"
+                                   name="tool_freed_time_notifications_max_future_days"
+                                   class="form-control text-right"
+                                   value="{{ form.tool_freed_time_notifications_max_future_days.value }}" />
+                            <span class="input-group-addon">days</span>
+                        </div>
+                    </div>
+                    {% if form.tool_freed_time_notifications_max_future_days.errors %}
+                        <div class="col-sm-6 form-control-static danger-highlight">
+                            {{ form.tool_freed_time_notifications_max_future_days.errors|striptags }}
+                        </div>
+                    {% else %}
+                        <div class="col-sm-6 form-control-static">{{ form.tool_freed_time_notifications_max_future_days.help_text }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="col-xs-3 col-sm-2 col-lg-1 form-control-static" for="tool_notification_search">Tools</label>
+                    <div class="col-xs-9 col-sm-4">
+                        <input id="tool_notification_search"
+                               type="text"
+                               autocomplete="off"
+                               class="form-control"
+                               placeholder="Add a tool">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div id="notification-list" class="col-xs-offset-3 col-sm-offset-2 col-lg-offset-1 col-sm-9">
+                        You are not receiving notifications for any tools.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3 id="buddy_system_label">Buddy System</h3>
+                <div class="form-group col-sm-12" role="group" aria-labelledby="buddy_system_label">
+                    <div class="checkbox">
+                        <label>
+                            <input name="display_new_buddy_request_notification"
+                                   type="checkbox"
+                                   {% if user_preferences.display_new_buddy_request_notification %}checked{% endif %}>
+                            Check this box to see notification badges for new buddy requests
+                        </label>
+                        <br>
+                        <label>
+                            <input name="email_new_buddy_request_reply"
+                                   type="checkbox"
+                                   {% if user_preferences.email_new_buddy_request_reply %}checked{% endif %}>
+                            Check this box to receive an email notification when users reply to buddy requests you replied to
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3 id="adjustment_requests_label">Adjustment Requests</h3>
+                <div class="form-group col-sm-12">
+                    <div class="checkbox">
+                        <label>
+                            <input name="email_new_adjustment_request_reply"
+                                   type="checkbox"
+                                   {% if user_preferences.email_new_adjustment_request_reply %}checked{% endif %}>
+                            Check this box to receive an email notification for replies to your adjustment requests
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if user.is_staff or user.is_facility_manager or user.is_service_personnel %}
             <div class="panel panel-default">
-				<div class="panel-body">
-					<h3 id="tool_freed_time_label">Tool freed time notifications</h3>
-					<div class="form-group">
-						<label class="col-xs-6 col-sm-3 col-lg-2 form-control-static" for="tool_freed_time_notifications_min_time">Minimum freed time</label>
-                        <div class="col-xs-6 col-sm-3">
-                            <div class="input-group">
-                                <input type="number" step="15" min="15" id="tool_freed_time_notifications_min_time" name="tool_freed_time_notifications_min_time" class="form-control text-right" value="{{ form.tool_freed_time_notifications_min_time.value }}"/>
-                                <span class="input-group-addon">minutes</span>
-                            </div>
-                        </div>
-                        {% if form.tool_freed_time_notifications_min_time.errors %}
-                            <div class="col-sm-6 form-control-static danger-highlight">
-                                {{ form.tool_freed_time_notifications_min_time.errors|striptags }}
-                            </div>
-                        {% else %}
-                            <div class="col-sm-6 form-control-static">{{ form.tool_freed_time_notifications_min_time.help_text }}</div>
-			            {% endif %}
-					</div>
+                <div class="panel-body">
+                    <h3 id="adjustment_requests_label">Tool maintenance & notifications</h3>
                     <div class="form-group">
-						<label class="col-xs-6 col-sm-3 col-lg-2 form-control-static" for="tool_freed_time_notifications_max_future_days">Maximum future days</label>
-                        <div class="col-sm-3 col-xs-6">
-                            <div class="input-group">
-                                <input type="number" step="1" min="1" id="tool_freed_time_notifications_max_future_days" name="tool_freed_time_notifications_max_future_days" class="form-control text-right" value="{{ form.tool_freed_time_notifications_max_future_days.value }}"/>
-                                <span class="input-group-addon">days</span>
-                            </div>
-                        </div>
-                        {% if form.tool_freed_time_notifications_max_future_days.errors %}
-                            <div class="col-sm-6 form-control-static danger-highlight">
-                                {{ form.tool_freed_time_notifications_max_future_days.errors|striptags }}
-                            </div>
-                        {% else %}
-                            <div class="col-sm-6 form-control-static">{{ form.tool_freed_time_notifications_max_future_days.help_text }}</div>
-			            {% endif %}
-					</div>
-                    <div class="form-group">
-                        <label class="col-xs-3 col-sm-2 col-lg-1 form-control-static" for="tool_notification_search">Tools</label>
-                        <div class="col-xs-9 col-sm-4">
-                            <input id="tool_notification_search" type="text" autocomplete="off" class="form-control" placeholder="Add a tool">
+                        <label class="col-sm-5 col-md-4 col-lg-3 form-control-static" for="tool_task_notification_search">
+                            {% if user.is_facility_manager and "tool"|customization:"tool_task_updates_facility_managers" == "enabled" %}
+                                Limit
+                            {% else %}
+                                View/receive
+                            {% endif %}
+                            maintenance notifications
+                        </label>
+                        <div class="col-sm-6 col-lg-4">
+                            <input id="tool_task_notification_search"
+                                   type="text"
+                                   autocomplete="off"
+                                   class="form-control"
+                                   placeholder="Add a tool">
                         </div>
                     </div>
                     <div class="form-group">
-                        <div id="notification-list" class="col-xs-offset-3 col-sm-offset-2 col-lg-offset-1 col-sm-9">
-                            You are not receiving notifications for any tools.
-                        </div>
-                    </div>
-				</div>
-			</div>
-			<div class="panel panel-default">
-				<div class="panel-body">
-					<h3 id="buddy_system_label">Buddy System</h3>
-					<div class="form-group col-sm-12" role="group" aria-labelledby="buddy_system_label">
-						<div class="checkbox">
-							<label><input name="display_new_buddy_request_notification" type="checkbox" {% if user_preferences.display_new_buddy_request_notification %}checked{% endif %}>Check this box to see notification badges for new buddy requests</label>
-							<br><label><input name="email_new_buddy_request_reply" type="checkbox" {% if user_preferences.email_new_buddy_request_reply %}checked{% endif %}>Check this box to receive an email notification when users reply to buddy requests you replied to</label>
-						</div>
-					</div>
-				</div>
-			</div>
-             <div class="panel panel-default">
-				<div class="panel-body">
-					<h3 id="adjustment_requests_label">Adjustment Requests</h3>
-					<div class="form-group col-sm-12">
-						<div class="checkbox">
-							<label><input name="email_new_adjustment_request_reply" type="checkbox" {% if user_preferences.email_new_adjustment_request_reply %}checked{% endif %}>Check this box to receive an email notification for replies to your adjustment requests</label>
-						</div>
-					</div>
-                </div>
-             </div>
-            {% if user.is_staff or user.is_facility_manager or user.is_service_personnel %}
-                <div class="panel panel-default">
-                    <div class="panel-body">
-                        <h3 id="adjustment_requests_label">Tool maintenance & notifications</h3>
-                        <div class="form-group">
-                            <label class="col-sm-5 col-md-4 col-lg-3 form-control-static" for="tool_task_notification_search">{% if user.is_facility_manager and "tool"|customization:"tool_task_updates_facility_managers" == "enabled" %}Limit{% else %}View/receive{% endif %} maintenance notifications</label>
-                            <div class="col-sm-6 col-lg-4">
-                                <input id="tool_task_notification_search" type="text" autocomplete="off" class="form-control" placeholder="Add a tool">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div id="task-notification-list" class="col-sm-offset-5 col-md-offset-4 col-lg-offset-3 col-sm-7">
-                                You are currently viewing/receiving maintenance notifications for all tools{% if not user.is_facility_manager or not "tool"|customization:"tool_task_updates_facility_managers" == "enabled" %} you are an owner or backup owners of{% endif %}.
-                            </div>
+                        <div id="task-notification-list" class="col-sm-offset-5 col-md-offset-4 col-lg-offset-3 col-sm-7">
+                            You are currently viewing/receiving maintenance notifications for all tools
+                            {% if not user.is_facility_manager or not "tool"|customization:"tool_task_updates_facility_managers" == "enabled" %}
+                                you are an owner or backup owners of
+                            {% endif %}
+                            .
                         </div>
                     </div>
                 </div>
-            {% endif %}
-            {% if not form.fields.staff_status_view.disabled %}
-                <div class="panel panel-default">
-                    <div class="panel-body">
-                        <h3 id="staff_status_label">Staff status</h3>
-                        <div class="form-group" role="group" aria-labelledby="staff_status_label staff_status_view_label">
-                            <div class="col-sm-3 form-control-static" id="staff_status_view_label">Default view</div>
-                            <div class="col-sm-9">
-                                <label class="radio-inline">
-                                    <input type="radio" aria-label="Day view" name="staff_status_view" id="staff_status_view" value="day" {% if user_preferences.staff_status_view == 'day' %}checked{% endif %}> Day
-                                    <br><input type="radio" aria-label="Week view" name="staff_status_view" value="week" {% if user_preferences.staff_status_view == 'week' %}checked{% endif %}> Week
-                                    {% if not user_view %}
-                                      <br><input type="radio" aria-label="Month view" name="staff_status_view" value="month" {% if user_preferences.staff_status_view == 'month' %}checked{% endif %}> Month
-                                    {% endif %}
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% endif %}
+            </div>
+        {% endif %}
+        {% if not form.fields.staff_status_view.disabled %}
             <div class="panel panel-default">
-				<div class="panel-body">
-					<h3 id="email_notifications_label">Email notifications</h3>
-                    <p>The following is a list of notifications you will receive from {{ site_title }}. You have
-                        the option to set an alternate email address and define your preferences for which notifications
-                        you want to be sent to either of your emails, or both.</p>
-                    <p>Some notifications can also be turned off completely.</p>
-                    <br>
-                    <div class="form-group">
-                        <label class="col-sm-3 form-control-static" for="alternate_email_address">Alternate email address</label>
-                        <div class="col-sm-4">
-                            <input type="email" class="form-control" id="alternate_email_address" name="email_alternate" value="{{ form.email_alternate.value|default_if_none:'' }}" maxlength="254">
-                        </div>
-                        {% if form.email_alternate.errors %}
-                            <div class="col-sm-5 form-control-static danger-highlight">
-                                {{ form.email_alternate.errors|striptags }}
-                            </div>
-			            {% endif %}
-                        <div class="col-sm-offset-3 col-sm-9">
-                            Main email: {{ user.email }}
-                        </div>
-                    </div>
-                    {% for field_name, field in form.fields.items %}
-                        {% if field|class_name == "TypedChoiceField" and field_name != "staff_status_view" and field_name != "email_send_recurring_charges_reminder_emails" %}
-                            {% with data=form.data|get_item:field_name initial=form.initial|get_item:field_name %}
-                                <div class="form-group" role="group" aria-labelledby="{{ field_name }}">
-                                    <div class="col-sm-3 form-control-static" id="{{ field_name }}">{{ field.help_text }}</div>
-                                    <div class="col-sm-9">
-                                        {% for choice in field.choices %}
-                                            <label class="radio-inline"><input type="radio" name="{{ field_name }}" value="{{ choice.0 }}" {% if data|default:initial|to_int == choice.0 %}checked{% endif %}>{{ choice.1 }}</label>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            {% endwith %}
-                        {% endif %}
-                    {% endfor %}
-                    <div class="form-group">
-                        <label class="col-sm-3 form-control-static" for="recurring_charges_reminder_days">{{ recurring_charges_name }} reminder days</label>
-                        <div class="col-sm-3">
-                            <input type="text" aria-describedby="recurring_charges_help" class="form-control" id="recurring_charges_reminder_days" name="recurring_charges_reminder_days" value="{{ form.recurring_charges_reminder_days.value|default_if_none:'' }}" maxlength="200">
-                        </div>
-                        {% if form.recurring_charges_reminder_days.errors %}
-                            <div class="col-sm-6 form-control-static danger-highlight">
-                                {{ form.recurring_charges_reminder_days.errors|striptags }}
-                            </div>
-                        {% else %}
-                            <div id="recurring_charges_help" class="col-sm-6 form-control-static">Set the number of days to receive a reminder prior to {{ recurring_charges_name|lower }} being charged. A comma-separated list can be used.</div>
-			            {% endif %}
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-3 form-control-static">{{ recurring_charges_name }} reminders:</label>
+                <div class="panel-body">
+                    <h3 id="staff_status_label">Staff status</h3>
+                    <div class="form-group" role="group" aria-labelledby="staff_status_label staff_status_view_label">
+                        <div class="col-sm-3 form-control-static" id="staff_status_view_label">Default view</div>
                         <div class="col-sm-9">
-                        {% for choice in form.fields.email_send_recurring_charges_reminder_emails.choices %}
-                            <label class="radio-inline"><input type="radio" name="email_send_recurring_charges_reminder_emails" value="{{ choice.0 }}" {% if form.email_send_recurring_charges_reminder_emails.value|to_int == choice.0 %}checked{% endif %}>{{ choice.1 }}</label>
-                        {% endfor %}
+                            <label class="radio-inline">
+                                <input type="radio"
+                                       aria-label="Day view"
+                                       name="staff_status_view"
+                                       id="staff_status_view"
+                                       value="day"
+                                       {% if user_preferences.staff_status_view == 'day' %}checked{% endif %}>
+                                Day
+                                <br>
+                                <input type="radio"
+                                       aria-label="Week view"
+                                       name="staff_status_view"
+                                       value="week"
+                                       {% if user_preferences.staff_status_view == 'week' %}checked{% endif %}>
+                                Week
+                                {% if not user_view %}
+                                    <br>
+                                    <input type="radio"
+                                           aria-label="Month view"
+                                           name="staff_status_view"
+                                           value="month"
+                                           {% if user_preferences.staff_status_view == 'month' %}checked{% endif %}>
+                                    Month
+                                {% endif %}
+                            </label>
                         </div>
                     </div>
                 </div>
-			</div>
-            {% button type="save" value="Update preferences" %}
-		</form>
-        <script>
+            </div>
+        {% endif %}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3 id="email_notifications_label">Email notifications</h3>
+                <p>
+                    The following is a list of notifications you will receive from {{ site_title }}. You have
+                    the option to set an alternate email address and define your preferences for which notifications
+                    you want to be sent to either of your emails, or both.
+                </p>
+                <p>Some notifications can also be turned off completely.</p>
+                <br>
+                <div class="form-group">
+                    <label class="col-sm-3 form-control-static" for="alternate_email_address">Alternate email address</label>
+                    <div class="col-sm-4">
+                        <input type="email"
+                               class="form-control"
+                               id="alternate_email_address"
+                               name="email_alternate"
+                               value="{{ form.email_alternate.value|default_if_none:'' }}"
+                               maxlength="254">
+                    </div>
+                    {% if form.email_alternate.errors %}
+                        <div class="col-sm-5 form-control-static danger-highlight">{{ form.email_alternate.errors|striptags }}</div>
+                    {% endif %}
+                    <div class="col-sm-offset-3 col-sm-9">Main email: {{ user.email }}</div>
+                </div>
+                {% for field_name, field in form.fields.items %}
+                    {% if field|class_name == "TypedChoiceField" and field_name != "staff_status_view" and field_name != "email_send_recurring_charges_reminder_emails" %}
+                        {% with data=form.data|get_item:field_name initial=form.initial|get_item:field_name %}
+                            <div class="form-group" role="group" aria-labelledby="{{ field_name }}">
+                                <div class="col-sm-3 form-control-static" id="{{ field_name }}">{{ field.help_text }}</div>
+                                <div class="col-sm-9">
+                                    {% for choice in field.choices %}
+                                        <label class="radio-inline">
+                                            <input type="radio"
+                                                   name="{{ field_name }}"
+                                                   value="{{ choice.0 }}"
+                                                   {% if data|default:initial|to_int == choice.0 %}checked{% endif %}>
+                                            {{ choice.1 }}
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+                <div class="form-group">
+                    <label class="col-sm-3 form-control-static" for="recurring_charges_reminder_days">
+                        {{ recurring_charges_name }} reminder days
+                    </label>
+                    <div class="col-sm-3">
+                        <input type="text"
+                               aria-describedby="recurring_charges_help"
+                               class="form-control"
+                               id="recurring_charges_reminder_days"
+                               name="recurring_charges_reminder_days"
+                               value="{{ form.recurring_charges_reminder_days.value|default_if_none:'' }}"
+                               maxlength="200">
+                    </div>
+                    {% if form.recurring_charges_reminder_days.errors %}
+                        <div class="col-sm-6 form-control-static danger-highlight">
+                            {{ form.recurring_charges_reminder_days.errors|striptags }}
+                        </div>
+                    {% else %}
+                        <div id="recurring_charges_help" class="col-sm-6 form-control-static">
+                            Set the number of days to receive a reminder prior to {{ recurring_charges_name|lower }} being charged. A comma-separated list can be used.
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 form-control-static">{{ recurring_charges_name }} reminders:</label>
+                    <div class="col-sm-9">
+                        {% for choice in form.fields.email_send_recurring_charges_reminder_emails.choices %}
+                            <label class="radio-inline">
+                                <input type="radio"
+                                       name="email_send_recurring_charges_reminder_emails"
+                                       value="{{ choice.0 }}"
+                                       {% if form.email_send_recurring_charges_reminder_emails.value|to_int == choice.0 %}checked{% endif %}>
+                                {{ choice.1 }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% button type="save" value="Update preferences" %}
+    </form>
+    <script>
             function add_tool_task_notification(jquery_event, search_selection, dataset_name)
             {
                 add_to_list("#task-notification-list", "remove_tool_task_notification", search_selection.id, search_selection.name, "Remove the " + search_selection.name, "tool_task_notifications");
@@ -228,5 +354,5 @@
                 {% endif %}
             }
             $(on_load);
-        </script>
+    </script>
 {% endblock %}

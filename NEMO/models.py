@@ -164,11 +164,11 @@ class BaseDocumentModel(BaseModel):
         return (
             self.name
             if self.name
-            else os.path.basename(self.document.name)
-            if self.document
-            else self.url.rsplit("/", 1)[-1]
-            if self.url
-            else ""
+            else (
+                os.path.basename(self.document.name)
+                if self.document
+                else self.url.rsplit("/", 1)[-1] if self.url else ""
+            )
         )
 
     def link(self):
@@ -2886,27 +2886,27 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
         errors = {}
         if self.customer_id:
             if not self.customer.is_active:
-                errors[
-                    "customer"
-                ] = "A consumable withdraw was requested for an inactive user. Only active users may withdraw consumables."
+                errors["customer"] = (
+                    "A consumable withdraw was requested for an inactive user. Only active users may withdraw consumables."
+                )
             if self.customer.access_expiration and self.customer.access_expiration < datetime.date.today():
                 errors["customer"] = f"This user's access expired on {format_datetime(self.customer.access_expiration)}"
         if self.project_id:
             if not self.project.active:
-                errors[
-                    "project"
-                ] = "A consumable may only be billed to an active project. The user's project is inactive."
+                errors["project"] = (
+                    "A consumable may only be billed to an active project. The user's project is inactive."
+                )
             if not self.project.account.active:
-                errors[
-                    "project"
-                ] = "A consumable may only be billed to a project that belongs to an active account. The user's account is inactive."
+                errors["project"] = (
+                    "A consumable may only be billed to a project that belongs to an active account. The user's account is inactive."
+                )
         if self.quantity is not None and self.quantity < 1:
             errors["quantity"] = "Please specify a valid quantity of items to withdraw."
         if self.consumable_id:
             if not self.consumable.reusable and self.quantity > self.consumable.quantity:
-                errors[
-                    NON_FIELD_ERRORS
-                ] = f'There are not enough "{self.consumable.name}". (The current quantity in stock is {str(self.consumable.quantity)}). Please order more as soon as possible.'
+                errors[NON_FIELD_ERRORS] = (
+                    f'There are not enough "{self.consumable.name}". (The current quantity in stock is {str(self.consumable.quantity)}). Please order more as soon as possible.'
+                )
         if self.customer_id and self.consumable_id and self.project_id:
             from NEMO.exceptions import ProjectChargeException
             from NEMO.policy import policy_class as policy

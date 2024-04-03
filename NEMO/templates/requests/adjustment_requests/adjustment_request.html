@@ -2,27 +2,41 @@
 {% load custom_tags_and_filters %}
 {% load static %}
 {% load tz %}
-{% block title %}{% if form.instance.id %}Modify adjustment request{% else %}New adjustment request{% endif %}{% endblock %}
+{% block title %}
+    {% if form.instance.id %}
+        Modify adjustment request
+    {% else %}
+        New adjustment request
+    {% endif %}
+{% endblock %}
 {% block extrahead %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block content %}
     {% with instance_id=form.instance.id %}
-        <h1 class="form-group">{% if instance_id %}Modify adjustment request{% else %}New adjustment request{% endif %}</h1>
-        <form class="well" action="{% if instance_id %}{% url 'edit_adjustment_request' instance_id %}{% else %}{% url 'create_adjustment_request' %}{% endif %}" method="post">
-            {% csrf_token %}
-            {% if form.non_field_errors %}
-                <div class="alert alert-danger">
-                    {{ form.non_field_errors }}
-                </div>
+        <h1 class="form-group">
+            {% if instance_id %}
+                Modify adjustment request
+            {% else %}
+                New adjustment request
             {% endif %}
+        </h1>
+        <form class="well"
+              action="{% if instance_id %}{% url 'edit_adjustment_request' instance_id %}{% else %}{% url 'create_adjustment_request' %}{% endif %}"
+              method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
             {% if instance_id and user in form.instance.reviewers %}
                 <div class="form-group">
                     <div class="row">
                         <div class="col-sm-6">
                             <label for="creator_readonly" class="control-label">Creator</label>
-                            <input id="creator_readonly" class="form-control" style="min-width: 250px;" disabled value="{{ form.instance.creator }}">
+                            <input id="creator_readonly"
+                                   class="form-control"
+                                   style="min-width: 250px"
+                                   disabled
+                                   value="{{ form.instance.creator }}">
                         </div>
                     </div>
                 </div>
@@ -34,13 +48,21 @@
                         <input type="hidden" name="item_id" value="{{ form.item_id.value|default_if_none:"" }}">
                         <label for="billable_item" class="control-label">Charge</label>
                         <select class="form-control" id="billable_item" name="item">
-                            <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id %}{% else %}{% url 'create_adjustment_request' %}{% endif %}" selected value="">General adjustment request</option>
+                            <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id %}{% else %}{% url 'create_adjustment_request' %}{% endif %}"
+                                    selected
+                                    value="">General adjustment request</option>
                             {% if form.instance.item %}
-                                <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id form.item_type.value form.item_id.value %}{% else %}{% url 'create_adjustment_request' form.item_type.value form.item_id.value %}{% endif %}" value="{{ form.item_type.value }}|{{ form.item_id.value }}" selected>{{ form.instance.item|billable_display:user }}</option>
+                                <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id form.item_type.value form.item_id.value %}{% else %}{% url 'create_adjustment_request' form.item_type.value form.item_id.value %}{% endif %}"
+                                        value="{{ form.item_type.value }}|{{ form.item_id.value }}"
+                                        selected>{{ form.instance.item|billable_display:user }}</option>
                             {% endif %}
                             {% for charge in eligible_items %}
                                 {% with charge_type=charge|content_type %}
-                                    <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id charge_type.id charge.id %}{% else %}{% url 'create_adjustment_request' charge_type.id charge.id %}{% endif %}" value="{{ charge_type.id }}|{{ charge.id }}" {% if form.item_type.value == charge_type and form.item_id.value|to_int == charge.id %}selected{% endif %}>{{ charge|billable_display:user }}</option>
+                                    <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id charge_type.id charge.id %}{% else %}{% url 'create_adjustment_request' charge_type.id charge.id %}{% endif %}"
+                                            value="{{ charge_type.id }}|{{ charge.id }}"
+                                            {% if form.item_type.value == charge_type and form.item_id.value|to_int == charge.id %}selected{% endif %}>
+                                        {{ charge|billable_display:user }}
+                                    </option>
                                 {% endwith %}
                             {% endfor %}
                         </select>
@@ -55,29 +77,52 @@
                     <div class="row">
                         <div class="col-md-3 col-sm-6">
                             <label for="new_start">New start</label>
-                            <input type="text" class="form-control text-center" name="new_start" id="new_start" value="{{ form.new_start.value|input_date_format }}">
+                            <input type="text"
+                                   class="form-control text-center"
+                                   name="new_start"
+                                   id="new_start"
+                                   value="{{ form.new_start.value|input_date_format }}">
                         </div>
                         <div class="col-md-3 col-sm-6">
                             <label for="new_end">New end</label>
-                            <input type="text" class="form-control text-center" name="new_end" id="new_end" value="{{ form.new_end.value|input_date_format }}">
+                            <input type="text"
+                                   class="form-control text-center"
+                                   name="new_end"
+                                   id="new_end"
+                                   value="{{ form.new_end.value|input_date_format }}">
                         </div>
                     </div>
                     {% if form.new_start.errors or form.new_end.errors %}
                         <div class="row">
-                            <div class="col-md-3 col-sm-6">{% if form.new_start.errors %}<span style="color:red">{{ form.new_start.errors|striptags }}</span>{% endif %}</div>
-                            <div class="col-md-3 col-sm-6">{% if form.new_end.errors %}<span style="color:red">{{ form.new_end.errors|striptags }}</span>{% endif %}</div>
+                            <div class="col-md-3 col-sm-6">
+                                {% if form.new_start.errors %}<span style="color:red">{{ form.new_start.errors|striptags }}</span>{% endif %}
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                {% if form.new_end.errors %}<span style="color:red">{{ form.new_end.errors|striptags }}</span>{% endif %}
+                            </div>
                         </div>
                     {% endif %}
                 </div>
             {% endif %}
             <div class="form-group">
-                <label for="description" class="control-label">Description</label>{% if form.description.errors %} - <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
-                <textarea class="form-control" rows="3" name="description" id="description" placeholder="Explain the reason for this request" required>{{ form.description.value|default_if_none:"" }}</textarea>
+                <label for="description" class="control-label">Description</label>
+                {% if form.description.errors %}- <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
+                <textarea class="form-control"
+                          rows="3"
+                          name="description"
+                          id="description"
+                          placeholder="Explain the reason for this request"
+                          required>{{ form.description.value|default_if_none:"" }}</textarea>
             </div>
             {% if form.instance.get_status_display == "Pending" and instance_id and user in form.instance.reviewers %}
                 <div class="form-group">
-                    <label for="manager_note" class="control-label">Feedback/Instructions</label>{% if form.description.errors %} - <span style="color:red">{{ form.manager_note.errors|striptags }}</span>{% endif %}
-                    <textarea class="form-control" rows="3" name="manager_note" id="manager_note" placeholder="Feedback to send to the user if the request is denied or instructions to the user office if it's approved">{{ form.manager_note.value|default_if_none:"" }}</textarea>
+                    <label for="manager_note" class="control-label">Feedback/Instructions</label>
+                    {% if form.description.errors %}- <span style="color:red">{{ form.manager_note.errors|striptags }}</span>{% endif %}
+                    <textarea class="form-control"
+                              rows="3"
+                              name="manager_note"
+                              id="manager_note"
+                              placeholder="Feedback to send to the user if the request is denied or instructions to the user office if it's approved">{{ form.manager_note.value|default_if_none:"" }}</textarea>
                 </div>
             {% endif %}
             <div class="text-right">
@@ -93,7 +138,7 @@
             </div>
         </form>
     {% endwith %}
-	<script>
+    <script>
         let timepicker_properties =
 		{
 			format: '{{ datetime_input_js_format }}',
@@ -123,5 +168,6 @@
                 submit_and_disable(review_button)
             }
         }
-	</script>
+	
+    </script>
 {% endblock %}

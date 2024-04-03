@@ -4,48 +4,75 @@
 {% block content %}
     <div class="h1 row">
         <div class="col-xs-6 col-sm-7">Accounts and projects</div>
-		<div class="col-sm-5 text-right">
+        <div class="col-sm-5 text-right">
             {% button type="add" value="New project" url="create_project" %}
             {% button type="add" value="New account" url="create_account" %}
-		</div>
-	</div>
-	<div class="row">
-		<div class="col-sm-5" id="search_container">
-			<input id="search" type="text" aria-label="Search for account or project" placeholder="Search for an account or project" class="form-control" autofocus>
-		</div>
-	</div>
-	{% if account %}
-		<div class="row">
-			<div class="col-sm-12">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-5" id="search_container">
+            <input id="search"
+                   type="text"
+                   aria-label="Search for account or project"
+                   placeholder="Search for an account or project"
+                   class="form-control"
+                   autofocus>
+        </div>
+    </div>
+    {% if account %}
+        <div class="row">
+            <div class="col-sm-12">
                 {% if not selected_project %}
                     <h2>
                         {{ account }}
                         <form style="display:inline" method="post" action="{% url 'toggle_active' 'account' account.id %}">
                             {% csrf_token %}
                             {# Using an 'input submit' element would be preferable to an anchor on the following line, but Bootstrap can't style a 'submit' as a label so you have to use an anchor. #}
-                            <a onclick="$(this).closest('form').submit()" class="label {% if account.active %}label-success{% else %}label-danger{% endif %}" style="vertical-align:50%; font-size:small">
-                                {% if account.active %}Active{% else %}Inactive{% endif %}
+                            <a onclick="$(this).closest('form').submit()"
+                               class="label {% if account.active %}label-success{% else %}label-danger{% endif %}"
+                               style="vertical-align:50%;
+                                      font-size:small">
+                                {% if account.active %}
+                                    Active
+                                {% else %}
+                                    Inactive
+                                {% endif %}
                             </a>
                         </form>
                     </h2>
                 {% endif %}
-				{% for project in account.project_set.all %}
+                {% for project in account.project_set.all %}
                     {% if not selected_project or project == selected_project %}
                         <div class="h3">
-                            <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#project_{{ project.id }}_details" class="pointer" style="text-decoration:none">
-                                <span id="project_{{ project.id }}_chevron" class="glyphicon {% if selected_project %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
+                            <a onclick="toggle_details(this)"
+                               data-toggle="collapse"
+                               data-target="#project_{{ project.id }}_details"
+                               class="pointer"
+                               style="text-decoration:none">
+                                <span id="project_{{ project.id }}_chevron"
+                                      class="glyphicon {% if selected_project %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
                                 {{ project }}
                             </a>
                             <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
                                 {% csrf_token %}
                                 {# Using an 'input submit' element would be preferable to an anchor on the following line, but Bootstrap can't style a 'submit' as a label so you have to use an anchor. #}
-                                <a onclick="$(this).closest('form').submit()" class="label {% if project.active %}label-success{% else %}label-danger{% endif %}" style="vertical-align:50%; font-size:small">
-                                    {% if project.active %}Active{% else %}Inactive{% endif %}
+                                <a onclick="$(this).closest('form').submit()"
+                                   class="label {% if project.active %}label-success{% else %}label-danger{% endif %}"
+                                   style="vertical-align:50%;
+                                          font-size:small">
+                                    {% if project.active %}
+                                        Active
+                                    {% else %}
+                                        Inactive
+                                    {% endif %}
                                 </a>
                             </form>
                         </div>
                         <div style="margin-left:34px">
-                            {% if selected_project %}<label class="control-label">Account:</label> <a href="{% url 'account' project.account.id %}">{{ project.account }}</a>{% endif %}
+                            {% if selected_project %}
+                                <label class="control-label">Account:</label>
+                                <a href="{% url 'account' project.account.id %}">{{ project.account }}</a>
+                            {% endif %}
                             {% if project.manager_set.all %}
                                 <div>
                                     <span class="control-label">PIs:</span>
@@ -57,12 +84,12 @@
                                     <span class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</span>
                                     <span>{{ project.application_identifier }}</span>
                                 </div>
-								{% if project.discipline %}
-									<div>
-										<span class="control-label">Discipline:</span>
-										<span>{{ project.discipline }}</span>
-									</div>
-								{% endif %}
+                                {% if project.discipline %}
+                                    <div>
+                                        <span class="control-label">Discipline:</span>
+                                        <span>{{ project.discipline }}</span>
+                                    </div>
+                                {% endif %}
                                 {% if project.start_date %}
                                     <div>
                                         <span class="control-label">Start Date:</span>
@@ -72,21 +99,21 @@
                                 <div id="project_{{ project.id }}_users">
                                     {% include 'accounts_and_projects/users_for_project.html' with users=project.user_set.all %}
                                 </div>
-								{% if allow_document_upload or project.project_documents.all %}
-									<div id="project_{{ project.id }}_documents">
-										{% include 'accounts_and_projects/documents_for_project.html' with documents=project.project_documents.all %}
-									</div>
-								{% endif %}
+                                {% if allow_document_upload or project.project_documents.all %}
+                                    <div id="project_{{ project.id }}_documents">
+                                        {% include 'accounts_and_projects/documents_for_project.html' with documents=project.project_documents.all %}
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     {% endif %}
-				{% empty %}
-					<h4>This account does not have any projects</h4>
-				{% endfor %}
-			</div>
-		</div>
-	{% endif %}
-	<script>
+                {% empty %}
+                    <h4>This account does not have any projects</h4>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    <script>
 		function get_project_or_account(jquery_event, search_selection, dataset_name)
 		{
 			if(search_selection.type === 'project')
@@ -126,12 +153,14 @@
             reset_autocomplete();
 		}
 		window.addEventListener('load', on_load, true);
-	</script>
-	<style>
+	
+    </script>
+    <style>
 		#search_container .tt-dropdown-menu
 		{
 			min-width: 400px;
 			max-height: 600px;
 		}
-	</style>
+	
+    </style>
 {% endblock %}

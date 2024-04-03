@@ -3,64 +3,75 @@
 {% load static %}
 {% block title %}New account{% endblock %}
 {% block extrahead %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block content %}
-	<h1>New account</h1>
-	{% if form.non_field_errors %}
-		<div class="alert alert-danger">
-			Oops! Something went wrong. The project was not created because:<br>
-			{{ form.non_field_errors }}
-		</div>
-	{% endif %}
-	<form method="post" action="{% url 'create_account' %}" class="form-horizontal">
-		{% csrf_token %}
-		<div class="form-group">
-            <label for="name" class="control-label col-sm-2"><b>Name</b></label>
+    <h1>New account</h1>
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            Oops! Something went wrong. The project was not created because:
+            <br>
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+    <form method="post" action="{% url 'create_account' %}" class="form-horizontal">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="name" class="control-label col-sm-2">
+                <b>Name</b>
+            </label>
             <div class="col-sm-4">
-                <input type="text" id="name" name="name" placeholder="Name" maxlength="100" class="form-control" value="{{ form.name.value|default_if_none:'' }}" autofocus required>
+                <input type="text"
+                       id="name"
+                       name="name"
+                       placeholder="Name"
+                       maxlength="100"
+                       class="form-control"
+                       value="{{ form.name.value|default_if_none:'' }}"
+                       autofocus
+                       required>
             </div>
-            <div class="col-sm-6 form-control-static danger-highlight">
-                {{ form.name.errors|striptags }}
-            </div>
-		</div>
+            <div class="col-sm-6 form-control-static danger-highlight">{{ form.name.errors|striptags }}</div>
+        </div>
         {% if form.fields.type.choices.queryset %}
-			<div class="form-group">
-				<label class="control-label col-sm-2" for="type">Type</label>
-				<div class="col-sm-4">
-					<select id="type" name="type" class="form-control">
-						{% for t in form.fields.type.choices %}
-							<option value="{{ t.0 }}" {% if t.0 == form.type.value|to_int %}selected{% endif %}>{{ t.1 }}</option>
-						{% endfor %}
-					</select>
-				</div>
-			</div>
-		{% endif %}
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="type">Type</label>
+                <div class="col-sm-4">
+                    <select id="type" name="type" class="form-control">
+                        {% for t in form.fields.type.choices %}
+                            <option value="{{ t.0 }}" {% if t.0 == form.type.value|to_int %}selected{% endif %}>{{ t.1 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        {% endif %}
         <div class="form-group">
             <label for="start_date" class="control-label col-sm-2">Start date</label>
             <div class="col-sm-4">
-				<input type="text" id="start_date" name="start_date" class="form-control" placeholder="Choose a date" value="{{ form.start_date.value|input_date_format }}">
+                <input type="text"
+                       id="start_date"
+                       name="start_date"
+                       class="form-control"
+                       placeholder="Choose a date"
+                       value="{{ form.start_date.value|input_date_format }}">
             </div>
-            <div class="col-sm-6 form-control-static danger-highlight">
-				{{ form.start_date.errors|striptags }}
-			</div>
+            <div class="col-sm-6 form-control-static danger-highlight">{{ form.start_date.errors|striptags }}</div>
         </div>
-		<div class="form-group">
+        <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
                 <div class="checkbox">
                     <label>
-                        <input type="checkbox" name="active" {% if form.active.value %}checked{% endif %}> Active
+                        <input type="checkbox" name="active" {% if form.active.value %}checked{% endif %}>
+                        Active
                     </label>
                 </div>
             </div>
         </div>
-		<div class="form-group">
-            <div class="col-sm-offset-2 col-sm-10">
-                {% button type="save" value="Create new account" %}
-            </div>
-		</div>
-	</form>
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">{% button type="save" value="Create new account" %}</div>
+        </div>
+    </form>
     <script>
     window.addEventListener("load", function ()
     {

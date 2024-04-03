@@ -1,26 +1,27 @@
 {% load static %}
 {% load custom_tags_and_filters %}
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	{# This meta-tag forcefully disables 'compatibility mode' in Internet Explorer because it causes rendering problems. #}
-	<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-	<meta charset="UTF-8">
-	<meta name="application-name" content="NEMO">
-	<meta name="author" content="Center for Nanoscale Science and Technology">
-	<meta name="description" content="NEMO allows facility users to make tool reservations, control access to tools in their facility, and streamline logistics and communication">
-	<meta name="keywords" content="logistics, operations, nano-technology, nano-fabrication, reservation, tool control, status">
-	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
-	{# Snippet to prevent clickjacking. Taken from https://www.codemagi.com/blog/post/194 #}
-	<style id="antiClickjack">
+    <head>
+        {# This meta-tag forcefully disables 'compatibility mode' in Internet Explorer because it causes rendering problems. #}
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta charset="UTF-8">
+        <meta name="application-name" content="NEMO">
+        <meta name="author" content="Center for Nanoscale Science and Technology">
+        <meta name="description"
+              content="NEMO allows facility users to make tool reservations, control access to tools in their facility, and streamline logistics and communication">
+        <meta name="keywords"
+              content="logistics, operations, nano-technology, nano-fabrication, reservation, tool control, status">
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+        {# Snippet to prevent clickjacking. Taken from https://www.codemagi.com/blog/post/194 #}
+        <style id="antiClickjack">
 		body
 		{
 			display: none !important;
 		}
-	</style>
-	<script type="text/javascript">
+	
+        </style>
+        <script type="text/javascript">
 		if(self === top)
 		{
 			let antiClickjack = document.getElementById("antiClickjack");
@@ -30,77 +31,72 @@
         {
 			top.location = self.location;
         }
-	</script>
-
-    {% block head %}
-        {# Moment #}
-        <script type="text/javascript" src="{% static "moment.min.js" %}"></script>
-
-        {# jQuery #}
-	    <script type="text/javascript" src="{% static "jquery.min.js" %}"></script>
-
-        {# Bootstrap #}
-        <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
-        <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}"/>
-        <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.min.css" %}"/>
-
-        {# Typeahead #}
-        <script type="text/javascript" src="{% static "typeahead.jquery.min.js" %}"></script>
-    {% endblock %}
-
-	{# NEMO #}
-    <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}"/>
-	<script type="text/javascript" src="{% static "nemo.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}"/>
-
-	{% block extrahead %}{% endblock %}
-
-	<title>{% block title %}{% endblock %}</title>
-</head>
-<body class="{% if "impersonate_id" in request.session and request.session.impersonate_id %}impersonating{% endif %}">
-<a class="sr-only sr-only-focusable" href="#main-content">Skip to main content</a>
-{% if "impersonate_id" in request.session and request.session.impersonate_id %}
-	{% include 'base/impersonate_header.html' %}
-{% endif %}
-{% if no_header %}
-	<div style="height: 15px;"></div>
-{% else %}
-	{% include 'base/navbar.html' %}
-{% endif %}
-{% block body %}
-    <div class="body-container">
-        <div id="loading-div-page" class="spinner-full-page spinner-container" style="display: none">
-            <div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
-        </div>
-        <div class="container" id="main-content">
-			{% if messages %}
-				{% for message in messages %}
-					<div class="alert alert-{% if message.level_tag == 'error' %}danger{% else %}{{ message.level_tag }}{% endif %} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
-						<button type="button" class="close" data-dismiss="alert" aria-label="Modal close button">&times;</button>
-						{{ message }}
-					</div>
-				{% endfor %}
-			{% endif %}
-            {# Content goes here #}
-            {% block content %}{% endblock %}
-            {% spaceless %}<div class="modal-footer">{% block footer %}{% endblock %}</div>{% endspaceless %}
-        </div>
-        {% block extra_whitespace %}
-            <div style="height: 200px"></div>
+	
+        </script>
+        {% block head %}
+            {# Moment #}
+            <script type="text/javascript" src="{% static "moment.min.js" %}"></script>
+            {# jQuery #}
+            <script type="text/javascript" src="{% static "jquery.min.js" %}"></script>
+            {# Bootstrap #}
+            <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
+            <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}" />
+            <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.min.css" %}" />
+            {# Typeahead #}
+            <script type="text/javascript" src="{% static "typeahead.jquery.min.js" %}"></script>
         {% endblock %}
-    </div>
-    {% include 'base/footer.html' %}
-{% endblock %}
-
-{# This division is used to display dialog messages via Bootstrap. #}
-<div class="modal fade" id="dialog" tabindex="-1">
-	<div class="modal-dialog" role="dialog" aria-modal="true">
-		<div class="modal-content">
-		</div>
-	</div>
-</div>
-
-<script>
+        {# NEMO #}
+        <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}" />
+        <script type="text/javascript" src="{% static "nemo.js" %}"></script>
+        <link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}" />
+        {% block extrahead %}{% endblock %}
+        <title>
+            {% block title %}{% endblock %}
+        </title>
+    </head>
+    <body class="{% if "impersonate_id" in request.session and request.session.impersonate_id %}impersonating{% endif %}">
+        <a class="sr-only sr-only-focusable" href="#main-content">Skip to main content</a>
+        {% if "impersonate_id" in request.session and request.session.impersonate_id %}
+            {% include 'base/impersonate_header.html' %}
+        {% endif %}
+        {% if no_header %}
+            <div style="height: 15px;"></div>
+        {% else %}
+            {% include 'base/navbar.html' %}
+        {% endif %}
+        {% block body %}
+            <div class="body-container">
+                <div id="loading-div-page" class="spinner-full-page spinner-container" style="display: none">
+                    <div class="glyphicon glyphicon-repeat normal-right-spinner"></div>
+                </div>
+                <div class="container" id="main-content">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{% if message.level_tag == 'error' %}danger{% else %}{{ message.level_tag }}{% endif %} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Modal close button">&times;</button>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    {# Content goes here #}
+                    {% block content %}{% endblock %}
+                    {% spaceless %}
+                        <div class="modal-footer">
+                            {% block footer %}{% endblock %}
+                        </div>
+                    {% endspaceless %}
+                </div>
+                {% block extra_whitespace %}<div style="height: 200px"></div>{% endblock %}
+            </div>
+            {% include 'base/footer.html' %}
+        {% endblock %}
+        {# This division is used to display dialog messages via Bootstrap. #}
+        <div class="modal fade" id="dialog" tabindex="-1">
+            <div class="modal-dialog" role="dialog" aria-modal="true">
+                <div class="modal-content"></div>
+            </div>
+        </div>
+        <script>
 	function csrf_token()
 	{
 		return '{{ csrf_token }}';
@@ -166,7 +162,6 @@
     {
         hide_spinner();
     });
-</script>
-
-</body>
+        </script>
+    </body>
 </html>

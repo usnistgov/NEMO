@@ -1,98 +1,124 @@
 {% extends 'base/popup.html' %}
 {% load custom_tags_and_filters %}
-{% block title %}{% if form.instance.pk %}Modify staff absence{% else %}New staff absence{% endif %}{% endblock %}
-{% block content %}
-<form id="absence_form" class="form-horizontal" action="{% if form.instance.pk %}{% url 'edit_staff_absence' form.instance.pk %}{% else %}{% url 'create_staff_absence' %}{% endif %}?timestamp={{ page_timestamp }}" method="post">
-    {% csrf_token %}
-    {% if form.non_field_errors %}
-        <div class="alert alert-danger">
-            {{ form.non_field_errors }}
-        </div>
+{% block title %}
+    {% if form.instance.pk %}
+        Modify staff absence
+    {% else %}
+        New staff absence
     {% endif %}
-    <div class="form-group">
-        <label class="col-sm-3 control-label" for="staff_member_search">Staff</label>
-        <div class="col-sm-9">
-            <input type="text" id="staff_member_search" name="staff_member" class="form-control">
-            <input type="button" id="selected_staff_member" class="btn btn-default" onclick="clear_staff_member_selection()" style="display:none">
+{% endblock %}
+{% block content %}
+    <form id="absence_form"
+          class="form-horizontal"
+          action="{% if form.instance.pk %}{% url 'edit_staff_absence' form.instance.pk %}{% else %}{% url 'create_staff_absence' %}{% endif %}?timestamp={{ page_timestamp }}"
+          method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="form-group">
+            <label class="col-sm-3 control-label" for="staff_member_search">Staff</label>
+            <div class="col-sm-9">
+                <input type="text" id="staff_member_search" name="staff_member" class="form-control">
+                <input type="button"
+                       id="selected_staff_member"
+                       class="btn btn-default"
+                       onclick="clear_staff_member_selection()"
+                       style="display:none">
+            </div>
+            {% if form.staff_member.errors %}
+                <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.staff_member.errors|striptags }}</div>
+            {% endif %}
         </div>
-        {% if form.staff_member.errors %}
-            <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.staff_member.errors|striptags }}</div>
-        {% endif %}
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label" for="absence_type">Absence type</label>
-        <div class="col-sm-9">
-            <select class="form-control" name="absence_type" id="absence_type">
-                <option value="" disabled selected></option>
-                {% for x, y in form.fields.absence_type.choices %}
-                    {% if x %}
-                        <option value="{{ x }}"{% if form.absence_type.value|to_int == x %} selected{% endif %}>{{ y }}</option>
-                    {% endif %}
-                {% endfor %}
-            </select>
+        <div class="form-group">
+            <label class="col-sm-3 control-label" for="absence_type">Absence type</label>
+            <div class="col-sm-9">
+                <select class="form-control" name="absence_type" id="absence_type">
+                    <option value="" disabled selected></option>
+                    {% for x, y in form.fields.absence_type.choices %}
+                        {% if x %}
+                            <option value="{{ x }}"{% if form.absence_type.value|to_int == x %} selected{% endif %}>{{ y }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            {% if form.absence_type.errors %}
+                <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.absence_type.errors|striptags }}</div>
+            {% endif %}
         </div>
-        {% if form.absence_type.errors %}
-            <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.absence_type.errors|striptags }}</div>
-        {% endif %}
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label" for="start_date">Start</label>
-        <div class="col-sm-4">
-            <input type="text" class="form-control text-center" name="start_date" id="start_date" value="{{ form.start_date.value|input_date_format }}" required>
+        <div class="form-group">
+            <label class="col-sm-3 control-label" for="start_date">Start</label>
+            <div class="col-sm-4">
+                <input type="text"
+                       class="form-control text-center"
+                       name="start_date"
+                       id="start_date"
+                       value="{{ form.start_date.value|input_date_format }}"
+                       required>
+            </div>
+            <label class="col-sm-1 control-label" for="end_date">End</label>
+            <div class="col-sm-4">
+                <input type="text"
+                       class="form-control text-center"
+                       name="end_date"
+                       id="end_date"
+                       value="{{ form.end_date.value|input_date_format }}"
+                       required>
+            </div>
+            {% if form.start_date.errors or form.end_date.errors %}
+                <div class="col-sm-4 col-sm-offset-3">
+                    {% if form.start_date.errors %}<span style="color:red">{{ form.start_date.errors|striptags }}</span>{% endif %}
+                </div>
+                <div class="col-sm-4 col-sm-offset-1">
+                    {% if form.end_date.errors %}<span style="color:red">{{ form.end_date.errors|striptags }}</span>{% endif %}
+                </div>
+            {% endif %}
         </div>
-        <label class="col-sm-1 control-label" for="end_date">End</label>
-        <div class="col-sm-4">
-            <input type="text" class="form-control text-center" name="end_date" id="end_date" value="{{ form.end_date.value|input_date_format }}" required>
+        <div class="form-group">
+            <label class="col-sm-3 control-label">All day</label>
+            <div class="col-sm-9">
+                <div class="checkbox">
+                    <label>
+                        <input id="full_day" name="full_day" type="checkbox" {% if form.full_day.value %}checked{% endif %}>
+                        {{ form.full_day.help_text }}
+                    </label>
+                </div>
+            </div>
+            {% if form.full_day.errors %}
+                <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.full_day.errors|striptags }}</div>
+            {% endif %}
         </div>
-        {% if form.start_date.errors or form.end_date.errors %}
-            <div class="col-sm-4 col-sm-offset-3">{% if form.start_date.errors %}<span style="color:red">{{ form.start_date.errors|striptags }}</span>{% endif %}</div>
-            <div class="col-sm-4 col-sm-offset-1">{% if form.end_date.errors %}<span style="color:red">{{ form.end_date.errors|striptags }}</span>{% endif %}</div>
-        {% endif %}
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label">All day</label>
-        <div class="col-sm-9">
-            <div class="checkbox">
-                <label><input id="full_day" name="full_day" type="checkbox" {% if form.full_day.value %}checked{% endif %}> {{ form.full_day.help_text }}</label>
+        <div class="form-group">
+            <label class="col-sm-3 control-label" for="absence_description">Description</label>
+            <div class="col-sm-9">
+                <textarea class="form-control" oninput="auto_size_textarea(this)" id="absence_description" name="description">{{ form.description.value|default_if_none:'' }}</textarea>
+            </div>
+            <div class="col-sm-9 col-sm-offset-3 italic" style="font-size: x-small">{{ form.description.help_text }}</div>
+            {% if form.description.errors %}
+                <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.description.errors|striptags }}</div>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label class="col-sm-3 control-label" for="manager_note">Manager note</label>
+            <div class="col-sm-9">
+                <textarea class="form-control" oninput="auto_size_textarea(this)" id="manager_note" name="manager_note">{{ form.manager_note.value|default_if_none:'' }}</textarea>
+            </div>
+            <div class="col-sm-9 col-sm-offset-3 italic" style="font-size: x-small">{{ form.manager_note.help_text }}</div>
+            {% if form.manager_note.errors %}
+                <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.manager_note.errors|striptags }}</div>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            {% if form.instance.pk %}
+                <div class="col-sm-5 col-sm-offset-3 text-left">
+                    {% url 'delete_staff_absence' form.instance.pk as delete_staff_absence_url %}
+                    {% button type="delete" value="Delete" url=delete_staff_absence_url|concat:"?timestamp="|concat:page_timestamp %}
+                </div>
+            {% endif %}
+            <div class="text-right {% if form.instance.pk %}col-sm-4{% else %}col-sm-12{% endif %}">
+                {% button type="save" submit=False onclick="submit_form(this.form)" value=form.instance.pk|yesno:"Save changes,Create staff absence" %}
             </div>
         </div>
-        {% if form.full_day.errors %}
-            <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.full_day.errors|striptags }}</div>
-        {% endif %}
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label" for="absence_description">Description</label>
-        <div class="col-sm-9">
-            <textarea class="form-control" oninput="auto_size_textarea(this)" id="absence_description" name="description">{{ form.description.value|default_if_none:'' }}</textarea>
-        </div>
-        <div class="col-sm-9 col-sm-offset-3 italic" style="font-size: x-small">{{ form.description.help_text }}</div>
-        {% if form.description.errors %}
-            <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.description.errors|striptags }}</div>
-        {% endif %}
-    </div>
-    <div class="form-group">
-        <label class="col-sm-3 control-label" for="manager_note">Manager note</label>
-        <div class="col-sm-9">
-            <textarea class="form-control" oninput="auto_size_textarea(this)" id="manager_note" name="manager_note">{{ form.manager_note.value|default_if_none:'' }}</textarea>
-        </div>
-        <div class="col-sm-9 col-sm-offset-3 italic" style="font-size: x-small">{{ form.manager_note.help_text }}</div>
-        {% if form.manager_note.errors %}
-            <div class="col-sm-9 col-sm-offset-3" style="color:red">{{ form.manager_note.errors|striptags }}</div>
-        {% endif %}
-    </div>
-    <div class="form-group">
-        {% if form.instance.pk %}
-            <div class="col-sm-5 col-sm-offset-3 text-left">
-                {% url 'delete_staff_absence' form.instance.pk as delete_staff_absence_url %}
-                {% button type="delete" value="Delete" url=delete_staff_absence_url|concat:"?timestamp="|concat:page_timestamp %}
-            </div>
-        {% endif %}
-        <div class="text-right {% if form.instance.pk %}col-sm-4{% else %}col-sm-12{% endif %}">
-            {% button type="save" submit=False onclick="submit_form(this.form)" value=form.instance.pk|yesno:"Save changes,Create staff absence"%}
-        </div>
-    </div>
-</form>
-<script>
+    </form>
+    <script>
     function absence_callback(response, status, xml_http_request)
     {
         if(response)
@@ -148,5 +174,5 @@
         auto_size_textarea(document.getElementById('absence_description'));
         auto_size_textarea(document.getElementById('manager_note'));
     });
-</script>
+    </script>
 {% endblock %}

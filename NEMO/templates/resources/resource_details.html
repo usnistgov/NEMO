@@ -2,88 +2,116 @@
 {% load custom_tags_and_filters %}
 {% block title %}{{ resource }}{% endblock %}
 {% block content %}
-	<div class="row pull-right h1">
-		<div class="col-md-4">
+    <div class="row pull-right h1">
+        <div class="col-md-4">
             {% url 'modify_resource' resource.id as modify_resource_url %}
             {% button type="edit" value="Modify availability" url=modify_resource_url %}
-		</div>
-		<div class="col-md-4 col-md-offset-2">
+        </div>
+        <div class="col-md-4 col-md-offset-2">
             {% url 'schedule_resource_outage' resource.id as resource_outage_url %}
             {% button type="delete" value="Schedule outage" icon="glyphicon-time" url=resource_outage_url %}
-		</div>
-	</div>
-	<h1>{{ resource }} {% if resource.category %}({{ resource.category }}{% endif %})</h1>
-	This resource is {% if resource.available %}<span class="success-highlight">available</span>.{% endif %}
-	{% if not resource.available %}<span class="danger-highlight">unavailable</span> for the following reason:
-		<ul><li style="list-style: none"><div class="warning-highlight" style="margin-top: 10px">{{ resource.restriction_message|linebreaks }}</div></li></ul>
-	{% endif %}
-	{% if outages %}
-		<h3>
-			Scheduled outages:
-		</h3>
-		<div class="row" style="margin-top: 20px">
-			{% for o in outages %}
-				<div class="col-sm-4">
-					<div class="alert alert-danger">
-						<form id="delete_resource_outage_{{ o.id }}" method="post" action="{% url 'delete_scheduled_resource_outage' resource.id o.id %}">
-							{% csrf_token %}
-							<span class="glyphicon glyphicon-remove pull-right" style="cursor:pointer" onclick="$('#delete_resource_outage_{{ o.id }}').submit()" data-toggle="tooltip" data-placement="top" title="Delete this outage"></span>
-						</form>
-						<form id="edit_resource_outage_{{ o.id }}" method="get" action="{% url 'schedule_resource_outage' resource.id %}">
-							<span class="glyphicon glyphicon-pencil pull-right" style="margin-right:10px; cursor:pointer" onclick="$('#edit_resource_outage_{{ o.id }}').submit()" data-toggle="tooltip" data-placement="top" title="Edit this outage"></span>
-							<input type="hidden" name="outage_id" value="{{ o.id }}">
-						</form>
-						<span style="font-weight:bold">{{ o.title }}</span><br>
-						{% if o.category %}Outage category: {{ o.category }}<br>{% endif %}
-						Starts on {{ o.start }}<br>
-						Ends on {{ o.end }}<br>
-						{{ o.details }}<br>
-					</div>
-				</div>
-			{% endfor %}
-		</div>
-	{% endif %}
-	{% if resource.visible_fully_dependent_tools %}
-		<h3>Tools that fully depend on {{ resource }}</h3>
-		<ul>
-			{% for t in resource.visible_fully_dependent_tools %}
-				<li>
-					{% if t.in_use %}
-						{{ t }} - in use by <a href="{% url 'get_email_form_for_user' t.get_current_usage_event.operator.id %}"><span class="glyphicon glyphicon-send"></span> {{ t.get_current_usage_event.operator }}</a>
-					{% else %}
-						{{ t }}
-					{% endif %}
-				</li>
-			{% endfor %}
-		</ul>
-	{% else %}
-		<h3>No tools fully depend on {{ resource }}</h3>
-	{% endif %}
-	{% if resource.visible_partially_dependent_tools %}
-		<h3>Tools that partially depend on {{ resource }}</h3>
-		<ul>
-			{% for t in resource.visible_partially_dependent_tools %}
-				<li>
-					{% if t.in_use %}
-						{{ t }} - in use by <a href="{% url 'get_email_form_for_user' t.get_current_usage_event.operator.id %}"><span class="glyphicon glyphicon-send"></span> {{ t.get_current_usage_event.operator }}</a>
-					{% else %}
-						{{ t }}
-					{% endif %}
-				</li>
-			{% endfor %}
-		</ul>
-	{% else %}
-		<h3>No tools partially depend on {{ resource }}</h3>
-	{% endif %}
-	{% if resource.dependent_areas.all %}
-		<h3>Areas that depend on {{ resource }}</h3>
-		<ul>
-			{% for a in resource.dependent_areas.all %}
-				<li>{{ a }}</li>
-			{% endfor %}
-		</ul>
-	{% else %}
-		<h3>No areas depend on {{ resource }}</h3>
-	{% endif %}
-	<script>$('.glyphicon').tooltip({container: 'body'});</script>
+        </div>
+    </div>
+    <h1>
+        {{ resource }}
+        {% if resource.category %}({{ resource.category }}{% endif %}
+        )
+    </h1>
+    This resource is
+    {% if resource.available %}<span class="success-highlight">available</span>.{% endif %}
+    {% if not resource.available %}
+        <span class="danger-highlight">unavailable</span> for the following reason:
+        <ul>
+            <li style="list-style: none">
+                <div class="warning-highlight" style="margin-top: 10px">{{ resource.restriction_message|linebreaks }}</div>
+            </li>
+        </ul>
+    {% endif %}
+    {% if outages %}
+        <h3>Scheduled outages:</h3>
+        <div class="row" style="margin-top: 20px">
+            {% for o in outages %}
+                <div class="col-sm-4">
+                    <div class="alert alert-danger">
+                        <form id="delete_resource_outage_{{ o.id }}"
+                              method="post"
+                              action="{% url 'delete_scheduled_resource_outage' resource.id o.id %}">
+                            {% csrf_token %}
+                            <span class="glyphicon glyphicon-remove pull-right"
+                                  style="cursor:pointer"
+                                  onclick="$('#delete_resource_outage_{{ o.id }}').submit()"
+                                  data-toggle="tooltip"
+                                  data-placement="top"
+                                  title="Delete this outage"></span>
+                        </form>
+                        <form id="edit_resource_outage_{{ o.id }}"
+                              method="get"
+                              action="{% url 'schedule_resource_outage' resource.id %}">
+                            <span class="glyphicon glyphicon-pencil pull-right"
+                                  style="margin-right:10px;
+                                         cursor:pointer"
+                                  onclick="$('#edit_resource_outage_{{ o.id }}').submit()"
+                                  data-toggle="tooltip"
+                                  data-placement="top"
+                                  title="Edit this outage"></span>
+                            <input type="hidden" name="outage_id" value="{{ o.id }}">
+                        </form>
+                        <span style="font-weight:bold">{{ o.title }}</span>
+                        <br>
+                        {% if o.category %}
+                            Outage category: {{ o.category }}
+                            <br>
+                        {% endif %}
+                        Starts on {{ o.start }}
+                        <br>
+                        Ends on {{ o.end }}
+                        <br>
+                        {{ o.details }}
+                        <br>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% if resource.visible_fully_dependent_tools %}
+        <h3>Tools that fully depend on {{ resource }}</h3>
+        <ul>
+            {% for t in resource.visible_fully_dependent_tools %}
+                <li>
+                    {% if t.in_use %}
+                        {{ t }} - in use by <a href="{% url 'get_email_form_for_user' t.get_current_usage_event.operator.id %}"><span class="glyphicon glyphicon-send"></span> {{ t.get_current_usage_event.operator }}</a>
+                    {% else %}
+                        {{ t }}
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <h3>No tools fully depend on {{ resource }}</h3>
+    {% endif %}
+    {% if resource.visible_partially_dependent_tools %}
+        <h3>Tools that partially depend on {{ resource }}</h3>
+        <ul>
+            {% for t in resource.visible_partially_dependent_tools %}
+                <li>
+                    {% if t.in_use %}
+                        {{ t }} - in use by <a href="{% url 'get_email_form_for_user' t.get_current_usage_event.operator.id %}"><span class="glyphicon glyphicon-send"></span> {{ t.get_current_usage_event.operator }}</a>
+                    {% else %}
+                        {{ t }}
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <h3>No tools partially depend on {{ resource }}</h3>
+    {% endif %}
+    {% if resource.dependent_areas.all %}
+        <h3>Areas that depend on {{ resource }}</h3>
+        <ul>
+            {% for a in resource.dependent_areas.all %}<li>{{ a }}</li>{% endfor %}
+        </ul>
+    {% else %}
+        <h3>No areas depend on {{ resource }}</h3>
+    {% endif %}
+    <script>$('.glyphicon').tooltip({container: 'body'});</script>
 {% endblock %}

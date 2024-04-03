@@ -1,19 +1,24 @@
 {% extends popup_view|yesno:"base/popup.html,base.html" %}
-
 {% block title %}{{ event.tool }} usage details{% endblock %}
 {% block content %}
-    {% if not popup_view %}
-        <h1>{{ event.tool }} usage details</h1>
-    {% endif %}
-    User: {{ event.user }}<br>
-    Operator: {{ event.operator }}<br>
-    Project: {{ event.project.name }}<br>
-    Tool: {{ event.tool }}<br>
-    Start: {{ event.start }}<br>
+    {% if not popup_view %}<h1>{{ event.tool }} usage details</h1>{% endif %}
+    User: {{ event.user }}
+    <br>
+    Operator: {{ event.operator }}
+    <br>
+    Project: {{ event.project.name }}
+    <br>
+    Tool: {{ event.tool }}
+    <br>
+    Start: {{ event.start }}
+    <br>
     {% if event.end %}
-        End: {{ event.end }}<br>
+        End: {{ event.end }}
+        <br>
     {% else %}
-        This tool is currently in use.<br>
+        This tool is currently in use.
+        <br>
     {% endif %}
-    Identifier: {{ event.id }}<br>
+    Identifier: {{ event.id }}
+    <br>
 {% endblock %}

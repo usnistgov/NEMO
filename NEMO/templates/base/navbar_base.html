@@ -1,48 +1,64 @@
 {% load static %}
 {% load custom_tags_and_filters %}
 <nav class="navbar navbar-default navbar-static-top" role="navigation">
-	<div class="container">
-		<div class="navbar-header">
-			<a class="navbar-brand" href="{% url 'landing' %}">{{ site_title }}</a>
-			<button type="button" class="navbar-toggle navbar-btn" data-toggle="collapse" data-target="#site-navigation" aria-label="menu button">
-				<span class="icon-bar"></span>
-				<span class="icon-bar"></span>
-				<span class="icon-bar"></span>
-			</button>
-		</div>
-		<div class="navbar-collapse collapse" id="site-navigation">
-			<ul class="nav navbar-nav">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="{% url 'landing' %}">{{ site_title }}</a>
+            <button type="button"
+                    class="navbar-toggle navbar-btn"
+                    data-toggle="collapse"
+                    data-target="#site-navigation"
+                    aria-label="menu button">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+        </div>
+        <div class="navbar-collapse collapse" id="site-navigation">
+            <ul class="nav navbar-nav">
                 {% block navbar_main %}
-				    <li><a href="{% url 'calendar' %}">{{ calendar_page_title }}</a></li>
-                    {% if tools_exist %}<li><a href="{% url 'tool_control' %}">{{ tool_control_page_title }}</a></li>{% endif %}
+                    <li>
+                        <a href="{% url 'calendar' %}">{{ calendar_page_title }}</a>
+                    </li>
+                    {% if tools_exist %}
+                        <li>
+                            <a href="{% url 'tool_control' %}">{{ tool_control_page_title }}</a>
+                        </li>
+                    {% endif %}
                     {% if tools_exist or areas_exist %}
                         {% if areas_exist %}
-                            <li><a href="{% url 'status_dashboard' %}">{{ status_dashboard_page_title }}</a></li>
+                            <li>
+                                <a href="{% url 'status_dashboard' %}">{{ status_dashboard_page_title }}</a>
+                            </li>
                         {% else %}
-                            <li><a href="{% url 'status_dashboard_tab' 'tools' %}">{{ status_dashboard_page_title }}</a></li>
+                            <li>
+                                <a href="{% url 'status_dashboard_tab' 'tools' %}">{{ status_dashboard_page_title }}</a>
+                            </li>
                         {% endif %}
                     {% endif %}
                     {% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist or adjustment_request_allowed and facility_managers_exist %}
-                        <li><a href="{% url 'user_requests' %}">
-                            {{ requests_page_title }}
-                            {% if buddy_notification_count or temporary_access_notification_count or adjustment_notification_count %}
-                                <span class="badge active">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count }}</span>
-                            {% endif %}
-                        </a></li>
+                        <li>
+                            <a href="{% url 'user_requests' %}">
+                                {{ requests_page_title }}
+                                {% if buddy_notification_count or temporary_access_notification_count or adjustment_notification_count %}
+                                    <span class="badge active">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
                     {% endif %}
                     {% if safety_menu_item %}
-                        <li><a href="{% url 'safety' %}">
-                            {{ safety_page_title }}
-                            {% if safety_notification_count %}
-                                <span class="badge active">{{ safety_notification_count }}</span>
-                            {% endif %}
-                        </a></li>
+                        <li>
+                            <a href="{% url 'safety' %}">
+                                {{ safety_page_title }}
+                                {% if safety_notification_count %}<span class="badge active">{{ safety_notification_count }}</span>{% endif %}
+                            </a>
+                        </li>
                     {% endif %}
                 {% endblock %}
-				{% if user.is_any_part_of_staff or user.is_tool_superuser or user.is_project_pi or user.get_all_permissions and "django.contrib.admin"|app_installed %}
-					<li class="dropdown">
-						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Administration <b class="caret"></b></a>
-						<ul id="admin-nav" class="dropdown-menu">
+                {% if user.is_any_part_of_staff or user.is_tool_superuser or user.is_project_pi or user.get_all_permissions and "django.contrib.admin"|app_installed %}
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Administration <b class="caret"></b></a>
+                        <ul id="admin-nav" class="dropdown-menu">
                             {% block navbar_admin %}
                                 {# The navigation_url tag will display the item if the URL name can be reversed. #}
                                 {# This allows items to be easily removed from the public facing version. #}
@@ -52,16 +68,24 @@
                                     {% navigation_url 'accounts_and_projects' 'Accounts and projects' user.is_accounting_officer user.is_user_office user.is_facility_manager user.is_superuser %}
                                     {% navigation_url 'alerts' 'Alerts' user.is_staff user.is_user_office user.is_superuser %}
                                     {% navigation_url 'api-root' 'API' user.is_superuser %}
-                                    {% if areas_exist %}{% navigation_url 'area_access' 'Area access' user.is_staff user.is_user_office user.is_superuser %}{% endif %}
-                                    {% if tools_exist %}{% navigation_url 'configuration_agenda' 'Configuration agenda' user.is_staff user.is_superuser %}{% endif %}
+                                    {% if areas_exist %}
+                                        {% navigation_url 'area_access' 'Area access' user.is_staff user.is_user_office user.is_superuser %}
+                                    {% endif %}
+                                    {% if tools_exist %}
+                                        {% navigation_url 'configuration_agenda' 'Configuration agenda' user.is_staff user.is_superuser %}
+                                    {% endif %}
                                     {% if user.is_facility_manager or user.is_superuser or user.is_staff and "contracts"|customization:"contracts_view_staff" == "enabled" or user.is_user_office and "contracts"|customization:"contracts_view_user_office" == "enabled" or user.is_accounting_officer and "contracts"|customization:"contracts_view_accounting_officer" == "enabled" %}
                                         {% navigation_url 'service_contracts' 'Contracts & procurements' %}
                                     {% endif %}
                                     {% navigation_url 'customization' 'Customization' user.is_superuser %}
                                     {% navigation_url 'email_broadcast' 'Email' %}
-                                    {% if tools_exist %}{% navigation_url 'maintenance' 'Maintenance' user.is_staff  user.is_superuser %}{% endif %}
+                                    {% if tools_exist %}
+                                        {% navigation_url 'maintenance' 'Maintenance' user.is_staff  user.is_superuser %}
+                                    {% endif %}
                                     {% navigation_url 'project_billing' 'Project billing' user.is_accounting_officer user.is_user_office user.is_superuser %}
-                                    {% if tools_exist %}{% navigation_url 'qualifications' 'Qualifications' user.is_staff user.is_superuser %}{% endif %}
+                                    {% if tools_exist %}
+                                        {% navigation_url 'qualifications' 'Qualifications' user.is_staff user.is_superuser %}
+                                    {% endif %}
                                     {% navigation_url 'recurring_charges' recurring_charges_name user.is_user_office user.is_facility_manager user.is_superuser %}
                                     {% navigation_url 'staff_charges' 'Remote work' user.is_staff user.is_superuser %}
                                     {% navigation_url 'resources' 'Resources' user.is_staff user.is_superuser %}
@@ -69,61 +93,90 @@
                                     {# we can't use args with navigation url so let's check that the regular one exists and then use staff in <li> #}
                                     {% navigation_url 'knowledge_base' '' as knowledge_base_url %}
                                     {% if knowledge_base_url %}
-                                        <li><a href="{% url 'knowledge_base' 'staff' %}">Staff knowledge base</a></li>
+                                        <li>
+                                            <a href="{% url 'knowledge_base' 'staff' %}">Staff knowledge base</a>
+                                        </li>
                                     {% endif %}
                                     {% navigation_url 'consumables' 'Supplies' user.is_staff user.is_user_office user.is_superuser %}
-                                    {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_staff user.is_superuser %}{% endif %}
+                                    {% if tools_exist %}
+                                        {% navigation_url 'training' 'Training' user.is_staff user.is_superuser %}
+                                    {% endif %}
                                     {% navigation_url 'users' 'Users' %}
                                     {% if "projects_and_accounts"|customization:"project_allow_transferring_charges" == "enabled" %}
                                         {% navigation_url 'transfer_charges' 'Transfer charges' user.is_accounting_officer user.is_facility_manager user.is_superuser %}
                                     {% endif %}
                                 {% elif user.is_tool_superuser or user.is_project_pi %}
                                     {% navigation_url 'projects' 'Projects' user.is_project_pi %}
-                                    {% if tools_exist %}{% navigation_url 'training' 'Training' user.is_tool_superuser %}{% endif %}
+                                    {% if tools_exist %}
+                                        {% navigation_url 'training' 'Training' user.is_tool_superuser %}
+                                    {% endif %}
                                 {% endif %}
                                 {% if perms.NEMO.can_impersonate_users %}
                                     {% navigation_url 'impersonate' 'Impersonate' %}
                                 {% endif %}
                             {% endblock %}
-						</ul>
-					</li>
-				{% endif %}
+                        </ul>
+                    </li>
+                {% endif %}
                 {% if user.is_staff and user.charging_staff_time %}
-					<li class="visible-xs visible-sm">
+                    <li class="visible-xs visible-sm">
                         <a href="{% url 'staff_charges' %}" style="color:red; text-decoration: none">
-                            <span id="staff_charge_link" data-container="body" data-toggle="tooltip" data-placement="right" title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">Charging staff time</span>
+                            <span id="staff_charge_link"
+                                  data-container="body"
+                                  data-toggle="tooltip"
+                                  data-placement="right"
+                                  title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">Charging staff time</span>
                         </a>
-						<script>
-							$("#staff_charge_link").tooltip();
-						</script>
-					</li>
-				{% endif %}
-				<li class="visible-xs visible-sm"><a href="{%  url 'user_preferences' %}">Preferences</a></li>
-				{% if logout_allowed %}
-					<li class="visible-xs visible-sm"><a href="{% url 'logout' %}">Logout</a></li>
-				{% endif %}
-			</ul>
-			<ul class="nav navbar-nav navbar-right hidden-sm hidden-xs">
-				{% if user.is_staff and user.charging_staff_time %}
-					<li>
-						<p class="navbar-text">
-							<a id="staff_charge_link" href="{% url 'staff_charges' %}" style="color:red; text-decoration: none" data-container="body" data-toggle="tooltip" data-placement="bottom" title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">
-								Charging staff time
-							</a>
-						</p>
-						<script>
-							$("#staff_charge_link").tooltip();
-						</script>
-					</li>
-				{% endif %}
-				<li><p class="navbar-text">Welcome, {{ user.first_name }}</p></li>
-				<li class="navbar-preferences"><a href="{%  url 'user_preferences' %}"><img src="{% static 'icons/preferences.png' %}" alt="preferences"/></a></li>
-				{% if logout_allowed %}
-					<li><a href="{% url 'logout' %}" style="padding-left: 0;padding-right: 0;margin-left: 15px; margin-right: 15px">Logout</a></li>
-				{% endif %}
-			</ul>
-		</div>
-	</div>
+                        <script>$("#staff_charge_link").tooltip();</script>
+                    </li>
+                {% endif %}
+                <li class="visible-xs visible-sm">
+                    <a href="{% url 'user_preferences' %}">Preferences</a>
+                </li>
+                {% if logout_allowed %}
+                    <li class="visible-xs visible-sm">
+                        <a href="{% url 'logout' %}">Logout</a>
+                    </li>
+                {% endif %}
+            </ul>
+            <ul class="nav navbar-nav navbar-right hidden-sm hidden-xs">
+                {% if user.is_staff and user.charging_staff_time %}
+                    <li>
+                        <p class="navbar-text">
+                            <a id="staff_charge_link"
+                               href="{% url 'staff_charges' %}"
+                               style="color:red;
+                                      text-decoration: none"
+                               data-container="body"
+                               data-toggle="tooltip"
+                               data-placement="bottom"
+                               title="{% with user.get_staff_charge as staff_charge %}You are charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.{% endwith %}">
+                                Charging staff time
+                            </a>
+                        </p>
+                        <script>$("#staff_charge_link").tooltip();</script>
+                    </li>
+                {% endif %}
+                <li>
+                    <p class="navbar-text">Welcome, {{ user.first_name }}</p>
+                </li>
+                <li class="navbar-preferences">
+                    <a href="{% url 'user_preferences' %}">
+                        <img src="{% static 'icons/preferences.png' %}" alt="preferences" />
+                    </a>
+                </li>
+                {% if logout_allowed %}
+                    <li>
+                        <a href="{% url 'logout' %}"
+                           style="padding-left: 0;
+                                  padding-right: 0;
+                                  margin-left: 15px;
+                                  margin-right: 15px">Logout</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
 </nav>
 <script>
     window.addEventListener("load", function ()
