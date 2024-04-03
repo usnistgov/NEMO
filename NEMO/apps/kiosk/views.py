@@ -498,15 +498,15 @@ def report_problem(request):
         errors = nice_errors(form)
 
         dictionary["message"] = errors.as_ul()
-        dictionary["estimated_resolution_dt"] = request.POST["estimated_resolution_dt"]
-        dictionary["estimated_resolution_tm"] = request.POST["estimated_resolution_tm"]
+        dictionary["estimated_resolution_dt"] = request.POST.get("estimated_resolution_dt")
+        dictionary["estimated_resolution_tm"] = request.POST.get("estimated_resolution_tm")
         dictionary["form"] = form
 
         return render(request, "kiosk/tool_report_problem.html", dictionary)
 
     task = form.save()
     task.estimated_resolution_time = estimated_resolution_time
-    
+
     save_error = save_task(request, task)
 
     if save_error:
