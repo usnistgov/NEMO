@@ -1,41 +1,60 @@
 {% load custom_tags_and_filters %}
-<div class="alert {% if reservation.start < now %}alert-warning{% else %}alert-success{% endif %}" role="alert" onclick="tool_information('{% url 'kiosk_tool_information' reservation.tool.id customer.id 'back_to_start' %}')">
+<div class="alert {% if reservation.start < now %}alert-warning{% else %}alert-success{% endif %}"
+     role="alert"
+     onclick="tool_information('{% url 'kiosk_tool_information' reservation.tool.id customer.id 'back_to_start' %}')">
     <strong>
         {% if reservation.title %}{{ reservation.title }} ({% endif %}
-        {% if reservation.start < now %}You're late for your {% endif %}
+        {% if reservation.start < now %}You're late for your{% endif %}
         <span style="cursor:pointer;text-decoration: underline">{{ reservation.tool }}</span>
-        {% if reservation.start < now %} reservation!{% endif %}
+        {% if reservation.start < now %}reservation!{% endif %}
         {% if reservation.title %}){% endif %}
     </strong>
     <br>
-    Starting {{ reservation.start }}<br>
-    Ending {{ reservation.end }}<br>
+    Starting {{ reservation.start }}
+    <br>
+    Ending {{ reservation.end }}
+    <br>
     <div>
         {% for question_name, data in reservation.question_data_json.items %}
-            {{ question_name }}: {{ data.user_input }}<br>
+            {{ question_name }}: {{ data.user_input }}
+            <br>
         {% endfor %}
         <div style="height:10px">{# Vertical spacer #}</div>
         {% if reservation.project %}
-            For project {{ reservation.project }}<br>
+            For project {{ reservation.project }}
+            <br>
         {% endif %}
-        <span style="white-space: pre-line">Created by {{ reservation.creator }} {% if reservation.user != reservation.creator %} on behalf of {{ reservation.user }}{% endif %} on {{ reservation.creation_time}}</span><br>
+        <span style="white-space: pre-line">Created by {{ reservation.creator }}
+            {% if reservation.user != reservation.creator %}on behalf of {{ reservation.user }}{% endif %}
+        on {{ reservation.creation_time }}</span>
+        <br>
         {% if reservation.self_configuration %}
-            <strong>You have elected to configure this tool yourself.</strong><br>
+            <strong>You have elected to configure this tool yourself.</strong>
+            <br>
         {% else %}
             {% if reservation.short_notice %}
-                <strong>This reservation was created on short notice. Tool configuration is not guaranteed upon start time.</strong><br>
+                <strong>This reservation was created on short notice. Tool configuration is not guaranteed upon start time.</strong>
+                <br>
             {% endif %}
         {% endif %}
         {% if reservation.configurationoption_set.exists %}
             <div style="height:10px">{# Vertical spacer #}</div>
-            Configuration:<br>
+            Configuration:
+            <br>
             {% for config_option in reservation.configurationoption_set.all %}
-                {{ config_option.name }}: {% if config_option.get_color %}<span class="configuration-reservation-option" style="background-color: {{ config_option.get_color }}">{{ config_option.current_setting }}</span>{% else %}{{ config_option.current_setting }}{% endif %}<br>
+                {{ config_option.name }}:
+                {% if config_option.get_color %}
+                    <span class="configuration-reservation-option" style="background-color: {{ config_option.get_color }}">{{ config_option.current_setting }}</span>
+                {% else %}
+                    {{ config_option.current_setting }}
+                {% endif %}
+                <br>
             {% endfor %}
         {% endif %}
         {% if reservation.additional_information %}
             <div style="height:10px">{# Vertical spacer #}</div>
-            Additional information:<br>
+            Additional information:
+            <br>
             {{ reservation.additional_information|linebreaksbr }}
         {% endif %}
         {# Allow the user to cancel the reservation if they have that privilege. #}

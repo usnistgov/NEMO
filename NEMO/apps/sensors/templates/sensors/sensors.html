@@ -2,7 +2,7 @@
 {% load static %}
 {% load custom_tags_and_filters %}
 {% block extrahead %}
-    <link rel="stylesheet" type="text/css" href="{% static "sensors/sensors.css" %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static "sensors/sensors.css" %}" />
 {% endblock %}
 {% block title %}Sensors{% endblock %}
 {% block content %}
@@ -11,9 +11,13 @@
             {% if not selected_category %}
                 <li class="active">Sensor Dashboard</li>
             {% else %}
-                <li class="active"><a href="{% url 'sensors' %}">Dashboard</a></li>
+                <li class="active">
+                    <a href="{% url 'sensors' %}">Dashboard</a>
+                </li>
                 {% for ancestor in selected_category.ancestors %}
-                    <li><a href="{% url 'sensors' ancestor.id %}">{{ ancestor.name }}</a></li>
+                    <li>
+                        <a href="{% url 'sensors' ancestor.id %}">{{ ancestor.name }}</a>
+                    </li>
                 {% endfor %}
                 <li class="active">{{ selected_category.name }}</li>
             {% endif %}
@@ -21,16 +25,19 @@
         <ul class="list-inline list-inline-sensors-dashboard text-center">
             {% if categories %}
                 {% for category in categories %}
-                    <li class="dashboard-category-group-item text-center {% if category.alert_triggered %}alert-danger{% else %}alert-success{% endif %}" onclick="window.location = '{% url 'sensors' category.id %}'">
-                        {{ category.name }}
-                    </li>
+                    <li class="dashboard-category-group-item text-center {% if category.alert_triggered %}alert-danger{% else %}alert-success{% endif %}"
+                        onclick="window.location = '{% url 'sensors' category.id %}'">{{ category.name }}</li>
                 {% endfor %}
             {% endif %}
             {% if sensors %}
                 {% for sensor in sensors %}
-                    <li class="dashboard-sensor-group-item text-center {% if sensor.alert_triggered %}alert-danger{% else %}alert-success{% endif %}" onclick="window.location = '{% url 'sensor_details' sensor.id %}'">
-                        {{ sensor.name }}<br><br>
-                        {{ sensor.last_data_point.created_date|date:"SHORT_DATETIME_FORMAT" }}<br>
+                    <li class="dashboard-sensor-group-item text-center {% if sensor.alert_triggered %}alert-danger{% else %}alert-success{% endif %}"
+                        onclick="window.location = '{% url 'sensor_details' sensor.id %}'">
+                        {{ sensor.name }}
+                        <br>
+                        <br>
+                        {{ sensor.last_data_point.created_date|date:"SHORT_DATETIME_FORMAT" }}
+                        <br>
                         {{ sensor.last_data_point.display_value }}
                     </li>
                 {% endfor %}
@@ -39,28 +46,33 @@
                 <div class="dashboard-no-group-items">
                     no items to display.
                     {% if user.is_superuser and not selected_category and "django.contrib.admin"|app_installed %}
-                        <br/><br/>You can add sensors, categories and alerts by navigating to<br>
-                        <a href="{% url 'admin:app_list' 'sensors' %}">
-                            Administration -> Detailed Administration -> Sensors
-                        </a>
+                        <br />
+                        <br />
+                        You can add sensors, categories and alerts by navigating to
+                        <br>
+                        <a href="{% url 'admin:app_list' 'sensors' %}">Administration -> Detailed Administration -> Sensors</a>
                     {% endif %}
                 </div>
             {% endif %}
         </ul>
         {% if sensors or categories %}
-            {%if selected_category or alert_logs %}
+            {% if selected_category or alert_logs %}
                 <div class="panel-body">
                     <ul class="nav nav-tabs" id="tabs">
                         <li class="active">
                             <a>Alert log</a>
                         </li>
                     </ul>
-                    <div id="no-sensor-data" class="tab-content panel panel-default panel-tab-content" style="margin-bottom: 0">
+                    <div id="no-sensor-data"
+                         class="tab-content panel panel-default panel-tab-content"
+                         style="margin-bottom: 0">
                         <div class="panel-body">
                             {% if alert_logs %}
                                 <ul style="margin-top: 10px;">
                                     {% for alert in alert_logs %}
-                                        <li class="{% if alert.reset %}success-highlight{% else %}danger-highlight{% endif %}">[{{ alert.sensor.name }}] {{ alert.description }}</li>
+                                        <li class="{% if alert.reset %}success-highlight{% else %}danger-highlight{% endif %}">
+                                            [{{ alert.sensor.name }}] {{ alert.description }}
+                                        </li>
                                     {% endfor %}
                                 </ul>
                             {% else %}

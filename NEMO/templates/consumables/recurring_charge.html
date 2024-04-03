@@ -1,71 +1,111 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load custom_tags_and_filters %}
-{% block title %}{% if form.instance.id %}Modify {{ form.instance.name }}{% else %}New item{% endif %}{% endblock %}
+{% block title %}
+    {% if form.instance.id %}
+        Modify {{ form.instance.name }}
+    {% else %}
+        New item
+    {% endif %}
+{% endblock %}
 {% block extrahead %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block content %}
-    <h1 class="form-group">{% if form.instance.id %}Modify {{ form.instance.name }}{% else %}New item{% endif %}</h1>
-	<form class="well form-horizontal" action="{% if form.instance.id %}{% url 'edit_recurring_charge' form.instance.id %}{% else %}{% url 'create_recurring_charge' %}{% endif %}" method="post">
-		{% csrf_token %}
-		{% if form.non_field_errors %}
-			<div class="alert alert-danger">
-				{{ form.non_field_errors }}
-			</div>
-		{% endif %}
+    <h1 class="form-group">
+        {% if form.instance.id %}
+            Modify {{ form.instance.name }}
+        {% else %}
+            New item
+        {% endif %}
+    </h1>
+    <form class="well form-horizontal"
+          action="{% if form.instance.id %}{% url 'edit_recurring_charge' form.instance.id %}{% else %}{% url 'create_recurring_charge' %}{% endif %}"
+          method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
         <div class="form-group">
-            <label class="control-label col-sm-2" for="recurring_charge_name"><b>Name</b></label>
+            <label class="control-label col-sm-2" for="recurring_charge_name">
+                <b>Name</b>
+            </label>
             <div class="col-sm-6 col-md-4">
-                <input required class="form-control" id="recurring_charge_name" name="name" type="text" autocomplete="off" value="{{ form.instance.name }}" {% if form.fields.name.disabled %}disabled{% endif %} autofocus/>
+                <input required
+                       class="form-control"
+                       id="recurring_charge_name"
+                       name="name"
+                       type="text"
+                       autocomplete="off"
+                       value="{{ form.instance.name }}"
+                       {% if form.fields.name.disabled %}disabled{% endif %}
+                       autofocus />
             </div>
             {% if form.name.errors %}
-				<div class="col-sm-4 col-md-6 form-control-static danger-highlight">
-					{{ form.name.errors|striptags }}
-				</div>
-			{% endif %}
+                <div class="col-sm-4 col-md-6 form-control-static danger-highlight">{{ form.name.errors|striptags }}</div>
+            {% endif %}
         </div>
         <div class="form-group">
-            <label class="control-label col-sm-2" for="consumable"><b>Consumable</b></label>
+            <label class="control-label col-sm-2" for="consumable">
+                <b>Consumable</b>
+            </label>
             {% if force_quantity %}
-                <input name="quantity" type="hidden" value="{{ force_quantity }}" {% if form.fields.quantity.disabled %}disabled{% endif %}/>
+                <input name="quantity"
+                       type="hidden"
+                       value="{{ force_quantity }}"
+                       {% if form.fields.quantity.disabled %}disabled{% endif %} />
             {% else %}
                 <div class="col-sm-2 col-md-1">
-                    <input aria-label="Quantity" id="quantity" name="quantity" type="number" class="form-control" value="{{ form.quantity.value }}" {% if form.fields.quantity.disabled %}disabled{% endif %}/>
+                    <input aria-label="Quantity"
+                           id="quantity"
+                           name="quantity"
+                           type="number"
+                           class="form-control"
+                           value="{{ form.quantity.value }}"
+                           {% if form.fields.quantity.disabled %}disabled{% endif %} />
                 </div>
             {% endif %}
             <div class="{% if force_quantity %}col-sm-6 col-md-4{% else %}col-sm-4 col-md-3{% endif %}">
-                <select class="form-control" id="consumable" name="consumable" {% if form.fields.consumable.disabled %}disabled{% endif %}>
+                <select class="form-control"
+                        id="consumable"
+                        name="consumable"
+                        {% if form.fields.consumable.disabled %}disabled{% endif %}>
                     {% if not form.consumable.value %}<option value="" disabled selected>Select a consumable</option>{% endif %}
                     {% regroup consumables by category as consumable_by_category %}
                     {% for category in consumable_by_category %}
-                        {% if consumable_by_category|length != 1 and category.grouper %}<optgroup label="{{ category.grouper.name }}">{% endif %}
-                        {% for consumable in category.list %}
-                            <option label="{{ consumable.name }}" value="{{ consumable.id }}" {% if form.consumable.value|to_int == consumable.id %}selected{% endif %}></option>
-                        {% endfor %}
-                        {% if consumable_by_category|length != 1 and category.grouper %}</optgroup>{% endif %}
+                        {% if consumable_by_category|length != 1 and category.grouper %}
+                            <optgroup label="{{ category.grouper.name }}">
+                            {% endif %}
+                            {% for consumable in category.list %}
+                                <option label="{{ consumable.name }}"
+                                        value="{{ consumable.id }}"
+                                        {% if form.consumable.value|to_int == consumable.id %}selected{% endif %}>
+                                </option>
+                            {% endfor %}
+                            {% if consumable_by_category|length != 1 and category.grouper %}</optgroup>{% endif %}
                     {% endfor %}
                 </select>
             </div>
             {% if form.quantity.errors or form.consumable.errors %}
-				<div class="col-sm-4 col-md-6 form-control-static danger-highlight">
-					{{ form.consumable.errors|striptags|default:form.quantity.errors|striptags }}
-				</div>
-			{% endif %}
+                <div class="col-sm-4 col-md-6 form-control-static danger-highlight">
+                    {{ form.consumable.errors|striptags|default:form.quantity.errors|striptags }}
+                </div>
+            {% endif %}
         </div>
         <div class="form-group">
             <label class="control-label col-sm-2" for="customer_search">Customer</label>
             <div class="col-sm-6 col-md-4">
                 <input type="text" class="form-control" id="customer_search" placeholder="Search for a customer">
-                <input type="button" id="chosen_customer" title="chosen customer" class="btn btn-default" style="display:none" onclick="clear_selected_customer()">
+                <input type="button"
+                       id="chosen_customer"
+                       title="chosen customer"
+                       class="btn btn-default"
+                       style="display:none"
+                       onclick="clear_selected_customer()">
                 <input type="hidden" id="customer" name="customer">
             </div>
             {% if form.customer.errors %}
-				<div class="col-sm-4 col-md-6 form-control-static danger-highlight">
-					{{ form.customer.errors|striptags }}
-				</div>
-			{% endif %}
+                <div class="col-sm-4 col-md-6 form-control-static danger-highlight">{{ form.customer.errors|striptags }}</div>
+            {% endif %}
         </div>
         <div class="form-group">
             <label class="control-label col-sm-2" for="project">Project</label>
@@ -77,74 +117,94 @@
                         <option value="{{ projects.0.id }}">{{ projects.0 }}</option>
                     {% elif projects %}
                         <option disabled selected value="">Choose a project to bill</option>
-                        {% for p in projects %}
-                            <option value="{{ p.id }}">{{ p }}</option>
-                        {% endfor %}
+                        {% for p in projects %}<option value="{{ p.id }}">{{ p }}</option>{% endfor %}
                     {% endif %}
                 </select>
             </div>
             {% if form.project.errors %}
-				<div class="col-sm-4 col-md-6 form-control-static danger-highlight">
-					{{ form.project.errors|striptags }}
-				</div>
-			{% endif %}
+                <div class="col-sm-4 col-md-6 form-control-static danger-highlight">{{ form.project.errors|striptags }}</div>
+            {% endif %}
         </div>
-		<div class="form-group">
+        <div class="form-group">
             <label class="control-label col-sm-2" for="rec_start">Start charging on</label>
             <div class="col-sm-6 col-md-4">
-                <input type="text" class="form-control" name="rec_start" id="rec_start" value="{{ form.rec_start.value|input_date_format }}" {% if form.fields.rec_start.disabled %}disabled{% endif %}>
+                <input type="text"
+                       class="form-control"
+                       name="rec_start"
+                       id="rec_start"
+                       value="{{ form.rec_start.value|input_date_format }}"
+                       {% if form.fields.rec_start.disabled %}disabled{% endif %}>
             </div>
             {% if form.rec_start.errors %}
-				<div class="col-sm-4 col-md-6 form-control-static danger-highlight">
-					{{ form.rec_start.errors|striptags }}
-				</div>
-			{% endif %}
+                <div class="col-sm-4 col-md-6 form-control-static danger-highlight">{{ form.rec_start.errors|striptags }}</div>
+            {% endif %}
         </div>
         <div class="form-group">
             <label class="control-label col-sm-2" for="rec_interval">And then every</label>
             <div class="col-sm-3 col-md-2">
-                <input id="rec_interval" name="rec_interval" type="number" class="form-control" value="{{ form.rec_interval.value }}" {% if form.fields.rec_interval.disabled %}disabled{% endif %}/>
+                <input id="rec_interval"
+                       name="rec_interval"
+                       type="number"
+                       class="form-control"
+                       value="{{ form.rec_interval.value }}"
+                       {% if form.fields.rec_interval.disabled %}disabled{% endif %} />
             </div>
             <div class="col-sm-3 col-md-2">
-                <select class="form-control" name="rec_frequency" id="rec_frequency" aria-label="Frequency" {% if form.fields.rec_frequency.disabled %}disabled{% endif %}>
+                <select class="form-control"
+                        name="rec_frequency"
+                        id="rec_frequency"
+                        aria-label="Frequency"
+                        {% if form.fields.rec_frequency.disabled %}disabled{% endif %}>
                     {% for choice in form.fields.rec_frequency.choices %}
-                        <option value="{{ choice.0 }}" {% if choice.0 == form.rec_frequency.value|to_int %}selected{% endif %}>{{ choice.1 }}</option>
+                        <option value="{{ choice.0 }}" {% if choice.0 == form.rec_frequency.value|to_int %}selected{% endif %}>
+                            {{ choice.1 }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
             {% if form.rec_interval.errors or form.rec_frequency.errors %}
-				<div class="col-sm-4 col-md-6 form-control-static danger-highlight">
-					{{ form.rec_interval.errors|striptags|default:form.rec_frequency.errors|striptags }}
-				</div>
-			{% endif %}
+                <div class="col-sm-4 col-md-6 form-control-static danger-highlight">
+                    {{ form.rec_interval.errors|striptags|default:form.rec_frequency.errors|striptags }}
+                </div>
+            {% endif %}
         </div>
         <div class="form-group">
             <label class="control-label col-sm-2" for="rec_until">Until</label>
             <div class="col-sm-6 col-md-4">
-                <input type="text" id="rec_until" name="rec_until" class="form-control" placeholder="Choose a date" value="{{ form.rec_until.value|input_date_format }}" {% if form.fields.rec_until.disabled %}disabled{% endif %}>
+                <input type="text"
+                       id="rec_until"
+                       name="rec_until"
+                       class="form-control"
+                       placeholder="Choose a date"
+                       value="{{ form.rec_until.value|input_date_format }}"
+                       {% if form.fields.rec_until.disabled %}disabled{% endif %}>
             </div>
             {% if form.rec_until.errors %}
-				<div class="col-sm-4 col-md-6 form-control-static danger-highlight">
-					{{ form.rec_until.errors|striptags }}
-				</div>
-			{% endif %}
+                <div class="col-sm-4 col-md-6 form-control-static danger-highlight">{{ form.rec_until.errors|striptags }}</div>
+            {% endif %}
         </div>
         <div class="form-group">
             <label class="control-label col-sm-2" for="rec_count">Or after</label>
             <div class="col-sm-2">
-                <input type="number" id="rec_count" name="rec_count" class="form-control" value="{{ form.rec_count.value }}" {% if form.fields.rec_count.disabled %}disabled{% endif %}>
+                <input type="number"
+                       id="rec_count"
+                       name="rec_count"
+                       class="form-control"
+                       value="{{ form.rec_count.value }}"
+                       {% if form.fields.rec_count.disabled %}disabled{% endif %}>
             </div>
             <span class="control-label col-sm-4 col-md-2" style="text-align: left">iterations</span>
             {% if form.rec_count.errors %}
-				<div class="col-sm-4 col-md-6 form-control-static danger-highlight">
-					{{ form.rec_count.errors|striptags }}
-				</div>
-			{% endif %}
+                <div class="col-sm-4 col-md-6 form-control-static danger-highlight">{{ form.rec_count.errors|striptags }}</div>
+            {% endif %}
         </div>
         <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
                 {% button type="save" value="Save" name="save" %}
-                <div style="display: inline-block" {% if not can_charge %}title="The customer was already charged for this item today"{% endif %}>{% button type="warn" submit=True value="Save and charge now" onclick="if (confirm('Are you sure you want to charge this customer today?')){ submit_and_disable(this); } else return false;" icon="glyphicon-floppy-save" name="save_and_charge" disabled=can_charge|yesno:",disabled" %}</div>
+                <div style="display: inline-block"
+                     {% if not can_charge %}title="The customer was already charged for this item today"{% endif %}>
+                    {% button type="warn" submit=True value="Save and charge now" onclick="if (confirm('Are you sure you want to charge this customer today?')){ submit_and_disable(this); } else return false;" icon="glyphicon-floppy-save" name="save_and_charge" disabled=can_charge|yesno:",disabled" %}
+                </div>
             </div>
         </div>
     </form>
@@ -177,15 +237,15 @@
 
 			if(projects.length === 0)
             {
-				project_selector.append($('<option/>', { text: "No active projects!" })).attr('disabled', 'disabled');
+				project_selector.append($('<option />', { text: "No active projects!" })).attr('disabled', 'disabled');
             }
 			else if(projects.length === 1)
             {
-				project_selector.append($('<option/>', { value: response['projects'][0].id, text: response['projects'][0].name }));
+				project_selector.append($('<option />', { value: response['projects'][0].id, text: response['projects'][0].name }));
             }
 			else
 			{
-				project_selector.append($('<option/>', {
+				project_selector.append($('<option />', {
 					text: "Choose a project to bill",
 					disabled: true,
 					selected: true,
@@ -193,7 +253,7 @@
 				}));
 				$.each(projects, function(count, project)
 				{
-					project_selector.append($('<option/>', {value: project.id, text: project.name}));
+					project_selector.append($('<option />', {value: project.id, text: project.name}));
 				});
 			}
 		}
@@ -210,5 +270,6 @@
             $('#rec_start').datetimepicker(timepicker_properties);
             $('#rec_until').datetimepicker(timepicker_properties);
 		}, true);
-	</script>
+	
+    </script>
 {% endblock %}

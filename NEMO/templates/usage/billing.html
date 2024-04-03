@@ -1,87 +1,90 @@
 {% extends 'usage/usage_base.html' %}
 {% load custom_tags_and_filters %}
 {% load humanize %}
-
 {% block usage_content %}
-	<div style="margin-top:10px">
-		<ul class="nav nav-pills" id="tabs">
-			<li><a href="{{ tab_url }}">Usage</a></li>
-			<li class="active"><a>Billing information</a></li>
-		</ul>
-	</div>
-
-	<div id="content" class="tab-content">
-		<div class="tab-pane active" id="billing_information">
-			<br>
-			<p>
-				Approved adjustments <b>are included</b> in the billing information.
-			</p>
-			<div id="billing_information_response">
-				<table style="margin-top:20px">
-					{% if not spending %}
-						<span style="color: #cd0000">There was a problem communicating with the billing service. The financial information associated with your usage cannot be displayed at this time.</span>
-					{% elif not spending.activities %}
-						<h3>No billing information available for the selected period</h3>
-					{% else %}
-						{% for account, value in spending.activities.items %}
-							<tr>
-								<td>Account: {{ account.1 }}</td>
-								<td colspan="4" ></td>
-								<td style="text-align: right">
-									{% if selection == account.1 %}
+    <div style="margin-top:10px">
+        <ul class="nav nav-pills" id="tabs">
+            <li>
+                <a href="{{ tab_url }}">Usage</a>
+            </li>
+            <li class="active">
+                <a>Billing information</a>
+            </li>
+        </ul>
+    </div>
+    <div id="content" class="tab-content">
+        <div class="tab-pane active" id="billing_information">
+            <br>
+            <p>
+                Approved adjustments <b>are included</b> in the billing information.
+            </p>
+            <div id="billing_information_response">
+                <table style="margin-top:20px">
+                    {% if not spending %}
+                        <span style="color: #cd0000">There was a problem communicating with the billing service. The financial information associated with your usage cannot be displayed at this time.</span>
+                    {% elif not spending.activities %}
+                        <h3>No billing information available for the selected period</h3>
+                    {% else %}
+                        {% for account, value in spending.activities.items %}
+                            <tr>
+                                <td>Account: {{ account.1 }}</td>
+                                <td colspan="4"></td>
+                                <td style="text-align: right">
+                                    {% if selection == account.1 %}
                                         {% if user.is_user_office or user.is_accounting_officer or user.is_facility_manager or user.is_superuser %}
-										${{ spending.account_totals|get_item:account.0|floatformat:2|intcomma }}
+                                            ${{ spending.account_totals|get_item:account.0|floatformat:2|intcomma }}
                                         {% endif %}
-									{% endif %}
-								</td>
-							</tr>
-							{% for application, projects in value.items %}
-								<tr>
-									<td></td>
-									<td style="border-bottom: 1px dotted lightgray; padding-top: 5px">
-										Application: {{ application.1 }}</td>
-									<td colspan="3" style="text-align: right; border-bottom: 1px dotted lightgray"></td>
-									<td style="border-bottom: 1px dotted lightgray; text-align: right">
-										{% if application.0 in spending.user_pi_applications %}
-											${{ spending.application_totals|get_item:application.0|floatformat:2|intcomma }}
-										{% endif %}
-									</td>
-								</tr>
-								{% for project, users in projects.items %}
-									<tr>
-										<td colspan="2"></td>
-										<td style="border-bottom: 1px solid lightgray;padding-top: 5px">Project: {{ project.1 }}</td>
-										<td style="width: 10%; border-bottom: 1px solid lightgray"></td>
-										<td colspan="2" style="border-bottom: 1px solid lightgray"></td>
-									</tr>
-									{% for user, amount in users.items %}
-										<tr>
-											<td colspan="2"></td>
-											<td colspan="2" style="text-align: right; padding: 3px 0; font-size: 12px">
-												{% if user.1 %}
-													{{ user.1.get_full_name }}
-												{% else %}
-													unknown user with id {{ user.0 }}
-												{% endif %}
-											</td>
-											<td style="width: 15px"></td>
-											<td style="; text-align: right; font-size: 12px">${{ amount|floatformat:2|intcomma }}</td>
-										</tr>
-									{% endfor %}
-									{% if application.0 in spending.user_pi_applications %}
-										<tr>
-											<td colspan="2"></td>
-											<td colspan="2" style="border-top: 1px solid lightgray; text-align: right;font-weight: bold">Project total</td>
-											<td></td>
-											<td style="border-top: 1px solid lightgray; font-weight: bold; text-align: right">${{ spending.project_totals|get_item:project.0|floatformat:2|intcomma }}</td>
-										</tr>
-									{% endif %}
-								{% endfor %}
-							{% endfor %}
-						{% endfor %}
-					{% endif %}
-				</table>
-			</div>
-		</div>
-	</div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% for application, projects in value.items %}
+                                <tr>
+                                    <td></td>
+                                    <td style="border-bottom: 1px dotted lightgray; padding-top: 5px">Application: {{ application.1 }}</td>
+                                    <td colspan="3" style="text-align: right; border-bottom: 1px dotted lightgray"></td>
+                                    <td style="border-bottom: 1px dotted lightgray; text-align: right">
+                                        {% if application.0 in spending.user_pi_applications %}
+                                            ${{ spending.application_totals|get_item:application.0|floatformat:2|intcomma }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% for project, users in projects.items %}
+                                    <tr>
+                                        <td colspan="2"></td>
+                                        <td style="border-bottom: 1px solid lightgray;padding-top: 5px">Project: {{ project.1 }}</td>
+                                        <td style="width: 10%; border-bottom: 1px solid lightgray"></td>
+                                        <td colspan="2" style="border-bottom: 1px solid lightgray"></td>
+                                    </tr>
+                                    {% for user, amount in users.items %}
+                                        <tr>
+                                            <td colspan="2"></td>
+                                            <td colspan="2" style="text-align: right; padding: 3px 0; font-size: 12px">
+                                                {% if user.1 %}
+                                                    {{ user.1.get_full_name }}
+                                                {% else %}
+                                                    unknown user with id {{ user.0 }}
+                                                {% endif %}
+                                            </td>
+                                            <td style="width: 15px"></td>
+                                            <td style="; text-align: right; font-size: 12px">${{ amount|floatformat:2|intcomma }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    {% if application.0 in spending.user_pi_applications %}
+                                        <tr>
+                                            <td colspan="2"></td>
+                                            <td colspan="2" style="border-top: 1px solid lightgray; text-align: right;font-weight: bold">Project total</td>
+                                            <td></td>
+                                            <td style="border-top: 1px solid lightgray; font-weight: bold; text-align: right">
+                                                ${{ spending.project_totals|get_item:project.0|floatformat:2|intcomma }}
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
 {% endblock %}

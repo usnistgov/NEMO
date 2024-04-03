@@ -2,75 +2,150 @@
 {% load custom_tags_and_filters %}
 {% block title %}{{ calendar_page_title }}{% endblock %}
 {% block extrahead %}
-	{% load static %}
-	<link rel="stylesheet" type="text/css" href="{% static "fullcalendar/fullcalendar.min.css" %}" />
-	<script type="text/javascript" src="{% static "fullcalendar/fullcalendar.min.js" %}"></script>
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static "fullcalendar/fullcalendar.min.css" %}" />
+    <script type="text/javascript" src="{% static "fullcalendar/fullcalendar.min.js" %}"></script>
 {% endblock %}
 {% block body %}
-<div id="main-content">
-<div id="sidebar" class="application-sidebar">
-	<div class="btn-group sidebar-item">
-		<button type="button" class="btn btn-default dropdown-toggle" style="width:100%" data-toggle="dropdown">
-			<span id="event_type">Reservations</span>
-			<span class="caret"></span>
-		</button>
-		<ul class="dropdown-menu">
-			<li class="dropdown-header" id="event_type_help">Which type of events would you like<br>to view on the calendar?</li>
-			<li data-toggle="tooltip" data-placement="right" title="Displays {% if tools and areas %}tool and area{% elif tools %}tool{% elif areas %}area{% endif %} reservations. While viewing reservations, the 'Personal schedule' link shows your reservations for all {% if tools and areas %}tools and areas{% elif tools %}tools{% elif areas %}areas{% endif %}. Select a {% if tools and areas %}tool or area{% elif tools %}tool{% elif areas %}area{% endif %} to view everyone's reservations for that {% if tools and areas %}tool or area{% elif tools %}tool{% elif areas %}area{% endif %}."><a aria-describedby="event_type_help" href="javascript:void(0)" onclick="change_calendar_event_type(this)">Reservations</a></li>
-			<li data-toggle="tooltip" data-placement="right" title="Displays your {{ facility_name }} usage. This includes{% if areas %} area access,{% endif %}{% if tools %} tool usage,{% endif %} and missed reservations (which are all billable items)."><a aria-describedby="event_type_help" href="javascript:void(0)" onclick="change_calendar_event_type(this)">{{ facility_name }} usage</a></li>
-                <li data-toggle="tooltip" data-placement="right" title="Displays the tool configuration agenda."><a
-                        aria-describedby="event_type_help" href="javascript:void(0)"
-                        onclick="change_calendar_event_type(this)">Configuration agenda</a></li>
-			{% if user.is_staff %}
-				<li data-toggle="tooltip" data-placement="right" title="Displays {{ facility_name }} reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations."><a aria-describedby="event_type_help" href="javascript:void(0)" onclick="change_calendar_event_type(this)">Specific user</a></li>
-			{% endif %}
-		</ul>
-	</div>
-	<div id="expand-collapse" class="btn-group sidebar-item">
-        {% if calendar_qualified_tools and not user.is_staff %}
-            <button type="button" class="btn btn-default" style="width:50%" onclick="toggle_categories()" title="Expand/collapse all categories"><span id="expand_collapse_icon" class="glyphicon glyphicon"></span></button>
-            <button type="button" class="btn btn-default" id="qualified_tools_btn" style="width:50%" onclick="toggle_qualified_tools(retrieve_user_qualifications())" title="Only show qualified tools"><span class="glyphicon glyphicon-check"></span></button>
-        {% else %}
-            <button type="button" class="btn btn-default" style="width:100%" onclick="toggle_categories()" title="Expand/collapse all categories"><span id="expand_collapse_icon" class="glyphicon glyphicon"></span></button>
-        {% endif %}
-	</div>
-	<input aria-label="Search for a tool or area" type="search" id="item_search" placeholder="Search for{% if tools %} a tool{% endif %}{% if tools and areas %} or{% endif %}{% if areas %} an area{% endif %}" class="form-control sidebar-item" autocomplete="off">
-	<input aria-label="Search for a user" type="search" id="user_search" placeholder="Search for a user" class="form-control sidebar-item" autocomplete="off" style="display:none">
-	<button id="chosen_user_button" type="button" class="btn btn-default" style="width:100%; display:none" onclick="clear_specific_user()"></button>
-
-	{# The following menu tree code was take from an example at http://www.bootply.com/120625 #}
-	<ul id="extra-links" class="nav nav-list" style="margin-top: 10px; margin-bottom: 8px;">
-        <li><a href="javascript:void(0)" id="extra-links-personal-schedule" class="selected personal_schedule"
-               data-item-id="personal_schedule" onclick="on_extra_link_click(this)">Personal schedule</a></li>
-		{% if calendar_all_tools %}
-            <li><a href="javascript:void(0)" id="extra-links-all-tools" class="all_tools" data-item-id="all_tools"
-                   onclick="on_extra_link_click(this)">All tools</a></li>
-		{% endif %}
-		{% if calendar_all_areas %}
-            <li><a href="javascript:void(0)" id="extra-links-all-areas" class="all_areas" data-item-id="all_areas"
-                   onclick="on_extra_link_click(this)">All areas</a></li>
-		{% endif %}
-		{% if calendar_all_areastools %}
-            <li><a href="javascript:void(0)" id="extra-links-all-areastools" class="all_areastools"
-                   data-item-id="all_areastools" onclick="on_extra_link_click(this)">All areas and tools</a></li>
-		{% endif %}
-	</ul>
-    <button style="width: 100%" id="clear-selection-btn" class="btn btn-default" onclick="on_clear_selection_click();">
-        Clear Selection
-    </button>
-	{# The item tree has the HTML class tag "item_tree". See the widgets/item_tree.py file for more information. #}
-	{{ rendered_item_tree_html }}
-	<div style="height:50px"></div>
-</div>
-
-<div id="calendar" class="application-content"></div>
-<input type="hidden" id="impersonate" name="impersonate" value="">
-
-<script type="text/javascript">
+    <div id="main-content">
+        <div id="sidebar" class="application-sidebar">
+            <div class="btn-group sidebar-item">
+                <button type="button" class="btn btn-default dropdown-toggle" style="width:100%" data-toggle="dropdown">
+                    <span id="event_type">Reservations</span>
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li class="dropdown-header" id="event_type_help">
+                        Which type of events would you like
+                        <br>
+                        to view on the calendar?
+                    </li>
+                    <li data-toggle="tooltip"
+                        data-placement="right"
+                        title="Displays {% if tools and areas %}tool and area{% elif tools %}tool{% elif areas %}area{% endif %} reservations. While viewing reservations, the 'Personal schedule' link shows your reservations for all {% if tools and areas %}tools and areas{% elif tools %}tools{% elif areas %}areas{% endif %}. Select a {% if tools and areas %}tool or area{% elif tools %}tool{% elif areas %}area{% endif %} to view everyone's reservations for that {% if tools and areas %}tool or area{% elif tools %}tool{% elif areas %}area{% endif %}.">
+                        <a aria-describedby="event_type_help"
+                           href="javascript:void(0)"
+                           onclick="change_calendar_event_type(this)">Reservations</a>
+                    </li>
+                    <li data-toggle="tooltip"
+                        data-placement="right"
+                        title="Displays your {{ facility_name }} usage. This includes{% if areas %} area access,{% endif %}{% if tools %} tool usage,{% endif %} and missed reservations (which are all billable items).">
+                        <a aria-describedby="event_type_help"
+                           href="javascript:void(0)"
+                           onclick="change_calendar_event_type(this)">{{ facility_name }} usage</a>
+                    </li>
+                    <li data-toggle="tooltip" data-placement="right" title="Displays the tool configuration agenda.">
+                        <a aria-describedby="event_type_help"
+                           href="javascript:void(0)"
+                           onclick="change_calendar_event_type(this)">Configuration agenda</a>
+                    </li>
+                    {% if user.is_staff %}
+                        <li data-toggle="tooltip"
+                            data-placement="right"
+                            title="Displays {{ facility_name }} reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations.">
+                            <a aria-describedby="event_type_help"
+                               href="javascript:void(0)"
+                               onclick="change_calendar_event_type(this)">Specific user</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div id="expand-collapse" class="btn-group sidebar-item">
+                {% if calendar_qualified_tools and not user.is_staff %}
+                    <button type="button"
+                            class="btn btn-default"
+                            style="width:50%"
+                            onclick="toggle_categories()"
+                            title="Expand/collapse all categories">
+                        <span id="expand_collapse_icon" class="glyphicon glyphicon"></span>
+                    </button>
+                    <button type="button"
+                            class="btn btn-default"
+                            id="qualified_tools_btn"
+                            style="width:50%"
+                            onclick="toggle_qualified_tools(retrieve_user_qualifications())"
+                            title="Only show qualified tools">
+                        <span class="glyphicon glyphicon-check"></span>
+                    </button>
+                {% else %}
+                    <button type="button"
+                            class="btn btn-default"
+                            style="width:100%"
+                            onclick="toggle_categories()"
+                            title="Expand/collapse all categories">
+                        <span id="expand_collapse_icon" class="glyphicon glyphicon"></span>
+                    </button>
+                {% endif %}
+            </div>
+            <input aria-label="Search for a tool or area"
+                   type="search"
+                   id="item_search"
+                   placeholder="Search for{% if tools %} a tool{% endif %}{% if tools and areas %} or{% endif %}{% if areas %} an area{% endif %}"
+                   class="form-control sidebar-item"
+                   autocomplete="off">
+            <input aria-label="Search for a user"
+                   type="search"
+                   id="user_search"
+                   placeholder="Search for a user"
+                   class="form-control sidebar-item"
+                   autocomplete="off"
+                   style="display:none">
+            <button id="chosen_user_button"
+                    type="button"
+                    class="btn btn-default"
+                    style="width:100%;
+                           display:none"
+                    onclick="clear_specific_user()"></button>
+            {# The following menu tree code was take from an example at http://www.bootply.com/120625 #}
+            <ul id="extra-links" class="nav nav-list" style="margin-top: 10px; margin-bottom: 8px;">
+                <li>
+                    <a href="javascript:void(0)"
+                       id="extra-links-personal-schedule"
+                       class="selected personal_schedule"
+                       data-item-id="personal_schedule"
+                       onclick="on_extra_link_click(this)">Personal schedule</a>
+                </li>
+                {% if calendar_all_tools %}
+                    <li>
+                        <a href="javascript:void(0)"
+                           id="extra-links-all-tools"
+                           class="all_tools"
+                           data-item-id="all_tools"
+                           onclick="on_extra_link_click(this)">All tools</a>
+                    </li>
+                {% endif %}
+                {% if calendar_all_areas %}
+                    <li>
+                        <a href="javascript:void(0)"
+                           id="extra-links-all-areas"
+                           class="all_areas"
+                           data-item-id="all_areas"
+                           onclick="on_extra_link_click(this)">All areas</a>
+                    </li>
+                {% endif %}
+                {% if calendar_all_areastools %}
+                    <li>
+                        <a href="javascript:void(0)"
+                           id="extra-links-all-areastools"
+                           class="all_areastools"
+                           data-item-id="all_areastools"
+                           onclick="on_extra_link_click(this)">All areas and tools</a>
+                    </li>
+                {% endif %}
+            </ul>
+            <button style="width: 100%"
+                    id="clear-selection-btn"
+                    class="btn btn-default"
+                    onclick="on_clear_selection_click();">Clear Selection</button>
+            {# The item tree has the HTML class tag "item_tree". See the widgets/item_tree.py file for more information. #}
+            {{ rendered_item_tree_html }}
+            <div style="height:50px"></div>
+        </div>
+        <div id="calendar" class="application-content"></div>
+        <input type="hidden" id="impersonate" name="impersonate" value="">
+        <script type="text/javascript">
 let logged_in = false;
-{% if user.in_area %}
-logged_in = "{{ user.area_access_record.area.name }}";
-{% endif %}
+{% if user.in_area %}logged_in = "{{ user.area_access_record.area.name }}";{% endif %}
 
 function get_event_type()
 {
@@ -939,6 +1014,6 @@ function on_load()
 
 $(on_load);
 
-</script>
-</div>
+        </script>
+    </div>
 {% endblock %}

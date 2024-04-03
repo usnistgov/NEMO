@@ -3,14 +3,22 @@
 {% block content %}
     {% if video %}
         <div class="embed-responsive-item text-center">
-            <video id="media-video" {% if controls %}controls{% endif %} {% if autoplay %}autoplay{% endif %} class="media-popup media-video">
-                <source src="{{ document.link }}"/>
+            <video id="media-video"
+                   {% if controls %}controls{% endif %}
+                   {% if autoplay %}autoplay{% endif %}
+                   class="media-popup media-video">
+                <source src="{{ document.link }}" />
             </video>
         </div>
     {% elif pdf %}
         <div class="embed-responsive-item text-center">
-            <object id="media-pdf" data="{{ document.link }}#scrollbar=0&toolbar={% if controls %}1{% else %}0{% endif %}&navpanes=0" type="application/pdf" class="media-popup media-pdf">
-                <p>It appears you don't have a PDF plugin for this browser. You can <a href="{{ document.link }}">click here to download the PDF file.</a></p>
+            <object id="media-pdf"
+                    data="{{ document.link }}#scrollbar=0&toolbar={% if controls %}1{% else %}0{% endif %}&navpanes=0"
+                    type="application/pdf"
+                    class="media-popup media-pdf">
+                <p>
+                    It appears you don't have a PDF plugin for this browser. You can <a href="{{ document.link }}">click here to download the PDF file.</a>
+                </p>
             </object>
         </div>
     {% endif %}

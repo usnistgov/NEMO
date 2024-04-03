@@ -2,29 +2,32 @@
 {% load custom_tags_and_filters %}
 {% block title %}Resources{% endblock %}
 {% block content %}
-	<h1>Resources</h1>
-	<p>
-		Below is a list of resources, grouped by category.
-		<br>Resources in <span class="success-highlight">green</span> are currently
-		available while resources in <span class="danger-highlight">red</span> are unavailable. Click on a resource to modify its
-		availability, status message or to schedule an outage.
-		<br>When a resource is unavailable, users are blocked from using tools or login to areas that fully depend on that resource.
-	</p>
-	{% if resources %}
-		{% regroup resources by category as category_list %}
-		{% for category in category_list %}
-			{% if category.grouper %}<h3>{{ category.grouper }}</h3>{% endif %}
-			<div id="resource_list">
-				{% for resource in category.list %}
-					<a href="{% url 'resource_details' resource.id %}" class="{% if resource.available %}success-highlight{% else %}danger-highlight{% endif %}">{{ resource }}</a>
-					{% if not resource.available %}
-						- {{ resource.restriction_message }}
-					{% endif %}
-					<br>
-				{% endfor %}
-			</div>
-		{% endfor %}
-	{% elif user.is_superuser and "django.contrib.admin"|app_installed %}
-		<h3>No resources exist yet. You can <a href="{% url 'admin:NEMO_resource_changelist' %}">create some in the Resources section of 'Detailed Administration'</a>.</h3>
-	{% endif %}
+    <h1>Resources</h1>
+    <p>
+        Below is a list of resources, grouped by category.
+        <br>
+        Resources in <span class="success-highlight">green</span> are currently
+        available while resources in <span class="danger-highlight">red</span> are unavailable. Click on a resource to modify its
+        availability, status message or to schedule an outage.
+        <br>
+        When a resource is unavailable, users are blocked from using tools or login to areas that fully depend on that resource.
+    </p>
+    {% if resources %}
+        {% regroup resources by category as category_list %}
+        {% for category in category_list %}
+            {% if category.grouper %}<h3>{{ category.grouper }}</h3>{% endif %}
+            <div id="resource_list">
+                {% for resource in category.list %}
+                    <a href="{% url 'resource_details' resource.id %}"
+                       class="{% if resource.available %}success-highlight{% else %}danger-highlight{% endif %}">{{ resource }}</a>
+                    {% if not resource.available %}- {{ resource.restriction_message }}{% endif %}
+                    <br>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    {% elif user.is_superuser and "django.contrib.admin"|app_installed %}
+        <h3>
+            No resources exist yet. You can <a href="{% url 'admin:NEMO_resource_changelist' %}">create some in the Resources section of 'Detailed Administration'</a>.
+        </h3>
+    {% endif %}
 {% endblock %}

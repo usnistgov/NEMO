@@ -1,33 +1,42 @@
 {% extends 'usage/usage_base.html' %}
 {% load custom_tags_and_filters %}
 {% block usage_content %}
-	<div style="margin-top:10px">
-		<ul class="nav nav-pills" id="tabs">
-			<li class="active"><a>Usage</a></li>
-			{% if billing_service %}<li><a href="{{ tab_url }}">Billing Information</a></li>{% endif %}
-		</ul>
-	</div>
-
-	<div id="content" class="tab-content">
-		<div class="tab-pane active" id="usage">
-			<br/>
-			<p>
-				Adjustment activities <b>are not included</b> in the usage information.
-                {% if "requests"|customization:"adjustment_requests_enabled" and adjustment_time_limit %}
-                    <br>Adjustment requests can be made for charges ending after {{ adjustment_time_limit.date }}.
-                {% endif %}
-			</p>
-			{% if no_charges %}
-				<h3>There was no usage between {{ start_date|date }} and {{ end_date|date }}.</h3>
+    <div style="margin-top:10px">
+        <ul class="nav nav-pills" id="tabs">
+            <li class="active">
+                <a>Usage</a>
+            </li>
+            {% if billing_service %}
+                <li>
+                    <a href="{{ tab_url }}">Billing Information</a>
+                </li>
             {% endif %}
+        </ul>
+    </div>
+    <div id="content" class="tab-content">
+        <div class="tab-pane active" id="usage">
+            <br />
+            <p>
+                Adjustment activities <b>are not included</b> in the usage information.
+                {% if "requests"|customization:"adjustment_requests_enabled" and adjustment_time_limit %}
+                    <br>
+                    Adjustment requests can be made for charges ending after {{ adjustment_time_limit.date }}.
+                {% endif %}
+            </p>
+            {% if no_charges %}<h3>There was no usage between {{ start_date|date }} and {{ end_date|date }}.</h3>{% endif %}
             {% with adj_reservation="requests"|customization:"adjustment_requests_missed_reservation_enabled" adj_tool_usage="requests"|customization:"adjustment_requests_tool_usage_enabled" adj_area_access="requests"|customization:"adjustment_requests_area_access_enabled" adj_staff_charge="requests"|customization:"adjustment_requests_staff_staff_charges_enabled" %}
                 {% if missed_reservations %}
                     <h3>Missed reservations</h3>
                     {% for m in missed_reservations %}
                         <div class="usage-charge alert alert-danger">
-                            <span style="font-weight:bold">{{ m.reservation_item }}</span><br>
-                            {% if project_autocomplete or selected_project %}Missed by {{ m.user }}<br>{% endif %}
-                            {{ m.start }}<br>
+                            <span style="font-weight:bold">{{ m.reservation_item }}</span>
+                            <br>
+                            {% if project_autocomplete or selected_project %}
+                                Missed by {{ m.user }}
+                                <br>
+                            {% endif %}
+                            {{ m.start }}
+                            <br>
                             Charged to project {{ m.project }}
                             {% if adj_reservation == "enabled" %}
                                 {% if not adjustment_time_limit or adjustment_time_limit <= m.end %}
@@ -43,10 +52,16 @@
                     <h3>Supplies and consumables</h3>
                     {% for c in consumables %}
                         <div class="usage-charge alert alert-info">
-                            <span style="font-weight:bold">{{ c.consumable }}</span><br>
-                            {% if project_autocomplete or selected_project %}<span style="font-weight:bold">For {{ c.customer }}</span><br>{% endif %}
-                            Quantity {{ c.quantity }}<br>
-                            Purchased from {{ c.merchant }} on {{ c.date }}<br>
+                            <span style="font-weight:bold">{{ c.consumable }}</span>
+                            <br>
+                            {% if project_autocomplete or selected_project %}
+                                <span style="font-weight:bold">For {{ c.customer }}</span>
+                                <br>
+                            {% endif %}
+                            Quantity {{ c.quantity }}
+                            <br>
+                            Purchased from {{ c.merchant }} on {{ c.date }}
+                            <br>
                             Charged to project {{ c.project }}
                         </div>
                     {% endfor %}
@@ -55,10 +70,22 @@
                     <h3>Staff charges</h3>
                     {% for s in staff_charges %}
                         <div class="usage-charge alert alert-info">
-                            <span style="font-weight:bold">Work performed by {{ s.staff_member }} {% if project_autocomplete or selected_project %}on behalf of {{ s.customer }}{% else %}on your behalf{% endif %}</span><br>
-                            {% if s.note %}Charge note: {{ s.note|linebreaksbr }}<br>{% endif %}
-                            {{ s.start }}<br>
-                            {{ s.end }}<br>
+                            <span style="font-weight:bold">Work performed by {{ s.staff_member }}
+                                {% if project_autocomplete or selected_project %}
+                                    on behalf of {{ s.customer }}
+                                {% else %}
+                                    on your behalf
+                                {% endif %}
+                            </span>
+                            <br>
+                            {% if s.note %}
+                                Charge note: {{ s.note|linebreaksbr }}
+                                <br>
+                            {% endif %}
+                            {{ s.start }}
+                            <br>
+                            {{ s.end }}
+                            <br>
                             Charged to project {{ s.project }}
                             {% if adj_staff_charge == "enabled" and s.staff_member == user and user.is_staff %}
                                 {% if not adjustment_time_limit or adjustment_time_limit <= s.end %}
@@ -72,9 +99,13 @@
                     <h3>Training sessions</h3>
                     {% for t in training_sessions %}
                         <div class="usage-charge alert alert-info">
-                            <span style="font-weight:bold">{{ t.tool }}</span> {{ t.get_type_display }} training {% if project_autocomplete or selected_project %}for {{ t.trainee }} {% endif %}<br>
-                            Trained by <span style="font-weight:bold">{{ t.trainer }}</span><br>
-                            {{ t.date }} ({{ t.duration }} minutes)<br>
+                            <span style="font-weight:bold">{{ t.tool }}</span> {{ t.get_type_display }} training
+                            {% if project_autocomplete or selected_project %}for {{ t.trainee }}{% endif %}
+                            <br>
+                            Trained by <span style="font-weight:bold">{{ t.trainer }}</span>
+                            <br>
+                            {{ t.date }} ({{ t.duration }} minutes)
+                            <br>
                             Charged to project {{ t.project }}
                         </div>
                     {% endfor %}
@@ -83,12 +114,27 @@
                     <h3>Area access</h3>
                     {% for a in area_access %}
                         <div class="usage-charge alert {% if not a.staff_charge %}alert-info{% else %}alert-warning{% endif %}">
-                            <span style="font-weight:bold">{{ a.area }}</span><br>
-                            {% if a.staff_charge %}<span style="font-weight:bold">Area accessed by {{ a.staff_charge.staff_member }} {% if project_autocomplete or selected_project %}on behalf of {{ a.customer }}{% else %}on your behalf{% endif %}</span><br>
-                            {% else %}{% if project_autocomplete or selected_project %}<span style="font-weight:bold">Area accessed by {{ a.customer }}</span><br>{% endif %}
+                            <span style="font-weight:bold">{{ a.area }}</span>
+                            <br>
+                            {% if a.staff_charge %}
+                                <span style="font-weight:bold">Area accessed by {{ a.staff_charge.staff_member }}
+                                    {% if project_autocomplete or selected_project %}
+                                        on behalf of {{ a.customer }}
+                                    {% else %}
+                                        on your behalf
+                                    {% endif %}
+                                </span>
+                                <br>
+                            {% else %}
+                                {% if project_autocomplete or selected_project %}
+                                    <span style="font-weight:bold">Area accessed by {{ a.customer }}</span>
+                                    <br>
+                                {% endif %}
                             {% endif %}
-                            {{ a.start }}<br>
-                            {{ a.end|default_if_none:"In progress" }}<br>
+                            {{ a.start }}
+                            <br>
+                            {{ a.end|default_if_none:"In progress" }}
+                            <br>
                             Charged to project {{ a.project }}
                             {% if not a.staff_charge and adj_area_access == "enabled" %}
                                 {% if not adjustment_time_limit or adjustment_time_limit <= a.end %}
@@ -110,12 +156,27 @@
                     <h3>Tool usage</h3>
                     {% for u in usage_events %}
                         <div class="usage-charge alert {% if u.user == u.operator %}alert-info{% else %}alert-warning{% endif %}">
-                            <span style="font-weight:bold">{{ u.tool }}</span><br>
-                            {% if u.user != u.operator %}<span style="font-weight:bold">Operated by {{ u.operator }} {% if project_autocomplete or selected_project %}on behalf of {{ u.user }}{% else %}on your behalf{% endif %}</span><br>
-                            {% else %}{% if project_autocomplete or selected_project %}<span style="font-weight:bold">Operated by {{ u.user }}</span><br>{% endif %}
+                            <span style="font-weight:bold">{{ u.tool }}</span>
+                            <br>
+                            {% if u.user != u.operator %}
+                                <span style="font-weight:bold">Operated by {{ u.operator }}
+                                    {% if project_autocomplete or selected_project %}
+                                        on behalf of {{ u.user }}
+                                    {% else %}
+                                        on your behalf
+                                    {% endif %}
+                                </span>
+                                <br>
+                            {% else %}
+                                {% if project_autocomplete or selected_project %}
+                                    <span style="font-weight:bold">Operated by {{ u.user }}</span>
+                                    <br>
+                                {% endif %}
                             {% endif %}
-                            {{ u.start }}<br>
-                            {{ u.end }}<br>
+                            {{ u.start }}
+                            <br>
+                            {{ u.end }}
+                            <br>
                             Charged to project {{ u.project }}
                             {% if adj_tool_usage == "enabled" %}
                                 {% if not adjustment_time_limit or adjustment_time_limit <= u.end %}
@@ -135,6 +196,6 @@
                     {% endfor %}
                 {% endif %}
             {% endwith %}
-		</div>
-	</div>
+        </div>
+    </div>
 {% endblock %}

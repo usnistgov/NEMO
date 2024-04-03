@@ -5,193 +5,237 @@
 {% block remote_work_title %}Previous work{% endblock %}
 {% block remote_work_tab_class %}active{% endblock %}
 {% block extrahead %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block tab_content %}
-	<p>This page displays remote work done by {{ facility_name }} staff on behalf of users. You can filter by which staff member performed the work, and
-	when, by using the dropdown boxes below.</p>
-
+    <p>
+        This page displays remote work done by {{ facility_name }} staff on behalf of users. You can filter by which staff member performed the work, and
+        when, by using the dropdown boxes below.
+    </p>
     {% if remote_work_validation %}
-        <p>Each charge can be validated, which means that you have confirmed that the charge is legitimate and correct, and no adjustment needs to
-        be made to it. Press the green 'Validate' button on an individual row to validate a charge. Charges that have already been validated are
-        highlighted in <span class="success-highlight">green</span>.</p>
-
-        <p>Do not validate a charge if part or all of it is incorrect. Instead, visit the user office so an adjustment can be entered
-        into the billing system. Furthermore, please visit the user office if there is a charge that you forgot to enter.</p>
+        <p>
+            Each charge can be validated, which means that you have confirmed that the charge is legitimate and correct, and no adjustment needs to
+            be made to it. Press the green 'Validate' button on an individual row to validate a charge. Charges that have already been validated are
+            highlighted in <span class="success-highlight">green</span>.
+        </p>
+        <p>
+            Do not validate a charge if part or all of it is incorrect. Instead, visit the user office so an adjustment can be entered
+            into the billing system. Furthermore, please visit the user office if there is a charge that you forgot to enter.
+        </p>
     {% endif %}
-
-	<form id="remote_work_form" class="form-horizontal" role="form" style="margin-top: 20px">
-		<input type="hidden" name="csv" id="hidden_data_csv"/>
-		<div class="form-group">
-			<label class="control-label col-md-2" for="operator">View charges for</label>
-			<div class="col-md-4">
-				<select id="operator" name="operator" class="form-control">
-					<option {% if selected_staff == "all staff" %}selected{% endif %}>all staff</option>
-					{% for s in staff_list %}
-						<option value="{{ s.id }}" {% if s.id == selected_staff %}selected{% endif %}>{{ s }}</option>
-					{% endfor %}
-				</select>
-			</div>
-			<div class="control-label col-md-2">
-				<label class="text-center" style="width: 100%" for="project">and for</label>
-			</div>
-			<div class="col-md-4">
-				<select id="project" name="project" class="form-control">
-					<option {% if selected_project == "all projects" %}selected{% endif %}>all projects</option>
-					{% for p in project_list %}
-						<option value="{{ p.id }}" {% if p.id == selected_project %}selected{% endif %}>{{ p }}</option>
-					{% endfor %}
-				</select>
-			</div>
-		</div>
-		<div class="form-group">
-			<label for="month_list" class="control-label col-md-2">during</label>
-			<div class="col-md-3">
-				<select id="month_list" class="form-control" style="margin-right: 5px;" onchange="set_dates_from_month(this.value)">
-					<option selected></option>
-					{% for month in month_list %}
-						<option>{{ month|date:"F, Y" }}</option>
-					{% endfor %}
-				</select>
-			</div>
-			<div class="control-label col-md-2" style="padding-left: 0;padding-right: 0">
-				<label for="start_date" class="text-center" style="width: 100%">or between</label>
-			</div>
-			<div class="col-md-2">
-				<input type="text" id="start_date" name="start" class="form-control text-center" placeholder="Choose a date" value="{{ start_date.date|input_date_format }}">
-			</div>
-			<div class="control-label col-md-1">
-				<label for="end_date" class="text-center" style="width: 100%">and</label>
-			</div>
-			<div class="col-md-2">
-				<input type="text" id="end_date" name="end" class="form-control text-center" placeholder="Choose a date" value="{{ end_date.date|input_date_format }}">
-			</div>
-		</div>
-		<div class="form-group" style="margin-top: 25px">
-			<div class="col-md-offset-2 col-md-5 col-xs-6">
+    <form id="remote_work_form" class="form-horizontal" role="form" style="margin-top: 20px">
+        <input type="hidden" name="csv" id="hidden_data_csv" />
+        <div class="form-group">
+            <label class="control-label col-md-2" for="operator">View charges for</label>
+            <div class="col-md-4">
+                <select id="operator" name="operator" class="form-control">
+                    <option {% if selected_staff == "all staff" %}selected{% endif %}>all staff</option>
+                    {% for s in staff_list %}
+                        <option value="{{ s.id }}" {% if s.id == selected_staff %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="control-label col-md-2">
+                <label class="text-center" style="width: 100%" for="project">and for</label>
+            </div>
+            <div class="col-md-4">
+                <select id="project" name="project" class="form-control">
+                    <option {% if selected_project == "all projects" %}selected{% endif %}>all projects</option>
+                    {% for p in project_list %}
+                        <option value="{{ p.id }}" {% if p.id == selected_project %}selected{% endif %}>{{ p }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="month_list" class="control-label col-md-2">during</label>
+            <div class="col-md-3">
+                <select id="month_list"
+                        class="form-control"
+                        style="margin-right: 5px"
+                        onchange="set_dates_from_month(this.value)">
+                    <option selected></option>
+                    {% for month in month_list %}<option>{{ month|date:"F, Y" }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="control-label col-md-2" style="padding-left: 0;padding-right: 0">
+                <label for="start_date" class="text-center" style="width: 100%">or between</label>
+            </div>
+            <div class="col-md-2">
+                <input type="text"
+                       id="start_date"
+                       name="start"
+                       class="form-control text-center"
+                       placeholder="Choose a date"
+                       value="{{ start_date.date|input_date_format }}">
+            </div>
+            <div class="control-label col-md-1">
+                <label for="end_date" class="text-center" style="width: 100%">and</label>
+            </div>
+            <div class="col-md-2">
+                <input type="text"
+                       id="end_date"
+                       name="end"
+                       class="form-control text-center"
+                       placeholder="Choose a date"
+                       value="{{ end_date.date|input_date_format }}">
+            </div>
+        </div>
+        <div class="form-group" style="margin-top: 25px">
+            <div class="col-md-offset-2 col-md-5 col-xs-6">
                 {% button type="save" submit=False value="Update" icon="glyphicon-refresh" onclick="$('#hidden_data_csv').val('');$('#remote_work_form').submit();" %}
             </div>
-			<div class="col-md-5 col-xs-6 text-right">
+            <div class="col-md-5 col-xs-6 text-right">
                 {% button type="export" submit=False value="Export" onclick="$('#hidden_data_csv').val('true');$('#remote_work_form').submit();" %}
-			</div>
-		</div>
-	</form>
-
-	<h3>Staff charges</h3>
-	<table class="table">
-		<thead>
-		<tr>
-			<th>ID</th>
-			<th>Staff member</th>
-			<th>Customer</th>
-			<th>Project</th>
-			<th>Start</th>
-			<th>End</th>
-			{% if remote_work_validation %}<th>Validate</th>{% endif %}
-		</tr>
-		</thead>
-		<tbody>
-		{% for c in staff_charges %}
-			<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and  c.validated %}success-highlight{% endif %}">
-				{% admin_edit_url c request.build_absolute_uri as edit_url %}
-                {% if edit_url %}
-                    <td><a href="{{ edit_url }}">{{ c.id }}</a></td>
-                {% else %}
-                    <td>{{ c.id }}</td>
-                {% endif %}
-				<td>{{ c.staff_member }}</td>
-				<td>{{ c.customer }}</td>
-				<td>{{ c.project }}</td>
-				<td>{{ c.start }}</td>
-				<td>{{ c.end|default_if_none:'' }}</td>
-				{% if remote_work_validation %}
-                    <td {% if c.note and c.areaaccessrecord_set.exists %}rowspan="3" {% elif c.note or c.areaaccessrecord_set.exists %}rowspan="2"{% endif %} style="vertical-align: middle">
-                        {% url 'validate_staff_charge' c.id as validate_staff_charge_url %}
-                        {% if c.end and not c.validated %}
-                            {% button type="save" submit=False onclick="validate_charge('"|concat:validate_staff_charge_url|concat:"', this, '.staff_charge_row_"|concat:c.id|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
-                        {% endif %}
-                    </td>
-                {% endif %}
-			</tr>
-            {% if c.note %}
-                <tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}">
-                    <td style="border: none; padding-top: 0"></td>
-                    <td colspan="5" style="border:none; padding-top: 0">Charge note: {{ c.note|linebreaksbr }}<br></td>
-                </tr>
-            {% endif %}
-			{% for area_access_record in c.areaaccessrecord_set.all %}
-				<tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}" style="font-size: smaller">
-					{% admin_edit_url area_access_record request.build_absolute_uri as edit_url %}
+            </div>
+        </div>
+    </form>
+    <h3>Staff charges</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Staff member</th>
+                <th>Customer</th>
+                <th>Project</th>
+                <th>Start</th>
+                <th>End</th>
+                {% if remote_work_validation %}<th>Validate</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in staff_charges %}
+                <tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and  c.validated %}success-highlight{% endif %}">
+                    {% admin_edit_url c request.build_absolute_uri as edit_url %}
                     {% if edit_url %}
-                        <td><a href="{{ edit_url }}">{{ area_access_record.id }}</a></td>
+                        <td>
+                            <a href="{{ edit_url }}">{{ c.id }}</a>
+                        </td>
                     {% else %}
-                        <td>{{ area_access_record.id }}</td>
+                        <td>{{ c.id }}</td>
                     {% endif %}
-					<td colspan="3" style="border-top-style: dotted">{{ area_access_record.area.name }} access</td>
-					<td style="border-top-style: dotted">{{ area_access_record.start }}</td>
-					<td style="border-top-style: dotted">{{ area_access_record.end|default_if_none:'' }}</td>
-				</tr>
-			{%  endfor %}
-        {% empty %}
-            <tr><td colspan="7">
-                {% if start_date or end_date %}
-                    No staff charges exist {% if start_date and end_date %}between {{ start_date }} and {{ end_date }}{% elif start_date %}after {{ start_date }}{% else %}before {{ end_date }}{% endif %}.
+                    <td>{{ c.staff_member }}</td>
+                    <td>{{ c.customer }}</td>
+                    <td>{{ c.project }}</td>
+                    <td>{{ c.start }}</td>
+                    <td>{{ c.end|default_if_none:'' }}</td>
+                    {% if remote_work_validation %}
+                        <td {% if c.note and c.areaaccessrecord_set.exists %}rowspan="3" {% elif c.note or c.areaaccessrecord_set.exists %}rowspan="2"{% endif %}
+                            style="vertical-align: middle">
+                            {% url 'validate_staff_charge' c.id as validate_staff_charge_url %}
+                            {% if c.end and not c.validated %}
+                                {% button type="save" submit=False onclick="validate_charge('"|concat:validate_staff_charge_url|concat:"', this, '.staff_charge_row_"|concat:c.id|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                </tr>
+                {% if c.note %}
+                    <tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}">
+                        <td style="border: none; padding-top: 0"></td>
+                        <td colspan="5" style="border:none; padding-top: 0">
+                            Charge note: {{ c.note|linebreaksbr }}
+                            <br>
+                        </td>
+                    </tr>
                 {% endif %}
-            </td></tr>
-		{% endfor %}
-		</tbody>
-	</table>
-	<br>
-	<h3>Tool usage</h3>
-	<table class="table">
-		<thead>
-		<tr>
-			<th>ID</th>
-			<th>Operator</th>
-			<th>User</th>
-			<th>Project</th>
-			<th>Start</th>
-			<th>End</th>
-			<th>Tool</th>
-			{% if remote_work_validation %}<th>Validate</th>{% endif %}
-		</tr>
-		</thead>
-		<tbody>
-		{% for u in usage %}
-			<tr {% if remote_work_validation and u.validated %}class="success-highlight"{% endif %} id="usage_event_row_{{ forloop.counter }}">
-				{% admin_edit_url u request.build_absolute_uri as edit_url %}
-                {% if edit_url %}
-                    <td><a href="{{ edit_url }}">{{ u.id }}</a></td>
-                {% else %}
-                    <td>{{ u.id }}</td>
-                {% endif %}
-				<td>{{ u.operator }}</td>
-				<td>{{ u.user }}</td>
-				<td>{{ u.project }}</td>
-				<td>{{ u.start }}</td>
-				<td>{{ u.end|default_if_none:'' }}</td>
-				<td>{{ u.tool }}</td>
-				{% if remote_work_validation %}
-                    <td>
-                        {% url 'validate_usage_event' u.id as validate_usage_url %}
-                        {% if u.end and not u.validated %}
-                            {% button type="save" submit=False onclick="validate_charge('"|concat:validate_usage_url|concat:"', this, '#usage_event_row_"|concat:forloop.counter|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
+                {% for area_access_record in c.areaaccessrecord_set.all %}
+                    <tr class="staff_charge_row_{{ c.id }} {% if remote_work_validation and c.validated %}success-highlight{% endif %}"
+                        style="font-size: smaller">
+                        {% admin_edit_url area_access_record request.build_absolute_uri as edit_url %}
+                        {% if edit_url %}
+                            <td>
+                                <a href="{{ edit_url }}">{{ area_access_record.id }}</a>
+                            </td>
+                        {% else %}
+                            <td>{{ area_access_record.id }}</td>
+                        {% endif %}
+                        <td colspan="3" style="border-top-style: dotted">{{ area_access_record.area.name }} access</td>
+                        <td style="border-top-style: dotted">{{ area_access_record.start }}</td>
+                        <td style="border-top-style: dotted">{{ area_access_record.end|default_if_none:'' }}</td>
+                    </tr>
+                {% endfor %}
+            {% empty %}
+                <tr>
+                    <td colspan="7">
+                        {% if start_date or end_date %}
+                            No staff charges exist
+                            {% if start_date and end_date %}
+                                between {{ start_date }} and {{ end_date }}
+                            {% elif start_date %}
+                                after {{ start_date }}
+                            {% else %}
+                                before {{ end_date }}
+                            {% endif %}
+                            .
                         {% endif %}
                     </td>
-                {% endif %}
-			</tr>
-        {% empty %}
-            <tr><td colspan="8">
-                {% if start_date or end_date %}
-                    No tool usage exist {% if start_date and end_date %}between {{ start_date }} and {{ end_date }}{% elif start_date %}after {{ start_date }}{% else %}before {{ end_date }}{% endif %}.
-                {% endif %}
-            </td></tr>
-		{% endfor %}
-		</tbody>
-	</table>
-
-	<script>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br>
+    <h3>Tool usage</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Operator</th>
+                <th>User</th>
+                <th>Project</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Tool</th>
+                {% if remote_work_validation %}<th>Validate</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usage %}
+                <tr {% if remote_work_validation and u.validated %}class="success-highlight"{% endif %}
+                    id="usage_event_row_{{ forloop.counter }}">
+                    {% admin_edit_url u request.build_absolute_uri as edit_url %}
+                    {% if edit_url %}
+                        <td>
+                            <a href="{{ edit_url }}">{{ u.id }}</a>
+                        </td>
+                    {% else %}
+                        <td>{{ u.id }}</td>
+                    {% endif %}
+                    <td>{{ u.operator }}</td>
+                    <td>{{ u.user }}</td>
+                    <td>{{ u.project }}</td>
+                    <td>{{ u.start }}</td>
+                    <td>{{ u.end|default_if_none:'' }}</td>
+                    <td>{{ u.tool }}</td>
+                    {% if remote_work_validation %}
+                        <td>
+                            {% url 'validate_usage_event' u.id as validate_usage_url %}
+                            {% if u.end and not u.validated %}
+                                {% button type="save" submit=False onclick="validate_charge('"|concat:validate_usage_url|concat:"', this, '#usage_event_row_"|concat:forloop.counter|concat:"')" icon="glyphicon-ok-circle" value="Validate" %}
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="8">
+                        {% if start_date or end_date %}
+                            No tool usage exist
+                            {% if start_date and end_date %}
+                                between {{ start_date }} and {{ end_date }}
+                            {% elif start_date %}
+                                after {{ start_date }}
+                            {% else %}
+                                before {{ end_date }}
+                            {% endif %}
+                            .
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script>
         const js_date_format = "{{ date_input_js_format }}";
 
 		function validate_charge(url, button, row)
@@ -232,6 +276,6 @@
 		}
 
         window.addEventListener("load", set_dropdown_selected)
-	</script>
-
+	
+    </script>
 {% endblock %}

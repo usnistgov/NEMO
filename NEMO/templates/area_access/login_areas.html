@@ -1,28 +1,40 @@
 {% load mptt_tags %}
 <ul class="login-tree area-tree-root area-tree-list" style="padding-left: 0;margin-top: 10px">
-	{% recursetree areas %}
-		{% if node.is_leaf_node %}
-			<li class="area-tree-leaf">
-		{% else %}
-			<li class="area-tree-node">
-				<a onclick="toggle_details(this)" data-toggle="collapse" aria-expanded="true" data-target="#area-{{ node.id }}">
-					<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-		{% endif %}
-		{% if node not in user_accessible_areas %}
-					<span class="media-heading">{{ node.name }}</span>
-				</a>
-		{% else %}
-				</a>
-				<div class="checkbox">
-					<label class="control-label" style="padding-left: 0"><input type="radio" name="{{ input_name|default:'area' }}" value="{{ node.id }}" {% if area_id and node.id == area_id %}checked{% endif %} required> {% if node.category %}({{ node.category }}) {% endif %}{{ node.name }}</label><br>
-				</div>
-		{% endif %}
-		{% if not node.is_leaf_node %}
-			<ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ node.id }}">
-				{{ children }}
-			</ul>
-		{% else %}
-		{% endif %}
-			</li>
-	{% endrecursetree %}
+    {% recursetree areas %}
+    {% if node.is_leaf_node %}
+        <li class="area-tree-leaf">
+        {% else %}
+            <li class="area-tree-node">
+                <a onclick="toggle_details(this)"
+                   data-toggle="collapse"
+                   aria-expanded="true"
+                   data-target="#area-{{ node.id }}">
+                    <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                {% endif %}
+                {% if node not in user_accessible_areas %}
+                    <span class="media-heading">{{ node.name }}</span>
+                </a>
+            {% else %}
+            </a>
+            <div class="checkbox">
+                <label class="control-label" style="padding-left: 0">
+                    <input type="radio"
+                           name="{{ input_name|default:'area' }}"
+                           value="{{ node.id }}"
+                           {% if area_id and node.id == area_id %}checked{% endif %}
+                           required>
+                    {% if node.category %}({{ node.category }}){% endif %}
+                    {{ node.name }}
+                </label>
+                <br>
+            </div>
+        {% endif %}
+        {% if not node.is_leaf_node %}
+            <ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ node.id }}">
+                {{ children }}
+            </ul>
+        {% else %}
+        {% endif %}
+    </li>
+{% endrecursetree %}
 </ul>

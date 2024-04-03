@@ -1,29 +1,30 @@
 {% load custom_tags_and_filters %}
 <div class="modal-header">
-	<button type="button" class="close" data-dismiss="modal" aria-label="Modal close button">&times;</button>
-	<h4 id="modal-description-label" class="modal-title">Reservation questions</h4>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Modal close button">&times;</button>
+    <h4 id="modal-description-label" class="modal-title">Reservation questions</h4>
 </div>
-
 <div class="modal-body">
-	<p>This reservation requires extra information to be provided:</p>
+    <p>This reservation requires extra information to be provided:</p>
     {% if error %}
         <div class="alert alert-danger">
-			Oops! Something went wrong. Please correct the errors highlighted below.<br><br>
-			<ul><li>{{ error }}</li></ul>
-		</div>
+            Oops! Something went wrong. Please correct the errors highlighted below.
+            <br>
+            <br>
+            <ul>
+                <li>{{ error }}</li>
+            </ul>
+        </div>
     {% endif %}
-	<input type="hidden" id="dialog_cancelled" value="true">
-	<form id="additional_event_parameters">
+    <input type="hidden" id="dialog_cancelled" value="true">
+    <form id="additional_event_parameters">
         <input type="hidden" name="reservation_questions" value=true>
-		{{ reservation_questions }}
-	</form>
+        {{ reservation_questions }}
+    </form>
 </div>
-
 <div class="modal-footer">
     <p id="answer_to_proceed" style="text-align:center">Please answer the required questions (above) to proceed</p>
     {% button id="reservation_questions_submit" type="save" value="Submit" dismiss="modal" onclick="$('#dialog_cancelled').val(false);" submit=False %}
 </div>
-
 <script>
 	function update_submit_button()
 	{

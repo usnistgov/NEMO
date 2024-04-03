@@ -1,91 +1,113 @@
 {% extends 'base.html' %}
 {% load humanize %}
 {% block extrahead %}
-	{% load static %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
+    {% load static %}
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block title %}Maintenance{% endblock %}
 {% block body %}
-
-	<div class="container-fluid">
-		<h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">Maintenance</h1>
-		<ul class="nav nav-pills" id="tabs">
-			<li class="active"><a href="#pending">Pending</a></li>
-			<li><a href="#closed">Closed</a></li>
-		</ul>
-	</div>
-
-	<div class="tab-content">
-		<div id="pending" class="tab-pane active">
-			<div class="split-screen-left-panel">
-				<table id="pending_tasks" class="table table-hover">
-					<thead><tr>
-						<th><a href="{% url 'maintenance' sort_by='urgency' %}">Urgency</a></th>
-						<th><a href="{% url 'maintenance' sort_by='force_shutdown' %}">Severity</a></th>
-						<th><a href="{% url 'maintenance' sort_by='tool' %}">Tool</a></th>
-						<th><a href="{% url 'maintenance' sort_by='problem_category' %}">Category</a></th>
-						<th><a href="{% url 'maintenance' sort_by='last_updated' %}">Last updated</a></th>
-						<th><a href="{% url 'maintenance' sort_by='creation_time' %}">Created</a></th>
-						<th>Description</th>
-					</tr></thead>
-					{% for task in pending_tasks %}
-						<tr onclick="pending_task_details(this, '{% url 'task_details' task.id %}')" data-task-id="{{ task.id }}">
-							<td>{{ task.get_urgency_display }}</td>
-							<td>{% if task.force_shutdown %}
-									<span class="glyphicon glyphicon-fire danger-highlight"></span>
-								{% else %}
-									<span class="glyphicon glyphicon-wrench warning-highlight"></span>
-								{% endif %}
-							</td>
-							<td>{{ task.tool.name }}</td>
-							<td>{{ task.problem_category|default_if_none:"" }}</td>
-							<td>{% if task.last_updated and task.last_updated_by %}{{ task.last_updated|naturaltime }} by {{ task.last_updated_by.first_name }}{% endif %}</td>
-							<td>{{ task.creation_time|naturaltime }}</td>
-							<td>{{ task.problem_description }}</td>
-						</tr>
-					{% endfor %}
-				</table>
-			</div>
-			<div id="pending_task_details" class="split-screen-right-panel"></div>
-		</div>
-
-		<div id="closed" class="tab-pane">
-			<div class="split-screen-left-panel">
-				<table id="closed_tasks" class="table table-hover">
-					<thead><tr>
-						<th>Urgency</th>
-						<th>Severity</th>
-						<th>Tool</th>
-						<th>Category</th>
-						<th>Created</th>
-						<th>Resolved</th>
-						<th>Description</th>
-					</tr></thead>
-					{% for task in closed_tasks %}
-						<tr onclick="closed_task_details(this, '{% url 'task_details' task.id %}')">
-							<td>{{ task.get_urgency_display }}</td>
-							<td>{% if task.force_shutdown %}
-									<span class="glyphicon glyphicon-fire danger-highlight"></span>
-								{% else %}
-									<span class="glyphicon glyphicon-wrench warning-highlight"></span>
-								{% endif %}
-							</td>
-							<td>{{ task.tool.name }}</td>
-							<td>{{ task.problem_category|default_if_none:"" }}</td>
-							<td>{{ task.creation_time }}</td>
-							<td>{{ task.resolution_time }}</td>
-							<td>{{ task.problem_description }}</td>
-						</tr>
-					{% endfor %}
-				</table>
-			</div>
-			<div id="closed_task_details" class="split-screen-right-panel"></div>
-		</div>
-	</div>
-
-	<script>
-
+    <div class="container-fluid">
+        <h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:0">Maintenance</h1>
+        <ul class="nav nav-pills" id="tabs">
+            <li class="active">
+                <a href="#pending">Pending</a>
+            </li>
+            <li>
+                <a href="#closed">Closed</a>
+            </li>
+        </ul>
+    </div>
+    <div class="tab-content">
+        <div id="pending" class="tab-pane active">
+            <div class="split-screen-left-panel">
+                <table id="pending_tasks" class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>
+                                <a href="{% url 'maintenance' sort_by='urgency' %}">Urgency</a>
+                            </th>
+                            <th>
+                                <a href="{% url 'maintenance' sort_by='force_shutdown' %}">Severity</a>
+                            </th>
+                            <th>
+                                <a href="{% url 'maintenance' sort_by='tool' %}">Tool</a>
+                            </th>
+                            <th>
+                                <a href="{% url 'maintenance' sort_by='problem_category' %}">Category</a>
+                            </th>
+                            <th>
+                                <a href="{% url 'maintenance' sort_by='last_updated' %}">Last updated</a>
+                            </th>
+                            <th>
+                                <a href="{% url 'maintenance' sort_by='creation_time' %}">Created</a>
+                            </th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    {% for task in pending_tasks %}
+                        <tr onclick="pending_task_details(this, '{% url 'task_details' task.id %}')"
+                            data-task-id="{{ task.id }}">
+                            <td>{{ task.get_urgency_display }}</td>
+                            <td>
+                                {% if task.force_shutdown %}
+                                    <span class="glyphicon glyphicon-fire danger-highlight"></span>
+                                {% else %}
+                                    <span class="glyphicon glyphicon-wrench warning-highlight"></span>
+                                {% endif %}
+                            </td>
+                            <td>{{ task.tool.name }}</td>
+                            <td>{{ task.problem_category|default_if_none:"" }}</td>
+                            <td>
+                                {% if task.last_updated and task.last_updated_by %}
+                                    {{ task.last_updated|naturaltime }} by {{ task.last_updated_by.first_name }}
+                                {% endif %}
+                            </td>
+                            <td>{{ task.creation_time|naturaltime }}</td>
+                            <td>{{ task.problem_description }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <div id="pending_task_details" class="split-screen-right-panel"></div>
+        </div>
+        <div id="closed" class="tab-pane">
+            <div class="split-screen-left-panel">
+                <table id="closed_tasks" class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Urgency</th>
+                            <th>Severity</th>
+                            <th>Tool</th>
+                            <th>Category</th>
+                            <th>Created</th>
+                            <th>Resolved</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    {% for task in closed_tasks %}
+                        <tr onclick="closed_task_details(this, '{% url 'task_details' task.id %}')">
+                            <td>{{ task.get_urgency_display }}</td>
+                            <td>
+                                {% if task.force_shutdown %}
+                                    <span class="glyphicon glyphicon-fire danger-highlight"></span>
+                                {% else %}
+                                    <span class="glyphicon glyphicon-wrench warning-highlight"></span>
+                                {% endif %}
+                            </td>
+                            <td>{{ task.tool.name }}</td>
+                            <td>{{ task.problem_category|default_if_none:"" }}</td>
+                            <td>{{ task.creation_time }}</td>
+                            <td>{{ task.resolution_time }}</td>
+                            <td>{{ task.problem_description }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <div id="closed_task_details" class="split-screen-right-panel"></div>
+        </div>
+    </div>
+    <script>
 	function pending_task_details(row, url)
 	{
 		$("#pending_tasks tr").removeClass('active');
@@ -162,5 +184,6 @@
 
 	$(on_load);
 
-	</script>
+	
+    </script>
 {% endblock %}

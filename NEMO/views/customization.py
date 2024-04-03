@@ -359,9 +359,11 @@ class UserRequestsCustomization(CustomizationBase):
                 delta = (
                     relativedelta(months=interval)
                     if freq == RecurrenceFrequency.MONTHLY
-                    else relativedelta(weeks=interval)
-                    if freq == RecurrenceFrequency.WEEKLY
-                    else relativedelta(days=interval)
+                    else (
+                        relativedelta(weeks=interval)
+                        if freq == RecurrenceFrequency.WEEKLY
+                        else relativedelta(days=interval)
+                    )
                 )
                 return timezone.now() - delta
         except:

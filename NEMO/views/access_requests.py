@@ -215,11 +215,7 @@ def send_request_received_email(request, access_request: TemporaryPhysicalAccess
         status = (
             "approved"
             if access_request.status == RequestStatus.APPROVED
-            else "denied"
-            if access_request.status == RequestStatus.DENIED
-            else "updated"
-            if edit
-            else "received"
+            else "denied" if access_request.status == RequestStatus.DENIED else "updated" if edit else "received"
         )
         absolute_url = get_full_url(reverse("user_requests", kwargs={"tab": "access"}), request)
         color_type = "success" if status == "approved" else "danger" if status == "denied" else "info"

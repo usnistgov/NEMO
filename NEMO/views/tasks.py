@@ -124,9 +124,9 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
     # Email the appropriate staff that a new task has been created:
     if message:
         dictionary = {
-            "template_color": bootstrap_primary_color("danger")
-            if task.force_shutdown
-            else bootstrap_primary_color("warning"),
+            "template_color": (
+                bootstrap_primary_color("danger") if task.force_shutdown else bootstrap_primary_color("warning")
+            ),
             "user": request.user,
             "task": task,
             "tool": task.tool,
@@ -310,9 +310,9 @@ def task_update_form(request, task_id):
         "categories": categories,
         "urgency": Task.Urgency.Choices,
         "task": task,
-        "estimated_resolution_time": as_timezone(task.estimated_resolution_time)
-        if task.estimated_resolution_time
-        else None,
+        "estimated_resolution_time": (
+            as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None
+        ),
         "task_statuses": TaskStatus.objects.all(),
     }
     return render(request, "tasks/update.html", dictionary)
@@ -326,9 +326,9 @@ def task_resolution_form(request, task_id):
     dictionary = {
         "categories": categories,
         "task": task,
-        "estimated_resolution_time": as_timezone(task.estimated_resolution_time)
-        if task.estimated_resolution_time
-        else None,
+        "estimated_resolution_time": (
+            as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None
+        ),
     }
     return render(request, "tasks/resolve.html", dictionary)
 

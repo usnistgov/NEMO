@@ -5,12 +5,13 @@
     </head>
     <body>
         <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
-        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+        <table align="center"
+               style="width:100%;
+                      max-width:600px;
+                      font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
             <tr>
                 <td align="center" style="color: white; background: #d9534f; padding: 50px 0;" bgcolor="#d9534f">
-                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
-                        MISSED RESERVATION NOTIFICATION
-                    </h1>
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">MISSED RESERVATION NOTIFICATION</h1>
                 </td>
             </tr>
             <tr>
@@ -21,8 +22,10 @@
                         {{ reservation.start }} and ending at {{ reservation.end }}.
                     </p>
                     <p>
-                        {% if reservation.area %}You were still not logged in to the {{ reservation.area }}
-                        {% else %}The tool was not used for more than
+                        {% if reservation.area %}
+                            You were still not logged in to the {{ reservation.area }}
+                        {% else %}
+                            The tool was not used for more than
                         {% endif %}
                         {{ reservation.reservation_item.missed_reservation_threshold }} minutes after the start
                         of your reservation, therefore your reservation time has been marked as 'missed' in {{ site_title }} and cancelled on the calendar.

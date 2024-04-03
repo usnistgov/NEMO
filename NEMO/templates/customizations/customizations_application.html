@@ -6,29 +6,51 @@
         <div class="form-group">
             <label class="control-label col-md-3" for="facility_name">Facility name</label>
             <div class="col-md-4">
-                <input type="text" id="facility_name" name="facility_name" class="form-control" value="{{ facility_name }}">
+                <input type="text"
+                       id="facility_name"
+                       name="facility_name"
+                       class="form-control"
+                       value="{{ facility_name }}">
             </div>
-            <div class="col-md-5 help-block light-grey">
-                The name of the facility to use in all templates.
-            </div>
+            <div class="col-md-5 help-block light-grey">The name of the facility to use in all templates.</div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-3" for="site_title">Site title</label>
             <div class="col-md-4">
                 <input type="text" id="site_title" name="site_title" class="form-control" value="{{ site_title }}">
             </div>
-            <div class="col-md-5 help-block light-grey">
-                The name of the site to use in all templates/headers.
-            </div>
+            <div class="col-md-5 help-block light-grey">The name of the site to use in all templates/headers.</div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-3">Area login/logout</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">Allow users to log themselves into access controlled areas from the landing page</label><br/>
-                    <label><input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">Allow users to log themselves out of access controlled areas from the landing page</label><br/>
-                    <label><input type="checkbox" name="calendar_login_logout" {% if calendar_login_logout %}checked{% endif %} value="enabled">Show access controlled area login/logout button on calendar view (requires login and/or logout feature enabled above)</label>
-                    {% if "NEMO.apps.area_access"|app_installed %}<label><input type="checkbox" name="area_logout_already_logged_in" {% if area_logout_already_logged_in %}checked{% endif %} value="enabled">Automatically log users out when they try to log in to an area they are already logged in (single entrance/exit tablet mode)</label>{% endif %}
+                    <label>
+                        <input type="checkbox" name="self_log_in" {% if self_log_in %}checked{% endif %} value="enabled">
+                        Allow users to log themselves into access controlled areas from the landing page
+                    </label>
+                    <br />
+                    <label>
+                        <input type="checkbox" name="self_log_out" {% if self_log_out %}checked{% endif %} value="enabled">
+                        Allow users to log themselves out of access controlled areas from the landing page
+                    </label>
+                    <br />
+                    <label>
+                        <input type="checkbox"
+                               name="calendar_login_logout"
+                               {% if calendar_login_logout %}checked{% endif %}
+                               value="enabled">
+                        Show access controlled area login/logout button on calendar view (requires login and/or logout feature enabled above)
+                    </label>
+                    {% if "NEMO.apps.area_access"|app_installed %}
+                        <label>
+                            <input type="checkbox"
+                                   name="area_logout_already_logged_in"
+                                   {% if area_logout_already_logged_in %}checked{% endif %}
+                                   value="enabled">
+                            Automatically log users out when they try to log in to an area they are already logged in (single entrance/exit tablet mode)
+                        </label>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -36,8 +58,15 @@
             <label class="control-label col-md-3">Area usage reminder</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <input type="hidden" name="area_in_usage_reminders" value="off"/>
-                    <label><input type="checkbox" name="area_in_usage_reminders" {% if area_in_usage_reminders != "off" %}checked{% endif %} value="">In usage reminder emails, show areas users are currently logged in</label><br/>
+                    <input type="hidden" name="area_in_usage_reminders" value="off" />
+                    <label>
+                        <input type="checkbox"
+                               name="area_in_usage_reminders"
+                               {% if area_in_usage_reminders != "off" %}checked{% endif %}
+                               value="">
+                        In usage reminder emails, show areas users are currently logged in
+                    </label>
+                    <br />
                 </div>
             </div>
         </div>
@@ -45,22 +74,41 @@
             <label class="control-label col-md-3">Consumables</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="consumable_user_self_checkout" {% if consumable_user_self_checkout %}checked{% endif %} value="enabled">Allow users to self-checkout consumables</label>
+                    <label>
+                        <input type="checkbox"
+                               name="consumable_user_self_checkout"
+                               {% if consumable_user_self_checkout %}checked{% endif %}
+                               value="enabled">
+                        Allow users to self-checkout consumables
+                    </label>
                 </div>
             </div>
             <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                If enabled, you need to add a {% if "django.contrib.admin"|app_installed %}<a href="{% url 'admin:NEMO_landingpagechoice_changelist' %}">landing page choice</a>{% else %}landing page option{% endif %} with url <b>/consumables/</b> so users can have a way to get to the page.
+                If enabled, you need to add a
+                {% if "django.contrib.admin"|app_installed %}
+                    <a href="{% url 'admin:NEMO_landingpagechoice_changelist' %}">landing page choice</a>
+                {% else %}
+                    landing page option
+                {% endif %}
+                with url <b>/consumables/</b> so users can have a way to get to the page.
             </div>
             <div class="col-md-offset-3 col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" id="consumable_category_collapse" name="consumable_category_collapse" {% if consumable_category_collapse %}checked{% endif %} value="enabled"> Collapse consumable categories by default</label>
+                    <label>
+                        <input type="checkbox"
+                               id="consumable_category_collapse"
+                               name="consumable_category_collapse"
+                               {% if consumable_category_collapse %}checked{% endif %}
+                               value="enabled">
+                        Collapse consumable categories by default
+                    </label>
                 </div>
             </div>
             <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 Check this box to collapse consumable categories by default.
             </div>
         </div>
-		{% if "NEMO.apps.area_access"|app_installed or "NEMO.apps.kiosk"|app_installed %}
+        {% if "NEMO.apps.area_access"|app_installed or "NEMO.apps.kiosk"|app_installed %}
             {% if badge_readers %}
                 <div class="form-group">
                     <label class="control-label col-md-3" for="default_badge_reader_id">Default badge reader</label>
@@ -68,7 +116,10 @@
                         <select id="default_badge_reader_id" name="default_badge_reader_id" class="form-control">
                             <option value="" label="Default badge reader"></option>
                             {% for badge_reader in badge_readers %}
-                                <option value="{{ badge_reader.id }}" label="{{ badge_reader.name }}" {% if default_badge_reader_id|to_int == badge_reader.id %}selected{% endif %}></option>
+                                <option value="{{ badge_reader.id }}"
+                                        label="{{ badge_reader.name }}"
+                                        {% if default_badge_reader_id|to_int == badge_reader.id %}selected{% endif %}>
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -81,17 +132,28 @@
                 <label class="control-label col-md-3" for="show_badge_number">Badge number scan</label>
                 <div class="col-md-9">
                     <div class="checkbox">
-                        <label><input type="checkbox" id="show_badge_number" name="show_badge_number" {% if show_badge_number %}checked{% endif %} value="enabled"> Display badge number when badging in kiosk and area access</label>
+                        <label>
+                            <input type="checkbox"
+                                   id="show_badge_number"
+                                   name="show_badge_number"
+                                   {% if show_badge_number %}checked{% endif %}
+                                   value="enabled">
+                            Display badge number when badging in kiosk and area access
+                        </label>
                     </div>
                 </div>
             </div>
-		{% endif %}
+        {% endif %}
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Page title settings</h3>
         <div class="form-group">
             <label class="control-label col-md-3" for="calendar_page_title">Calendar</label>
             <div class="col-md-4">
-                <input type="text" id="calendar_page_title" name="calendar_page_title" class="form-control" value="{{ calendar_page_title }}">
+                <input type="text"
+                       id="calendar_page_title"
+                       name="calendar_page_title"
+                       class="form-control"
+                       value="{{ calendar_page_title }}">
             </div>
             <div class="col-md-5 help-block light-grey">
                 The title of the "Calendar" page and its corresponding link in the navbar.
@@ -100,7 +162,11 @@
         <div class="form-group">
             <label class="control-label col-md-3" for="tool_control_page_title">Tool control</label>
             <div class="col-md-4">
-                <input type="text" id="tool_control_page_title" name="tool_control_page_title" class="form-control" value="{{ tool_control_page_title }}">
+                <input type="text"
+                       id="tool_control_page_title"
+                       name="tool_control_page_title"
+                       class="form-control"
+                       value="{{ tool_control_page_title }}">
             </div>
             <div class="col-md-5 help-block light-grey">
                 The title of the "Tool control" page and its corresponding link in the navbar.
@@ -109,7 +175,11 @@
         <div class="form-group">
             <label class="control-label col-md-3" for="status_dashboard_page_title">Status dashboard</label>
             <div class="col-md-4">
-                <input type="text" id="status_dashboard_page_title" name="status_dashboard_page_title" class="form-control" value="{{ status_dashboard_page_title }}">
+                <input type="text"
+                       id="status_dashboard_page_title"
+                       name="status_dashboard_page_title"
+                       class="form-control"
+                       value="{{ status_dashboard_page_title }}">
             </div>
             <div class="col-md-5 help-block light-grey">
                 The title of the "Status dashboard" page and its corresponding link in the navbar.
@@ -118,7 +188,11 @@
         <div class="form-group">
             <label class="control-label col-md-3" for="requests_page_title">Requests</label>
             <div class="col-md-4">
-                <input type="text" id="requests_page_title" name="requests_page_title" class="form-control" value="{{ requests_page_title }}">
+                <input type="text"
+                       id="requests_page_title"
+                       name="requests_page_title"
+                       class="form-control"
+                       value="{{ requests_page_title }}">
             </div>
             <div class="col-md-5 help-block light-grey">
                 The title of the "Requests" page and its corresponding link in the navbar.
@@ -127,15 +201,17 @@
         <div class="form-group">
             <label class="control-label col-md-3" for="safety_page_title">Safety</label>
             <div class="col-md-4">
-                <input type="text" id="safety_page_title" name="safety_page_title" class="form-control" value="{{ safety_page_title }}">
+                <input type="text"
+                       id="safety_page_title"
+                       name="safety_page_title"
+                       class="form-control"
+                       value="{{ safety_page_title }}">
             </div>
             <div class="col-md-5 help-block light-grey">
                 The title of the "Safety" page and its corresponding link in the navbar.
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <div class="text-center">
-            {% button type="save" value="Save settings" %}
-        </div>
+        <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
 </div>

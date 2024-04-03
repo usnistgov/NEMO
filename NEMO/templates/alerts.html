@@ -1,81 +1,130 @@
 {% extends 'base.html' %}
 {% block extrahead %}
-	{% load static %}
-	{% load custom_tags_and_filters %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    {% load static %}
+    {% load custom_tags_and_filters %}
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block title %}Alerts{% endblock %}
 {% block content %}
-	<h1>Alerts</h1>
-	{% if form.non_field_errors %}
-		<div class="alert alert-danger">
-			{{ form.non_field_errors }}
-		</div>
-	{% endif %}
-	<p>
-		You can create and edit alerts that will be visible to everyone. The alert will only be visible after the debut time and will be deleted after the expiration time. (HTML syntax is allowed).
-	</p>
-	<form action="{% url 'alerts' %}" method="post" class="well">
-		<h4>{% if editing %}Edit this alert{% else %}Create a new alert{% endif %}</h4>
-		{% csrf_token %}
-		{% if form.instance.id %}<input type="hidden" name="alert_id" value="{{ form.instance.id }}">{% endif %}
-		<div class="form-group">
-			<label for="title">Title</label>{% if form.title.errors %} - <span style="color:red">{{ form.title.errors }}</span>{% endif %}
-			<input type="text" class="form-control" name="title" id="title" value="{{ form.title.value|default_if_none:"" }}" maxlength="{{ form.fields.title.max_length }}" autofocus>
-		</div>
-		{% if alert_categories %}
-			<div class="form-group">
-				<label for="category">Type</label>{% if form.category.errors %} - <span style="color:red">{{ form.category.errors|striptags }}</span>{% endif %}
-				<select id="category" name="category" class="form-control">
-					<option value="" disabled selected>Select an alert type</option>
-					{% for category in alert_categories %}
-						<option value="{{ category.name }}" {% if form.category.value == category.name %}selected{% endif %}>{{ category.name }}</option>
-					{% endfor %}
-				</select>
-			</div>
-		{% endif %}
-		<div class="form-group">
-			<label for="contents">Contents</label>{% if form.contents.errors %} - <span style="color:red">{{ form.contents.errors|striptags }}</span>{% endif %}
-			<textarea rows="3" class="form-control" name="contents" id="contents" maxlength="{{ form.fields.contents.max_length }}">{{ form.contents.value|default_if_none:"" }}</textarea>
-		</div>
-		<div class="form-group">
-			<div class="row">
-				<div class="col-sm-6">
-					<label for="debut_time">Debut time</label>{% if form.debut_time.errors %} - <span style="color:red">{{ form.debut_time.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control" name="debut_time" id="debut_time" value="{% if form.debut_time.value %}{{ form.debut_time.value|input_date_format }}{% else %}{{ now|input_date_format }}{% endif %}">
-				</div>
-				<div class="col-sm-6">
-					<label for="expiration_time">Expiration time</label>{% if form.expiration_time.errors %} - <span style="color:red">{{ form.expiration_time.errors|striptags }}</span>{% endif %}
-					<input type="text" class="form-control" name="expiration_time" id="expiration_time" value="{{ form.expiration_time.value|input_date_format }}">
-				</div>
-			</div>
-		</div>
-		<div class="form-group">
-            {% button type="save" value=editing|yesno:"Save changes,Create alert" %}
-		</div>
-	</form>
-	<div class="row">
-		{% for a in alerts %}
-			<div class="col-sm-6">
-				<div class="alert alert-danger">
-					<form id="delete_alert_{{ a.id }}" method="post" action="{% url 'delete_alert' a.id %}">
-						{% csrf_token %}
-						<span class="glyphicon glyphicon-remove pull-right" style="cursor:pointer" onclick="$('#delete_alert_{{ a.id }}').submit()" data-toggle="tooltip" data-placement="top" title="Delete this alert"></span>
-					</form>
-					<form id="edit_alert_{{ a.id }}" method="get" action="{% url 'alerts' %}">
-						<span class="glyphicon glyphicon-pencil pull-right" style="margin-right:10px; cursor:pointer" onclick="$('#edit_alert_{{ a.id }}').submit()" data-toggle="tooltip" data-placement="top" title="Edit this alert"></span>
-						<input type="hidden" name="alert_id" value="{{ a.id }}">
-					</form>
-					{% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
-					{{ a.contents|safe|linebreaksbr }}
-					<br><br>Debuts on {{ a.debut_time }}<br>
-					{% if a.expiration_time %}Expires on {{ a.expiration_time }}{% else %}This alert will never expire{% endif %}<br>
-				</div>
-			</div>
-		{% endfor %}
-	</div>
-	<script>
+    <h1>Alerts</h1>
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <p>
+        You can create and edit alerts that will be visible to everyone. The alert will only be visible after the debut time and will be deleted after the expiration time. (HTML syntax is allowed).
+    </p>
+    <form action="{% url 'alerts' %}" method="post" class="well">
+        <h4>
+            {% if editing %}
+                Edit this alert
+            {% else %}
+                Create a new alert
+            {% endif %}
+        </h4>
+        {% csrf_token %}
+        {% if form.instance.id %}<input type="hidden" name="alert_id" value="{{ form.instance.id }}">{% endif %}
+        <div class="form-group">
+            <label for="title">Title</label>
+            {% if form.title.errors %}- <span style="color:red">{{ form.title.errors }}</span>{% endif %}
+            <input type="text"
+                   class="form-control"
+                   name="title"
+                   id="title"
+                   value="{{ form.title.value|default_if_none:"" }}"
+                   maxlength="{{ form.fields.title.max_length }}"
+                   autofocus>
+        </div>
+        {% if alert_categories %}
+            <div class="form-group">
+                <label for="category">Type</label>
+                {% if form.category.errors %}- <span style="color:red">{{ form.category.errors|striptags }}</span>{% endif %}
+                <select id="category" name="category" class="form-control">
+                    <option value="" disabled selected>Select an alert type</option>
+                    {% for category in alert_categories %}
+                        <option value="{{ category.name }}" {% if form.category.value == category.name %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+        <div class="form-group">
+            <label for="contents">Contents</label>
+            {% if form.contents.errors %}- <span style="color:red">{{ form.contents.errors|striptags }}</span>{% endif %}
+            <textarea rows="3"
+                      class="form-control"
+                      name="contents"
+                      id="contents"
+                      maxlength="{{ form.fields.contents.max_length }}">{{ form.contents.value|default_if_none:"" }}</textarea>
+        </div>
+        <div class="form-group">
+            <div class="row">
+                <div class="col-sm-6">
+                    <label for="debut_time">Debut time</label>
+                    {% if form.debut_time.errors %}- <span style="color:red">{{ form.debut_time.errors|striptags }}</span>{% endif %}
+                    <input type="text"
+                           class="form-control"
+                           name="debut_time"
+                           id="debut_time"
+                           value="{% if form.debut_time.value %}{{ form.debut_time.value|input_date_format }}{% else %}{{ now|input_date_format }}{% endif %}">
+                </div>
+                <div class="col-sm-6">
+                    <label for="expiration_time">Expiration time</label>
+                    {% if form.expiration_time.errors %}
+                        - <span style="color:red">{{ form.expiration_time.errors|striptags }}</span>
+                    {% endif %}
+                    <input type="text"
+                           class="form-control"
+                           name="expiration_time"
+                           id="expiration_time"
+                           value="{{ form.expiration_time.value|input_date_format }}">
+                </div>
+            </div>
+        </div>
+        <div class="form-group">{% button type="save" value=editing|yesno:"Save changes,Create alert" %}</div>
+    </form>
+    <div class="row">
+        {% for a in alerts %}
+            <div class="col-sm-6">
+                <div class="alert alert-danger">
+                    <form id="delete_alert_{{ a.id }}" method="post" action="{% url 'delete_alert' a.id %}">
+                        {% csrf_token %}
+                        <span class="glyphicon glyphicon-remove pull-right"
+                              style="cursor:pointer"
+                              onclick="$('#delete_alert_{{ a.id }}').submit()"
+                              data-toggle="tooltip"
+                              data-placement="top"
+                              title="Delete this alert"></span>
+                    </form>
+                    <form id="edit_alert_{{ a.id }}" method="get" action="{% url 'alerts' %}">
+                        <span class="glyphicon glyphicon-pencil pull-right"
+                              style="margin-right:10px;
+                                     cursor:pointer"
+                              onclick="$('#edit_alert_{{ a.id }}').submit()"
+                              data-toggle="tooltip"
+                              data-placement="top"
+                              title="Edit this alert"></span>
+                        <input type="hidden" name="alert_id" value="{{ a.id }}">
+                    </form>
+                    {% if a.title %}
+                        <span style="font-weight:bold">{{ a.title }}</span>
+                        <br>
+                    {% endif %}
+                    {{ a.contents|safe|linebreaksbr }}
+                    <br>
+                    <br>
+                    Debuts on {{ a.debut_time }}
+                    <br>
+                    {% if a.expiration_time %}
+                        Expires on {{ a.expiration_time }}
+                    {% else %}
+                        This alert will never expire
+                    {% endif %}
+                    <br>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <script>
 		let timepicker_properties = {
             format: "{{ datetime_input_js_format }}",
 			sideBySide: true
@@ -83,5 +132,6 @@
 		$('#debut_time').datetimepicker(timepicker_properties);
 		$('#expiration_time').datetimepicker(timepicker_properties);
 		$('.glyphicon').tooltip({container: 'body'});
-	</script>
+	
+    </script>
 {% endblock %}

@@ -2,7 +2,7 @@
 {% load custom_tags_and_filters %}
 {% block title %}{{ recurring_charges_name }}{% endblock %}
 {% block before_pagination %}
-	<div class="h1 row">
+    <div class="h1 row">
         <div class="col-xs-6 col-sm-7 col-md-8">{{ recurring_charges_name }}</div>
         <div class="col-xs-6 col-sm-5 col-md-4 text-right">
             {% button type="export" value="Export" url="export_recurring_charges" target="_blank" %}
@@ -10,11 +10,16 @@
                 {% button value="Add item" type="add" url="create_recurring_charge" %}
             {% endif %}
         </div>
-	</div>
+    </div>
     {% if page %}
         <div class="row" style="margin-bottom: 25px">
             <div class="col-sm-6">
-                <input id="search" type="text" aria-label="Search for {{ recurring_charges_name|lower }}" placeholder="Search for {{ recurring_charges_name|lower }}" class="form-control" autofocus>
+                <input id="search"
+                       type="text"
+                       aria-label="Search for {{ recurring_charges_name|lower }}"
+                       placeholder="Search for {{ recurring_charges_name|lower }}"
+                       class="form-control"
+                       autofocus>
             </div>
         </div>
     {% endif %}
@@ -25,7 +30,9 @@
         <thead>
             <tr>
                 <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
-                {% if different_quantities|length != 1 or page.0.quantity != 1 %}<th>{% include 'pagination/pagination_column.html' with order_by='quantity' name='Quantity' %}</th>{% endif %}
+                {% if different_quantities|length != 1 or page.0.quantity != 1 %}
+                    <th>{% include 'pagination/pagination_column.html' with order_by='quantity' name='Quantity' %}</th>
+                {% endif %}
                 <th>{% include 'pagination/pagination_column.html' with order_by='consumable' name='Item' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='customer' name='Customer' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='project' name='Project' %}</th>
@@ -42,9 +49,20 @@
                     <td>{{ recurring_charge.name }}</td>
                     {% if different_quantities|length != 1 or page.0.quantity != 1 %}<td>{{ recurring_charge.quantity }}</td>{% endif %}
                     <td>{{ recurring_charge.consumable }}</td>
-                    <td {% if recurring_charge.invalid_customer %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_customer|default:'' }}"{% endif %}>{{ recurring_charge.customer|default_if_none:"" }}</td>
-                    <td {% if recurring_charge.invalid_project %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project|default:'' }}"{% endif %}>{{ recurring_charge.project|default_if_none:"" }}</td>
-                    <td style="white-space: nowrap;">{% if recurring_charge.get_recurrence_interval_display %}{{ recurring_charge.get_recurrence_interval_display }} <span class="glyphicon glyphicon-info-sign primary-highlight" style="vertical-align: text-bottom" data-toggle="tooltip" data-title="{{ recurring_charge.get_recurrence_display|default_if_none:'' }}"></span>{% endif %}</td>
+                    <td {% if recurring_charge.invalid_customer %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_customer|default:'' }}"{% endif %}>
+                        {{ recurring_charge.customer|default_if_none:"" }}
+                    </td>
+                    <td {% if recurring_charge.invalid_project %}class="danger" data-toggle="tooltip" data-title="{{ recurring_charge.invalid_project|default:'' }}"{% endif %}>
+                        {{ recurring_charge.project|default_if_none:"" }}
+                    </td>
+                    <td style="white-space: nowrap;">
+                        {% if recurring_charge.get_recurrence_interval_display %}
+                            {{ recurring_charge.get_recurrence_interval_display }} <span class="glyphicon glyphicon-info-sign primary-highlight"
+       style="vertical-align: text-bottom"
+       data-toggle="tooltip"
+       data-title="{{ recurring_charge.get_recurrence_display|default_if_none:'' }}"></span>
+                        {% endif %}
+                    </td>
                     <td>{{ recurring_charge.last_charge|date:'SHORT_DATE_FORMAT' }}</td>
                     <td>{{ recurring_charge.next_charge|date:'SHORT_DATE_FORMAT' }}</td>
                     <td class="button-column-minimum">
@@ -63,7 +81,10 @@
     </table>
 {% endblock %}
 {% block table_empty_content %}
-    <div>There are no current {{ recurring_charges_name|lower }}. {% if extended_permissions %}Please add some by clicking the "Add item" button above.{% endif %}</div>
+    <div>
+        There are no current {{ recurring_charges_name|lower }}.
+        {% if extended_permissions %}Please add some by clicking the "Add item" button above.{% endif %}
+    </div>
 {% endblock %}
 {% block after_pagination %}
     <script>

@@ -2,29 +2,35 @@
 {% load custom_tags_and_filters %}
 {% block title %}{{ item }} calendar{% endblock %}
 {% block content %}
-	<div class="row" style="font-size:1.7em; margin-bottom:20px">
-		<div class="col-xs-2"><a href="{% url 'view_calendar' item_type item.id %}{{ previous_day|date:"Y-m-d" }}/"><span class="glyphicon glyphicon-chevron-left"></span></a></div>
-		<div class="col-xs-8" style="text-align:center">
-			{{ item }}<br>
-			{{ current_day|date:"l" }}<br>
-			{{ current_day|date:"F jS" }}
-		</div>
-		<div class="col-xs-2"><a href="{% url 'view_calendar' item_type item.id %}{{ next_day|date:"Y-m-d" }}/"><span class="glyphicon glyphicon-chevron-right"></span></a></div>
-	</div>
-	{% for event in events %}
-		{% if event|class_name == "Reservation" %}
-			{% include 'mobile/individual_reservation.html' with reservation=event %}
-		{% elif event|class_name == "ScheduledOutage" %}
-			{% include 'mobile/individual_outage.html' with outage=event %}
-		{% endif %}
-	{% empty %}
-		<div style="text-align:center">There are no reservations</div>
-	{% endfor %}
-	<a href="{% url 'new_reservation' item_type item.id current_day_string %}">
-		<svg height="50" width="50" style="position:fixed; right:15px; bottom:15px">
-			<circle cx="25" cy="25" r="25" fill="green"></circle>
-			<rect x="24" y="15" width="3" height="20" fill="white"></rect>
-			<rect x="15" y="24" width="21" height="3" fill="white"></rect>
-		</svg>
-	</a>
+    <div class="row" style="font-size:1.7em; margin-bottom:20px">
+        <div class="col-xs-2">
+            <a href="{% url 'view_calendar' item_type item.id %}{{ previous_day|date:"Y-m-d" }}/"><span class="glyphicon glyphicon-chevron-left"></span></a>
+        </div>
+        <div class="col-xs-8" style="text-align:center">
+            {{ item }}
+            <br>
+            {{ current_day|date:"l" }}
+            <br>
+            {{ current_day|date:"F jS" }}
+        </div>
+        <div class="col-xs-2">
+            <a href="{% url 'view_calendar' item_type item.id %}{{ next_day|date:"Y-m-d" }}/"><span class="glyphicon glyphicon-chevron-right"></span></a>
+        </div>
+    </div>
+    {% for event in events %}
+        {% if event|class_name == "Reservation" %}
+            {% include 'mobile/individual_reservation.html' with reservation=event %}
+        {% elif event|class_name == "ScheduledOutage" %}
+            {% include 'mobile/individual_outage.html' with outage=event %}
+        {% endif %}
+    {% empty %}
+        <div style="text-align:center">There are no reservations</div>
+    {% endfor %}
+    <a href="{% url 'new_reservation' item_type item.id current_day_string %}">
+        <svg height="50" width="50" style="position:fixed; right:15px; bottom:15px">
+            <circle cx="25" cy="25" r="25" fill="green"></circle>
+            <rect x="24" y="15" width="3" height="20" fill="white"></rect>
+            <rect x="15" y="24" width="21" height="3" fill="white"></rect>
+        </svg>
+    </a>
 {% endblock %}

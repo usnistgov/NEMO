@@ -2,7 +2,9 @@
 {% load custom_tags_and_filters %}
 {% block content %}
     <div id="safety-tabs" class="clearfix">
-        <h1 class="safety-title pull-left">{% block safety_title %}Safety{% endblock %}</h1>
+        <h1 class="safety-title pull-left">
+            {% block safety_title %}Safety{% endblock %}
+        </h1>
         {% if show_tabs > 1 %}
             <ul class="nav nav-pills nav-pills-spacer safety-tabs-nav" id="tabs">
                 {% if show_safety %}
@@ -13,9 +15,7 @@
                 {% if show_safety_issues %}
                     <li class="{% if tab == 'safety_issues' %}active{% endif %}">
                         <a href="#safety" onclick="location.href = '{% url "safety_issues" %}'">Safety issues
-                            {% if safety_notification_count %}
-                                <span class="badge badge-tab-top">{{ safety_notification_count }}</span>
-                            {% endif %}
+                            {% if safety_notification_count %}<span class="badge badge-tab-top">{{ safety_notification_count }}</span>{% endif %}
                         </a>
                     </li>
                 {% endif %}
@@ -29,10 +29,8 @@
     </div>
     <div class="tab-content">
         <div class="tab-pane active" id="safety">
-             {% block tab_content %}{% endblock %}
+            {% block tab_content %}{% endblock %}
         </div>
     </div>
-    <script>
-        $("#tabs").find("a").click(switch_tab);
-    </script>
+    <script>$("#tabs").find("a").click(switch_tab);</script>
 {% endblock %}

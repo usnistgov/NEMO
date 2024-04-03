@@ -2,66 +2,92 @@
 {% load custom_tags_and_filters %}
 {% block title %}Users{% endblock %}
 {% block before_pagination %}
-	<div class="h1 row" style="margin-top: 0">
+    <div class="h1 row" style="margin-top: 0">
         {% url "create_or_modify_user" "new" as new_user_url %}
-        <div class="col-xs-3">Users</div>{% if not readonly %}<div class="{% if page %}col-sm-9{% else %}col-sm-3{% endif %} text-right">{% button value="New user" type="add" url=new_user_url %}</div>{% endif %}
-	</div>
-	<div class="row" style="margin-bottom: 25px">
-		<div class="col-sm-6">
-			<input id="search" type="text" aria-label="Search for user" placeholder="Search for a user" class="form-control" autofocus>
-		</div>
-	</div>
+        <div class="col-xs-3">Users</div>
+        {% if not readonly %}
+            <div class="{% if page %}col-sm-9{% else %}col-sm-3{% endif %} text-right">
+                {% button value="New user" type="add" url=new_user_url %}
+            </div>
+        {% endif %}
+    </div>
+    <div class="row" style="margin-bottom: 25px">
+        <div class="col-sm-6">
+            <input id="search"
+                   type="text"
+                   aria-label="Search for user"
+                   placeholder="Search for a user"
+                   class="form-control"
+                   autofocus>
+        </div>
+    </div>
 {% endblock %}
 {% block pagination_content %}
-	<table class="table table-align-middle table-bordered table-condensed table-striped table-hover thead-light">
-			<thead>
-				<tr>
-					<th>{% include 'pagination/pagination_column.html' with order_by='first_name' name='First Name' %}</th>
-					<th>{% include 'pagination/pagination_column.html' with order_by='last_name' name='Last Name' %}</th>
-					<th>{% include 'pagination/pagination_column.html' with order_by='username' name='Username' %}</th>
-					{% if user_types %}<th>{% include 'pagination/pagination_column.html' with order_by='type' name='Type' %}</th>{% endif %}
-					<th>{% include 'pagination/pagination_column.html' with order_by='is_active' name='Active' %}</th>
-					<th>{% include 'pagination/pagination_column.html' with order_by='access_expiration' name='Expiration' %}</th>
-					<th>{% include 'pagination/pagination_column.html' with order_by='is_staff' name='Staff' %}</th>
-					<th>{% include 'pagination/pagination_column.html' with order_by='is_user_office' name='User Office' %}</th>
-					<th>{% include 'pagination/pagination_column.html' with order_by='is_accounting_officer' name='Accounting' %}</th>
-					<th>{% include 'pagination/pagination_column.html' with order_by='is_superuser' name='Admin' %}</th>
-					<th aria-label="Actions"></th>
-				</tr>
-			</thead>
-			<tbody>
-                {% now "Y-m-d" as today %}
-				{% for user in page %}
-					<tr>
-						<td>{{ user.first_name }}</td>
-						<td>{{ user.last_name }}</td>
-						<td>{{ user.username }}</td>
-						{% if user_types %}<td>{{ user.type|default_if_none:"" }}</td>{% endif %}
-						<td class="text-center"><span class="glyphicon {% if user.is_active %}glyphicon-ok success-highlight{% else %}glyphicon-remove danger-highlight{% endif %}"></span></td>
-						<td class="text-center"><span class="{% if user.access_expiration and user.access_expiration|date:"Y-m-d" < today %}danger-highlight{% endif %}">{{ user.access_expiration|date:"SHORT_DATE_FORMAT" }}</span></td>
-						<td class="text-center"><span class="glyphicon {% if user.is_staff %}glyphicon-ok success-highlight{% endif %}"></span></td>
-						<td class="text-center"><span class="glyphicon {% if user.is_user_office %}glyphicon-ok success-highlight{% endif %}"></span></td>
-						<td class="text-center"><span class="glyphicon {% if user.is_accounting_officer %}glyphicon-ok success-highlight{% endif %}"></span></td>
-						<td class="text-center"><span class="glyphicon {% if user.is_superuser %}glyphicon-ok success-highlight{% endif %}"></span></td>
-						<td class="text-center button-column-minimum">
-                            {% url 'create_or_modify_user' user.id as edit_url %}
-                            {% if not readonly %}
-                                {% with next=request.get_full_path|urlencode %}
-                                    {% button value="Edit" type="edit" size="small" url=edit_url|concat:"?next="|concat:next %}
-                                    {% url "deactivate_user" user.id as deactivate_user_url %}
-                                    {% if user.is_active %}{% button type="warn" size="small" icon="glyphicon-ban-circle" value="Deactivate" title="Deactivate user" url=deactivate_user_url %}{% endif %}
-                                {% endwith %}
-                            {% else %}
-                                {% button type="view" size="small" url=edit_url value="View" %}
-                            {% endif %}
-						</td>
-					</tr>
-				{% endfor %}
-			</tbody>
-		</table>
+    <table class="table table-align-middle table-bordered table-condensed table-striped table-hover thead-light">
+        <thead>
+            <tr>
+                <th>{% include 'pagination/pagination_column.html' with order_by='first_name' name='First Name' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='last_name' name='Last Name' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='username' name='Username' %}</th>
+                {% if user_types %}
+                    <th>{% include 'pagination/pagination_column.html' with order_by='type' name='Type' %}</th>
+                {% endif %}
+                <th>{% include 'pagination/pagination_column.html' with order_by='is_active' name='Active' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='access_expiration' name='Expiration' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='is_staff' name='Staff' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='is_user_office' name='User Office' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='is_accounting_officer' name='Accounting' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='is_superuser' name='Admin' %}</th>
+                <th aria-label="Actions"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% now "Y-m-d" as today %}
+            {% for user in page %}
+                <tr>
+                    <td>{{ user.first_name }}</td>
+                    <td>{{ user.last_name }}</td>
+                    <td>{{ user.username }}</td>
+                    {% if user_types %}<td>{{ user.type|default_if_none:"" }}</td>{% endif %}
+                    <td class="text-center">
+                        <span class="glyphicon {% if user.is_active %}glyphicon-ok success-highlight{% else %}glyphicon-remove danger-highlight{% endif %}"></span>
+                    </td>
+                    <td class="text-center">
+                        <span class="{% if user.access_expiration and user.access_expiration|date:"Y-m-d" < today %}danger-highlight{% endif %}">{{ user.access_expiration|date:"SHORT_DATE_FORMAT" }}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="glyphicon {% if user.is_staff %}glyphicon-ok success-highlight{% endif %}"></span>
+                    </td>
+                    <td class="text-center">
+                        <span class="glyphicon {% if user.is_user_office %}glyphicon-ok success-highlight{% endif %}"></span>
+                    </td>
+                    <td class="text-center">
+                        <span class="glyphicon {% if user.is_accounting_officer %}glyphicon-ok success-highlight{% endif %}"></span>
+                    </td>
+                    <td class="text-center">
+                        <span class="glyphicon {% if user.is_superuser %}glyphicon-ok success-highlight{% endif %}"></span>
+                    </td>
+                    <td class="text-center button-column-minimum">
+                        {% url 'create_or_modify_user' user.id as edit_url %}
+                        {% if not readonly %}
+                            {% with next=request.get_full_path|urlencode %}
+                                {% button value="Edit" type="edit" size="small" url=edit_url|concat:"?next="|concat:next %}
+                                {% url "deactivate_user" user.id as deactivate_user_url %}
+                                {% if user.is_active %}
+                                    {% button type="warn" size="small" icon="glyphicon-ban-circle" value="Deactivate" title="Deactivate user" url=deactivate_user_url %}
+                                {% endif %}
+                            {% endwith %}
+                        {% else %}
+                            {% button type="view" size="small" url=edit_url value="View" %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}
 {% block after_pagination %}
-	<script>
+    <script>
 		function get_user(jquery_event, search_selection, dataset_name)
 		{
 			window.location.href = "{% url 'create_or_modify_user' 999 %}".replace('999', search_selection.id);
@@ -71,5 +97,6 @@
 			$("#search").autocomplete('users', get_user, '{% url 'user_search' %}', true).focus();
 		}
 		window.addEventListener('load', on_load, true);
-	</script>
+	
+    </script>
 {% endblock %}

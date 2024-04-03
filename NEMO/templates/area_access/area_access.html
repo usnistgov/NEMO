@@ -2,76 +2,107 @@
 {% load custom_tags_and_filters %}
 {% block title %}Area access{% endblock %}
 {% block extrahead %}
-	{% load static %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
+    {% load static %}
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block content %}
-	<h1>Area access</h1>
-	<p>You can <a href="{% url 'new_area_access_record' %}">manually create an area access record</a> under extraordinary circumstances.</p>
-	View area access records for:
-	<ul>
-		<li><a href="{{ today }}">Today</a></li>
-		<li><a href="{{ yesterday }}">Yesterday</a></li>
-		<li>Or, enter a custom date range</li>
-	</ul>
-	<form id="view_records" action="{% url 'area_access' %}" class="form-inline" method="get" style="margin-top: 15px; width: 500px;">
-		<div class="form-group col-md-3 form-control-static">Date range:</div>
-		<div class="form-group">
-			<div class="form-group">
-				<div class="datetimepicker-container">
-					<input type="text" id="start" name="start" aria-label="Start date" class="form-control" autocomplete="off" placeholder="start" value="{{ start.date|input_date_format }}">
-				</div>
-			</div>
-			<div class="form-group">
-				<div class="datetimepicker-container">
-					<input type="text" id="end" name="end" aria-label="End date" class="form-control" autocomplete="off" placeholder="end" value="{{ end.date|input_date_format }}">
-				</div>
-			</div>
-		</div>
-		<div style="margin-top: 15px">
-			<div class="form-group col-md-3 form-control-static">Area:</div>
-			<div class="form-group">
-				{{ area_select_field }}
-			</div>
-		</div>
-		<div class="form-group col-md-12" style="margin-top: 15px">
+    <h1>Area access</h1>
+    <p>
+        You can <a href="{% url 'new_area_access_record' %}">manually create an area access record</a> under extraordinary circumstances.
+    </p>
+    View area access records for:
+    <ul>
+        <li>
+            <a href="{{ today }}">Today</a>
+        </li>
+        <li>
+            <a href="{{ yesterday }}">Yesterday</a>
+        </li>
+        <li>Or, enter a custom date range</li>
+    </ul>
+    <form id="view_records"
+          action="{% url 'area_access' %}"
+          class="form-inline"
+          method="get"
+          style="margin-top: 15px;
+                 width: 500px">
+        <div class="form-group col-md-3 form-control-static">Date range:</div>
+        <div class="form-group">
+            <div class="form-group">
+                <div class="datetimepicker-container">
+                    <input type="text"
+                           id="start"
+                           name="start"
+                           aria-label="Start date"
+                           class="form-control"
+                           autocomplete="off"
+                           placeholder="start"
+                           value="{{ start.date|input_date_format }}">
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="datetimepicker-container">
+                    <input type="text"
+                           id="end"
+                           name="end"
+                           aria-label="End date"
+                           class="form-control"
+                           autocomplete="off"
+                           placeholder="end"
+                           value="{{ end.date|input_date_format }}">
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 15px">
+            <div class="form-group col-md-3 form-control-static">Area:</div>
+            <div class="form-group">{{ area_select_field }}</div>
+        </div>
+        <div class="form-group col-md-12" style="margin-top: 15px">
             {% button type="view" value="View access records" submit=True %}
-		</div>
-	</form>
-	<div class="col-lg-12" style="margin-top:30px">
-		{% if access_records %}
-			<table class="table table-bordered table-condensed">
-				<thead>
-					<tr>
-						<th>Area</th>
-						<th>Identifier</th>
-						<th>User</th>
-						<th>Project</th>
-						<th>Start</th>
-						<th>End</th>
-					</tr>
-				</thead>
-				<tbody>
-					{% for x in access_records %}
-						<tr>
-							<td>{{ x.area }}</td>
-							<td>{{ x.id }}</td>
-							<td>{{ x.customer }}</td>
-							<td>{{ x.project }}</td>
-							<td>{{ x.start }}</td>
-							<td>{{ x.end|default:"In progress" }}</td>
-						</tr>
-					{% endfor %}
-				</tbody>
-			</table>
-		{% else %}
-			{% if start or end %}
-				No access records exist {% if start and end %}between {{ start }} and {{ end }}{% elif start %}after {{ start }}{% else %}before {{ end }}{% endif %}.
-			{% endif %}
-		{% endif %}
-	</div>
-	<script>
+        </div>
+    </form>
+    <div class="col-lg-12" style="margin-top:30px">
+        {% if access_records %}
+            <table class="table table-bordered table-condensed">
+                <thead>
+                    <tr>
+                        <th>Area</th>
+                        <th>Identifier</th>
+                        <th>User</th>
+                        <th>Project</th>
+                        <th>Start</th>
+                        <th>End</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for x in access_records %}
+                        <tr>
+                            <td>{{ x.area }}</td>
+                            <td>{{ x.id }}</td>
+                            <td>{{ x.customer }}</td>
+                            <td>{{ x.project }}</td>
+                            <td>{{ x.start }}</td>
+                            <td>{{ x.end|default:"In progress" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            {% if start or end %}
+                No access records exist
+                {% if start and end %}
+                    between {{ start }} and {{ end }}
+                {% elif start %}
+                    after {{ start }}
+                {% else %}
+                    before {{ end }}
+                {% endif %}
+                .
+            {% endif %}
+        {% endif %}
+    </div>
+    <script>
 		function on_load()
 		{
 			let timepicker_properties =
@@ -82,5 +113,6 @@
 			$('#end').datetimepicker(timepicker_properties);
 		}
 		$(on_load);
-	</script>
+	
+    </script>
 {% endblock %}

@@ -2,28 +2,28 @@
 {% load custom_tags_and_filters %}
 {% block title %}Bill to a different project{% endblock %}
 {% block content %}
-	<h1>Bill area access to a different project</h1>
-	{% if error %}
-		<div class="alert alert-danger">
-			{{ error }}
-		</div>
-	{% endif %}
-	{% if user.in_area %}
-		<p>You are billing {{ user.area_access_record.area.name }} access to the project named {{ user.billing_to_project }} since {{ user.area_access_record.start }}.</p>
-		{% if user.active_project_count > 1 %}
-			<p>Would you like to bill area access to a different project?</p>
-			{% for project in user.active_projects %}
-				{% if user.billing_to_project != project %}
-					<form action="{% url 'change_project' project.id %}" method="post">
-						<div class="form-group">
-							{% csrf_token %}
-                            <button type="submit" class="btn btn-warning" title="{{ project.name }}">{% project_selection_display project %}</button>
-						</div>
-					</form>
-				{% endif %}
-			{% endfor %}
-		{% endif %}
-	{% else %}
-		<p>You are not currently billing area access.</p>
-	{% endif %}
+    <h1>Bill area access to a different project</h1>
+    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+    {% if user.in_area %}
+        <p>
+            You are billing {{ user.area_access_record.area.name }} access to the project named {{ user.billing_to_project }} since {{ user.area_access_record.start }}.
+        </p>
+        {% if user.active_project_count > 1 %}
+            <p>Would you like to bill area access to a different project?</p>
+            {% for project in user.active_projects %}
+                {% if user.billing_to_project != project %}
+                    <form action="{% url 'change_project' project.id %}" method="post">
+                        <div class="form-group">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning" title="{{ project.name }}">
+                                {% project_selection_display project %}
+                            </button>
+                        </div>
+                    </form>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    {% else %}
+        <p>You are not currently billing area access.</p>
+    {% endif %}
 {% endblock %}

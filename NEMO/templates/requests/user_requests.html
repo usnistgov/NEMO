@@ -2,7 +2,11 @@
 {% block title %}{{ requests_page_title }}{% endblock %}
 {% block content %}
     <div class="clearfix" style="margin-top: 0;">
-        <ul class="nav nav-pills nav-pills-spacer" id="tabs" style="display: inline-block;float: right; margin-bottom: 15px">
+        <ul class="nav nav-pills nav-pills-spacer"
+            id="tabs"
+            style="display: inline-block;
+                   float: right;
+                   margin-bottom: 15px">
             {% if access_user_request_allowed_exist and facility_managers_exist %}
                 <li class="{% if tab == 'access' %}active{% endif %}">
                     <a href="#access-requests" onclick="location.href = '{% url "user_requests" "access" %}'">{{ access_requests_title }}
@@ -15,9 +19,7 @@
             {% if buddy_system_areas_exist %}
                 <li class="{% if tab == 'buddy' %}active{% endif %}">
                     <a href="#buddy-requests" onclick="location.href = '{% url "user_requests" "buddy" %}'">{{ buddy_requests_title }}
-                        {% if buddy_notification_count %}
-                            <span class="badge badge-tab-top">{{ buddy_notification_count }}</span>
-                        {% endif %}
+                        {% if buddy_notification_count %}<span class="badge badge-tab-top">{{ buddy_notification_count }}</span>{% endif %}
                     </a>
                 </li>
             {% endif %}
@@ -31,7 +33,17 @@
                 </li>
             {% endif %}
         </ul>
-        <h1 class="pull-left" style="margin-top: 0;margin-right: 20px">{% if tab == 'access' %}{{ access_requests_title }}{% elif tab == 'buddy' %}{{ buddy_requests_title }}{% elif tab == 'adjustment' %}{{ adjustment_requests_title }}{% else %}Requests{% endif %}</h1>
+        <h1 class="pull-left" style="margin-top: 0;margin-right: 20px">
+            {% if tab == 'access' %}
+                {{ access_requests_title }}
+            {% elif tab == 'buddy' %}
+                {{ buddy_requests_title }}
+            {% elif tab == 'adjustment' %}
+                {{ adjustment_requests_title }}
+            {% else %}
+                Requests
+            {% endif %}
+        </h1>
     </div>
     <div class="tab-content">
         {% if access_user_request_allowed_exist and facility_managers_exist %}
@@ -40,7 +52,7 @@
             </div>
         {% endif %}
         {% if buddy_system_areas_exist %}
-	        <div class="tab-pane{% if tab == 'buddy' %} active{% endif %}" id="buddy-requests">
+            <div class="tab-pane{% if tab == 'buddy' %} active{% endif %}" id="buddy-requests">
                 {# This will be loaded asynchronously #}
             </div>
         {% endif %}

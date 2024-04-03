@@ -1,39 +1,47 @@
 {% if no_occupants %}
-	Nobody is in an access controlled {{ facility_name }} area.
+    Nobody is in an access controlled {{ facility_name }} area.
 {% else %}
-	<p>
-		Staff members are highlighted in <span class="bg-success">&nbsp;green&nbsp;</span><br>
-		Service personnel are highlighted in <span class="bg-warning">&nbsp;orange&nbsp;</span><br>
+    <p>
+        Staff members are highlighted in <span class="bg-success">&nbsp;green&nbsp;</span>
+        <br>
+        Service personnel are highlighted in <span class="bg-warning">&nbsp;orange&nbsp;</span>
+        <br>
         {% if reservations_can_expire %}
-        Users with expired reservations are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
+            Users with expired reservations are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
         {% endif %}
         Users logged in outside of their allowed schedule are highlighted in <span class="bg-danger">&nbsp;red&nbsp;</span>
-	</p>
-	<ul class="area-tree-list area-tree-root" style="margin-top: 25px;padding-left: 0">
-		{% for area_item in area_items %}
-			{% if area_item == "in" %}
-				<ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ forloop.counter }}">
-			{% else %}
-				{% if area_item == "out" %}
-						</ul>
-					</li>
-				{% else %}
-					{% if area_item.leaf %}
-						<li class="area-tree-leaf">
-							{% include 'occupancy/occupancy_content.html' with area=area_item.item occupants=area_item.occupants show_force_logout=True %}
-						</li>
-					{% else %}
-						<li class="area-tree-node">
-							<a class="h3" onclick="toggle_details(this)" data-toggle="collapse" aria-expanded="true" data-target="#area-{{ forloop.counter|add:1 }}">
-								<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-								<span class="media-heading">{{ area_item.name }}</span>
-								{% if area_item.maximum_capacity %}
-									 <span style="font-size: large;padding-left: 40px">{% include 'occupancy/occupancy_count.html' with area=area_item.item %}</span>
-								{% endif %}
-							</a>
-					{% endif %}
-				{% endif %}
-			{% endif %}
-		{% endfor %}
-	</ul>
+    </p>
+    <ul class="area-tree-list area-tree-root" style="margin-top: 25px;padding-left: 0">
+        {% for area_item in area_items %}
+            {% if area_item == "in" %}
+                <ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ forloop.counter }}">
+                {% else %}
+                    {% if area_item == "out" %}
+                    </ul>
+                </li>
+            {% else %}
+                {% if area_item.leaf %}
+                    <li class="area-tree-leaf">
+                        {% include 'occupancy/occupancy_content.html' with area=area_item.item occupants=area_item.occupants show_force_logout=True %}
+                    </li>
+                {% else %}
+                    <li class="area-tree-node">
+                        <a class="h3"
+                           onclick="toggle_details(this)"
+                           data-toggle="collapse"
+                           aria-expanded="true"
+                           data-target="#area-{{ forloop.counter|add:1 }}">
+                            <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                            <span class="media-heading">{{ area_item.name }}</span>
+                            {% if area_item.maximum_capacity %}
+                                <span style="font-size: large;padding-left: 40px">
+                                    {% include 'occupancy/occupancy_count.html' with area=area_item.item %}
+                                </span>
+                            {% endif %}
+                        </a>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </ul>
 {% endif %}
