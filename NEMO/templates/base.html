@@ -83,7 +83,7 @@
 			{% endif %}
             {# Content goes here #}
             {% block content %}{% endblock %}
-            <div class="modal-footer">{% block footer %}{% endblock %}</div>
+            {% spaceless %}<div class="modal-footer">{% block footer %}{% endblock %}</div>{% endspaceless %}
         </div>
         {% block extra_whitespace %}
             <div style="height: 200px"></div>
