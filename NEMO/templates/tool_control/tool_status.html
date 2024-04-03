@@ -319,8 +319,8 @@
 			{%  endif %}
 			{% if not tool.in_use %}
 				{% if show_wait_list and not wait_list_position == 1 %}
-					<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#use-tool" class="pointer" style="margin-bottom: 10px; margin-top: 10px; display: block; color: darkgrey;" >
-						<span class="glyphicon glyphicon-chevron-right chevron"></span> Skip Wait List
+					<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#use-tool" class="pointer" style="padding-bottom: 10px; padding-top: 10px; display: block; color: darkgrey;" >
+						<span class="glyphicon glyphicon-chevron-right chevron"></span>Skip Wait List
 					</a>
 				{% endif %}
 				<div id="use-tool" class="{% if show_wait_list and not wait_list_position == 1 %}collapse{% endif %}">
@@ -385,13 +385,13 @@
 							{% button type="delete" style="margin-right: 20px;" submit=False icon="glyphicon-trash" value="Exit Wait List for "|concat:tool.name onclick="exit_wait_list('"|concat:tool.id|concat:"'); return false;" %}
 						{% endif %}
 						{% if wait_list.count > 0 %}
-							<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#wait-list-content" class="pointer" style="display: block; margin-top: 10px;">
-								<span class="glyphicon glyphicon-chevron-right chevron"></span> Show Wait List
+							<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#wait-list-content" class="pointer" style="display: block; padding-top: 10px;">
+								<span class="glyphicon glyphicon-chevron-right chevron"></span>Show Wait List
 							</a>
 						{% endif %}
 					</div>
 					{% if wait_list.count > 0 %}
-						<div id="wait-list-content"  style="margin-top: 10px;" class="collapse">
+						<div id="wait-list-content"  style="padding-top: 10px;" class="collapse">
 							<table style="margin-top: 10px;" class="table table-condensed table-striped table-bordered">
 								<thead>
 									<tr>

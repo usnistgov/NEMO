@@ -226,9 +226,7 @@ class NEMOPolicy:
 
         # Tool is not operating in wait list  mode
         if new_reservation.tool and not new_reservation.tool.allow_reservation():
-            policy_problems.append(
-                "This tool is operating in wait list mode."
-            )
+            policy_problems.append("This tool is operating in wait list mode.")
 
 
         # Reservations may not have a start time that is earlier than the end time.

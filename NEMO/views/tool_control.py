@@ -98,7 +98,7 @@ def tool_status(request, tool_id):
     broadcast_upcoming_reservation = ToolCustomization.get("tool_control_broadcast_upcoming_reservation")
     user_is_qualified = tool.user_set.filter(id=request.user.id).exists()
     user_is_staff = request.user.is_staff
-    user = request.user
+    user: User = request.user
     tool_control_broadcast_upcoming_reservation_enabled = ToolCustomization.get_bool(
         "tool_control_broadcast_upcoming_reservation"
     )

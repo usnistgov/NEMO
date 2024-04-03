@@ -242,7 +242,7 @@ This email is to inform you that today was the last occurrence for the {closure_
 @require_GET
 @permission_required("NEMO.trigger_timed_services", raise_exception=True)
 def check_and_update_wait_list(request):
-    do_check_and_update_wait_list()
+    return do_check_and_update_wait_list()
 
 
 def do_check_and_update_wait_list(now=timezone.now()):
