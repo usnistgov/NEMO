@@ -5,7 +5,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("NEMO", "0068_door_multiple_areas"),
+        ("NEMO", "0069_version_5_4_0"),
     ]
 
     def migrate_calendar_axis_time_format(apps, schema_editor):
