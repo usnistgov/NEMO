@@ -1,11 +1,16 @@
 {% load custom_tags_and_filters %}
-<form method="POST" action="{% url 'usage_data_history' tool_id %}" id="usage_data_form" class="form-inline" role="form" style="margin: 15px 0" target="_blank">
-	{% csrf_token %}
-	<input type="hidden" name="csv" id="hidden_data_csv"/>
-	<input type="hidden" name="start" id="hidden_data_start"/>
-	<input type="hidden" name="end" id="hidden_data_end"/>
+<form method="POST"
+      action="{% url 'usage_data_history' tool_id %}"
+      id="usage_data_form"
+      class="form-inline"
+      role="form"
+      style="margin: 15px 0"
+      target="_blank">
+    {% csrf_token %}
+    <input type="hidden" name="csv" id="hidden_data_csv" />
+    <input type="hidden" name="start" id="hidden_data_start" />
+    <input type="hidden" name="end" id="hidden_data_end" />
     <div class="container-fluid">
-
         <div class="row">
             <div class="col-md-8">
                 <div class="row" style="margin-bottom: 15px">
@@ -14,19 +19,32 @@
                             <label for="data_history_start_date">From</label>
                         </div>
                         <div class="datetimepicker-container form-group extra-side-padding">
-                            <input type="text" id="data_history_start_date" name="data_history_start_date" class="form-control text-center small-input" placeholder="Start date" value="{{ data_history_start|input_date_format }}">
+                            <input type="text"
+                                   id="data_history_start_date"
+                                   name="data_history_start_date"
+                                   class="form-control text-center small-input"
+                                   placeholder="Start date"
+                                   value="{{ data_history_start|input_date_format }}">
                         </div>
                         <div class="form-group extra-side-padding">
                             <label for="data_history_end_date">to</label>
                         </div>
                         <div class="datetimepicker-container form-group extra-side-padding">
-                            <input type="text" id="data_history_end_date" name="data_history_end_date" class="form-control text-center small-input" placeholder="End date" value="{{ data_history_end|input_date_format }}">
+                            <input type="text"
+                                   id="data_history_end_date"
+                                   name="data_history_end_date"
+                                   class="form-control text-center small-input"
+                                   placeholder="End date"
+                                   value="{{ data_history_end|input_date_format }}">
                         </div>
                         <div class="form-group extra-side-padding">
                             <label for="data_history_last">or last</label>
                         </div>
                         <div class="form-group extra-side-padding">
-                            <select id="data_history_last" name="data_history_last" class="form-control small-input" onchange="if (this.value !== '') {$('#data_history_start_date').val('');$('#data_history_end_date').val('')}">
+                            <select id="data_history_last"
+                                    name="data_history_last"
+                                    class="form-control small-input"
+                                    onchange="if (this.value !== '') {$('#data_history_start_date').val('');$('#data_history_end_date').val('')}">
                                 <option value=""></option>
                                 <option value="10" {% if data_history_last == '10' %}selected{% endif %}>10</option>
                                 <option value="25" {% if data_history_last == '25' %}selected{% endif %}>25</option>
@@ -45,12 +63,28 @@
                             <label for="user_search">Filter by user:</label>
                         </div>
                         <div class="form-group extra-side-padding">
-                            <input type="text" class="form-control" id="user_search" placeholder="Search for a user" {% if data_history_user %}style="display:none"{% endif %} required>
-                            <input type="button" id="chosen_user" class="btn btn-default" {% if not data_history_user %}style="display:none"{% endif %} onclick="clear_selected_user()" value="{{ data_history_user }}">
-                            <input type="hidden" id="data_history_user_id" name="data_history_user_id" value="{{ data_history_user.id }}">
+                            <input type="text"
+                                   class="form-control"
+                                   id="user_search"
+                                   placeholder="Search for a user"
+                                   {% if data_history_user %}style="display:none"{% endif %}
+                                   required>
+                            <input type="button"
+                                   id="chosen_user"
+                                   class="btn btn-default"
+                                   {% if not data_history_user %}style="display:none"{% endif %}
+                                   onclick="clear_selected_user()"
+                                   value="{{ data_history_user }}">
+                            <input type="hidden"
+                                   id="data_history_user_id"
+                                   name="data_history_user_id"
+                                   value="{{ data_history_user.id }}">
                         </div>
                         <div class="checkbox">
-                            <label style="padding-left: 20px"><input type="checkbox" name="show_project_info" {% if show_project_info %}checked{% endif %}> Show project information</label>
+                            <label style="padding-left: 20px">
+                                <input type="checkbox" name="show_project_info" {% if show_project_info %}checked{% endif %}>
+                                Show project information
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -61,91 +95,96 @@
                 </div>
             </div>
         </div>
-
     </div>
 </form>
 {% if run_data_table.rows or pre_run_data_table.rows %}
-<ul class="nav nav-tabs" id="usage-tabs">
-    {% if pre_run_data_table.rows  %}
-    <li class="{% if pre_run_data_table.rows %}active{% endif %}">
-        <a data-toggle="tab" href="#pre-run-data-tab">Pre-Run Data</a>
-    </li>
-    {% endif %}
-    {% if run_data_table.rows  %}
-    <li class="{% if not pre_run_data_table.rows %}active{% endif %}">
-        <a data-toggle="tab" href="#run-data-tab">Run Data</a>
-    </li>
-    {% endif %}
-</ul>
-<div class="tab-content" style="margin-bottom: 0;">
-    <div class="tab-pane {% if pre_run_data_table.rows %}active{% endif %}" id="pre-run-data-tab">
-        <div class="col-md-12">
-            <div class="form-group pull-right extra-side-padding" style="padding-top: 10px">
-                {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', 'pre-run');" %}
+    <ul class="nav nav-tabs" id="usage-tabs">
+        {% if pre_run_data_table.rows %}
+            <li class="{% if pre_run_data_table.rows %}active{% endif %}">
+                <a data-toggle="tab" href="#pre-run-data-tab">Pre-Run Data</a>
+            </li>
+        {% endif %}
+        {% if run_data_table.rows %}
+            <li class="{% if not pre_run_data_table.rows %}active{% endif %}">
+                <a data-toggle="tab" href="#run-data-tab">Run Data</a>
+            </li>
+        {% endif %}
+    </ul>
+    <div class="tab-content" style="margin-bottom: 0;">
+        <div class="tab-pane {% if pre_run_data_table.rows %}active{% endif %}" id="pre-run-data-tab">
+            <div class="col-md-12">
+                <div class="form-group pull-right extra-side-padding" style="padding-top: 10px">
+                    {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', 'pre-run');" %}
+                </div>
+            </div>
+            <div class="panel-body">
+                {% if pre_run_data_table.rows %}
+                    <table class="table table-bordered table-condensed" style="margin-top: 10px">
+                        <thead>
+                            <tr>
+                                {% for header in pre_run_data_table.flat_headers %}<th>{{ header }}</th>{% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in pre_run_data_table.flat_rows %}
+                                <tr>
+                                    {% for item in row %}
+                                        <td>
+                                            {% if item|class_name == "list" %}
+                                                {{ item|join:", " }}
+                                            {% else %}
+                                                {{ item|default_if_none:"" }}
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <span class="italic">No pre-run data was found between these dates</span>
+                {% endif %}
             </div>
         </div>
-        <div class="panel-body">
-            {% if pre_run_data_table.rows %}
-                <table class="table table-bordered table-condensed" style="margin-top: 10px">
-                    <thead>
-                        <tr>
-                            {% for header in pre_run_data_table.flat_headers %}
-                                <th>{{ header }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in pre_run_data_table.flat_rows %}
+        <div class="tab-pane {% if not pre_run_data_table.rows %}active{% endif %}" id="run-data-tab">
+            <div class="col-md-12">
+                <div class="form-group pull-right extra-side-padding" style="padding-top: 10px">
+                    {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', 'run');" %}
+                </div>
+            </div>
+            <div class="panel-body">
+                {% if run_data_table.rows %}
+                    <table class="table table-bordered table-condensed" style="margin-top: 10px">
+                        <thead>
                             <tr>
-                                {% for item in row %}
-                                    <td>{% if item|class_name == "list" %}{{ item|join:", " }}{% else %}{{ item|default_if_none:"" }}{% endif %}</td>
-                                {% endfor %}
+                                {% for header in run_data_table.flat_headers %}<th>{{ header }}</th>{% endfor %}
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <span class="italic">No pre-run data was found between these dates</span>
-            {% endif %}
-        </div>
-    </div>
-    <div class="tab-pane {% if not pre_run_data_table.rows %}active{% endif %}" id="run-data-tab">
-        <div class="col-md-12">
-            <div class="form-group pull-right extra-side-padding" style="padding-top: 10px">
-                {% button type="export" value="Export" onclick="load_usage_data('"|concat:tool_id|concat:"', 'run');" %}
+                        </thead>
+                        <tbody>
+                            {% for row in run_data_table.flat_rows %}
+                                <tr>
+                                    {% for item in row %}
+                                        <td>
+                                            {% if item|class_name == "list" %}
+                                                {{ item|join:", " }}
+                                            {% else %}
+                                                {{ item|default_if_none:"" }}
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <span class="italic">No run data was found between these dates</span>
+                {% endif %}
             </div>
         </div>
-        <div class="panel-body">
-            {% if run_data_table.rows %}
-                <table class="table table-bordered table-condensed" style="margin-top: 10px">
-                    <thead>
-                        <tr>
-                            {% for header in run_data_table.flat_headers %}
-                                <th>{{ header }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in run_data_table.flat_rows %}
-                            <tr>
-                                {% for item in row %}
-                                    <td>{% if item|class_name == "list" %}{{ item|join:", " }}{% else %}{{ item|default_if_none:"" }}{% endif %}</td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <span class="italic">No run data was found between these dates</span>
-            {% endif %}
-        </div>
     </div>
-</div>
 {% else %}
     <span class="italic">No usage data was found between these dates</span>
 {% endif %}
-
-
 <script>
     function clear_selected_user()
     {

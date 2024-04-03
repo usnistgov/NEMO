@@ -2,25 +2,39 @@
 {% load custom_tags_and_filters %}
 {% block title %}Compose an email{% endblock %}
 {% block content %}
-	<h1>Compose an email</h1>
-	<form action="{% url 'send_email' %}" method="post">
-		{% csrf_token %}
-		<input type="hidden" value="{{ recipient }}" name="recipient">
-		<div class="form-group">
-			<p>From: {{ user.email }}</p>
-			<p>To: {% if name %}{{ name }}{% else %}{{ recipient }}{% endif %}</p>
-			<div class="checkbox">
-				<label><input type="checkbox" name="copy_me" checked>Send a copy of this message to myself</label>
-			</div>
-		</div>
-		<div class="form-group">
-			<input id="subject" class="form-control" type="text" name="subject" aria-label="Email subject" placeholder="What is the subject of this email?" required>
-		</div>
-		<div class="form-group">
-			<textarea class="form-control" rows="6" name="body" aria-label="Email content" required></textarea>
-		</div>
-		<div class="form-group">
-            {% button type="save" value="Send email" icon="glyphicon-send" %}
-		</div>
-	</form>
+    <h1>Compose an email</h1>
+    <form action="{% url 'send_email' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" value="{{ recipient }}" name="recipient">
+        <div class="form-group">
+            <p>From: {{ user.email }}</p>
+            <p>
+                To:
+                {% if name %}
+                    {{ name }}
+                {% else %}
+                    {{ recipient }}
+                {% endif %}
+            </p>
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="copy_me" checked>
+                    Send a copy of this message to myself
+                </label>
+            </div>
+        </div>
+        <div class="form-group">
+            <input id="subject"
+                   class="form-control"
+                   type="text"
+                   name="subject"
+                   aria-label="Email subject"
+                   placeholder="What is the subject of this email?"
+                   required>
+        </div>
+        <div class="form-group">
+            <textarea class="form-control" rows="6" name="body" aria-label="Email content" required></textarea>
+        </div>
+        <div class="form-group">{% button type="save" value="Send email" icon="glyphicon-send" %}</div>
+    </form>
 {% endblock %}

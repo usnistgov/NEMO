@@ -2,24 +2,34 @@
 {% load custom_tags_and_filters %}
 {% block title %}Publish new news{% endblock %}
 {% block content %}
-	<h1>Publish new news</h1>
-	<form method="post" action="{% url 'publish_new_news' %}">
-		{% csrf_token %}
-		<div class="form-group">
-			<input name="title" type="text" class="form-control" aria-label="News story title" autocomplete="off" required placeholder="Provide a news story title">
-		</div>
-		<div class="form-group">
-			<textarea name="content" class="form-control" rows="6" aria-label="News story content" required placeholder="What's happening?"></textarea>
-		</div>
+    <h1>Publish new news</h1>
+    <form method="post" action="{% url 'publish_new_news' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <input name="title"
+                   type="text"
+                   class="form-control"
+                   aria-label="News story title"
+                   autocomplete="off"
+                   required
+                   placeholder="Provide a news story title">
+        </div>
+        <div class="form-group">
+            <textarea name="content"
+                      class="form-control"
+                      rows="6"
+                      aria-label="News story content"
+                      required
+                      placeholder="What's happening?"></textarea>
+        </div>
         <div class="form-group">
             <div class="checkbox">
                 <label for="pinned">
-                    <input id="pinned" name="pinned" type="checkbox"> Keep this news story at the top of the news feed
+                    <input id="pinned" name="pinned" type="checkbox">
+                    Keep this news story at the top of the news feed
                 </label>
             </div>
         </div>
-		<div class="form-group text-right">
-            {% button type="save" name="publish" value="Publish" %}
-		</div>
-	</form>
+        <div class="form-group text-right">{% button type="save" name="publish" value="Publish" %}</div>
+    </form>
 {% endblock %}

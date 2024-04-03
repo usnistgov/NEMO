@@ -105,9 +105,7 @@ def get_staff_status(request, csv_export=False) -> Union[Dict, HttpResponse]:
     user_view = (
         user_view_options
         if not user.is_any_part_of_staff
-        else staff_view_options
-        if not user.is_facility_manager
-        else ""
+        else staff_view_options if not user.is_facility_manager else ""
     )
     # Take the default view from user preferences
     view = request.GET.get("view", user.get_preferences().staff_status_view)
@@ -476,9 +474,9 @@ def merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, 
             "scheduled_outage": False,
             "scheduled_partial_outage": False,
             "area_name": tool.requires_area_access.name if tool.requires_area_access else None,
-            "area_requires_reservation": tool.requires_area_access.requires_reservation
-            if tool.requires_area_access
-            else False,
+            "area_requires_reservation": (
+                tool.requires_area_access.requires_reservation if tool.requires_area_access else False
+            ),
         }
         if tooltip_info:
             result[tool.tool_or_parent_id()]["get_tool_info_html"] = tool.get_tool_info_html()

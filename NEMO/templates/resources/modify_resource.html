@@ -2,64 +2,80 @@
 {% load custom_tags_and_filters %}
 {% block title %}Modify resource{% endblock %}
 {% block content %}
-	{% if error %}
-		<div class="alert alert-danger">
-			{{ error }}
-		</div>
-	{% endif %}
-	<h1>Modify {{ resource }} resource</h1>
-	<form method="post" action="{% url 'modify_resource' resource.id %}" style="margin-bottom:50px">
-		{% csrf_token %}
-		{% if resource.available %}
-			<input type="hidden" name="status" value="unavailable">
-			<p>
-				<strong>{{ resource.name }}</strong> is currently <strong>available</strong>. Enter a status message to mark the resource as unavailable.
-			</p>
-			When a resource is unavailable:
-			<ul>
-				<li>The status message will be displayed on the landing page and tool control page of each affected tool</li>
-				<li>Tools that fully depend on this resource will be <strong>unavailable to users</strong></li>
-				<li>Areas that depend on this resource will be <strong>unavailable to users</strong></li>
-				<li>Tools that partially depend on this resource will be available to users, however it is the user's responsibility to determine if their fabrication process will succeed without the resource available</li>
-			</ul>
-			<div class="form-group">
-				<textarea name="reason" aria-label="Reason for resource being unavailable" class="form-control" rows="3" placeholder="Why is the resource unavailable?" required></textarea>
-			</div>
-			{% if fully_dependent_tools_in_use %}
-				<div class="alert alert-danger">
-					<p>
-						<strong>Warning:</strong> the following tools fully depend on this resource and are in use.
-						You must disable the tools individually to block <strong>current</strong> use. It is recommended
-						that you disable these tools before making the resource unavailable.
-					</p>
-					<ul>
-						{% for t in fully_dependent_tools_in_use %}
-							<li>{{ t.name }}</li>
-						{% endfor %}
-					</ul>
-				</div>
-			{% endif %}
-		{% else %}
-			<p>{{ resource.name }} is currently <strong>unavailable</strong>. What would you like to do?</p>
-			<div class="form-group">
-				<div class="radio">
-					<label>
-						<input type="radio" name="status" id="available" value="available" checked onclick="$('#modify_status_message').hide()">
-						Make the resource available
-					</label>
-				</div>
-				<div class="radio">
-					<label>
-						<input type="radio" name="status" id="unavailable" value="unavailable" onclick="$('#modify_status_message').show(); $('#reason').focus().select()">
-						Change the status message for the resource outage
-					</label>
-				</div>
-			</div>
-			<div id="modify_status_message" class="form-group" style="display:none">
-				<label for="reason">What would you like the new status message to say?</label>
-				<textarea id="reason" name="reason" rows="3" class="form-control">{{ resource.restriction_message }}</textarea>
-			</div>
-		{% endif %}
+    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+    <h1>Modify {{ resource }} resource</h1>
+    <form method="post" action="{% url 'modify_resource' resource.id %}" style="margin-bottom:50px">
+        {% csrf_token %}
+        {% if resource.available %}
+            <input type="hidden" name="status" value="unavailable">
+            <p>
+                <strong>{{ resource.name }}</strong> is currently <strong>available</strong>. Enter a status message to mark the resource as unavailable.
+            </p>
+            When a resource is unavailable:
+            <ul>
+                <li>The status message will be displayed on the landing page and tool control page of each affected tool</li>
+                <li>
+                    Tools that fully depend on this resource will be <strong>unavailable to users</strong>
+                </li>
+                <li>
+                    Areas that depend on this resource will be <strong>unavailable to users</strong>
+                </li>
+                <li>
+                    Tools that partially depend on this resource will be available to users, however it is the user's responsibility to determine if their fabrication process will succeed without the resource available
+                </li>
+            </ul>
+            <div class="form-group">
+                <textarea name="reason"
+                          aria-label="Reason for resource being unavailable"
+                          class="form-control"
+                          rows="3"
+                          placeholder="Why is the resource unavailable?"
+                          required></textarea>
+            </div>
+            {% if fully_dependent_tools_in_use %}
+                <div class="alert alert-danger">
+                    <p>
+                        <strong>Warning:</strong> the following tools fully depend on this resource and are in use.
+                        You must disable the tools individually to block <strong>current</strong> use. It is recommended
+                        that you disable these tools before making the resource unavailable.
+                    </p>
+                    <ul>
+                        {% for t in fully_dependent_tools_in_use %}<li>{{ t.name }}</li>{% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        {% else %}
+            <p>
+                {{ resource.name }} is currently <strong>unavailable</strong>. What would you like to do?
+            </p>
+            <div class="form-group">
+                <div class="radio">
+                    <label>
+                        <input type="radio"
+                               name="status"
+                               id="available"
+                               value="available"
+                               checked
+                               onclick="$('#modify_status_message').hide()">
+                        Make the resource available
+                    </label>
+                </div>
+                <div class="radio">
+                    <label>
+                        <input type="radio"
+                               name="status"
+                               id="unavailable"
+                               value="unavailable"
+                               onclick="$('#modify_status_message').show(); $('#reason').focus().select()">
+                        Change the status message for the resource outage
+                    </label>
+                </div>
+            </div>
+            <div id="modify_status_message" class="form-group" style="display:none">
+                <label for="reason">What would you like the new status message to say?</label>
+                <textarea id="reason" name="reason" rows="3" class="form-control">{{ resource.restriction_message }}</textarea>
+            </div>
+        {% endif %}
         {% button type="save" value="Modify resource" %}
-	</form>
+    </form>
 {% endblock %}

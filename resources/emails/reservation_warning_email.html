@@ -5,11 +5,23 @@
     </head>
     <body>
         <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
-        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+        <table align="center"
+               style="width:100%;
+                      max-width:600px;
+                      font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
             <tr>
-                <td align="center" style="color: white; background: {{ template_color }}; padding: 50px 0;" bgcolor="{{ template_color }}">
+                <td align="center"
+                    style="color: white;
+                           background: {{ template_color }};
+                           padding: 50px 0"
+                    bgcolor="{{ template_color }}">
                     <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
-                        RESERVATION {% if fatal_error %}PROBLEM{% else %}WARNING{% endif %}
+                        RESERVATION
+                        {% if fatal_error %}
+                            PROBLEM
+                        {% else %}
+                            WARNING
+                        {% endif %}
                     </h1>
                 </td>
             </tr>
@@ -25,13 +37,18 @@
                             The tool may be operating in a diminished capacity or may not be able to perform certain processes. Please visit {{ site_title }} to view current tool status.
                         {% endif %}
                     </p>
-
                     <h4>What's wrong and when will it be resolved?</h4>
                     {% with reservation.tool.problems as problems %}
                         {% for problem in problems %}
-                            <div style="padding-left: 7px; {% if problem.force_shutdown %}border-left: 5px solid #d9534f;{% else %}border-left: 5px solid #f0ad4e;{% endif %}">
+                            <div style="padding-left: 7px;
+                                        {% if problem.force_shutdown %}border-left: 5px solid #d9534f;
+                                        {% else %}border-left: 5px solid #f0ad4e;
+                                        {% endif %}">
                                 <p>
-                                    {% if problem.problem_category %}<em>{{ problem.problem_category }}</em><br>{% endif %}
+                                    {% if problem.problem_category %}
+                                        <em>{{ problem.problem_category }}</em>
+                                        <br>
+                                    {% endif %}
                                     {{ problem.problem_description|linebreaksbr }}
                                 </p>
                                 <p>
@@ -48,7 +65,8 @@
                         {% for resource in unavailable_required_resources %}
                             <div style="padding-left: 7px; border-left: 5px solid #d9534f">
                                 <p>
-                                    <em>A required tool resource is unavailable: {{ resource }}</em><br>
+                                    <em>A required tool resource is unavailable: {{ resource }}</em>
+                                    <br>
                                     {{ resource.restriction_message|linebreaksbr }}
                                 </p>
                             </div>
@@ -58,13 +76,13 @@
                         {% for resource in unavailable_nonrequired_resources %}
                             <div style="padding-left: 7px; border-left: 5px solid #f0ad4e">
                                 <p>
-                                    <em>An optional tool resource is unavailable: {{ resource }}</em><br>
+                                    <em>An optional tool resource is unavailable: {{ resource }}</em>
+                                    <br>
                                     {{ resource.restriction_message|linebreaksbr }}
                                 </p>
                             </div>
                         {% endfor %}
                     {% endwith %}
-
                     <h4>We're at your service</h4>
                     <p>
                         If you have any questions about the tool or your reservation, please contact the primary tool owner,
@@ -74,9 +92,7 @@
                         If you are unable to reach the primary tool owner then you can contact the secondary tool owner,
                         <a href="mailto:{{ reservation.tool.secondary_owner.email }}">{{ reservation.tool.secondary_owner.first_name }} {{ reservation.tool.secondary_owner.last_name }}</a>.
                     </p>
-                    <p>
-                        The staff can provide answers to general inquiries.
-                    </p>
+                    <p>The staff can provide answers to general inquiries.</p>
                 </td>
             </tr>
         </table>

@@ -2,112 +2,151 @@
 {% load custom_tags_and_filters %}
 {% block title %}Compose email{% endblock %}
 {% block content %}
-	<h1>Compose an email</h1>
-	{% if error %}
-		{{ error }}
-	{% elif generic_email_sample %}
-		<div class="row">
-			<form action="{% url 'send_broadcast_email' %}" id="email_form" method="post" enctype="multipart/form-data">
-				{% csrf_token %}
-				{% if user.is_any_part_of_staff %}
-					<div class="col-sm-6">
-						<div class="row">
-							<div class="col-sm-6 h3">Recipients</div>
-							<div class="col-sm-6 h3">{% if user_emails %}{% button type="export" size="small" value="Export user list" onclick="export_user_emails();" %}{% endif %}</div>
-						</div>
-						Active users are listed below in black. Inactive users are <span class="light-grey strikethrough">crossed out</span>.
-						<div class="checkbox">
-							<label><input type="checkbox" name="only_active_users" onclick="updated_email_link()" checked> Only send this email to active users</label>
-						</div>
-						<div class="checkbox">
-							<label><input type="checkbox" name="copy_me" onclick="updated_email_link()" checked> Send a copy of this email to myself</label>
-						</div>
-						{% for u in users %}
-							<span {% if not u.is_active %}class="light-grey strikethrough"{% endif %}>{{ u }} - {{ u.email }}</span><br>
-						{% endfor %}
-					</div>
-				{% endif %}
-				<div class="col-sm-6">
-					<h3>Email content</h3>
-					<input type="hidden" name="audience" value="{{ audience }}">
-					<input type="hidden" name="no_type" value="{{ no_type }}">
+    <h1>Compose an email</h1>
+    {% if error %}
+        {{ error }}
+    {% elif generic_email_sample %}
+        <div class="row">
+            <form action="{% url 'send_broadcast_email' %}"
+                  id="email_form"
+                  method="post"
+                  enctype="multipart/form-data">
+                {% csrf_token %}
+                {% if user.is_any_part_of_staff %}
+                    <div class="col-sm-6">
+                        <div class="row">
+                            <div class="col-sm-6 h3">Recipients</div>
+                            <div class="col-sm-6 h3">
+                                {% if user_emails %}
+                                    {% button type="export" size="small" value="Export user list" onclick="export_user_emails();" %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        Active users are listed below in black. Inactive users are <span class="light-grey strikethrough">crossed out</span>.
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="only_active_users" onclick="updated_email_link()" checked>
+                                Only send this email to active users
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="copy_me" onclick="updated_email_link()" checked>
+                                Send a copy of this email to myself
+                            </label>
+                        </div>
+                        {% for u in users %}
+                            <span {% if not u.is_active %}class="light-grey strikethrough"{% endif %}>{{ u }} - {{ u.email }}</span>
+                            <br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="col-sm-6">
+                    <h3>Email content</h3>
+                    <input type="hidden" name="audience" value="{{ audience }}">
+                    <input type="hidden" name="no_type" value="{{ no_type }}">
                     {% for selection_value in selection %}
-					    <input type="hidden" name="selection" value="{{ selection_value }}" oninput="updated_email_link()">
+                        <input type="hidden" name="selection" value="{{ selection_value }}" oninput="updated_email_link()">
                     {% endfor %}
-					<div class="form-group">
+                    <div class="form-group">
                         {% if topic %}
                             <div class="input-group">
                                 <span class="input-group-addon">[{{ topic }}]</span>
-                        {% endif %}
-						<input type="text" name="subject" class="form-control" aria-label="Email subject" placeholder="Subject line" oninput="updated_email_link()" autofocus required>
-                        {% if topic %}
-                            </div>
-                        {% endif %}
-					</div>
-					<div class="form-group">
-						Title background color:
-						<div class="radio" style="background-color:#5bc0de; padding:5px">
-							<label>
-								<input type="radio" name="color" value="#5bc0de" checked>
-								Blue, for conveying information
-							</label>
-						</div>
-						<div class="radio" style="background-color:#5cb85c; padding:5px">
-							<label>
-								<input type="radio" name="color" value="#5cb85c">
-								Green, for conveying success
-							</label>
-						</div>
-						<div class="radio" style="background-color:#f0ad4e; padding:5px">
-							<label>
-								<input type="radio" name="color" value="#f0ad4e">
-								Orange, for conveying a warning
-							</label>
-						</div>
-						<div class="radio" style="background-color:#d9534f; padding:5px">
-							<label>
-								<input type="radio" name="color" value="#d9534f">
-								Red, for conveying danger
-							</label>
-						</div>
-					</div>
-					<div class="form-group">
-						<input type="text" name="title" aria-label="Email title" class="form-control" style="text-transform:uppercase" placeholder="Title (always uppercase)" oninput="updated_email_link()">
-					</div>
-					<div class="form-group">
-						<input type="text" name="greeting" aria-label="Email greeting" class="form-control" placeholder="Greeting" oninput="updated_email_link()">
-					</div>
-					<div class="form-group">
-						<textarea class="form-control" name="contents" aria-label="Email contents" rows="6" placeholder="What would you like to say?" oninput="updated_email_link()" required></textarea>
-					</div>
-					<div class="form-group">
-						<input name="attachments" type="file" multiple>
-					</div>
+                            {% endif %}
+                            <input type="text"
+                                   name="subject"
+                                   class="form-control"
+                                   aria-label="Email subject"
+                                   placeholder="Subject line"
+                                   oninput="updated_email_link()"
+                                   autofocus
+                                   required>
+                            {% if topic %}</div>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        Title background color:
+                        <div class="radio" style="background-color:#5bc0de; padding:5px">
+                            <label>
+                                <input type="radio" name="color" value="#5bc0de" checked>
+                                Blue, for conveying information
+                            </label>
+                        </div>
+                        <div class="radio" style="background-color:#5cb85c; padding:5px">
+                            <label>
+                                <input type="radio" name="color" value="#5cb85c">
+                                Green, for conveying success
+                            </label>
+                        </div>
+                        <div class="radio" style="background-color:#f0ad4e; padding:5px">
+                            <label>
+                                <input type="radio" name="color" value="#f0ad4e">
+                                Orange, for conveying a warning
+                            </label>
+                        </div>
+                        <div class="radio" style="background-color:#d9534f; padding:5px">
+                            <label>
+                                <input type="radio" name="color" value="#d9534f">
+                                Red, for conveying danger
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="text"
+                               name="title"
+                               aria-label="Email title"
+                               class="form-control"
+                               style="text-transform:uppercase"
+                               placeholder="Title (always uppercase)"
+                               oninput="updated_email_link()">
+                    </div>
+                    <div class="form-group">
+                        <input type="text"
+                               name="greeting"
+                               aria-label="Email greeting"
+                               class="form-control"
+                               placeholder="Greeting"
+                               oninput="updated_email_link()">
+                    </div>
+                    <div class="form-group">
+                        <textarea class="form-control"
+                                  name="contents"
+                                  aria-label="Email contents"
+                                  rows="6"
+                                  placeholder="What would you like to say?"
+                                  oninput="updated_email_link()"
+                                  required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <input name="attachments" type="file" multiple>
+                    </div>
                     {% button type="view" onclick="update_preview();document.getElementById('email_preview').scrollIntoView();" value="Preview" %}
-					{% button type="save" value="Send" icon="glyphicon-send" %}
+                    {% button type="save" value="Send" icon="glyphicon-send" %}
                     {% if user.is_any_part_of_staff and user_emails %}
                         {% if active_user_emails|length > 2000 %}
-                            <div class="pull-right" style="display: inline-block" id="default_client_email_wrapper" data-title="There are too many email addresses to use the default email client. Use the export function instead.">
+                            <div class="pull-right"
+                                 style="display: inline-block"
+                                 id="default_client_email_wrapper"
+                                 data-title="There are too many email addresses to use the default email client. Use the export function instead.">
                                 {% button type="info" value="Use default email client" icon="glyphicon-envelope" disabled="disabled" %}
                             </div>
                         {% else %}
                             <a id="email_client_link" href="" target="_blank" class="pull-right">{% button type="info" value="Use default email client" icon="glyphicon-envelope" %}</a>
                         {% endif %}
                     {% endif %}
-					<div style="height:50px"></div>
-					<h3>Your email will look like this...</h3>
-					<table style="width:100%; border-width: 1px;border-style: solid;">
-						<tr>
-							<td id="email_preview">{{ generic_email_sample|safe }}</td>
-						</tr>
-					</table>
-				</div>
-			</form>
-		</div>
-	{% else %}
-		A generic email format has not been customized for your organization yet. You'll need to create one before you can send email broadcasts from within {{ site_title }}. Please visit the <a href="{% url 'customization' %}">customizations page</a> to upload a template.
-	{% endif %}
-	<script type="application/javascript">
+                    <div style="height:50px"></div>
+                    <h3>Your email will look like this...</h3>
+                    <table style="width:100%; border-width: 1px;border-style: solid;">
+                        <tr>
+                            <td id="email_preview">{{ generic_email_sample|safe }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </form>
+        </div>
+    {% else %}
+        A generic email format has not been customized for your organization yet. You'll need to create one before you can send email broadcasts from within {{ site_title }}. Please visit the <a href="{% url 'customization' %}">customizations page</a> to upload a template.
+    {% endif %}
+    <script type="application/javascript">
         window.addEventListener('load', function()
         {
             $('#default_client_email_wrapper').tooltip();
@@ -191,5 +230,6 @@
             mailto_link.href = mailto;
         }
         {%  endif %}
-	</script>
+	
+    </script>
 {% endblock %}

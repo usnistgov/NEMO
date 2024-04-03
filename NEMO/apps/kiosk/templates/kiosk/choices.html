@@ -1,56 +1,54 @@
 <div class="row" style="margin-top:30px">
-	<div class="col-xs-offset-3 col-xs-6" onclick="revert()">
-		<div class="alert alert-warning" style="text-align:center; margin-bottom:0">
-			<span style="font-size:x-large">I've finished using this kiosk</span>
-		</div>
-	</div>
+    <div class="col-xs-offset-3 col-xs-6" onclick="revert()">
+        <div class="alert alert-warning" style="text-align:center; margin-bottom:0">
+            <span style="font-size:x-large">I've finished using this kiosk</span>
+        </div>
+    </div>
 </div>
-
 {% if messages %}
     {% for message in messages %}
         <div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none; margin-top: 15px">
             <button type="button" class="close" data-dismiss="alert" aria-label="Modal close button">&times;</button>
-            {{message}}
+            {{ message }}
         </div>
     {% endfor %}
 {% endif %}
-
 {% if usage_events %}
-	<h1>Current {{ facility_name }} usage</h1>
-	<div class="row">
-		{% for u in usage_events %}
-			<div class="col-xs-6">
-				<div class="alert alert-info" onclick="tool_information('{% url 'kiosk_tool_information' u.tool.tool_or_parent_id customer.id 'back_to_start' %}')">
-					<span style="font-size:x-large">{{ u.tool }}</span><br>
-					You are using this tool for the project named <strong>{{ u.project }}</strong> since <strong>{{ u.start|date:"MONTH_DAY_FORMAT" }} @ {{ u.start|time }}</strong>
-				</div>
-			</div>
-		{% endfor %}
-	</div>
+    <h1>Current {{ facility_name }} usage</h1>
+    <div class="row">
+        {% for u in usage_events %}
+            <div class="col-xs-6">
+                <div class="alert alert-info"
+                     onclick="tool_information('{% url 'kiosk_tool_information' u.tool.tool_or_parent_id customer.id 'back_to_start' %}')">
+                    <span style="font-size:x-large">{{ u.tool }}</span>
+                    <br>
+                    You are using this tool for the project named <strong>{{ u.project }}</strong> since <strong>{{ u.start|date:"MONTH_DAY_FORMAT" }} @ {{ u.start|time }}</strong>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 {% endif %}
-
 <h1>Find a tool by category</h1>
 <div class="row">
-	{% for category in categories %}
-		<div class="col-xs-6">
-			<div class="panel panel-default {% if category in unqualified_categories %}disabled{% endif %}" onclick="view_category('{% url 'kiosk_category_choices' category customer.id %}')">
-				<div class="panel-body">
-					<span style="font-size:x-large; margin-right:10px">{{ category }}</span>
-				</div>
-			</div>
-		</div>
-	{% endfor %}
+    {% for category in categories %}
+        <div class="col-xs-6">
+            <div class="panel panel-default {% if category in unqualified_categories %}disabled{% endif %}"
+                 onclick="view_category('{% url 'kiosk_category_choices' category customer.id %}')">
+                <div class="panel-body">
+                    <span style="font-size:x-large; margin-right:10px">{{ category }}</span>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
 </div>
-
 {% if upcoming_reservations %}
-	<h1>Upcoming Reservations</h1>
-	<div>
-		{% for reservation in upcoming_reservations %}
-			<div class="col-xs-6">
-				{% include 'kiosk/individual_reservation.html' with reservation=reservation customer=customer %}
-			</div>
-		{% endfor %}
-	</div>
+    <h1>Upcoming Reservations</h1>
+    <div>
+        {% for reservation in upcoming_reservations %}
+            <div class="col-xs-6">
+                {% include 'kiosk/individual_reservation.html' with reservation=reservation customer=customer %}
+            </div>
+        {% endfor %}
+    </div>
 {% endif %}
-
 <script>revert(75);</script>

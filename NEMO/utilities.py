@@ -370,9 +370,7 @@ def export_format_datetime(
     datetime_format = (
         export_date_format
         if d_format and not t_format
-        else export_time_format
-        if not d_format and t_format
-        else export_date_format + separator + export_time_format
+        else export_time_format if not d_format and t_format else export_date_format + separator + export_time_format
     )
     return format_datetime(this_time, datetime_format, as_current_timezone)
 

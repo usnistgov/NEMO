@@ -13,7 +13,12 @@
             <label class="control-label col-md-3" for="sensor_read_retries">Retry reading data</label>
             <div class="col-md-3">
                 <div class="input-group">
-                    <input type="number" min="0" id="sensor_read_retries" name="sensor_read_retries" class="form-control text-right" value="{% if errors.sensor_read_retries %}{{ errors.sensor_read_retries.value }}{% else %}{{ sensor_read_retries }}{% endif %}"/>
+                    <input type="number"
+                           min="0"
+                           id="sensor_read_retries"
+                           name="sensor_read_retries"
+                           class="form-control text-right"
+                           value="{% if errors.sensor_read_retries %}{{ errors.sensor_read_retries.value }}{% else %}{{ sensor_read_retries }}{% endif %}" />
                     <span class="input-group-addon">time(s)</span>
                 </div>
             </div>
@@ -28,7 +33,12 @@
         <div class="form-group {% if errors.sensor_alert_emails %}has-error{% endif %}">
             <label class="control-label col-md-3" for="sensor_alert_emails">Sensor alert email(s)</label>
             <div class="col-md-5">
-                <input type="text" id="sensor_alert_emails" name="sensor_alert_emails" class="form-control" value="{% if errors.sensor_alert_emails %}{{ errors.sensor_alert_emails.value }}{% else %}{{ sensor_alert_emails }}{% endif %}" placeholder="sensor_alerts@example.org"/>
+                <input type="text"
+                       id="sensor_alert_emails"
+                       name="sensor_alert_emails"
+                       class="form-control"
+                       value="{% if errors.sensor_alert_emails %}{{ errors.sensor_alert_emails.value }}{% else %}{{ sensor_alert_emails }}{% endif %}"
+                       placeholder="sensor_alerts@example.org" />
             </div>
             <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 {% if errors.sensor_alert_emails %}
@@ -42,11 +52,42 @@
             <label class="control-label col-md-3" for="sensor_default_daterange">Default daterange</label>
             <div class="col-md-9">
                 <div class="radio">
-                    <label><input type="radio" id="sensor_default_daterange" name="sensor_default_daterange" {% if not sensor_default_daterange %}checked{% endif %} value=""> Last 24 hrs</label>
-                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_72hrs' %}checked{% endif %} value="last_72hrs"> Last 72 hrs</label>
-                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_week' %}checked{% endif %} value="last_week"> Last week</label>
-                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_month' %}checked{% endif %} value="last_month"> Last month</label>
-                    <label><input type="radio" name="sensor_default_daterange" {% if sensor_default_daterange == 'last_year' %}checked{% endif %} value="last_year"> Last year</label>
+                    <label>
+                        <input type="radio"
+                               id="sensor_default_daterange"
+                               name="sensor_default_daterange"
+                               {% if not sensor_default_daterange %}checked{% endif %}
+                               value="">
+                        Last 24 hrs
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="sensor_default_daterange"
+                               {% if sensor_default_daterange == 'last_72hrs' %}checked{% endif %}
+                               value="last_72hrs">
+                        Last 72 hrs
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="sensor_default_daterange"
+                               {% if sensor_default_daterange == 'last_week' %}checked{% endif %}
+                               value="last_week">
+                        Last week
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="sensor_default_daterange"
+                               {% if sensor_default_daterange == 'last_month' %}checked{% endif %}
+                               value="last_month">
+                        Last month
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="sensor_default_daterange"
+                               {% if sensor_default_daterange == 'last_year' %}checked{% endif %}
+                               value="last_year">
+                        Last year
+                    </label>
                 </div>
             </div>
         </div>
@@ -66,29 +107,27 @@
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Chart date formats</h3>
         <div class="col-sm-12 form-group help-block light-grey">
-            These formats are used in charts to display the date/time on the x-axis. See <a
-                href="https://momentjs.com/docs/#/displaying/format/">moment.js format</a> for more details.
+            These formats are used in charts to display the date/time on the x-axis. See <a href="https://momentjs.com/docs/#/displaying/format/">moment.js format</a> for more details.
         </div>
         {% with date_format_list="millisecond second minute hour day week month quarter year" %}
             {% for date_format in date_format_list.split %}
                 <div class="form-group">
                     {% with date_format_variable="sensor_format_"|concat:date_format %}
-                        <label class="control-label col-md-3"
-                               for="{{ date_format_variable }}">{{ date_format|capfirst }}:</label>
+                        <label class="control-label col-md-3" for="{{ date_format_variable }}">{{ date_format|capfirst }}:</label>
                         <div class="col-md-4">
-                            <input type="text" id="{{ date_format_variable }}" name="{{ date_format_variable }}"
+                            <input type="text"
+                                   id="{{ date_format_variable }}"
+                                   name="{{ date_format_variable }}"
                                    class="form-control"
                                    value="{{ "sensors"|customization:date_format_variable|default_if_none:"" }}"
-                                   placeholder=""/>
+                                   placeholder="" />
                         </div>
                     {% endwith %}
                 </div>
             {% endfor %}
         {% endwith %}
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <div class="text-center">
-            {% button type="save" value="Save settings" %}
-        </div>
+        <div class="text-center">{% button type="save" value="Save settings" %}</div>
         {# add a "fake" chart to get the adapter's formats and use them as placeholders for the inputs #}
         <canvas class="hidden" id="customization_chart"></canvas>
         <script>

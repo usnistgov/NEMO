@@ -13,15 +13,31 @@
             You can send your comments or concerns completely anonymously or provide your name so that we can follow up with you.
         </p>
     {% endif %}
-
-	<form action="{% url 'create_safety_issue' %}" method="post">
-		{% csrf_token %}
-		<input type="text" name="location" class="form-control" style="max-width: 250px" aria-label="Problem location" placeholder="Where is the problem?" required autofocus><br>
-		<textarea name="concern" class="form-control" rows="6" aria-label="Concern" placeholder="Why are you concerned?" required></textarea>
-		<input type="hidden" name="resolved" value="false">
-		<div class="checkbox">
-			<label><input type="checkbox" name="report_anonymously">Report this issue anonymously.</label> <span class="light-grey">Your name will not be visible to staff. There will be no way for us to follow up with you about how the safety issue was resolved.</span>
-		</div>
+    <form action="{% url 'create_safety_issue' %}" method="post">
+        {% csrf_token %}
+        <input type="text"
+               name="location"
+               class="form-control"
+               style="max-width: 250px"
+               aria-label="Problem location"
+               placeholder="Where is the problem?"
+               required
+               autofocus>
+        <br>
+        <textarea name="concern"
+                  class="form-control"
+                  rows="6"
+                  aria-label="Concern"
+                  placeholder="Why are you concerned?"
+                  required></textarea>
+        <input type="hidden" name="resolved" value="false">
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" name="report_anonymously">
+                Report this issue anonymously.
+            </label>
+            <span class="light-grey">Your name will not be visible to staff. There will be no way for us to follow up with you about how the safety issue was resolved.</span>
+        </div>
         {% button type="delete" submit=True value="Report a new safety concern" icon="glyphicon-send" %}
-	</form>
+    </form>
 {% endblock %}

@@ -2,99 +2,120 @@
 {% load custom_tags_and_filters %}
 {% block title %}Accounts and projects{% endblock %}
 {% block before_pagination %}
-	<div class="h1 row">
+    <div class="h1 row">
         <div class="col-xs-6 col-sm-7">Accounts and projects</div>
-		<div class="col-sm-5 text-right">
+        <div class="col-sm-5 text-right">
             {% button type="add" value="New project" url="create_project" %}
             {% button type="add" value="New account" url="create_account" %}
-		</div>
-	</div>
-	<div class="row">
-		<div class="col-sm-5" id="search_container">
-			<input id="search" type="text" aria-label="Search for account or project" placeholder="Search for an account or project" class="form-control" autofocus>
-		</div>
-	</div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-5" id="search_container">
+            <input id="search"
+                   type="text"
+                   aria-label="Search for account or project"
+                   placeholder="Search for an account or project"
+                   class="form-control"
+                   autofocus>
+        </div>
+    </div>
 {% endblock %}
 {% block pagination_content %}
-	<table class="table table-bordered table-condensed table-hover table-align-middle thead-light">
-			<thead>
-				<tr>
-					<th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
-					{% if account_types %}<th>{% include 'pagination/pagination_column.html' with order_by='type' name='Account type' %}</th>{% endif %}
-					<th>{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}</th>
-					<th class="button-column-minimum">{% include 'pagination/pagination_column.html' with order_by='active' name='Active' %}</th>
-					<th class="button-column-minimum" aria-label="Action"></th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for account in page %}
-					<tr style="background-color: #f9f9f9">
-						<td id="chevron_{{ account.id }}" data-toggle="collapse" data-target=".projects_{{ account.id }}" onclick="toggle_details($('#chevron_{{ account.id }}'))" style="font-weight: bold">
-							<span class="glyphicon glyphicon-chevron-{% if account_list_collapse %}right{% else %}down{% endif %} pull-left chevron"></span>
-							{{ account.name }}
-						</td>
-                        {% if account_types %}<td data-toggle="collapse" data-target=".projects_{{ account.id }}" onclick="toggle_details($('#chevron_{{ account.id }}'))">{{ account.type|default_if_none:"" }}</td>{% endif %}
-						<td data-toggle="collapse" data-target=".projects_{{ account.id }}" onclick="toggle_details($('#chevron_{{ account.id }}'))"></td>
-						<td class="text-center">
-							<form method="post" action="{% url 'toggle_active' 'account' account.id %}">
-								{% csrf_token %}
-								{% if account.active %}
-                                    {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
-								{% else %}
-                                    {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
-								{% endif %}
-							</form>
-						</td>
-						<td>
-                            {% url "account" account.id as account_url %}
-                            {% button type="view" size="small" value="View" title="View account" url=account_url %}
-						</td>
-					</tr>
-                    {% regroup account.sorted_projects by active as active_inactive_projects %}
-                    {% if active_inactive_projects|length_is:1 and not active_inactive_projects.0.grouper and project_list_active_only %}
-                        <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
-							<td colspan="4" style="padding-left: 28px">
-								<span>This account does not have any active projects</span>
-							</td>
-						</tr>
+    <table class="table table-bordered table-condensed table-hover table-align-middle thead-light">
+        <thead>
+            <tr>
+                <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
+                {% if account_types %}
+                    <th>{% include 'pagination/pagination_column.html' with order_by='type' name='Account type' %}</th>
+                {% endif %}
+                <th>{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}</th>
+                <th class="button-column-minimum">
+                    {% include 'pagination/pagination_column.html' with order_by='active' name='Active' %}
+                </th>
+                <th class="button-column-minimum" aria-label="Action"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in page %}
+                <tr style="background-color: #f9f9f9">
+                    <td id="chevron_{{ account.id }}"
+                        data-toggle="collapse"
+                        data-target=".projects_{{ account.id }}"
+                        onclick="toggle_details($('#chevron_{{ account.id }}'))"
+                        style="font-weight: bold">
+                        <span class="glyphicon glyphicon-chevron-{% if account_list_collapse %}right{% else %}down{% endif %} pull-left chevron"></span>
+                        {{ account.name }}
+                    </td>
+                    {% if account_types %}
+                        <td data-toggle="collapse"
+                            data-target=".projects_{{ account.id }}"
+                            onclick="toggle_details($('#chevron_{{ account.id }}'))">
+                            {{ account.type|default_if_none:"" }}
+                        </td>
                     {% endif %}
-					{% for project_list in active_inactive_projects %}
-                        {% if project_list.grouper or not project_list_active_only %}
-                            {% for project in project_list.list %}
-                                <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
-                                    <td style="padding-left: 28px">{{ project.name }}</td>
-                                    {% if account_types %}<td></td>{% endif %}
-                                    <td>{{ project.application_identifier }}</td>
-                                    <td class="text-center">
-                                        <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
-                                            {% csrf_token %}
-                                            {% if project.active %}
-                                                {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
-                                            {% else %}
-                                                {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
-                                            {% endif %}
-                                        </form>
-                                    </td>
-                                    <td>
-                                        {% url "project" project.id as project_url %}
-                                        {% button type="view" size="small" value="View" title="View project" url=project_url %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        {% endif %}
-                    {% empty %}
-						<tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
-							<td colspan="4" style="padding-left: 28px">
-								<span>This account does not have any projects</span>
-							</td>
-						</tr>
-                    {% endfor %}
-				{% endfor %}
-			</tbody>
-		</table>
+                    <td data-toggle="collapse"
+                        data-target=".projects_{{ account.id }}"
+                        onclick="toggle_details($('#chevron_{{ account.id }}'))"></td>
+                    <td class="text-center">
+                        <form method="post" action="{% url 'toggle_active' 'account' account.id %}">
+                            {% csrf_token %}
+                            {% if account.active %}
+                                {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
+                            {% else %}
+                                {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
+                            {% endif %}
+                        </form>
+                    </td>
+                    <td>
+                        {% url "account" account.id as account_url %}
+                        {% button type="view" size="small" value="View" title="View account" url=account_url %}
+                    </td>
+                </tr>
+                {% regroup account.sorted_projects by active as active_inactive_projects %}
+                {% if active_inactive_projects|length_is:1 and not active_inactive_projects.0.grouper and project_list_active_only %}
+                    <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
+                        <td colspan="4" style="padding-left: 28px">
+                            <span>This account does not have any active projects</span>
+                        </td>
+                    </tr>
+                {% endif %}
+                {% for project_list in active_inactive_projects %}
+                    {% if project_list.grouper or not project_list_active_only %}
+                        {% for project in project_list.list %}
+                            <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
+                                <td style="padding-left: 28px">{{ project.name }}</td>
+                                {% if account_types %}<td></td>{% endif %}
+                                <td>{{ project.application_identifier }}</td>
+                                <td class="text-center">
+                                    <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
+                                        {% csrf_token %}
+                                        {% if project.active %}
+                                            {% button type="save" size="small" title="Deactivate" icon="glyphicon-ok" value="" %}
+                                        {% else %}
+                                            {% button type="delete" submit=True size="small" title="Reactivate" icon="glyphicon-remove" value="" %}
+                                        {% endif %}
+                                    </form>
+                                </td>
+                                <td>
+                                    {% url "project" project.id as project_url %}
+                                    {% button type="view" size="small" value="View" title="View project" url=project_url %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                {% empty %}
+                    <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
+                        <td colspan="4" style="padding-left: 28px">
+                            <span>This account does not have any projects</span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}
 {% block after_pagination %}
-	<script>
+    <script>
 		function get_project_or_account(jquery_event, search_selection, dataset_name)
 		{
 			if(search_selection.type === 'project')
@@ -107,12 +128,14 @@
 			$('#search').autocomplete('accounts_and_projects', get_project_or_account, {% json_search_base_with_extra_fields accounts_and_projects 'application_identifier' display='display_with_status' %});
 		}
 		window.addEventListener('load', on_load, true);
-	</script>
-	<style>
+	
+    </script>
+    <style>
 		#search_container .tt-dropdown-menu
 		{
 			min-width: 400px;
 			max-height: 600px;
 		}
-	</style>
+	
+    </style>
 {% endblock %}

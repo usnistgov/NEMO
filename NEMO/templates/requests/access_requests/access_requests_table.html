@@ -21,21 +21,28 @@
     <tbody>
         {% for a_request in access_request_list %}
             <tr>
-                <td style="vertical-align: middle">{% if a_request.id in access_request_notifications %}<span class="label label-success">New</span> {% endif %}{{ a_request.creation_time|date:'SHORT_DATETIME_FORMAT' }}</td>
-                <td class="text-center" style="vertical-align: middle">{{ a_request.physical_access_level.display_value_for_select }}</td>
+                <td style="vertical-align: middle">
+                    {% if a_request.id in access_request_notifications %}<span class="label label-success">New</span>{% endif %}
+                    {{ a_request.creation_time|date:'SHORT_DATETIME_FORMAT' }}
+                </td>
+                <td class="text-center" style="vertical-align: middle">
+                    {{ a_request.physical_access_level.display_value_for_select }}
+                </td>
                 <td class="text-center" style="vertical-align: middle">{{ a_request.start_time|date:'SHORT_DATETIME_FORMAT' }}</td>
                 <td class="text-center" style="vertical-align: middle">{{ a_request.end_time|date:'SHORT_DATETIME_FORMAT' }}</td>
                 <td style="vertical-align: middle">
                     <ul style="padding-inline-start: 25px; margin-bottom: 0">
-                        <li><b>{{ a_request.creator }}</b></li>
-                        {% for other_user in a_request.other_users.all %}
-                            <li>{{ other_user }}</li>
-                        {% endfor %}
+                        <li>
+                            <b>{{ a_request.creator }}</b>
+                        </li>
+                        {% for other_user in a_request.other_users.all %}<li>{{ other_user }}</li>{% endfor %}
                     </ul>
                 </td>
                 <td class="text-center text-nowrap" style="vertical-align: middle">
                     {% if request_status == 'pending' and user in a_request.reviewers %}
-                        <a class="btn btn-sm btn-default" title="Approve/Deny" href="{% url 'edit_access_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
+                        <a class="btn btn-sm btn-default"
+                           title="Approve/Deny"
+                           href="{% url 'edit_access_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
                     {% elif request_status == 'pending' and a_request.creator == user %}
                         {% url 'edit_access_request' a_request.id as edit_request_url %}
                         {% url 'delete_access_request' a_request.id as delete_request_url %}
@@ -48,7 +55,13 @@
             </tr>
             <tr>
                 {% if a_request.description %}
-                    <td colspan="6" style="border: none">{% if a_request.description %}<u>Description:</u><br>{{ a_request.description|linebreaksbr }}{% endif %}</td>
+                    <td colspan="6" style="border: none">
+                        {% if a_request.description %}
+                            <u>Description:</u>
+                            <br>
+                            {{ a_request.description|linebreaksbr }}
+                        {% endif %}
+                    </td>
                 {% endif %}
             </tr>
         {% endfor %}

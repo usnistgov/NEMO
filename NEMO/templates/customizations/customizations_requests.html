@@ -7,7 +7,14 @@
             <label class="control-label col-md-4">Enable adjustment requests</label>
             <div class="col-md-8">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="adjustment_requests_enabled" {% if adjustment_requests_enabled %}checked{% endif %} value="enabled">Check this box to allow users to request adjustment for charges.</label><br/>
+                    <label>
+                        <input type="checkbox"
+                               name="adjustment_requests_enabled"
+                               {% if adjustment_requests_enabled %}checked{% endif %}
+                               value="enabled">
+                        Check this box to allow users to request adjustment for charges.
+                    </label>
+                    <br />
                 </div>
             </div>
             <div class="col-md-offset-4 col-md-8 help-block light-grey">
@@ -17,7 +24,11 @@
         <div class="form-group">
             <label class="control-label col-md-4" for="adjustment_requests_title">Adjustment request tab title</label>
             <div class="col-md-7">
-                <input type="text" id="adjustment_requests_title" name="adjustment_requests_title" class="form-control" value="{{ adjustment_requests_title }}"/>
+                <input type="text"
+                       id="adjustment_requests_title"
+                       name="adjustment_requests_title"
+                       class="form-control"
+                       value="{{ adjustment_requests_title }}" />
             </div>
             <div class="col-md-offset-4 col-md-8 help-block light-grey">
                 The title for the adjustment request tab of the user requests page.
@@ -26,7 +37,10 @@
         <div class="form-group">
             <label class="control-label col-md-4" for="adjustment_requests_description">Adjustment requests description</label>
             <div class="col-md-7">
-                <textarea oninput="auto_size_textarea(this);" id="adjustment_requests_description" name="adjustment_requests_description" class="form-control">{{ adjustment_requests_description }}</textarea>
+                <textarea oninput="auto_size_textarea(this);"
+                          id="adjustment_requests_description"
+                          name="adjustment_requests_description"
+                          class="form-control">{{ adjustment_requests_description }}</textarea>
             </div>
             <div class="col-md-offset-4 col-md-8 help-block light-grey">
                 The description/instructions to display on the adjustment requests page.
@@ -36,7 +50,13 @@
             <label class="control-label col-md-4" for="adjustment_requests_display_max">Adjustment requests display maximum</label>
             <div class="col-md-3">
                 <div class="input-group">
-                    <input type="number" step="1" min="0" id="adjustment_requests_display_max" name="adjustment_requests_display_max" class="form-control text-right" value="{{ adjustment_requests_display_max }}"/>
+                    <input type="number"
+                           step="1"
+                           min="0"
+                           id="adjustment_requests_display_max"
+                           name="adjustment_requests_display_max"
+                           class="form-control text-right"
+                           value="{{ adjustment_requests_display_max }}" />
                     <span class="input-group-addon">requests</span>
                 </div>
             </div>
@@ -48,8 +68,15 @@
             <label class="control-label col-md-4">Allowed charges for staff</label>
             <div class="col-md-8">
                 <div class="checkbox">
-                    <input type="hidden" name="adjustment_requests_staff_staff_charges_enabled" value="off"/>
-                    <label><input type="checkbox" name="adjustment_requests_staff_staff_charges_enabled" {% if adjustment_requests_staff_staff_charges_enabled == "enabled" %}checked{% endif %} value="enabled">Remote work (Staff charges, Tool usage & Area access)</label><br/>
+                    <input type="hidden" name="adjustment_requests_staff_staff_charges_enabled" value="off" />
+                    <label>
+                        <input type="checkbox"
+                               name="adjustment_requests_staff_staff_charges_enabled"
+                               {% if adjustment_requests_staff_staff_charges_enabled == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        Remote work (Staff charges, Tool usage & Area access)
+                    </label>
+                    <br />
                 </div>
             </div>
         </div>
@@ -58,29 +85,63 @@
             <div class="col-md-8">
                 <div class="checkbox">
                     <div class="row col-md-12">
-                        <input type="hidden" name="adjustment_requests_tool_usage_enabled" value="off"/>
-                        <label><input type="checkbox" name="adjustment_requests_tool_usage_enabled" {% if adjustment_requests_tool_usage_enabled == "enabled" %}checked{% endif %} value="enabled">Tool usage</label><br/>
+                        <input type="hidden" name="adjustment_requests_tool_usage_enabled" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_tool_usage_enabled"
+                                   {% if adjustment_requests_tool_usage_enabled == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            Tool usage
+                        </label>
+                        <br />
                     </div>
                     <div class="row col-md-12">
-                        <input type="hidden" name="adjustment_requests_area_access_enabled" value="off"/>
-                        <label><input type="checkbox" name="adjustment_requests_area_access_enabled" {% if adjustment_requests_area_access_enabled == "enabled" %}checked{% endif %} value="enabled">Area access</label><br/>
+                        <input type="hidden" name="adjustment_requests_area_access_enabled" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_area_access_enabled"
+                                   {% if adjustment_requests_area_access_enabled == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            Area access
+                        </label>
+                        <br />
                     </div>
                     <div class="row col-lg-4 col-xs-5">
-                        <input type="hidden" name="adjustment_requests_missed_reservation_enabled" value="off"/>
-                        <label><input type="checkbox" name="adjustment_requests_missed_reservation_enabled" {% if adjustment_requests_missed_reservation_enabled == "enabled" %}checked{% endif %} value="enabled">Missed reservation</label>
+                        <input type="hidden" name="adjustment_requests_missed_reservation_enabled" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_missed_reservation_enabled"
+                                   {% if adjustment_requests_missed_reservation_enabled == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            Missed reservation
+                        </label>
                     </div>
                     <div class="row col-xs-8">
-                        <label><input type="checkbox" name="adjustment_requests_missed_reservation_times" {% if adjustment_requests_missed_reservation_times %}checked{% endif %} value="enabled">users can adjust reservation times</label>
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_missed_reservation_times"
+                                   {% if adjustment_requests_missed_reservation_times %}checked{% endif %}
+                                   value="enabled">
+                            users can adjust reservation times
+                        </label>
                     </div>
                 </div>
             </div>
         </div>
         <br>
         <div class="form-group">
-            <label class="control-label col-md-4" for="adjustment_requests_charges_display_number">Restrict number of charges</label>
+            <label class="control-label col-md-4" for="adjustment_requests_charges_display_number">
+                Restrict number of charges
+            </label>
             <div class="col-md-5">
                 <div class="input-group">
-                    <input type="number" step="1" min="0" id="adjustment_requests_charges_display_number" name="adjustment_requests_charges_display_number" class="form-control text-right" value="{{ adjustment_requests_charges_display_number }}"/>
+                    <input type="number"
+                           step="1"
+                           min="0"
+                           id="adjustment_requests_charges_display_number"
+                           name="adjustment_requests_charges_display_number"
+                           class="form-control text-right"
+                           value="{{ adjustment_requests_charges_display_number }}" />
                     <span class="input-group-addon">most recent charges</span>
                 </div>
             </div>
@@ -93,16 +154,30 @@
             <div class="col-md-5">
                 <div class="input-group">
                     <span class="input-group-addon">last</span>
-                    <input type="number" step="1" min="0" id="adjustment_requests_time_limit_interval" name="adjustment_requests_time_limit_interval" class="form-control text-right" value="{{ adjustment_requests_time_limit_interval }}"/>
+                    <input type="number"
+                           step="1"
+                           min="0"
+                           id="adjustment_requests_time_limit_interval"
+                           name="adjustment_requests_time_limit_interval"
+                           class="form-control text-right"
+                           value="{{ adjustment_requests_time_limit_interval }}" />
                     <span class="input-group-addon" style="background-color: initial; padding: 0">
-                        <select aria-label="time limit frequency" style="width: auto; border: none; text-align: center; padding: 6px 12px;" id="adjustment_requests_time_limit_frequency" name="adjustment_requests_time_limit_frequency">
+                        <select aria-label="time limit frequency"
+                                style="width: auto;
+                                       border: none;
+                                       text-align: center;
+                                       padding: 6px 12px"
+                                id="adjustment_requests_time_limit_frequency"
+                                name="adjustment_requests_time_limit_frequency">
                             <option value=""></option>
                             {% for freq in frequency_choices %}
                                 {{ adjustment_requests_time_limit_frequency }}
-                                <option value="{{ freq.0 }}" {% if adjustment_requests_time_limit_frequency|to_int == freq.0 %}selected{% endif %}>{{ freq.1 }}</option>
+                                <option value="{{ freq.0 }}"
+                                        {% if adjustment_requests_time_limit_frequency|to_int == freq.0 %}selected{% endif %}>
+                                    {{ freq.1 }}
+                                </option>
                             {% endfor %}
                         </select>
-
                     </span>
                 </div>
             </div>
@@ -120,19 +195,28 @@
             <label class="control-label col-md-4">Edit approved charges</label>
             <div class="col-md-8">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="adjustment_requests_edit_charge_button" {% if adjustment_requests_edit_charge_button %}checked{% endif %} value="enabled">Check this box to show a link to edit the original charge after approval</label><br/>
+                    <label>
+                        <input type="checkbox"
+                               name="adjustment_requests_edit_charge_button"
+                               {% if adjustment_requests_edit_charge_button %}checked{% endif %}
+                               value="enabled">
+                        Check this box to show a link to edit the original charge after approval
+                    </label>
+                    <br />
                 </div>
             </div>
-            <div class="col-md-offset-4 col-md-8 help-block light-grey">
-                This does not apply to general charges.
-            </div>
+            <div class="col-md-offset-4 col-md-8 help-block light-grey">This does not apply to general charges.</div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Access requests settings</h3>
         <div class="form-group">
             <label class="control-label col-md-4" for="access_requests_title">Access request tab title</label>
             <div class="col-md-7">
-                <input type="text" id="access_requests_title" name="access_requests_title" class="form-control" value="{{ access_requests_title }}"/>
+                <input type="text"
+                       id="access_requests_title"
+                       name="access_requests_title"
+                       class="form-control"
+                       value="{{ access_requests_title }}" />
             </div>
             <div class="col-md-offset-4 col-md-8 help-block light-grey">
                 The title for the access request tab of the user requests page.
@@ -141,7 +225,10 @@
         <div class="form-group">
             <label class="control-label col-md-4" for="access_requests_description">Access requests description</label>
             <div class="col-md-7">
-                <textarea oninput="auto_size_textarea(this);" id="access_requests_description" name="access_requests_description" class="form-control">{{ access_requests_description }}</textarea>
+                <textarea oninput="auto_size_textarea(this);"
+                          id="access_requests_description"
+                          name="access_requests_description"
+                          class="form-control">{{ access_requests_description }}</textarea>
             </div>
             <div class="col-md-offset-4 col-md-8 help-block light-grey">
                 The description/instructions to display on the access requests page.
@@ -151,7 +238,13 @@
             <label class="control-label col-md-4" for="access_requests_minimum_users">Access requests minimum users</label>
             <div class="col-md-3">
                 <div class="input-group">
-                    <input type="number" step="1" min="0" id="access_requests_minimum_users" name="access_requests_minimum_users" class="form-control text-right" value="{{ access_requests_minimum_users }}"/>
+                    <input type="number"
+                           step="1"
+                           min="0"
+                           id="access_requests_minimum_users"
+                           name="access_requests_minimum_users"
+                           class="form-control text-right"
+                           value="{{ access_requests_minimum_users }}" />
                     <span class="input-group-addon">users</span>
                 </div>
             </div>
@@ -163,7 +256,13 @@
             <label class="control-label col-md-4" for="access_requests_display_max">Access requests display maximum</label>
             <div class="col-md-3">
                 <div class="input-group">
-                    <input type="number" step="1" min="0" id="access_requests_display_max" name="access_requests_display_max" class="form-control text-right" value="{{ access_requests_display_max }}"/>
+                    <input type="number"
+                           step="1"
+                           min="0"
+                           id="access_requests_display_max"
+                           name="access_requests_display_max"
+                           class="form-control text-right"
+                           value="{{ access_requests_display_max }}" />
                     <span class="input-group-addon">requests</span>
                 </div>
             </div>
@@ -172,9 +271,16 @@
             </div>
         </div>
         <div class="form-group {% if errors.weekend_access_notification_emails %}has-error{% endif %}">
-            <label class="control-label col-md-4" for="weekend_access_notification_emails">Weekend access notification email(s)</label>
+            <label class="control-label col-md-4" for="weekend_access_notification_emails">
+                Weekend access notification email(s)
+            </label>
             <div class="col-md-7">
-                <input type="text" id="weekend_access_notification_emails" name="weekend_access_notification_emails" class="form-control" value="{% if errors.weekend_access_notification_emails %}{{ errors.weekend_access_notification_emails.value }}{% else %}{{ weekend_access_notification_emails }}{% endif %}" placeholder="weekend_access@example.org"/>
+                <input type="text"
+                       id="weekend_access_notification_emails"
+                       name="weekend_access_notification_emails"
+                       class="form-control"
+                       value="{% if errors.weekend_access_notification_emails %}{{ errors.weekend_access_notification_emails.value }}{% else %}{{ weekend_access_notification_emails }}{% endif %}"
+                       placeholder="weekend_access@example.org" />
             </div>
             <div class="col-md-offset-4 col-md-8 help-block light-grey">
                 {% if errors.weekend_access_notification_emails %}
@@ -185,9 +291,13 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-4" for="weekend_access_notification_cutoff_day">Weekend access notification cutoff</label>
+            <label class="control-label col-md-4" for="weekend_access_notification_cutoff_day">
+                Weekend access notification cutoff
+            </label>
             <div class="col-md-2">
-                <select id="weekend_access_notification_cutoff_day" name="weekend_access_notification_cutoff_day" class="form-control">
+                <select id="weekend_access_notification_cutoff_day"
+                        name="weekend_access_notification_cutoff_day"
+                        class="form-control">
                     <option value=""></option>
                     <option value="1" {% if weekend_access_notification_cutoff_day == '1' %}selected{% endif %}>Tuesday</option>
                     <option value="2" {% if weekend_access_notification_cutoff_day == '2' %}selected{% endif %}>Wednesday</option>
@@ -201,7 +311,14 @@
             </div>
             <div class="col-md-2">
                 <div class="input-group">
-                    <input type="number" step="1" min="0" max="24" id="weekend_access_notification_cutoff_hour" name="weekend_access_notification_cutoff_hour" class="form-control text-right" value="{{ weekend_access_notification_cutoff_hour }}"/>
+                    <input type="number"
+                           step="1"
+                           min="0"
+                           max="24"
+                           id="weekend_access_notification_cutoff_hour"
+                           name="weekend_access_notification_cutoff_hour"
+                           class="form-control text-right"
+                           value="{{ weekend_access_notification_cutoff_hour }}" />
                     <span class="input-group-addon">:00 hrs</span>
                 </div>
             </div>
@@ -214,7 +331,11 @@
         <div class="form-group">
             <label class="control-label col-md-4" for="buddy_requests_title">Buddy request tab title</label>
             <div class="col-md-7">
-                <input type="text" id="buddy_requests_title" name="buddy_requests_title" class="form-control" value="{{ buddy_requests_title }}"/>
+                <input type="text"
+                       id="buddy_requests_title"
+                       name="buddy_requests_title"
+                       class="form-control"
+                       value="{{ buddy_requests_title }}" />
             </div>
             <div class="col-md-offset-4 col-md-8 help-block light-grey">
                 The title for the buddy request tab of the user requests page.
@@ -223,16 +344,17 @@
         <div class="form-group">
             <label class="control-label col-md-4" for="buddy_board_description">Buddy board description</label>
             <div class="col-md-7">
-                <textarea oninput="auto_size_textarea(this);" id="buddy_board_description" name="buddy_board_description" class="form-control">{{ buddy_board_description }}</textarea>
+                <textarea oninput="auto_size_textarea(this);"
+                          id="buddy_board_description"
+                          name="buddy_board_description"
+                          class="form-control">{{ buddy_board_description }}</textarea>
             </div>
             <div class="col-md-offset-4 col-md-8 help-block light-grey">
                 The description/instructions to display on the buddy board page.
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <div class="text-center">
-            {% button type="save" value="Save settings" %}
-        </div>
+        <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
     <script type="text/javascript">
         $("#requests-tab-link").click(function() {setTimeout(on_requests_tab_show, 50)});

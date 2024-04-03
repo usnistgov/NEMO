@@ -1,15 +1,30 @@
 <div style="height:10px"></div>
 <div id="add_user_to_project_{{ project.id }}">
-	<label class="control-label">Users:<input id="search_user_for_project_{{ project.id }}" type="text" class="form-control user_search" placeholder="Search for a user to add" data-project-id="{{ project.id }}" style="min-width: 250px;"></label>
+    <label class="control-label">
+        Users:
+        <input id="search_user_for_project_{{ project.id }}"
+               type="text"
+               class="form-control user_search"
+               placeholder="Search for a user to add"
+               data-project-id="{{ project.id }}"
+               style="min-width: 250px">
+    </label>
 </div>
 <div>
-	{% for u in users %}
-		<a href="javascript:remove_user_from_project('{{ u.id }}', '{{ project.id }}')" class="grey hover-black" title="Remove {{ u.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a> {% if u.is_active %}{{ u }}{% else %}<span class="strikethrough light-grey" title="This user is inactive">{{ u }}</span>{% endif %}<br>
-	{% empty %}
-		This project does not have any members.
-	{% endfor %}
+    {% for u in users %}
+        <a href="javascript:remove_user_from_project('{{ u.id }}', '{{ project.id }}')"
+           class="grey hover-black"
+           title="Remove {{ u.first_name }}"><span class="glyphicon glyphicon-remove-circle"></span></a>
+        {% if u.is_active %}
+            {{ u }}
+        {% else %}
+            <span class="strikethrough light-grey" title="This user is inactive">{{ u }}</span>
+        {% endif %}
+        <br>
+    {% empty %}
+        This project does not have any members.
+    {% endfor %}
 </div>
-
 <script>
     $(function()
     {

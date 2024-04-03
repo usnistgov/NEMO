@@ -2,39 +2,36 @@
 {% load custom_tags_and_filters %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	{# This meta-tag forcefully disables 'compatibility mode' in Internet Explorer because it causes rendering problems. #}
-	<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-	<meta charset="UTF-8">
-
-	{# jQuery #}
-    <script type="text/javascript" src="{% static "jquery.min.js" %}"></script>
-
-	{# Bootstrap #}
-    <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
-    <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}"/>
-    <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.min.css" %}"/>
-
-	{# NEMO #}
-    <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}"/>
-	<script type="text/javascript" src="{% static "nemo.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}"/>
-
-	<title>Jumbotron</title>
-</head>
-<body class="jumbotron-body" style="background-image:linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url('{{ MEDIA_URL }}jumbotron_watermark.png')">
-	<div id="jumbotron-container" style="min-height: calc(100vh - 61px); padding:10px 30px 0 30px">
-		<div class="container-fluid" style="background:transparent">
-			<div class="row" id="content" style="background:transparent"></div>
-			<div class="row" id="offline-message" style="display:none">
-				<div class="col-lg-12" style="text-align:center">
-					<span style="font-size:250px; color:red">{{ site_title }} is offline</span>
-				</div>
-			</div>
-		</div>
-	</div>
-	{% include 'base/footer.html' %}
-	<script>
+    <head>
+        {# This meta-tag forcefully disables 'compatibility mode' in Internet Explorer because it causes rendering problems. #}
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta charset="UTF-8">
+        {# jQuery #}
+        <script type="text/javascript" src="{% static "jquery.min.js" %}"></script>
+        {# Bootstrap #}
+        <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
+        <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.min.css" %}" />
+        {# NEMO #}
+        <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}" />
+        <script type="text/javascript" src="{% static "nemo.js" %}"></script>
+        <link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}" />
+        <title>Jumbotron</title>
+    </head>
+    <body class="jumbotron-body"
+          style="background-image:linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url('{{ MEDIA_URL }}jumbotron_watermark.png')">
+        <div id="jumbotron-container" style="min-height: calc(100vh - 61px); padding:10px 30px 0 30px">
+            <div class="container-fluid" style="background:transparent">
+                <div class="row" id="content" style="background:transparent"></div>
+                <div class="row" id="offline-message" style="display:none">
+                    <div class="col-lg-12" style="text-align:center">
+                        <span style="font-size:250px; color:red">{{ site_title }} is offline</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% include 'base/footer.html' %}
+        <script>
 		function on_complete(response, status)
 		{
 			if (status === "success")
@@ -58,6 +55,7 @@
 			set_interval_when_visible(document, refresh_jumbotron, 10000);
 		}
 		$(on_load);
-	</script>
-</body>
+	
+        </script>
+    </body>
 </html>

@@ -1,32 +1,40 @@
 <div class="alert alert-warning" style="margin-bottom: 0">
-	<table style="width: 100%">
-		<tr>
-			<th class="alert alert-danger danger-highlight text-center">
-				<table style="margin: auto">
-					<tr>
-						<td style="padding-right: 10px"><span class="glyphicon glyphicon-alert warning-highlight notification-icon"></span></td>
-						<td>This is a busy time in the {{ area.name }}</td>
-					</tr>
-				</table>
-			</th>
-		</tr>
-		<tr style="height: 15px"></tr>
-		<tr>
-			<td class="text-center" style="color:black;">
-				At <b>{{ max_area_time|time }}</b>, {{ max_area_count }} people (including you) are expected in the {{ area.name }} area.
-				{% if area.maximum_capacity %}
-					<br>
-					<b>The maximum capacity is {{ area.maximum_capacity }} people.</b>
-				{% endif %}
-				{% if max_location_count > 1 %}<br><br>In addition, at <b>{{ max_location_time|time }}</b>, {{ max_location_count }} of those people are expected in the same location ({{ location }}){% endif %}
-				<br><br>
-				Please consider social distancing when making reservations.<br>
-			</td>
-		</tr>
-	</table>
-	<div style="text-align: center; margin-top: 15px">
-		<button type="button" class="btn btn-default" data-dismiss="modal" aria-label="Ok">
-			<span aria-hidden="true">Ok</span>
-		</button>
-	</div>
+    <table style="width: 100%">
+        <tr>
+            <th class="alert alert-danger danger-highlight text-center">
+                <table style="margin: auto">
+                    <tr>
+                        <td style="padding-right: 10px">
+                            <span class="glyphicon glyphicon-alert warning-highlight notification-icon"></span>
+                        </td>
+                        <td>This is a busy time in the {{ area.name }}</td>
+                    </tr>
+                </table>
+            </th>
+        </tr>
+        <tr style="height: 15px"></tr>
+        <tr>
+            <td class="text-center" style="color:black;">
+                At <b>{{ max_area_time|time }}</b>, {{ max_area_count }} people (including you) are expected in the {{ area.name }} area.
+                {% if area.maximum_capacity %}
+                    <br>
+                    <b>The maximum capacity is {{ area.maximum_capacity }} people.</b>
+                {% endif %}
+                {% if max_location_count > 1 %}
+                    <br>
+                    <br>
+                    In addition, at <b>{{ max_location_time|time }}</b>, {{ max_location_count }} of those people are expected in the same location ({{ location }})
+                {% endif %}
+                <br>
+                <br>
+                Please consider social distancing when making reservations.
+                <br>
+            </td>
+        </tr>
+    </table>
+    <div style="text-align: center; margin-top: 15px">
+        <button type="button" class="btn btn-default" data-dismiss="modal" aria-label="Ok">
+            <span aria-hidden="true">Ok</span>
+        </button>
+    </div>
 </div>

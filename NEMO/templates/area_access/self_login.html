@@ -3,42 +3,41 @@
 {% load custom_tags_and_filters %}
 {% block title %}Log in to an area{% endblock %}
 {% block content %}
-	<h1>Log in to an access controlled area</h1>
-	{% if error_message %}
-		<div class="alert alert-danger">
-			{{ error_message }}
-		</div>
-	{% elif area_error_message %}
-		<div class="alert alert-danger">
-			{{ area_error_message }}
-		</div>
-	{% endif %}
-	{% if not error_message %}
-		<form method="post" action="{% url 'self_log_in' %}">
-			{% csrf_token %}
-			<div class="form-group">
-				{% if projects|length == 1 %}
-					You only have one active project. Area access will be billed to: {{ projects.0 }}
-					<input type="hidden" name="project" value="{{ projects.0.id }}">
-				{% else %}
-					<p>Charge area access to which project?</p>
-					{% for p in projects %}
-						<div class="radio">
-							<label><input type="radio" name="project" value="{{ p.id }}" required>{% project_selection_display p %}</label>
-						</div>
-					{% endfor %}
-				{% endif %}
-			</div>
-			<div class="form-group">
-			{% if areas|length == 1 %}
-				You are only able to access one area: {{ areas.0 }}
-				<input type="hidden" name="area" value="{{ areas.0.id }}">
-			{% else %}
-				<p>Log in to which area?</p>
-				{% include 'area_access/login_areas.html' with area_id=area_id %}
-			{% endif %}
-			</div>
+    <h1>Log in to an access controlled area</h1>
+    {% if error_message %}
+        <div class="alert alert-danger">{{ error_message }}</div>
+    {% elif area_error_message %}
+        <div class="alert alert-danger">{{ area_error_message }}</div>
+    {% endif %}
+    {% if not error_message %}
+        <form method="post" action="{% url 'self_log_in' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                {% if projects|length == 1 %}
+                    You only have one active project. Area access will be billed to: {{ projects.0 }}
+                    <input type="hidden" name="project" value="{{ projects.0.id }}">
+                {% else %}
+                    <p>Charge area access to which project?</p>
+                    {% for p in projects %}
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="project" value="{{ p.id }}" required>
+                                {% project_selection_display p %}
+                            </label>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {% if areas|length == 1 %}
+                    You are only able to access one area: {{ areas.0 }}
+                    <input type="hidden" name="area" value="{{ areas.0.id }}">
+                {% else %}
+                    <p>Log in to which area?</p>
+                    {% include 'area_access/login_areas.html' with area_id=area_id %}
+                {% endif %}
+            </div>
             {% button type="save" icon="glyphicon-log-in" value="Log in" %}
-		</form>
-	{% endif %}
+        </form>
+    {% endif %}
 {% endblock %}

@@ -2,78 +2,93 @@
 {% load custom_tags_and_filters %}
 {% block extrahead %}
     <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
-
 <div class="modal-header">
-	<button type="button" class="close" data-dismiss="modal" aria-label="Modal close button">&times;</button>
-	<h4 id="modal-description-label" class="modal-title">Schedule an outage</h4>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Modal close button">&times;</button>
+    <h4 id="modal-description-label" class="modal-title">Schedule an outage</h4>
 </div>
-
 <div class="modal-body clearfix">
-	{# Assume the dialog is cancelled by default, preventing the scheduled outage request from being processed further. #}
-	{# When a button is clicked this value is set to false, enabling further processing. #}
-	{# Hiding the dialog using the X in the top right, or clicking outside of it, will stop processing. #}
-	<input type="hidden" id="dialog_cancelled" value="true">
-	<form id="additional_event_parameters" onsubmit="return false">
-		<input type="hidden" id="configured" name="configured" value="true">
-		<div class="form-group col-sm-12">
-			<label for="title">Title</label>
-			<input aria-labelledby="outage_title_help" id="title" name="title" type="text" maxlength="100" class="form-control" autocomplete="off">
+    {# Assume the dialog is cancelled by default, preventing the scheduled outage request from being processed further. #}
+    {# When a button is clicked this value is set to false, enabling further processing. #}
+    {# Hiding the dialog using the X in the top right, or clicking outside of it, will stop processing. #}
+    <input type="hidden" id="dialog_cancelled" value="true">
+    <form id="additional_event_parameters" onsubmit="return false">
+        <input type="hidden" id="configured" name="configured" value="true">
+        <div class="form-group col-sm-12">
+            <label for="title">Title</label>
+            <input aria-labelledby="outage_title_help"
+                   id="title"
+                   name="title"
+                   type="text"
+                   maxlength="100"
+                   class="form-control"
+                   autocomplete="off">
             <div id="outage_title_help" class="light-grey">You must provide a title to create a scheduled outage</div>
-		</div>
-		{% if categories %}
-			<div class="form-group col-sm-12">
-				<label for="category">Category</label>
-				<select aria-labelledby="outage_category_help" class="form-control" name="category" id="category">
-					<option></option>
-					{% for c in categories %}
-						<option>{{ c }}</option>
-					{% endfor %}
-				</select>
-                <div id="outage_category_help" class="light-grey">Is there a category for this outage? This is useful for data and trend analysis</div>
-			</div>
-		{% endif %}
-		<div class="form-group col-sm-12">
-			<label for="details">Details</label>
-			<textarea aria-labelledby="outage_details_help" name="details" id="details" rows="7" maxlength="3000" class="form-control"></textarea>
-            <div id="outage_details_help" class="light-grey">Please provide any additional details for the scheduled outage. Be descriptive so that users understand why there is a scheduled outage.</div>
-		</div>
-		<div class="col-sm-12">
-			<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#recurrence" class="pointer" style="text-decoration: none">
-				<input type="checkbox" id="recurring_outage" name="recurring_outage"/>
-			</a>
-			<label for="recurring_outage" style="padding-left: 5px">Create more than one occurrence of this outage</label>
-		</div>
-		<div id="recurrence" class="collapse col-sm-12" style="margin: 0 auto">
-			<div class="col-sm-12">
-				<div class="form-group col-sm-2">
-					<label for="recurrence_interval">Every</label>
-					<input id="recurrence_interval" name="recurrence_interval" type="number" class="form-control" value="1"/>
-				</div>
-				<div class="form-group col-sm-6">
-					<label for="recurrence_frequency">Frequency</label>
-					<select class="form-control" name="recurrence_frequency" id="recurrence_frequency">
-						{% for choice in recurrence_intervals %}
-							<option value="{{ choice.0 }}">{{ choice.1 }}</option>
-						{% endfor %}
-					</select>
-				</div>
-				<div class="form-group col-sm-4">
-					<label for="recurrence_until">Until:</label>
-					<input type="text" id="recurrence_until" name="recurrence_until" class="form-control select-date" placeholder="Choose a date">
-				</div>
-			</div>
-		</div>
-	</form>
+        </div>
+        {% if categories %}
+            <div class="form-group col-sm-12">
+                <label for="category">Category</label>
+                <select aria-labelledby="outage_category_help" class="form-control" name="category" id="category">
+                    <option></option>
+                    {% for c in categories %}<option>{{ c }}</option>{% endfor %}
+                </select>
+                <div id="outage_category_help" class="light-grey">
+                    Is there a category for this outage? This is useful for data and trend analysis
+                </div>
+            </div>
+        {% endif %}
+        <div class="form-group col-sm-12">
+            <label for="details">Details</label>
+            <textarea aria-labelledby="outage_details_help"
+                      name="details"
+                      id="details"
+                      rows="7"
+                      maxlength="3000"
+                      class="form-control"></textarea>
+            <div id="outage_details_help" class="light-grey">
+                Please provide any additional details for the scheduled outage. Be descriptive so that users understand why there is a scheduled outage.
+            </div>
+        </div>
+        <div class="col-sm-12">
+            <a onclick="toggle_details(this)"
+               data-toggle="collapse"
+               data-target="#recurrence"
+               class="pointer"
+               style="text-decoration: none">
+                <input type="checkbox" id="recurring_outage" name="recurring_outage" />
+            </a>
+            <label for="recurring_outage" style="padding-left: 5px">Create more than one occurrence of this outage</label>
+        </div>
+        <div id="recurrence" class="collapse col-sm-12" style="margin: 0 auto">
+            <div class="col-sm-12">
+                <div class="form-group col-sm-2">
+                    <label for="recurrence_interval">Every</label>
+                    <input id="recurrence_interval" name="recurrence_interval" type="number" class="form-control" value="1" />
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="recurrence_frequency">Frequency</label>
+                    <select class="form-control" name="recurrence_frequency" id="recurrence_frequency">
+                        {% for choice in recurrence_intervals %}<option value="{{ choice.0 }}">{{ choice.1 }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group col-sm-4">
+                    <label for="recurrence_until">Until:</label>
+                    <input type="text"
+                           id="recurrence_until"
+                           name="recurrence_until"
+                           class="form-control select-date"
+                           placeholder="Choose a date">
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
-
 <div class="modal-footer">
-	<div class="col-sm-12">
+    <div class="col-sm-12">
         {% button id="schedule_outage" type="save" disabled="disabled" submit=False dismiss="modal" onclick="$('#dialog_cancelled').val(false)" value="Schedule this outage" %}
-	</div>
+    </div>
 </div>
-
 <script>
 	autofocus('#title');
 	$('#title').on('input', function() { if(this.value) $('#schedule_outage').prop('disabled', false); else $('#schedule_outage').prop('disabled', true); });

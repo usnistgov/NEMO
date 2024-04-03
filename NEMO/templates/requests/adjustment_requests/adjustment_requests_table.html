@@ -3,9 +3,7 @@
     <thead>
         <tr>
             <th>Created</th>
-            {% if user_is_reviewer or user.is_any_part_of_staff %}
-                <th>User</th>
-            {% endif %}
+            {% if user_is_reviewer or user.is_any_part_of_staff %}<th>User</th>{% endif %}
             <th class="text-center">Charge</th>
             <th class="text-center text-nowrap">New start</th>
             <th class="text-center text-nowrap">New end</th>
@@ -24,7 +22,10 @@
     <tbody>
         {% for a_request in adjustment_request_list %}
             <tr>
-                <td style="vertical-align: middle">{% if a_request.id in request_notifications %}<span class="label label-success">New</span> {% endif %}{{ a_request.creation_time|date:'SHORT_DATETIME_FORMAT' }}</td>
+                <td style="vertical-align: middle">
+                    {% if a_request.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
+                    {{ a_request.creation_time|date:'SHORT_DATETIME_FORMAT' }}
+                </td>
                 {% if user_is_reviewer or user.is_any_part_of_staff %}
                     <td style="vertical-align: middle">{{ a_request.creator.get_name }}</td>
                 {% endif %}
@@ -39,12 +40,15 @@
                             {% url "user_requests" "adjustment" as redirect_adjustment_url %}
                             {% admin_edit_url a_request.item redirect_adjustment_url as edit_url %}
                             {% if edit_url %}
-                                <br>{% button type="edit" size="small" value="Edit charge" url=edit_url %}
+                                <br>
+                                {% button type="edit" size="small" value="Edit charge" url=edit_url %}
                             {% endif %}
                         {% endif %}
                     {% else %}
                         {% if request_status == 'pending' and user in a_request.reviewers %}
-                            <a class="btn btn-sm btn-default" title="Approve/Deny" href="{% url 'edit_adjustment_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
+                            <a class="btn btn-sm btn-default"
+                               title="Approve/Deny"
+                               href="{% url 'edit_adjustment_request' a_request.id %}"><i class="glyphicon glyphicon-ok-circle success-highlight"></i>&nbsp;&nbsp;<i class="glyphicon glyphicon-ban-circle danger-highlight"></i> Review</a>
                         {% endif %}
                         {% if request_status == 'pending' and a_request.creator == user %}
                             {% url 'edit_adjustment_request' a_request.id as edit_request_url %}
@@ -56,7 +60,8 @@
                 </td>
             </tr>
             <tr>
-                <td colspan="{% if user_is_reviewer or user.is_any_part_of_staff %}3{% else %}2{% endif %}" style="border: none">
+                <td colspan="{% if user_is_reviewer or user.is_any_part_of_staff %}3{% else %}2{% endif %}"
+                    style="border: none">
                     <div style="color: rgb(128,128,128)">
                         {% if a_request.description %}
                             <div>
@@ -70,7 +75,9 @@
                             {% for message in a_request.replies %}
                                 <div>
                                     <div class="adjustment-request-message">
-                                        {% if message.id in reply_notifications %}<span class="label label-success request-item-message-new-reply">New reply</span>{% endif %}
+                                        {% if message.id in reply_notifications %}
+                                            <span class="label label-success request-item-message-new-reply">New reply</span>
+                                        {% endif %}
                                         {{ message.content|linebreaksbr }}
                                         <div class="request-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
                                     </div>
@@ -81,7 +88,9 @@
                             {% if user == a_request.creator or user in a_request.reviewers %}
                                 <div>
                                     <div class="adjustment-request-reply-textarea" style="display: none;">
-                                        <form id="adjustment_request_reply_{{ a_request.id }}" action="{% url 'adjustment_request_reply' a_request.id %}" method="post">
+                                        <form id="adjustment_request_reply_{{ a_request.id }}"
+                                              action="{% url 'adjustment_request_reply' a_request.id %}"
+                                              method="post">
                                             {% csrf_token %}
                                             <textarea required name="reply_content" aria-label="Reply content" style="width: 100%"></textarea>
                                         </form>

@@ -51,12 +51,12 @@
             {% with knowledge_base_url='admin:NEMO_'|concat:kind|concat:'knowledgebaseitem_changelist' %}
                 <p>
                     Please go to <a href="{% url knowledge_base_url %}">Administration -> Detailed Administration
-                    -> {{ kind|capfirst }} knowledge base items</a>
-                </p>
-            {% endwith %}
-        {% endif %}
+                -> {{ kind|capfirst }} knowledge base items</a>
+            </p>
+        {% endwith %}
     {% endif %}
-    <script>
+{% endif %}
+<script>
         function get_knowledge_base_item(jquery_event, search_selection, dataset_name) {
             window.location.href = "{% url 'knowledge_base_item' kind 999 %}".replace('999', search_selection.id);
         }
@@ -70,5 +70,5 @@
         }
 
         window.addEventListener('load', on_load, true);
-    </script>
+</script>
 {% endblock %}

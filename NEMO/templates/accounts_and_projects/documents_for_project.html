@@ -1,19 +1,25 @@
 <div style="height:10px"></div>
 <div>
-	<label class="control-label" for="project_documents">Documents:</label>
+    <label class="control-label" for="project_documents">Documents:</label>
 </div>
 <div>
-{% for d in documents %}
-	<a href="javascript:remove_document_from_project('{% url 'remove_document_from_project' project.id d.id  %}', '{{ project.id }}')" class="grey hover-black" title="Remove {{ d.filename }}"><span class="glyphicon glyphicon-remove-circle"></span></a> <a href="{{ d.link }}">{{ d.filename }}</a><br>
-{% empty %}
-	This project does not have any documents.
-{% endfor %}
+    {% for d in documents %}
+        <a href="javascript:remove_document_from_project('{% url 'remove_document_from_project' project.id d.id %}', '{{ project.id }}')"
+           class="grey hover-black"
+           title="Remove {{ d.filename }}"><span class="glyphicon glyphicon-remove-circle"></span></a> <a href="{{ d.link }}">{{ d.filename }}</a>
+        <br>
+    {% empty %}
+        This project does not have any documents.
+    {% endfor %}
 </div>
 {% if allow_document_upload %}
-	<div>
-		<form action="{% url 'add_document_to_project' project.id %}" enctype="multipart/form-data" method="post" onchange="add_document_to_project('{{ project.id }}', this);">
-			{% csrf_token %}
-			<input type="file" id="project_documents" name="project_documents" class="form-control-static" multiple>
-		</form>
-	</div>
+    <div>
+        <form action="{% url 'add_document_to_project' project.id %}"
+              enctype="multipart/form-data"
+              method="post"
+              onchange="add_document_to_project('{{ project.id }}', this);">
+            {% csrf_token %}
+            <input type="file" id="project_documents" name="project_documents" class="form-control-static" multiple>
+        </form>
+    </div>
 {% endif %}

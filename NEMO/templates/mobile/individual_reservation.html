@@ -1,52 +1,87 @@
 {% load custom_tags_and_filters %}
 <div class="alert {% if personal_schedule %}alert-success{% else %}alert-info{% endif %}" role="alert">
-	<span style="cursor:pointer" class="pull-right glyphicon glyphicon-chevron-down" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}"></span>
-	<span style="cursor:pointer" data-toggle="collapse" data-target="#extended_reservation_information_{{ reservation.id }}"><strong>{% if personal_schedule %}{{ reservation.title|default:reservation.reservation_item }}{% else %}{{ reservation.title|default:reservation.user }}{% endif %}</strong></span><br>
-	Starting {{ reservation.start }}<br>
-	Ending {{ reservation.end }}<br>
-	<div id="extended_reservation_information_{{ reservation.id }}" class="collapse">
+    <span style="cursor:pointer"
+          class="pull-right glyphicon glyphicon-chevron-down"
+          data-toggle="collapse"
+          data-target="#extended_reservation_information_{{ reservation.id }}"></span>
+    <span style="cursor:pointer"
+          data-toggle="collapse"
+          data-target="#extended_reservation_information_{{ reservation.id }}"><strong>
+        {% if personal_schedule %}
+            {{ reservation.title|default:reservation.reservation_item }}
+        {% else %}
+            {{ reservation.title|default:reservation.user }}
+        {% endif %}
+    </strong></span>
+    <br>
+    Starting {{ reservation.start }}
+    <br>
+    Ending {{ reservation.end }}
+    <br>
+    <div id="extended_reservation_information_{{ reservation.id }}" class="collapse">
         {% for question_name, data in reservation.question_data_json.items %}
-            {{ question_name }}: {{ data.user_input }}<br>
+            {{ question_name }}: {{ data.user_input }}
+            <br>
         {% endfor %}
-		<div style="height:10px">{# Vertical spacer #}</div>
-		{% if reservation.project %}
-			For project {{ reservation.project }}<br>
-		{% endif %}
-		Created by {{ reservation.creator }} {% if reservation.user != reservation.creator %} on behalf of {{ reservation.user }}{% endif %} on {{ reservation.creation_time }}<br>
-		{% if reservation.self_configuration %}
-			<strong>You have elected to configure this tool yourself.</strong><br>
-		{% else %}
-			{% if reservation.short_notice %}
-				<strong>This reservation was created on short notice. Tool configuration is not guaranteed upon start time.</strong><br>
-			{% endif %}
-		{% endif %}
+        <div style="height:10px">{# Vertical spacer #}</div>
+        {% if reservation.project %}
+            For project {{ reservation.project }}
+            <br>
+        {% endif %}
+        Created by {{ reservation.creator }}
+        {% if reservation.user != reservation.creator %}on behalf of {{ reservation.user }}{% endif %}
+        on {{ reservation.creation_time }}
+        <br>
+        {% if reservation.self_configuration %}
+            <strong>You have elected to configure this tool yourself.</strong>
+            <br>
+        {% else %}
+            {% if reservation.short_notice %}
+                <strong>This reservation was created on short notice. Tool configuration is not guaranteed upon start time.</strong>
+                <br>
+            {% endif %}
+        {% endif %}
         {% if reservation.configurationoption_set.exists %}
             <div style="height:10px">{# Vertical spacer #}</div>
-            Configuration:<br>
+            Configuration:
+            <br>
             {% for config_option in reservation.configurationoption_set.all %}
-                {{ config_option.name }}: {% if config_option.get_color %}<span class="configuration-reservation-option" style="background-color: {{ config_option.get_color }}">{{ config_option.current_setting }}</span>{% else %}{{ config_option.current_setting }}{% endif %}<br>
+                {{ config_option.name }}:
+                {% if config_option.get_color %}
+                    <span class="configuration-reservation-option" style="background-color: {{ config_option.get_color }}">{{ config_option.current_setting }}</span>
+                {% else %}
+                    {{ config_option.current_setting }}
+                {% endif %}
+                <br>
             {% endfor %}
         {% endif %}
-		{% if reservation.additional_information %}
+        {% if reservation.additional_information %}
             <div style="height:10px">{# Vertical spacer #}</div>
-			Additional information:<br>
-			{{ reservation.additional_information|linebreaksbr }}
-		{% endif %}
-		{# Allow the user to cancel the reservation if they have that privilege. #}
-		{% if not reservation.missed and not reservation.cancelled %}
-			{% if reservation.user.id == user.id and reservation.has_not_ended or user.is_staff %}
-				<div style="height:10px">{# Vertical spacer #}</div>
-				<form method="post" action="{% url 'cancel_reservation' reservation.id %}">
-					{% csrf_token %}
-					{% if user != reservation.user %}
-						{# Staff must provide a reason for cancelling someone else's reservation. #}
-						<div class="form-group">
-							<input type="text" class="form-control" name="reason" maxlength="3000" placeholder="Cancellation reason (required)" aria-label="Cancellation reason (required)" required>
-						</div>
-					{% endif %}
+            Additional information:
+            <br>
+            {{ reservation.additional_information|linebreaksbr }}
+        {% endif %}
+        {# Allow the user to cancel the reservation if they have that privilege. #}
+        {% if not reservation.missed and not reservation.cancelled %}
+            {% if reservation.user.id == user.id and reservation.has_not_ended or user.is_staff %}
+                <div style="height:10px">{# Vertical spacer #}</div>
+                <form method="post" action="{% url 'cancel_reservation' reservation.id %}">
+                    {% csrf_token %}
+                    {% if user != reservation.user %}
+                        {# Staff must provide a reason for cancelling someone else's reservation. #}
+                        <div class="form-group">
+                            <input type="text"
+                                   class="form-control"
+                                   name="reason"
+                                   maxlength="3000"
+                                   placeholder="Cancellation reason (required)"
+                                   aria-label="Cancellation reason (required)"
+                                   required>
+                        </div>
+                    {% endif %}
                     {% button type="delete" submit=True value="Cancel this reservation" %}
-				</form>
-			{% endif %}
-		{% endif %}
-	</div>
+                </form>
+            {% endif %}
+        {% endif %}
+    </div>
 </div>

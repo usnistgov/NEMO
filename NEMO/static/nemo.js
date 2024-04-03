@@ -771,7 +771,7 @@ function set_start_end_datetime_pickers(start_jq, end_jq, properties, set_end_da
 
 function sort_compare(element)
 {
-	return element.innerText.toLowerCase();
+	return element.innerText.toLowerCase().trim();
 }
 
 function sort_elements(list_element, selector, sort_function)

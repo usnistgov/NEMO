@@ -7,7 +7,14 @@
             <label class="control-label col-md-3" for="account_list_active_only">Projects/accounts list</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" id="account_list_active_only" name="account_list_active_only" {% if account_list_active_only %}checked{% endif %} value="enabled"> Hide inactive accounts</label>
+                    <label>
+                        <input type="checkbox"
+                               id="account_list_active_only"
+                               name="account_list_active_only"
+                               {% if account_list_active_only %}checked{% endif %}
+                               value="enabled">
+                        Hide inactive accounts
+                    </label>
                 </div>
             </div>
             <div class="col-md-offset-3 col-md-9 help-block light-grey">
@@ -17,7 +24,14 @@
         <div class="form-group" style="margin-bottom: 0">
             <div class="col-md-offset-3 col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" id="project_list_active_only" name="project_list_active_only" {% if project_list_active_only %}checked{% endif %} value="enabled"> Hide inactive projects</label>
+                    <label>
+                        <input type="checkbox"
+                               id="project_list_active_only"
+                               name="project_list_active_only"
+                               {% if project_list_active_only %}checked{% endif %}
+                               value="enabled">
+                        Hide inactive projects
+                    </label>
                 </div>
             </div>
             <div class="col-md-offset-3 col-md-9 help-block light-grey">
@@ -27,7 +41,14 @@
         <div class="form-group">
             <div class="col-md-offset-3 col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" id="account_list_collapse" name="account_list_collapse" {% if account_list_collapse %}checked{% endif %} value="enabled"> Collapse project list by default</label>
+                    <label>
+                        <input type="checkbox"
+                               id="account_list_collapse"
+                               name="account_list_collapse"
+                               {% if account_list_collapse %}checked{% endif %}
+                               value="enabled">
+                        Collapse project list by default
+                    </label>
                 </div>
             </div>
             <div class="col-md-offset-3 col-md-9 help-block light-grey">
@@ -38,22 +59,33 @@
             <label class="control-label col-md-3" for="project_allow_transferring_charges">Transfer charges</label>
             <div class="col-md-8">
                 <div class="checkbox">
-                    <label><input type="checkbox" id="project_allow_transferring_charges"
-                                  name="project_allow_transferring_charges"
-                                  {% if project_allow_transferring_charges %}checked{% endif %} value="enabled"> Allow
-                        accounting officers and managers to transfer charges to another project</label>
+                    <label>
+                        <input type="checkbox"
+                               id="project_allow_transferring_charges"
+                               name="project_allow_transferring_charges"
+                               {% if project_allow_transferring_charges %}checked{% endif %}
+                               value="enabled">
+                        Allow
+                        accounting officers and managers to transfer charges to another project
+                    </label>
                 </div>
             </div>
             <div class="col-md-offset-3 col-md-8 help-block light-grey">
-                Check this box to enable the transfer charges feature (available in the Administration menu or <a
-                    href="{% url 'transfer_charges' %}">here</a>).
+                Check this box to enable the transfer charges feature (available in the Administration menu or <a href="{% url 'transfer_charges' %}">here</a>).
             </div>
         </div>
-		<div class="form-group">
-			<label class="control-label col-md-3" for="project_allow_pi_manage_users">Project PIs</label>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="project_allow_pi_manage_users">Project PIs</label>
             <div class="col-md-8">
                 <div class="checkbox">
-                    <label><input type="checkbox" id="project_allow_pi_manage_users" name="project_allow_pi_manage_users" {% if project_allow_pi_manage_users %}checked{% endif %} value="enabled"> Allow project PIs to manage users</label>
+                    <label>
+                        <input type="checkbox"
+                               id="project_allow_pi_manage_users"
+                               name="project_allow_pi_manage_users"
+                               {% if project_allow_pi_manage_users %}checked{% endif %}
+                               value="enabled">
+                        Allow project PIs to manage users
+                    </label>
                 </div>
             </div>
             <div class="col-md-offset-3 col-md-8 help-block light-grey">
@@ -63,7 +95,11 @@
         <div class="form-group {% if errors.project_application_identifier_name %}has-error{% endif %}">
             <label class="control-label col-md-3" for="project_application_identifier_name">Project identifier name</label>
             <div class="col-md-8">
-                <input type="text" id="project_application_identifier_name" name="project_application_identifier_name" class="form-control" value="{{ project_application_identifier_name }}">
+                <input type="text"
+                       id="project_application_identifier_name"
+                       name="project_application_identifier_name"
+                       class="form-control"
+                       value="{{ project_application_identifier_name }}">
             </div>
             <div class="col-md-offset-3 col-md-8 help-block light-grey">
                 {% if errors.project_application_identifier_name %}
@@ -76,7 +112,10 @@
         <div class="form-group {% if errors.project_selection_template %}has-error{% endif %}">
             <label class="control-label col-md-3" for="project_selection_template">Project selection template</label>
             <div class="col-md-8">
-                <textarea oninput="auto_size_textarea(this);" id="project_selection_template" name="project_selection_template" class="form-control">{% if errors.project_selection_template %}{{ errors.project_selection_template.value }}{% else %}{{ project_selection_template }}{% endif %}</textarea>
+                <textarea oninput="auto_size_textarea(this);"
+                          id="project_selection_template"
+                          name="project_selection_template"
+                          class="form-control">{% if errors.project_selection_template %}{{ errors.project_selection_template.value }}{% else %}{{ project_selection_template }}{% endif %}</textarea>
             </div>
             <div class="col-md-offset-3 col-md-8 help-block light-grey">
                 {% if errors.project_selection_template %}
@@ -86,18 +125,22 @@
                 {% endif %}
             </div>
         </div>
-		<div class="form-group">
-			<label class="control-label col-md-3">Document upload</label>
-			<div class="col-md-5">
-				<div class="checkbox">
-					<label><input type="checkbox" name="project_allow_document_upload" {% if project_allow_document_upload %}checked{% endif %} value="enabled">Enable project document upload</label>
-				</div>
-			</div>
-		</div>
-        <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <div class="text-center">
-            {% button type="save" value="Save settings" %}
+        <div class="form-group">
+            <label class="control-label col-md-3">Document upload</label>
+            <div class="col-md-5">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="project_allow_document_upload"
+                               {% if project_allow_document_upload %}checked{% endif %}
+                               value="enabled">
+                        Enable project document upload
+                    </label>
+                </div>
+            </div>
         </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
     <script type="text/javascript">
         $("#projects_and_accounts-tab-link").click(function() {setTimeout(on_project_tab_show, 50)});

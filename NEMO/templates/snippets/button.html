@@ -1,3 +1,12 @@
-<{{ btn_element }} class="{{ btn_class }}" {% if btn_url %}href="{{ btn_url }}"{% endif %} {% if btn_type %}type="{{ btn_type }}"{% endif %} {% if btn_onclick %}onclick="{{ btn_onclick }}"{% endif %} {% if btn_dismiss %}data-dismiss="{{ btn_dismiss }}"{% endif %} {% if btn_title %}title="{{ btn_title }}" aria-label="{{ btn_title }}"{% endif %} {% for key, value in kwargs.items %}{% if value %}{{ key }}="{{ value }}" {% endif %}{% endfor %}>
-    <i class="{{ btn_icon }}"></i> {{ btn_value }}
+<{{ btn_element }} class="{{ btn_class }}"
+{% if btn_url %}href="{{ btn_url }}"{% endif %}
+{% if btn_type %}type="{{ btn_type }}"{% endif %}
+{% if btn_onclick %}onclick="{{ btn_onclick }}"{% endif %}
+{% if btn_dismiss %}data-dismiss="{{ btn_dismiss }}"{% endif %}
+{% if btn_title %}title="{{ btn_title }}" aria-label="{{ btn_title }}"{% endif %}
+{% for key, value in kwargs.items %}
+    {% if value %}{{ key }}="{{ value }}"{% endif %}
+{% endfor %}
+>
+<i class="{{ btn_icon }}"></i> {{ btn_value }}
 </{{ btn_element }}>

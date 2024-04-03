@@ -7,14 +7,17 @@
     {% endif %}
 {% endblock %}
 {% block pagination_content %}
-    <table class="table table-bordered table-condensed table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
+    <table class="table table-bordered table-condensed table-align-middle table-striped table-hover thead-light"
+           style="margin-bottom: 0">
         <thead>
             <tr>
                 <th class="sticky">{% include 'pagination/pagination_column.html' with order_by='name' name='General info' %}</th>
                 <th class="text-center">Year</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='submitted_date' name='Submitted' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='award_date' name='Awarded' %}</th>
-                <th>{% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract/Requisition number' %}</th>
+                <th>
+                    {% include 'pagination/pagination_column.html' with order_by='contract_number' name='Contract/Requisition number' %}
+                </th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='start' name='Start' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='natural_end' name='End' %}</th>
                 <th>{% include 'pagination/pagination_column.html' with order_by='reminder_date' name='Reminder' %}</th>
@@ -32,7 +35,8 @@
                     <td>
                         {{ service_contract.contract_number|default_if_none:"" }}
                         {% if service_contract.requisition_number %}
-                            <br>{{ service_contract.requisition_number|default_if_none:"" }}
+                            <br>
+                            {{ service_contract.requisition_number|default_if_none:"" }}
                         {% endif %}
                     </td>
                     <td>{{ service_contract.start|date:"SHORT_DATE_FORMAT" }}</td>

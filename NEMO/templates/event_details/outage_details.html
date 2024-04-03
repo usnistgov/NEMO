@@ -1,10 +1,9 @@
 {% extends popup_view|yesno:"base/popup.html,base.html" %}
 {% load custom_tags_and_filters %}
 {% load tz %}
-
 {% if not popup_view %}
-{% block extrahead %}
-    <script type="text/javascript">
+    {% block extrahead %}
+        <script type="text/javascript">
     function callback_success(){
         // if on a standalone page, reload the browser window to display the results of the change to the outage
         location.reload()
@@ -36,134 +35,169 @@
         ajax_post(url, data, callback_success, [failure_dialog]);
     }
 
-    </script>
-{% endblock %}
+        </script>
+    {% endblock %}
 {% endif %}
-
 {% block title %}Scheduled outage details{% endblock %}
 {% block content %}
-    {% if not popup_view %}
-        <h1>Scheduled outage details</h1>
-    {% endif %}
+    {% if not popup_view %}<h1>Scheduled outage details</h1>{% endif %}
     <table class="table table-striped" style="margin-bottom: 0">
         {% if user.is_staff %}
             <tr>
-                <td><label for="outage_title" style="margin-bottom: 0">Title:</label></td>
+                <td>
+                    <label for="outage_title" style="margin-bottom: 0">Title:</label>
+                </td>
                 <td>
                     <div id="outage_display_title" style="display: inline">
                         {{ outage.title }}
-                        <span class="glyphicon glyphicon-pencil pull-right" title="Change the outage title" onclick="$('#outage_display_title').hide();$('#outage_change_title').css('display', 'inline');"></span>
+                        <span class="glyphicon glyphicon-pencil pull-right"
+                              title="Change the outage title"
+                              onclick="$('#outage_display_title').hide();$('#outage_change_title').css('display', 'inline');"></span>
                     </div>
                     <div id="outage_change_title" style="display: none">
                         <div class="input-group" style="display: inline-flex; vertical-align: middle">
                             <input type="text" id="outage_title" class="form-control" value="{{ outage.title }}">
                             <span class="input-group-btn">
-                                <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}change_outage_title('{% url 'change_outage_title' outage.id %}', $('#outage_title').val()) {% if popup_view %}}){% endif %}">Change title</button>
-                            </span>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        {% else %}
-            <tr>
-                <td>Title:</td>
-                <td>{{ outage.title }}</td>
-            </tr>
-        {% endif %}
-        <tr>
-            <td>Created by:</td>
-            <td>{{ outage.creator }}</td>
-        </tr>
-        {% if outage.tool %}
-            <tr>
-                <td>Tool:</td>
-                <td>{{ outage.tool }}</td>
-            </tr>
-        {% endif %}
-        {% if outage.resource %}
-            <tr>
-                <td>Resource:</td>
-                <td>{{ outage.resource }} <span class="light-grey">({{ outage.resource.category }})</span></td>
-            </tr>
-        {% endif %}
-        {% if outage.category %}
-            <tr>
-                <td>Outage category:</td>
-                <td>{{ outage.category }}</td>
-            </tr>
-        {% endif %}
-        <tr>
-            {% if user.is_staff and outage.has_not_ended and outage.has_not_started %}
-                <td style="vertical-align: middle"><label for="outage_start" style="margin-bottom: 0">Start:</label></td>
-                <td id="outage_display_start">
-                    {{ outage.start }}
-                    <span class="glyphicon glyphicon-pencil pull-right" title="Change the start date" onclick="$('#outage_display_start').hide();$('#outage_change_start').show();"></span>
-                </td>
-                <td id="outage_change_start" style="display: none">
-                    <div class="input-group">
-                        <input type="text" id="outage_start" class="form-control" value="{{ outage.start|localtime|input_date_format }}">
-                        <span class="input-group-btn">
-                            <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}change_outage_date('{% url 'change_outage_date' %}', {{ outage.id }}, 'new_start', $('#outage_start').val()) {% if popup_view %}}){% endif %}">Change start</button>
-                        </span>
-                    </div>
-                </td>
-            {% else %}
-                <td>Start:</td>
-                <td>{{ outage.start }}</td>
-            {% endif %}
-        </tr>
-        <tr>
-            {% if user.is_staff and outage.has_not_ended and outage.has_not_started %}
-                <td style="vertical-align: middle"><label for="outage_end" style="margin-bottom: 0">End:</label></td>
-                <td id="outage_display_end">
-                    {{ outage.end }}
-                    <span class="glyphicon glyphicon-pencil pull-right" title="Change the end date" onclick="$('#outage_display_end').hide();$('#outage_change_end').show();"></span>
-                </td>
-                <td id="outage_change_end" style="display: none">
-                    <div class="input-group">
-                        <input type="text" id="outage_end" class="form-control" value="{{ outage.end|localtime|input_date_format }}">
-                        <span class="input-group-btn">
-                            <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}change_outage_date('{% url 'change_outage_date' %}', {{ outage.id }}, 'new_end', $('#outage_end').val()) {% if popup_view %}}){% endif %}">Change end</button>
-                        </span>
-                    </div>
-                </td>
-            {% else %}
-                <td>End:</td>
-                <td>{{ outage.end }}</td>
-            {% endif %}
-        </tr>
-        <tr>
-            <td>Identifier:</td>
-            <td>{{ outage.id }}</td>
-        </tr>
-        {% if outage.details or user.is_staff %}
-            {% if user.is_staff %}
-                <tr>
-                    <td><label for="outage_details" style="margin-bottom: 0">Details:</label></td>
-                    <td id="outage_display_details">
-                        <span class="glyphicon glyphicon-pencil pull-right" title="Change the outage details" onclick="$('#outage_display_details').hide();$('#outage_change_details').show();auto_size_textarea(document.getElementById('outage_details'))"></span>
-                        {{ outage.details|linebreaksbr }}
-                    </td>
-                    <td id="outage_change_details" style="display: none">
-                        <div class="input-group" style="width: 100%;">
-                            <textarea id="outage_details" class="form-control" oninput="auto_size_textarea(this);">{{ outage.details }}</textarea>
-                            <span class="input-group-addon btn btn-success" style="color: #fff" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}change_outage_details('{% url 'change_outage_details' outage.id %}', $('#outage_details').val()) {% if popup_view %}}){% endif %}">Change details</span>
-                        </div>
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td>Details:</td>
-                    <td>{{ outage.details|linebreaksbr }}</td>
-                </tr>
-            {% endif %}
-        {% endif %}
-    </table>
-
-    {# Allow the user to cancel the outage if they have that privilege. only in popup view #}
+                                <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() {
+                                {% endif %}
+                                change_outage_title('{% url 'change_outage_title' outage.id %}', $('#outage_title').val()) {% if popup_view %}}){% endif %}
+                            ">Change title</button>
+                    </span>
+                </div>
+            </div>
+        </td>
+    </tr>
+{% else %}
+    <tr>
+        <td>Title:</td>
+        <td>{{ outage.title }}</td>
+    </tr>
+{% endif %}
+<tr>
+    <td>Created by:</td>
+    <td>{{ outage.creator }}</td>
+</tr>
+{% if outage.tool %}
+    <tr>
+        <td>Tool:</td>
+        <td>{{ outage.tool }}</td>
+    </tr>
+{% endif %}
+{% if outage.resource %}
+    <tr>
+        <td>Resource:</td>
+        <td>
+            {{ outage.resource }} <span class="light-grey">({{ outage.resource.category }})</span>
+        </td>
+    </tr>
+{% endif %}
+{% if outage.category %}
+    <tr>
+        <td>Outage category:</td>
+        <td>{{ outage.category }}</td>
+    </tr>
+{% endif %}
+<tr>
+    {% if user.is_staff and outage.has_not_ended and outage.has_not_started %}
+        <td style="vertical-align: middle">
+            <label for="outage_start" style="margin-bottom: 0">Start:</label>
+        </td>
+        <td id="outage_display_start">
+            {{ outage.start }}
+            <span class="glyphicon glyphicon-pencil pull-right"
+                  title="Change the start date"
+                  onclick="$('#outage_display_start').hide();$('#outage_change_start').show();"></span>
+        </td>
+        <td id="outage_change_start" style="display: none">
+            <div class="input-group">
+                <input type="text"
+                       id="outage_start"
+                       class="form-control"
+                       value="{{ outage.start|localtime|input_date_format }}">
+                <span class="input-group-btn">
+                    <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() {
+                    {% endif %}
+                    change_outage_date('{% url 'change_outage_date' %}', {{ outage.id }}, 'new_start', $('#outage_start').val()) {% if popup_view %}}){% endif %}
+                ">Change start</button>
+        </span>
+    </div>
+</td>
+{% else %}
+<td>Start:</td>
+<td>{{ outage.start }}</td>
+{% endif %}
+</tr>
+<tr>
+    {% if user.is_staff and outage.has_not_ended and outage.has_not_started %}
+        <td style="vertical-align: middle">
+            <label for="outage_end" style="margin-bottom: 0">End:</label>
+        </td>
+        <td id="outage_display_end">
+            {{ outage.end }}
+            <span class="glyphicon glyphicon-pencil pull-right"
+                  title="Change the end date"
+                  onclick="$('#outage_display_end').hide();$('#outage_change_end').show();"></span>
+        </td>
+        <td id="outage_change_end" style="display: none">
+            <div class="input-group">
+                <input type="text"
+                       id="outage_end"
+                       class="form-control"
+                       value="{{ outage.end|localtime|input_date_format }}">
+                <span class="input-group-btn">
+                    <button type="button" class="btn btn-success" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() {
+                    {% endif %}
+                    change_outage_date('{% url 'change_outage_date' %}', {{ outage.id }}, 'new_end', $('#outage_end').val()) {% if popup_view %}}){% endif %}
+                ">Change end</button>
+        </span>
+    </div>
+</td>
+{% else %}
+<td>End:</td>
+<td>{{ outage.end }}</td>
+{% endif %}
+</tr>
+<tr>
+    <td>Identifier:</td>
+    <td>{{ outage.id }}</td>
+</tr>
+{% if outage.details or user.is_staff %}
     {% if user.is_staff %}
-        <div class="modal-footer" style="padding: 15px 0 0 0;">
-            <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() { {% endif %}cancel_outage('{% url 'cancel_outage' outage.id  %}', 'Outage {{ outage.id }}'); {% if popup_view %}}){% endif %}">Cancel this outage</button>
+        <tr>
+            <td>
+                <label for="outage_details" style="margin-bottom: 0">Details:</label>
+            </td>
+            <td id="outage_display_details">
+                <span class="glyphicon glyphicon-pencil pull-right"
+                      title="Change the outage details"
+                      onclick="$('#outage_display_details').hide();$('#outage_change_details').show();auto_size_textarea(document.getElementById('outage_details'))"></span>
+                {{ outage.details|linebreaksbr }}
+            </td>
+            <td id="outage_change_details" style="display: none">
+                <div class="input-group" style="width: 100%;">
+                    <textarea id="outage_details" class="form-control" oninput="auto_size_textarea(this);">{{ outage.details }}</textarea>
+                    <span class="input-group-addon btn btn-success" style="color: #fff" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() {
+                    {% endif %}
+                    change_outage_details('{% url 'change_outage_details' outage.id %}', $('#outage_details').val()) {% if popup_view %}}){% endif %}
+            ">Change details</span>
         </div>
-    {% endif %}
+    </td>
+</tr>
+{% else %}
+<tr>
+    <td>Details:</td>
+    <td>{{ outage.details|linebreaksbr }}</td>
+</tr>
+{% endif %}
+{% endif %}
+</table>
+{# Allow the user to cancel the outage if they have that privilege. only in popup view #}
+{% if user.is_staff %}
+    <div class="modal-footer" style="padding: 15px 0 0 0;">
+        <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="{% if popup_view %}$('#dialog').one('hidden.bs.modal', function() {
+        {% endif %}
+        cancel_outage('{% url 'cancel_outage' outage.id %}', 'Outage {{ outage.id }}'); {% if popup_view %}}){% endif %}
+    ">Cancel this outage</button>
+</div>
+{% endif %}
 {% endblock %}

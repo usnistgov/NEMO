@@ -1,8 +1,4 @@
 {% extends 'area_access/base.html' %}
 {% block title %}Farewell{% endblock %}
-{% block default_content %}
-	<h1>Scan your badge to log out.</h1>
-{% endblock %}
-{% block action %}
-	exit_area(badge_number);
-{% endblock %}
+{% block default_content %}<h1>Scan your badge to log out.</h1>{% endblock %}
+{% block action %}exit_area(badge_number);{% endblock %}

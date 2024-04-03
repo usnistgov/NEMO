@@ -7,7 +7,8 @@
     {% endif %}
 {% endblock %}
 {% block pagination_content %}
-    <table class="table table-bordered table-align-middle table-striped table-hover thead-light" style="margin-bottom: 0">
+    <table class="table table-bordered table-align-middle table-striped table-hover thead-light"
+           style="margin-bottom: 0">
         <thead>
             <tr>
                 <th class="sticky">{% include 'pagination/pagination_column.html' with order_by='name' name='General info' %}</th>
