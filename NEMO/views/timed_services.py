@@ -354,8 +354,7 @@ def get_reservation_end(reservation):
 
 def notify_next_user_in_wait_list(entry, time_to_expiration):
     message = get_media_file_contents("wait_list_notification_email.html")
-    user_office_email = EmailsCustomization.get("user_office_email_address")
-    if message and user_office_email:
+    if message:
         subject = "Your turn for the " + str(entry.tool)
         message = render_email_template(
             message, {"user": entry.user, "tool": entry.tool, "time_to_expiration": time_to_expiration}
@@ -364,13 +363,13 @@ def notify_next_user_in_wait_list(entry, time_to_expiration):
         send_mail(
             subject=subject,
             content=message,
-            from_email=user_office_email,
+            from_email=get_email_from_settings(),
             to=recipients,
             email_category=EmailCategory.TIMED_SERVICES,
         )
     else:
         timed_service_logger.error(
-            "Wait list notification email couldn't be send because wait_list_notification_email.html or user_office_email are not defined"
+            "Wait list notification email couldn't be send because wait_list_notification_email.html is not defined"
         )
 
 
