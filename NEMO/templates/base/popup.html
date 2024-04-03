@@ -5,4 +5,4 @@
 <div class="modal-body">
     {% block content %}{% endblock %}
 </div>
-<div class="modal-footer">{% block footer %}{% endblock %}</div>
+{% spaceless %}<div class="modal-footer">{% block footer %}{% endblock %}</div>{% endspaceless %}
