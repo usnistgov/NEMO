@@ -428,7 +428,7 @@
 <script>
     function sort_comp(element)
     {
-        return element.getElementsByTagName("h3")[0].innerText.toLowerCase();
+        return element.getElementsByTagName("h3")[0].innerText.toLowerCase().trim();
     }
 
     window.addEventListener("load", function ()
