@@ -43,6 +43,7 @@ setup(
         "pytz==2024.1",
         "requests==2.31.0",
     ],
+    extras_require={"dev-tools": ["pre-commit", "djlint", "black"]},
     entry_points={
         "console_scripts": ["nemo=NEMO.provisioning:entry_point"],
     },
