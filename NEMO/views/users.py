@@ -111,9 +111,9 @@ def create_or_modify_user(request, user_id):
             users_logger.error(warning_message)
     elif identity_service:
         # display warning if identity service is defined but disabled
-        dictionary[
-            "warning"
-        ] = "The identity service is disabled. You will not be able to modify externally managed physical access levels, reset account passwords, or unlock accounts."
+        dictionary["warning"] = (
+            "The identity service is disabled. You will not be able to modify externally managed physical access levels, reset account passwords, or unlock accounts."
+        )
 
     if readonly or request.method == "GET":
         training_not_required = UserCustomization.get("default_user_training_not_required", raise_exception=False)
@@ -131,10 +131,10 @@ def create_or_modify_user(request, user_id):
                 if result.status_code == HTTPStatus.OK:
                     dictionary["user_identity_information"] = result.json()
                 elif result.status_code == HTTPStatus.NOT_FOUND:
-                    dictionary[
-                        "warning"
-                    ] = "The identity service could not find username {} on the {} domain. Does the user's account reside on a different domain? If so, select that domain now and save the user information.".format(
-                        user.username, user.domain
+                    dictionary["warning"] = (
+                        "The identity service could not find username {} on the {} domain. Does the user's account reside on a different domain? If so, select that domain now and save the user information.".format(
+                            user.username, user.domain
+                        )
                     )
                 else:
                     dictionary["identity_service_available"] = False
@@ -177,9 +177,9 @@ def create_or_modify_user(request, user_id):
                                 result.status_code, result.text
                             )
                         )
-                        dictionary[
-                            "warning"
-                        ] = "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
+                        dictionary["warning"] = (
+                            "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
+                        )
                         return render(request, "users/create_or_modify_user.html", dictionary)
                 except Exception as e:
                     dictionary["identity_service_available"] = False
@@ -189,9 +189,9 @@ def create_or_modify_user(request, user_id):
                         + " - "
                         + str(e)
                     )
-                    dictionary[
-                        "warning"
-                    ] = "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
+                    dictionary["warning"] = (
+                        "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
+                    )
                     return render(request, "users/create_or_modify_user.html", dictionary)
 
         # Ensure the user account is added and configured correctly on the current domain if the user is active...
@@ -206,15 +206,15 @@ def create_or_modify_user(request, user_id):
             }
             try:
                 if len(parameters["requested_areas"]) > 0 and not parameters["badge_number"]:
-                    dictionary[
-                        "warning"
-                    ] = "A user must have a badge number in order to have area access. Please enter the badge number first, then grant access to areas."
+                    dictionary["warning"] = (
+                        "A user must have a badge number in order to have area access. Please enter the badge number first, then grant access to areas."
+                    )
                     return render(request, "users/create_or_modify_user.html", dictionary)
                 result = requests.put(identity_service["url"], data=parameters, timeout=timeout)
                 if result.status_code == HTTPStatus.NOT_FOUND:
-                    dictionary[
-                        "warning"
-                    ] = "The username was not found on this domain. Did you spell the username correctly in this form and did you select the correct domain? Ensure the user exists on the domain in order to proceed."
+                    dictionary["warning"] = (
+                        "The username was not found on this domain. Did you spell the username correctly in this form and did you select the correct domain? Ensure the user exists on the domain in order to proceed."
+                    )
                     return render(request, "users/create_or_modify_user.html", dictionary)
                 if result.status_code != HTTPStatus.OK:
                     dictionary["identity_service_available"] = False
@@ -223,9 +223,9 @@ def create_or_modify_user(request, user_id):
                             result.status_code, result.text
                         )
                     )
-                    dictionary[
-                        "warning"
-                    ] = "The user information was not modified because the identity service encountered a problem while creating the corresponding domain account. The administrator has been notified to resolve the problem."
+                    dictionary["warning"] = (
+                        "The user information was not modified because the identity service encountered a problem while creating the corresponding domain account. The administrator has been notified to resolve the problem."
+                    )
                     return render(request, "users/create_or_modify_user.html", dictionary)
             except Exception as e:
                 dictionary["identity_service_available"] = False
@@ -235,9 +235,9 @@ def create_or_modify_user(request, user_id):
                     + " - "
                     + str(e)
                 )
-                dictionary[
-                    "warning"
-                ] = "The user information was not modified because the identity service encountered a problem while creating the corresponding domain account. The administrator has been notified to resolve the problem."
+                dictionary["warning"] = (
+                    "The user information was not modified because the identity service encountered a problem while creating the corresponding domain account. The administrator has been notified to resolve the problem."
+                )
                 return render(request, "users/create_or_modify_user.html", dictionary)
 
         # Only save the user model for now, and wait to process the many-to-many relationships.
@@ -295,9 +295,9 @@ def deactivate(request, user_id):
                     users_logger.error(
                         f"The identity service encountered a problem while attempting to delete a user. The HTTP error is {result.status_code}: {result.text}"
                     )
-                    dictionary[
-                        "warning"
-                    ] = "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
+                    dictionary["warning"] = (
+                        "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
+                    )
                     return render(request, "users/safe_deactivation.html", dictionary)
             except Exception as e:
                 users_logger.error(
@@ -306,9 +306,9 @@ def deactivate(request, user_id):
                     + " - "
                     + str(e)
                 )
-                dictionary[
-                    "warning"
-                ] = "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
+                dictionary["warning"] = (
+                    "The user information was not modified because the identity service could not delete the corresponding domain account. The administrator has been notified to resolve the problem."
+                )
                 return render(request, "users/safe_deactivation.html", dictionary)
 
         if request.POST.get("cancel_reservations") == "on":

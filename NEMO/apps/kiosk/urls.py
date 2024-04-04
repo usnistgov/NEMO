@@ -13,6 +13,8 @@ urlpatterns = [
                 path("enable_tool/", views.enable_tool, name="enable_tool_from_kiosk"),
                 path("disable_tool/", views.disable_tool, name="disable_tool_from_kiosk"),
                 path("reserve_tool/", views.reserve_tool, name="reserve_tool_from_kiosk"),
+                path("post_comment/", views.post_comment, name="post_comment_from_kiosk"),
+                path("report_problem/", views.report_problem, name="report_problem_from_kiosk"),
                 path(
                     "cancel_reservation/<int:reservation_id>/",
                     views.cancel_reservation,
@@ -37,6 +39,16 @@ urlpatterns = [
                 path("enter_wait_list/", views.enter_wait_list, name="enter_wait_list_from_kiosk"),
                 path("exit_wait_list/", views.exit_wait_list, name="exit_wait_list_from_kiosk"),
                 path("logout_user/<int:tool_id>", views.logout_user, name="kiosk_logout_user"),
+                re_path(
+                    r"^tool_report_problem/(?P<tool_id>\d+)/(?P<user_id>\d+)/(?P<back>back_to_start|back_to_category)/$",
+                    views.tool_report_problem,
+                    name="kiosk_tool_report_problem",
+                ),
+                re_path(
+                    r"^tool_post_comment/(?P<tool_id>\d+)/(?P<user_id>\d+)/(?P<back>back_to_start|back_to_category)/$",
+                    views.tool_post_comment,
+                    name="kiosk_tool_post_comment",
+                ),
                 # Keeping for backwards compatibility (bookmarked links with location)
                 re_path(r"^(?P<location>.+)/$", views.kiosk, name="kiosk"),
                 path("", views.kiosk, name="kiosk"),

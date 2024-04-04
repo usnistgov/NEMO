@@ -12,6 +12,7 @@ def hide_logout_button(request):
 
 
 def base_context(request):
+    user: User = getattr(request, "user", None)
     try:
         if "no_header" in request.GET:
             if request.GET["no_header"] == "True":
@@ -37,7 +38,7 @@ def base_context(request):
     except:
         access_user_request_allowed_exist = False
     try:
-        notification_counts = get_notification_counts(request.user)
+        notification_counts = get_notification_counts(user)
     except:
         notification_counts = {}
     try:

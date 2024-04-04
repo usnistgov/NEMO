@@ -5,11 +5,19 @@
     </head>
     <body>
         <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
-        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+        <table align="center"
+               style="width:100%;
+                      max-width:600px;
+                      font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
             {% if remaining_days %}
                 {# This is only a reminder #}
                 <tr>
-                    <td align="center" style="color: white; background: #5bc0de; margin: 0; padding: 50px 0;" bgcolor="#5bc0de">
+                    <td align="center"
+                        style="color: white;
+                               background: #5bc0de;
+                               margin: 0;
+                               padding: 50px 0"
+                        bgcolor="#5bc0de">
                         <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
                             {{ tool.name }} access expiring in {{ remaining_days }} days!
                         </h1>
@@ -19,31 +27,42 @@
                     <td style="padding: 10px;">
                         <p>Dear {{ user.first_name }},</p>
                         <p>
-                            This is a reminder that your {{ tool.name }} access is set to expire in {{ remaining_days }} days on {{ expiration_date }} because you have not used the {{ tool.name }} since {% if last_tool_use %}{{ last_tool_use }}{% else %}last qualifying for it on {{ qualification_date }}{% endif %}.
+                            This is a reminder that your {{ tool.name }} access is set to expire in {{ remaining_days }} days on {{ expiration_date }} because you have not used the {{ tool.name }} since
+                            {% if last_tool_use %}
+                                {{ last_tool_use }}
+                            {% else %}
+                                last qualifying for it on {{ qualification_date }}
+                            {% endif %}
+                            .
                         </p>
-                        <p>
-                            In order to keep access to this tool you will need to use it before {{ expiration_date }}.
-                        </p>
+                        <p>In order to keep access to this tool you will need to use it before {{ expiration_date }}.</p>
                     </td>
                 </tr>
             {% else %}
                 {# Qualification expired #}
                 <tr>
-                    <td align="center" style="color: white; background: #d9534f; margin: 0; padding: 50px 0;" bgcolor="#d9534f">
-                        <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
-                            {{ tool.name }} access expired!
-                        </h1>
+                    <td align="center"
+                        style="color: white;
+                               background: #d9534f;
+                               margin: 0;
+                               padding: 50px 0"
+                        bgcolor="#d9534f">
+                        <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">{{ tool.name }} access expired!</h1>
                     </td>
                 </tr>
                 <tr>
                     <td style="padding: 10px;">
                         <p>Dear {{ user.first_name }},</p>
                         <p>
-                            You lost access to the {{ tool.name }} since you have not used it since {% if last_tool_use %}{{ last_tool_use }}{% else %}last qualifying for it on {{ qualification_date }}{% endif %}.
+                            You lost access to the {{ tool.name }} since you have not used it since
+                            {% if last_tool_use %}
+                                {{ last_tool_use }}
+                            {% else %}
+                                last qualifying for it on {{ qualification_date }}
+                            {% endif %}
+                            .
                         </p>
-                        <p>
-                            Please contact anyone copied on this email if you wish to get re-trained.
-                        </p>
+                        <p>Please contact anyone copied on this email if you wish to get re-trained.</p>
                     </td>
                 </tr>
             {% endif %}

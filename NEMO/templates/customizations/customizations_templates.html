@@ -1,35 +1,51 @@
 {% load custom_tags_and_filters %}
 <div class="panel-body">
     <h3 class="customization-section-title" id="login_banner_id">Login banner</h3>
-    <p>The login banner is an informational message displayed underneath the username and password text boxes on the login page. You can customize this to convey rules for {{ site_title }} users at your organization.</p>
+    <p>
+        The login banner is an informational message displayed underneath the username and password text boxes on the login page. You can customize this to convey rules for {{ site_title }} users at your organization.
+    </p>
     {% include 'customizations/customizations_upload.html' with element=login_banner name='login banner' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 <div class="panel-body">
-    <h3 class="customization-section-title" id="authorization_failed_id">&quot;<a href="{% url 'authorization_failed' %}" target="_blank">{{ facility_name }} failed login</a>&quot; message</h3>
+    <h3 class="customization-section-title" id="authorization_failed_id">
+        &quot;<a href="{% url 'authorization_failed' %}" target="_blank">{{ facility_name }} failed login</a>&quot; message
+    </h3>
     <p>
         This message is displayed after authentication when either no matching username could be found in the database or if that user has been deactivated.
-        <br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the message.
+        <br>
+        The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the message.
     </p>
     {% include 'customizations/customizations_upload.html' with element=authorization_failed name='authorization failed' button_name='Upload failed login page' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 <div class="panel-body">
-    <h3 class="customization-section-title" id="safety_introduction_id">Introduction for &quot;<a href="{% url 'safety_issues' %}" target="_blank">Safety suggestions and observations</a>&quot; page</h3>
-    <p>What would you like everyone to know about safety policy and procedures? This introduction will be presented at the top of the safety page. You can use HTML to modify the look of the text.</p>
+    <h3 class="customization-section-title" id="safety_introduction_id">
+        Introduction for &quot;<a href="{% url 'safety_issues' %}" target="_blank">Safety suggestions and observations</a>&quot; page
+    </h3>
+    <p>
+        What would you like everyone to know about safety policy and procedures? This introduction will be presented at the top of the safety page. You can use HTML to modify the look of the text.
+    </p>
     {% include 'customizations/customizations_upload.html' with element=safety_introduction name='safety introduction' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 <div class="panel-body">
-    <h3 class="customization-section-title" id="facility_rules_tutorial_id">&quot;<a href="{% url 'facility_rules' %}" target="_blank">{{ facility_name }} rules tutorial</a>&quot; page</h3>
+    <h3 class="customization-section-title" id="facility_rules_tutorial_id">
+        &quot;<a href="{% url 'facility_rules' %}" target="_blank">{{ facility_name }} rules tutorial</a>&quot; page
+    </h3>
     <p>
         The facility rules tutorial is an opportunity to provide new users with a tutorial to your facility operating procedures and rules.
-        <br>The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.
+        <br>
+        The HTML you upload is rendered with the Django template engine. You can use JavaScript (including jQuery) within the page.
         <br>
     </p>
     <ul>
-        <li>The form should include <b>{% templatetag openblock %} csrf_token {% templatetag closeblock %}</b> inside the form tags.</li>
-        <li>Completion of the HTML form should be POSTed to <b>"{% templatetag openblock %} url 'facility_rules' {% templatetag closeblock %}"</b> (exactly as is).</li>
+        <li>
+            The form should include <b>{% templatetag openblock %} csrf_token {% templatetag closeblock %}</b> inside the form tags.
+        </li>
+        <li>
+            Completion of the HTML form should be POSTed to <b>"{% templatetag openblock %} url 'facility_rules' {% templatetag closeblock %}"</b> (exactly as is).
+        </li>
     </ul>
     <p>
         Upon completion, the user's "facility rules tutorial required" attribute is set to false, and they are able to make reservations and control tools.
@@ -38,70 +54,112 @@
     <div class="customization-separation"></div>
 </div>
 <div class="panel-body">
-    <h3 class="customization-section-title" id="jumbotron_watermark_id">&quot;<a href="{% url 'jumbotron' %}" target="_blank">Jumbotron</a>&quot; watermark</h3>
-    <p>This image is displayed as background for the Jumbotron. It is set as a full background screen, so your image needs to take that into account.
-        <br>The image you upload should be a valid image file (recommended size is 1500x1000).
+    <h3 class="customization-section-title" id="jumbotron_watermark_id">
+        &quot;<a href="{% url 'jumbotron' %}" target="_blank">Jumbotron</a>&quot; watermark
+    </h3>
+    <p>
+        This image is displayed as background for the Jumbotron. It is set as a full background screen, so your image needs to take that into account.
+        <br>
+        The image you upload should be a valid image file (recommended size is 1500x1000).
     </p>
     {% include 'customizations/customizations_upload.html' with element=jumbotron_watermark name='jumbotron watermark' extension='png' key='templates' %}
     <div class="customization-separation"></div>
 </div>
 <div id="panel-sort">
     <div class="panel-body">
-        <h3 class="customization-section-title" id="access_request_notification_email_id">Access request notification email</h3>
-        <p>This email is sent to the person who created the request when an access request is created or updated. The other users present on the request as well as the reviewers are cc'ed.</p>
+        <h3 class="customization-section-title" id="access_request_notification_email_id">
+            Access request notification email
+        </h3>
+        <p>
+            This email is sent to the person who created the request when an access request is created or updated. The other users present on the request as well as the reviewers are cc'ed.
+        </p>
         <p>The following context variables are provided when the email is rendered:</p>
         <ul>
-            <li><b>template_color</b> - the color: green if approved, red if denied, blue otherwise</li>
-            <li><b>access_request</b> - the user's access request that was created or updated</li>
-            <li><b>status</b> - the status of the request: received, updated, approved or denied</li>
-            <li><b>access_requests_url</b> - the URL to the access requests page</li>
+            <li>
+                <b>template_color</b> - the color: green if approved, red if denied, blue otherwise
+            </li>
+            <li>
+                <b>access_request</b> - the user's access request that was created or updated
+            </li>
+            <li>
+                <b>status</b> - the status of the request: received, updated, approved or denied
+            </li>
+            <li>
+                <b>access_requests_url</b> - the URL to the access requests page
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=access_request_notification_email name='access request notification email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
-        <h3 class="customization-section-title" id="adjustment_request_notification_email_id">Adjustment request notification email</h3>
-        <p>This email is sent to the person who created the request when an adjustment request is created or updated. Reviewers are cc'ed.</p>
+        <h3 class="customization-section-title" id="adjustment_request_notification_email_id">
+            Adjustment request notification email
+        </h3>
+        <p>
+            This email is sent to the person who created the request when an adjustment request is created or updated. Reviewers are cc'ed.
+        </p>
         <p>When an adjustment request is approved it is also sent to the User Office</p>
         <p>The following context variables are provided when the email is rendered:</p>
         <ul>
-            <li><b>template_color</b> - the color: green if approved, red if denied, blue otherwise</li>
-            <li><b>adjustment_request</b> - the user's adjustment request that was created or updated</li>
-            <li><b>status</b> - the status of the request: received, updated, approved or denied</li>
-            <li><b>adjustment_requests_url</b> - the URL to the adjustment requests page</li>
-            <li><b>manager_note</b> - an extra (optional) note from the manager sent to the user when the request is denied or to the user office when it is approved</li>
-            <li><b>user_office</b> - a flag that is true when the email is addressed to the User Office</li>
+            <li>
+                <b>template_color</b> - the color: green if approved, red if denied, blue otherwise
+            </li>
+            <li>
+                <b>adjustment_request</b> - the user's adjustment request that was created or updated
+            </li>
+            <li>
+                <b>status</b> - the status of the request: received, updated, approved or denied
+            </li>
+            <li>
+                <b>adjustment_requests_url</b> - the URL to the adjustment requests page
+            </li>
+            <li>
+                <b>manager_note</b> - an extra (optional) note from the manager sent to the user when the request is denied or to the user office when it is approved
+            </li>
+            <li>
+                <b>user_office</b> - a flag that is true when the email is addressed to the User Office
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=adjustment_request_notification_email name='adjustment request notification email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
-	<div class="panel-body">
+    <div class="panel-body">
         <h3 class="customization-section-title" id="wait_list_notification_email_id">Tool wait list notification email</h3>
         <p>This email is sent to a person in a wait list when their turn to use the tool has arrived.</p>
         <p>The following context variables are provided when the email is rendered:</p>
         <ul>
-            <li><b>user</b> - the user in the wait list</li>
-            <li><b>tool</b> - the tool that the user is in the wait list for</li>
-			<li><b>time_to_expiration</b> - the time left for the user to use the tool</li>
+            <li>
+                <b>user</b> - the user in the wait list
+            </li>
+            <li>
+                <b>tool</b> - the tool that the user is in the wait list for
+            </li>
+            <li>
+                <b>time_to_expiration</b> - the time left for the user to use the tool
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=wait_list_notification_email name='wait list notification email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="cancellation_email_id">Cancellation email</h3>
-        <p>This email is sent to a user when a staff member cancels the user's reservation. The following context variables are provided when the email is rendered:</p>
+        <p>
+            This email is sent to a user when a staff member cancels the user's reservation. The following context variables are provided when the email is rendered:
+        </p>
         <ul>
-            <li><b>reservation</b> - the user's reservation that was cancelled</li>
-            <li><b>staff_member</b> - the user object of the staff member who cancelled the reservation</li>
-            <li><b>reason</b> - the reason the staff member provided for cancelling the reservation</li>
+            <li>
+                <b>reservation</b> - the user's reservation that was cancelled
+            </li>
+            <li>
+                <b>staff_member</b> - the user object of the staff member who cancelled the reservation
+            </li>
+            <li>
+                <b>reason</b> - the reason the staff member provided for cancelling the reservation
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=cancellation_email name='cancellation email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="counter_threshold_reached_email_id">Counter threshold reached email</h3>
         <p>
@@ -109,12 +167,13 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>counter</b> - the counter which value reached the warning threshold</li>
+            <li>
+                <b>counter</b> - the counter which value reached the warning threshold
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=counter_threshold_reached_email name='counter threshold reached email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="feedback_email_id">Feedback email</h3>
         <p>
@@ -122,26 +181,38 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>contents</b> - the user's feedback</li>
-            <li><b>user</b> - the user object of the user who submitted the feedback</li>
+            <li>
+                <b>contents</b> - the user's feedback
+            </li>
+            <li>
+                <b>user</b> - the user object of the user who submitted the feedback
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=feedback_email name='feedback email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="generic_email_id">Generic email</h3>
-        <p>A generic email that can be sent to qualified tool users, members of an account, or members of a project. Send these using the <a href="{% url 'email_broadcast' %}">email broadcast page</a>. The following context variables are provided when the email is rendered:</p>
+        <p>
+            A generic email that can be sent to qualified tool users, members of an account, or members of a project. Send these using the <a href="{% url 'email_broadcast' %}">email broadcast page</a>. The following context variables are provided when the email is rendered:
+        </p>
         <ul>
-            <li><b>title</b> - the user specified title of the email</li>
-            <li><b>greeting</b> - a greeting to the recipients of the email</li>
-            <li><b>contents</b> - the body of the email</li>
-            <li><b>template_color</b> - the color to emphasize</li>
+            <li>
+                <b>title</b> - the user specified title of the email
+            </li>
+            <li>
+                <b>greeting</b> - a greeting to the recipients of the email
+            </li>
+            <li>
+                <b>contents</b> - the body of the email
+            </li>
+            <li>
+                <b>template_color</b> - the color to emphasize
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=generic_email name='generic email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="missed_reservation_email_id">Missed reservation email</h3>
         <p>
@@ -150,12 +221,13 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>reservation</b> - the reservation that the user missed</li>
+            <li>
+                <b>reservation</b> - the reservation that the user missed
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=missed_reservation_email name='missed reservation email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="facility_rules_tutorial_email_id">Facility rules tutorial email</h3>
         <p>
@@ -164,13 +236,16 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>user</b> - the user's model instance</li>
-            <li><b>making_reservations_rule_summary</b> - a free-response answer provided by the user. Normally, this is provided by the user to summarize their understanding of the {{ facility_name }} rules and proceedures.</li>
+            <li>
+                <b>user</b> - the user's model instance
+            </li>
+            <li>
+                <b>making_reservations_rule_summary</b> - a free-response answer provided by the user. Normally, this is provided by the user to summarize their understanding of the {{ facility_name }} rules and proceedures.
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=facility_rules_tutorial_email name='facility rules tutorial email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="new_task_email_id">New task email</h3>
         <p>
@@ -178,16 +253,25 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>user</b> - the user who created the task</li>
-            <li><b>task</b> - the task information</li>
-            <li><b>tool</b> - the tool that the task is associated with</li>
-            <li><b>tool_control_absolute_url</b> - the URL of the tool control page for the tool</li>
-            <li><b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.</li>
+            <li>
+                <b>user</b> - the user who created the task
+            </li>
+            <li>
+                <b>task</b> - the task information
+            </li>
+            <li>
+                <b>tool</b> - the tool that the task is associated with
+            </li>
+            <li>
+                <b>tool_control_absolute_url</b> - the URL of the tool control page for the tool
+            </li>
+            <li>
+                <b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=new_task_email name='new task email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="out_of_time_reservation_email_id">Out of time reservation email</h3>
         <p>
@@ -195,29 +279,37 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>reservation</b> - the reservation that the user is out of time on</li>
+            <li>
+                <b>reservation</b> - the reservation that the user is out of time on
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=out_of_time_reservation_email name='out of time reservation email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
-        <h3 class="customization-section-title" id="recurring_charges_reminder_email_id">{{ recurring_charges_name }} reminder email</h3>
+        <h3 class="customization-section-title" id="recurring_charges_reminder_email_id">
+            {{ recurring_charges_name }} reminder email
+        </h3>
         <p>
             This email is sent to users at configurable days (defaults to one week) before they are charged for {{ recurring_charges_name|lower }}.
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>user</b> - the user who is assigned to the items</li>
-            <li><b>charges</b> - the list of {{ recurring_charges_name|lower }}</li>
-            <li><b>reminder_days</b> - the number of days until the items are charged</li>
+            <li>
+                <b>user</b> - the user who is assigned to the items
+            </li>
+            <li>
+                <b>charges</b> - the list of {{ recurring_charges_name|lower }}
+            </li>
+            <li>
+                <b>reminder_days</b> - the number of days until the items are charged
+            </li>
         </ul>
         {% with button_name=recurring_charges_name|lower %}
             {% include 'customizations/customizations_upload.html' with element=recurring_charges_reminder_email name="recurring charges reminder email" button_name="Upload "|concat:button_name|concat:" reminder email" element_link_name=button_name.split|join:"_"|concat:"_reminder_email" key='templates' %}
         {% endwith %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="reorder_supplies_reminder_email_id">Reorder supplies reminder email</h3>
         <p>
@@ -225,25 +317,29 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>item</b> - the item which quantity fell below the reminder threshold</li>
+            <li>
+                <b>item</b> - the item which quantity fell below the reminder threshold
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=reorder_supplies_reminder_email name='reorder supplies reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
-        <h3 class="customization-section-title" id="reservation_ending_reminder_email_id">Reservation ending reminder email</h3>
+        <h3 class="customization-section-title" id="reservation_ending_reminder_email_id">
+            Reservation ending reminder email
+        </h3>
         <p>
             This email is sent to a user that is logged in an area 30 and 15 minutes before their area reservation ends.
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>reservation</b> - the user's reservation ending</li>
+            <li>
+                <b>reservation</b> - the user's reservation ending
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=reservation_ending_reminder_email name='reservation ending reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="reservation_reminder_email_id">Reservation reminder email</h3>
         <p>
@@ -252,12 +348,13 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>reservation</b> - the user's upcoming reservation</li>
+            <li>
+                <b>reservation</b> - the user's upcoming reservation
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=reservation_reminder_email name='reservation reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="reservation_warning_email_id">Reservation warning email</h3>
         <p>
@@ -266,14 +363,19 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>reservation</b> - the user's upcoming reservation</li>
-            <li><b>fatal_error</b> - boolean value that, when true, indicates that it will be impossible for the user to use the tool/access the area during their reservation (due to maintenance, outages or a missing required dependency)</li>
-            <li><b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.</li>
+            <li>
+                <b>reservation</b> - the user's upcoming reservation
+            </li>
+            <li>
+                <b>fatal_error</b> - boolean value that, when true, indicates that it will be impossible for the user to use the tool/access the area during their reservation (due to maintenance, outages or a missing required dependency)
+            </li>
+            <li>
+                <b>template_color</b> - an HTML color code indicating the severity of the problem. Orange for warning, red for shutdown.
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=reservation_warning_email name='reservation warning email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="safety_issue_email_id">Safety issue email</h3>
         <p>
@@ -281,13 +383,16 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>issue</b> - the issue information</li>
-            <li><b>issue_absolute_url</b> - the URL for the detailed view of the issue</li>
+            <li>
+                <b>issue</b> - the issue information
+            </li>
+            <li>
+                <b>issue_absolute_url</b> - the URL for the detailed view of the issue
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=safety_issue_email name='safety issue email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="staff_charge_reminder_email_id">Staff charge reminder email</h3>
         <p>
@@ -295,12 +400,13 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>staff_charge</b> - the staff charge that is in progress</li>
+            <li>
+                <b>staff_charge</b> - the staff charge that is in progress
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=staff_charge_reminder_email name='staff charge reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="task_status_notification_id">Task status notification email</h3>
         <p>
@@ -308,56 +414,81 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>template_color</b> - the color to emphasize</li>
-            <li><b>title</b> - a title indicating that the message is a task status notification</li>
-            <li><b>task</b> - the task that was updated</li>
-            <li><b>status_message</b> - the current status message for the task</li>
-            <li><b>notification_message</b> - the notification message that is configured (via the admin site) for the status</li>
-            <li><b>tool_control_absolute_url</b> - the URL of the tool control page for the task</li>
+            <li>
+                <b>template_color</b> - the color to emphasize
+            </li>
+            <li>
+                <b>title</b> - a title indicating that the message is a task status notification
+            </li>
+            <li>
+                <b>task</b> - the task that was updated
+            </li>
+            <li>
+                <b>status_message</b> - the current status message for the task
+            </li>
+            <li>
+                <b>notification_message</b> - the notification message that is configured (via the admin site) for the status
+            </li>
+            <li>
+                <b>tool_control_absolute_url</b> - the URL of the tool control page for the task
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=task_status_notification name='task status notification' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
-        <h3 class="customization-section-title" id="tool_qualification_expiration_email_id">Tool qualification expiration email</h3>
+        <h3 class="customization-section-title" id="tool_qualification_expiration_email_id">
+            Tool qualification expiration email
+        </h3>
         <p>
             This email is sent to the user, tool owner & backup owners and facility managers when a tool qualification is about to expire (reminder) or expired.
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>remaining_days</b> - the number of days left before the qualification expires. This variable is only provided when a reminder is sent</li>
-            <li><b>expiration_date</b> - the date the tool qualification expires</li>
-            <li><b>user</b> - the user whose qualification is expiring</li>
-            <li><b>tool</b> - the tool whose qualification is expiring</li>
-            <li><b>last_tool_use</b> - the last time the tool was used. Blank if the user never used the tool</li>
-            <li><b>qualification_date</b> - the time the user was last qualified on that tool</li>
+            <li>
+                <b>remaining_days</b> - the number of days left before the qualification expires. This variable is only provided when a reminder is sent
+            </li>
+            <li>
+                <b>expiration_date</b> - the date the tool qualification expires
+            </li>
+            <li>
+                <b>user</b> - the user whose qualification is expiring
+            </li>
+            <li>
+                <b>tool</b> - the tool whose qualification is expiring
+            </li>
+            <li>
+                <b>last_tool_use</b> - the last time the tool was used. Blank if the user never used the tool
+            </li>
+            <li>
+                <b>qualification_date</b> - the time the user was last qualified on that tool
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=tool_qualification_expiration_email name='tool qualification expiration email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="unauthorized_tool_access_email_id">Unauthorized tool access email</h3>
-        <p>
-            This email is sent when a user tries to access a tool:
-        </p>
+        <p>This email is sent when a user tries to access a tool:</p>
         <ul>
             <li>without being logged in to the area in which the tool resides (type 'area').</li>
             <li>without having a current area reservation (type 'reservation')</li>
         </ul>
-        <p>
-            The following context variables are provided when the email is rendered:
-        </p>
+        <p>The following context variables are provided when the email is rendered:</p>
         <ul>
-            <li><b>operator</b> - the person who attempted to use the tool</li>
-            <li><b>tool</b> - the tool that the user was denied access to</li>
-            <li><b>type</b> - the type of abuse ('area' or 'reservation')</li>
+            <li>
+                <b>operator</b> - the person who attempted to use the tool
+            </li>
+            <li>
+                <b>tool</b> - the tool that the user was denied access to
+            </li>
+            <li>
+                <b>type</b> - the type of abuse ('area' or 'reservation')
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=unauthorized_tool_access_email name='unauthorized tool access email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="usage_reminder_email_id">Usage reminder email</h3>
         <p>
@@ -365,55 +496,71 @@
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>user</b> - the user who is using a tool or logged in to an area</li>
-            <li><b>resources_in_use</b> - the resources the user is still using/logged in to (tools or areas)</li>
+            <li>
+                <b>user</b> - the user who is using a tool or logged in to an area
+            </li>
+            <li>
+                <b>resources_in_use</b> - the resources the user is still using/logged in to (tools or areas)
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=usage_reminder_email name='usage reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
-        <h3 class="customization-section-title" id="user_access_expiration_reminder_email_id">User access expiration reminder email</h3>
+        <h3 class="customization-section-title" id="user_access_expiration_reminder_email_id">
+            User access expiration reminder email
+        </h3>
         <p>
             This email is periodically sent to remind a user that their access is expiring.
             The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>user</b> - the user whose access is expiring</li>
-            <li><b>remaining_days</b> - the remaining days before the access expires</li>
+            <li>
+                <b>user</b> - the user whose access is expiring
+            </li>
+            <li>
+                <b>remaining_days</b> - the remaining days before the access expires
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=user_access_expiration_reminder_email name='user access expiration reminder email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="reservation_created_user_email_id">User reservation created email</h3>
         <p>
             This email is sent to a user when the user creates a reservation and has opted to receive ics calendar notification in his preferences.
-            <br>This is optional, the email will still be sent with only the calendar attachment if this is left blank.
-            <br><br>The following context variables are provided when the email is rendered:
+            <br>
+            This is optional, the email will still be sent with only the calendar attachment if this is left blank.
+            <br>
+            <br>
+            The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>reservation</b> - the user's reservation that was created</li>
+            <li>
+                <b>reservation</b> - the user's reservation that was created
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=reservation_created_user_email name='reservation created user email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="reservation_cancelled_user_email_id">User reservation cancelled email</h3>
         <p>
             This email is sent to a user when the user cancels his own reservation and has opted to receive ics calendar notification in his preferences.
-            <br>This is optional, the email will still be sent with only the calendar attachment if this is left blank.
-            <br><br>The following context variables are provided when the email is rendered:
+            <br>
+            This is optional, the email will still be sent with only the calendar attachment if this is left blank.
+            <br>
+            <br>
+            The following context variables are provided when the email is rendered:
         </p>
         <ul>
-            <li><b>reservation</b> - the user's reservation that was cancelled</li>
+            <li>
+                <b>reservation</b> - the user's reservation that was cancelled
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=reservation_cancelled_user_email name='reservation cancelled user email' key='templates' %}
         <div class="customization-separation"></div>
     </div>
-
     <div class="panel-body">
         <h3 class="customization-section-title" id="weekend_access_email_id">Weekend access notification email</h3>
         <p>
@@ -429,11 +576,11 @@
                 (the email is sent on the <a href="?#weekend_access_notification_cutoff_day">cutoff day</a> at the <a href="?#weekend_access_notification_cutoff_hour">cutoff hour</a> provided in the user requests settings above).
             </li>
         </ul>
-        <p>
-            The following context variables are provided when the email is rendered:
-        </p>
+        <p>The following context variables are provided when the email is rendered:</p>
         <ul>
-            <li><b>weekend_access</b> - true/false, whether there are approved weekend access requests for the current week.</li>
+            <li>
+                <b>weekend_access</b> - true/false, whether there are approved weekend access requests for the current week.
+            </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=weekend_access_email name='weekend access email' key='templates' %}
     </div>
@@ -441,7 +588,7 @@
 <script>
     function sort_comp(element)
     {
-        return element.getElementsByTagName("h3")[0].innerText.toLowerCase();
+        return element.getElementsByTagName("h3")[0].innerText.toLowerCase().trim();
     }
 
     window.addEventListener("load", function ()

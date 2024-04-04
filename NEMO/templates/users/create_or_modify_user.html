@@ -1,11 +1,17 @@
 {% extends 'users/users.html' %}
 {% load custom_tags_and_filters %}
 {% load mptt_tags %}
-{% block title %}{% if form.instance.id %}Modify user{% else %}New user{% endif %}{% endblock %}
+{% block title %}
+    {% if form.instance.id %}
+        Modify user
+    {% else %}
+        New user
+    {% endif %}
+{% endblock %}
 {% block extrahead %}
-	{% load static %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    {% load static %}
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block before_pagination %}
     {% if form.instance.id %}{{ block.super }}{% endif %}
@@ -17,365 +23,488 @@
         </div>
     {% endif %}
     <div class="row col-sm-12">
-    {% if form.errors %}
-        <div class="col-sm-6 alert alert-danger">
-            Oops! Something went wrong. Please correct the errors highlighted below.<br>
-            {{ form.non_field_errors }}
-        </div>
-    {% endif %}
-    {% if warning %}
-        <div class="col-sm-6 alert alert-warning">
-            {{ warning }}
-        </div>
-    {% endif %}
+        {% if form.errors %}
+            <div class="col-sm-6 alert alert-danger">
+                Oops! Something went wrong. Please correct the errors highlighted below.
+                <br>
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        {% if warning %}<div class="col-sm-6 alert alert-warning">{{ warning }}</div>{% endif %}
     </div>
-	<div class="h1 row" style="margin-bottom: 25px">
+    <div class="h1 row" style="margin-bottom: 25px">
         {% url 'history' 'user' form.instance.id as user_history_url %}
-        {% if form.instance.id %}<div class="col-xs-6 col-sm-4" style="padding-right: 0">{% if readonly %}View{% else %}Modify{% endif %} user</div><div class="col-sm-2 text-right" style="padding-left: 0">{% button type="info" icon="glyphicon-list" value="View user history" url=user_history_url %}</div>{% else %}<div class="col-sm-6">New user</div>{% endif %}
+        {% if form.instance.id %}
+            <div class="col-xs-6 col-sm-4" style="padding-right: 0">
+                {% if readonly %}
+                    View
+                {% else %}
+                    Modify
+                {% endif %}
+                user
+            </div>
+            <div class="col-sm-2 text-right" style="padding-left: 0">
+                {% button type="info" icon="glyphicon-list" value="View user history" url=user_history_url %}
+            </div>
+        {% else %}
+            <div class="col-sm-6">New user</div>
+        {% endif %}
     </div>
-	<form id="user_form" class="form-horizontal" enctype="multipart/form-data" method="post" action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}?next={{ request.GET.next|default:''|urlencode }}">
-		{% csrf_token %}
-		{% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="user_id">{% endif %}
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="first_name"><strong>First name</strong></label>
-			<div class="col-sm-4">
-				<input id="first_name" name="first_name" type="text" autocomplete="off" class="form-control" value="{{ form.first_name.value|default_if_none:"" }}" autofocus required>
-			</div>
-			{% if form.first_name.errors %}
-				<div class="col-sm-6 form-control-static danger-highlight">
-					{{ form.first_name.errors|striptags }}
-				</div>
-			{% endif %}
-		</div>
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="last_name"><strong>Last name</strong></label>
-			<div class="col-sm-4">
-				<input id="last_name" name="last_name" type="text" autocomplete="off" class="form-control" value="{{ form.last_name.value|default_if_none:"" }}" required>
-			</div>
-			{% if form.last_name.errors %}
-				<div class="col-sm-6 form-control-static danger-highlight">
-					{{ form.last_name.errors|striptags }}
-				</div>
-			{% endif %}
-		</div>
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="username"><strong>Username</strong></label>
-			<div class="col-sm-4">
-				<input id="username" name="username" type="text" autocomplete="off" class="form-control" value="{{ form.username.value|default_if_none:"" }}" required>
-			</div>
-			{% if form.username.errors %}
-				<div class="col-sm-6 form-control-static danger-highlight">
-					{{ form.username.errors|striptags }}
-				</div>
-			{% endif %}
-		</div>
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="email"><strong>E-mail address</strong></label>
-			<div class="col-sm-4">
-				<input id="email" name="email" type="text" autocomplete="off" class="form-control" value="{{ form.email.value|default_if_none:"" }}">
-			</div>
-			{% if form.email.errors %}
-				<div class="col-sm-6 form-control-static danger-highlight">
-					{{ form.email.errors|striptags }}
-				</div>
-			{% endif %}
-		</div>
-		{% if form.fields.type.choices.queryset %}
-			<div class="form-group">
-				<label class="control-label col-sm-2" for="type">Type</label>
-				<div class="col-sm-4">
-					<select id="type" name="type" class="form-control">
-						{% for t in form.fields.type.choices %}
-							<option value="{{ t.0 }}" {% if t.0 == form.type.value|to_int %}selected{% endif %}>{{ t.1 }}</option>
-						{% endfor %}
-					</select>
-				</div>
-			</div>
-		{% endif %}
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="badge_number">Badge number</label>
-			<div class="col-sm-4">
-				<input id="badge_number" name="badge_number" autocomplete="off" type="text" class="form-control" value="{{ form.badge_number.value|default_if_none:"" }}">
-			</div>
-			{% if form.badge_number.errors %}
-				<div class="col-sm-6 form-control-static danger-highlight">
-					{{ form.badge_number.errors|striptags }}
-				</div>
-			{% endif %}
-		</div>
+    <form id="user_form"
+          class="form-horizontal"
+          enctype="multipart/form-data"
+          method="post"
+          action="{% if form.instance.id %}{% url 'create_or_modify_user' form.instance.id %}{% else %}{% url 'create_or_modify_user' 'new' %}{% endif %}?next={{ request.GET.next|default:''|urlencode }}">
+        {% csrf_token %}
+        {% if form.instance.id %}<input type="hidden" value="{{ form.instance.id }}" name="user_id">{% endif %}
         <div class="form-group">
-            <label class="control-label col-sm-2" for="notes">Notes</label>
-			<div class="col-sm-4">
-				<textarea oninput="auto_size_textarea(this);" id="notes" name="notes" class="form-control">{{ form.notes.value|default_if_none:"" }}</textarea>
-			</div>
+            <label class="control-label col-sm-2" for="first_name">
+                <strong>First name</strong>
+            </label>
+            <div class="col-sm-4">
+                <input id="first_name"
+                       name="first_name"
+                       type="text"
+                       autocomplete="off"
+                       class="form-control"
+                       value="{{ form.first_name.value|default_if_none:"" }}"
+                       autofocus
+                       required>
+            </div>
+            {% if form.first_name.errors %}
+                <div class="col-sm-6 form-control-static danger-highlight">{{ form.first_name.errors|striptags }}</div>
+            {% endif %}
         </div>
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="access_expiration">Access expiration</label>
-			<div class="col-sm-2">
-				<input id="access_expiration" name="access_expiration" type="text" autocomplete="off" class="form-control" value="{{ form.access_expiration.value|input_date_format }}">
-			</div>
-			<div class="control-label col-sm-2" style="text-align:left">
-				{% if not readonly %}<a href="javascript:void(0)" onclick="$('#access_expiration').val('{{ one_year_from_now|input_date_format }}')">One year from now</a>{% endif %}
-			</div>
-			{% if form.access_expiration.errors %}
-				<div class="col-sm-6 form-control-static danger-highlight">
-					{{ form.access_expiration.errors|striptags }}
-				</div>
-			{% endif %}
-		</div>
-		<div class="form-group">
-			<div class="col-sm-offset-2 {% if not readonly and form.instance.id and form.is_active.value %}col-sm-2{% else %}col-sm-10{% endif %}">
-				<div class="checkbox">
-					<label {% if form.instance.id and form.is_active.value %}data-toggle="tooltip" data-placement="left" title="Pro-tip: you can safely deactivate this user using the link on the right so that no future costs are incurred (such as missed reservations)."{% endif %}>
-						<input id="is_active" name="is_active" type="checkbox" {% if form.is_active.value %}checked{% endif %}> Active
-					</label>
-				</div>
-			</div>
-			{% if not readonly and form.instance.id and form.is_active.value %}
-				<div class="control-label col-sm-8" style="text-align: left">
-					<a href="{% url 'deactivate_user' form.instance.id %}">Safely deactivate this user</a>
-				</div>
-			{% endif %}
-			<div class="col-sm-offset-2 col-sm-4">
-				<div class="checkbox">
-					<label><input id="is_service_personnel" name="is_service_personnel" type="checkbox" {% if form.is_service_personnel.value %}checked{% endif %}> Service personnel</label><br>
-					<label><input id="training_required" name="training_required" type="checkbox" {% if form.training_required.value %}checked{% endif %}> Facility rules tutorial required</label>
-				</div>
-			</div>
-		</div>
-		{% if form.instance.id %}
-			<div class="form-group">
-				<div class="control-label col-sm-2">Date joined</div>
-				<div class="col-sm-4 form-control-static">{{ form.instance.date_joined }}</div>
-			</div>
-			<div class="form-group">
-				<div class="control-label col-sm-2">Last login</div>
-				<div class="col-sm-4 form-control-static">
-					{{ form.instance.last_login|default_if_none:"Never" }}
-				</div>
-			</div>
-		{% endif %}
-		<div class="form-group" style="margin-left:0">
-			{% if identity_service_domains|length == 1 %}
-				<div class="row">
-					<label class="control-label col-sm-2">Domain</label>
-					<div class="col-sm-4 form-control-static">{{ identity_service_domains.0 }}</div>
-					<input type="hidden" name="domain" value="{{ identity_service_domains.0 }}">
-				</div>
-			{% elif identity_service_domains|length > 1 %}
-				<div class="row">
-					<label class="control-label col-sm-2"><strong>Domain</strong></label>
-					<div class="col-sm-4">
-						{% for d in identity_service_domains %}
-							<div class="radio">
-								<label><input type="radio" name="domain" value="{{ d }}" {% if form.instance.domain == d %}checked{% endif %} required> {{ d }}</label>
-							</div>
-						{% endfor %}
-					</div>
-				</div>
-			{% endif %}
-		</div>
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="add_a_project">Projects</label>
-			{% if not readonly %}<div class="col-sm-4">
-				<input id="add_a_project" type="text" autocomplete="off" class="form-control" placeholder="Add a project">
-			</div>
-		</div>
-		<div class="form-group">
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="last_name">
+                <strong>Last name</strong>
+            </label>
+            <div class="col-sm-4">
+                <input id="last_name"
+                       name="last_name"
+                       type="text"
+                       autocomplete="off"
+                       class="form-control"
+                       value="{{ form.last_name.value|default_if_none:"" }}"
+                       required>
+            </div>
+            {% if form.last_name.errors %}
+                <div class="col-sm-6 form-control-static danger-highlight">{{ form.last_name.errors|striptags }}</div>
             {% endif %}
-			<div id="project-list" class="{% if not readonly %}col-sm-offset-2{% endif %} col-sm-8" {% if readonly %}style="padding-top: 7px"{% endif %}>
-				This user has no assigned projects.
-			</div>
-		</div>
-		<div class="form-group">
-			<label class="control-label col-sm-2" for="add_a_tool_qualification">Tool qualifications</label>
-			{% if not readonly %}<div class="col-sm-4">
-				<input id="add_a_tool_qualification" type="text" autocomplete="off" class="form-control" placeholder="Add a qualification">
-			</div>
-		</div>
-		<div class="form-group">
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="username">
+                <strong>Username</strong>
+            </label>
+            <div class="col-sm-4">
+                <input id="username"
+                       name="username"
+                       type="text"
+                       autocomplete="off"
+                       class="form-control"
+                       value="{{ form.username.value|default_if_none:"" }}"
+                       required>
+            </div>
+            {% if form.username.errors %}
+                <div class="col-sm-6 form-control-static danger-highlight">{{ form.username.errors|striptags }}</div>
             {% endif %}
-			<div id="qualification-list" class="{% if not readonly %}col-sm-offset-2{% endif %} col-sm-8" {% if readonly %}style="padding-top: 7px"{% endif %}>
-				This user is not qualified to use any tools.
-			</div>
-		</div>
-		{% if area_access_levels or externally_managed_physical_access_levels %}
-			<div class="form-group">
-				<span class="control-label col-sm-2">Physical access levels</span>
-				<div class="col-sm-8">
-					{% if area_access_levels %}
-						<div class="panel panel-info">
-							<div class="panel-heading">
-								<span class="panel-title" style="font-size:inherit">Tablet controlled</span>
-							</div>
-							<div class="panel-body">
-								<p style="font-style: italic"><span class="glyphicon glyphicon-info-sign primary-highlight"></span> Selecting a parent area access will give access to all sub-areas</p>
-								<ul class="login-tree area-tree-root area-tree-list" style="padding-left: 0;margin-top: 10px">
-									{% if form.instance.id %}
-										{# unfortunately have to duplicate some code here #}
-										{% with checked_access_levels=form.instance.accessible_access_levels %}
-											{% recursetree area_access_levels %}
-												{% if node.is_leaf_node %}
-													<li class="area-tree-leaf">
-												{% else %}
-													<li class="area-tree-node">
-														<a onclick="toggle_details(this)" data-toggle="collapse" aria-expanded="true" data-target="#area-{{ node.id }}">
-															<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-												{% endif %}
-													{% if not area_access_dict|get_item:node.id %}
-															<span class="media-heading">{{ node.name }}</span>
-														</a>
-													{% else %}
-														</a>
-													{% endif %}
-													{% for level in area_access_dict|get_item:node.id %}
-														<div class="checkbox" {% if not node.is_leaf_node %}style="display: inline-block;margin-left: -3px"{% endif %}>
-															<label><input name="physical_access_levels" type="checkbox" {% if form.instance.is_staff and level.allow_staff_access or form.instance.is_user_office and level.allow_staff_access %}disabled title="This access is automatically granted to staff users"{% endif %} value="{{ level.id }}" {% if level in checked_access_levels %}checked{% endif %}>{% if node.category %}({{ node.category }}) {% endif %}{{ level }}</label>
-														</div>
-													{% endfor %}
-													{% if not node.is_leaf_node %}
-														<ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ node.id }}">
-															{{ children }}
-														</ul>
-													{% endif %}
-												</li>
-											{% endrecursetree %}
-										{% endwith %}
-									{% else %}
-										{% recursetree area_access_levels %}
-											{% if node.is_leaf_node %}
-												<li class="area-tree-leaf">
-											{% else %}
-												<li class="area-tree-node">
-													<a onclick="toggle_details(this)" data-toggle="collapse" aria-expanded="true" data-target="#area-{{ node.id }}">
-														<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-											{% endif %}
-												{% if not area_access_dict|get_item:node.id %}
-														<span class="media-heading">{{ node.name }}</span>
-													</a>
-												{% else %}
-													</a>
-												{% endif %}
-												{% for level in area_access_dict|get_item:node.id %}
-													<div class="checkbox" {% if not node.is_leaf_node %}style="display: inline-block;margin-left: -3px"{% endif %}>
-														<label><input name="physical_access_levels" type="checkbox" value="{{ level.id }}">{% if node.category %}({{ node.category }}) {% endif %}{{ level }}</label>
-													</div>
-												{% endfor %}
-												{% if not node.is_leaf_node %}
-													<ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ node.id }}">
-														{{ children }}
-													</ul>
-												{% endif %}
-											</li>
-										{% endrecursetree %}
-									{% endif %}
-								</ul>
-							</div>
-						</div>
-					{% endif %}
-					{% if externally_managed_physical_access_levels %}
-						<div class="panel panel-success">
-							<div class="panel-heading">
-								<span class="panel-title" style="font-size:inherit">Badge-reader controlled</span>
-							</div>
-							<div class="panel-body">
-								{% for level in externally_managed_physical_access_levels %}
-									<div class="checkbox">
-										<label><input name="externally_managed_access_levels" type="checkbox" {% if level in user_identity_information.area_access %}checked{% endif %} value="{{ level }}"> {{ level }}</label>
-									</div>
-								{% endfor %}
-							</div>
-						</div>
-					{% endif %}
-				</div>
-			</div>
-		{% endif %}
-		{% if form.fields.safety_trainings.choices.queryset %}
-			<div class="form-group">
-				<span class="control-label col-sm-2">Safety training</span>
-				<div class="col-sm-8">
-					<div class="panel panel-default">
-						<div class="panel-heading">
-							<span class="panel-title" style="font-size:inherit">Safety training</span>
-						</div>
-						<div class="panel-body">
-							{% for safety_training_id, safety_training_name in form.fields.safety_trainings.choices %}
-								<div class="checkbox">
-									<label><input name="safety_trainings" type="checkbox" {% if safety_training_id in form.safety_trainings.value %}checked{% endif %} value="{{ safety_training_id }}"> {{ safety_training_name }}</label>
-								</div>
-							{% endfor %}
-						</div>
-					</div>
-				</div>
-			</div>
-		{% endif %}
-		{% if form.fields.onboarding_phases.choices.queryset %}
-			<div class="form-group">
-				<span class="control-label col-sm-2">Onboarding phases</span>
-				<div class="col-sm-8">
-					<div class="panel panel-default">
-						<div class="panel-heading">
-							<span class="panel-title" style="font-size:inherit">Onboarding phases</span>
-						</div>
-						<div class="panel-body">
-							{% for onboarding_phase_id, onboarding_phase_name in form.fields.onboarding_phases.choices %}
-								<div class="checkbox">
-									<label><input name="onboarding_phases" type="checkbox" {% if onboarding_phase_id in form.onboarding_phases.value %}checked{% endif %} value="{{ onboarding_phase_id }}"> {{ onboarding_phase_name }}</label>
-								</div>
-							{% endfor %}
-						</div>
-					</div>
-				</div>
-			</div>
-		{% endif %}
-		{% if form.instance.user_documents.all or allow_document_upload %}
-			<div class="form-group">
-				<span class="control-label col-sm-2">Documents</span>
-				<div class="col-sm-10">
-					{% for d in form.instance.user_documents.all %}
-						<div id="document_{{ d.id }}">{% if not readonly %}<a href="javascript:mark_document_for_removal('{{ d.id }}')" class="grey hover-black" title="Remove {{ d.filename }}"><span class="glyphicon glyphicon-remove-circle"></span></a>{% endif %} <a href="{{ d.document.url }}" target="_blank" style="margin-right: 5px">{{ d.filename }}</a></div>
-					{% empty %}
-                        <div class="form-control-static">This user doesn't have any documents.</div>
-					{% endfor %}
-                    {% if not readonly and allow_document_upload %}
-                        <div style="padding-top: 10px">
-                            <input aria-label="File upload" id="fileupload" type="file" name="user_documents" multiple>
-                        </div>
-                    {% endif %}
-				</div>
-			</div>
-		{% endif %}
-        {% if not readonly %}
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="email">
+                <strong>E-mail address</strong>
+            </label>
+            <div class="col-sm-4">
+                <input id="email"
+                       name="email"
+                       type="text"
+                       autocomplete="off"
+                       class="form-control"
+                       value="{{ form.email.value|default_if_none:"" }}">
+            </div>
+            {% if form.email.errors %}
+                <div class="col-sm-6 form-control-static danger-highlight">{{ form.email.errors|striptags }}</div>
+            {% endif %}
+        </div>
+        {% if form.fields.type.choices.queryset %}
             <div class="form-group">
-                <div class="col-sm-offset-2 col-md-10">
-                    {% button type="save" value=form.instance.id|yesno:"Save changes,Create user" %}
+                <label class="control-label col-sm-2" for="type">Type</label>
+                <div class="col-sm-4">
+                    <select id="type" name="type" class="form-control">
+                        {% for t in form.fields.type.choices %}
+                            <option value="{{ t.0 }}" {% if t.0 == form.type.value|to_int %}selected{% endif %}>{{ t.1 }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
         {% endif %}
-	</form>
-	{% if not readonly and identity_service_available and form.instance.id and user_identity_information.can_reset_password_and_unlock_account %}
-		<form class="form-horizontal" method="post" action="{% url 'reset_password' form.instance.id %}">
-			{% csrf_token %}
-			<div class="form-group">
-				<div class="col-sm-offset-2 col-md-10">
-                    {% button type="warn" submit=True icon="glyphicon-repeat" value="Reset password" %}
-				</div>
-			</div>
-		</form>
-		{# Account unlock can only be performed if the account is currently in the locked state. #}
-		{% if user_identity_information.account_locked %}
-			<form class="form-horizontal" method="post" action="{% url 'unlock_account' form.instance.id %}">
-				{% csrf_token %}
-				<div class="form-group">
-					<div class="col-sm-offset-2 col-md-10">
-                        {% button type="warn" submit=True icon="glyphicon-lock" value="Unlock account" %}
-					</div>
-				</div>
-			</form>
-		{% endif %}
-	{% endif %}
-
-	<script>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="badge_number">Badge number</label>
+            <div class="col-sm-4">
+                <input id="badge_number"
+                       name="badge_number"
+                       autocomplete="off"
+                       type="text"
+                       class="form-control"
+                       value="{{ form.badge_number.value|default_if_none:"" }}">
+            </div>
+            {% if form.badge_number.errors %}
+                <div class="col-sm-6 form-control-static danger-highlight">{{ form.badge_number.errors|striptags }}</div>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="notes">Notes</label>
+            <div class="col-sm-4">
+                <textarea oninput="auto_size_textarea(this);" id="notes" name="notes" class="form-control">{{ form.notes.value|default_if_none:"" }}</textarea>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="access_expiration">Access expiration</label>
+            <div class="col-sm-2">
+                <input id="access_expiration"
+                       name="access_expiration"
+                       type="text"
+                       autocomplete="off"
+                       class="form-control"
+                       value="{{ form.access_expiration.value|input_date_format }}">
+            </div>
+            <div class="control-label col-sm-2" style="text-align:left">
+                {% if not readonly %}
+                    <a href="javascript:void(0)"
+                       onclick="$('#access_expiration').val('{{ one_year_from_now|input_date_format }}')">One year from now</a>
+                {% endif %}
+            </div>
+            {% if form.access_expiration.errors %}
+                <div class="col-sm-6 form-control-static danger-highlight">{{ form.access_expiration.errors|striptags }}</div>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <div class="col-sm-offset-2 {% if not readonly and form.instance.id and form.is_active.value %}col-sm-2{% else %}col-sm-10{% endif %}">
+                <div class="checkbox">
+                    <label {% if form.instance.id and form.is_active.value %}data-toggle="tooltip" data-placement="left" title="Pro-tip: you can safely deactivate this user using the link on the right so that no future costs are incurred (such as missed reservations)."{% endif %}>
+                        <input id="is_active" name="is_active" type="checkbox" {% if form.is_active.value %}checked{% endif %}>
+                        Active
+                    </label>
+                </div>
+            </div>
+            {% if not readonly and form.instance.id and form.is_active.value %}
+                <div class="control-label col-sm-8" style="text-align: left">
+                    <a href="{% url 'deactivate_user' form.instance.id %}">Safely deactivate this user</a>
+                </div>
+            {% endif %}
+            <div class="col-sm-offset-2 col-sm-4">
+                <div class="checkbox">
+                    <label>
+                        <input id="is_service_personnel"
+                               name="is_service_personnel"
+                               type="checkbox"
+                               {% if form.is_service_personnel.value %}checked{% endif %}>
+                        Service personnel
+                    </label>
+                    <br>
+                    <label>
+                        <input id="training_required"
+                               name="training_required"
+                               type="checkbox"
+                               {% if form.training_required.value %}checked{% endif %}>
+                        Facility rules tutorial required
+                    </label>
+                </div>
+            </div>
+        </div>
+        {% if form.instance.id %}
+            <div class="form-group">
+                <div class="control-label col-sm-2">Date joined</div>
+                <div class="col-sm-4 form-control-static">{{ form.instance.date_joined }}</div>
+            </div>
+            <div class="form-group">
+                <div class="control-label col-sm-2">Last login</div>
+                <div class="col-sm-4 form-control-static">{{ form.instance.last_login|default_if_none:"Never" }}</div>
+            </div>
+        {% endif %}
+        <div class="form-group" style="margin-left:0">
+            {% if identity_service_domains|length == 1 %}
+                <div class="row">
+                    <label class="control-label col-sm-2">Domain</label>
+                    <div class="col-sm-4 form-control-static">{{ identity_service_domains.0 }}</div>
+                    <input type="hidden" name="domain" value="{{ identity_service_domains.0 }}">
+                </div>
+            {% elif identity_service_domains|length > 1 %}
+                <div class="row">
+                    <label class="control-label col-sm-2">
+                        <strong>Domain</strong>
+                    </label>
+                    <div class="col-sm-4">
+                        {% for d in identity_service_domains %}
+                            <div class="radio">
+                                <label>
+                                    <input type="radio"
+                                           name="domain"
+                                           value="{{ d }}"
+                                           {% if form.instance.domain == d %}checked{% endif %}
+                                           required>
+                                    {{ d }}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="add_a_project">Projects</label>
+            {% if not readonly %}
+                <div class="col-sm-4">
+                    <input id="add_a_project" type="text" autocomplete="off" class="form-control" placeholder="Add a project">
+                </div>
+            </div>
+            <div class="form-group">
+            {% endif %}
+            <div id="project-list"
+                 class="{% if not readonly %}col-sm-offset-2{% endif %} col-sm-8"
+                 {% if readonly %}style="padding-top: 7px"{% endif %}>This user has no assigned projects.</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="add_a_tool_qualification">Tool qualifications</label>
+            {% if not readonly %}
+                <div class="col-sm-4">
+                    <input id="add_a_tool_qualification"
+                           type="text"
+                           autocomplete="off"
+                           class="form-control"
+                           placeholder="Add a qualification">
+                </div>
+            </div>
+            <div class="form-group">
+            {% endif %}
+            <div id="qualification-list"
+                 class="{% if not readonly %}col-sm-offset-2{% endif %} col-sm-8"
+                 {% if readonly %}style="padding-top: 7px"{% endif %}>
+                This user is not qualified to use any tools.
+            </div>
+        </div>
+        {% if area_access_levels or externally_managed_physical_access_levels %}
+            <div class="form-group">
+                <span class="control-label col-sm-2">Physical access levels</span>
+                <div class="col-sm-8">
+                    {% if area_access_levels %}
+                        <div class="panel panel-info">
+                            <div class="panel-heading">
+                                <span class="panel-title" style="font-size:inherit">Tablet controlled</span>
+                            </div>
+                            <div class="panel-body">
+                                <p style="font-style: italic">
+                                    <span class="glyphicon glyphicon-info-sign primary-highlight"></span> Selecting a parent area access will give access to all sub-areas
+                                </p>
+                                <ul class="login-tree area-tree-root area-tree-list" style="padding-left: 0;margin-top: 10px">
+                                    {% if form.instance.id %}
+                                        {# unfortunately have to duplicate some code here #}
+                                        {% with checked_access_levels=form.instance.accessible_access_levels %}
+                                            {% recursetree area_access_levels %}
+                                            {% if node.is_leaf_node %}
+                                                <li class="area-tree-leaf">
+                                                {% else %}
+                                                    <li class="area-tree-node">
+                                                        <a onclick="toggle_details(this)"
+                                                           data-toggle="collapse"
+                                                           aria-expanded="true"
+                                                           data-target="#area-{{ node.id }}">
+                                                            <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                                                        {% endif %}
+                                                        {% if not area_access_dict|get_item:node.id %}
+                                                            <span class="media-heading">{{ node.name }}</span>
+                                                        </a>
+                                                    {% else %}
+                                                    </a>
+                                                {% endif %}
+                                                {% for level in area_access_dict|get_item:node.id %}
+                                                    <div class="checkbox"
+                                                         {% if not node.is_leaf_node %}style="display: inline-block;margin-left: -3px"{% endif %}>
+                                                        <label>
+                                                            <input name="physical_access_levels"
+                                                                   type="checkbox"
+                                                                   {% if form.instance.is_staff and level.allow_staff_access or form.instance.is_user_office and level.allow_staff_access %}disabled title="This access is automatically granted to staff users"{% endif %}
+                                                                   value="{{ level.id }}"
+                                                                   {% if level in checked_access_levels %}checked{% endif %}>
+                                                            {% if node.category %}({{ node.category }}){% endif %}
+                                                            {{ level }}
+                                                        </label>
+                                                    </div>
+                                                {% endfor %}
+                                                {% if not node.is_leaf_node %}
+                                                    <ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ node.id }}">
+                                                        {{ children }}
+                                                    </ul>
+                                                {% endif %}
+                                            </li>
+                                        {% endrecursetree %}
+                                    {% endwith %}
+                                {% else %}
+                                    {% recursetree area_access_levels %}
+                                    {% if node.is_leaf_node %}
+                                        <li class="area-tree-leaf">
+                                        {% else %}
+                                            <li class="area-tree-node">
+                                                <a onclick="toggle_details(this)"
+                                                   data-toggle="collapse"
+                                                   aria-expanded="true"
+                                                   data-target="#area-{{ node.id }}">
+                                                    <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                                                {% endif %}
+                                                {% if not area_access_dict|get_item:node.id %}
+                                                    <span class="media-heading">{{ node.name }}</span>
+                                                </a>
+                                            {% else %}
+                                            </a>
+                                        {% endif %}
+                                        {% for level in area_access_dict|get_item:node.id %}
+                                            <div class="checkbox"
+                                                 {% if not node.is_leaf_node %}style="display: inline-block;margin-left: -3px"{% endif %}>
+                                                <label>
+                                                    <input name="physical_access_levels" type="checkbox" value="{{ level.id }}">
+                                                    {% if node.category %}({{ node.category }}){% endif %}
+                                                    {{ level }}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                        {% if not node.is_leaf_node %}
+                                            <ul class="area-tree-list collapse in" aria-expanded="true" id="area-{{ node.id }}">
+                                                {{ children }}
+                                            </ul>
+                                        {% endif %}
+                                    </li>
+                                {% endrecursetree %}
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+            {% if externally_managed_physical_access_levels %}
+                <div class="panel panel-success">
+                    <div class="panel-heading">
+                        <span class="panel-title" style="font-size:inherit">Badge-reader controlled</span>
+                    </div>
+                    <div class="panel-body">
+                        {% for level in externally_managed_physical_access_levels %}
+                            <div class="checkbox">
+                                <label>
+                                    <input name="externally_managed_access_levels"
+                                           type="checkbox"
+                                           {% if level in user_identity_information.area_access %}checked{% endif %}
+                                           value="{{ level }}">
+                                    {{ level }}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+{% if form.fields.safety_trainings.choices.queryset %}
+    <div class="form-group">
+        <span class="control-label col-sm-2">Safety training</span>
+        <div class="col-sm-8">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <span class="panel-title" style="font-size:inherit">Safety training</span>
+                </div>
+                <div class="panel-body">
+                    {% for safety_training_id, safety_training_name in form.fields.safety_trainings.choices %}
+                        <div class="checkbox">
+                            <label>
+                                <input name="safety_trainings"
+                                       type="checkbox"
+                                       {% if safety_training_id in form.safety_trainings.value %}checked{% endif %}
+                                       value="{{ safety_training_id }}">
+                                {{ safety_training_name }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% if form.fields.onboarding_phases.choices.queryset %}
+    <div class="form-group">
+        <span class="control-label col-sm-2">Onboarding phases</span>
+        <div class="col-sm-8">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <span class="panel-title" style="font-size:inherit">Onboarding phases</span>
+                </div>
+                <div class="panel-body">
+                    {% for onboarding_phase_id, onboarding_phase_name in form.fields.onboarding_phases.choices %}
+                        <div class="checkbox">
+                            <label>
+                                <input name="onboarding_phases"
+                                       type="checkbox"
+                                       {% if onboarding_phase_id in form.onboarding_phases.value %}checked{% endif %}
+                                       value="{{ onboarding_phase_id }}">
+                                {{ onboarding_phase_name }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% if form.instance.user_documents.all or allow_document_upload %}
+    <div class="form-group">
+        <span class="control-label col-sm-2">Documents</span>
+        <div class="col-sm-10">
+            {% for d in form.instance.user_documents.all %}
+                <div id="document_{{ d.id }}">
+                    {% if not readonly %}
+                        <a href="javascript:mark_document_for_removal('{{ d.id }}')"
+                           class="grey hover-black"
+                           title="Remove {{ d.filename }}"><span class="glyphicon glyphicon-remove-circle"></span></a>
+                    {% endif %}
+                    <a href="{{ d.document.url }}" target="_blank" style="margin-right: 5px">{{ d.filename }}</a>
+                </div>
+            {% empty %}
+                <div class="form-control-static">This user doesn't have any documents.</div>
+            {% endfor %}
+            {% if not readonly and allow_document_upload %}
+                <div style="padding-top: 10px">
+                    <input aria-label="File upload" id="fileupload" type="file" name="user_documents" multiple>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+{% if not readonly %}
+    <div class="form-group">
+        <div class="col-sm-offset-2 col-md-10">
+            {% button type="save" value=form.instance.id|yesno:"Save changes,Create user" %}
+        </div>
+    </div>
+{% endif %}
+</form>
+{% if not readonly and identity_service_available and form.instance.id and user_identity_information.can_reset_password_and_unlock_account %}
+    <form class="form-horizontal" method="post" action="{% url 'reset_password' form.instance.id %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-md-10">
+                {% button type="warn" submit=True icon="glyphicon-repeat" value="Reset password" %}
+            </div>
+        </div>
+    </form>
+    {# Account unlock can only be performed if the account is currently in the locked state. #}
+    {% if user_identity_information.account_locked %}
+        <form class="form-horizontal" method="post" action="{% url 'unlock_account' form.instance.id %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <div class="col-sm-offset-2 col-md-10">
+                    {% button type="warn" submit=True icon="glyphicon-lock" value="Unlock account" %}
+                </div>
+            </div>
+        </form>
+    {% endif %}
+{% endif %}
+<script>
 		function on_search_selection(jquery_event, search_selection, dataset_name)
 		{
 			$(this).typeahead('val', '').focus();
@@ -427,5 +556,6 @@
             }
 		}
 		$(on_load);
-	</script>
+	
+</script>
 {% endblock %}

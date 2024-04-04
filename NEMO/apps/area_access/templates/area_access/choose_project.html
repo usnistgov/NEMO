@@ -3,15 +3,19 @@
 <h2>Please choose a project to bill for area access.</h2>
 <h2>You can always change your choice later.</h2>
 {% for project in badge_user.active_projects %}
-	<p>
-		<button type="button" class="btn btn-success btn-lg btn-block btn-extra-large" onclick="enter_area('{{ badge_user.badge_number }}', {{ project.id }}, {{ area_id }})">
-			{% project_selection_display project %}
-		</button>
-	</p>
+    <p>
+        <button type="button"
+                class="btn btn-success btn-lg btn-block btn-extra-large"
+                onclick="enter_area('{{ badge_user.badge_number }}', {{ project.id }}, {{ area_id }})">
+            {% project_selection_display project %}
+        </button>
+    </p>
 {% endfor %}
 <p>
-	<button type="button" class="btn btn-warning btn-lg btn-block btn-extra-large" onclick="revert_to_default_content()">
-		Nevermind, don't log in (<span class="countdown">30</span>)
-	</button>
+    <button type="button"
+            class="btn btn-warning btn-lg btn-block btn-extra-large"
+            onclick="revert_to_default_content()">
+        Nevermind, don't log in (<span class="countdown">30</span>)
+    </button>
 </p>
 <script>revert(30);</script>

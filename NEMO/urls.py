@@ -72,12 +72,14 @@ def sort_urls(url_path):
 
 # REST API URLs
 router = routers.DefaultRouter()
-router.register(r"auth_groups", api.GroupViewSet)
-router.register(r"auth_permissions", api.PermissionViewSet)
 router.register(r"account_types", api.AccountTypeViewSet)
 router.register(r"accounts", api.AccountViewSet)
+router.register(r"alert_categories", api.AlertCategoryViewSet)
+router.register(r"alerts", api.AlertViewSet)
 router.register(r"area_access_records", api.AreaAccessRecordViewSet)
 router.register(r"areas", api.AreaViewSet)
+router.register(r"auth_groups", api.GroupViewSet)
+router.register(r"auth_permissions", api.PermissionViewSet)
 router.register(r"billing", api.BillingViewSet, basename="billing")
 router.register(r"configurations", api.ConfigurationViewSet)
 router.register(r"consumable_categories", api.ConsumableCategoryViewSet)

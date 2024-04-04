@@ -93,9 +93,11 @@ def charge_training(request):
                     setattr(
                         charges[index],
                         "qualify_tools",
-                        [Tool.objects.get(id=identifier)]
-                        if chosen_type == "tool"
-                        else ToolQualificationGroup.objects.get(id=identifier).tools.all(),
+                        (
+                            [Tool.objects.get(id=identifier)]
+                            if chosen_type == "tool"
+                            else ToolQualificationGroup.objects.get(id=identifier).tools.all()
+                        ),
                     )
                     # Even with a group of tools, we only charge training on the first one
                     charges[index].tool = next(iter(charges[index].qualify_tools))

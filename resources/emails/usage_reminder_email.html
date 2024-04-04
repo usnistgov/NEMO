@@ -5,12 +5,13 @@
     </head>
     <body>
         <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
-        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+        <table align="center"
+               style="width:100%;
+                      max-width:600px;
+                      font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
             <tr>
                 <td align="center" style="color: white; background: #5bc0de; padding: 50px 0;" bgcolor="#5bc0de">
-                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
-                        USAGE REMINDER
-                    </h1>
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">USAGE REMINDER</h1>
                 </td>
             </tr>
             <tr>
@@ -18,9 +19,7 @@
                     <p>Dear {{ user.first_name }},</p>
                     <p>This is a friendly reminder that you are currently using the following facility resources:</p>
                     <ul>
-                        {% for resource in resources_in_use %}
-                            <li>{{ resource }}</li>
-                        {% endfor %}
+                        {% for resource in resources_in_use %}<li>{{ resource }}</li>{% endfor %}
                     </ul>
                     <p>While on campus, you can relinquish tool control by visiting {{ site_title }}.</p>
                     <p>

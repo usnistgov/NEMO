@@ -4,65 +4,69 @@
 {% load custom_tags_and_filters %}
 {% block title %}Update task{% endblock %}
 {% block extrahead %}
-	<script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}"/>
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block content %}
-	<h1>{{ task.tool.name }} task</h1>
-	<span style="color:grey">Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).</span>
-	<p>
-		{% if task.last_updated and task.last_updated_by %}
-			<span style="color:grey">Last updated by {{ task.last_updated_by }} on {{ task.last_updated }} ({{ task.last_updated|naturaltime }}).</span>
-		{% endif %}
-	</p>
-
-	<div class="row">
-		<div class="col-md-5">
-			<h4>Update the task</h4>
-			<form action="{% url 'update_task' task.id %}" method="post" enctype="multipart/form-data">
-				{% csrf_token %}
-				<input type="hidden" name="tool" value="{{ task.tool.id }}">
-				<input type="hidden" name="action" value="update">
-				<div class="form-group">
-					<label class="control-label" for="urgency">
-						Would you like to change the urgency of this task? This will help staff prioritize tasks in the {{ facility_name }}.
-					</label>
-					<select name="urgency" id="urgency" class="form-control">
-						{% for level in urgency %}
-							<option value="{{ level.0 }}" {% if task.urgency == level.0 %}selected{% endif %}>{{ level.1 }}</option>
-						{% endfor %}
-					</select>
-				</div>
-				{% if categories %}
-					<div class="form-group">
-						<label class="control-label" for="problem_category">
-							Would you like to change this task's initial classification to more accurately reflect the nature of the problem? Proper classification helps the staff analyze long-term maintenance trends.
-						</label>
-						<select name="problem_category" id="problem_category" class="form-control">
-							<option value="">&nbsp;</option>
-							{% for c in categories %}
-								<option value="{{ c.id }}" {% if task.problem_category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
-							{% endfor %}
-						</select>
-					</div>
-				{% endif %}
-				{% if task_statuses %}
-					<div class="form-group">
-						<label class="control-label" for="status">
-							What is the status of the task?
-						</label>
-						<select name="status" id="status" class="form-control">
-							<option value="">&nbsp;</option>
-							{% for s in task_statuses %}
-								<option {% if task.current_status == s.name %}selected{% endif %}>{{ s.name }}</option>
-							{% endfor %}
-						</select>
-					</div>
-				{% endif %}
-				<div class="form-group">
-					<label for="resolution_time" class="control-label">When do you think the problem will be resolved? Leave this field blank if it's difficult to predict.</label>
-					<input id="resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off" value="{{ estimated_resolution_time|input_date_format }}">
-					<script>
+    <h1>{{ task.tool.name }} task</h1>
+    <span style="color:grey">Created by {{ task.creator }} on {{ task.creation_time }} ({{ task.creation_time|naturaltime }}).</span>
+    <p>
+        {% if task.last_updated and task.last_updated_by %}
+            <span style="color:grey">Last updated by {{ task.last_updated_by }} on {{ task.last_updated }} ({{ task.last_updated|naturaltime }}).</span>
+        {% endif %}
+    </p>
+    <div class="row">
+        <div class="col-md-5">
+            <h4>Update the task</h4>
+            <form action="{% url 'update_task' task.id %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="tool" value="{{ task.tool.id }}">
+                <input type="hidden" name="action" value="update">
+                <div class="form-group">
+                    <label class="control-label" for="urgency">
+                        Would you like to change the urgency of this task? This will help staff prioritize tasks in the {{ facility_name }}.
+                    </label>
+                    <select name="urgency" id="urgency" class="form-control">
+                        {% for level in urgency %}
+                            <option value="{{ level.0 }}" {% if task.urgency == level.0 %}selected{% endif %}>{{ level.1 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if categories %}
+                    <div class="form-group">
+                        <label class="control-label" for="problem_category">
+                            Would you like to change this task's initial classification to more accurately reflect the nature of the problem? Proper classification helps the staff analyze long-term maintenance trends.
+                        </label>
+                        <select name="problem_category" id="problem_category" class="form-control">
+                            <option value="">&nbsp;</option>
+                            {% for c in categories %}
+                                <option value="{{ c.id }}" {% if task.problem_category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+                {% if task_statuses %}
+                    <div class="form-group">
+                        <label class="control-label" for="status">What is the status of the task?</label>
+                        <select name="status" id="status" class="form-control">
+                            <option value="">&nbsp;</option>
+                            {% for s in task_statuses %}
+                                <option {% if task.current_status == s.name %}selected{% endif %}>{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+                <div class="form-group">
+                    <label for="resolution_time" class="control-label">
+                        When do you think the problem will be resolved? Leave this field blank if it's difficult to predict.
+                    </label>
+                    <input id="resolution_time"
+                           name="estimated_resolution_time"
+                           type="text"
+                           class="form-control"
+                           autocomplete="off"
+                           value="{{ estimated_resolution_time|input_date_format }}">
+                    <script>
 						let timepicker_properties =
 						{
                             format: "{{ datetime_input_js_format }}",
@@ -70,46 +74,58 @@
 							showClose: true
 						};
 						$('#resolution_time').datetimepicker(timepicker_properties);
-					</script>
-				</div>
-				<div class="form-group">
-					<div class="checkbox"><label><input type="checkbox" name="force_shutdown" {% if task.force_shutdown %}checked{% endif %}> This task requires the {{ task.tool.name }} to be shutdown</label></div>
-					<div class="checkbox"><label><input type="checkbox" name="safety_hazard" {% if task.safety_hazard %}checked{% endif %}> This task is considered a potential safety hazard to the {{ facility_name }}</label></div>
-				</div>
-				<div class="form-group">
-					<label for="description">Please describe any actions being taken to resolve this task. This information will be visible to all users in order to keep everyone apprised of the tool's status.</label>
-					<textarea name="description" id="description" class="form-control" rows="3"></textarea>
-				</div>
-				{% if task.task_images %}
-					<div>images:
-						<ul>
-							{% for image in task.task_images %}
-								<li><a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">{{ image.filename }}</a></li>
-							{% endfor %}
-						</ul>
-					</div>
-				{% endif %}
-				<div class="form-group">
-					<input id="fileupload" type="file" name="image" multiple>
-				</div>
-				<div class="form-group">
-                    {% button type="save" value="Update" %}
-				</div>
-			</form>
-		</div>
-		<div class="col-md-6 col-md-offset-1">
-			<h4>Problem description</h4>
-			{{ task.problem_description|linebreaksbr }}
-
-			{% if task.progress_description %}
-				<h4>Progress</h4>
-				{{ task.progress_description|linebreaksbr }}
-			{% endif %}
-
-			{% if rendered_configuration_html %}
-				<h4>Configuration</h4>
-				{{ rendered_configuration_html }}
-			{% endif %}
-		</div>
-	</div>
+					
+                    </script>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="force_shutdown" {% if task.force_shutdown %}checked{% endif %}>
+                            This task requires the {{ task.tool.name }} to be shutdown
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="safety_hazard" {% if task.safety_hazard %}checked{% endif %}>
+                            This task is considered a potential safety hazard to the {{ facility_name }}
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="description">
+                        Please describe any actions being taken to resolve this task. This information will be visible to all users in order to keep everyone apprised of the tool's status.
+                    </label>
+                    <textarea name="description" id="description" class="form-control" rows="3"></textarea>
+                </div>
+                {% if task.task_images %}
+                    <div>
+                        images:
+                        <ul>
+                            {% for image in task.task_images %}
+                                <li>
+                                    <a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">{{ image.filename }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                <div class="form-group">
+                    <input id="fileupload" type="file" name="image" multiple>
+                </div>
+                <div class="form-group">{% button type="save" value="Update" %}</div>
+            </form>
+        </div>
+        <div class="col-md-6 col-md-offset-1">
+            <h4>Problem description</h4>
+            {{ task.problem_description|linebreaksbr }}
+            {% if task.progress_description %}
+                <h4>Progress</h4>
+                {{ task.progress_description|linebreaksbr }}
+            {% endif %}
+            {% if rendered_configuration_html %}
+                <h4>Configuration</h4>
+                {{ rendered_configuration_html }}
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}

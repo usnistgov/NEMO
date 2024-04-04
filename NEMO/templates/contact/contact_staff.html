@@ -1,22 +1,26 @@
 {% extends 'base.html' %}
 {% block title %}Contact {{ facility_name }} staff{% endblock %}
 {% block content %}
-	<h1>Contact information</h1>
-	{% for category in categories %}
-		<h3>{{ category }}</h3>
-		<div class="row">
-			{% for person in people %}
-				{% if person.category == category %}
-					<div class="col-md-3">
-						<div class="thumbnail">
-							{% if person.image %}<img alt="staff contact picture" src="{{ person.image.url }}" style="margin-top:7px; height:266px; width:200px">{% endif %}
-							<div class="caption">
-								{% include 'snippets/contact_person.html' %}
-							</div>
-						</div>
-					</div>
-				{% endif %}
-			{% endfor %}
-		</div>
-	{% endfor %}
+    <h1>Contact information</h1>
+    {% for category in categories %}
+        <h3>{{ category }}</h3>
+        <div class="row">
+            {% for person in people %}
+                {% if person.category == category %}
+                    <div class="col-md-3">
+                        <div class="thumbnail">
+                            {% if person.image %}
+                                <img alt="staff contact picture"
+                                     src="{{ person.image.url }}"
+                                     style="margin-top:7px;
+                                            height:266px;
+                                            width:200px">
+                            {% endif %}
+                            <div class="caption">{% include 'snippets/contact_person.html' %}</div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endfor %}
 {% endblock %}

@@ -2,11 +2,11 @@
 {% load custom_tags_and_filters %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-	{% if heading %}<h1>{{ heading }}</h1>{% endif %}
-	{% if content %}<p>{{ content }}</p>{% endif %}
-	<div class="row">
-		<div class="col-xs-4">
+    {% if heading %}<h1>{{ heading }}</h1>{% endif %}
+    {% if content %}<p>{{ content }}</p>{% endif %}
+    <div class="row">
+        <div class="col-xs-4">
             {% button type="save" url="landing" value="Continue to "|concat:site_title|concat:" home screen" icon="glyphicon-home" %}
-		</div>
-	</div>
+        </div>
+    </div>
 {% endblock %}

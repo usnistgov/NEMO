@@ -4,38 +4,80 @@
     <form method="POST" action="{% url 'customize' 'calendar' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
-            <label class="control-label col-md-3" >Default view</label>
+            <label class="control-label col-md-3">Default view</label>
             <div class="col-md-9">
                 <div class="radio">
-                    <label><input type="radio" id="calendar_view" name="calendar_view" {% if not calendar_view or calendar_view == 'agendaWeek' %}checked{% endif %} value="agendaWeek"> Week view</label>
-                    <label><input type="radio" id="calendar_view" name="calendar_view" {% if calendar_view == 'month' %}checked{% endif %} value="month"> Month view</label>
-                    <label><input type="radio" id="calendar_view" name="calendar_view" {% if calendar_view == 'agendaDay' %}checked{% endif %} value="agendaDay"> Day view</label>
+                    <label>
+                        <input type="radio"
+                               id="calendar_view"
+                               name="calendar_view"
+                               {% if not calendar_view or calendar_view == 'agendaWeek' %}checked{% endif %}
+                               value="agendaWeek">
+                        Week view
+                    </label>
+                    <label>
+                        <input type="radio"
+                               id="calendar_view"
+                               name="calendar_view"
+                               {% if calendar_view == 'month' %}checked{% endif %}
+                               value="month">
+                        Month view
+                    </label>
+                    <label>
+                        <input type="radio"
+                               id="calendar_view"
+                               name="calendar_view"
+                               {% if calendar_view == 'agendaDay' %}checked{% endif %}
+                               value="agendaDay">
+                        Day view
+                    </label>
                 </div>
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-3" >First day of the week</label>
+            <label class="control-label col-md-3">First day of the week</label>
             <div class="col-md-9">
                 <div class="radio">
-                    <label><input type="radio" id="calendar_first_day_of_week" name="calendar_first_day_of_week" {% if not calendar_first_day_of_week or calendar_first_day_of_week == '1' %}checked{% endif %} value="1"> Monday</label>
-                    <label><input type="radio" id="calendar_first_day_of_week" name="calendar_first_day_of_week" {% if calendar_first_day_of_week == '0' %}checked{% endif %} value="0"> Sunday</label>
+                    <label>
+                        <input type="radio"
+                               id="calendar_first_day_of_week"
+                               name="calendar_first_day_of_week"
+                               {% if not calendar_first_day_of_week or calendar_first_day_of_week == '1' %}checked{% endif %}
+                               value="1">
+                        Monday
+                    </label>
+                    <label>
+                        <input type="radio"
+                               id="calendar_first_day_of_week"
+                               name="calendar_first_day_of_week"
+                               {% if calendar_first_day_of_week == '0' %}checked{% endif %}
+                               value="0">
+                        Sunday
+                    </label>
                 </div>
             </div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-3" for="calendar_start_of_the_day">Start of the day</label>
             <div class="col-md-3">
-                <input type="text" id="calendar_start_of_the_day" name="calendar_start_of_the_day" class="form-control" value="{{ calendar_start_of_the_day }}" placeholder="07:00:00">
+                <input type="text"
+                       id="calendar_start_of_the_day"
+                       name="calendar_start_of_the_day"
+                       class="form-control"
+                       value="{{ calendar_start_of_the_day }}"
+                       placeholder="07:00:00">
             </div>
-            <div class="col-md-6 help-block light-grey">
-                The time the day starts in the calendar view (24h format).
-            </div>
+            <div class="col-md-6 help-block light-grey">The time the day starts in the calendar view (24h format).</div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-3" for="calendar_outage_recurrence_limit">Outage recurrence limit</label>
             <div class="col-md-3">
                 <div class="input-group">
-                    <input type="number" id="calendar_outage_recurrence_limit" name="calendar_outage_recurrence_limit" class="form-control" value="{{ calendar_outage_recurrence_limit }}">
+                    <input type="number"
+                           id="calendar_outage_recurrence_limit"
+                           name="calendar_outage_recurrence_limit"
+                           class="form-control"
+                           value="{{ calendar_outage_recurrence_limit }}">
                     <span class="input-group-addon">days</span>
                 </div>
             </div>
@@ -47,7 +89,14 @@
             <label class="control-label col-md-3">Current time indicator</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="calendar_now_indicator" {% if calendar_now_indicator %}checked{% endif %} value="enabled">Show current time indicator on the calendar</label><br/>
+                    <label>
+                        <input type="checkbox"
+                               name="calendar_now_indicator"
+                               {% if calendar_now_indicator %}checked{% endif %}
+                               value="enabled">
+                        Show current time indicator on the calendar
+                    </label>
+                    <br />
                 </div>
             </div>
         </div>
@@ -55,18 +104,53 @@
             <label class="control-label col-md-3">Areas</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="calendar_display_not_qualified_areas" {% if calendar_display_not_qualified_areas %}checked{% endif %} value="enabled">Also show areas (for reservations) that the user doesn't have access to (grayed out)</label><br/>
+                    <label>
+                        <input type="checkbox"
+                               name="calendar_display_not_qualified_areas"
+                               {% if calendar_display_not_qualified_areas %}checked{% endif %}
+                               value="enabled">
+                        Also show areas (for reservations) that the user doesn't have access to (grayed out)
+                    </label>
+                    <br />
                 </div>
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-3" >Overview options:</label>
+            <label class="control-label col-md-3">Overview options:</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label style="padding-right: 20px;"><input type="checkbox" id="calendar_all_tools" name="calendar_all_tools" {% if calendar_all_tools  %}checked{% endif %} value="enabled"> Enable all tools option</label>
-                    <label style="padding-right: 20px;"><input type="checkbox" id="calendar_all_areas" name="calendar_all_areas" {% if calendar_all_areas %}checked{% endif %} value="enabled"> Enable all areas option</label>
-                    <label style="padding-right: 20px;"><input type="checkbox" id="calendar_all_areastools" name="calendar_all_areastools" {% if calendar_all_areastools %}checked{% endif %} value="enabled"> Enable all tools & areas option</label>
-                    <label style="padding-right: 20px;"><input type="checkbox" id="calendar_qualified_tools" name="calendar_qualified_tools" {% if calendar_qualified_tools %}checked{% endif %} value="enabled"> Show qualified tools button</label>
+                    <label style="padding-right: 20px;">
+                        <input type="checkbox"
+                               id="calendar_all_tools"
+                               name="calendar_all_tools"
+                               {% if calendar_all_tools %}checked{% endif %}
+                               value="enabled">
+                        Enable all tools option
+                    </label>
+                    <label style="padding-right: 20px;">
+                        <input type="checkbox"
+                               id="calendar_all_areas"
+                               name="calendar_all_areas"
+                               {% if calendar_all_areas %}checked{% endif %}
+                               value="enabled">
+                        Enable all areas option
+                    </label>
+                    <label style="padding-right: 20px;">
+                        <input type="checkbox"
+                               id="calendar_all_areastools"
+                               name="calendar_all_areastools"
+                               {% if calendar_all_areastools %}checked{% endif %}
+                               value="enabled">
+                        Enable all tools & areas option
+                    </label>
+                    <label style="padding-right: 20px;">
+                        <input type="checkbox"
+                               id="calendar_qualified_tools"
+                               name="calendar_qualified_tools"
+                               {% if calendar_qualified_tools %}checked{% endif %}
+                               value="enabled">
+                        Show qualified tools button
+                    </label>
                 </div>
             </div>
         </div>
@@ -74,7 +158,14 @@
             <label class="control-label col-md-3">Configuration settings</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="calendar_configuration_in_reservations" {% if calendar_configuration_in_reservations %}checked{% endif %} value="enabled">Show configuration settings and colors in the reservation calendar</label><br/>
+                    <label>
+                        <input type="checkbox"
+                               name="calendar_configuration_in_reservations"
+                               {% if calendar_configuration_in_reservations %}checked{% endif %}
+                               value="enabled">
+                        Show configuration settings and colors in the reservation calendar
+                    </label>
+                    <br />
                 </div>
             </div>
         </div>
@@ -86,40 +177,90 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-3" for="calendar_time_format">Time format</label>
+            <label class="control-label col-md-3" for="calendar_axis_time_format">Axis Time format</label>
             <div class="col-md-3">
-                <input type="text" id="calendar_time_format" name="calendar_time_format" class="form-control" value="{{ calendar_time_format }}"  placeholder="ha">
+                <input type="text"
+                       id="calendar_axis_time_format"
+                       name="calendar_axis_time_format"
+                       class="form-control"
+                       value="{{ calendar_axis_time_format }}"
+                       placeholder="ha">
             </div>
             <div class="col-md-6 help-block light-grey">
-                The time format for the calendar.
+                The time format for the calendar axis labels  (only applies to day and week view).
             </div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-3" for="calendar_day_column_format">Day column format</label>
             <div class="col-md-3">
-                <input type="text" id="calendar_day_column_format" name="calendar_day_column_format" class="form-control" value="{{ calendar_day_column_format }}"  placeholder="dddd MM/DD/YYYY">
+                <input type="text"
+                       id="calendar_day_column_format"
+                       name="calendar_day_column_format"
+                       class="form-control"
+                       value="{{ calendar_day_column_format }}"
+                       placeholder="dddd MM/DD/YYYY">
             </div>
-            <div class="col-md-6 help-block light-grey">
-                The column date format for the day view.
+            <div class="col-md-6 help-block light-grey">The column date format for the day view.</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_day_time_format">Day time format</label>
+            <div class="col-md-3">
+                <input type="text"
+                       id="calendar_day_time_format"
+                       name="calendar_day_time_format"
+                       class="form-control"
+                       value="{{ calendar_day_time_format }}"
+                       placeholder="h:mm">
             </div>
+            <div class="col-md-6 help-block light-grey">The reservation time format for the day view.</div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-3" for="calendar_week_column_format">Week column format</label>
             <div class="col-md-3">
-                <input type="text" id="calendar_week_column_format" name="calendar_week_column_format" class="form-control" value="{{ calendar_week_column_format }}"  placeholder="ddd M/DD">
+                <input type="text"
+                       id="calendar_week_column_format"
+                       name="calendar_week_column_format"
+                       class="form-control"
+                       value="{{ calendar_week_column_format }}"
+                       placeholder="ddd M/DD">
             </div>
-            <div class="col-md-6 help-block light-grey">
-                The column date format for the week view.
+            <div class="col-md-6 help-block light-grey">The column date format for the week view.</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_week_time_format">Week time format</label>
+            <div class="col-md-3">
+                <input type="text"
+                       id="calendar_week_time_format"
+                       name="calendar_week_time_format"
+                       class="form-control"
+                       value="{{ calendar_week_time_format }}"
+                       placeholder="h:mm">
             </div>
+            <div class="col-md-6 help-block light-grey">The reservation time format for the week view.</div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-3" for="calendar_month_column_format">Month column format</label>
             <div class="col-md-3">
-                <input type="text" id="calendar_month_column_format" name="calendar_month_column_format" class="form-control" value="{{ calendar_month_column_format }}"  placeholder="ddd">
+                <input type="text"
+                       id="calendar_month_column_format"
+                       name="calendar_month_column_format"
+                       class="form-control"
+                       value="{{ calendar_month_column_format }}"
+                       placeholder="ddd">
             </div>
-            <div class="col-md-6 help-block light-grey">
-                The column date format for the month view.
+            <div class="col-md-6 help-block light-grey">The column date format for the month view.</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_month_time_format">Month time format</label>
+            <div class="col-md-3">
+                <input type="text"
+                       id="calendar_month_time_format"
+                       name="calendar_month_time_format"
+                       class="form-control"
+                       value="{{ calendar_month_time_format }}"
+                       placeholder="h(:mm)t">
             </div>
+            <div class="col-md-6 help-block light-grey">The reservation time format for the month view.</div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Reservation confirmations</h3>
@@ -127,7 +268,14 @@
             <label class="control-label col-md-3">Create</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="create_reservation_confirmation" {% if create_reservation_confirmation %}checked{% endif %} value="enabled">Require users to confirm by clicking 'Ok' when creating a reservation (this setting can be overwritten by users).</label><br/>
+                    <label>
+                        <input type="checkbox"
+                               name="create_reservation_confirmation"
+                               {% if create_reservation_confirmation %}checked{% endif %}
+                               value="enabled">
+                        Require users to confirm by clicking 'Ok' when creating a reservation (this setting can be overwritten by users).
+                    </label>
+                    <br />
                 </div>
             </div>
         </div>
@@ -135,7 +283,14 @@
             <label class="control-label col-md-3">Move/Resize</label>
             <div class="col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="change_reservation_confirmation" {% if change_reservation_confirmation %}checked{% endif %} value="enabled">Require users to confirm by clicking 'Ok' when moving/resizing a reservation (this setting can be overwritten by users).</label><br/>
+                    <label>
+                        <input type="checkbox"
+                               name="change_reservation_confirmation"
+                               {% if change_reservation_confirmation %}checked{% endif %}
+                               value="enabled">
+                        Require users to confirm by clicking 'Ok' when moving/resizing a reservation (this setting can be overwritten by users).
+                    </label>
+                    <br />
                 </div>
             </div>
         </div>
@@ -147,24 +302,28 @@
         <div class="form-group">
             <label class="control-label col-md-3" for="reservation_confirmation_date_format">Date format</label>
             <div class="col-md-3">
-                <input type="text" id="reservation_confirmation_date_format" name="reservation_confirmation_date_format" class="form-control" value="{{ reservation_confirmation_date_format }}"  placeholder="MMMM D, yyyy">
+                <input type="text"
+                       id="reservation_confirmation_date_format"
+                       name="reservation_confirmation_date_format"
+                       class="form-control"
+                       value="{{ reservation_confirmation_date_format }}"
+                       placeholder="MMMM D, yyyy">
             </div>
-            <div class="col-md-6 help-block light-grey">
-                The date format (not including time).
-            </div>
+            <div class="col-md-6 help-block light-grey">The date format (not including time).</div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-3" for="reservation_confirmation_time_format">Time format</label>
             <div class="col-md-3">
-                <input type="text" id="reservation_confirmation_time_format" name="reservation_confirmation_time_format" class="form-control" value="{{ reservation_confirmation_time_format }}"  placeholder="h:mma">
+                <input type="text"
+                       id="reservation_confirmation_time_format"
+                       name="reservation_confirmation_time_format"
+                       class="form-control"
+                       value="{{ reservation_confirmation_time_format }}"
+                       placeholder="h:mma">
             </div>
-            <div class="col-md-6 help-block light-grey">
-                The time format.
-            </div>
+            <div class="col-md-6 help-block light-grey">The time format.</div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <div class="text-center">
-            {% button type="save" value="Save settings" %}
-        </div>
+        <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
 </div>

@@ -3,46 +3,65 @@
 {% load custom_tags_and_filters %}
 {% block title %}New reservation{% endblock %}
 {% block extrahead %}
-	<script type="text/javascript" src="{% static "pickadate/picker.js" %}"></script>
-	<script type="text/javascript" src="{% static "pickadate/picker.date.js" %}"></script>
-	<script type="text/javascript" src="{% static "pickadate/picker.time.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.css" %}"/>
-	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.date.css" %}"/>
-	<link rel="stylesheet" type="text/css" href="{% static "pickadate/default.time.css" %}"/>
+    <script type="text/javascript" src="{% static "pickadate/picker.js" %}"></script>
+    <script type="text/javascript" src="{% static "pickadate/picker.date.js" %}"></script>
+    <script type="text/javascript" src="{% static "pickadate/picker.time.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "pickadate/default.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "pickadate/default.date.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "pickadate/default.time.css" %}" />
 {% endblock %}
 {% block content %}
-	<h3>Create a new reservation</h3>
-	<form method="post" action="{% url 'make_reservation' %}">
-		{% csrf_token %}
-		<input type="hidden" name="item_id" value="{{ item.id }}">
-		<input type="hidden" name="item_type" value="{{ item_type }}">
-		{% if not user.is_staff %}
-			{% if user.active_project_count == 1 %}
-				<input type="hidden" name="project_id" value="{{ user.active_projects.0.id }}">
-			{% elif user.active_project_count > 1 %}
-				<h4>Which project is this for?</h4>
-				{% for project in user.active_projects %}
-                    <div class="radio"><label><input type="radio" name="project_id" value="{{ project.id }}"
-                                                     required>{% project_selection_display project %}</label></div>
-				{% endfor %}
-			{% endif %}
-		{% endif %}
-		<h4>When would you like to reserve the {{ item }}?</h4>
-		<div class="form-group">
-			<input type="text" id="date" name="date" class="form-control" aria-label="Reservation day" placeholder="Choose a date">
-		</div>
-		<div class="form-group">
-			<input type="text" id="start" name="start" class="form-control" aria-label="Reservation start time" placeholder="Choose a start time">
-		</div>
-		<div class="form-group">
-			<input type="text" id="end" name="end" class="form-control" aria-label="Reservation end time" placeholder="Choose an end time">
-		</div>
-		<div class="form-group text-center" style="margin-top:40px">
+    <h3>Create a new reservation</h3>
+    <form method="post" action="{% url 'make_reservation' %}">
+        {% csrf_token %}
+        <input type="hidden" name="item_id" value="{{ item.id }}">
+        <input type="hidden" name="item_type" value="{{ item_type }}">
+        {% if not user.is_staff %}
+            {% if user.active_project_count == 1 %}
+                <input type="hidden" name="project_id" value="{{ user.active_projects.0.id }}">
+            {% elif user.active_project_count > 1 %}
+                <h4>Which project is this for?</h4>
+                {% for project in user.active_projects %}
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="project_id" value="{{ project.id }}" required>
+                            {% project_selection_display project %}
+                        </label>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+        <h4>When would you like to reserve the {{ item }}?</h4>
+        <div class="form-group">
+            <input type="text"
+                   id="date"
+                   name="date"
+                   class="form-control"
+                   aria-label="Reservation day"
+                   placeholder="Choose a date">
+        </div>
+        <div class="form-group">
+            <input type="text"
+                   id="start"
+                   name="start"
+                   class="form-control"
+                   aria-label="Reservation start time"
+                   placeholder="Choose a start time">
+        </div>
+        <div class="form-group">
+            <input type="text"
+                   id="end"
+                   name="end"
+                   class="form-control"
+                   aria-label="Reservation end time"
+                   placeholder="Choose an end time">
+        </div>
+        <div class="form-group text-center" style="margin-top:40px">
             {% button type="save" value="Create the reservation" %}
-		</div>
-	</form>
-	<div style="height:350px"></div>
-	<script>
+        </div>
+    </form>
+    <div style="height:350px"></div>
+    <script>
         window.addEventListener('load', function () {
             $('input[type=radio][name=project_id]').prop('checked', false);
         });
@@ -74,11 +93,12 @@
                     let start = times[0];
                     let end = times[1];
                     if (date_time_selected >= start && date_time_selected < end) {
-                        return '<sp!an>h:i A</sp!an> <sm!all> !alre!ad!y re!serve!d</sm!all>';
+                        return '<sp !an>h:i A</sp !an> <sm !all> !alre!ad!y re!serve!d</sm !all>';
                     }
                 }
 			}
 		    return "h:i A";
         }
-	</script>
+	
+    </script>
 {% endblock %}

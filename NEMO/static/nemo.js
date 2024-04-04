@@ -89,8 +89,8 @@ function on_item_search_selection(jquery_event, search_selection, dataset_name)
 function expand_to_item(id, type)
 {
 	let item = $("#"+type+"-"+id);
-	item.click().parents('ul.tree').show();
 	set_selected_item(item, true);
+	item.click().parents('ul.tree').show();
 }
 
 function toggle_categories()
@@ -771,7 +771,7 @@ function set_start_end_datetime_pickers(start_jq, end_jq, properties, set_end_da
 
 function sort_compare(element)
 {
-	return element.innerText.toLowerCase();
+	return element.innerText.toLowerCase().trim();
 }
 
 function sort_elements(list_element, selector, sort_function)

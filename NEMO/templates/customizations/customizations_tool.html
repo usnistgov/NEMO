@@ -7,8 +7,21 @@
             <label class="control-label col-sm-4 col-md-3">Phone number</label>
             <div class="col-sm-8 col-md-9">
                 <div class="radio">
-                    <label><input type="radio" id="tool_phone_number_required" name="tool_phone_number_required" {% if tool_phone_number_required == "off" %}checked{% endif %} value="off"> Not required</label>
-                    <label><input type="radio" name="tool_phone_number_required" {% if tool_phone_number_required == "enabled" %}checked{% endif %} value="enabled"> Required</label>
+                    <label>
+                        <input type="radio"
+                               id="tool_phone_number_required"
+                               name="tool_phone_number_required"
+                               {% if tool_phone_number_required == "off" %}checked{% endif %}
+                               value="off">
+                        Not required
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="tool_phone_number_required"
+                               {% if tool_phone_number_required == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        Required
+                    </label>
                 </div>
             </div>
         </div>
@@ -16,8 +29,21 @@
             <label class="control-label col-sm-4 col-md-3">Location</label>
             <div class="col-sm-8 col-md-9">
                 <div class="radio">
-                    <label><input type="radio" id="tool_location_required" name="tool_location_required" {% if tool_location_required == "off" %}checked{% endif %} value="off"> Not required</label>
-                    <label><input type="radio" name="tool_location_required" {% if tool_location_required == "enabled" %}checked{% endif %} value="enabled"> Required</label>
+                    <label>
+                        <input type="radio"
+                               id="tool_location_required"
+                               name="tool_location_required"
+                               {% if tool_location_required == "off" %}checked{% endif %}
+                               value="off">
+                        Not required
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="tool_location_required"
+                               {% if tool_location_required == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        Required
+                    </label>
                 </div>
             </div>
         </div>
@@ -25,7 +51,13 @@
             <label class="control-label col-sm-4 col-md-3">Reservation policy</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="tool_reservation_policy_superusers_bypass" {% if tool_reservation_policy_superusers_bypass %}checked{% endif %} value="enabled"> Tool superusers are exempt from reservation policy rules</label>
+                    <label>
+                        <input type="checkbox"
+                               name="tool_reservation_policy_superusers_bypass"
+                               {% if tool_reservation_policy_superusers_bypass %}checked{% endif %}
+                               value="enabled">
+                        Tool superusers are exempt from reservation policy rules
+                    </label>
                 </div>
             </div>
         </div>
@@ -34,7 +66,10 @@
         <div class="form-group {% if errors.tool_control_configuration_setting_template %}has-error{% endif %}">
             <label class="control-label col-md-3" for="tool_control_configuration_setting_template">Configuration template</label>
             <div class="col-md-7">
-                <textarea oninput="auto_size_textarea(this);" id="tool_control_configuration_setting_template" name="tool_control_configuration_setting_template" class="form-control">{% if errors.tool_control_configuration_setting_template %}{{ errors.tool_control_configuration_setting_template.value }}{% else %}{{ tool_control_configuration_setting_template }}{% endif %}</textarea>
+                <textarea oninput="auto_size_textarea(this);"
+                          id="tool_control_configuration_setting_template"
+                          name="tool_control_configuration_setting_template"
+                          class="form-control">{% if errors.tool_control_configuration_setting_template %}{{ errors.tool_control_configuration_setting_template.value }}{% else %}{{ tool_control_configuration_setting_template }}{% endif %}</textarea>
             </div>
             <div class="col-md-offset-3 col-md-9 help-block light-grey">
                 {% if errors.tool_control_configuration_setting_template %}
@@ -48,7 +83,12 @@
             <label class="control-label col-sm-4 col-md-3" for="tool_configuration_near_future_days">Near future</label>
             <div class="col-md-3">
                 <div class="input-group">
-                    <input type="number" min="1" id="tool_configuration_near_future_days" name="tool_configuration_near_future_days" class="form-control text-right" value="{% if errors.tool_configuration_near_future_days %}{{ errors.tool_configuration_near_future_days.value }}{% else %}{{ tool_configuration_near_future_days }}{% endif %}"/>
+                    <input type="number"
+                           min="1"
+                           id="tool_configuration_near_future_days"
+                           name="tool_configuration_near_future_days"
+                           class="form-control text-right"
+                           value="{% if errors.tool_configuration_near_future_days %}{{ errors.tool_configuration_near_future_days.value }}{% else %}{{ tool_configuration_near_future_days }}{% endif %}" />
                     <span class="input-group-addon">day(s)</span>
                 </div>
             </div>
@@ -66,7 +106,13 @@
             <label class="control-label col-sm-4 col-md-3">New problems</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" name="tool_problem_send_to_all_qualified_users" {% if tool_problem_send_to_all_qualified_users %}checked{% endif %} value="enabled">Send new tool problems to all qualified users (but not updates)</label>
+                    <label>
+                        <input type="checkbox"
+                               name="tool_problem_send_to_all_qualified_users"
+                               {% if tool_problem_send_to_all_qualified_users %}checked{% endif %}
+                               value="enabled">
+                        Send new tool problems to all qualified users (but not updates)
+                    </label>
                 </div>
             </div>
         </div>
@@ -74,9 +120,22 @@
             <label class="control-label col-sm-4 col-md-3">Updates</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
-                    <input type="hidden" name="tool_task_updates_facility_managers" value="off"/>
-                    <label><input type="checkbox" name="tool_task_updates_facility_managers" {% if tool_task_updates_facility_managers != 'off' %}checked{% endif %} value="">Send all tool problem & updates to facility managers</label><br>
-                    <label><input type="checkbox" name="tool_task_updates_superusers" {% if tool_task_updates_superusers %}checked{% endif %} value="enabled">Send all tool problem & updates to tool superusers</label>
+                    <input type="hidden" name="tool_task_updates_facility_managers" value="off" />
+                    <label>
+                        <input type="checkbox"
+                               name="tool_task_updates_facility_managers"
+                               {% if tool_task_updates_facility_managers != 'off' %}checked{% endif %}
+                               value="">
+                        Send all tool problem & updates to facility managers
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox"
+                               name="tool_task_updates_superusers"
+                               {% if tool_task_updates_superusers %}checked{% endif %}
+                               value="enabled">
+                        Send all tool problem & updates to tool superusers
+                    </label>
                 </div>
             </div>
         </div>
@@ -84,7 +143,12 @@
             <label class="control-label col-sm-4 col-md-3" for="tool_problem_max_image_size_pixels">Limit task images size</label>
             <div class="col-md-3">
                 <div class="input-group">
-                    <input type="number" min="0" id="tool_problem_max_image_size_pixels" name="tool_problem_max_image_size_pixels" class="form-control text-right" value="{% if errors.tool_problem_max_image_size_pixels %}{{ errors.tool_problem_max_image_size_pixels.value }}{% else %}{{ tool_problem_max_image_size_pixels }}{% endif %}"/>
+                    <input type="number"
+                           min="0"
+                           id="tool_problem_max_image_size_pixels"
+                           name="tool_problem_max_image_size_pixels"
+                           class="form-control text-right"
+                           value="{% if errors.tool_problem_max_image_size_pixels %}{{ errors.tool_problem_max_image_size_pixels.value }}{% else %}{{ tool_problem_max_image_size_pixels }}{% endif %}" />
                     <span class="input-group-addon">pixels</span>
                 </div>
             </div>
@@ -95,7 +159,14 @@
             <label class="control-label col-sm-4 col-md-3">Usage data history</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" id="tool_control_hide_data_history_users" name="tool_control_hide_data_history_users" {% if tool_control_hide_data_history_users %}checked{% endif %} value="enabled"> check to only show usage data history tab for staff members</label>
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_hide_data_history_users"
+                               name="tool_control_hide_data_history_users"
+                               {% if tool_control_hide_data_history_users %}checked{% endif %}
+                               value="enabled">
+                        Check to only show usage data history tab for staff members
+                    </label>
                 </div>
             </div>
         </div>
@@ -103,7 +174,14 @@
             <label class="control-label col-sm-4 col-md-3">Qualified users list</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" id="tool_control_show_qualified_users_to_all" name="tool_control_show_qualified_users_to_all" {% if tool_control_show_qualified_users_to_all %}checked{% endif %} value="enabled"> check to allow everyone to see who is qualified on a tool</label>
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_show_qualified_users_to_all"
+                               name="tool_control_show_qualified_users_to_all"
+                               {% if tool_control_show_qualified_users_to_all %}checked{% endif %}
+                               value="enabled">
+                        Check to allow everyone to see who is qualified on a tool
+                    </label>
                 </div>
             </div>
         </div>
@@ -111,8 +189,23 @@
             <label class="control-label col-sm-4 col-md-3">Show tool documents to</label>
             <div class="col-sm-8 col-md-9">
                 <div class="radio">
-                    <label><input type="radio" id="tool_control_show_documents_only_qualified_users_2" name="tool_control_show_documents_only_qualified_users" {% if not tool_control_show_documents_only_qualified_users %}checked{% endif %} value=""> Everyone</label><br>
-                    <label><input type="radio" id="tool_control_show_documents_only_qualified_users_1" name="tool_control_show_documents_only_qualified_users" {% if tool_control_show_documents_only_qualified_users %}checked{% endif %} value="enabled"> Only qualified users</label>
+                    <label>
+                        <input type="radio"
+                               id="tool_control_show_documents_only_qualified_users_2"
+                               name="tool_control_show_documents_only_qualified_users"
+                               {% if not tool_control_show_documents_only_qualified_users %}checked{% endif %}
+                               value="">
+                        Everyone
+                    </label>
+                    <br>
+                    <label>
+                        <input type="radio"
+                               id="tool_control_show_documents_only_qualified_users_1"
+                               name="tool_control_show_documents_only_qualified_users"
+                               {% if tool_control_show_documents_only_qualified_users %}checked{% endif %}
+                               value="enabled">
+                        Only qualified users
+                    </label>
                 </div>
             </div>
         </div>
@@ -120,9 +213,32 @@
             <label class="control-label col-sm-4 col-md-3">Email users with upcoming reservation</label>
             <div class="col-sm-8 col-md-9">
                 <div class="radio">
-                    <label><input type="radio" id="tool_control_broadcast_upcoming_reservation_1" name="tool_control_broadcast_upcoming_reservation" {% if not tool_control_broadcast_upcoming_reservation %}checked{% endif %} value=""> Staff only</label><br>
-                    <label><input type="radio" id="tool_control_broadcast_upcoming_reservation_2" name="tool_control_broadcast_upcoming_reservation" {% if tool_control_broadcast_upcoming_reservation == "qualified" %}checked{% endif %} value="qualified"> Qualified users</label><br>
-                    <label><input type="radio" id="tool_control_broadcast_upcoming_reservation_3" name="tool_control_broadcast_upcoming_reservation" {% if tool_control_broadcast_upcoming_reservation == "all" %}checked{% endif %} value="all"> All</label>
+                    <label>
+                        <input type="radio"
+                               id="tool_control_broadcast_upcoming_reservation_1"
+                               name="tool_control_broadcast_upcoming_reservation"
+                               {% if not tool_control_broadcast_upcoming_reservation %}checked{% endif %}
+                               value="">
+                        Staff only
+                    </label>
+                    <br>
+                    <label>
+                        <input type="radio"
+                               id="tool_control_broadcast_upcoming_reservation_2"
+                               name="tool_control_broadcast_upcoming_reservation"
+                               {% if tool_control_broadcast_upcoming_reservation == "qualified" %}checked{% endif %}
+                               value="qualified">
+                        Qualified users
+                    </label>
+                    <br>
+                    <label>
+                        <input type="radio"
+                               id="tool_control_broadcast_upcoming_reservation_3"
+                               name="tool_control_broadcast_upcoming_reservation"
+                               {% if tool_control_broadcast_upcoming_reservation == "all" %}checked{% endif %}
+                               value="all">
+                        All
+                    </label>
                 </div>
             </div>
         </div>
@@ -130,103 +246,147 @@
             <label class="control-label col-sm-4 col-md-3">Show task details by default</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
-                    <label><input type="checkbox" id="tool_control_show_task_details" name="tool_control_show_task_details" {% if tool_control_show_task_details %}checked{% endif %} value="enabled"> Show task details, such as who created the task and when, by default (click on the task to collapse/hide)</label>
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_show_task_details"
+                               name="tool_control_show_task_details"
+                               {% if tool_control_show_task_details %}checked{% endif %}
+                               value="enabled">
+                        Show task details, such as who created the task and when, by default (click on the task to collapse/hide)
+                    </label>
                 </div>
             </div>
         </div>
-		<div class="customization-separation" style="margin-bottom: 15px"></div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool wait list</h3>
         <div class="form-group">
             <label class="control-label col-sm-4 col-md-3" for="tool_wait_list_spot_expiration">Time to expiration</label>
             <div class="col-md-3">
                 <div class="input-group">
-                    <input type="number" min="0" id="tool_wait_list_spot_expiration" name="tool_wait_list_spot_expiration" class="form-control text-right" value="{% if errors.tool_wait_list_spot_expiration %}{{ errors.tool_wait_list_spot_expiration.value }}{% else %}{{ tool_wait_list_spot_expiration }}{% endif %}"/>
+                    <input type="number"
+                           min="0"
+                           id="tool_wait_list_spot_expiration"
+                           name="tool_wait_list_spot_expiration"
+                           class="form-control text-right"
+                           value="{% if errors.tool_wait_list_spot_expiration %}{{ errors.tool_wait_list_spot_expiration.value }}{% else %}{{ tool_wait_list_spot_expiration }}{% endif %}" />
                     <span class="input-group-addon">minutes</span>
                 </div>
             </div>
-			<div class="col-md-offset-3 col-md-9 help-block light-grey">
-				Time to expiration for a spot in the wait list. If a user does not claim the spot within this time, the spot will be removed from the wait list.
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                Time to expiration for a spot in the wait list. If a user does not claim the spot within this time, the spot will be removed from the wait list.
             </div>
         </div>
-		<div class="form-group">
-            <label class="control-label col-sm-4 col-md-3" for="tool_wait_list_reservation_buffer">Reservation wait list buffer</label>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3" for="tool_wait_list_reservation_buffer">
+                Reservation wait list buffer
+            </label>
             <div class="col-md-3">
                 <div class="input-group">
-                    <input type="number" min="0" id="tool_wait_list_reservation_buffer" name="tool_wait_list_reservation_buffer" class="form-control text-right" value="{% if errors.tool_wait_list_reservation_buffer %}{{ errors.tool_wait_list_reservation_buffer.value }}{% else %}{{ tool_wait_list_reservation_buffer }}{% endif %}"/>
+                    <input type="number"
+                           min="0"
+                           id="tool_wait_list_reservation_buffer"
+                           name="tool_wait_list_reservation_buffer"
+                           class="form-control text-right"
+                           value="{% if errors.tool_wait_list_reservation_buffer %}{{ errors.tool_wait_list_reservation_buffer.value }}{% else %}{{ tool_wait_list_reservation_buffer }}{% endif %}" />
                     <span class="input-group-addon">minutes</span>
                 </div>
             </div>
-			<div class="col-md-offset-3 col-md-9 help-block light-grey">
-				For a tool operating in "hybrid" mode, if a reservation is upcoming within this time, the next user in the wait list will not be notified.
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                For a tool operating in "hybrid" mode, if a reservation is upcoming within this time, the next user in the wait list will not be notified.
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool qualification expiration</h3>
-        <p>If active, this feature will remove tool qualification from a user if the user has not used the tool after a while or never used it since qualified (configured separately).
-        <p>The <a href="{% url 'customization' 'templates' %}?#tool_qualification_expiration_email_id">user tool qualification expiration email</a> need to be set to enable this feature.</p><br/>
-        <div class="form-group {% if errors.tool_qualification_reminder_days %}has-error{% endif %}">
-            <label class="control-label col-md-3" for="tool_qualification_reminder_days">Reminder days</label>
-            <div class="col-md-5">
-                <input type="text" id="tool_qualification_reminder_days" name="tool_qualification_reminder_days" class="form-control" value="{% if errors.tool_qualification_reminder_days %}{{ errors.tool_qualification_reminder_days.value }}{% else %}{{ tool_qualification_reminder_days }}{% endif %}"/>
+        <p>
+            If active, this feature will remove tool qualification from a user if the user has not used the tool after a while or never used it since qualified (configured separately).
+            <p>
+                The <a href="{% url 'customization' 'templates' %}?#tool_qualification_expiration_email_id">user tool qualification expiration email</a> need to be set to enable this feature.
+            </p>
+            <br />
+            <div class="form-group {% if errors.tool_qualification_reminder_days %}has-error{% endif %}">
+                <label class="control-label col-md-3" for="tool_qualification_reminder_days">Reminder days</label>
+                <div class="col-md-5">
+                    <input type="text"
+                           id="tool_qualification_reminder_days"
+                           name="tool_qualification_reminder_days"
+                           class="form-control"
+                           value="{% if errors.tool_qualification_reminder_days %}{{ errors.tool_qualification_reminder_days.value }}{% else %}{{ tool_qualification_reminder_days }}{% endif %}" />
+                </div>
+                <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                    {% if errors.tool_qualification_reminder_days %}
+                        {{ errors.tool_qualification_reminder_days.error }}
+                    {% else %}
+                        The (optional) number of days to send a reminder prior to the user's tool qualification expiration (below). A comma-separated list can be used for multiple reminders. This applies to both expiration cases.
+                    {% endif %}
+                </div>
             </div>
-            <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                {% if errors.tool_qualification_reminder_days %}
-                    {{ errors.tool_qualification_reminder_days.error }}
-                {% else %}
-                    The (optional) number of days to send a reminder prior to the user's tool qualification expiration (below). A comma-separated list can be used for multiple reminders. This applies to both expiration cases.
-                {% endif %}
+            <div class="form-group {% if errors.tool_qualification_expiration_days %}has-error{% endif %}">
+                <label class="control-label col-md-3" for="tool_qualification_expiration_days">
+                    Expiration days (previous tool usage)
+                </label>
+                <div class="col-md-5">
+                    <input type="number"
+                           step="1"
+                           id="tool_qualification_expiration_days"
+                           name="tool_qualification_expiration_days"
+                           class="form-control"
+                           value="{% if errors.tool_qualification_expiration_days %}{{ errors.tool_qualification_expiration_days.value }}{% else %}{{ tool_qualification_expiration_days }}{% endif %}" />
+                </div>
+                <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                    {% if errors.tool_qualification_expiration_days %}
+                        {{ errors.tool_qualification_expiration_days.error }}
+                    {% else %}
+                        The number of days before the user's tool qualification expires since the user last used the tool.
+                    {% endif %}
+                </div>
             </div>
+            <div class="form-group {% if errors.tool_qualification_expiration_never_used_days %}has-error{% endif %}">
+                <label class="control-label col-md-3" for="tool_qualification_expiration_never_used_days">
+                    Expiration days (no tool usage)
+                </label>
+                <div class="col-md-5">
+                    <input type="number"
+                           step="1"
+                           id="tool_qualification_expiration_never_used_days"
+                           name="tool_qualification_expiration_never_used_days"
+                           class="form-control"
+                           value="{% if errors.tool_qualification_expiration_never_used_days %}{{ errors.tool_qualification_expiration_never_used_days.value }}{% else %}{{ tool_qualification_expiration_never_used_days }}{% endif %}" />
+                </div>
+                <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                    {% if errors.tool_qualification_expiration_never_used_days %}
+                        {{ errors.tool_qualification_expiration_never_used_days.error }}
+                    {% else %}
+                        The number of days before the user's tool qualification expires since the user qualified for the first time.
+                    {% endif %}
+                </div>
+            </div>
+            <div class="form-group {% if errors.tool_qualification_cc %}has-error{% endif %}">
+                <label class="control-label col-md-3" for="tool_qualification_cc">Reminder/expiration CC</label>
+                <div class="col-md-5">
+                    <input type="text"
+                           id="tool_qualification_cc"
+                           name="tool_qualification_cc"
+                           class="form-control"
+                           value="{% if errors.tool_qualification_cc %}{{ errors.tool_qualification_cc.value }}{% else %}{{ tool_qualification_cc }}{% endif %}"
+                           placeholder="information@example.org" />
+                </div>
+                <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                    {% if errors.tool_qualification_cc %}
+                        {{ errors.tool_qualification_cc.error }}
+                    {% else %}
+                        Extra email address to copy when a user's tool qualification reminder/expiration email is sent. A comma-separated list can be used.
+                    {% endif %}
+                </div>
+            </div>
+            <div class="customization-separation" style="margin-bottom: 15px"></div>
+            <div class="text-center">{% button type="save" value="Save settings" %}</div>
         </div>
-        <div class="form-group {% if errors.tool_qualification_expiration_days %}has-error{% endif %}">
-            <label class="control-label col-md-3" for="tool_qualification_expiration_days">Expiration days (previous tool usage)</label>
-            <div class="col-md-5">
-                <input type="number" step="1" id="tool_qualification_expiration_days" name="tool_qualification_expiration_days" class="form-control" value="{% if errors.tool_qualification_expiration_days %}{{ errors.tool_qualification_expiration_days.value }}{% else %}{{ tool_qualification_expiration_days }}{% endif %}"/>
-            </div>
-            <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                {% if errors.tool_qualification_expiration_days %}
-                    {{ errors.tool_qualification_expiration_days.error }}
-                {% else %}
-                    The number of days before the user's tool qualification expires since the user last used the tool.
-                {% endif %}
-            </div>
-        </div>
-        <div class="form-group {% if errors.tool_qualification_expiration_never_used_days %}has-error{% endif %}">
-            <label class="control-label col-md-3" for="tool_qualification_expiration_never_used_days">Expiration days (no tool usage)</label>
-            <div class="col-md-5">
-                <input type="number" step="1" id="tool_qualification_expiration_never_used_days" name="tool_qualification_expiration_never_used_days" class="form-control" value="{% if errors.tool_qualification_expiration_never_used_days %}{{ errors.tool_qualification_expiration_never_used_days.value }}{% else %}{{ tool_qualification_expiration_never_used_days }}{% endif %}"/>
-            </div>
-            <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                {% if errors.tool_qualification_expiration_never_used_days %}
-                    {{ errors.tool_qualification_expiration_never_used_days.error }}
-                {% else %}
-                    The number of days before the user's tool qualification expires since the user qualified for the first time.
-                {% endif %}
-            </div>
-        </div>
-        <div class="form-group {% if errors.tool_qualification_cc %}has-error{% endif %}">
-            <label class="control-label col-md-3" for="tool_qualification_cc">Reminder/expiration CC</label>
-            <div class="col-md-5">
-                <input type="text" id="tool_qualification_cc" name="tool_qualification_cc" class="form-control" value="{% if errors.tool_qualification_cc %}{{ errors.tool_qualification_cc.value }}{% else %}{{ tool_qualification_cc }}{% endif %}" placeholder="information@example.org"/>
-            </div>
-            <div class="col-md-offset-3 col-md-9 help-block light-grey">
-                {% if errors.tool_qualification_cc %}
-                    {{ errors.tool_qualification_cc.error }}
-                {% else %}
-                    Extra email address to copy when a user's tool qualification reminder/expiration email is sent. A comma-separated list can be used.
-                {% endif %}
-            </div>
-        </div>
-        <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <div class="text-center">
-            {% button type="save" value="Save settings" %}
-        </div>
-    </div>
-    <script type="text/javascript">
+        <script type="text/javascript">
         $("#tool-tab-link").click(function() {setTimeout(on_tool_tab_show, 50)});
         function on_tool_tab_show()
         {
             auto_size_textarea(document.getElementById('tool_control_configuration_setting_template'))
         }
         on_tool_tab_show();
-    </script>
-</form>
+        </script>
+    </form>

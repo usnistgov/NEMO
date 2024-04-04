@@ -1,78 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<title>{% block title %}{% endblock %}</title>
-	{% load static %}
-	{% load custom_tags_and_filters %}
-
-	{# jQuery #}
-    <script type="text/javascript" src="{% static "jquery.min.js" %}"></script>
-
-	{# Bootstrap #}
-    <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
-    <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}"/>
-    <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.min.css" %}"/>
-
-	{# NEMO #}
-    <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}"/>
-	<script type="text/javascript" src="{% static "nemo.js" %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}"/>
-
-	{# Area Access #}
-	<link rel="stylesheet" type="text/css" href="{% static "area_access/area_access.css" %}"/>
-
-	{# Badge Reader #}
-	<script type="text/javascript" src="{% static "badge_reader.js" %}"></script>
-
-	<!--suppress CssUnusedSymbol -->
-	<style>
+    <head>
+        <title>
+            {% block title %}{% endblock %}
+        </title>
+        {% load static %}
+        {% load custom_tags_and_filters %}
+        {# jQuery #}
+        <script type="text/javascript" src="{% static "jquery.min.js" %}"></script>
+        {# Bootstrap #}
+        <script type="text/javascript" src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
+        <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.min.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.min.css" %}" />
+        {# NEMO #}
+        <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}" />
+        <script type="text/javascript" src="{% static "nemo.js" %}"></script>
+        <link rel="stylesheet" type="text/css" href="{% static "nemo.css" %}" />
+        {# Area Access #}
+        <link rel="stylesheet" type="text/css" href="{% static "area_access/area_access.css" %}" />
+        {# Badge Reader #}
+        <script type="text/javascript" src="{% static "badge_reader.js" %}"></script>
+        <!--suppress CssUnusedSymbol -->
+        <style>
 		.btn-extra-large
 		{
 			margin-top: 50px;
 			margin-bottom: 50px;
 			font-size: 36px;
 		}
-	</style>
-</head>
-<body>
-	<div id="area-container">
-		<div id="default_content">
-			{% block default_content %}
-			{% endblock %}
-			<div id="occupancy"></div>
-		</div>
-		<div id="error" style="display: none"><h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1><audio id="error-sound" src="{% url 'media' 'error.mp3' %}"></audio></div>
-        <div id="interlock_error" style="display: none">
-            <h1 class="text-center">
-                <span style="font-size: xx-large;margin-right:10px;" class="glyphicon glyphicon-exclamation-sign"></span>
-                Interlock error
-            </h1>
-            <h3 id="interlock_message" class="text-center"></h3>
-
-            <div class="col-xs-4" style="margin: 40px auto; float: initial">
-                <div id="inter_bypass" class="btn-block" style="display: none; margin-bottom: 10px">
-                    <div class="alert alert-success" style="text-align:center; margin-bottom:0">
-                        <span id="bypass_text" style="font-size:x-large"></span>
+	
+        </style>
+    </head>
+    <body>
+        <div id="area-container">
+            <div id="default_content">
+                {% block default_content %}{% endblock %}
+                <div id="occupancy"></div>
+            </div>
+            <div id="error" style="display: none">
+                <h1>There was a problem communicating with the web server. Please visit the user office for assistance.</h1>
+                <audio id="error-sound" src="{% url 'media' 'error.mp3' %}"></audio>
+            </div>
+            <div id="interlock_error" style="display: none">
+                <h1 class="text-center">
+                    <span style="font-size: xx-large;margin-right:10px;" class="glyphicon glyphicon-exclamation-sign"></span>
+                    Interlock error
+                </h1>
+                <h3 id="interlock_message" class="text-center"></h3>
+                <div class="col-xs-4" style="margin: 40px auto; float: initial">
+                    <div id="inter_bypass" class="btn-block" style="display: none; margin-bottom: 10px">
+                        <div class="alert alert-success" style="text-align:center; margin-bottom:0">
+                            <span id="bypass_text" style="font-size:x-large"></span>
+                        </div>
                     </div>
-                </div>
-                <div id="inter_try_again" class="btn-block" style="margin-bottom: 10px">
-                    <div class="alert alert-info" style="text-align:center; margin-bottom:0">
-                        <span style="font-size:x-large">Try again</span>
+                    <div id="inter_try_again" class="btn-block" style="margin-bottom: 10px">
+                        <div class="alert alert-info" style="text-align:center; margin-bottom:0">
+                            <span style="font-size:x-large">Try again</span>
+                        </div>
                     </div>
-                </div>
-                <div class="btn-block" onclick="revert()">
-                    <div class="alert alert-warning" style="text-align:center; margin-bottom:0">
-                        <span style="font-size:x-large">Cancel</span>
+                    <div class="btn-block" onclick="revert()">
+                        <div class="alert alert-warning" style="text-align:center; margin-bottom:0">
+                            <span style="font-size:x-large">Cancel</span>
+                        </div>
                     </div>
                 </div>
             </div>
+            <div id="status" style="display: none"></div>
+            <div>
+                <h1 style="color:lightgrey" id="badge_number"></h1>
+            </div>
+            <div id="countdown" class="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
         </div>
-		<div id="status" style="display: none"></div>
-		<div><h1 style="color:lightgrey" id="badge_number"></h1></div>
-        <div id="countdown" class="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
-	</div>
-	{% include 'base/footer.html' %}
-	<script type="text/javascript">
+        {% include 'base/footer.html' %}
+        <script type="text/javascript">
         {% with show_badge_number="application"|customization:"show_badge_number" %}
 		let area_access_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}", {% if badge_reader.record_key %}"{{ badge_reader.record_key }}",{% else %}undefined,{% endif %} {{ show_badge_number|yesno:"true,false" }});
         {% endwith %}
@@ -232,6 +232,7 @@
                 load_complete(response, status, xml_http_request);
             }
         }
-	</script>
-</body>
+	
+        </script>
+    </body>
 </html>

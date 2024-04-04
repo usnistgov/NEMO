@@ -4,7 +4,9 @@
 {% block content %}
     <ul>
         {% for document in document_list %}
-            <li><a href="{{ document.link }}" target="_blank">{{ document.filename }}</a></li>
+            <li>
+                <a href="{{ document.link }}" target="_blank">{{ document.filename }}</a>
+            </li>
         {% endfor %}
     </ul>
     {% if allow_zip %}
@@ -15,9 +17,7 @@
                     <input type="hidden" name="document_info" value="{{ content_type.id }}__{{ document.id }}">
                 {% endwith %}
             {% endfor %}
-            <div class="text-center" style="margin-top: 25px">
-                {% button type="save" value="Download as zip" onclick="" %}
-            </div>
+            <div class="text-center" style="margin-top: 25px">{% button type="save" value="Download as zip" onclick="" %}</div>
         </form>
     {% endif %}
 {% endblock %}

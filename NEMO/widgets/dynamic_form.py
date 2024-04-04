@@ -710,8 +710,10 @@ def validate_consumable_for_question(question: PostUsageQuestion):
             if question.consumable and question.consumable_id:
                 raise Exception("Use consumable or consumable_id but not both")
             try:
-                Consumable.objects.get(pk=question.consumable_id) if question.consumable_id else Consumable.objects.get(
-                    name=question.consumable
+                (
+                    Consumable.objects.get(pk=question.consumable_id)
+                    if question.consumable_id
+                    else Consumable.objects.get(name=question.consumable)
                 )
             except Consumable.DoesNotExist:
                 match = f"id '{question.consumable_id}'" if question.consumable_id else f"name '{question.consumable}'"

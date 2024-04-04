@@ -2,7 +2,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name="NEMO",
-    version="5.3.0",
+    version="5.5.0.dev",
     python_requires=">=3.8, <4",
     packages=find_namespace_packages(exclude=["resources", "resources.*", "build", "build.*"]),
     include_package_data=True,
@@ -43,6 +43,7 @@ setup(
         "pytz==2024.1",
         "requests==2.31.0",
     ],
+    extras_require={"dev-tools": ["pre-commit", "djlint", "black"]},
     entry_points={
         "console_scripts": ["nemo=NEMO.provisioning:entry_point"],
     },

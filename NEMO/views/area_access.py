@@ -143,51 +143,51 @@ def new_area_access_record(request):
             return render(request, "area_access/new_area_access_record.html", dictionary)
         except NoAccessiblePhysicalAccessUserError as error:
             if error.closure_time:
-                dictionary[
-                    "error_message"
-                ] = "{} does not have access to the {} at this time due to the following closure: {}.".format(
-                    record.customer, record.area.name, error.closure_time.closure.name
+                dictionary["error_message"] = (
+                    "{} does not have access to the {} at this time due to the following closure: {}.".format(
+                        record.customer, record.area.name, error.closure_time.closure.name
+                    )
                 )
             else:
-                dictionary[
-                    "error_message"
-                ] = "{} does not have a physical access level that allows access to the {} at this time.".format(
-                    record.customer, record.area.name
+                dictionary["error_message"] = (
+                    "{} does not have a physical access level that allows access to the {} at this time.".format(
+                        record.customer, record.area.name
+                    )
                 )
             return render(request, "area_access/new_area_access_record.html", dictionary)
         except UnavailableResourcesUserError as error:
-            dictionary[
-                "error_message"
-            ] = "The {} is inaccessible because a required resource ({}) is unavailable. You must make all required resources for this area available before creating a new area access record.".format(
-                error.area.name, error.resources[0]
+            dictionary["error_message"] = (
+                "The {} is inaccessible because a required resource ({}) is unavailable. You must make all required resources for this area available before creating a new area access record.".format(
+                    error.area.name, error.resources[0]
+                )
             )
             return render(request, "area_access/new_area_access_record.html", dictionary)
         except MaximumCapacityReachedError as error:
-            dictionary[
-                "error_message"
-            ] = "The {} is inaccessible because the {} has reached its maximum capacity. Wait for somebody to exit and try again.".format(
-                record.area.name, error.area.name
+            dictionary["error_message"] = (
+                "The {} is inaccessible because the {} has reached its maximum capacity. Wait for somebody to exit and try again.".format(
+                    record.area.name, error.area.name
+                )
             )
             return render(request, "area_access/new_area_access_record.html", dictionary)
         except ScheduledOutageInProgressError as error:
-            dictionary[
-                "error_message"
-            ] = "The {} is inaccessible because a scheduled outage is in effect. You must wait for the outage to end before creating a new area access record.".format(
-                error.area.name
+            dictionary["error_message"] = (
+                "The {} is inaccessible because a scheduled outage is in effect. You must wait for the outage to end before creating a new area access record.".format(
+                    error.area.name
+                )
             )
             return render(request, "area_access/new_area_access_record.html", dictionary)
         except ReservationRequiredUserError:
-            dictionary[
-                "error_message"
-            ] = "You do not have a current reservation for the {}. Please make a reservation before trying to access this area.".format(
-                record.area.name
+            dictionary["error_message"] = (
+                "You do not have a current reservation for the {}. Please make a reservation before trying to access this area.".format(
+                    record.area.name
+                )
             )
             return render(request, "area_access/new_area_access_record.html", dictionary)
         if record.customer.billing_to_project():
-            dictionary[
-                "error_message"
-            ] = "{} is already billing area access to another area. The user must log out of that area before entering another.".format(
-                record.customer
+            dictionary["error_message"] = (
+                "{} is already billing area access to another area. The user must log out of that area before entering another.".format(
+                    record.customer
+                )
             )
             return render(request, "area_access/new_area_access_record.html", dictionary)
         if record.project not in record.customer.active_projects():
@@ -307,24 +307,24 @@ def self_log_in(request, load_areas=True):
     try:
         policy.check_to_enter_any_area(user)
     except InactiveUserError:
-        dictionary[
-            "error_message"
-        ] = f"Your account has been deactivated. Please visit the {facility_name} staff to resolve the problem."
+        dictionary["error_message"] = (
+            f"Your account has been deactivated. Please visit the {facility_name} staff to resolve the problem."
+        )
         return render(request, "area_access/self_login.html", dictionary)
     except NoActiveProjectsForUserError:
-        dictionary[
-            "error_message"
-        ] = f"You are not a member of any active projects. You won't be able to use any interlocked {facility_name} tools. Please visit the {facility_name} user office for more information."
+        dictionary["error_message"] = (
+            f"You are not a member of any active projects. You won't be able to use any interlocked {facility_name} tools. Please visit the {facility_name} user office for more information."
+        )
         return render(request, "area_access/self_login.html", dictionary)
     except PhysicalAccessExpiredUserError:
-        dictionary[
-            "error_message"
-        ] = f"Your physical access to the {facility_name} has expired. Have you completed your safety training within the last year? Please visit the User Office to renew your access."
+        dictionary["error_message"] = (
+            f"Your physical access to the {facility_name} has expired. Have you completed your safety training within the last year? Please visit the User Office to renew your access."
+        )
         return render(request, "area_access/self_login.html", dictionary)
     except NoPhysicalAccessUserError:
-        dictionary[
-            "error_message"
-        ] = f"You have not been granted physical access to any {facility_name} area. Please visit the User Office if you believe this is an error."
+        dictionary["error_message"] = (
+            f"You have not been granted physical access to any {facility_name} area. Please visit the User Office if you believe this is an error."
+        )
         return render(request, "area_access/self_login.html", dictionary)
 
     if load_areas:
@@ -347,33 +347,33 @@ def self_log_in(request, load_areas=True):
             return render(request, "area_access/self_login.html", dictionary)
         except NoAccessiblePhysicalAccessUserError as error:
             if error.closure_time:
-                dictionary[
-                    "area_error_message"
-                ] = f"You do not have access to the {error.area.name} at this time due to the following closure: {error.closure_time.closure.name}. The closure ends on {localize(error.closure_time.end_time.astimezone(timezone.get_current_timezone()))}"
+                dictionary["area_error_message"] = (
+                    f"You do not have access to the {error.area.name} at this time due to the following closure: {error.closure_time.closure.name}. The closure ends on {localize(error.closure_time.end_time.astimezone(timezone.get_current_timezone()))}"
+                )
             else:
-                dictionary[
-                    "area_error_message"
-                ] = f"You do not have access to the {error.area.name} at this time. Please visit the User Office if you believe this is an error."
+                dictionary["area_error_message"] = (
+                    f"You do not have access to the {error.area.name} at this time. Please visit the User Office if you believe this is an error."
+                )
             return render(request, "area_access/self_login.html", dictionary)
         except UnavailableResourcesUserError as error:
-            dictionary[
-                "area_error_message"
-            ] = f"The {error.area.name} is inaccessible because a required resource is unavailable ({error.resources[0]})."
+            dictionary["area_error_message"] = (
+                f"The {error.area.name} is inaccessible because a required resource is unavailable ({error.resources[0]})."
+            )
             return render(request, "area_access/self_login.html", dictionary)
         except ScheduledOutageInProgressError as error:
-            dictionary[
-                "area_error_message"
-            ] = f"The {error.area.name} is inaccessible because a scheduled outage is in progress."
+            dictionary["area_error_message"] = (
+                f"The {error.area.name} is inaccessible because a scheduled outage is in progress."
+            )
             return render(request, "area_access/self_login.html", dictionary)
         except MaximumCapacityReachedError as error:
-            dictionary[
-                "area_error_message"
-            ] = f"The {error.area.name} is inaccessible because it has reached its maximum capacity. Wait for somebody to exit and try again."
+            dictionary["area_error_message"] = (
+                f"The {error.area.name} is inaccessible because it has reached its maximum capacity. Wait for somebody to exit and try again."
+            )
             return render(request, "area_access/self_login.html", dictionary)
         except ReservationRequiredUserError as error:
-            dictionary[
-                "area_error_message"
-            ] = f"You do not have a current reservation for the {error.area.name}. Please make a reservation before trying to access this area."
+            dictionary["area_error_message"] = (
+                f"You do not have a current reservation for the {error.area.name}. Please make a reservation before trying to access this area."
+            )
             return render(request, "area_access/self_login.html", dictionary)
         except Exception as error:
             area_access_logger.exception(error)

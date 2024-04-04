@@ -256,10 +256,13 @@ class CalendarCustomization(CustomizationBase):
     variables = {
         "calendar_view": "agendaWeek",
         "calendar_first_day_of_week": "1",
-        "calendar_time_format": "ha",
+        "calendar_axis_time_format": "ha",
         "calendar_day_column_format": "dddd MM/DD/YYYY",
+        "calendar_day_time_format": "h:mm",
         "calendar_week_column_format": "ddd M/DD",
+        "calendar_week_time_format": "h:mm",
         "calendar_month_column_format": "ddd",
+        "calendar_month_time_format": "h(:mm)t",
         "calendar_start_of_the_day": "07:00:00",
         "calendar_now_indicator": "",
         "calendar_display_not_qualified_areas": "",
@@ -356,9 +359,11 @@ class UserRequestsCustomization(CustomizationBase):
                 delta = (
                     relativedelta(months=interval)
                     if freq == RecurrenceFrequency.MONTHLY
-                    else relativedelta(weeks=interval)
-                    if freq == RecurrenceFrequency.WEEKLY
-                    else relativedelta(days=interval)
+                    else (
+                        relativedelta(weeks=interval)
+                        if freq == RecurrenceFrequency.WEEKLY
+                        else relativedelta(days=interval)
+                    )
                 )
                 return timezone.now() - delta
         except:

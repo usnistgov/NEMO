@@ -67,14 +67,25 @@ def create(request):
     task = form.save()
     task_images = save_task_images(request, task)
 
-    if not settings.ALLOW_CONDITIONAL_URLS and task.force_shutdown:
-        site_title = ApplicationCustomization.get("site_title")
+    save_error = save_task(request, task, task_images)
+
+    if save_error:
         dictionary = {
             "title": "Task creation failed",
             "heading": "Something went wrong while reporting the problem",
-            "content": f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus.",
+            "content": save_error,
         }
         return render(request, "acknowledgement.html", dictionary)
+
+    return redirect("tool_control")
+
+
+def save_task(request, task: Task, task_images: List[TaskImages] = None):
+    task.save()
+    if not settings.ALLOW_CONDITIONAL_URLS and task.force_shutdown:
+        site_title = ApplicationCustomization.get("site_title")
+
+        return f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus."
 
     if task.force_shutdown:
         # Shut down the tool.
@@ -101,7 +112,8 @@ def create(request):
 
     send_new_task_emails(request, task, task_images)
     set_task_status(request, task, request.POST.get("status"), request.user)
-    return redirect("tool_control")
+
+    return None
 
 
 def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
@@ -112,9 +124,9 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
     # Email the appropriate staff that a new task has been created:
     if message:
         dictionary = {
-            "template_color": bootstrap_primary_color("danger")
-            if task.force_shutdown
-            else bootstrap_primary_color("warning"),
+            "template_color": (
+                bootstrap_primary_color("danger") if task.force_shutdown else bootstrap_primary_color("warning")
+            ),
             "user": request.user,
             "task": task,
             "tool": task.tool,
@@ -298,9 +310,9 @@ def task_update_form(request, task_id):
         "categories": categories,
         "urgency": Task.Urgency.Choices,
         "task": task,
-        "estimated_resolution_time": as_timezone(task.estimated_resolution_time)
-        if task.estimated_resolution_time
-        else None,
+        "estimated_resolution_time": (
+            as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None
+        ),
         "task_statuses": TaskStatus.objects.all(),
     }
     return render(request, "tasks/update.html", dictionary)
@@ -314,9 +326,9 @@ def task_resolution_form(request, task_id):
     dictionary = {
         "categories": categories,
         "task": task,
-        "estimated_resolution_time": as_timezone(task.estimated_resolution_time)
-        if task.estimated_resolution_time
-        else None,
+        "estimated_resolution_time": (
+            as_timezone(task.estimated_resolution_time) if task.estimated_resolution_time else None
+        ),
     }
     return render(request, "tasks/resolve.html", dictionary)
 

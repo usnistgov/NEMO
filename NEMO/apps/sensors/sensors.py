@@ -77,7 +77,7 @@ class Sensor(ABC):
                     else:
                         continue
             data_value = self.evaluate_sensor(sensor, registers=registers)
-            if data_value:
+            if data_value is not None:
                 data = SensorData.objects.create(sensor=sensor, value=data_value)
                 process_alerts(sensor, data)
                 return data

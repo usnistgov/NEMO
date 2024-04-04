@@ -7,8 +7,15 @@
             <label class="control-label col-sm-4 col-md-3">Main menu item</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
-                    <input type="hidden" name="safety_main_menu" value="off"/>
-                    <label for="safety_main_menu"><input type="checkbox" id="safety_main_menu" name="safety_main_menu" {% if safety_main_menu != "off" %}checked{% endif %} value=""> Show</label>
+                    <input type="hidden" name="safety_main_menu" value="off" />
+                    <label for="safety_main_menu">
+                        <input type="checkbox"
+                               id="safety_main_menu"
+                               name="safety_main_menu"
+                               {% if safety_main_menu != "off" %}checked{% endif %}
+                               value="">
+                        Show
+                    </label>
                 </div>
             </div>
         </div>
@@ -17,16 +24,37 @@
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
                     <div class="row col-sm-12">
-                        <input type="hidden" name="safety_show_safety" value="off"/>
-                        <label for="safety_show_safety"><input type="checkbox" id="safety_show_safety" name="safety_show_safety" {% if safety_show_safety != "off" %}checked{% endif %} value=""> Safety</label>
+                        <input type="hidden" name="safety_show_safety" value="off" />
+                        <label for="safety_show_safety">
+                            <input type="checkbox"
+                                   id="safety_show_safety"
+                                   name="safety_show_safety"
+                                   {% if safety_show_safety != "off" %}checked{% endif %}
+                                   value="">
+                            Safety
+                        </label>
                     </div>
                     <div class="row col-sm-12">
-                        <input type="hidden" name="safety_show_safety_issues" value="off"/>
-                        <label for="safety_show_safety_issues"><input type="checkbox" id="safety_show_safety_issues" name="safety_show_safety_issues" {% if safety_show_safety_issues != "off" %}checked{% endif %} value=""> Safety issues</label>
+                        <input type="hidden" name="safety_show_safety_issues" value="off" />
+                        <label for="safety_show_safety_issues">
+                            <input type="checkbox"
+                                   id="safety_show_safety_issues"
+                                   name="safety_show_safety_issues"
+                                   {% if safety_show_safety_issues != "off" %}checked{% endif %}
+                                   value="">
+                            Safety issues
+                        </label>
                     </div>
                     <div class="row col-sm-12">
-                        <input type="hidden" name="safety_show_safety_data_sheets" value="off"/>
-                        <label for="safety_show_safety_data_sheets"><input type="checkbox" id="safety_show_safety_data_sheets" name="safety_show_safety_data_sheets" {% if safety_show_safety_data_sheets != "off" %}checked{% endif %} value=""> Safety data sheets</label>
+                        <input type="hidden" name="safety_show_safety_data_sheets" value="off" />
+                        <label for="safety_show_safety_data_sheets">
+                            <input type="checkbox"
+                                   id="safety_show_safety_data_sheets"
+                                   name="safety_show_safety_data_sheets"
+                                   {% if safety_show_safety_data_sheets != "off" %}checked{% endif %}
+                                   value="">
+                            Safety data sheets
+                        </label>
                     </div>
                 </div>
             </div>
@@ -35,8 +63,21 @@
             <label class="control-label col-sm-4 col-md-3">Safety items view</label>
             <div class="col-sm-8 col-md-9">
                 <div class="radio">
-                    <label><input type="radio" id="safety_items_expand_categories" name="safety_items_expand_categories" {% if not safety_items_expand_categories %}checked{% endif %} value=""> Side category panel</label>
-                    <label><input type="radio" name="safety_items_expand_categories" {% if safety_items_expand_categories %}checked{% endif %} value="enabled"> All expanded categories</label>
+                    <label>
+                        <input type="radio"
+                               id="safety_items_expand_categories"
+                               name="safety_items_expand_categories"
+                               {% if not safety_items_expand_categories %}checked{% endif %}
+                               value="">
+                        Side category panel
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="safety_items_expand_categories"
+                               {% if safety_items_expand_categories %}checked{% endif %}
+                               value="enabled">
+                        All expanded categories
+                    </label>
                 </div>
             </div>
         </div>
@@ -44,13 +85,18 @@
             <label class="control-label col-sm-4 col-md-3">Safety data sheets</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
-                    <label for="safety_data_sheets_keywords_default"><input type="checkbox" id="safety_data_sheets_keywords_default" name="safety_data_sheets_keywords_default" {% if safety_data_sheets_keywords_default %}checked{% endif %} value="enabled"> Search with keywords by default</label>
+                    <label for="safety_data_sheets_keywords_default">
+                        <input type="checkbox"
+                               id="safety_data_sheets_keywords_default"
+                               name="safety_data_sheets_keywords_default"
+                               {% if safety_data_sheets_keywords_default %}checked{% endif %}
+                               value="enabled">
+                        Search with keywords by default
+                    </label>
                 </div>
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
-        <div class="text-center">
-            {% button type="save" value="Save settings" %}
-        </div>
+        <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
 </div>

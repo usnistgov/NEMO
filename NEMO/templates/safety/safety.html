@@ -27,9 +27,7 @@
                         </ul>
                     </div>
                 {% endif %}
-                <div class="col-sm-{% if safety_categories %}9{% else %}12{% endif %}">
-                    {% include 'safety/safety_items.html' %}
-                </div>
+                <div class="col-sm-{% if safety_categories %}9{% else %}12{% endif %}">{% include 'safety/safety_items.html' %}</div>
             {% else %}
                 <div class="col-sm-12">
                     {% if safety_general %}
@@ -44,7 +42,8 @@
     {% else %}
         <p>There are currently no safety items.</p>
         {% if user.is_superuser and "django.contrib.admin"|app_installed %}
-            <p>Please go to <a href="{% url 'admin:NEMO_safetyitem_changelist' %}">Administration -> Detailed Administration -> SafetyItems</a>
+            <p>
+                Please go to <a href="{% url 'admin:NEMO_safetyitem_changelist' %}">Administration -> Detailed Administration -> SafetyItems</a>
             </p>
         {% endif %}
     {% endif %}

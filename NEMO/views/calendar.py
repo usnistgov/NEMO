@@ -89,10 +89,13 @@ def calendar(request, item_type=None, item_id=None):
 
     calendar_view = CalendarCustomization.get("calendar_view")
     calendar_first_day_of_week = CalendarCustomization.get("calendar_first_day_of_week")
-    calendar_time_format = CalendarCustomization.get("calendar_time_format")
+    calendar_axis_time_format = CalendarCustomization.get("calendar_axis_time_format")
     calendar_day_column_format = CalendarCustomization.get("calendar_day_column_format")
+    calendar_day_time_format = CalendarCustomization.get("calendar_day_time_format")
     calendar_week_column_format = CalendarCustomization.get("calendar_week_column_format")
+    calendar_week_time_format = CalendarCustomization.get("calendar_week_time_format")
     calendar_month_column_format = CalendarCustomization.get("calendar_month_column_format")
+    calendar_month_time_format = CalendarCustomization.get("calendar_month_time_format")
     calendar_start_of_the_day = CalendarCustomization.get("calendar_start_of_the_day")
     calendar_now_indicator = CalendarCustomization.get("calendar_now_indicator")
     calendar_all_tools = CalendarCustomization.get("calendar_all_tools")
@@ -122,10 +125,13 @@ def calendar(request, item_type=None, item_id=None):
         "auto_select_item_type": item_type,
         "calendar_view": calendar_view,
         "calendar_first_day_of_week": calendar_first_day_of_week,
-        "calendar_time_format": calendar_time_format,
+        "calendar_axis_time_format": calendar_axis_time_format,
         "calendar_day_column_format": calendar_day_column_format,
+        "calendar_day_time_format": calendar_day_time_format,
         "calendar_week_column_format": calendar_week_column_format,
+        "calendar_week_time_format": calendar_week_time_format,
         "calendar_month_column_format": calendar_month_column_format,
+        "calendar_month_time_format": calendar_month_time_format,
         "calendar_start_of_the_day": calendar_start_of_the_day,
         "calendar_now_indicator": calendar_now_indicator,
         "calendar_all_tools": calendar_all_tools,

@@ -200,15 +200,19 @@ def get_contractors_table_display(contractor_agreement_list: QuerySetType[Contra
                 "name": contractor_agreement.name,
                 "contract_name": contractor_agreement.contract_name,
                 "contract_number": contractor_agreement.contract_number,
-                "start": format_datetime(contractor_agreement.start, "SHORT_DATE_FORMAT")
-                if contractor_agreement.start
-                else "",
-                "end": format_datetime(contractor_agreement.end, "SHORT_DATE_FORMAT")
-                if contractor_agreement.end
-                else "",
-                "reminder_date": format_datetime(contractor_agreement.reminder_date, "SHORT_DATE_FORMAT")
-                if contractor_agreement.reminder_date
-                else "",
+                "start": (
+                    format_datetime(contractor_agreement.start, "SHORT_DATE_FORMAT")
+                    if contractor_agreement.start
+                    else ""
+                ),
+                "end": (
+                    format_datetime(contractor_agreement.end, "SHORT_DATE_FORMAT") if contractor_agreement.end else ""
+                ),
+                "reminder_date": (
+                    format_datetime(contractor_agreement.reminder_date, "SHORT_DATE_FORMAT")
+                    if contractor_agreement.reminder_date
+                    else ""
+                ),
                 "notes": contractor_agreement.notes or "",
                 "documents": "\n".join(
                     [doc.full_link() for doc in contractor_agreement.contractoragreementdocuments_set.all()]

@@ -13,9 +13,7 @@ def user_requests(request, tab: str = None):
         "access"
         if PhysicalAccessLevel.objects.filter(allow_user_request=True).exists()
         and User.objects.filter(is_active=True, is_facility_manager=True).exists()
-        else "buddy"
-        if Area.objects.filter(buddy_system_allowed=True).exists()
-        else "adjustment"
+        else "buddy" if Area.objects.filter(buddy_system_allowed=True).exists() else "adjustment"
     )
     buddy_requests_title = UserRequestsCustomization.get("buddy_requests_title")
     access_requests_title = UserRequestsCustomization.get("access_requests_title")

@@ -10,14 +10,14 @@
                 <a href="#remote_work_tab" onclick="location.href = '{% url "remote_work" %}'">Previous work</a>
             </li>
         </ul>
-        <h1 class="pull-left" style="margin-top: 0;margin-right: 20px">{% block remote_work_title %}Staff charges{% endblock %}</h1>
+        <h1 class="pull-left" style="margin-top: 0;margin-right: 20px">
+            {% block remote_work_title %}Staff charges{% endblock %}
+        </h1>
     </div>
     <div class="tab-content">
         <div class="tab-pane active" id="remote_work_tab">
-             {% block tab_content %}{% endblock %}
+            {% block tab_content %}{% endblock %}
         </div>
     </div>
-    <script>
-        $("#tabs").find("a").click(switch_tab);
-    </script>
+    <script>$("#tabs").find("a").click(switch_tab);</script>
 {% endblock %}

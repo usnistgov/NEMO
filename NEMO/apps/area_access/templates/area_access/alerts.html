@@ -6,10 +6,15 @@
             <div class="alert alert-danger">
                 <table style="width:100%">
                     <tr>
-                        <td style="width:100px"><span class="glyphicon glyphicon-alert danger-highlight" style="font-size:64px"></span></td>
+                        <td style="width:100px">
+                            <span class="glyphicon glyphicon-alert danger-highlight" style="font-size:64px"></span>
+                        </td>
                         <td>
-                            {% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
-                            {{ a.contents|linebreaks }}
+                            {% if a.title %}
+                                <span style="font-weight:bold">{{ a.title }}</span>
+                                <br>
+                            {% endif %}
+                            {{ a.contents|safe|linebreaksbr }}
                         </td>
                     </tr>
                 </table>
@@ -19,9 +24,12 @@
             <div class="alert alert-danger">
                 <table style="width:100%">
                     <tr>
-                        <td style="width:100px"><span class="glyphicon glyphicon-leaf danger-highlight" style="font-size:64px"></span></td>
+                        <td style="width:100px">
+                            <span class="glyphicon glyphicon-leaf danger-highlight" style="font-size:64px"></span>
+                        </td>
                         <td>
-                            <span style="font-weight:bold">Resource outage: {{ r }}</span><br>
+                            <span style="font-weight:bold">Resource outage: {{ r }}</span>
+                            <br>
                             {{ r.restriction_message }}
                         </td>
                     </tr>

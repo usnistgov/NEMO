@@ -5,23 +5,29 @@
     </head>
     <body>
         <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
-        <table align="center" style="width:100%; max-width:600px; font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+        <table align="center"
+               style="width:100%;
+                      max-width:600px;
+                      font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
             <tr>
                 <td align="center" style="color: white; background: #d9534f; padding: 50px 0;" bgcolor="#d9534f">
-                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">
-                        SAFETY ISSUE
-                    </h1>
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">SAFETY ISSUE</h1>
                 </td>
             </tr>
             <tr>
                 <td style="padding: 10px;">
                     <p>
-                        {% if issue.reporter %}{{ issue.reporter }}{% else %}An anonymous user{% endif %} created a safety issue on {{ issue.creation_time }}{% if issue.location %} for the stated location '{{ issue.location }}'{% endif %}:
+                        {% if issue.reporter %}
+                            {{ issue.reporter }}
+                        {% else %}
+                            An anonymous user
+                        {% endif %}
+                        created a safety issue on {{ issue.creation_time }}
+                        {% if issue.location %}for the stated location '{{ issue.location }}'{% endif %}
+                        :
                     </p>
                     <p>
-                        <div style="padding-left: 7px; border-left: 5px solid #d9534f;">
-                            {{ issue.concern|linebreaksbr }}
-                        </div>
+                        <div style="padding-left: 7px; border-left: 5px solid #d9534f;">{{ issue.concern|linebreaksbr }}</div>
                     </p>
                     <p>
                         You can <a href="{{ issue_absolute_url }}">view and edit</a> this issue in {{ site_title }}.

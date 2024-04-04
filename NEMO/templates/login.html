@@ -2,19 +2,20 @@
 {% load custom_tags_and_filters %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-	<meta name="application-name" content="NEMO">
-	<meta name="author" content="Center for Nanoscale Science and Technology">
-	<meta name="description" content="NEMO allows facility users to make tool reservations, control access to tools in their facility, and streamline logistics and communication">
-	<meta name="keywords" content="logistics, operations, nano-technology, nano-fabrication, reservation, tool control, status">
-
-	{# Snippet to prevent clickjacking. Taken from https://www.codemagi.com/blog/post/194 #}
-	<style id="antiClickjack">body{display:none !important;}</style>
-	<!--suppress JSValidateTypes -->
-	<script type="text/javascript">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+        <meta name="application-name" content="NEMO">
+        <meta name="author" content="Center for Nanoscale Science and Technology">
+        <meta name="description"
+              content="NEMO allows facility users to make tool reservations, control access to tools in their facility, and streamline logistics and communication">
+        <meta name="keywords"
+              content="logistics, operations, nano-technology, nano-fabrication, reservation, tool control, status">
+        {# Snippet to prevent clickjacking. Taken from https://www.codemagi.com/blog/post/194 #}
+        <style id="antiClickjack">body{display:none !important;}</style>
+        <!--suppress JSValidateTypes -->
+        <script type="text/javascript">
 		if (self === top)
 		{
 			var antiClickjack = document.getElementById("antiClickjack");
@@ -22,69 +23,74 @@
 		}
 		else
 			top.location = self.location;
-	</script>
-
-	<title>{{ site_title }}</title>
-    <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}"/>
-	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.css" %}"/>
-	<link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.css" %}"/>
-</head>
-<body>
-	<div class="container">
-		<div class="col-md-8 col-md-offset-2" style="text-align:center; margin-bottom:30px"><h1>Welcome to the {{ site_title }} website</h1></div>
-
-		<form method="post" class="form-horizontal" autocomplete="off" id="login_form">
-			{% csrf_token %}
-
-			<div class="form-group">
-				<div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
-					<input type="text" aria-label="Username" id="username" name="username" class="form-control" placeholder="User name" spellcheck="false" autocapitalize="off" autocomplete="off" autofocus>
-				</div>
-			</div>
-
-			<div class="form-group">
-				<div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
-					<input type="password" aria-label="Password" id="password" name="password" class="form-control" placeholder="Password" autocomplete="off">
-				</div>
-			</div>
-
-			<div class="form-group">
-				<div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
-					{% button style="width: 100%;" type="save" value="Log in" icon="glyphicon-log-in" %}
-				</div>
-			</div>
-		</form>
-
-		<div class="alert alert-danger" style="display:none" id="cookie_error">
-			{{ site_title }} relies on cookies to work properly. Please modify your web browser settings
-			to allow this site to use cookies. Reload this page after modifying the settings
-			and you will be able to log in.
-		</div>
-
-		{% if user_name_or_password_incorrect %}
-			<div class="alert alert-danger">
-				<span class="glyphicon icon-info"></span> The username or password was not valid.
-			</div>
-		{% endif %}
-
-		{% if login_banner %}
-			<div class="alert alert-info">
-				{{ login_banner|safe }}
-			</div>
-		{% endif %}
-        {% include 'base/footer.html' %}
-	</div>
-
-	<script>
+	
+        </script>
+        <title>{{ site_title }}</title>
+        <link rel="shortcut icon" type="image/x-icon" href="{% static 'favicon.ico' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "bootstrap/css/bootstrap-theme.css" %}" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="col-md-8 col-md-offset-2" style="text-align:center; margin-bottom:30px">
+                <h1>Welcome to the {{ site_title }} website</h1>
+            </div>
+            <form method="post" class="form-horizontal" autocomplete="off" id="login_form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
+                        <input type="text"
+                               aria-label="Username"
+                               id="username"
+                               name="username"
+                               class="form-control"
+                               placeholder="User name"
+                               spellcheck="false"
+                               autocapitalize="off"
+                               autocomplete="off"
+                               autofocus>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
+                        <input type="password"
+                               aria-label="Password"
+                               id="password"
+                               name="password"
+                               class="form-control"
+                               placeholder="Password"
+                               autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-xs-12 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4 col-lg-4 col-lg-offset-4">
+                        {% button style="width: 100%;" type="save" value="Log in" icon="glyphicon-log-in" %}
+                    </div>
+                </div>
+            </form>
+            <div class="alert alert-danger" style="display:none" id="cookie_error">
+                {{ site_title }} relies on cookies to work properly. Please modify your web browser settings
+                to allow this site to use cookies. Reload this page after modifying the settings
+                and you will be able to log in.
+            </div>
+            {% if user_name_or_password_incorrect %}
+                <div class="alert alert-danger">
+                    <span class="glyphicon icon-info"></span> The username or password was not valid.
+                </div>
+            {% endif %}
+            {% if login_banner %}<div class="alert alert-info">{{ login_banner|safe }}</div>{% endif %}
+            {% include 'base/footer.html' %}
+        </div>
+        <script>
 		if(!navigator.cookieEnabled)
 		{
 			document.getElementById("login_form").style.display = "none";
 			document.getElementById("cookie_error").style.display = "block";
 		}
-	</script>
-
-</body>
-<style>
+	
+        </script>
+    </body>
+    <style>
 .page-footer
 {
 	margin-top: 20px;
@@ -92,5 +98,5 @@
 	line-height: 40px;
 	text-align: center;
 }
-</style>
+    </style>
 </html>

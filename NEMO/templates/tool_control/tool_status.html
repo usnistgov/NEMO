@@ -4,87 +4,121 @@
         {% if device == 'mobile' %}
             <h1>{{ tool.name_or_child_in_use_name }}</h1>
             <ul class="nav nav-pills" id="tabs" style="margin-bottom:10px">
-                <li style="width:48%; text-align:center" class="active"><a href="#summary" style="padding: 10px 5px">Summary</a></li>
-                <li style="width:48%; text-align:center"><a href="#details" style="padding: 10px 5px">Details</a></li>
+                <li style="width:48%; text-align:center" class="active">
+                    <a href="#summary" style="padding: 10px 5px">Summary</a>
+                </li>
+                <li style="width:48%; text-align:center">
+                    <a href="#details" style="padding: 10px 5px">Details</a>
+                </li>
                 {% if tool.configuration_set.exists %}
-                    <li style="width:48%; text-align:center"><a href="#config" style="padding: 10px 5px"
-                                                                onclick="load_config_history('{{ tool.id }}');">Config
-                        History</a></li>{% endif %}
-                {% if has_usage_questions and not hide_data_history or has_usage_questions and user.is_any_part_of_staff %}<li style="width: 48%; text-align: center"><a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
-                <li style="width:48%; text-align:center"><a href="#problem" style="padding: 10px 5px">Report a problem</a></li>
-                <li style="width:48%; text-align:center"><a href="#comment" style="padding: 10px 5px">Post a comment</a></li>
+                    <li style="width:48%; text-align:center">
+                        <a href="#config" style="padding: 10px 5px" onclick="load_config_history('{{ tool.id }}');">Config
+                        History</a>
+                    </li>
+                {% endif %}
+                {% if has_usage_questions and not hide_data_history or has_usage_questions and user.is_any_part_of_staff %}
+                    <li style="width: 48%; text-align: center">
+                        <a href="#usage_data" style="padding: 10px 5px;" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a>
+                    </li>
+                {% endif %}
+                <li style="width:48%; text-align:center">
+                    <a href="#problem" style="padding: 10px 5px">Report a problem</a>
+                </li>
+                <li style="width:48%; text-align:center">
+                    <a href="#comment" style="padding: 10px 5px">Post a comment</a>
+                </li>
             </ul>
         {% else %}
-            <h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:10px">{{ tool.name_or_child_in_use_name }}</h1>
+            <h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:10px">
+                {{ tool.name_or_child_in_use_name }}
+            </h1>
             <ul class="nav nav-pills" id="tabs">
-                <li class="active"><a href="#summary">Summary</a></li>
-                <li><a href="#details">Details</a></li>
+                <li class="active">
+                    <a href="#summary">Summary</a>
+                </li>
+                <li>
+                    <a href="#details">Details</a>
+                </li>
                 {% if tool.configuration_set.exists %}
-                    <li><a href="#config" onclick="load_config_history('{{ tool.id }}');">Config History</a>
-                    </li>{% endif %}
-                {% if has_usage_questions and not hide_data_history or has_usage_questions and user.is_any_part_of_staff %}<li><a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a></li>{% endif %}
-                <li><a href="#problem">Report a problem</a></li>
-                <li><a href="#comment">Post a comment</a></li>
+                    <li>
+                        <a href="#config" onclick="load_config_history('{{ tool.id }}');">Config History</a>
+                    </li>
+                {% endif %}
+                {% if has_usage_questions and not hide_data_history or has_usage_questions and user.is_any_part_of_staff %}
+                    <li>
+                        <a href="#usage_data" onclick="load_usage_data('{{ tool.id }}');">Usage Data History</a>
+                    </li>
+                {% endif %}
+                <li>
+                    <a href="#problem">Report a problem</a>
+                </li>
+                <li>
+                    <a href="#comment">Post a comment</a>
+                </li>
             </ul>
         {% endif %}
     {% endwith %}
 </div>
-
 <div class="tab-content">
-	<div class="tab-pane active" id="summary">
-		{% if tool.serial %}
-			<div style="float: right; font-size:x-small">s/n : {{ tool.serial| safe }}</div>
-		{% endif %}
-
-		{# Display tool status... #}
-		<div class="tool-status">
-			{% if tool.in_use %}
-				<div class="primary-highlight">
-					<span class="glyphicon glyphicon-user pull-left notification-icon"></span>
-					{% with tool.get_current_usage_event as current_usage_event %}
-						<h2>
-							{% if current_usage_event.operator.id == user.id %}
-								You are using this tool
-							{% else %}
-								<a title="Click to email this user" href="{% url 'get_email_form_for_user' current_usage_event.operator.id %}">{{ current_usage_event.operator }}</a> is using this tool
-							{% endif %}
-							{% if current_usage_event.operator.id != current_usage_event.user.id %}
-								on behalf of {{ current_usage_event.user }}
-							{% endif %}
-							for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"MONTH_DAY_FORMAT" }} @ {{ current_usage_event.start|time }}.
-						</h2>
-					{% endwith %}
-				</div>
-				{% if time_left and not user.is_staff %}
-					<div>
-						Your reservation for this tool will end at {{ time_left|time }}. The remainder of your reservation will be relinquished when you stop using this tool.
-					</div>
-				{% endif %}
-			{% elif tool.delayed_logoff_in_progress %}
-				{% with tool.get_delayed_logoff_usage_event as delayed_logoff_event %}
-					<div class="primary-highlight">
-						<span class="glyphicon glyphicon-time pull-left notification-icon"></span>
-						<h2>{{ delayed_logoff_event.operator }} has finished using the {{ tool.name_or_child_in_use_name }} but delayed logoff is in effect. The tool will be available at {{ delayed_logoff_event.end|time }}.</h2>
-					</div>
-				{% endwith %}
-			{% elif not tool.operational or tool.required_resource_is_unavailable or tool.scheduled_outages %}
-				<div class="danger-highlight media">
-					<span class="glyphicon glyphicon-ban-circle pull-left notification-icon"></span>
-					<h2>This tool is <strong>shut down</strong>.</h2>
-				</div>
-			{% elif tool.nonrequired_resource_is_unavailable or tool.scheduled_partial_outages %}
-				<div class="warning-highlight media">
-					<span class="glyphicon glyphicon-exclamation-sign pull-left notification-icon"></span>
-					<h2>This tool is <strong>operational</strong> but not all resources are available.</h2>
-				</div>
-			{% else %}
-				<div class="success-highlight media">
-					<span class="glyphicon glyphicon-ok pull-left notification-icon"></span>
-					<h2>This tool is <strong>operational</strong> and <strong>idle</strong>.</h2>
-				</div>
-			{% endif %}
+    <div class="tab-pane active" id="summary">
+        {% if tool.serial %}<div style="float: right; font-size:x-small">s/n : {{ tool.serial| safe }}</div>{% endif %}
+        {# Display tool status... #}
+        <div class="tool-status">
+            {% if tool.in_use %}
+                <div class="primary-highlight">
+                    <span class="glyphicon glyphicon-user pull-left notification-icon"></span>
+                    {% with tool.get_current_usage_event as current_usage_event %}
+                        <h2>
+                            {% if current_usage_event.operator.id == user.id %}
+                                You are using this tool
+                            {% else %}
+                                <a title="Click to email this user"
+                                   href="{% url 'get_email_form_for_user' current_usage_event.operator.id %}">{{ current_usage_event.operator }}</a> is using this tool
+                            {% endif %}
+                            {% if current_usage_event.operator.id != current_usage_event.user.id %}
+                                on behalf of {{ current_usage_event.user }}
+                            {% endif %}
+                            for the project named {{ current_usage_event.project.name }} since {{ current_usage_event.start|date:"MONTH_DAY_FORMAT" }} @ {{ current_usage_event.start|time }}.
+                        </h2>
+                    {% endwith %}
+                </div>
+                {% if time_left and not user.is_staff %}
+                    <div>
+                        Your reservation for this tool will end at {{ time_left|time }}. The remainder of your reservation will be relinquished when you stop using this tool.
+                    </div>
+                {% endif %}
+            {% elif tool.delayed_logoff_in_progress %}
+                {% with tool.get_delayed_logoff_usage_event as delayed_logoff_event %}
+                    <div class="primary-highlight">
+                        <span class="glyphicon glyphicon-time pull-left notification-icon"></span>
+                        <h2>
+                            {{ delayed_logoff_event.operator }} has finished using the {{ tool.name_or_child_in_use_name }} but delayed logoff is in effect. The tool will be available at {{ delayed_logoff_event.end|time }}.
+                        </h2>
+                    </div>
+                {% endwith %}
+            {% elif not tool.operational or tool.required_resource_is_unavailable or tool.scheduled_outages %}
+                <div class="danger-highlight media">
+                    <span class="glyphicon glyphicon-ban-circle pull-left notification-icon"></span>
+                    <h2>
+                        This tool is <strong>shut down</strong>.
+                    </h2>
+                </div>
+            {% elif tool.nonrequired_resource_is_unavailable or tool.scheduled_partial_outages %}
+                <div class="warning-highlight media">
+                    <span class="glyphicon glyphicon-exclamation-sign pull-left notification-icon"></span>
+                    <h2>
+                        This tool is <strong>operational</strong> but not all resources are available.
+                    </h2>
+                </div>
+            {% else %}
+                <div class="success-highlight media">
+                    <span class="glyphicon glyphicon-ok pull-left notification-icon"></span>
+                    <h2>
+                        This tool is <strong>operational</strong> and <strong>idle</strong>.
+                    </h2>
+                </div>
+            {% endif %}
         </div>
-
         {% if tool_rate %}
             <div class="tool-rates">
                 {% autoescape off %}
@@ -92,222 +126,266 @@
                 {% endautoescape %}
             </div>
         {% endif %}
-
         {% if tool.active_counters %}
             <div class="tool-counters">
                 {% for counter in tool.active_counters %}
                     <div class="tool-counter">
-                        <div class="tool-counter-name">{{ counter.name }}: <span style="font-weight: bold; {% if counter.value_color %}color: {{ counter.value_color }}{% endif %}">{{ counter.value|floatformat:-2 }}</span></div>
-                        {% if user.is_staff %}<div class="tool-counter-reset"><a class="btn btn-xs btn-warning" href="{% url 'reset_tool_counter' counter.id %}" onclick="return confirm('You are about to reset the {{ counter.name }} counter to 0.\nAre you sure?')">Reset</a></div>{% endif %}
+                        <div class="tool-counter-name">
+                            {{ counter.name }}: <span style="font-weight: bold; {% if counter.value_color %}color: {{ counter.value_color }}{% endif %}">{{ counter.value|floatformat:-2 }}</span>
+                        </div>
+                        {% if user.is_staff %}
+                            <div class="tool-counter-reset">
+                                <a class="btn btn-xs btn-warning"
+                                   href="{% url 'reset_tool_counter' counter.id %}"
+                                   onclick="return confirm('You are about to reset the {{ counter.name }} counter to 0.\nAre you sure?')">Reset</a>
+                            </div>
+                        {% endif %}
                         <div class="tool-counter-description">{{ counter.description|linebreaksbr }}</div>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
-
-		{% if tool.unavailable_required_resources or tool.scheduled_outages %}
-			<div class="danger-status">
-				{# Display any unavailable required resources... #}
-				{% for r in tool.unavailable_required_resources %}
-					<div class="media">
-						<span class="glyphicon glyphicon-leaf pull-left notification-icon danger-highlight"></span>
-						<div class="media-body">
-							<span class="media-heading">A required resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></span>
-							<span class="media-middle">{{ r.restriction_message }}</span>
-						</div>
-					</div>
-				{% endfor %}
-
-				{% if tool.scheduled_outages %}
-					{% for o in tool.scheduled_outages %}
-						<div class="media">
-							<span class="glyphicon glyphicon-time pull-left notification-icon danger-highlight"></span>
-							<div class="media-body">
-								<span class="media-heading">{{ o.title }}<span class="light-grey"> ({{ o.resource.category }})</span></span>
-								{% if o.details %}<span class="media-middle">{{ o.details }}</span>{% endif %}
-								<span class="media-bottom">{{ o.creator }} scheduled this outage from {{ o.start }} until {{ o.end }}.</span>
-							</div>
-						</div>
-					{% endfor %}
-				{% endif %}
-			</div>
-		{% endif %}
-
-		{% if tool.unavailable_nonrequired_resources or tool.scheduled_partial_outages %}
-			<div class="warning-status">
-				{# Display any unavailable non-required resources... #}
-				{% for r in tool.unavailable_nonrequired_resources %}
-					<div class="media">
-						<span class="glyphicon glyphicon-leaf pull-left notification-icon warning-highlight"></span>
-						<div class="media-body">
-							<span class="media-heading">An optional resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></span>
-							<span class="media-middle">{{ r.restriction_message }}</span>
-						</div>
-					</div>
-				{% endfor %}
-
-				{# Display any outage for non-required resources... #}
-				{% for o in tool.scheduled_partial_outages %}
-					<div class="media">
-						<span class="glyphicon glyphicon-time pull-left notification-icon warning-highlight"></span>
-						<div class="media-body">
-							<h4 class="media-heading">An optional resource has an outage: {{ o.resource.name }} <span class="light-grey">({{ o.resource.category }})</span></h4>
-							{{ o.title }}{% if o.details %}: {{ o.details }}{% endif %}
-							<h5>{{ o.creator }} scheduled this outage from {{ o.start }} until {{ o.end }}.</h5>
-						</div>
-					</div>
-				{% endfor %}
-			</div>
-		{% endif %}
-
-		{% if tool.problems %}
-			<div class="tool-problems">
-				{# Display all problems and shutdowns... #}
-				{% for t in tool.problems %}
-					<div class="media">
-						<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#task_{{ t.id }}_details" class="pointer">
-							{% if t.force_shutdown %}
-								<span class="glyphicon glyphicon-fire pull-left notification-icon danger-highlight" title="Click to toggle details about this task"></span>
-							{% else %}
-								<span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight" title="Click to toggle details about this task"></span>
-							{% endif %}
-							<span class="glyphicon glyphicon-chevron-{% if tool_control_show_task_details %}down{% else %}right{% endif %} pull-left chevron"></span>
-						</a>
-						<div class="media-body">
-							{% if t.problem_category %}<span class="media-heading">{{ t.problem_category }}</span>{% endif %}
-							<span class="media-middle">{{ t.problem_description }}</span>
-							{% if t.estimated_resolution_time %}<span class="media-middle">Estimated resolution time is {{ t.estimated_resolution_time }}.</span>{% endif %}
-							<div id="task_{{ t.id }}_details" class="collapse{% if tool_control_show_task_details %} in{% endif %}">
-								<span class="media-bottom">
-									This task was created by {{ t.creator }} on {{ t.creation_time }}.
-									{% if user.is_staff %}
-										You can <a href="{% url 'task_update_form' t.id %}">update</a> or <a href="{% url 'task_resolution_form' t.id %}">resolve</a> this task.
-									{% endif %}
-									{% if t.force_shutdown %}
-										The tool will remain shut down until this task is resolved.
-									{% endif %}
-									{% if t.creator.id == user.id %}
-										You may <a href="javascript:$('#cancel_task_{{ t.id }}').submit()">cancel</a> this task if it was mistakenly created.<br>
-										<form id="cancel_task_{{ t.id }}" action="{% url 'cancel_task' t.id %}" method="POST">
-											{% csrf_token %}
-										</form>
-									{% endif %}
-								</span>
-								{% if t.progress_description %}
-									<div class="media">
-										<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
-										<div class="media-body">
-											<span class="media-heading">Progress updates</span>
-											<span class="media-middle">{{ t.progress_description|linebreaksbr }}</span>
-										</div>
-									</div>
-								{% endif %}
-								{% if t.task_images %}
-									<div>images:
-										<ul>
-											{% for image in t.task_images %}
-												<li><a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">{{ image.filename }}</a></li>
-											{% endfor %}
-										</ul>
-									</div>
-								{% endif %}
-							</div>
-						</div>
-					</div>
-				{% endfor %}
-			</div>
-		{% endif %}
-
-		{% if tool.comments or user.is_staff and tool.staff_only_comments|length > 0 %}
-			<div class="tool-comments">
-				{# Display all comments... #}
-				{% for c in tool.comments %}
-					<div class="media">
-						{% if user.id == c.author.id or user.is_staff %}
-							<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#comment_{{ c.id }}_actions" class="pointer">
-						{% endif %}
-						<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight" title="{% if c.expiration_date %}This comment will expire and become hidden on {{ c.expiration_date }}{% else %}This comment will be displayed indefinitely.{% endif %}"></span>
-						{% if user.id == c.author.id or user.is_staff %}
-							<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-							</a>
-						{% endif %}
-						<div class="media-body">
-							<span class="media-middle">{{ c.content|linebreaksbr }}</span>
-							<span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
-							{% if user.id == c.author.id or user.is_staff %}
-								<div id="comment_{{ c.id }}_actions" class="collapse grey">
-									<form action="{% url 'hide_comment' c.id %}" method="post">
-										{% csrf_token %}
-										<a href="javascript:void(0)" onclick="$(this).closest('form').submit()">Hide this comment</a>.
-									</form>
-								</div>
-							{% endif %}
-						</div>
-					</div>
-				{% endfor %}
-
-				{# Display all staff comments #}
-				{% if user.is_staff and tool.staff_only_comments|length > 0 %}
-					<div class="media">
-						<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#staff_only_comments" class="pointer">
-							<span class="glyphicon glyphicon-eye-close pull-left notification-icon warning-highlight"></span><span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-						</a>
-						<div class="media-body">
-							<div style="margin-bottom: 15px">Staff Only</div>
-							<div id="staff_only_comments" class="collapse">
-								{% for c in tool.staff_only_comments %}
-									<div class="media">
-										{% if user.id == c.author.id or user.is_staff %}
-											<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#comment_{{ c.id }}_actions" class="pointer">
-										{% endif %}
-										<span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight" title="{% if c.expiration_date %}This comment will expire and become hidden on {{ c.expiration_date }}{% else %}This comment will be displayed indefinitely.{% endif %}"></span>
-										{% if user.id == c.author.id or user.is_staff %}
-											<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-											</a>
-										{% endif %}
-										<div class="media-body">
-											<span class="media-middle">{{ c.content|linebreaksbr }}</span>
-											<span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
-											{% if user.id == c.author.id or user.is_staff %}
-												<div id="comment_{{ c.id }}_actions" class="collapse grey">
-													<form action="{% url 'hide_comment' c.id %}" method="post">
-														{% csrf_token %}
-														<a href="javascript:void(0)" onclick="$(this).closest('form').submit()">Hide this comment</a>.
-													</form>
-												</div>
-											{% endif %}
-										</div>
-									</div>
-								{% endfor %}
-							</div>
-						</div>
-					</div>
-				{% endif %}
-			</div>
-		{% endif %}
-
-		<div style="margin-top:10px">
-			{{ rendered_configuration_html }}
-		</div>
-
-		{# Display tool control... #}
-		<form id="tool_control">
-			{% if tool.in_use %}
-				{% if tool.get_current_usage_event.operator.id == user.id or tool.get_current_usage_event.user.id == user.id %}
-					{{ post_usage_questions }}
-					{% if tool.allow_delayed_logoff and not tool.delayed_logoff_in_progress %}
-						<div class="form-group">
-							Prevent others from using the tool for <input type="number" id="downtime" name="downtime" aria-label="Downtime" class="form-control" style="display:inline; width:auto" min="5" max="120" inputmode="numeric" pattern="[0-9]*" placeholder="0"> minutes after disabling the tool.
-							<a id="delayed_logoff_help" class="pointer" tabindex="0" data-toggle="popover" data-placement="bottom" data-trigger="focus" data-content="Some tools may require downtime after you finish using them. (For example, to perform automated cleaning or pump-down). Once you click &quot;Stop using the {{ tool.name_or_child_in_use_name }}&quot; the tool interlock will immediately disable the tool and it will remain unusable for the specified duration. Leave the duration blank to indicate that no post-usage downtime is required.">What's this?</a>
-						</div>
-					{% endif %}
-					<div id="stop_wrapper">
-                        <div style="display:inline-block" data-toggle="tooltip" data-placement="bottom" title="Please answer the required questions (above) to proceed">
+        {% if tool.unavailable_required_resources or tool.scheduled_outages %}
+            <div class="danger-status">
+                {# Display any unavailable required resources... #}
+                {% for r in tool.unavailable_required_resources %}
+                    <div class="media">
+                        <span class="glyphicon glyphicon-leaf pull-left notification-icon danger-highlight"></span>
+                        <div class="media-body">
+                            <span class="media-heading">A required resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></span>
+                            <span class="media-middle">{{ r.restriction_message }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+                {% if tool.scheduled_outages %}
+                    {% for o in tool.scheduled_outages %}
+                        <div class="media">
+                            <span class="glyphicon glyphicon-time pull-left notification-icon danger-highlight"></span>
+                            <div class="media-body">
+                                <span class="media-heading">{{ o.title }}<span class="light-grey">({{ o.resource.category }})</span></span>
+                                {% if o.details %}<span class="media-middle">{{ o.details }}</span>{% endif %}
+                                <span class="media-bottom">{{ o.creator }} scheduled this outage from {{ o.start }} until {{ o.end }}.</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if tool.unavailable_nonrequired_resources or tool.scheduled_partial_outages %}
+            <div class="warning-status">
+                {# Display any unavailable non-required resources... #}
+                {% for r in tool.unavailable_nonrequired_resources %}
+                    <div class="media">
+                        <span class="glyphicon glyphicon-leaf pull-left notification-icon warning-highlight"></span>
+                        <div class="media-body">
+                            <span class="media-heading">An optional resource is unavailable: {{ r.name }} <span class="light-grey">({{ r.category }})</span></span>
+                            <span class="media-middle">{{ r.restriction_message }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+                {# Display any outage for non-required resources... #}
+                {% for o in tool.scheduled_partial_outages %}
+                    <div class="media">
+                        <span class="glyphicon glyphicon-time pull-left notification-icon warning-highlight"></span>
+                        <div class="media-body">
+                            <h4 class="media-heading">
+                                An optional resource has an outage: {{ o.resource.name }} <span class="light-grey">({{ o.resource.category }})</span>
+                            </h4>
+                            {{ o.title }}
+                            {% if o.details %}: {{ o.details }}{% endif %}
+                            <h5>{{ o.creator }} scheduled this outage from {{ o.start }} until {{ o.end }}.</h5>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if tool.problems %}
+            <div class="tool-problems">
+                {# Display all problems and shutdowns... #}
+                {% for t in tool.problems %}
+                    <div class="media">
+                        <a onclick="toggle_details(this)"
+                           data-toggle="collapse"
+                           data-target="#task_{{ t.id }}_details"
+                           class="pointer">
+                            {% if t.force_shutdown %}
+                                <span class="glyphicon glyphicon-fire pull-left notification-icon danger-highlight"
+                                      title="Click to toggle details about this task"></span>
+                            {% else %}
+                                <span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight"
+                                      title="Click to toggle details about this task"></span>
+                            {% endif %}
+                            <span class="glyphicon glyphicon-chevron-{% if tool_control_show_task_details %}down{% else %}right{% endif %} pull-left chevron"></span>
+                        </a>
+                        <div class="media-body">
+                            {% if t.problem_category %}<span class="media-heading">{{ t.problem_category }}</span>{% endif %}
+                            <span class="media-middle">{{ t.problem_description }}</span>
+                            {% if t.estimated_resolution_time %}
+                                <span class="media-middle">Estimated resolution time is {{ t.estimated_resolution_time }}.</span>
+                            {% endif %}
+                            <div id="task_{{ t.id }}_details" class="collapse{% if tool_control_show_task_details %} in{% endif %}">
+                                <span class="media-bottom">
+                                    This task was created by {{ t.creator }} on {{ t.creation_time }}.
+                                    {% if user.is_staff %}
+                                        You can <a href="{% url 'task_update_form' t.id %}">update</a> or <a href="{% url 'task_resolution_form' t.id %}">resolve</a> this task.
+                                    {% endif %}
+                                    {% if t.force_shutdown %}The tool will remain shut down until this task is resolved.{% endif %}
+                                    {% if t.creator.id == user.id %}
+                                        You may <a href="javascript:$('#cancel_task_{{ t.id }}').submit()">cancel</a> this task if it was mistakenly created.
+                                        <br>
+                                        <form id="cancel_task_{{ t.id }}" action="{% url 'cancel_task' t.id %}" method="POST">
+                                            {% csrf_token %}
+                                        </form>
+                                    {% endif %}
+                                </span>
+                                {% if t.progress_description %}
+                                    <div class="media">
+                                        <span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
+                                        <div class="media-body">
+                                            <span class="media-heading">Progress updates</span>
+                                            <span class="media-middle">{{ t.progress_description|linebreaksbr }}</span>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if t.task_images %}
+                                    <div>
+                                        images:
+                                        <ul>
+                                            {% for image in t.task_images %}
+                                                <li>
+                                                    <a href="{{ image.image.url }}" target="_blank" style="margin-right: 5px">{{ image.filename }}</a>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if tool.comments or user.is_staff and tool.staff_only_comments|length > 0 %}
+            <div class="tool-comments">
+                {# Display all comments... #}
+                {% for c in tool.comments %}
+                    <div class="media">
+                        {% if user.id == c.author.id or user.is_staff %}
+                            <a onclick="toggle_details(this)"
+                               data-toggle="collapse"
+                               data-target="#comment_{{ c.id }}_actions"
+                               class="pointer">
+                            {% endif %}
+                            <span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"
+                                  title="{% if c.expiration_date %}This comment will expire and become hidden on {{ c.expiration_date }}{% else %}This comment will be displayed indefinitely.{% endif %}"></span>
+                            {% if user.id == c.author.id or user.is_staff %}
+                                <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                            </a>
+                        {% endif %}
+                        <div class="media-body">
+                            <span class="media-middle">{{ c.content|linebreaksbr }}</span>
+                            <span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
+                            {% if user.id == c.author.id or user.is_staff %}
+                                <div id="comment_{{ c.id }}_actions" class="collapse grey">
+                                    <form action="{% url 'hide_comment' c.id %}" method="post">
+                                        {% csrf_token %}
+                                        <a href="javascript:void(0)" onclick="$(this).closest('form').submit()">Hide this comment</a>.
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+                {# Display all staff comments #}
+                {% if user.is_staff and tool.staff_only_comments|length > 0 %}
+                    <div class="media">
+                        <a onclick="toggle_details(this)"
+                           data-toggle="collapse"
+                           data-target="#staff_only_comments"
+                           class="pointer">
+                            <span class="glyphicon glyphicon-eye-close pull-left notification-icon warning-highlight"></span><span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                        </a>
+                        <div class="media-body">
+                            <div style="margin-bottom: 15px">Staff Only</div>
+                            <div id="staff_only_comments" class="collapse">
+                                {% for c in tool.staff_only_comments %}
+                                    <div class="media">
+                                        {% if user.id == c.author.id or user.is_staff %}
+                                            <a onclick="toggle_details(this)"
+                                               data-toggle="collapse"
+                                               data-target="#comment_{{ c.id }}_actions"
+                                               class="pointer">
+                                            {% endif %}
+                                            <span class="glyphicon glyphicon-comment pull-left notification-icon primary-highlight"
+                                                  title="{% if c.expiration_date %}This comment will expire and become hidden on {{ c.expiration_date }}{% else %}This comment will be displayed indefinitely.{% endif %}"></span>
+                                            {% if user.id == c.author.id or user.is_staff %}
+                                                <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                                            </a>
+                                        {% endif %}
+                                        <div class="media-body">
+                                            <span class="media-middle">{{ c.content|linebreaksbr }}</span>
+                                            <span class="media-bottom">{{ c.author }} wrote this comment on {{ c.creation_date }}</span>
+                                            {% if user.id == c.author.id or user.is_staff %}
+                                                <div id="comment_{{ c.id }}_actions" class="collapse grey">
+                                                    <form action="{% url 'hide_comment' c.id %}" method="post">
+                                                        {% csrf_token %}
+                                                        <a href="javascript:void(0)" onclick="$(this).closest('form').submit()">Hide this comment</a>.
+                                                    </form>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+        <div style="margin-top:10px">{{ rendered_configuration_html }}</div>
+        {# Display tool control... #}
+        <form id="tool_control">
+            {% if tool.in_use %}
+                {% if tool.get_current_usage_event.operator.id == user.id or tool.get_current_usage_event.user.id == user.id %}
+                    {{ post_usage_questions }}
+                    {% if tool.allow_delayed_logoff and not tool.delayed_logoff_in_progress %}
+                        <div class="form-group">
+                            Prevent others from using the tool for
+                            <input type="number"
+                                   id="downtime"
+                                   name="downtime"
+                                   aria-label="Downtime"
+                                   class="form-control"
+                                   style="display:inline;
+                                          width:auto"
+                                   min="5"
+                                   max="120"
+                                   inputmode="numeric"
+                                   pattern="[0-9]*"
+                                   placeholder="0">
+                            minutes after disabling the tool.
+                            <a id="delayed_logoff_help"
+                               class="pointer"
+                               tabindex="0"
+                               data-toggle="popover"
+                               data-placement="bottom"
+                               data-trigger="focus"
+                               data-content="Some tools may require downtime after you finish using them. (For example, to perform automated cleaning or pump-down). Once you click &quot;Stop using the {{ tool.name_or_child_in_use_name }}&quot; the tool interlock will immediately disable the tool and it will remain unusable for the specified duration. Leave the duration blank to indicate that no post-usage downtime is required.">What's this?</a>
+                        </div>
+                    {% endif %}
+                    <div id="stop_wrapper">
+                        <div style="display:inline-block"
+                             data-toggle="tooltip"
+                             data-placement="bottom"
+                             title="Please answer the required questions (above) to proceed">
                             {% url 'disable_tool' tool.get_current_usage_event.tool.id as disable_tool_url %}
                             {% button type="delete" id="stop" icon="glyphicon-stop" onclick="disable_tool('"|concat:disable_tool_url|concat:"'); return false;" value="Stop using the "|concat:tool.name_or_child_in_use_name %}
                         </div>
                         {% if time_left and user.is_staff %}
-                            <div style="display:inline-block" data-toggle="tooltip" data-placement="bottom" title="Please answer the required questions (above) to proceed">
+                            <div style="display:inline-block"
+                                 data-toggle="tooltip"
+                                 data-placement="bottom"
+                                 title="Please answer the required questions (above) to proceed">
                                 {% url 'disable_tool' tool.get_current_usage_event.tool.id as disable_tool_url %}
                                 {% with left_until=time_left|timeuntil %}
                                     {% button type="delete" id="stop" icon="glyphicon-stop" onclick="disable_tool('"|concat:disable_tool_url|concat:"', true); return false;" value="Stop using the "|concat:tool.name_or_child_in_use_name|concat:" and relinquish the remaining "|concat:left_until|concat:" of your reservation" %}
@@ -315,108 +393,153 @@
                             </div>
                         {% endif %}
                     </div>
-				{% endif %}
-			{%  endif %}
-			{% if not tool.in_use %}
-				{% if show_wait_list and not wait_list_position == 1 %}
-					<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#use-tool" class="pointer" style="padding-bottom: 10px; padding-top: 10px; display: block; color: darkgrey;" >
-						<span class="glyphicon glyphicon-chevron-right chevron"></span>Skip Wait List
-					</a>
-				{% endif %}
-				<div id="use-tool" class="{% if show_wait_list and not wait_list_position == 1 %}collapse{% endif %}">
-					{% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all %}
-						<h4 id="what_to_do_label">What would you like to do?</h4>
-						<input type="hidden" id="remote_work" name="remote_work" value="">
-						<div class="radio" role="group" aria-labelledby="what_to_do_label">
-							<label><input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">Use this tool for my own project</label>
-							{% if user.is_staff %}
-								<br><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="false">Use this tool on behalf of another user{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (no remote){% endif %}</label>
-								{% if "remote_work"|customization:"remote_work_ask_explicitly" %}
-									<br><label><input type="radio" onchange="use_tool_for_other(true)" name="staff_charge" value="false">Use this tool for a remote project</label>
-								{% endif %}
-								{% if user.charging_staff_time %}
-									{% with user.get_staff_charge as staff_charge %}
-										<br><label id="staff_charge_tooltip_container" class="strikethrough light-grey" data-toggle="tooltip" data-placement="right" title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
-											<input type="radio" onchange="use_tool_for_other()" disabled>
-											<span id="staff_charge_tooltip_location">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</span>
-										</label>
-										<script>
-											$("#staff_charge_tooltip_container").tooltip();
-										</script>
-									{% endwith %}
-								{% else %}
-									<br><label><input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">Use this tool for a remote project{% if "remote_work"|customization:"remote_work_ask_explicitly" %} (charge staff time{% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %} & {{ tool.requires_area_access }} time{% endif %}){% endif %}</label>
-								{% endif %}
-							{% endif %}
-						</div>
-						<div id="project_choice"></div>
-					{% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
-						{% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
-					{% endif %}
-					<div id="pre_usage_questions" style="display:none">{{ pre_usage_questions }}</div>
-					{% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}
-						<div id="start" style="display:none">
-							{% if tool.is_parent_tool %}
-								You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:<br>
-								<div style="height: 5px"></div>
-							{% endif %}
-							{% button type="save" submit=False icon="glyphicon-play" value="Start using the "|concat:tool.name onclick="enable_tool('"|concat:tool.id|concat:"'); return false;" %}
-							{% if tool.is_parent_tool %}
-								{% for alternate_tool in tool.tool_children_set.all %}
-									{% button style="margin-left: 10px" type="save" submit=False icon="glyphicon-play" value="Start using the "|concat:alternate_tool.name onclick="enable_tool('"|concat:alternate_tool.id|concat:"'); return false;" %}
-								{% endfor %}
-							{% endif %}
-						</div>
-					{% endif %}
-				</div>
-			{% endif %}
-			{% if show_wait_list %}
-				<div>
-					<div style="margin-bottom: 10px;">
-						<span>This tool has a wait list. There are <strong>{{ wait_list.count }}</strong> people in line to use this tool.</span>
-						{% if not wait_list_position == 0 %}
-							<br><span>You are number <strong>{{ wait_list_position }}</strong> in line to use this tool.</span>
-						{% endif %}
-					</div>
-					<div id="wait-list">
-						{% if wait_list_position == 0 %}
-							{% button type="save" style="margin-right: 20px;" submit=False icon="glyphicon-list" value="Enter Wait List for "|concat:tool.name onclick="enter_wait_list('"|concat:tool.id|concat:"'); return false;" %}
-						{% else %}
-							{% button type="delete" style="margin-right: 20px;" submit=False icon="glyphicon-trash" value="Exit Wait List for "|concat:tool.name onclick="exit_wait_list('"|concat:tool.id|concat:"'); return false;" %}
-						{% endif %}
-						{% if wait_list.count > 0 %}
-							<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#wait-list-content" class="pointer" style="display: block; padding-top: 10px;">
-								<span class="glyphicon glyphicon-chevron-right chevron"></span>Show Wait List
-							</a>
-						{% endif %}
-					</div>
-					{% if wait_list.count > 0 %}
-						<div id="wait-list-content"  style="padding-top: 10px;" class="collapse">
-							<table style="margin-top: 10px;" class="table table-condensed table-striped table-bordered">
-								<thead>
-									<tr>
-										<th>Position</th>
-										<th>User</th>
-									</tr>
-								</thead>
-								<tbody>
-									{% for entry in wait_list %}
-										<tr class="{% if user.id == entry.user.id %}success{% endif %}">
-											<td>{{ forloop.counter }}</td>
-											<td>{{ entry.user.get_full_name }}</td>
-										</tr>
-									{% endfor %}
-								</tbody>
-							</table>
-						</div>
-					{% endif %}
-				</div>
-			{% endif %}
-
-		</form>
-
+                {% endif %}
+            {% endif %}
+            {% if not tool.in_use %}
+                {% if show_wait_list and not wait_list_position == 1 %}
+                    <a onclick="toggle_details(this)"
+                       data-toggle="collapse"
+                       data-target="#use-tool"
+                       class="pointer"
+                       style="padding-bottom: 10px;
+                              padding-top: 10px;
+                              display: block;
+                              color: darkgrey">
+                        <span class="glyphicon glyphicon-chevron-right chevron"></span>Skip Wait List
+                    </a>
+                {% endif %}
+                <div id="use-tool" class="{% if show_wait_list and not wait_list_position == 1 %}collapse{% endif %}">
+                    {% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all %}
+                        <h4 id="what_to_do_label">What would you like to do?</h4>
+                        <input type="hidden" id="remote_work" name="remote_work" value="">
+                        <div class="radio" role="group" aria-labelledby="what_to_do_label">
+                            <label>
+                                <input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">
+                                Use this tool for my own project
+                            </label>
+                            {% if user.is_staff %}
+                                <br>
+                                <label>
+                                    <input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="false">
+                                    Use this tool on behalf of another user
+                                    {% if "remote_work"|customization:"remote_work_ask_explicitly" %}(no remote){% endif %}
+                                </label>
+                                {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
+                                    <br>
+                                    <label>
+                                        <input type="radio" onchange="use_tool_for_other(true)" name="staff_charge" value="false">
+                                        Use this tool for a remote project
+                                    </label>
+                                {% endif %}
+                                {% if user.charging_staff_time %}
+                                    {% with user.get_staff_charge as staff_charge %}
+                                        <br>
+                                        <label id="staff_charge_tooltip_container"
+                                               class="strikethrough light-grey"
+                                               data-toggle="tooltip"
+                                               data-placement="right"
+                                               title="This option is not available because you are already charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.">
+                                            <input type="radio" onchange="use_tool_for_other()" disabled>
+                                            <span id="staff_charge_tooltip_location">Use this tool for a remote project
+                                                {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
+                                                    (charge staff time
+                                                    {% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %}
+                                                        & {{ tool.requires_area_access }} time
+                                                    {% endif %}
+                                                    )
+                                                {% endif %}
+                                            </span>
+                                        </label>
+                                        <script>$("#staff_charge_tooltip_container").tooltip();</script>
+                                    {% endwith %}
+                                {% else %}
+                                    <br>
+                                    <label>
+                                        <input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="true">
+                                        Use this tool for a remote project
+                                        {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
+                                            (charge staff time
+                                            {% if tool.requires_area_access and "remote_work"|customization:"remote_work_start_area_access_automatically" == "enabled" %}
+                                                & {{ tool.requires_area_access }} time
+                                            {% endif %}
+                                            )
+                                        {% endif %}
+                                    </label>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div id="project_choice"></div>
+                    {% elif tool.operational and not tool.required_resource_is_unavailable and not tool.delayed_logoff_in_progress and not tool.scheduled_outage_in_progress %}
+                        {% include 'tool_control/get_projects.html' with active_projects=user.active_projects user_id=user.id %}
+                    {% endif %}
+                    <div id="pre_usage_questions" style="display:none">{{ pre_usage_questions }}</div>
+                    {% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all or tool.ready_to_use %}
+                        <div id="start" style="display:none">
+                            {% if tool.is_parent_tool %}
+                                You have {{ tool.tool_children_set.all|length|add:1 }} options to use this tool:
+                                <br>
+                                <div style="height: 5px"></div>
+                            {% endif %}
+                            {% button type="save" submit=False icon="glyphicon-play" value="Start using the "|concat:tool.name onclick="enable_tool('"|concat:tool.id|concat:"'); return false;" %}
+                            {% if tool.is_parent_tool %}
+                                {% for alternate_tool in tool.tool_children_set.all %}
+                                    {% button style="margin-left: 10px" type="save" submit=False icon="glyphicon-play" value="Start using the "|concat:alternate_tool.name onclick="enable_tool('"|concat:alternate_tool.id|concat:"'); return false;" %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            {% if show_wait_list %}
+                <div>
+                    <div style="margin-bottom: 10px;">
+                        <span>This tool has a wait list. There are <strong>{{ wait_list.count }}</strong> people in line to use this tool.</span>
+                        {% if not wait_list_position == 0 %}
+                            <br>
+                            <span>You are number <strong>{{ wait_list_position }}</strong> in line to use this tool.</span>
+                        {% endif %}
+                    </div>
+                    <div id="wait-list">
+                        {% if wait_list_position == 0 %}
+                            {% button type="save" style="margin-right: 20px;" submit=False icon="glyphicon-list" value="Enter Wait List for "|concat:tool.name onclick="enter_wait_list('"|concat:tool.id|concat:"'); return false;" %}
+                        {% else %}
+                            {% button type="delete" style="margin-right: 20px;" submit=False icon="glyphicon-trash" value="Exit Wait List for "|concat:tool.name onclick="exit_wait_list('"|concat:tool.id|concat:"'); return false;" %}
+                        {% endif %}
+                        {% if wait_list.count > 0 %}
+                            <a onclick="toggle_details(this)"
+                               data-toggle="collapse"
+                               data-target="#wait-list-content"
+                               class="pointer"
+                               style="display: block;
+                                      padding-top: 10px">
+                                <span class="glyphicon glyphicon-chevron-right chevron"></span>Show Wait List
+                            </a>
+                        {% endif %}
+                    </div>
+                    {% if wait_list.count > 0 %}
+                        <div id="wait-list-content"  style="padding-top: 10px;" class="collapse">
+                            <table style="margin-top: 10px;" class="table table-condensed table-striped table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Position</th>
+                                        <th>User</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in wait_list %}
+                                        <tr class="{% if user.id == entry.user.id %}success{% endif %}">
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ entry.user.get_full_name }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </form>
         <div style="height:15px">{# Spacer #}</div>
-
         {% if messages %}
             {% for message in messages %}
                 <div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none">
@@ -425,93 +548,123 @@
                 </div>
             {% endfor %}
         {% endif %}
-		
-		{% if tool.description or tool.image or tool.tooldocuments_set.all and user_can_see_documents %}
-			<div style="background-color: #f5f5f5;">
-				<div class="row" style="margin:0; padding: 15px 0">
-					{% if tool.description %}
-					<div class="col-md-8">
-						<p> {{ tool.description|safe }} </p>
-					</div>
-				{% endif %}
-				{% if tool.image %}
-					<div class="col-md-4" style="text-align:center">
-						<img src="{{ tool.image.url }}" alt="Tool image" class="img-fluid img-thumbnail" style="max-width:300px ;max-height:300px" >
-					</div>
-				{% endif %}
-                {% if tool.tooldocuments_set.all and user_can_see_documents %}
-                    <div class="col-md-12">
-                        Documents:
-                        <ul>
-                        {% for tool_doc in tool.tooldocuments_set.all %}
-                            <li><a href="{{ tool_doc.link }}" target="_blank">{{ tool_doc.filename }}</a></li>
-                        {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-				</div>
-			</div>
-		{% endif %}
-		<div style="height:150px">{# Spacer #}</div>
-	</div>
-
-	<div class="tab-pane" id="details">
-		{% if tool.in_use %}
+        {% if tool.description or tool.image or tool.tooldocuments_set.all and user_can_see_documents %}
+            <div style="background-color: #f5f5f5;">
+                <div class="row" style="margin:0; padding: 15px 0">
+                    {% if tool.description %}
+                        <div class="col-md-8">
+                            <p>{{ tool.description|safe }}</p>
+                        </div>
+                    {% endif %}
+                    {% if tool.image %}
+                        <div class="col-md-4" style="text-align:center">
+                            <img src="{{ tool.image.url }}"
+                                 alt="Tool image"
+                                 class="img-fluid img-thumbnail"
+                                 style="max-width:300px;
+                                        max-height:300px">
+                        </div>
+                    {% endif %}
+                    {% if tool.tooldocuments_set.all and user_can_see_documents %}
+                        <div class="col-md-12">
+                            Documents:
+                            <ul>
+                                {% for tool_doc in tool.tooldocuments_set.all %}
+                                    <li>
+                                        <a href="{{ tool_doc.link }}" target="_blank">{{ tool_doc.filename }}</a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+        <div style="height:150px">{# Spacer #}</div>
+    </div>
+    <div class="tab-pane" id="details">
+        {% if tool.in_use %}
             {% if user.is_staff or user.is_user_office %}
-			    <p>You may <a href="javascript:void(0)" onclick="disable_tool('{% url 'disable_tool' tool.id %}')">force {{ tool.get_current_usage_event.operator }} off this tool</a>.</p>
+                <p>
+                    You may <a href="javascript:void(0)" onclick="disable_tool('{% url 'disable_tool' tool.id %}')">force {{ tool.get_current_usage_event.operator }} off this tool</a>.
+                </p>
             {% endif %}
-		{% endif %}
-		<div class="media">
-			<span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
-			<div class="media-body">
-				<p>{{ tool.primary_owner.get_contact_info_html|safe }} is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.</p>
-				{% if tool.backup_owners.all.count == 1 %}
-					{% with tool.backup_owners.all|first as backup %}
-						<p>If you are unable to reach {{ tool.primary_owner.get_name }} then please contact the backup tool owner, {{ backup.get_contact_info_html|safe }}.</p>
-					{% endwith %}
-				{% elif tool.backup_owners.all.count > 1 %}
-					<p>If you are unable to reach {{ tool.primary_owner.get_name }} then please contact
-					{% for x in tool.backup_owners.all %}
-						{% if not forloop.last %}
-							{{ x.get_contact_info_html|safe }},
-						{% else %}
-							or {{ x.get_contact_info_html|safe }}.
-						{% endif %}
-					{% endfor %}
-					</p>
-				{% endif %}
+        {% endif %}
+        <div class="media">
+            <span class="glyphicon glyphicon-info-sign pull-left notification-icon primary-highlight"></span>
+            <div class="media-body">
+                <p>
+                    {{ tool.primary_owner.get_contact_info_html|safe }} is primarily responsible for this tool and can be contacted with any questions or concerns about the tool.
+                </p>
+                {% if tool.backup_owners.all.count == 1 %}
+                    {% with tool.backup_owners.all|first as backup %}
+                        <p>
+                            If you are unable to reach {{ tool.primary_owner.get_name }} then please contact the backup tool owner, {{ backup.get_contact_info_html|safe }}.
+                        </p>
+                    {% endwith %}
+                {% elif tool.backup_owners.all.count > 1 %}
+                    <p>
+                        If you are unable to reach {{ tool.primary_owner.get_name }} then please contact
+                        {% for x in tool.backup_owners.all %}
+                            {% if not forloop.last %}
+                                {{ x.get_contact_info_html|safe }},
+                            {% else %}
+                                or {{ x.get_contact_info_html|safe }}.
+                            {% endif %}
+                        {% endfor %}
+                    </p>
+                {% endif %}
                 {% if tool.superusers.all.count == 1 %}
-					{% with tool.superusers.all|first as superuser %}
-						<p>For equipment training, you can contact the primary, backup or the superuser, {{ superuser.get_contact_info_html|safe }}.</p>
-					{% endwith %}
-				{% elif tool.superusers.all.count > 1 %}
-					<p>For equipment training, you can contact the primary, backup or one of the superusers
-					{% for x in tool.superusers.all %}
-						{% if not forloop.last %}
-							{{ x.get_contact_info_html|safe }},
-						{% else %}
-							or {{ x.get_contact_info_html|safe }}.
-						{% endif %}
-					{% endfor %}
-					</p>
-				{% endif %}
-				{% if tool.notification_email_address %}
-					<p>Problem reports for the {{ tool.name_or_child_in_use_name }} are automatically emailed to <a href="{% url 'get_email_form' %}?recipient={{ tool.notification_email_address }}" title="Email {{ tool.notification_email_address }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.notification_email_address }}</a>.</p>
-				{% endif %}
-				{% if tool.location %}<p>The {{ tool.name_or_child_in_use_name }} is located in room <span class="glyphicon glyphicon-map-marker small-icon"></span>{{ tool.location }}.</p>{% endif %}
-				{% if tool.phone_number %}<p>You may dial the phone that is closest to the {{ tool.name_or_child_in_use_name }} at extension <span class="glyphicon glyphicon-phone small-icon"></span>{{ tool.phone_number }}.</p>{% endif %}
-				{% if show_broadcast_upcoming_reservation %}<p>You can email <a href="{% url 'compose_email' %}?audience=tool-reservation&selection={{ tool.id }}"><span class="glyphicon glyphicon-send"></span> all users with an upcoming reservation</a>.</p>{% endif %}
-			</div>
-		</div>
-		{% if user.is_staff %}
-			<div id="qualified_users_container" class="media">
-				{% include 'tool_control/qualified_users.html' %}
-			</div>
-		{% elif user in tool.superusers.all or "tool"|customization:"tool_control_show_qualified_users_to_all" == "enabled" %}
+                    {% with tool.superusers.all|first as superuser %}
+                        <p>
+                            For equipment training, you can contact the primary, backup or the superuser, {{ superuser.get_contact_info_html|safe }}.
+                        </p>
+                    {% endwith %}
+                {% elif tool.superusers.all.count > 1 %}
+                    <p>
+                        For equipment training, you can contact the primary, backup or one of the superusers
+                        {% for x in tool.superusers.all %}
+                            {% if not forloop.last %}
+                                {{ x.get_contact_info_html|safe }},
+                            {% else %}
+                                or {{ x.get_contact_info_html|safe }}.
+                            {% endif %}
+                        {% endfor %}
+                    </p>
+                {% endif %}
+                {% if tool.notification_email_address %}
+                    <p>
+                        Problem reports for the {{ tool.name_or_child_in_use_name }} are automatically emailed to <a href="{% url 'get_email_form' %}?recipient={{ tool.notification_email_address }}"
+    title="Email {{ tool.notification_email_address }}"><span class="glyphicon glyphicon-send small-icon"></span>{{ tool.notification_email_address }}</a>.
+                    </p>
+                {% endif %}
+                {% if tool.location %}
+                    <p>
+                        The {{ tool.name_or_child_in_use_name }} is located in room <span class="glyphicon glyphicon-map-marker small-icon"></span>{{ tool.location }}.
+                    </p>
+                {% endif %}
+                {% if tool.phone_number %}
+                    <p>
+                        You may dial the phone that is closest to the {{ tool.name_or_child_in_use_name }} at extension <span class="glyphicon glyphicon-phone small-icon"></span>{{ tool.phone_number }}.
+                    </p>
+                {% endif %}
+                {% if show_broadcast_upcoming_reservation %}
+                    <p>
+                        You can email <a href="{% url 'compose_email' %}?audience=tool-reservation&selection={{ tool.id }}"><span class="glyphicon glyphicon-send"></span> all users with an upcoming reservation</a>.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+        {% if user.is_staff %}
+            <div id="qualified_users_container" class="media">{% include 'tool_control/qualified_users.html' %}</div>
+        {% elif user in tool.superusers.all or "tool"|customization:"tool_control_show_qualified_users_to_all" == "enabled" %}
             {% with tool.user_set.all as qualified_users %}
                 {% if qualified_users %}
                     <div id="qualified_users_container" class="media">
-                        <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#qualified_users" class="pointer">
+                        <a onclick="toggle_details(this)"
+                           data-toggle="collapse"
+                           data-target="#qualified_users"
+                           class="pointer">
                             <span class="glyphicon glyphicon-user pull-left notification-icon primary-highlight"></span>
                             <span class="glyphicon {% if expanded %}glyphicon-chevron-down{% else %}glyphicon-chevron-right{% endif %} pull-left chevron"></span>
                         </a>
@@ -520,228 +673,262 @@
                             <div id="qualified_users" class="collapse {% if expanded %}in{% endif %}">
                                 <p>Only qualified users are able to operate the {{ tool.name }}.</p>
                                 <p>
-                                    Current qualified users are listed below. Inactive qualified users are <span class="strikethrough light-grey">crossed out</span>.<br>
+                                    Current qualified users are listed below. Inactive qualified users are <span class="strikethrough light-grey">crossed out</span>.
+                                    <br>
                                 </p>
-                                    <ul>
-                                        {% for u in qualified_users %}
-                                            {% if u.is_active %}
-                                                <li class="">{{ u }}</li>
-                                            {% else %}
-                                                <li class="grey"><span class="strikethrough light-grey">{{ u }}</span></li>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </ul>
+                                <ul>
+                                    {% for u in qualified_users %}
+                                        {% if u.is_active %}
+                                            <li class="">{{ u }}</li>
+                                        {% else %}
+                                            <li class="grey">
+                                                <span class="strikethrough light-grey">{{ u }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
                             </div>
                         </div>
                     </div>
                 {% endif %}
             {% endwith %}
-		{% endif %}
-		{% if tool.required_resource_set.exists %}
-			<div class="media">
-				<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#required_resources" class="pointer">
-					<span class="glyphicon glyphicon-leaf pull-left notification-icon success-highlight"></span>
-					<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-				</a>
-				<div class="media-body">
-					<h4 class="media-heading">Resources that are required for this tool to operate</h4>
-					<div id="required_resources" class="collapse">
-						<ul>
-							{% for u in tool.required_resource_set.all %}
-								<li>{{ u.name }} {% if u.category %}<span class="light-grey">({{ u.category }})</span>{% endif %}</li>
-							{% endfor %}
-						</ul>
-					</div>
-				</div>
-			</div>
-		{% endif %}
-		{% if tool.nonrequired_resource_set.exists %}
-			<div class="media">
-				<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#nonrequired_resources" class="pointer">
-					<span class="glyphicon glyphicon-leaf pull-left notification-icon warning-highlight"></span>
-					<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-				</a>
-				<div class="media-body">
-					<h4 class="media-heading">Resources that are optional for this tool to operate</h4>
-					<div id="nonrequired_resources" class="collapse">
-						<ul>
-							{% for u in tool.nonrequired_resource_set.all %}
-								<li>{{ u.name }} <span class="light-grey">({{ u.category }})</span></li>
-							{% endfor %}
-						</ul>
-					</div>
-				</div>
-			</div>
-		{% endif %}
-		<div class="media">
-			<a onclick="toggle_details(this)" data-toggle="collapse" data-target="#history" class="pointer">
-				<span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight"></span>
-				<span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
-			</a>
-			<div class="media-body">
-				<h4 class="media-heading">Task &amp; comment history for this tool</h4>
-				<div id="history" class="collapse">
-					<form id="history_form">
-						<input type="hidden" name="tool_id" value="{{ tool.id }}">
-						<div class="form-group">
+        {% endif %}
+        {% if tool.required_resource_set.exists %}
+            <div class="media">
+                <a onclick="toggle_details(this)"
+                   data-toggle="collapse"
+                   data-target="#required_resources"
+                   class="pointer">
+                    <span class="glyphicon glyphicon-leaf pull-left notification-icon success-highlight"></span>
+                    <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                </a>
+                <div class="media-body">
+                    <h4 class="media-heading">Resources that are required for this tool to operate</h4>
+                    <div id="required_resources" class="collapse">
+                        <ul>
+                            {% for u in tool.required_resource_set.all %}
+                                <li>
+                                    {{ u.name }}
+                                    {% if u.category %}<span class="light-grey">({{ u.category }})</span>{% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        {% if tool.nonrequired_resource_set.exists %}
+            <div class="media">
+                <a onclick="toggle_details(this)"
+                   data-toggle="collapse"
+                   data-target="#nonrequired_resources"
+                   class="pointer">
+                    <span class="glyphicon glyphicon-leaf pull-left notification-icon warning-highlight"></span>
+                    <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+                </a>
+                <div class="media-body">
+                    <h4 class="media-heading">Resources that are optional for this tool to operate</h4>
+                    <div id="nonrequired_resources" class="collapse">
+                        <ul>
+                            {% for u in tool.nonrequired_resource_set.all %}
+                                <li>
+                                    {{ u.name }} <span class="light-grey">({{ u.category }})</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        <div class="media">
+            <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#history" class="pointer">
+                <span class="glyphicon glyphicon-wrench pull-left notification-icon warning-highlight"></span>
+                <span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+            </a>
+            <div class="media-body">
+                <h4 class="media-heading">Task &amp; comment history for this tool</h4>
+                <div id="history" class="collapse">
+                    <form id="history_form">
+                        <input type="hidden" name="tool_id" value="{{ tool.id }}">
+                        <div class="form-group">
                             {% button type="info" onclick="load_tasks_and_comments_for_last_three_months();" value="Created in the last 3 months" icon="glyphicon-list-alt" %}
-						</div>
-						<div class="form-group">
-                            {% button type="info" onclick="load_ten_most_recent_tasks_and_comments();" value="10 most recent" icon="glyphicon-list-alt" %}<br>
-						</div>
-						<div class="panel panel-default" style="display:inline-block">
-							<div class="panel-body">
-								<div class="form-group" style="position:relative">
-									<div class="input-group" style="max-width:350px">
-										<span class="input-group-addon">Contains</span>
-										<input id="search" name="search" type="text" aria-label="Search" placeholder="search title and content" class="form-control">
-									</div>
-								</div>
-								<div id="task_and_comment_start_form_group" class="form-group" style="position:relative">
-									<div class="input-group" style="max-width:350px">
-										<span class="input-group-addon">Between</span>
-										<input id="task_and_comment_start" name="start" type="text" aria-label="Search start date" placeholder="start" class="form-control">
-									</div>
-								</div>
-								<div id="task_and_comment_end_form_group" class="form-group" style="position:relative">
-									<div class="input-group" style="max-width:350px">
-										<span class="input-group-addon">and</span>
-										<input id="task_and_comment_end" name="end" type="text" aria-label="Search end date" placeholder="end" class="form-control">
-									</div>
-								</div>
-								<div class="form-group" style="margin-bottom:0">
+                        </div>
+                        <div class="form-group">
+                            {% button type="info" onclick="load_ten_most_recent_tasks_and_comments();" value="10 most recent" icon="glyphicon-list-alt" %}
+                            <br>
+                        </div>
+                        <div class="panel panel-default" style="display:inline-block">
+                            <div class="panel-body">
+                                <div class="form-group" style="position:relative">
+                                    <div class="input-group" style="max-width:350px">
+                                        <span class="input-group-addon">Contains</span>
+                                        <input id="search"
+                                               name="search"
+                                               type="text"
+                                               aria-label="Search"
+                                               placeholder="search title and content"
+                                               class="form-control">
+                                    </div>
+                                </div>
+                                <div id="task_and_comment_start_form_group" class="form-group" style="position:relative">
+                                    <div class="input-group" style="max-width:350px">
+                                        <span class="input-group-addon">Between</span>
+                                        <input id="task_and_comment_start"
+                                               name="start"
+                                               type="text"
+                                               aria-label="Search start date"
+                                               placeholder="start"
+                                               class="form-control">
+                                    </div>
+                                </div>
+                                <div id="task_and_comment_end_form_group" class="form-group" style="position:relative">
+                                    <div class="input-group" style="max-width:350px">
+                                        <span class="input-group-addon">and</span>
+                                        <input id="task_and_comment_end"
+                                               name="end"
+                                               type="text"
+                                               aria-label="Search end date"
+                                               placeholder="end"
+                                               class="form-control">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom:0">
                                     <div class="col-sm-6" style="padding-left: 0">
                                         {% button type="save" submit=False value="Go" icon="glyphicon-search" onclick="load_tasks_and_comments();" %}
                                     </div>
                                     <div class="col-sm-6" style="padding-right: 0">
                                         {% button type="export" style="float: right" onclick="export_tasks_and_comments();" value="Export" %}
                                     </div>
-								</div>
-							</div>
-						</div>
-					</form>
-					<div id="past_tasks_and_comments"></div>
-				</div>
-			</div>
-		</div>
-		<div style="height:150px">{# Spacer #}</div>
-	</div>
-
-	<div class="tab-pane" id="config">
-        {# the data to be loaded here is in tool_control/config_history.html #}
-	</div>
-
-	<div class="tab-pane" id="usage_data">
-		{# the data to be loaded here is in tool_control/usage_data.html #}
-	</div>
-
-	<div class="tab-pane" id="problem">
-		<form action="{% url 'create_task' %}" method="post" enctype="multipart/form-data">
-			{% csrf_token %}
-			<input type="hidden" name="action" value="create">
-			<input type="hidden" name="tool" value="{{ tool.id }}">
-			<p>Use this form to report a problem relating to the currently selected tool. The {{ facility_name }} staff as well as anyone with an upcoming reservation will be notified of the problem by email and the details of the problem will be visible to everyone on the website.</p>
-			{% if task_categories %}
-				<div class="form-group">
-					<label for="problem_category">Please choose a category that best describes this problem. If there is no appropriate category then leave this field blank.</label>
-					<select id="problem_category" name="problem_category" class="form-control" style="max-width:300px">
-						<option value="">&nbsp;</option>
-						{% for c in task_categories %}
-							<option value="{{ c.id }}">{{ c.name }}</option>
-						{% endfor %}
-					</select>
-				</div>
-			{% endif %}
-
-			{% if task_statuses and user.is_staff %}
-				<div class="form-group">
-					<label for="status">What is the status of this task?</label>
-					<select id="status" name="status" class="form-control" style="max-width:300px">
-						<option value="">&nbsp;</option>
-						{% for s in task_statuses %}
-							<option>{{ s.name }}</option>
-						{% endfor %}
-					</select>
-				</div>
-			{% endif %}
-
-			<div class="form-group">
-				<label for="description">Please provide a <strong>detailed</strong> description of the problem so that the {{ facility_name }} staff have enough information to resolve the problem efficiently.</label>
-				<textarea id="description" name="description" class="form-control" rows="7" required></textarea>
-			</div>
-			{% if user.is_staff %}
-				<div class="form-group">
-					<div style="position:relative">
-						<label for="estimated_resolution_time" class="control-label">What is your best estimate of when the problem will be resolved? Leave this field blank if you are unsure.</label>
-						<input id="estimated_resolution_time" name="estimated_resolution_time" type="text" class="form-control" autocomplete="off">
-						<script>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="past_tasks_and_comments"></div>
+                </div>
+            </div>
+        </div>
+        <div style="height:150px">{# Spacer #}</div>
+    </div>
+    <div class="tab-pane" id="config">{# the data to be loaded here is in tool_control/config_history.html #}</div>
+    <div class="tab-pane" id="usage_data">{# the data to be loaded here is in tool_control/usage_data.html #}</div>
+    <div class="tab-pane" id="problem">
+        <form action="{% url 'create_task' %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+            <input type="hidden" name="tool" value="{{ tool.id }}">
+            <p>
+                Use this form to report a problem relating to the currently selected tool. The {{ facility_name }} staff as well as anyone with an upcoming reservation will be notified of the problem by email and the details of the problem will be visible to everyone on the website.
+            </p>
+            {% if task_categories %}
+                <div class="form-group">
+                    <label for="problem_category">
+                        Please choose a category that best describes this problem. If there is no appropriate category then leave this field blank.
+                    </label>
+                    <select id="problem_category" name="problem_category" class="form-control" style="max-width:300px">
+                        <option value="">&nbsp;</option>
+                        {% for c in task_categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            {% if task_statuses and user.is_staff %}
+                <div class="form-group">
+                    <label for="status">What is the status of this task?</label>
+                    <select id="status" name="status" class="form-control" style="max-width:300px">
+                        <option value="">&nbsp;</option>
+                        {% for s in task_statuses %}<option>{{ s.name }}</option>{% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            <div class="form-group">
+                <label for="description">
+                    Please provide a <strong>detailed</strong> description of the problem so that the {{ facility_name }} staff have enough information to resolve the problem efficiently.
+                </label>
+                <textarea id="description" name="description" class="form-control" rows="7" required></textarea>
+            </div>
+            {% if user.is_staff %}
+                <div class="form-group">
+                    <div style="position:relative">
+                        <label for="estimated_resolution_time" class="control-label">
+                            What is your best estimate of when the problem will be resolved? Leave this field blank if you are unsure.
+                        </label>
+                        <input id="estimated_resolution_time"
+                               name="estimated_resolution_time"
+                               type="text"
+                               class="form-control"
+                               autocomplete="off">
+                        <script>
 							let timepicker_properties =
 							{
                                 format: "{{ datetime_input_js_format }}",
 								sideBySide: true
 							};
 							$('#estimated_resolution_time').datetimepicker(timepicker_properties);
-						</script>
-					</div>
-				</div>
-			{% endif %}
-			<div class="form-group">
-				<div class="checkbox"><label><input name="safety_hazard" type="checkbox"/>This problem represents a safety hazard to the {{ facility_name }} and should be regarded as urgent. Notify the {{ facility_name }} safety officer of this issue.</label></div>
-				<div class="checkbox"><label><input name="force_shutdown" type="checkbox"/>Shut down the tool so that it may not be used until this problem is resolved.</label></div>
-			</div>
-			<div class="form-group">
-				<input aria-label="File upload" id="fileupload" type="file" name="image" multiple>
-			</div>
-			<div class="form-group">
-                {% button type="delete" submit=True icon="glyphicon-send" value="Report problem" %}
-			</div>
-		</form>
-		<div style="height:150px">{# Spacer #}</div>
-	</div>
-
-	<div class="tab-pane" id="comment">
-		<form action="{% url 'create_comment' %}" method="post">
-			{% csrf_token %}
-			<input type="hidden" name="tool" value="{{ tool.id }}">
-			<p>
-				Use this form to comment on the operating status of the selected tool.
-				The comment will be visible to everyone on the website for <strong>informational purposes</strong>.
-				(Note: if there is something wrong with the tool then please report a problem instead of creating a comment).
-				You may remove the comment at any time because you are its author.
-			</p>
-			<div class="form-group">
-				<label class="form-inline">
-					How many days would you like the comment to be visible?
-					<select name="expiration" class="form-control" style="width:250px" required>
-						<option value="" disabled selected></option>
-						<option value="1">1 day</option>
-						<option value="7">7 days</option>
-						<option value="30">30 days</option>
-						<option value="60">60 days</option>
-						<option value="90">90 days</option>
-						<option value="-1">Indefinitely</option>
-						{% if user.is_any_part_of_staff %}<option value="0">Not visible</option>{% endif %}
-					</select>
-				</label>
-			</div>
-			<div class="form-group">
-				<label for="content-area">What would you like to say?</label>
-				<textarea name="content" id="content-area" class="form-control" rows="6" required></textarea>
-			</div>
-			{% if user.is_staff %}
-				<div class="form-group">
-					<input type="checkbox" id="staff_only" name="staff_only"/>
-					<label for="staff_only" style="padding-left: 5px">Make this comment only visible to staff users</label>
-				</div>
-			{% endif %}
-			<div class="form-group">
-                {% button type="save" value="Post comment" icon="glyphicon-send" %}
-			</div>
-		</form>
-		<div style="height:150px">{# Spacer #}</div>
-	</div>
+						
+                        </script>
+                    </div>
+                </div>
+            {% endif %}
+            <div class="form-group">
+                <div class="checkbox">
+                    <label>
+                        <input name="safety_hazard" type="checkbox" />
+                        This problem represents a safety hazard to the {{ facility_name }} and should be regarded as urgent. Notify the {{ facility_name }} safety officer of this issue.
+                    </label>
+                </div>
+                <div class="checkbox">
+                    <label>
+                        <input name="force_shutdown" type="checkbox" />
+                        Shut down the tool so that it may not be used until this problem is resolved.
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <input aria-label="File upload" id="fileupload" type="file" name="image" multiple>
+            </div>
+            <div class="form-group">{% button type="delete" submit=True icon="glyphicon-send" value="Report problem" %}</div>
+        </form>
+        <div style="height:150px">{# Spacer #}</div>
+    </div>
+    <div class="tab-pane" id="comment">
+        <form action="{% url 'create_comment' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="tool" value="{{ tool.id }}">
+            <p>
+                Use this form to comment on the operating status of the selected tool.
+                The comment will be visible to everyone on the website for <strong>informational purposes</strong>.
+                (Note: if there is something wrong with the tool then please report a problem instead of creating a comment).
+                You may remove the comment at any time because you are its author.
+            </p>
+            <div class="form-group">
+                <label class="form-inline">
+                    How many days would you like the comment to be visible?
+                    <select name="expiration" class="form-control" style="width:250px" required>
+                        <option value="" disabled selected></option>
+                        <option value="1">1 day</option>
+                        <option value="7">7 days</option>
+                        <option value="30">30 days</option>
+                        <option value="60">60 days</option>
+                        <option value="90">90 days</option>
+                        <option value="-1">Indefinitely</option>
+                        {% if user.is_any_part_of_staff %}<option value="0">Not visible</option>{% endif %}
+                    </select>
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="content-area">What would you like to say?</label>
+                <textarea name="content" id="content-area" class="form-control" rows="6" required></textarea>
+            </div>
+            {% if user.is_staff %}
+                <div class="form-group">
+                    <input type="checkbox" id="staff_only" name="staff_only" />
+                    <label for="staff_only" style="padding-left: 5px">Make this comment only visible to staff users</label>
+                </div>
+            {% endif %}
+            <div class="form-group">{% button type="save" value="Post comment" icon="glyphicon-send" %}</div>
+        </form>
+        <div style="height:150px">{# Spacer #}</div>
+    </div>
 </div>
-
 <script>
 	$(".contact-info-tooltip").on('click', function () {
         $(".tooltip").remove();

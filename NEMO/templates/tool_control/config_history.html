@@ -1,16 +1,19 @@
 {% for config in configs %}
     <div class="media" style="margin-top: 15px">
-        <a onclick="toggle_details(this)" data-toggle="collapse" data-target="#config_{{ forloop.counter }}_details"
+        <a onclick="toggle_details(this)"
+           data-toggle="collapse"
+           data-target="#config_{{ forloop.counter }}_details"
            class="pointer">
             <span class="glyphicon pull-left chevron glyphicon-chevron-right"></span>
         </a>
         <div class="media-body">
-            <div class="media-heading">On <i
-                    style="font-size: small">{{ config.modification_time|default:'Current' }}</i> {{ config.user }}
+            <div class="media-heading">
+                On <i style="font-size: small">{{ config.modification_time|default:'Current' }}</i> {{ config.user }}
                 changed the {{ config.name }} configuration
             </div>
-            <div id="config_{{ forloop.counter }}_details" class="media-middle collapse"
-                 style="margin-top: 10px">{{ config.html }}</div>
+            <div id="config_{{ forloop.counter }}_details" class="media-middle collapse" style="margin-top: 10px">
+                {{ config.html }}
+            </div>
         </div>
     </div>
 {% endfor %}

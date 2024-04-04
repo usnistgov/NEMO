@@ -3,104 +3,115 @@
 {% load custom_tags_and_filters %}
 {% block title %}Safe deactivation{% endblock %}
 {% block content %}
-	<h1>Safe deactivation for {{ user_to_deactivate }}</h1>
-	{% if warning %}
-		<div class="alert alert-warning">
-			{{ warning }}
-		</div>
-	{% endif %}
-	<form action="{% url 'deactivate_user' user_to_deactivate.id %}" method="post">
-		{% csrf_token %}
-		{% if reservations %}
-			<h2>Upcoming reservations</h2>
-			<div class="form-group">
-				{% if reservations|length == 1 %}
-					There is one reservation for {{ user_to_deactivate.first_name }} that is upcoming or in progress.
-				{% else %}
-					There are {{ reservations|length|apnumber }} reservations for {{ user_to_deactivate.first_name }} that are upcoming or in progress.
-				{% endif %}
-				<div class="checkbox">
-					<label><input type="checkbox" name="cancel_reservations" checked> Cancel all future reservations for {{ user_to_deactivate.first_name }}</label>
-				</div>
-				<table class="table table-bordered">
-					<thead>
-					<tr>
-						<th>Tool</th>
-						<th>Project</th>
-						<th>Start</th>
-						<th>End</th>
-					</tr>
-					</thead>
-					<tbody>
-					{% for r in reservations %}
-						<tr>
-							<td>{{ r.reservation_item }}</td>
-							<td>{{ r.project }}</td>
-							<td>{{ r.start }}</td>
-							<td>{{ r.end }}</td>
-						</tr>
-					{% endfor %}
-					</tbody>
-				</table>
-			</div>
-		{% endif %}
-		{% if tool_usage %}
-			<h2>Tool usage</h2>
-			<div class="form-group">
-				{{ user_to_deactivate.first_name }} is using {{ tool_usage|length|apnumber }} tool{{ tool_usage|length|pluralize }}.
-				<div class="checkbox">
-					<label><input type="checkbox" name="disable_tools" checked> Disable all tools for {{ user_to_deactivate.first_name }}</label>
-				</div>
-				<table class="table table-bordered">
-					<thead>
-					<tr>
-						<th>Tool</th>
-						<th>Project</th>
-						<th>Start</th>
-					</tr>
-					</thead>
-					<tbody>
-					{% for t in tool_usage %}
-						<tr>
-							<td>{{ t.tool }}</td>
-							<td>{{ t.project }}</td>
-							<td>{{ t.start }}</td>
-						</tr>
-					{% endfor %}
-					</tbody>
-				</table>
-			</div>
-		{% endif %}
-		{% if user_to_deactivate.in_area %}
-			<h2>Area access</h2>
-			<div class="form-group">
-				{{ user_to_deactivate.first_name }} is currently in the {{ user_to_deactivate.area_access_record.area }}.<br>
-				<div class="checkbox">
-					<label><input type="checkbox" name="force_area_logout" checked> Force {{ user_to_deactivate.first_name }} to log out of the {{ user_to_deactivate.area_access_record.area }}</label>
-				</div>
-			</div>
-		{% endif %}
-		{% if staff_charges %}
-			<h2>Staff charges</h2>
-			<div class="form-group">
-				{% for s in staff_charges %}
-					{{ s.staff_member }} is working on the project named &quot;{{ s.project }}&quot; for {{ s.customer }} since {{ s.start }}.<br>
-				{% endfor %}
-				{% if user_to_deactivate.charging_staff_time %}
-					{% with user_to_deactivate.get_staff_charge as s %}
-						{{ s.staff_member }} is working on the project named &quot;{{ s.project }}&quot; for {{ s.customer }} since {{ s.start }}.<br>
-					{% endwith %}
-				{% endif %}
-				<div class="checkbox">
-					<label><input type="checkbox" name="end_staff_charges" checked> End all staff charges</label>
-				</div>
-			</div>
-		{% endif %}
-		{% if not reservations and not tool_usage and not user_to_deactivate.in_area and not staff_charges %}
-			<h4>This user has no future reservations, is not using any tools, is not in a billable area, and has no staff charges in progress. It is safe to proceed.</h4>
-		{% endif %}
-		<div class="form-group">
-            {% button type="warn" submit=True value="Deactivate user" icon="glyphicon-ban-circle" %}
-		</div>
-	</form>
+    <h1>Safe deactivation for {{ user_to_deactivate }}</h1>
+    {% if warning %}<div class="alert alert-warning">{{ warning }}</div>{% endif %}
+    <form action="{% url 'deactivate_user' user_to_deactivate.id %}" method="post">
+        {% csrf_token %}
+        {% if reservations %}
+            <h2>Upcoming reservations</h2>
+            <div class="form-group">
+                {% if reservations|length == 1 %}
+                    There is one reservation for {{ user_to_deactivate.first_name }} that is upcoming or in progress.
+                {% else %}
+                    There are {{ reservations|length|apnumber }} reservations for {{ user_to_deactivate.first_name }} that are upcoming or in progress.
+                {% endif %}
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" name="cancel_reservations" checked>
+                        Cancel all future reservations for {{ user_to_deactivate.first_name }}
+                    </label>
+                </div>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Tool</th>
+                            <th>Project</th>
+                            <th>Start</th>
+                            <th>End</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reservations %}
+                            <tr>
+                                <td>{{ r.reservation_item }}</td>
+                                <td>{{ r.project }}</td>
+                                <td>{{ r.start }}</td>
+                                <td>{{ r.end }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+        {% if tool_usage %}
+            <h2>Tool usage</h2>
+            <div class="form-group">
+                {{ user_to_deactivate.first_name }} is using {{ tool_usage|length|apnumber }} tool{{ tool_usage|length|pluralize }}.
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" name="disable_tools" checked>
+                        Disable all tools for {{ user_to_deactivate.first_name }}
+                    </label>
+                </div>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Tool</th>
+                            <th>Project</th>
+                            <th>Start</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in tool_usage %}
+                            <tr>
+                                <td>{{ t.tool }}</td>
+                                <td>{{ t.project }}</td>
+                                <td>{{ t.start }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+        {% if user_to_deactivate.in_area %}
+            <h2>Area access</h2>
+            <div class="form-group">
+                {{ user_to_deactivate.first_name }} is currently in the {{ user_to_deactivate.area_access_record.area }}.
+                <br>
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" name="force_area_logout" checked>
+                        Force {{ user_to_deactivate.first_name }} to log out of the {{ user_to_deactivate.area_access_record.area }}
+                    </label>
+                </div>
+            </div>
+        {% endif %}
+        {% if staff_charges %}
+            <h2>Staff charges</h2>
+            <div class="form-group">
+                {% for s in staff_charges %}
+                    {{ s.staff_member }} is working on the project named &quot;{{ s.project }}&quot; for {{ s.customer }} since {{ s.start }}.
+                    <br>
+                {% endfor %}
+                {% if user_to_deactivate.charging_staff_time %}
+                    {% with user_to_deactivate.get_staff_charge as s %}
+                        {{ s.staff_member }} is working on the project named &quot;{{ s.project }}&quot; for {{ s.customer }} since {{ s.start }}.
+                        <br>
+                    {% endwith %}
+                {% endif %}
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" name="end_staff_charges" checked>
+                        End all staff charges
+                    </label>
+                </div>
+            </div>
+        {% endif %}
+        {% if not reservations and not tool_usage and not user_to_deactivate.in_area and not staff_charges %}
+            <h4>
+                This user has no future reservations, is not using any tools, is not in a billable area, and has no staff charges in progress. It is safe to proceed.
+            </h4>
+        {% endif %}
+        <div class="form-group">{% button type="warn" submit=True value="Deactivate user" icon="glyphicon-ban-circle" %}</div>
+    </form>
 {% endblock %}

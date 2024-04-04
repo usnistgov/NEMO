@@ -1,144 +1,195 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load custom_tags_and_filters %}
-
 {% block title %}{{ site_title }}{% endblock %}
 {% block content %}
     <h1 class="sr-only">Main dashboard</h1>
-	{% if user.training_required %}
-		<div class="row">
-			<div class="col-lg-12">
-				<a href="{% url 'facility_rules' %}">
-					<div class="well clearfix">
-						<div class="col-lg-2 text-center"><img src="{% static 'icons/caution.png' %}" alt="Caution image" height="128" width="128"></div>
-						<div class="col-lg-8 text-center">
-							<h2>{{ facility_name }} Rules Tutorial</h2>
-							<p style="text-align: center">You must complete your {{ facility_name }} rules tutorial before you can make reservations or use {{ facility_name }} tools. Click here to begin the tutorial.</p>
-						</div>
-						<div class="col-lg-2 text-center"><img src="{% static 'icons/agreement.png' %}" alt="Agreement icon" height="128" width="128"></div>
-					</div>
-				</a>
-			</div>
-		</div>
-	{% endif %}
-	<div class="row">
-		{% if upcoming_reservations %}
-			<div class="col-lg-4">
-				<h3>Upcoming reservations</h3>
+    {% if user.training_required %}
+        <div class="row">
+            <div class="col-lg-12">
+                <a href="{% url 'facility_rules' %}">
+                    <div class="well clearfix">
+                        <div class="col-lg-2 text-center">
+                            <img src="{% static 'icons/caution.png' %}" alt="Caution image" height="128" width="128">
+                        </div>
+                        <div class="col-lg-8 text-center">
+                            <h2>{{ facility_name }} Rules Tutorial</h2>
+                            <p style="text-align: center">
+                                You must complete your {{ facility_name }} rules tutorial before you can make reservations or use {{ facility_name }} tools. Click here to begin the tutorial.
+                            </p>
+                        </div>
+                        <div class="col-lg-2 text-center">
+                            <img src="{% static 'icons/agreement.png' %}" alt="Agreement icon" height="128" width="128">
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    {% endif %}
+    <div class="row">
+        {% if upcoming_reservations %}
+            <div class="col-lg-4">
+                <h3>Upcoming reservations</h3>
                 <div id="upcoming-reservations">
                     {% for r in upcoming_reservations %}
-                        {% if r.tool %}<a href="{% url 'tool_control' r.tool.id %}" style="text-decoration: none">
-                        {% elif self_log_in and r.area and r.start < now %}<a href="{% url 'self_log_in' %}?area_id={{ r.area.id }}" style="text-decoration: none">
-                        {% elif device == 'mobile' and r.area %}<a href="{% url 'view_calendar' item_type='area' item_id=r.area.id date=r.start|date:'Y-m-d' %}" style="text-decoration: none">{% endif %}
-                            <div class="alert {% if r.start < now %}alert-warning{% else %}alert-success{% endif %}">
-                                {% if r.title %}<b>{{ r.title }}</b><br>{% endif %}
-                                <b>{% if r.start < now %}You're late for your {{ r.reservation_item }} reservation!{% else %}{{ r.reservation_item }}{% endif %}</b><br>
-                                Starting on {{ r.start }}<br>
-                                Ending on {{ r.end }}
-                            </div>
-                        {% if r.tool or device == 'mobile' and r.area or self_log_in and r.area and r.start < now %}</a>{% endif %}
-                    {% endfor %}
-                </div>
-			</div>
-		{% endif %}
-		{% if alerts or disabled_resources %}
-			<div class="col-lg-4">
-                <h3>Alerts &amp; outages</h3>
-                <div id="alerts-outages" style=";overflow-y: scroll;">
-                    {% for a in alerts %}
-                        <div class="alert alert-danger">
-                            {% if a.title %}<span style="font-weight:bold">{{ a.title }}</span><br>{% endif %}
-                            {{ a.contents|linebreaks }}
+                        {% if r.tool %}
+                            <a href="{% url 'tool_control' r.tool.id %}" style="text-decoration: none">
+                            {% elif self_log_in and r.area and r.start < now %}
+                                <a href="{% url 'self_log_in' %}?area_id={{ r.area.id }}" style="text-decoration: none">
+                                {% elif device == 'mobile' and r.area %}
+                                    <a href="{% url 'view_calendar' item_type='area' item_id=r.area.id date=r.start|date:'Y-m-d' %}"
+                                       style="text-decoration: none">
+                                    {% endif %}
+                                    <div class="alert {% if r.start < now %}alert-warning{% else %}alert-success{% endif %}">
+                                        {% if r.title %}
+                                            <b>{{ r.title }}</b>
+                                            <br>
+                                        {% endif %}
+                                        <b>
+                                            {% if r.start < now %}
+                                                You're late for your {{ r.reservation_item }} reservation!
+                                            {% else %}
+                                                {{ r.reservation_item }}
+                                            {% endif %}
+                                        </b>
+                                        <br>
+                                        Starting on {{ r.start }}
+                                        <br>
+                                        Ending on {{ r.end }}
+                                    </div>
+                                    {% if r.tool or device == 'mobile' and r.area or self_log_in and r.area and r.start < now %}</a>{% endif %}
+                            {% endfor %}
                         </div>
-                    {% endfor %}
-                    {% for r in disabled_resources %}
-                        <div class="alert alert-danger">
-                            <span style="font-weight:bold">Resource outage: {{ r }}</span><br>
-                            {{ r.restriction_message }}
-                        </div>
-                    {% endfor %}
-                </div>
-                <div id="scroll-icon" style="display: none; width:100%; height:1.2em; line-height:1.2em; background:rgba(255,255,255,0.8); text-align:center;">&#x25BC;</div>
-			</div>
-		{% endif %}
-		{% if usage_events or user.in_area or self_log_in or user.is_staff and user.charging_staff_time %}
-			<div class="col-lg-4">
-				<h3>Current {{ facility_name }} usage</h3>
-                <div id="facility-usage">
-                    {% if user.is_staff and user.charging_staff_time %}
-                        <a href="{% url 'staff_charges' %}" style="text-decoration: none">
-                            <div class="alert alert-warning">
-                            {% with user.get_staff_charge as staff_charge %}
-                                You are currently charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.
-                            {% endwith %}
-                            </div>
-                        </a>
-                    {% endif %}
-                    {% for usage in usage_events %}
-                        <a href="{% url 'tool_control' usage.tool.tool_or_parent_id %}" style="text-decoration: none">
-                            <div class="alert alert-info">
-                                You are using the <b>{{ usage.tool }}</b> for the project named {{ usage.project }} since {{ usage.start }}.
-                            </div>
-                        </a>
-                    {% endfor %}
-                    {% if user.in_area %}
-                        {% with user.active_project_count as active_project_count %}
-                            <div class="alert alert-info">
-                                You are logged in to the <b>{{ user.area_access_record.area }}</b>{% if self_log_out %} (<a href="{% url 'self_log_out' user.id %}">logout</a>){% endif %}.
-                                Usage time is being billed to the project named <b>{{ user.billing_to_project }}</b>.
-                                {% if active_project_count > 1 %}
-                                    <a href="{% url 'change_project' %}">Click here to bill to a different project at any time.</a>
-                                {% endif %}
-                            </div>
-                        {% endwith %}
-                    {% endif %}
-                    {% if self_log_in %}
-                        <a href="{% url 'self_log_in' %}" style="text-decoration: none">
-                            <div class="alert alert-success">
-                                You are not logged in to an access controlled area. Click here to log in.
-                            </div>
-                        </a>
-                    {% endif %}
-                </div>
-			</div>
-		{% endif %}
-	</div>
-		{% for choice in landing_page_choices %}
-			{% if forloop.counter0|divisibleby:4 %}<div class="row">{% endif %}
-				<div class="col-md-3 text-center" style="margin-bottom:30px">
-					<a href="{{ choice.url }}" {% if choice.open_in_new_tab %}target="_blank" {% else %}onclick="show_spinner();"{% endif %} {% if choice.secure_referral %}rel="noopener noreferrer"{% endif %} style="text-decoration: none !important">
-						<img src="{{ choice.image.url }}" alt="{{ choice.name }} icon" height="128" width="128">
-						<h3 style="margin-top:0">
-							{{ choice.name }}
-							{% if choice.notifications %}
-								{% for type, count in notification_counts.items %}
-									{% if choice.notifications == type and count %}
-										<span class="badge active">{{ count }}</span>
-									{% endif %}
-								{% endfor %}
-							{% endif %}
-						</h3>
-					</a>
-				</div>
-			{% if forloop.counter|divisibleby:4 or forloop.last %}</div>{% endif %}
-		{% empty %}
-			<span style="font-size:xx-large">
-				Welcome! This is {{ site_title }}'s landing page - the first page users see when visiting the site. There's nothing here yet...<br>&nbsp;<br>
-
-                {% if user.is_superuser and "django.contrib.admin"|app_installed %}
-                    Add landing page choices by navigating to<br>
-                    <a href="{% url 'admin:NEMO_landingpagechoice_add' %}">
-                        Administration -> Detailed Administration -><br>
-                        Landing page choices -> Add landing page choice
-                    </a>
-                    <br>&nbsp;<br>
-
-                    Customize {{ site_title }} further by navigating to<br>
-                    <a href="{% url 'customization' %}">Administration -> Customization</a>
+                    </div>
                 {% endif %}
-			</span>
-		{% endfor %}
-    <script>
+                {% if alerts or disabled_resources %}
+                    <div class="col-lg-4">
+                        <h3>Alerts &amp; outages</h3>
+                        <div id="alerts-outages" style=";overflow-y: scroll;">
+                            {% for a in alerts %}
+                                <div class="alert alert-danger">
+                                    {% if a.dismissible and a.user == user %}
+                                        <form id="delete_alert_{{ a.id }}" method="post" action="{% url 'delete_alert' a.id %}">
+                                            {% csrf_token %}
+                                            <span class="glyphicon glyphicon-remove pull-right"
+                                                  style="cursor:pointer"
+                                                  onclick="$('#delete_alert_{{ a.id }}').submit()"
+                                                  data-toggle="tooltip"
+                                                  data-placement="top"
+                                                  title="Delete this alert"></span>
+                                        </form>
+                                    {% endif %}
+                                    {% if a.title %}
+                                        <span style="font-weight:bold">{{ a.title }}</span>
+                                        <br>
+                                    {% endif %}
+                                    {{ a.contents|safe|linebreaksbr }}
+                                </div>
+                            {% endfor %}
+                            {% for r in disabled_resources %}
+                                <div class="alert alert-danger">
+                                    <span style="font-weight:bold">Resource outage: {{ r }}</span>
+                                    <br>
+                                    {{ r.restriction_message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div id="scroll-icon"
+                             style="display: none;
+                                    width:100%;
+                                    height:1.2em;
+                                    line-height:1.2em;
+                                    background:rgba(255,255,255,0.8);
+                                    text-align:center">&#x25BC;</div>
+                    </div>
+                {% endif %}
+                {% if usage_events or user.in_area or self_log_in or user.is_staff and user.charging_staff_time %}
+                    <div class="col-lg-4">
+                        <h3>Current {{ facility_name }} usage</h3>
+                        <div id="facility-usage">
+                            {% if user.is_staff and user.charging_staff_time %}
+                                <a href="{% url 'staff_charges' %}" style="text-decoration: none">
+                                    <div class="alert alert-warning">
+                                        {% with user.get_staff_charge as staff_charge %}
+                                            You are currently charging staff time to {{ staff_charge.customer }} for the project named {{ staff_charge.project }} since {{ staff_charge.start }}.
+                                        {% endwith %}
+                                    </div>
+                                </a>
+                            {% endif %}
+                            {% for usage in usage_events %}
+                                <a href="{% url 'tool_control' usage.tool.tool_or_parent_id %}" style="text-decoration: none">
+                                    <div class="alert alert-info">
+                                        You are using the <b>{{ usage.tool }}</b> for the project named {{ usage.project }} since {{ usage.start }}.
+                                    </div>
+                                </a>
+                            {% endfor %}
+                            {% if user.in_area %}
+                                {% with user.active_project_count as active_project_count %}
+                                    <div class="alert alert-info">
+                                        You are logged in to the <b>{{ user.area_access_record.area }}</b>
+                                        {% if self_log_out %}
+                                            (<a href="{% url 'self_log_out' user.id %}">logout</a>)
+                                        {% endif %}
+                                        .
+                                        Usage time is being billed to the project named <b>{{ user.billing_to_project }}</b>.
+                                        {% if active_project_count > 1 %}
+                                            <a href="{% url 'change_project' %}">Click here to bill to a different project at any time.</a>
+                                        {% endif %}
+                                    </div>
+                                {% endwith %}
+                            {% endif %}
+                            {% if self_log_in %}
+                                <a href="{% url 'self_log_in' %}" style="text-decoration: none">
+                                    <div class="alert alert-success">You are not logged in to an access controlled area. Click here to log in.</div>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            {% for choice in landing_page_choices %}
+                {% if forloop.counter0|divisibleby:4 %}<div class="row">{% endif %}
+                    <div class="col-md-3 text-center" style="margin-bottom:30px">
+                        <a href="{{ choice.url }}"
+                           {% if choice.open_in_new_tab %}target="_blank" {% else %}onclick="show_spinner();"{% endif %}
+                           {% if choice.secure_referral %}rel="noopener noreferrer"{% endif %}
+                           style="text-decoration: none !important">
+                            <img src="{{ choice.image.url }}" alt="{{ choice.name }} icon" height="128" width="128">
+                            <h3 style="margin-top:0">
+                                {{ choice.name }}
+                                {% if choice.notifications %}
+                                    {% for type, count in notification_counts.items %}
+                                        {% if choice.notifications == type and count %}<span class="badge active">{{ count }}</span>{% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </h3>
+                        </a>
+                    </div>
+                    {% if forloop.counter|divisibleby:4 or forloop.last %}</div>{% endif %}
+            {% empty %}
+                <span style="font-size:xx-large">
+                    Welcome! This is {{ site_title }}'s landing page - the first page users see when visiting the site. There's nothing here yet...
+                    <br>
+                    &nbsp;
+                    <br>
+                    {% if user.is_superuser and "django.contrib.admin"|app_installed %}
+                        Add landing page choices by navigating to
+                        <br>
+                        <a href="{% url 'admin:NEMO_landingpagechoice_add' %}">
+                            Administration -> Detailed Administration ->
+                            <br>
+                            Landing page choices -> Add landing page choice
+                        </a>
+                        <br>
+                        &nbsp;
+                        <br>
+                        Customize {{ site_title }} further by navigating to
+                        <br>
+                        <a href="{% url 'customization' %}">Administration -> Customization</a>
+                    {% endif %}
+                </span>
+            {% endfor %}
+            <script>
         let facility_usage_height = document.getElementById('facility-usage') ? document.getElementById('facility-usage').scrollHeight : 0;
         let reservations_height = document.getElementById('upcoming-reservations') ? document.getElementById('upcoming-reservations').scrollHeight : 0;
         if (document.getElementById('alerts-outages'))
@@ -149,6 +200,8 @@
                 $('#scroll-icon').show();
             }
         }
-    </script>
-{% endblock %}
-{% block extra_whitespace %}{# Hide extra whitespace #}{% endblock %}
+            </script>
+        {% endblock %}
+        {% block extra_whitespace %}
+            {# Hide extra whitespace #}
+        {% endblock %}
