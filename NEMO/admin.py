@@ -484,15 +484,21 @@ class ConfigurationAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "tool",
+        "is_tool_visible",
         "name",
         "enabled",
         "qualified_users_are_maintainers",
         "display_order",
         "exclude_from_configuration_agenda",
     )
+    list_filter = ["enabled", ("tool", admin.RelatedOnlyFieldListFilter), "tool__visible"]
     filter_horizontal = ("maintainers",)
     actions = [duplicate_configuration]
     autocomplete_fields = ["tool"]
+
+    @admin.display(ordering="tool__visible", boolean=True, description="Tool visible")
+    def is_tool_visible(self, obj: Configuration):
+        return obj.tool.visible
 
 
 @register(ConfigurationHistory)
