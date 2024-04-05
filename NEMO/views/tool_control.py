@@ -96,12 +96,6 @@ def tool_status(request, tool_id):
     tool = get_object_or_404(Tool, id=tool_id, visible=True)
     user_is_qualified = tool.user_set.filter(id=user.id).exists()
     broadcast_upcoming_reservation = ToolCustomization.get("tool_control_broadcast_upcoming_reservation")
-    user_is_qualified = tool.user_set.filter(id=request.user.id).exists()
-    user_is_staff = request.user.is_staff
-    user: User = request.user
-    tool_control_broadcast_upcoming_reservation_enabled = ToolCustomization.get_bool(
-        "tool_control_broadcast_upcoming_reservation"
-    )
     wait_list = tool.current_wait_list()
     user_wait_list_entry = wait_list.filter(user=request.user).first()
     user_wait_list_position = (
