@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     ]
 
     def new_version_news(apps, schema_editor):
-        create_news_for_version(apps, "5.4.0")
+        create_news_for_version(apps, "5.5.0")
 
     operations = [
         migrations.RunPython(new_version_news),

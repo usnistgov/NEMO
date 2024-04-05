@@ -4,8 +4,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from NEMO.admin import InterlockCardAdminForm, ToolAdminForm
-from NEMO.models import Account, Area, Door, Interlock, InterlockCardCategory, PhysicalAccessLevel, Project, Tool, User
-from NEMO.tests.test_utilities import login_as, login_as_access_user, login_as_user
+from NEMO.models import Area, Door, Interlock, InterlockCardCategory, PhysicalAccessLevel, Tool, User
+from NEMO.tests.test_utilities import create_user_and_project, login_as
 
 tool: Optional[Tool] = None
 alternate_tool: Optional[Tool] = None
@@ -112,14 +112,10 @@ class ToolTestCase(TestCase):
         self.assertEqual(tool.get_absolute_url(), alternate_tool.get_absolute_url())
 
     def test_tool_in_use(self):
-        user = login_as_user(self.client)
+        user, project = create_user_and_project(add_area_access_permissions=True)
         # make the tool operational
         tool.operational = True
         tool.save()
-        project = Project.objects.create(
-            name="test project", application_identifier="sadasd", account=Account.objects.create(name="test account")
-        )
-        user.projects.add(project)
         # user needs to be qualified to use the tool
         user.qualifications.add(tool)
         user.physical_access_levels.add(PhysicalAccessLevel.objects.get(name="cleanroom access"))
@@ -127,7 +123,7 @@ class ToolTestCase(TestCase):
         user.training_required = False
         user.save()
         # log into the area
-        login_as_access_user(self.client)
+        login_as(self.client, user)
         response = self.client.post(
             reverse("login_to_area", kwargs={"door_id": area_door.id}), {"badge_number": user.badge_number}, follow=True
         )
