@@ -20,38 +20,38 @@ class ToolTestCase(TestCase):
     def test_user_enter_wait_list_regular_mode_fail(self):
         self.enter_wait_list_mode_fail(reverse("enter_wait_list"), Tool.OperationMode.REGULAR)
 
-    # def test_user_enter_wait_list_regular_mode_kiosk_fail(self):
-    #     self.enter_wait_list_mode_fail(reverse("enter_wait_list_from_kiosk"), Tool.OperationMode.REGULAR, True)
+    def test_user_enter_wait_list_regular_mode_kiosk_fail(self):
+        self.enter_wait_list_mode_fail(reverse("enter_wait_list_from_kiosk"), Tool.OperationMode.REGULAR, True)
 
     def test_user_enter_wait_list_wait_list_mode_pass(self):
         self.enter_wait_list_mode_pass(reverse("enter_wait_list"), Tool.OperationMode.WAIT_LIST)
 
-    # def test_user_enter_wait_list_wait_list_mode_kiosk_pass(self):
-    #     self.enter_wait_list_mode_pass(reverse("enter_wait_list_from_kiosk"), Tool.OperationMode.WAIT_LIST)
+    def test_user_enter_wait_list_wait_list_mode_kiosk_pass(self):
+        self.enter_wait_list_mode_pass(reverse("enter_wait_list_from_kiosk"), Tool.OperationMode.WAIT_LIST)
 
     def test_user_enter_wait_list_hybrid_mode_pass(self):
         self.enter_wait_list_mode_pass(reverse("enter_wait_list"), Tool.OperationMode.HYBRID)
 
-    # def test_user_enter_wait_list_hybrid_mode_kiosk_pass(self):
-    #     self.enter_wait_list_mode_pass(reverse("enter_wait_list_from_kiosk"), Tool.OperationMode.HYBRID)
+    def test_user_enter_wait_list_hybrid_mode_kiosk_pass(self):
+        self.enter_wait_list_mode_pass(reverse("enter_wait_list_from_kiosk"), Tool.OperationMode.HYBRID)
 
     def test_user_enter_wait_list_twice(self):
         self.user_enter_wait_list_twice(reverse("enter_wait_list"))
 
-    # def test_user_enter_wait_list_kiosk_twice(self):
-    #     self.user_enter_wait_list_twice(reverse("enter_wait_list_from_kiosk"), True)
+    def test_user_enter_wait_list_kiosk_twice(self):
+        self.user_enter_wait_list_twice(reverse("enter_wait_list_from_kiosk"), True)
 
     def test_user_exit_wait_list(self):
         self.exit_wait_list_pass(reverse("enter_wait_list"), reverse("exit_wait_list"))
 
-    # def test_user_exit_wait_list_kiosk(self):
-    #     self.exit_wait_list_pass(reverse("enter_wait_list_from_kiosk"), reverse("exit_wait_list_from_kiosk"))
+    def test_user_exit_wait_list_kiosk(self):
+        self.exit_wait_list_pass(reverse("enter_wait_list_from_kiosk"), reverse("exit_wait_list_from_kiosk"))
 
     def test_user_exit_wait_list_not_in_wait_list(self):
         self.exit_wait_list_not_in_wait_list(reverse("exit_wait_list"))
 
-    # def test_user_exit_wait_list_kiosk_not_in_wait_list(self):
-    #     self.exit_wait_list_not_in_wait_list(reverse("exit_wait_list_from_kiosk"), True)
+    def test_user_exit_wait_list_kiosk_not_in_wait_list(self):
+        self.exit_wait_list_not_in_wait_list(reverse("exit_wait_list_from_kiosk"), True)
 
     def test_wait_list_mode_reservation(self):
         time_to_expiration_saved, reservation_buffer_saved = get_configuration()
@@ -703,26 +703,26 @@ class ToolTestCase(TestCase):
             setup_configuration(time_to_expiration_saved, reservation_buffer_saved)
 
     def enter_wait_list_mode_fail(self, url, mode, kiosk=False):
-        user, project = create_user_and_project(True)
+        user, project = create_user_and_project(True, True)
         tool = create_tool("WaitList Test Tool", mode)
         usage = create_usage(user, project, tool, timezone.now() - timezone.timedelta(minutes=10), None)
         login_as(self.client, user)
         response = self.client.post(
             url,
-            {"tool_id": tool.id},
+            {"tool_id": tool.id, "customer_id": user.id},
             follow=True,
         )
         self.assertContains(response, "does not operate in wait list mode", status_code=200 if kiosk else 400)
         self.assertEqual(tool.current_wait_list().count(), 0)
 
     def enter_wait_list_mode_pass(self, url, mode):
-        user, project = create_user_and_project(True)
+        user, project = create_user_and_project(True, True)
         tool = create_tool("WaitList Test Tool", mode)
         usage = create_usage(user, project, tool, timezone.now() - timezone.timedelta(minutes=10), None)
         login_as(self.client, user)
         response = self.client.post(
             url,
-            {"tool_id": tool.id},
+            {"tool_id": tool.id, "customer_id": user.id},
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -730,13 +730,13 @@ class ToolTestCase(TestCase):
         self.assertEqual(tool.top_wait_list_entry().user, user)
 
     def user_enter_wait_list_twice(self, url, kiosk=False):
-        user, project = create_user_and_project(True)
+        user, project = create_user_and_project(True, True)
         tool = create_tool("WaitList Test Tool", Tool.OperationMode.WAIT_LIST)
         usage = create_usage(user, project, tool, timezone.now() - timezone.timedelta(minutes=10), None)
         login_as(self.client, user)
         response = self.client.post(
             url,
-            {"tool_id": tool.id},
+            {"tool_id": tool.id, "customer_id": user.id},
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -745,7 +745,7 @@ class ToolTestCase(TestCase):
 
         response = self.client.post(
             url,
-            {"tool_id": tool.id},
+            {"tool_id": tool.id, "customer_id": user.id},
             follow=True,
         )
         self.assertContains(response, "already in the wait list", status_code=200 if kiosk else 400)
@@ -753,13 +753,13 @@ class ToolTestCase(TestCase):
         self.assertEqual(tool.top_wait_list_entry().user, user)
 
     def exit_wait_list_pass(self, enter_url, exit_url):
-        user, project = create_user_and_project(True)
+        user, project = create_user_and_project(True, True)
         tool = create_tool("WaitList Test Tool", Tool.OperationMode.WAIT_LIST)
         usage = create_usage(user, project, tool, timezone.now() - timezone.timedelta(minutes=10), None)
         login_as(self.client, user)
         response = self.client.post(
             enter_url,
-            {"tool_id": tool.id},
+            {"tool_id": tool.id, "customer_id": user.id},
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -767,19 +767,19 @@ class ToolTestCase(TestCase):
         self.assertEqual(tool.top_wait_list_entry().user, user)
         response = self.client.post(
             exit_url,
-            {"tool_id": tool.id},
+            {"tool_id": tool.id, "customer_id": user.id},
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(tool.current_wait_list().count(), 0)
 
     def exit_wait_list_not_in_wait_list(self, url, kiosk=False):
-        user, project = create_user_and_project(True)
+        user, project = create_user_and_project(True, True)
         tool = create_tool("WaitList Test Tool", Tool.OperationMode.WAIT_LIST)
         login_as(self.client, user)
         response = self.client.post(
             url,
-            {"tool_id": tool.id},
+            {"tool_id": tool.id, "customer_id": user.id},
             follow=True,
         )
         self.assertContains(response, "not in the wait list", status_code=200 if kiosk else 400)
