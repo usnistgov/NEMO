@@ -457,6 +457,8 @@ class ToolCustomization(CustomizationBase):
         "tool_problem_send_to_all_qualified_users": "",
         "tool_configuration_near_future_days": "1",
         "tool_reservation_policy_superusers_bypass": "",
+        "tool_wait_list_spot_expiration": "15",
+        "tool_wait_list_reservation_buffer": "15",
     }
 
     def validate(self, name, value):
@@ -563,6 +565,7 @@ class TemplatesCustomization(CustomizationBase):
         ("reservation_cancelled_user_email", ".html"),
         ("weekend_access_email", ".html"),
         ("recurring_charges_reminder_email", ".html"),
+        ("wait_list_notification_email", ".html"),
     ]
 
 

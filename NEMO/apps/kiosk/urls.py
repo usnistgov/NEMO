@@ -36,6 +36,8 @@ urlpatterns = [
                     views.tool_reservation,
                     name="kiosk_tool_reservation",
                 ),
+                path("enter_wait_list/", views.enter_wait_list, name="enter_wait_list_from_kiosk"),
+                path("exit_wait_list/", views.exit_wait_list, name="exit_wait_list_from_kiosk"),
                 path("logout_user/<int:tool_id>", views.logout_user, name="kiosk_logout_user"),
                 re_path(
                     r"^tool_report_problem/(?P<tool_id>\d+)/(?P<user_id>\d+)/(?P<back>back_to_start|back_to_category)/$",

@@ -298,6 +298,35 @@
         {
             ajax_post(url, data, function(response, status, xml_http_request) {interlock_success_callback(response, status, xml_http_request)}, function(response, status, xml_http_request) { return interlock_failure_callback(response, status, xml_http_request, url, data) })
         }
+
+		function enter_wait_list(tool_id, customer_id)
+        {
+			default_content_element.hide();
+			error_element.hide();
+			error_interlock_element.hide();
+			let url = "{% url 'enter_wait_list_from_kiosk' %}";
+			status_element.html("<h1>Entering wait list...</h1>").show();
+			let data = {
+                tool_id: tool_id,
+				customer_id: customer_id
+			};
+            ajax_post(url, data, load_complete);
+		}
+
+		function exit_wait_list(tool_id, customer_id)
+        {
+			default_content_element.hide();
+			error_element.hide();
+			error_interlock_element.hide();
+			let url = "{% url 'exit_wait_list_from_kiosk' %}";
+			status_element.html("<h1>Exiting wait list...</h1>").show();
+            let data = {
+                tool_id: tool_id,
+				customer_id: customer_id
+			};
+            ajax_post(url, data, load_complete);
+		}
+
 		function enable_tool(tool_id)
 		{
 			default_content_element.hide();

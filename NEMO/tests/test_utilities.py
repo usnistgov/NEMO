@@ -64,7 +64,7 @@ def validate_model_error(test_case: TestCase, model, error_fields, strict=False)
                 test_case.fail(f"{diff2} have errors but shouldn't")
 
 
-def create_user_and_project(is_staff=False) -> Tuple[User, Project]:
+def create_user_and_project(is_staff=False, add_kiosk_permission=False) -> Tuple[User, Project]:
     count = User.objects.count()
     user: User = User.objects.create(
         first_name="Testy",
@@ -73,6 +73,9 @@ def create_user_and_project(is_staff=False) -> Tuple[User, Project]:
         email=f"test{count}@test.com",
         is_staff=is_staff,
     )
+    if add_kiosk_permission:
+        user.user_permissions.add(Permission.objects.get(codename="kiosk"))
+        user.save()
     project = Project.objects.create(
         name=f"TestProject{count}", account=Account.objects.create(name=f"TestAccount{count}")
     )

@@ -362,6 +362,11 @@ class UserPreferences(BaseModel):
         choices=EmailNotificationType.on_choices(),
         help_text="Tool qualification expiration reminders",
     )
+    email_send_wait_list_notification_emails = models.PositiveIntegerField(
+        default=EmailNotificationType.BOTH_EMAILS,
+        choices=EmailNotificationType.on_choices(),
+        help_text="Tool wait list notification",
+    )
     email_send_usage_reminders = models.PositiveIntegerField(
         default=EmailNotificationType.BOTH_EMAILS, choices=EmailNotificationType.Choices, help_text="Usage reminders"
     )
@@ -1093,6 +1098,13 @@ class UserDocuments(BaseDocumentModel):
 
 
 class Tool(SerializationByNameModel):
+
+    class OperationMode(object):
+        REGULAR = 0
+        WAIT_LIST = 1
+        HYBRID = 2
+        Choices = ((REGULAR, "Regular"), (WAIT_LIST, "Wait List"), (HYBRID, "Hybrid"))
+
     name = models.CharField(max_length=100, unique=True)
     parent_tool = models.ForeignKey(
         "Tool",
@@ -1290,6 +1302,11 @@ class Tool(SerializationByNameModel):
         db_column="policy_off_weekend",
         default=False,
         help_text="Whether or not policy rules should be enforced on weekends",
+    )
+    _operation_mode = models.IntegerField(
+        choices=OperationMode.Choices,
+        default=OperationMode.REGULAR,
+        help_text="The operation mode of the tool, which determines if reservations and wait list are allowed.",
     )
 
     class Meta:
@@ -1626,6 +1643,27 @@ class Tool(SerializationByNameModel):
         self.raise_setter_error_if_child_tool("tool_calendar_color")
         self._tool_calendar_color = value
 
+    @property
+    def operation_mode(self):
+        return self.parent_tool.operation_mode if self.is_child_tool() else self._operation_mode
+
+    @operation_mode.setter
+    def operation_mode(self, value):
+        self.raise_setter_error_if_child_tool("operation_mode")
+        self._operation_mode = value
+
+    def allow_wait_list(self):
+        return self.operation_mode in [self.OperationMode.WAIT_LIST, self.OperationMode.HYBRID]
+
+    def allow_reservation(self):
+        return self.operation_mode in [self.OperationMode.REGULAR, self.OperationMode.HYBRID]
+
+    def current_wait_list(self):
+        return ToolWaitList.objects.filter(tool=self, expired=False, deleted=False).order_by("date_entered")
+
+    def top_wait_list_entry(self):
+        return self.current_wait_list().first()
+
     def name_or_child_in_use_name(self, parent_ids=None) -> str:
         """This method returns the tool name unless one of its children is in use."""
         """ When used in loops, provide the parent_ids list to avoid unnecessary db calls """
@@ -1923,6 +1961,22 @@ class Tool(SerializationByNameModel):
             fresh_tool = Tool(id=self.id, parent_tool=self.parent_tool, name=self.name, visible=False)
             self.__dict__.update(fresh_tool.__dict__)
         super().save(force_insert, force_update, using, update_fields)
+
+
+class ToolWaitList(BaseModel):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        help_text="The user in the wait list.",
+    )
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE, help_text="The target tool for the wait list entry.")
+    date_entered = models.DateTimeField(auto_now_add=True, help_text="The date/time the user entered the wait list.")
+    date_exited = models.DateTimeField(null=True, blank=True, help_text="The date/time the user exited the wait list.")
+    last_turn_available_at = models.DateTimeField(
+        null=True, blank=True, help_text="The last date/time the user's turn became available."
+    )
+    expired = models.BooleanField(default=False, help_text="Whether the user's spot in the wait list has expired.")
+    deleted = models.BooleanField(default=False, help_text="Whether the wait list entry has been deleted.")
 
 
 class ToolDocuments(BaseDocumentModel):

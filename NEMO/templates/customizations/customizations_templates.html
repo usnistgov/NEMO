@@ -124,6 +124,24 @@
         <div class="customization-separation"></div>
     </div>
     <div class="panel-body">
+        <h3 class="customization-section-title" id="wait_list_notification_email_id">Tool wait list notification email</h3>
+        <p>This email is sent to a person in a wait list when their turn to use the tool has arrived.</p>
+        <p>The following context variables are provided when the email is rendered:</p>
+        <ul>
+            <li>
+                <b>user</b> - the user in the wait list
+            </li>
+            <li>
+                <b>tool</b> - the tool that the user is in the wait list for
+            </li>
+            <li>
+                <b>time_to_expiration</b> - the time left for the user to use the tool
+            </li>
+        </ul>
+        {% include 'customizations/customizations_upload.html' with element=wait_list_notification_email name='wait list notification email' key='templates' %}
+        <div class="customization-separation"></div>
+    </div>
+    <div class="panel-body">
         <h3 class="customization-section-title" id="cancellation_email_id">Cancellation email</h3>
         <p>
             This email is sent to a user when a staff member cancels the user's reservation. The following context variables are provided when the email is rendered:

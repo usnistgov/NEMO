@@ -32,6 +32,7 @@ from NEMO.models import (
     TaskStatus,
     Tool,
     ToolUsageCounter,
+    ToolWaitList,
     UsageEvent,
     User,
 )
@@ -95,6 +96,20 @@ def tool_status(request, tool_id):
     tool = get_object_or_404(Tool, id=tool_id, visible=True)
     user_is_qualified = tool.user_set.filter(id=user.id).exists()
     broadcast_upcoming_reservation = ToolCustomization.get("tool_control_broadcast_upcoming_reservation")
+    wait_list = tool.current_wait_list()
+    user_wait_list_entry = wait_list.filter(user=request.user).first()
+    user_wait_list_position = (
+        (
+            ToolWaitList.objects.filter(
+                tool=tool, date_entered__lte=user_wait_list_entry.date_entered, expired=False, deleted=False
+            )
+            .exclude(user=user)
+            .count()
+            + 1
+        )
+        if user_wait_list_entry
+        else 0
+    )
     dictionary = {
         "tool": tool,
         "tool_rate": rate_class.get_tool_rate(tool, user),
@@ -112,6 +127,19 @@ def tool_status(request, tool_id):
         "user_can_see_documents": user.is_any_part_of_staff
         or not ToolCustomization.get_bool("tool_control_show_documents_only_qualified_users")
         or user_is_qualified,
+        "wait_list_position": user_wait_list_position,  # 0 if not in wait list
+        "wait_list": wait_list,
+        "show_wait_list": (
+            tool.allow_wait_list()
+            and (
+                not (
+                    tool.get_current_usage_event().operator.id == user.id
+                    or tool.get_current_usage_event().user.id == user.id
+                )
+                if tool.in_use()
+                else wait_list.count() > 0
+            )
+        ),
     }
 
     try:
@@ -404,6 +432,11 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     new_usage_event.remote_work = remote_work
     new_usage_event.save()
 
+    # Remove wait list entry if it exists
+    wait_list_entry = ToolWaitList.objects.filter(tool=tool, expired=False, deleted=False, user=user)
+    if wait_list_entry.count() > 0:
+        wait_list_entry.update(deleted=True, date_exited=timezone.now())
+
     try:
         dynamic_form.charge_for_consumables(new_usage_event, new_usage_event.pre_run_data, request)
     except Exception as e:
@@ -484,6 +517,56 @@ def disable_tool(request, tool_id):
         return render(request, "tool_control/logout_user.html", {"area": area_record.area, "tool": tool})
 
     return HttpResponse()
+
+
+@login_required
+@require_POST
+def enter_wait_list(request):
+    tool = get_object_or_404(Tool, id=request.POST["tool_id"])
+
+    if not tool.allow_wait_list():
+        return HttpResponseBadRequest("This tool does not operate in wait list mode.")
+
+    user = request.user
+    wait_list_other_users = ToolWaitList.objects.filter(tool=tool, expired=False, deleted=False).exclude(user=user)
+    wait_list_user_entry = ToolWaitList.objects.filter(tool=tool, expired=False, deleted=False, user=user)
+
+    # User must not be in the wait list
+    if wait_list_user_entry.count() > 0:
+        return HttpResponseBadRequest("You are already in the wait list.")
+
+    # The tool must be in use or have a wait list
+    current_usage_event = tool.get_current_usage_event()
+    if not current_usage_event and wait_list_other_users.count() == 0:
+        return HttpResponseBadRequest("The tool is free to use.")
+
+    # The user must be qualified to use the tool itself, or the parent tool in case of alternate tool.
+    tool_to_check_qualifications = tool.parent_tool if tool.is_child_tool() else tool
+    if tool_to_check_qualifications not in user.qualifications.all() and not user.is_staff:
+        return HttpResponseBadRequest("You are not qualified to use this tool.")
+
+    entry = ToolWaitList()
+    entry.user = user
+    entry.tool = tool
+    entry.save()
+
+    return HttpResponse()
+
+
+@login_required
+@require_POST
+def exit_wait_list(request):
+    tool = get_object_or_404(Tool, id=request.POST["tool_id"])
+    user = request.user
+    wait_list_entry = ToolWaitList.objects.filter(tool=tool, expired=False, deleted=False, user=user)
+    if wait_list_entry.count() == 0:
+        return HttpResponseBadRequest("You are not in the wait list.")
+    do_exit_wait_list(wait_list_entry, timezone.now())
+    return HttpResponse()
+
+
+def do_exit_wait_list(entry, time):
+    entry.update(deleted=True, date_exited=time)
 
 
 @login_required
