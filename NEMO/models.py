@@ -155,6 +155,9 @@ class BaseDocumentModel(BaseModel):
     name = models.CharField(
         null=True, blank=True, max_length=200, help_text="The optional name to display for this document"
     )
+    display_order = models.IntegerField(
+        help_text="The order in which choices are displayed on the landing page, from left to right, top to bottom. Lower values are displayed first."
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def get_filename_upload(self, filename):
@@ -190,7 +193,7 @@ class BaseDocumentModel(BaseModel):
             raise ValidationError({"document": "Choose either document or URL but not both."})
 
     class Meta:
-        ordering = ["-uploaded_at"]
+        ordering = ["display_order", "-uploaded_at"]
         abstract = True
 
 
@@ -3656,9 +3659,15 @@ class SafetyItem(BaseModel):
     category = models.ForeignKey(
         SafetyCategory, null=True, blank=True, help_text="The category for this safety item.", on_delete=models.SET_NULL
     )
+    display_order = models.IntegerField(
+        help_text="The order in which the items will be displayed within the same category. Lower values are displayed first."
+    )
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ["display_order", "name"]
 
 
 class SafetyItemDocuments(BaseDocumentModel):
@@ -4426,9 +4435,15 @@ class StaffKnowledgeBaseItem(BaseModel):
         help_text="The category for this item.",
         on_delete=models.SET_NULL,
     )
+    display_order = models.IntegerField(
+        help_text="The order in which the items will be displayed within the same category. Lower values are displayed first."
+    )
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ["display_order", "name"]
 
 
 class StaffKnowledgeBaseItemDocuments(BaseDocumentModel):
@@ -4459,9 +4474,15 @@ class UserKnowledgeBaseItem(BaseModel):
         help_text="The category for this item.",
         on_delete=models.SET_NULL,
     )
+    display_order = models.IntegerField(
+        help_text="The order in which the items will be displayed within the same category. Lower values are displayed first."
+    )
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ["display_order", "name"]
 
 
 class UserKnowledgeBaseItemDocuments(BaseDocumentModel):
