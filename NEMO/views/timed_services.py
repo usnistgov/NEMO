@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 from logging import getLogger
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Set
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
@@ -24,6 +24,7 @@ from NEMO.models import (
     RequestStatus,
     Reservation,
     ReservationItemType,
+    ScheduledOutage,
     StaffCharge,
     TemporaryPhysicalAccessRequest,
     Tool,
@@ -37,9 +38,11 @@ from NEMO.utilities import (
     as_timezone,
     beginning_of_the_day,
     bootstrap_primary_color,
+    end_of_the_day,
     format_datetime,
     get_email_from_settings,
     get_full_url,
+    is_date_in_datetime_range,
     quiet_int,
     render_email_template,
     send_mail,
@@ -958,4 +961,45 @@ def do_auto_logout_users():
             # Now adjust the time, so it's "auto_logout_time" minutes long max
             record.end = record.start + timeout
             record.save(update_fields=["end"])
+    return HttpResponse()
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def email_scheduled_outage_reminders(request):
+    return send_email_scheduled_outage_reminders(request)
+
+
+def send_email_scheduled_outage_reminders(request=None) -> HttpResponse:
+    # Exit early if the template email is not defined
+    message = get_media_file_contents("scheduled_outage_reminder_email.html")
+    if not message:
+        timed_service_logger.error(
+            "Scheduled outage reminder email couldn't be send because scheduled_outage_reminder_email.html is not defined"
+        )
+        return HttpResponseNotFound(
+            "The scheduled outage reminder template has not been customized for your organization yet. Please visit the customization page to upload one, then scheduled outage reminder email notifications can be sent."
+        )
+    future_outages: QuerySetType[ScheduledOutage] = ScheduledOutage.objects.filter(start__gte=timezone.now())
+    outages_to_send_reminders_for: Set[ScheduledOutage] = set()
+    for future_outage in future_outages:
+        # Skip if we have no email addresses to send it to
+        if future_outage.reminder_emails:
+            for remaining_days in future_outage.get_reminder_days():
+                outage_date = date.today() + timedelta(days=remaining_days)
+                # Use the whole day of the start of the outage to check
+                start, end = beginning_of_the_day(future_outage.start), end_of_the_day(future_outage.start)
+                if is_date_in_datetime_range(outage_date, start, end):
+                    outages_to_send_reminders_for.add(future_outage)
+    for outage in outages_to_send_reminders_for:
+        subject = f"{outage.title} reminder"
+        rendered_message = render_email_template(message, {"outage": outage}, request)
+        send_mail(
+            subject=subject,
+            content=rendered_message,
+            from_email=get_email_from_settings(),
+            to=outage.reminder_emails,
+            email_category=EmailCategory.TIMED_SERVICES,
+        )
     return HttpResponse()

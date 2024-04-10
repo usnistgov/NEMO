@@ -4,8 +4,10 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import staff_member_required
-from NEMO.forms import ScheduledOutageForm
+from NEMO.forms import ResourceScheduledOutageForm, save_scheduled_outage
 from NEMO.models import Resource, ScheduledOutage, ScheduledOutageCategory, Tool, UsageEvent
+from NEMO.utilities import RecurrenceFrequency
+from NEMO.views.customization import CalendarCustomization
 
 
 @staff_member_required
@@ -66,25 +68,21 @@ def schedule_outage(request, resource_id):
         outage = ScheduledOutage.objects.get(id=outage_id)
     except:
         outage = None
-    if request.method == "GET":
-        form = ScheduledOutageForm(instance=outage)
-    elif request.method == "POST":
-        form = ScheduledOutageForm(data=request.POST, instance=outage)
+    form = ResourceScheduledOutageForm(data=request.POST or None, instance=outage)
+    if request.method == "POST":
         if form.is_valid():
-            outage = form.save(commit=False)
-            outage.resource = resource
-            outage.creator = request.user
-            outage.title = f"{outage.resource.name} scheduled outage"
-            outage.save()
+            title = f"{resource.name} scheduled outage"
+            save_scheduled_outage(form, request.user, resource, title=title, check_policy=False)
             return redirect("resource_details", resource.id)
-    else:
-        form = ScheduledOutageForm()
+    calendar_outage_recurrence_limit = CalendarCustomization.get("calendar_outage_recurrence_limit")
     dictionary = {
         "resource": resource,
         "form": form,
         "editing": True if form.instance.id else False,
         "resources": Resource.objects.all().prefetch_related("category").order_by("category__name", "name"),
         "outage_categories": ScheduledOutageCategory.objects.all(),
+        "recurrence_intervals": RecurrenceFrequency.choices(),
+        "calendar_outage_recurrence_limit": calendar_outage_recurrence_limit,
     }
     return render(request, "resources/scheduled_outage.html", dictionary)
 

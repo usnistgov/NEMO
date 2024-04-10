@@ -1,4 +1,7 @@
-from datetime import datetime
+from __future__ import annotations
+
+from datetime import datetime, time, timedelta
+from typing import Union
 
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -17,12 +20,14 @@ from django.forms import (
 )
 from django.forms.utils import ErrorDict, ErrorList
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from NEMO.models import (
     Account,
     AdjustmentRequest,
     Alert,
     AlertCategory,
+    Area,
     BuddyRequest,
     Comment,
     Consumable,
@@ -30,6 +35,7 @@ from NEMO.models import (
     Project,
     RecurringConsumableCharge,
     ReservationItemType,
+    Resource,
     SafetyIssue,
     ScheduledOutage,
     StaffAbsence,
@@ -41,7 +47,15 @@ from NEMO.models import (
     User,
     UserPreferences,
 )
-from NEMO.utilities import bootstrap_primary_color, format_datetime, quiet_int
+from NEMO.policy import policy_class as policy
+from NEMO.utilities import (
+    RecurrenceFrequency,
+    bootstrap_primary_color,
+    format_datetime,
+    get_recurring_rule,
+    localize,
+    quiet_int,
+)
 from NEMO.views.customization import UserRequestsCustomization
 
 
@@ -378,13 +392,51 @@ class AlertForm(ModelForm):
 
 
 class ScheduledOutageForm(ModelForm):
-    def __init__(self, *positional_arguments, **keyword_arguments):
-        super().__init__(*positional_arguments, **keyword_arguments)
+    send_reminders = BooleanField(required=False, initial=False)
+    recurring_outage = BooleanField(required=False, initial=False)
+    recurrence_interval = IntegerField(required=False)
+    recurrence_frequency = ChoiceField(choices=RecurrenceFrequency.choices(), required=False)
+    recurrence_until = DateField(required=False)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        errors = {}
+        recurring_outage = cleaned_data.get("recurring_outage", False)
+        recurrence_until = cleaned_data.get("recurrence_until")
+        recurrence_frequency = cleaned_data.get("recurrence_frequency")
+        recurrence_interval = cleaned_data.get("recurrence_interval")
+        if recurring_outage:
+            if not recurrence_interval:
+                errors["recurrence_interval"] = _("This field is required.")
+            if not recurrence_frequency:
+                errors["recurrence_frequency"] = _("This field is required.")
+            if not recurrence_until:
+                errors["recurrence_until"] = _("This field is required.")
+        send_reminders = cleaned_data.get("send_reminders", False)
+        reminder_days = cleaned_data.get("reminder_days")
+        reminder_emails = cleaned_data.get("reminder_emails")
+        if send_reminders:
+            if not reminder_days:
+                errors["reminder_days"] = _("This field is required.")
+            if not reminder_emails:
+                errors["reminder_emails"] = _("This field is required.")
+        if errors:
+            raise ValidationError(errors)
+        return cleaned_data
+
+    class Meta:
+        model = ScheduledOutage
+        exclude = ["start", "end", "resource", "creator"]
+
+
+class ResourceScheduledOutageForm(ScheduledOutageForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.fields["details"].required = True
 
     class Meta:
         model = ScheduledOutage
-        fields = ["details", "start", "end", "resource", "category"]
+        exclude = ["tool", "area", "creator", "title"]
 
 
 class UserPreferencesForm(ModelForm):
@@ -459,6 +511,53 @@ class StaffAbsenceForm(ModelForm):
     class Meta:
         model = StaffAbsence
         fields = "__all__"
+
+
+def save_scheduled_outage(
+    form: ScheduledOutageForm,
+    creator: User,
+    item: Union[Resource, Tool, Area],
+    start: datetime = None,
+    end: datetime = None,
+    title: str = None,
+    check_policy=True,
+):
+    outage: ScheduledOutage = form.save(commit=False)
+    outage.creator = creator
+    outage.outage_item = item
+    if title:
+        outage.title = title
+    if start:
+        outage.start = start
+    if end:
+        outage.end = end
+    duration = outage.end - outage.start
+
+    # If there is a policy problem for the outage then return the error...
+    if check_policy:
+        policy_problem = policy.check_to_create_outage(outage)
+        if policy_problem:
+            return policy_problem
+
+    if form.cleaned_data.get("recurring_outage"):
+        # we have to remove tz before creating rules otherwise 8am would become 7am after DST change for example.
+        start_no_tz = outage.start.replace(tzinfo=None)
+
+        submitted_frequency = form.cleaned_data.get("recurrence_frequency")
+        submitted_date_until = form.cleaned_data["recurrence_until"]
+        date_until_no_tz = datetime.combine(submitted_date_until, time())
+        date_until_no_tz += timedelta(days=1, seconds=-1)  # set at the end of the day
+        frequency = RecurrenceFrequency(quiet_int(submitted_frequency, RecurrenceFrequency.DAILY.index))
+        rules = get_recurring_rule(
+            start_no_tz, frequency, date_until_no_tz, int(form.cleaned_data.get("recurrence_interval", 1))
+        )
+        for rule in list(rules):
+            outage.pk = None
+            outage.start = localize(start_no_tz.replace(year=rule.year, month=rule.month, day=rule.day))
+            outage.end = outage.start + duration
+            outage.save()
+    else:
+        outage.save()
 
 
 def nice_errors(obj, non_field_msg="General form errors") -> ErrorDict:

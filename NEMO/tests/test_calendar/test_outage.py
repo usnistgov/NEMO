@@ -57,7 +57,7 @@ class OutageTestCase(TestCase):
     def outage_policy_problems(self, item_id: int, item_type: ReservationItemType):
         start = datetime.now()
         end = start - timedelta(hours=1)
-        data = self.get_outage_data(start=start, end=end, item_id=item_id, item_type=item_type)
+        data = self.get_outage_data(title="Outage", start=start, end=end, item_id=item_id, item_type=item_type)
 
         # regular user should not be able to create outage
         login_as_user(self.client)
@@ -85,7 +85,7 @@ class OutageTestCase(TestCase):
             Reservation.objects.create(
                 user=owner, creator=owner, area=area, start=start_reservation, end=end_reservation, short_notice=False
             )
-        data = self.get_outage_data(start=start, end=end, item_id=item_id, item_type=item_type)
+        data = self.get_outage_data(title="Outage", start=start, end=end, item_id=item_id, item_type=item_type)
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
@@ -95,7 +95,11 @@ class OutageTestCase(TestCase):
 
         # try to schedule an outage that starts before but ends slightly after the reservation starts
         data = self.get_outage_data(
-            start=start - timedelta(hours=1), end=end - timedelta(minutes=59), item_id=item_id, item_type=item_type
+            title="Outage",
+            start=start - timedelta(hours=1),
+            end=end - timedelta(minutes=59),
+            item_id=item_id,
+            item_type=item_type,
         )
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 400)
@@ -106,7 +110,11 @@ class OutageTestCase(TestCase):
 
         # try to schedule an outage that starts slightly before the reservation ends
         data = self.get_outage_data(
-            start=start + timedelta(minutes=59), end=end + timedelta(hours=1), item_id=item_id, item_type=item_type
+            title="Outage",
+            start=start + timedelta(minutes=59),
+            end=end + timedelta(hours=1),
+            item_id=item_id,
+            item_type=item_type,
         )
         response = self.client.post(reverse("create_outage"), data, follow=True)
         self.assertEqual(response.status_code, 400)

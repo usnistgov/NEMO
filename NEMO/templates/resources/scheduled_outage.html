@@ -13,21 +13,19 @@
         affected tools and areas, <strong>but will not kick users off if they're already logged in to an area or using a tool</strong>.
         It is the staff's responsibility to ensure that all tools and areas that use the resource are properly shutdown.
     </p>
-    <p>
-        When a resource is unavailable:
-        <ul>
-            <li>The status message will be displayed on the landing page and tool control page of each affected tool</li>
-            <li>
-                Tools that fully depend on the resource will be <strong>unavailable to users</strong>
-            </li>
-            <li>
-                Areas that depend on the resource will be <strong>unavailable to users</strong>
-            </li>
-            <li>
-                Tools that partially depend on the resource will be available to users, however it is the user's responsibility to determine if their fabrication process will succeed without the resource available
-            </li>
-        </ul>
-    </p>
+    <p>When a resource is unavailable:</p>
+    <ul>
+        <li>The status message will be displayed on the landing page and tool control page of each affected tool</li>
+        <li>
+            Tools that fully depend on the resource will be <strong>unavailable to users</strong>
+        </li>
+        <li>
+            Areas that depend on the resource will be <strong>unavailable to users</strong>
+        </li>
+        <li>
+            Tools that partially depend on the resource will be available to users, however it is the user's responsibility to determine if their fabrication process will succeed without the resource available
+        </li>
+    </ul>
     {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
     <form action="{% url 'schedule_resource_outage' resource.id %}" method="post" class="well">
         <h4>
@@ -53,7 +51,7 @@
         {% endif %}
         <div class="form-group">
             <label for="details">Details</label>
-            {% if form.details.errors %}- <span style="color:red">{{ form.details.errors|striptags }}</span>{% endif %}
+            {% if form.details.errors %}- <span class="danger-highlight">{{ form.details.errors|striptags }}</span>{% endif %}
             <textarea aria-labelledby="outage_details_help"
                       class="form-control"
                       rows="3"
@@ -68,7 +66,7 @@
             <div class="row">
                 <div class="col-sm-6">
                     <label for="start">Start time</label>
-                    {% if form.start.errors %}- <span style="color:red">{{ form.start.errors|striptags }}</span>{% endif %}
+                    {% if form.start.errors %}- <span class="danger-highlight">{{ form.start.errors|striptags }}</span>{% endif %}
                     <input type="text"
                            class="form-control"
                            name="start"
@@ -77,19 +75,139 @@
                 </div>
                 <div class="col-sm-6">
                     <label for="end">End time</label>
-                    {% if form.end.errors %}- <span style="color:red">{{ form.end.errors|striptags }}</span>{% endif %}
+                    {% if form.end.errors %}- <span class="danger-highlight">{{ form.end.errors|striptags }}</span>{% endif %}
                     <input type="text" class="form-control" name="end" id="end" value="{{ form.end.value|input_date_format }}">
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <a id="reminder_outage_link"
+               onclick="toggle_details(this)"
+               data-toggle="collapse"
+               data-target="#reminder_section"
+               class="pointer"
+               style="text-decoration: none">
+                <input type="hidden" name="send_reminders" value="" />
+                <input type="checkbox"
+                       id="send_reminders"
+                       name="send_reminders"
+                       {% if form.send_reminders.value or editing and form.reminder_emails.value and form.reminder_days.value %}checked{% endif %} />
+            </a>
+            <label for="send_reminders" style="padding-left: 5px">Send reminder(s) for this outage</label>
+        </div>
+        <div id="reminder_section"
+             class="collapse {{ form.send_reminders.value|yesno:"in," }} {% if editing %}{{ form.reminder_emails.value|yesno:"in," }} {{ form.reminder_days.value|yesno:"in," }}{% endif %}"
+             style="margin: 0 auto">
+            <div class="form-group">
+                <label for="reminder_days">Reminder day(s)</label>
+                {% if form.reminder_days.errors %}
+                    - <span class="danger-highlight">{{ form.reminder_days.errors|striptags }}</span>
+                {% endif %}
+                <input aria-labelledby="outage_reminder_days_help"
+                       id="reminder_days"
+                       name="reminder_days"
+                       type="text"
+                       maxlength="2000"
+                       class="form-control"
+                       value="{{ form.reminder_days.value|default_if_none:'' }}"
+                       autocomplete="off">
+                <div id="outage_reminder_days_help" class="light-grey">
+                    The number of day(s) prior to the start of the outage to send the reminder on
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="reminder_emails">Reminder email(s)</label>
+                {% if form.reminder_emails.errors %}
+                    - <span class="danger-highlight">{{ form.reminder_emails.errors|striptags }}</span>
+                {% endif %}
+                <input aria-labelledby="outage_reminder_emails_help"
+                       id="reminder_emails"
+                       name="reminder_emails"
+                       type="text"
+                       maxlength="2000"
+                       class="form-control"
+                       value="{{ form.reminder_emails.value|default_if_none:'' }}"
+                       autocomplete="off">
+                <div id="outage_reminder_emails_help" class="light-grey">The email(s) to send the reminder to</div>
+            </div>
+        </div>
+        {% if not editing %}
+            <div class="form-group">
+                <a id="recurring_outage_link"
+                   onclick="toggle_details(this)"
+                   data-toggle="collapse"
+                   data-target="#recurrence"
+                   class="pointer"
+                   style="text-decoration: none">
+                    <input type="hidden" name="recurring_outage" value="" />
+                    <input type="checkbox"
+                           id="recurring_outage"
+                           name="recurring_outage"
+                           {% if form.recurring_outage.value %}checked{% endif %} />
+                </a>
+                <label for="recurring_outage" style="padding-left: 5px">Create more than one occurrence of this outage</label>
+            </div>
+            <div id="recurrence"
+                 class="collapse {{ form.recurring_outage.value|yesno:"in," }}"
+                 style="margin: 0 auto">
+                <div class="row">
+                    <div class="form-group col-sm-2">
+                        <label for="recurrence_interval">Every</label>
+                        {% if form.recurrence_interval.errors %}
+                            - <span class="danger-highlight">{{ form.recurrence_interval.errors|striptags }}</span>
+                        {% endif %}
+                        <input id="recurrence_interval"
+                               name="recurrence_interval"
+                               type="number"
+                               class="form-control"
+                               value="{{ form.recurrence_interval.value|default_if_none:'1' }}" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label for="recurrence_frequency">Frequency</label>
+                        {% if form.recurrence_frequency.errors %}
+                            - <span class="danger-highlight">{{ form.recurrence_frequency.errors|striptags }}</span>
+                        {% endif %}
+                        <select class="form-control" name="recurrence_frequency" id="recurrence_frequency">
+                            {% for choice in recurrence_intervals %}
+                                <option value="{{ choice.0 }}"
+                                        {% if form.recurrence_frequency.value == choice.0|stringformat:'i' %}selected{% endif %}>
+                                    {{ choice.1 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group col-sm-4">
+                        <label for="recurrence_until">Until</label>
+                        {% if form.recurrence_until.errors %}
+                            - <span class="danger-highlight">{{ form.recurrence_until.errors|striptags }}</span>
+                        {% endif %}
+                        <input type="text"
+                               id="recurrence_until"
+                               name="recurrence_until"
+                               class="form-control select-date"
+                               value="{{ form.recurrence_until.value|input_date_format }}"
+                               placeholder="Choose a date">
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         <div class="form-group">{% button type="save" value=editing|yesno:"Save changes,Create outage" %}</div>
     </form>
     <script>
+    	let start_jq = $('#start');
+	    let end_jq = $('#end');
+        let recurrence_until_jq = $('#recurrence_until');
 		let timepicker_properties = {
             format: "{{ datetime_input_js_format }}",
 			sideBySide: true
 		};
-        set_start_end_datetime_pickers($('#start'), $('#end'), timepicker_properties);
-	
+        set_start_end_datetime_pickers(start_jq, end_jq, timepicker_properties);
+	    recurrence_until_jq.datetimepicker({format: '{{ date_input_js_format }}', useCurrent: false});
+        let recurrence_until_picker = recurrence_until_jq.data("DateTimePicker");
+	    start_jq.on("dp.change", function (e)
+		{
+            recurrence_until_picker.minDate(e.date);
+            recurrence_until_picker.maxDate(moment(e.date).add({{ calendar_outage_recurrence_limit }}, 'days').toDate());
+		});
     </script>
 {% endblock %}

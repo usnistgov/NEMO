@@ -567,6 +567,11 @@ if settings.ALLOW_CONDITIONAL_URLS:
             timed_services.email_reservation_reminders,
             name="email_reservation_reminders",
         ),
+        path(
+            "email_scheduled_outage_reminders/",
+            timed_services.email_scheduled_outage_reminders,
+            name="email_scheduled_outage_reminders",
+        ),
         path("email_usage_reminders/", timed_services.email_usage_reminders, name="email_usage_reminders"),
         path(
             "email_weekend_access_notification/",

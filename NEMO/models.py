@@ -17,7 +17,7 @@ from django.contrib.auth.models import BaseUserManager, Group, Permission, Permi
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, validate_comma_separated_integer_list
 from django.db import connections, models, transaction
 from django.db.models import Q
 from django.db.models.manager import Manager
@@ -1101,7 +1101,6 @@ class UserDocuments(BaseDocumentModel):
 
 
 class Tool(SerializationByNameModel):
-
     class OperationMode(object):
         REGULAR = 0
         WAIT_LIST = 1
@@ -3888,13 +3887,22 @@ class ScheduledOutage(BaseModel):
     tool = models.ForeignKey(Tool, blank=True, null=True, on_delete=models.CASCADE)
     area = TreeForeignKey(Area, blank=True, null=True, on_delete=models.CASCADE)
     resource = models.ForeignKey(Resource, blank=True, null=True, on_delete=models.CASCADE)
+    reminder_days = models.CharField(
+        null=True,
+        blank=True,
+        max_length=200,
+        validators=[validate_comma_separated_integer_list],
+        help_text="The number of days to send a reminder before a scheduled outage. A comma-separated list can be used for multiple reminders.",
+    )
+    reminder_emails: List[str] = fields.MultiEmailField(
+        null=True,
+        blank=True,
+        help_text="The reminder email(s) will be sent to this address. A comma-separated list can be used.",
+    )
 
     @property
-    def outage_item(self) -> Union[Tool, Area]:
-        if self.tool:
-            return self.tool
-        elif self.area:
-            return self.area
+    def outage_item(self) -> Union[Tool, Area, Resource]:
+        return self.tool or self.area or self.resource
 
     @outage_item.setter
     def outage_item(self, item):
@@ -3902,6 +3910,8 @@ class ScheduledOutage(BaseModel):
             self.tool = item
         elif isinstance(item, Area):
             self.area = item
+        elif isinstance(item, Resource):
+            self.resource = item
         else:
             raise AttributeError(f"This item [{item}] isn't allowed on outages.")
 
@@ -3924,6 +3934,11 @@ class ScheduledOutage(BaseModel):
 
     def has_not_started(self):
         return False if self.start <= timezone.now() else True
+
+    def get_reminder_days(self) -> List[int]:
+        if not self.reminder_emails:
+            return []
+        return [int(days) for days in self.reminder_days.split(",")]
 
     def clean(self):
         if self.start and self.end and self.start >= self.end:

@@ -157,6 +157,16 @@
 <td>{{ outage.end }}</td>
 {% endif %}
 </tr>
+{% if outage.reminder_days and outage.reminder_emails %}
+    <tr>
+        <td>Reminder day(s):</td>
+        <td>{{ outage.reminder_days }}</td>
+    </tr>
+    <tr>
+        <td>Reminder email(s):</td>
+        <td>{{ outage.reminder_emails|join:', ' }}</td>
+    </tr>
+{% endif %}
 <tr>
     <td>Identifier:</td>
     <td>{{ outage.id }}</td>

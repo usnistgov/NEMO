@@ -555,6 +555,7 @@ class TemplatesCustomization(CustomizationBase):
         ("reservation_reminder_email", ".html"),
         ("reservation_warning_email", ".html"),
         ("safety_issue_email", ".html"),
+        ("scheduled_outage_reminder_email", ".html"),
         ("staff_charge_reminder_email", ".html"),
         ("task_status_notification", ".html"),
         ("tool_qualification_expiration_email", ".html"),

@@ -1,0 +1,63 @@
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+        <table align="center"
+               style="width:100%;
+                      max-width:600px;
+                      font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+            <tr>
+                <td align="center" style="color: white; background: #5bc0de; padding: 50px 0;" bgcolor="#5bc0de">
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">{{ outage.title|upper }} REMINDER</h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">
+                    <p>Hello,</p>
+                    <p>
+                        This is a reminder that the {{ outage.title }} is scheduled to start in {{ outage.start|timeuntil }} on {{ outage.start }}.
+                        <br>
+                        {% if outage.resource %}
+                            <br>
+                            <u>Resource</u>: {{ outage.resource }}
+                        {% endif %}
+                        {% if outage.tool %}
+                            <br>
+                            <u>Tool</u>: {{ outage.tool }}
+                        {% endif %}
+                        {% if outage.area %}
+                            <br>
+                            <u>Area</u>: {{ outage.area }}
+                        {% endif %}
+                        <br>
+                        <u>Start time</u>: {{ outage.start }}
+                        <br>
+                        <u>End time</u>: {{ outage.end }}
+                        {% if outage.category %}
+                            <br>
+                            <u>Category</u>: {{ outage.category }}
+                        {% endif %}
+                        {% if outage.resource and outage.resource.visible_fully_dependent_tools %}
+                            <br>
+                            <u>Affected tools</u>: {{ outage.resource.visible_fully_dependent_tools|join:', ' }}
+                        {% endif %}
+                        {% if outage.resource and outage.resource.visible_partially_dependent_tools %}
+                            <br>
+                            <u>Partially affected tools</u>: {{ outage.resource.visible_partially_dependent_tools|join:', ' }}
+                        {% endif %}
+                        {% if outage.details %}
+                            <br>
+                            <u>Details</u>:
+                            <br>
+                            {{ outage.details|linebreaksbr }}
+                        {% endif %}
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+    </body>
+</html>

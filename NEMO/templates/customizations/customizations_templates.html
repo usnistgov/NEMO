@@ -394,6 +394,20 @@
         <div class="customization-separation"></div>
     </div>
     <div class="panel-body">
+        <h3 class="customization-section-title" id="scheduled_outage_reminder_email_id">Scheduled outage reminder email</h3>
+        <p>
+            This email is periodically sent to the reminder email(s) set on the scheduled outage.
+            The following context variables are provided when the email is rendered:
+        </p>
+        <ul>
+            <li>
+                <b>outage</b> - the upcoming scheduled outage
+            </li>
+        </ul>
+        {% include 'customizations/customizations_upload.html' with element=scheduled_outage_reminder_email name='scheduled outage reminder email' key='templates' %}
+        <div class="customization-separation"></div>
+    </div>
+    <div class="panel-body">
         <h3 class="customization-section-title" id="staff_charge_reminder_email_id">Staff charge reminder email</h3>
         <p>
             This email is periodically sent to remind staff that they are charging a user for staff time.
