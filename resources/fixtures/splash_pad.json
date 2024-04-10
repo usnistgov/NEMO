@@ -694,6 +694,7 @@
     "pk": 1,
     "fields": {
       "name": "How to handle chemicals",
+      "display_order": 1,
       "description": "This is a very important safety informational item. Please check out the following documents:",
       "category": [
         "Chemical handling"
@@ -705,6 +706,7 @@
     "pk": 2,
     "fields": {
       "name": "Dispose of chemicals",
+      "display_order": 2,
       "description": "Use the bins at your disposals throughout the facility. Check the following link for more information:",
       "category": [
         "Chemical handling"
@@ -716,6 +718,7 @@
     "pk": 3,
     "fields": {
       "name": "Code of conduct",
+      "display_order": 1,
       "description": "Please click on the following document to find out more:",
       "category": [
         "Cleanroom safety"
@@ -727,6 +730,7 @@
     "pk": 1,
     "fields": {
       "safety_item": 1,
+      "display_order": 1,
       "document": "",
       "url": "https://filesamples.com/samples/video/mp4/sample_960x400_ocean_with_audio.mp4",
       "name": "MP4 video example URL",
@@ -738,6 +742,7 @@
     "pk": 2,
     "fields": {
       "safety_item": 1,
+      "display_order": 2,
       "document": "",
       "url": "https://filesamples.com/samples/document/pdf/sample1.pdf",
       "name": "PDF document example URL",
@@ -749,6 +754,7 @@
     "pk": 3,
     "fields": {
       "safety_item": 2,
+      "display_order": 1,
       "document": "",
       "url": "https://filesamples.com/samples/video/ogv/sample_640x360.ogv",
       "name": "OGV video example URL",
@@ -760,6 +766,7 @@
     "pk": 4,
     "fields": {
       "safety_item": 3,
+      "display_order": 1,
       "document": "",
       "url": "https://www.wikihow.com/Enter-a-Cleanroom",
       "name": "Entering a cleanroom",
@@ -10085,6 +10092,7 @@
     "pk": 1,
     "fields": {
       "name": "Cleaning equipment",
+      "display_order": 1,
       "description": "Please refer to the SOP for equipment and safety rules",
       "category": [
         "Staff procedures"
@@ -10096,6 +10104,7 @@
     "pk": 1,
     "fields": {
       "name": "Equipment training",
+      "display_order": 1,
       "description": "Please contact the tool owner or tool superusers for equipment training.<br>This information is available in the tool control page, under the details tab.",
       "category": [
         "User training"
