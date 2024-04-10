@@ -228,32 +228,30 @@ def project_usage(request):
             projects = user.active_projects()
             selection = str(user)
 
+        area_access = AreaAccessRecord.objects.filter(end__gt=start_date, end__lte=end_date).order_by("-start")
+        consumables = ConsumableWithdraw.objects.filter(date__gt=start_date, date__lte=end_date)
+        missed_reservations = Reservation.objects.filter(missed=True, end__gt=start_date, end__lte=end_date)
+        staff_charges = StaffCharge.objects.filter(end__gt=start_date, end__lte=end_date)
+        training_sessions = TrainingSession.objects.filter(date__gt=start_date, date__lte=end_date)
+        usage_events = UsageEvent.objects.filter(end__gt=start_date, end__lte=end_date)
         if projects:
-            area_access = AreaAccessRecord.objects.filter(
-                project__in=projects, end__gt=start_date, end__lte=end_date
-            ).order_by("-start")
-            consumables = ConsumableWithdraw.objects.filter(
-                project__in=projects, date__gt=start_date, date__lte=end_date
+            area_access = area_access.filter(project__in=projects)
+            consumables = consumables.filter(project__in=projects)
+            missed_reservations = missed_reservations.filter(project__in=projects)
+            staff_charges = staff_charges.filter(project__in=projects)
+            training_sessions = training_sessions.filter(project__in=projects)
+            usage_events = usage_events.filter(project__in=projects)
+        if user:
+            area_access = area_access.filter(customer=user)
+            consumables = consumables.filter(customer=user)
+            missed_reservations = missed_reservations.filter(user=user)
+            staff_charges = staff_charges.filter(customer=user)
+            training_sessions = training_sessions.filter(trainee=user)
+            usage_events = usage_events.filter(user=user)
+        if bool(request.GET.get("csv", False)):
+            return csv_export_response(
+                usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations
             )
-            missed_reservations = Reservation.objects.filter(
-                project__in=projects, missed=True, end__gt=start_date, end__lte=end_date
-            )
-            staff_charges = StaffCharge.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date)
-            training_sessions = TrainingSession.objects.filter(
-                project__in=projects, date__gt=start_date, date__lte=end_date
-            )
-            usage_events = UsageEvent.objects.filter(project__in=projects, end__gt=start_date, end__lte=end_date)
-            if user:
-                area_access = area_access.filter(customer=user)
-                consumables = consumables.filter(customer=user)
-                missed_reservations = missed_reservations.filter(user=user)
-                staff_charges = staff_charges.filter(customer=user)
-                training_sessions = training_sessions.filter(trainee=user)
-                usage_events = usage_events.filter(user=user)
-            if bool(request.GET.get("csv", False)):
-                return csv_export_response(
-                    usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations
-                )
     except:
         pass
     dictionary = {
