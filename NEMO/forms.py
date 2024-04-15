@@ -533,6 +533,10 @@ def save_scheduled_outage(
         outage.end = end
     duration = outage.end - outage.start
 
+    if not form.cleaned_data.get("send_reminders"):
+        outage.reminder_days = None
+        outage.reminder_emails = None
+
     # If there is a policy problem for the outage then return the error...
     if check_policy:
         policy_problem = policy.check_to_create_outage(outage)
