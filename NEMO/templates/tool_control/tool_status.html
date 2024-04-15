@@ -517,8 +517,11 @@
                         {% endif %}
                     </div>
                     {% if wait_list.count > 0 %}
-                        <div id="wait-list-content"  style="padding-top: 10px;" class="collapse">
-                            <table style="margin-top: 10px;" class="table table-condensed table-striped table-bordered">
+                        <div id="wait-list-content"  style="padding-top: 10px;" class=" collapse">
+                            <table style="margin-top: 10px;
+                                          width: auto;
+                                          min-width: 50%"
+                                   class="table table-condensed table-striped table-bordered">
                                 <thead>
                                     <tr>
                                         <th>Position</th>

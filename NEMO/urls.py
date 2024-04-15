@@ -168,7 +168,6 @@ urlpatterns += [
     path("disable_tool/<int:tool_id>/", tool_control.disable_tool, name="disable_tool"),
     path("enter_wait_list/", tool_control.enter_wait_list, name="enter_wait_list"),
     path("exit_wait_list/", tool_control.exit_wait_list, name="exit_wait_list"),
-    path("check_and_update_wait_list/", timed_services.check_and_update_wait_list, name="check_and_update_wait_list"),
     path("tool_config_history/<int:tool_id>/", tool_control.tool_config_history, name="tool_config_history"),
     path("usage_data_history/<int:tool_id>/", tool_control.usage_data_history, name="usage_data_history"),
     path("past_comments_and_tasks/", tool_control.past_comments_and_tasks, name="past_comments_and_tasks"),
@@ -588,6 +587,9 @@ if settings.ALLOW_CONDITIONAL_URLS:
         ),
         path("manage_recurring_charges/", timed_services.manage_recurring_charges, name="manage_recurring_charges"),
         path("auto_logout_users/", timed_services.auto_logout_users, name="auto_logout_users"),
+        path(
+            "check_and_update_wait_list/", timed_services.check_and_update_wait_list, name="check_and_update_wait_list"
+        ),
         # Abuse:
         path("abuse/", abuse.abuse, name="abuse"),
         path("abuse/user_drill_down/", abuse.user_drill_down, name="user_drill_down"),
