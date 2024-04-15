@@ -228,6 +228,11 @@ urlpatterns += [
         adjustment_requests.delete_adjustment_request,
         name="delete_adjustment_request",
     ),
+    path(
+        "mark_adjustment_as_applied/<int:request_id>/",
+        adjustment_requests.mark_adjustment_as_applied,
+        name="mark_adjustment_as_applied",
+    ),
     # Tasks:
     path("create_task/", tasks.create, name="create_task"),
     path("cancel_task/<int:task_id>/", tasks.cancel, name="cancel_task"),

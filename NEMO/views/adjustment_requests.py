@@ -216,13 +216,33 @@ def delete_adjustment_request(request, request_id):
 
     if adjustment_request.creator != request.user:
         return HttpResponseBadRequest("You are not allowed to delete a request you didn't create.")
-    if adjustment_request and adjustment_request.status != RequestStatus.PENDING:
+    if adjustment_request.status != RequestStatus.PENDING:
         return HttpResponseBadRequest("You are not allowed to delete a request that was already completed.")
 
     adjustment_request.deleted = True
     adjustment_request.save(update_fields=["deleted"])
     delete_notification(Notification.Types.ADJUSTMENT_REQUEST, adjustment_request.id)
     return redirect("user_requests", "adjustment")
+
+
+@login_required
+@require_GET
+def mark_adjustment_as_applied(request, request_id):
+    if not UserRequestsCustomization.get_bool("adjustment_requests_enabled"):
+        return HttpResponseBadRequest("Adjustment requests are not enabled")
+
+    adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
+
+    if request.user not in adjustment_request.reviewers():
+        return HttpResponseBadRequest("You are not allowed to mark an adjustment as applied unless you are a reviewer.")
+    if adjustment_request.status != RequestStatus.APPROVED:
+        return HttpResponseBadRequest(
+            "You cannot mark a adjustment as applied unless the request has been approved first"
+        )
+
+    adjustment_request.applied = True
+    adjustment_request.save(update_fields=["applied"])
+    return HttpResponse()
 
 
 def send_request_received_email(request, adjustment_request: AdjustmentRequest, edit, reviewers: Set[User]):

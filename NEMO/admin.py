@@ -18,6 +18,7 @@ from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFi
 from NEMO.actions import (
     access_requests_export_csv,
     adjustment_requests_export_csv,
+    adjustment_requests_mark_as_applied,
     create_next_interlock,
     disable_selected_cards,
     duplicate_configuration,
@@ -326,7 +327,10 @@ class ToolAdmin(admin.ModelAdmin):
         """
         if not obj.allow_wait_list() and obj.current_wait_list():
             obj.current_wait_list().update(deleted=True)
-            messages.warning(request, f"The wait list for {obj} has been deleted because the current operation mode does not allow it.")
+            messages.warning(
+                request,
+                f"The wait list for {obj} has been deleted because the current operation mode does not allow it.",
+            )
 
         if obj.parent_tool:
             super(ToolAdmin, self).save_model(request, obj, form, change)
@@ -1666,16 +1670,18 @@ class AdjustmentRequestAdmin(admin.ModelAdmin):
         "get_time_difference",
         "get_status_display",
         "reply_count",
+        "applied",
         "deleted",
     )
     list_filter = (
         "status",
         "deleted",
+        "applied",
         ("creator", admin.RelatedOnlyFieldListFilter),
         ("reviewer", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "last_updated"
-    actions = [adjustment_requests_export_csv]
+    actions = [adjustment_requests_export_csv, adjustment_requests_mark_as_applied]
 
     @admin.display(description="Diff")
     def get_time_difference(self, adjustment_request: AdjustmentRequest):
