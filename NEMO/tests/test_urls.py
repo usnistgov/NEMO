@@ -105,6 +105,10 @@ url_kwargs_get_post = {
     "customize": {"kwargs": {"key": "application"}, "post": {"facility_name": "test facility"}},
     "create_adjustment_request": {"kwargs": {}},
     "edit_adjustment_request": {"kwargs": {"request_id": 1}},
+    "mark_adjustment_as_applied": {"login_id": 1},
+    "apply_adjustment": {"login_id": 1},
+    "delete_adjustment_request": {"kwargs": {"request_id": 2}, "login_id": 3},
+    "adjustment_request_reply": {"kwargs": {"request_id": 2}, "login_id": 3, "post": {"reply_content": "new message"}},
     "change_reservation_date": {
         "login_id": 1,
         "post": {
@@ -152,8 +156,6 @@ urls_to_skip = [
     "media_view",
     "media_list_view",
     "remove_document_from_project",
-    "adjustment_request_reply",
-    "delete_adjustment_request",
     "enter_wait_list_from_kiosk",
     "exit_wait_list_from_kiosk",
     "enter_wait_list",

@@ -990,6 +990,13 @@
   },
   {
     "model": "NEMO.customization",
+    "pk": "adjustment_requests_apply_button",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
     "pk": "calendar_all_tools",
     "fields": {
       "value": "enabled"
@@ -2361,7 +2368,7 @@
       "manager_note": "",
       "new_start": "2023-03-04T15:54:00Z",
       "new_end": "2023-03-05T11:00:00Z",
-      "status": 0,
+      "status": 1,
       "reviewer": null,
       "deleted": false
     }
@@ -2387,7 +2394,7 @@
       "manager_note": "Please enter this in the billing system with the note \"Approved by Captain NEMO\"",
       "new_start": "2023-01-20T23:54:00Z",
       "new_end": "2023-01-21T18:00:00Z",
-      "status": 1,
+      "status": 0,
       "reviewer": [
         "captain"
       ],

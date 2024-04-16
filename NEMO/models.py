@@ -4207,6 +4207,19 @@ class AdjustmentRequest(BaseModel):
             return area_reviewers or facility_managers
         return facility_managers
 
+    def apply_adjustment(self, user):
+        if self.status == RequestStatus.APPROVED and self.editable_charge():
+            new_start = self.get_new_start()
+            new_end = self.get_new_end()
+            if new_start:
+                self.item.start = new_start
+            if new_end:
+                self.item.end = new_end
+            self.item.save()
+            self.applied = True
+            self.applied_by = user
+            self.save()
+
     def delete(self, using=None, keep_parents=False):
         adjustment_id = self.id
         super().delete(using, keep_parents)

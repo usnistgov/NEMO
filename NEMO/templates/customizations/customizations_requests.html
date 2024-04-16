@@ -192,7 +192,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-4">Edit approved charges</label>
+            <label class="control-label col-md-4">Approved charges</label>
             <div class="col-md-8">
                 <div class="checkbox">
                     <label>
@@ -201,6 +201,14 @@
                                {% if adjustment_requests_edit_charge_button %}checked{% endif %}
                                value="enabled">
                         Check this box to show a link to edit the original charge after approval
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox"
+                               name="adjustment_requests_apply_button"
+                               {% if adjustment_requests_apply_button %}checked{% endif %}
+                               value="enabled">
+                        Check this box to allow reviewers to adjust the charge when approving an adjustment
                     </label>
                     <br />
                 </div>

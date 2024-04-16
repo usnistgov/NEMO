@@ -345,6 +345,7 @@ class UserRequestsCustomization(CustomizationBase):
         "adjustment_requests_time_limit_interval": "2",
         "adjustment_requests_time_limit_frequency": RecurrenceFrequency.WEEKLY.index,
         "adjustment_requests_edit_charge_button": "",
+        "adjustment_requests_apply_button": "",
         "weekend_access_notification_emails": "",
         "weekend_access_notification_cutoff_hour": "",
         "weekend_access_notification_cutoff_day": "",
