@@ -4137,6 +4137,9 @@ class AdjustmentRequest(BaseModel):
         "User", null=True, blank=True, related_name="adjustment_requests_reviewed", on_delete=models.CASCADE
     )
     applied = models.BooleanField(default=False, help_text="Indicates the adjustment has been applied")
+    applied_by = models.ForeignKey(
+        "User", null=True, blank=True, related_name="adjustment_requests_applied", on_delete=models.CASCADE
+    )
     deleted = models.BooleanField(
         default=False, help_text="Indicates the request has been deleted and won't be shown anymore."
     )

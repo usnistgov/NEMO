@@ -241,7 +241,8 @@ def mark_adjustment_as_applied(request, request_id):
         )
 
     adjustment_request.applied = True
-    adjustment_request.save(update_fields=["applied"])
+    adjustment_request.applied_by = request.user
+    adjustment_request.save(update_fields=["applied", "applied_by"])
     return HttpResponse()
 
 
