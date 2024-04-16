@@ -8732,7 +8732,7 @@
       "name": "Total gold used",
       "description": "",
       "value": 203,
-      "tool": 63,
+      "tool": ["Unaxis ICP Etcher"],
       "tool_usage_question": "gold_used",
       "last_reset_value": null,
       "last_reset": null,
