@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from django import forms
 from django.contrib import admin, messages
@@ -184,6 +185,22 @@ class ToolAdminForm(forms.ModelForm):
             self.fields["qualified_users"].initial = self.instance.user_set.all()
             self.fields["required_resources"].initial = self.instance.required_resource_set.all()
             self.fields["nonrequired_resources"].initial = self.instance.nonrequired_resource_set.all()
+
+    def clean__pre_usage_questions(self):
+        questions = self.cleaned_data["_pre_usage_questions"]
+        try:
+            return json.dumps(json.loads(questions), indent=4)
+        except:
+            pass
+        return questions
+
+    def clean__post_usage_questions(self):
+        questions = self.cleaned_data["_post_usage_questions"]
+        try:
+            return json.dumps(json.loads(questions), indent=4)
+        except:
+            pass
+        return questions
 
     def clean(self):
         cleaned_data = super().clean()
@@ -658,6 +675,14 @@ class ReservationQuestionsForm(forms.ModelForm):
     class Media:
         js = ("admin/dynamic_form_preview/dynamic_form_preview.js",)
         css = {"": ("admin/dynamic_form_preview/dynamic_form_preview.css",)}
+
+    def clean_questions(self):
+        questions = self.cleaned_data["questions"]
+        try:
+            return json.dumps(json.loads(questions), indent=4)
+        except:
+            pass
+        return questions
 
     def clean(self):
         cleaned_data = super().clean()
