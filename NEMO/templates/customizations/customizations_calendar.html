@@ -177,16 +177,18 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-3" for="calendar_time_format">Time format</label>
+            <label class="control-label col-md-3" for="calendar_axis_time_format">Axis time format</label>
             <div class="col-md-3">
                 <input type="text"
-                       id="calendar_time_format"
-                       name="calendar_time_format"
+                       id="calendar_axis_time_format"
+                       name="calendar_axis_time_format"
                        class="form-control"
-                       value="{{ calendar_time_format }}"
+                       value="{{ calendar_axis_time_format }}"
                        placeholder="ha">
             </div>
-            <div class="col-md-6 help-block light-grey">The time format for the calendar.</div>
+            <div class="col-md-6 help-block light-grey">
+                The time format for the calendar axis labels  (only applies to day and week view).
+            </div>
         </div>
         <div class="form-group">
             <label class="control-label col-md-3" for="calendar_day_column_format">Day column format</label>
@@ -201,6 +203,18 @@
             <div class="col-md-6 help-block light-grey">The column date format for the day view.</div>
         </div>
         <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_day_time_format">Day time format</label>
+            <div class="col-md-3">
+                <input type="text"
+                       id="calendar_day_time_format"
+                       name="calendar_day_time_format"
+                       class="form-control"
+                       value="{{ calendar_day_time_format }}"
+                       placeholder="h:mm">
+            </div>
+            <div class="col-md-6 help-block light-grey">The reservation time format for the day view.</div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-3" for="calendar_week_column_format">Week column format</label>
             <div class="col-md-3">
                 <input type="text"
@@ -213,6 +227,18 @@
             <div class="col-md-6 help-block light-grey">The column date format for the week view.</div>
         </div>
         <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_week_time_format">Week time format</label>
+            <div class="col-md-3">
+                <input type="text"
+                       id="calendar_week_time_format"
+                       name="calendar_week_time_format"
+                       class="form-control"
+                       value="{{ calendar_week_time_format }}"
+                       placeholder="h:mm">
+            </div>
+            <div class="col-md-6 help-block light-grey">The reservation time format for the week view.</div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-3" for="calendar_month_column_format">Month column format</label>
             <div class="col-md-3">
                 <input type="text"
@@ -223,6 +249,18 @@
                        placeholder="ddd">
             </div>
             <div class="col-md-6 help-block light-grey">The column date format for the month view.</div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3" for="calendar_month_time_format">Month time format</label>
+            <div class="col-md-3">
+                <input type="text"
+                       id="calendar_month_time_format"
+                       name="calendar_month_time_format"
+                       class="form-control"
+                       value="{{ calendar_month_time_format }}"
+                       placeholder="h(:mm)t">
+            </div>
+            <div class="col-md-6 help-block light-grey">The reservation time format for the month view.</div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Reservation confirmations</h3>

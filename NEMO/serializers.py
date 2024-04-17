@@ -20,6 +20,8 @@ from rest_framework.utils import model_meta
 from NEMO.models import (
     Account,
     AccountType,
+    Alert,
+    AlertCategory,
     Area,
     AreaAccessRecord,
     Configuration,
@@ -100,6 +102,22 @@ class ModelSerializer(serializers.ModelSerializer):
 
     def full_clean(self, instance, exclude=None, validate_unique=True):
         instance.full_clean(exclude, validate_unique)
+
+
+class AlertCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AlertCategory
+        fields = "__all__"
+
+
+class AlertSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = Alert
+        fields = "__all__"
+        expandable_fields = {
+            "creator": "NEMO.serializers.UserSerializer",
+            "user": "NEMO.serializers.UserSerializer",
+        }
 
 
 class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):

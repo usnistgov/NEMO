@@ -1,0 +1,6 @@
+[Unit]
+Description=Check and update tool wait list
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin check_and_update_wait_list

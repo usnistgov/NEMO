@@ -17,6 +17,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
+from NEMO.forms import ScheduledOutageForm, save_scheduled_outage
 from NEMO.models import (
     Area,
     AreaAccessRecord,
@@ -38,17 +39,14 @@ from NEMO.utilities import (
     RecurrenceFrequency,
     bootstrap_primary_color,
     create_ics,
-    date_input_format,
     datetime_input_format,
     distinct_qs_value_list,
     extract_times,
     format_datetime,
     get_email_from_settings,
     get_full_url,
-    get_recurring_rule,
     localize,
     parse_parameter_string,
-    quiet_int,
     render_email_template,
     send_mail,
 )
@@ -89,10 +87,13 @@ def calendar(request, item_type=None, item_id=None):
 
     calendar_view = CalendarCustomization.get("calendar_view")
     calendar_first_day_of_week = CalendarCustomization.get("calendar_first_day_of_week")
-    calendar_time_format = CalendarCustomization.get("calendar_time_format")
+    calendar_axis_time_format = CalendarCustomization.get("calendar_axis_time_format")
     calendar_day_column_format = CalendarCustomization.get("calendar_day_column_format")
+    calendar_day_time_format = CalendarCustomization.get("calendar_day_time_format")
     calendar_week_column_format = CalendarCustomization.get("calendar_week_column_format")
+    calendar_week_time_format = CalendarCustomization.get("calendar_week_time_format")
     calendar_month_column_format = CalendarCustomization.get("calendar_month_column_format")
+    calendar_month_time_format = CalendarCustomization.get("calendar_month_time_format")
     calendar_start_of_the_day = CalendarCustomization.get("calendar_start_of_the_day")
     calendar_now_indicator = CalendarCustomization.get("calendar_now_indicator")
     calendar_all_tools = CalendarCustomization.get("calendar_all_tools")
@@ -122,10 +123,13 @@ def calendar(request, item_type=None, item_id=None):
         "auto_select_item_type": item_type,
         "calendar_view": calendar_view,
         "calendar_first_day_of_week": calendar_first_day_of_week,
-        "calendar_time_format": calendar_time_format,
+        "calendar_axis_time_format": calendar_axis_time_format,
         "calendar_day_column_format": calendar_day_column_format,
+        "calendar_day_time_format": calendar_day_time_format,
         "calendar_week_column_format": calendar_week_column_format,
+        "calendar_week_time_format": calendar_week_time_format,
         "calendar_month_column_format": calendar_month_column_format,
+        "calendar_month_time_format": calendar_month_time_format,
         "calendar_start_of_the_day": calendar_start_of_the_day,
         "calendar_now_indicator": calendar_now_indicator,
         "calendar_all_tools": calendar_all_tools,
@@ -626,29 +630,18 @@ def create_outage(request):
     """Create an outage."""
     try:
         start, end = extract_times(request.POST)
-        duration = end - start
         item_type = ReservationItemType(request.POST["item_type"])
         item_id = request.POST.get("item_id")
     except Exception as e:
         return HttpResponseBadRequest(str(e))
     item = get_object_or_404(item_type.get_object_class(), id=item_id)
     # Create the new outage:
-    outage = ScheduledOutage()
-    outage.creator = request.user
-    outage.category = request.POST.get("category", "")[:200]
-    outage.outage_item = item
-    outage.start = start
-    outage.end = end
-
-    # If there is a policy problem for the outage then return the error...
-    policy_problem = policy.check_to_create_outage(outage)
-    if policy_problem:
-        return HttpResponseBadRequest(policy_problem)
-
-    # Make sure there is at least an outage title
-    if not request.POST.get("title"):
+    form = ScheduledOutageForm(request.POST)
+    if not form.is_valid():
         calendar_outage_recurrence_limit = CalendarCustomization.get("calendar_outage_recurrence_limit")
         dictionary = {
+            "form": form,
+            "outage_submitted": request.POST.get("outage_submitted"),
             "categories": ScheduledOutageCategory.objects.all(),
             "recurrence_intervals": RecurrenceFrequency.choices(),
             "recurrence_date_start": start.date(),
@@ -656,36 +649,10 @@ def create_outage(request):
         }
         return render(request, "calendar/scheduled_outage_information.html", dictionary)
 
-    outage.title = request.POST["title"]
-    outage.details = request.POST.get("details", "")
-
-    if request.POST.get("recurring_outage") == "on":
-        # we have to remove tz before creating rules otherwise 8am would become 7am after DST change for example.
-        start_no_tz = outage.start.replace(tzinfo=None)
-        end_no_tz = outage.end.replace(tzinfo=None)
-
-        submitted_frequency = request.POST.get("recurrence_frequency")
-        submitted_date_until = request.POST.get("recurrence_until", None)
-        date_until_no_tz = end_no_tz.replace(hour=0, minute=0, second=0)
-        if submitted_date_until:
-            date_until_no_tz = datetime.strptime(submitted_date_until, date_input_format)
-        date_until_no_tz += timedelta(days=1, seconds=-1)  # set at the end of the day
-        frequency = RecurrenceFrequency(quiet_int(submitted_frequency, RecurrenceFrequency.DAILY.index))
-        rules = get_recurring_rule(
-            start_no_tz, frequency, date_until_no_tz, int(request.POST.get("recurrence_interval", 1))
-        )
-        for rule in list(rules):
-            recurring_outage = ScheduledOutage()
-            recurring_outage.creator = outage.creator
-            recurring_outage.category = outage.category
-            recurring_outage.outage_item = outage.outage_item
-            recurring_outage.title = outage.title
-            recurring_outage.details = outage.details
-            recurring_outage.start = localize(start_no_tz.replace(year=rule.year, month=rule.month, day=rule.day))
-            recurring_outage.end = recurring_outage.start + duration
-            recurring_outage.save()
-    else:
-        outage.save()
+    # If there is a policy problem for the outage then return the error...
+    errors = save_scheduled_outage(form, request.user, item, start=start, end=end)
+    if errors:
+        return HttpResponseBadRequest(errors)
 
     return HttpResponse()
 

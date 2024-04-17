@@ -141,19 +141,33 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
             form.add_error(None, error)
 
         if form.is_valid():
+            adjust_charge = False
             if not edit:
                 form.instance.creator = user
             if edit and user in adjustment_request.reviewers():
-                decision = [state for state in ["approve_request", "deny_request"] if state in request.POST]
+                decision = [
+                    state
+                    for state in ["approve_request", "approve_apply_request", "deny_request"]
+                    if state in request.POST
+                ]
                 if decision:
-                    if next(iter(decision)) == "approve_request":
+                    actual_decision = next(iter(decision))
+                    if actual_decision.startswith("approve_"):
                         adjustment_request.status = RequestStatus.APPROVED
+                        if actual_decision == "approve_apply_request" and UserRequestsCustomization.get_bool(
+                            "adjustment_requests_apply_button"
+                        ):
+                            adjust_charge = True
                     else:
                         adjustment_request.status = RequestStatus.DENIED
                     adjustment_request.reviewer = user
 
             form.instance.last_updated_by = user
             new_adjustment_request = form.save()
+
+            # We only apply it here in case something goes wrong before when saving it
+            if adjust_charge:
+                new_adjustment_request.apply_adjustment(user)
 
             reviewers: Set[User] = set(list(adjustment_request.reviewers()))
 
@@ -216,13 +230,54 @@ def delete_adjustment_request(request, request_id):
 
     if adjustment_request.creator != request.user:
         return HttpResponseBadRequest("You are not allowed to delete a request you didn't create.")
-    if adjustment_request and adjustment_request.status != RequestStatus.PENDING:
+    if adjustment_request.status != RequestStatus.PENDING:
         return HttpResponseBadRequest("You are not allowed to delete a request that was already completed.")
 
     adjustment_request.deleted = True
     adjustment_request.save(update_fields=["deleted"])
     delete_notification(Notification.Types.ADJUSTMENT_REQUEST, adjustment_request.id)
     return redirect("user_requests", "adjustment")
+
+
+@login_required
+@require_GET
+def mark_adjustment_as_applied(request, request_id):
+    user: User = request.user
+    if not UserRequestsCustomization.get_bool("adjustment_requests_enabled"):
+        return HttpResponseBadRequest("Adjustment requests are not enabled")
+
+    adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
+
+    if not user.is_user_office and user not in adjustment_request.reviewers():
+        return HttpResponseBadRequest("You are not allowed to mark an adjustment as applied unless you are a reviewer.")
+    if adjustment_request.status != RequestStatus.APPROVED:
+        return HttpResponseBadRequest(
+            "You cannot mark a adjustment as applied unless the request has been approved first"
+        )
+
+    adjustment_request.applied = True
+    adjustment_request.applied_by = request.user
+    adjustment_request.save(update_fields=["applied", "applied_by"])
+    return HttpResponse()
+
+
+@login_required
+@require_GET
+def apply_adjustment(request, request_id):
+    if not UserRequestsCustomization.get_bool("adjustment_requests_enabled"):
+        return HttpResponseBadRequest("Adjustment requests are not enabled")
+    if not UserRequestsCustomization.get_bool("adjustment_requests_apply_button"):
+        return HttpResponseBadRequest("Applying adjustments is not allowed")
+
+    adjustment_request = get_object_or_404(AdjustmentRequest, id=request_id)
+
+    if request.user not in adjustment_request.reviewers():
+        return HttpResponseBadRequest("You are not allowed to adjust the charge unless you are a reviewer.")
+    if adjustment_request.status != RequestStatus.APPROVED:
+        return HttpResponseBadRequest("You cannot apply a adjustment unless the request has been approved first")
+
+    adjustment_request.apply_adjustment(request.user)
+    return HttpResponse()
 
 
 def send_request_received_email(request, adjustment_request: AdjustmentRequest, edit, reviewers: Set[User]):
@@ -272,7 +327,8 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             )
 
         # Send separate email to the user office (with the extra note) when a request is approved
-        if adjustment_request.status == RequestStatus.APPROVED:
+        # Unless it's also been applied in which case there is nothing to do so no need to notify them
+        if not adjustment_request.applied and adjustment_request.status == RequestStatus.APPROVED:
             dictionary["manager_note"] = adjustment_request.manager_note
             dictionary["user_office"] = True
             message = render_email_template(adjustment_request_notification_email, dictionary)
@@ -379,6 +435,8 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     table_result.add_header(("new_end", "New end"))
     table_result.add_header(("difference", "Difference"))
     table_result.add_header(("reviewer", "Reviewer"))
+    table_result.add_header(("applied", "Applied"))
+    table_result.add_header(("applied_by", "Applied by"))
     for req in request_list:
         req: AdjustmentRequest = req
         table_result.add_row(
@@ -392,6 +450,8 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
                 "new_end": req.new_end,
                 "difference": req.get_time_difference(),
                 "reviewer": req.reviewer,
+                "applied": req.applied,
+                "applied_by": req.applied_by,
             }
         )
 

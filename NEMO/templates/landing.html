@@ -68,11 +68,22 @@
                         <div id="alerts-outages" style=";overflow-y: scroll;">
                             {% for a in alerts %}
                                 <div class="alert alert-danger">
+                                    {% if a.dismissible and a.user == user %}
+                                        <form id="delete_alert_{{ a.id }}" method="post" action="{% url 'delete_alert' a.id %}">
+                                            {% csrf_token %}
+                                            <span class="glyphicon glyphicon-remove pull-right"
+                                                  style="cursor:pointer"
+                                                  onclick="$('#delete_alert_{{ a.id }}').submit()"
+                                                  data-toggle="tooltip"
+                                                  data-placement="top"
+                                                  title="Delete this alert"></span>
+                                        </form>
+                                    {% endif %}
                                     {% if a.title %}
                                         <span style="font-weight:bold">{{ a.title }}</span>
                                         <br>
                                     {% endif %}
-                                    {{ a.contents|linebreaks }}
+                                    {{ a.contents|safe|linebreaksbr }}
                                 </div>
                             {% endfor %}
                             {% for r in disabled_resources %}

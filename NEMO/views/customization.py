@@ -256,10 +256,13 @@ class CalendarCustomization(CustomizationBase):
     variables = {
         "calendar_view": "agendaWeek",
         "calendar_first_day_of_week": "1",
-        "calendar_time_format": "ha",
+        "calendar_axis_time_format": "ha",
         "calendar_day_column_format": "dddd MM/DD/YYYY",
+        "calendar_day_time_format": "h:mm",
         "calendar_week_column_format": "ddd M/DD",
+        "calendar_week_time_format": "h:mm",
         "calendar_month_column_format": "ddd",
+        "calendar_month_time_format": "h(:mm)t",
         "calendar_start_of_the_day": "07:00:00",
         "calendar_now_indicator": "",
         "calendar_display_not_qualified_areas": "",
@@ -342,6 +345,7 @@ class UserRequestsCustomization(CustomizationBase):
         "adjustment_requests_time_limit_interval": "2",
         "adjustment_requests_time_limit_frequency": RecurrenceFrequency.WEEKLY.index,
         "adjustment_requests_edit_charge_button": "",
+        "adjustment_requests_apply_button": "",
         "weekend_access_notification_emails": "",
         "weekend_access_notification_cutoff_hour": "",
         "weekend_access_notification_cutoff_day": "",
@@ -454,6 +458,8 @@ class ToolCustomization(CustomizationBase):
         "tool_problem_send_to_all_qualified_users": "",
         "tool_configuration_near_future_days": "1",
         "tool_reservation_policy_superusers_bypass": "",
+        "tool_wait_list_spot_expiration": "15",
+        "tool_wait_list_reservation_buffer": "15",
     }
 
     def validate(self, name, value):
@@ -550,6 +556,7 @@ class TemplatesCustomization(CustomizationBase):
         ("reservation_reminder_email", ".html"),
         ("reservation_warning_email", ".html"),
         ("safety_issue_email", ".html"),
+        ("scheduled_outage_reminder_email", ".html"),
         ("staff_charge_reminder_email", ".html"),
         ("task_status_notification", ".html"),
         ("tool_qualification_expiration_email", ".html"),
@@ -560,6 +567,7 @@ class TemplatesCustomization(CustomizationBase):
         ("reservation_cancelled_user_email", ".html"),
         ("weekend_access_email", ".html"),
         ("recurring_charges_reminder_email", ".html"),
+        ("wait_list_notification_email", ".html"),
     ]
 
 

@@ -1,7 +1,8 @@
 import datetime
+import json
 
 from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.admin import register
 from django.contrib.admin.decorators import display
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -18,6 +19,7 @@ from mptt.admin import DraggableMPTTAdmin, MPTTAdminForm, TreeRelatedFieldListFi
 from NEMO.actions import (
     access_requests_export_csv,
     adjustment_requests_export_csv,
+    adjustment_requests_mark_as_applied,
     create_next_interlock,
     disable_selected_cards,
     duplicate_configuration,
@@ -102,6 +104,7 @@ from NEMO.models import (
     ToolDocuments,
     ToolQualificationGroup,
     ToolUsageCounter,
+    ToolWaitList,
     TrainingSession,
     UsageEvent,
     User,
@@ -183,6 +186,22 @@ class ToolAdminForm(forms.ModelForm):
             self.fields["required_resources"].initial = self.instance.required_resource_set.all()
             self.fields["nonrequired_resources"].initial = self.instance.nonrequired_resource_set.all()
 
+    def clean__pre_usage_questions(self):
+        questions = self.cleaned_data["_pre_usage_questions"]
+        try:
+            return json.dumps(json.loads(questions), indent=4)
+        except:
+            pass
+        return questions
+
+    def clean__post_usage_questions(self):
+        questions = self.cleaned_data["_post_usage_questions"]
+        try:
+            return json.dumps(json.loads(questions), indent=4)
+        except:
+            pass
+        return questions
+
     def clean(self):
         cleaned_data = super().clean()
         image = cleaned_data.get("_image")
@@ -240,6 +259,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "name",
                     "parent_tool",
                     "_category",
+                    "_operation_mode",
                     "qualified_users",
                     "_qualifications_never_expire",
                     "_pre_usage_questions",
@@ -322,6 +342,13 @@ class ToolAdmin(admin.ModelAdmin):
         """
         Explicitly record any project membership changes on non-child tools.
         """
+        if not obj.allow_wait_list() and obj.current_wait_list():
+            obj.current_wait_list().update(deleted=True)
+            messages.warning(
+                request,
+                f"The wait list for {obj} has been deleted because the current operation mode does not allow it.",
+            )
+
         if obj.parent_tool:
             super(ToolAdmin, self).save_model(request, obj, form, change)
         else:
@@ -332,6 +359,12 @@ class ToolAdmin(admin.ModelAdmin):
                 obj.required_resource_set.set(form.cleaned_data["required_resources"])
             if "nonrequired_resources" in form.changed_data:
                 obj.nonrequired_resource_set.set(form.cleaned_data["nonrequired_resources"])
+
+
+@register(ToolWaitList)
+class ToolWaitList(admin.ModelAdmin):
+    list_display = ["tool", "user", "date_entered", "date_exited", "expired", "deleted"]
+    list_filter = ["deleted", "expired", "tool"]
 
 
 @register(ToolQualificationGroup)
@@ -484,15 +517,21 @@ class ConfigurationAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "tool",
+        "is_tool_visible",
         "name",
         "enabled",
         "qualified_users_are_maintainers",
         "display_order",
         "exclude_from_configuration_agenda",
     )
+    list_filter = ["enabled", ("tool", admin.RelatedOnlyFieldListFilter), "tool__visible"]
     filter_horizontal = ("maintainers",)
     actions = [duplicate_configuration]
     autocomplete_fields = ["tool"]
+
+    @admin.display(ordering="tool__visible", boolean=True, description="Tool visible")
+    def is_tool_visible(self, obj: Configuration):
+        return obj.tool.visible
 
 
 @register(ConfigurationHistory)
@@ -636,6 +675,14 @@ class ReservationQuestionsForm(forms.ModelForm):
     class Media:
         js = ("admin/dynamic_form_preview/dynamic_form_preview.js",)
         css = {"": ("admin/dynamic_form_preview/dynamic_form_preview.css",)}
+
+    def clean_questions(self):
+        questions = self.cleaned_data["questions"]
+        try:
+            return json.dumps(json.loads(questions), indent=4)
+        except:
+            pass
+        return questions
 
     def clean(self):
         cleaned_data = super().clean()
@@ -1648,16 +1695,18 @@ class AdjustmentRequestAdmin(admin.ModelAdmin):
         "get_time_difference",
         "get_status_display",
         "reply_count",
+        "applied",
         "deleted",
     )
     list_filter = (
         "status",
         "deleted",
+        "applied",
         ("creator", admin.RelatedOnlyFieldListFilter),
         ("reviewer", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "last_updated"
-    actions = [adjustment_requests_export_csv]
+    actions = [adjustment_requests_export_csv, adjustment_requests_mark_as_applied]
 
     @admin.display(description="Diff")
     def get_time_difference(self, adjustment_request: AdjustmentRequest):

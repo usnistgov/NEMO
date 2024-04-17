@@ -28,9 +28,13 @@ url_kwargs_get_post = {
     "cancel_reservation_from_kiosk": {"kwargs": {"reservation_id": 1}, "post": {"customer_id": 1}},
     "kiosk_category_choices": {"kwargs": {"category": "test", "user_id": 1}},
     "kiosk_tool_information": {"kwargs": {"tool_id": 1, "user_id": 1, "back": "back_to_start"}},
+    "kiosk_tool_post_comment": {"kwargs": {"tool_id": 1, "user_id": 1, "back": "back_to_start"}},
+    "kiosk_tool_report_problem": {"kwargs": {"tool_id": 1, "user_id": 1, "back": "back_to_start"}},
     "enable_tool_from_kiosk": {"post": {"tool_id": 1, "customer_id": 1, "project_id": 1}},
     "disable_tool_from_kiosk": {"post": {"tool_id": 1, "customer_id": 1}},
     "reserve_tool_from_kiosk": {"post": {"tool_id": 1, "customer_id": 1, "project_id": 1, "back": ""}},
+    "post_comment_from_kiosk": {"post": {"tool": 1, "customer_id": 1, "back": "back_to_start"}},
+    "report_problem_from_kiosk": {"post": {"tool": 1, "customer_id": 1, "back": "back_to_start"}},
     "login_to_area": {"kwargs": {"door_id": 1}, "post": {"badge_number": 1}},
     "logout_of_area": {"kwargs": {"door_id": 1}, "post": {"badge_number": 1}},
     "open_door": {"kwargs": {"door_id": 1}, "post": {"badge_number": 1}},
@@ -101,6 +105,10 @@ url_kwargs_get_post = {
     "customize": {"kwargs": {"key": "application"}, "post": {"facility_name": "test facility"}},
     "create_adjustment_request": {"kwargs": {}},
     "edit_adjustment_request": {"kwargs": {"request_id": 1}},
+    "mark_adjustment_as_applied": {"login_id": 1},
+    "apply_adjustment": {"login_id": 1},
+    "delete_adjustment_request": {"kwargs": {"request_id": 2}, "login_id": 3},
+    "adjustment_request_reply": {"kwargs": {"request_id": 2}, "login_id": 3, "post": {"reply_content": "new message"}},
     "change_reservation_date": {
         "login_id": 1,
         "post": {
@@ -131,6 +139,7 @@ url_kwargs_get_post = {
 }
 
 urls_to_skip = [
+    "api-root",
     "kiosk_tool_reservation",
     "cancel_reservation_from_kiosk",
     "create_reservation",
@@ -148,8 +157,11 @@ urls_to_skip = [
     "media_view",
     "media_list_view",
     "remove_document_from_project",
-    "adjustment_request_reply",
-    "delete_adjustment_request",
+    "enter_wait_list_from_kiosk",
+    "exit_wait_list_from_kiosk",
+    "enter_wait_list",
+    "exit_wait_list",
+    "check_and_update_wait_list",
 ]
 
 

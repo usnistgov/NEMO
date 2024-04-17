@@ -1,0 +1,34 @@
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <!--[if mso]><table width="600" align="center"><tr><td><![endif]-->
+        <table align="center"
+               style="width:100%;
+                      max-width:600px;
+                      font-family: 'Avenir Next', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'">
+            <tr>
+                <td align="center"
+                    style="color: white;
+                           background: #5bc0de;
+                           margin: 0;
+                           padding: 50px 0"
+                    bgcolor="#5bc0de">
+                    <h1 style="max-width: 90%; margin: 0 auto; padding: 0;">Your turn to use {{ tool.name }}</h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">
+                    <p>Dear {{ user.first_name }},</p>
+                    <p>This is a notification that it is now your turn to use {{ tool.name }}.</p>
+                    <p>
+                        We will hold your spot in the wait list for {{ time_to_expiration }} minutes. If you do not use the tool within that time, you will be removed from the wait list.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+    </body>
+</html>

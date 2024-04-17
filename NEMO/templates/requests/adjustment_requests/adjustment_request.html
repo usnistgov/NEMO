@@ -128,7 +128,12 @@
             <div class="text-right">
                 {% if form.instance.get_status_display == "Pending" %}
                     {% if instance_id and user in form.instance.reviewers %}
-                        {% button type="save" submit=False name="approve_request" title="Approve request" icon="glyphicon-ok-circle" value="Approve" onclick="confirm_review_dialog(this);" %}
+                        {% if form.instance.editable_charge and "requests"|customization:"adjustment_requests_apply_button" == "enabled" %}
+                            {% button type="save" submit=False name="approve_apply_request" title="Approve and adjust the original charge" icon="glyphicon-ok-circle" value="Approve and adjust" onclick="confirm_review_dialog(this, 'approve and adjust the actual charge of');" %}
+                            {% button type="save" submit=False name="approve_request" title="Approve without adjusting" icon="glyphicon-ok-circle" value="Approve only" onclick="confirm_review_dialog(this);" %}
+                        {% else %}
+                            {% button type="save" submit=False name="approve_request" title="Approve request" icon="glyphicon-ok-circle" value="Approve" onclick="confirm_review_dialog(this);" %}
+                        {% endif %}
                         {% button type="delete" submit=False name="deny_request" title="Deny request" icon="glyphicon-ban-circle" value="Deny" onclick="confirm_review_dialog(this);" %}
                     {% endif %}
                     {% if not instance_id or form.instance.creator == user %}
@@ -150,10 +155,11 @@
         $('#billable_item').on('change', function() {
             window.location.href = this.options[this.selectedIndex].getAttribute("url");
         });
-        function confirm_review_dialog(review_button)
+        function confirm_review_dialog(review_button, decision_text)
         {
             let decision = review_button.innerText.trim().toLowerCase();
-            let dialog_text = "Are you sure you want to "+decision+" this request?";
+            decision_text = decision_text || decision 
+            let dialog_text = "Are you sure you want to "+decision_text+" this request?";
             let note = $("#manager_note").val();
             if (note && decision === "approve")
             {

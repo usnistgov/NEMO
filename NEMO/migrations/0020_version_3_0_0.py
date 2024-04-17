@@ -9,7 +9,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("NEMO", "0019_user_type_not_required"),
+        ("NEMO", "0012_version_2_0_0_squashed"),
     ]
 
     def rebuild_area_tree(apps, schema_editor):

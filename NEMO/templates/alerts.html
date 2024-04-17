@@ -10,7 +10,7 @@
     <h1>Alerts</h1>
     {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
     <p>
-        You can create and edit alerts that will be visible to everyone. The alert will only be visible after the debut time and will be deleted after the expiration time.
+        You can create and edit alerts that will be visible to everyone. The alert will only be visible after the debut time and will be deleted after the expiration time. (HTML syntax is allowed).
     </p>
     <form action="{% url 'alerts' %}" method="post" class="well">
         <h4>
@@ -109,7 +109,9 @@
                         <span style="font-weight:bold">{{ a.title }}</span>
                         <br>
                     {% endif %}
-                    {{ a.contents|linebreaks }}
+                    {{ a.contents|safe|linebreaksbr }}
+                    <br>
+                    <br>
                     Debuts on {{ a.debut_time }}
                     <br>
                     {% if a.expiration_time %}
@@ -130,6 +132,6 @@
 		$('#debut_time').datetimepicker(timepicker_properties);
 		$('#expiration_time').datetimepicker(timepicker_properties);
 		$('.glyphicon').tooltip({container: 'body'});
-	
+
     </script>
 {% endblock %}

@@ -14,7 +14,7 @@
                                 <span style="font-weight:bold">{{ a.title }}</span>
                                 <br>
                             {% endif %}
-                            {{ a.contents|linebreaks }}
+                            {{ a.contents|safe|linebreaksbr }}
                         </td>
                     </tr>
                 </table>

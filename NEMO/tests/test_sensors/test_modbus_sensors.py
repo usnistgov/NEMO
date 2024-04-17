@@ -39,9 +39,6 @@ class ModbusInterlockTestCase(TestCase):
         # result should be 0 or 1 (random), so test a few times to make sure we get both
         first_result = evaluate_modbus_expression(sensor)
         second_result = evaluate_modbus_expression(sensor)
-        print(first_result)
-        print(second_result)
         while first_result == second_result:
             second_result = evaluate_modbus_expression(sensor)
-            print(second_result)
             self.assertIn(second_result, [0, 1])

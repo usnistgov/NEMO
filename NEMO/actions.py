@@ -134,6 +134,11 @@ def adjustment_requests_export_csv(modeladmin, request, queryset):
     return adjustments_csv_export(queryset.all())
 
 
+@admin.action(description="Mark selected adjustment requests as applied")
+def adjustment_requests_mark_as_applied(modeladmin, request, queryset):
+    return queryset.update(applied=True, applied_by=request.user)
+
+
 @admin.action(description="Export selected access requests in CSV")
 def access_requests_export_csv(modeladmin, request, queryset):
     return access_csv_export(queryset.all())

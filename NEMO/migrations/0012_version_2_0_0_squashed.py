@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
     ]
 
     dependencies = [
-        ("NEMO", "0011_version_1_22_0"),
+        ("NEMO", "0002_version_1_0_0_squashed"),
     ]
 
     def create_proxr_interlock_card_category(apps, schema_editor):

@@ -14,24 +14,44 @@
     {# Hiding the dialog using the X in the top right, or clicking outside of it, will stop processing. #}
     <input type="hidden" id="dialog_cancelled" value="true">
     <form id="additional_event_parameters" onsubmit="return false">
-        <input type="hidden" id="configured" name="configured" value="true">
+        <input type="hidden" id="outage_submitted" name="outage_submitted" value="true">
+        {% if outage_submitted %}
+            {% if form.errors %}
+                <div class="col-sm-12">
+                    <div class="alert alert-danger">
+                        Oops! Something went wrong. Please correct the errors highlighted below.
+                        <br>
+                        {{ form.non_field_errors }}
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
         <div class="form-group col-sm-12">
             <label for="title">Title</label>
+            {% if outage_submitted and form.title.errors %}
+                <span class="pull-right danger-highlight">{{ form.title.errors|striptags }}</span>
+            {% endif %}
             <input aria-labelledby="outage_title_help"
                    id="title"
                    name="title"
                    type="text"
                    maxlength="100"
                    class="form-control"
+                   value="{{ form.title.value|default_if_none:'' }}"
                    autocomplete="off">
             <div id="outage_title_help" class="light-grey">You must provide a title to create a scheduled outage</div>
         </div>
         {% if categories %}
             <div class="form-group col-sm-12">
                 <label for="category">Category</label>
+                {% if outage_submitted and form.category.errors %}
+                    <span class="pull-right danger-highlight">{{ form.category.errors|striptags }}</span>
+                {% endif %}
                 <select aria-labelledby="outage_category_help" class="form-control" name="category" id="category">
                     <option></option>
-                    {% for c in categories %}<option>{{ c }}</option>{% endfor %}
+                    {% for c in categories %}
+                        <option {% if form.category.value == c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
                 </select>
                 <div id="outage_category_help" class="light-grey">
                     Is there a category for this outage? This is useful for data and trend analysis
@@ -40,45 +60,125 @@
         {% endif %}
         <div class="form-group col-sm-12">
             <label for="details">Details</label>
+            {% if outage_submitted and form.details.errors %}
+                <span class="pull-right danger-highlight">{{ form.details.errors|striptags }}</span>
+            {% endif %}
             <textarea aria-labelledby="outage_details_help"
                       name="details"
                       id="details"
                       rows="7"
                       maxlength="3000"
-                      class="form-control"></textarea>
+                      class="form-control">{{ form.details.value|default_if_none:"" }}</textarea>
             <div id="outage_details_help" class="light-grey">
                 Please provide any additional details for the scheduled outage. Be descriptive so that users understand why there is a scheduled outage.
             </div>
         </div>
         <div class="col-sm-12">
-            <a onclick="toggle_details(this)"
+            <a id="reminder_outage_link"
+               onclick="toggle_details(this)"
+               data-toggle="collapse"
+               data-target="#reminder_section"
+               class="pointer"
+               style="text-decoration: none">
+                <input type="hidden" name="send_reminders" value="" />
+                <input type="checkbox"
+                       id="send_reminders"
+                       name="send_reminders"
+                       {% if form.send_reminders.value %}checked{% endif %} />
+            </a>
+            <label for="send_reminders" style="padding-left: 5px">Send reminder(s) for this outage</label>
+        </div>
+        <div id="reminder_section"
+             class="collapse {{ form.send_reminders.value|yesno:"in," }} col-sm-12"
+             style="margin: 0 auto">
+            <div class="form-group">
+                <label for="reminder_days">Reminder day(s)</label>
+                {% if outage_submitted and form.reminder_days.errors %}
+                    <span class="pull-right danger-highlight">{{ form.reminder_days.errors|striptags }}</span>
+                {% endif %}
+                <input aria-labelledby="outage_reminder_days_help"
+                       id="reminder_days"
+                       name="reminder_days"
+                       type="text"
+                       maxlength="2000"
+                       class="form-control"
+                       value="{{ form.reminder_days.value|default_if_none:'' }}"
+                       autocomplete="off">
+                <div id="outage_reminder_days_help" class="light-grey">
+                    The number of day(s) prior to the start of the outage to send the reminder on
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="reminder_emails">Reminder email(s)</label>
+                {% if outage_submitted and form.reminder_emails.errors %}
+                    <span class="pull-right danger-highlight">{{ form.reminder_emails.errors|striptags }}</span>
+                {% endif %}
+                <input aria-labelledby="outage_reminder_emails_help"
+                       id="reminder_emails"
+                       name="reminder_emails"
+                       type="text"
+                       maxlength="2000"
+                       class="form-control"
+                       value="{{ form.reminder_emails.value|default_if_none:'' }}"
+                       autocomplete="off">
+                <div id="outage_reminder_emails_help" class="light-grey">The email(s) to send the reminder to</div>
+            </div>
+        </div>
+        <div class="col-sm-12">
+            <a id="recurring_outage_link"
+               onclick="toggle_details(this)"
                data-toggle="collapse"
                data-target="#recurrence"
                class="pointer"
                style="text-decoration: none">
-                <input type="checkbox" id="recurring_outage" name="recurring_outage" />
+                <input type="hidden" name="recurring_outage" value="" />
+                <input type="checkbox"
+                       id="recurring_outage"
+                       name="recurring_outage"
+                       {% if form.recurring_outage.value %}checked{% endif %} />
             </a>
             <label for="recurring_outage" style="padding-left: 5px">Create more than one occurrence of this outage</label>
         </div>
-        <div id="recurrence" class="collapse col-sm-12" style="margin: 0 auto">
-            <div class="col-sm-12">
+        <div id="recurrence"
+             class="collapse {{ form.recurring_outage.value|yesno:"in," }} col-sm-12"
+             style="margin: 0 auto">
+            <div class="row">
                 <div class="form-group col-sm-2">
                     <label for="recurrence_interval">Every</label>
-                    <input id="recurrence_interval" name="recurrence_interval" type="number" class="form-control" value="1" />
+                    <input id="recurrence_interval"
+                           name="recurrence_interval"
+                           type="number"
+                           class="form-control"
+                           value="{{ form.recurrence_interval.value|default_if_none:'1' }}" />
+                    {% if outage_submitted and form.recurrence_interval.errors %}
+                        <span class="pull-right danger-highlight">{{ form.recurrence_interval.errors|striptags }}</span>
+                    {% endif %}
                 </div>
                 <div class="form-group col-sm-6">
                     <label for="recurrence_frequency">Frequency</label>
                     <select class="form-control" name="recurrence_frequency" id="recurrence_frequency">
-                        {% for choice in recurrence_intervals %}<option value="{{ choice.0 }}">{{ choice.1 }}</option>{% endfor %}
+                        {% for choice in recurrence_intervals %}
+                            <option value="{{ choice.0 }}"
+                                    {% if form.recurrence_frequency.value == choice.0|stringformat:'i' %}selected{% endif %}>
+                                {{ choice.1 }}
+                            </option>
+                        {% endfor %}
                     </select>
+                    {% if outage_submitted and form.recurrence_frequency.errors %}
+                        <span class="pull-right danger-highlight">{{ form.recurrence_frequency.errors|striptags }}</span>
+                    {% endif %}
                 </div>
                 <div class="form-group col-sm-4">
-                    <label for="recurrence_until">Until:</label>
+                    <label for="recurrence_until">Until</label>
                     <input type="text"
                            id="recurrence_until"
                            name="recurrence_until"
                            class="form-control select-date"
+                           value="{{ form.recurrence_until.value|input_date_format }}"
                            placeholder="Choose a date">
+                    {% if outage_submitted and form.recurrence_until.errors %}
+                        <span class="pull-right danger-highlight">{{ form.recurrence_until.errors|striptags }}</span>
+                    {% endif %}
                 </div>
             </div>
         </div>

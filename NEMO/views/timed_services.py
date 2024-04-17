@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 from logging import getLogger
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Set
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
@@ -24,9 +24,11 @@ from NEMO.models import (
     RequestStatus,
     Reservation,
     ReservationItemType,
+    ScheduledOutage,
     StaffCharge,
     TemporaryPhysicalAccessRequest,
     Tool,
+    ToolWaitList,
     UsageEvent,
     User,
 )
@@ -36,9 +38,11 @@ from NEMO.utilities import (
     as_timezone,
     beginning_of_the_day,
     bootstrap_primary_color,
+    end_of_the_day,
     format_datetime,
     get_email_from_settings,
     get_full_url,
+    is_date_in_datetime_range,
     quiet_int,
     render_email_template,
     send_mail,
@@ -235,6 +239,141 @@ This email is to inform you that today was the last occurrence for the {closure_
         to=facility_manager_emails,
         email_category=EmailCategory.SYSTEM,
     )
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def check_and_update_wait_list(request):
+    return do_check_and_update_wait_list()
+
+
+def do_check_and_update_wait_list(now=timezone.now()):
+    tools_with_wait_list = (
+        Tool.objects.filter(toolwaitlist__expired=False, toolwaitlist__deleted=False)
+        .exclude(_operation_mode=Tool.OperationMode.REGULAR)
+        .distinct()
+    )
+    time_to_expiration = quiet_int(ToolCustomization.get("tool_wait_list_spot_expiration"), 1)
+
+    for tool in tools_with_wait_list:
+        hybrid_mode = tool.operation_mode == Tool.OperationMode.HYBRID
+
+        # Only check the wait list if the tool is not in use
+        # And we are not in the hybrid mode exclusion zone (reservation buffer or active reservation)
+        if not tool.in_use() and not in_hybrid_mode_reservation_or_buffer_zone(tool, now):
+            top_wait_list_entry = tool.top_wait_list_entry()
+            last_turn_available_at = top_wait_list_entry.last_turn_available_at if top_wait_list_entry else None
+            turn_available_date = get_wait_list_turn_available_date(tool, top_wait_list_entry, hybrid_mode, now)
+            first_check = last_turn_available_at is None
+
+            # Notify the next user in the wait list
+            if first_check or turn_available_date > last_turn_available_at:
+                top_wait_list_entry.last_turn_available_at = turn_available_date
+                top_wait_list_entry.save()
+                last_turn_available_at = turn_available_date
+                notify_next_user_in_wait_list(top_wait_list_entry, time_to_expiration)
+
+            # Check if spot has expired
+            if not first_check and now - last_turn_available_at >= timedelta(minutes=time_to_expiration):
+                top_wait_list_entry.expired = True
+                top_wait_list_entry.date_exited = now
+                top_wait_list_entry.save()
+
+                # Use this if we want to notify next user in line in the same tick
+                next_user_entry = tool.top_wait_list_entry()
+                if next_user_entry:
+                    next_user_entry.last_turn_available_at = now
+                    next_user_entry.save()
+                    notify_next_user_in_wait_list(top_wait_list_entry, time_to_expiration)
+
+    return HttpResponse()
+
+
+def in_hybrid_mode_reservation_or_buffer_zone(tool, now=timezone.now()):
+    """
+    In hybrid mode, the wait list is not checked if there is an upcoming reservation within the next "reservation_buffer" minutes,
+    or if we are inside an active reservation slot.
+    """
+    if tool.operation_mode == Tool.OperationMode.HYBRID:
+        reservation_buffer = quiet_int(ToolCustomization.get("tool_wait_list_reservation_buffer"), 1)
+        upcoming_reservation_within_buffer_or_active_reservation = Reservation.objects.filter(
+            tool=tool,
+            cancelled=False,
+            missed=False,
+            shortened=False,
+            start__lte=now + timedelta(minutes=reservation_buffer),
+            end__gt=now,
+        ).exists()
+        return upcoming_reservation_within_buffer_or_active_reservation
+    return False
+
+
+def get_wait_list_turn_available_date(tool, entry, hybrid_mode=False, now=timezone.now()):
+    """
+    User turn becomes available starting from the latest of one of the following dates:
+    - The end of the last usage event
+    - The end of the last reservation (hybrid mode only)
+        - When a reservation is missed, the reservation end is calculated as the start date + the missed reservation threshold.
+    - The time the previous user exited the wait list
+    """
+
+    last_usage_event = (
+        UsageEvent.objects.filter(tool_id__in=tool.get_family_tool_ids(), end__lte=now).order_by("-end").first()
+    )
+    last_usage_event_end = last_usage_event.end if last_usage_event else None
+
+    last_reservation_end = None
+    if hybrid_mode:
+        last_reservation = (
+            Reservation.objects.filter(Q(end__lte=now) | Q(missed=True), tool=tool).order_by("-end").first()
+        )
+        last_reservation_end = get_reservation_end(last_reservation) if last_reservation else None
+
+    previous_wait_list_entry = (
+        ToolWaitList.objects.filter(Q(expired=True) | Q(deleted=True), tool=tool, date_entered__lt=entry.date_entered)
+        .order_by("-date_exited")
+        .first()
+    )
+    previous_wait_list_entry_exited = previous_wait_list_entry.date_exited if previous_wait_list_entry else None
+
+    return sorted(
+        [
+            last_usage_event_end,
+            last_reservation_end,
+            previous_wait_list_entry_exited,
+        ],
+        key=lambda x: (x is not None, x),
+        reverse=True,
+    )[0]
+
+
+def get_reservation_end(reservation):
+    if not reservation.missed:
+        return reservation.end
+    else:
+        return reservation.start + timedelta(minutes=reservation.tool.missed_reservation_threshold)
+
+
+def notify_next_user_in_wait_list(entry, time_to_expiration):
+    message = get_media_file_contents("wait_list_notification_email.html")
+    if message:
+        subject = "Your turn for the " + str(entry.tool)
+        message = render_email_template(
+            message, {"user": entry.user, "tool": entry.tool, "time_to_expiration": time_to_expiration}
+        )
+        recipients = entry.user.get_emails(entry.user.get_preferences().email_send_wait_list_notification_emails)
+        send_mail(
+            subject=subject,
+            content=message,
+            from_email=get_email_from_settings(),
+            to=recipients,
+            email_category=EmailCategory.TIMED_SERVICES,
+        )
+    else:
+        timed_service_logger.error(
+            "Wait list notification email couldn't be send because wait_list_notification_email.html is not defined"
+        )
 
 
 @login_required
@@ -822,4 +961,45 @@ def do_auto_logout_users():
             # Now adjust the time, so it's "auto_logout_time" minutes long max
             record.end = record.start + timeout
             record.save(update_fields=["end"])
+    return HttpResponse()
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def email_scheduled_outage_reminders(request):
+    return send_email_scheduled_outage_reminders(request)
+
+
+def send_email_scheduled_outage_reminders(request=None) -> HttpResponse:
+    # Exit early if the template email is not defined
+    message = get_media_file_contents("scheduled_outage_reminder_email.html")
+    if not message:
+        timed_service_logger.error(
+            "Scheduled outage reminder email couldn't be send because scheduled_outage_reminder_email.html is not defined"
+        )
+        return HttpResponseNotFound(
+            "The scheduled outage reminder template has not been customized for your organization yet. Please visit the customization page to upload one, then scheduled outage reminder email notifications can be sent."
+        )
+    future_outages: QuerySetType[ScheduledOutage] = ScheduledOutage.objects.filter(start__gte=timezone.now())
+    outages_to_send_reminders_for: Set[ScheduledOutage] = set()
+    for future_outage in future_outages:
+        # Skip if we have no email addresses to send it to
+        if future_outage.reminder_emails:
+            for remaining_days in future_outage.get_reminder_days():
+                outage_date = date.today() + timedelta(days=remaining_days)
+                # Use the whole day of the start of the outage to check
+                start, end = beginning_of_the_day(future_outage.start), end_of_the_day(future_outage.start)
+                if is_date_in_datetime_range(outage_date, start, end):
+                    outages_to_send_reminders_for.add(future_outage)
+    for outage in outages_to_send_reminders_for:
+        subject = f"{outage.title} reminder"
+        rendered_message = render_email_template(message, {"outage": outage}, request)
+        send_mail(
+            subject=subject,
+            content=rendered_message,
+            from_email=get_email_from_settings(),
+            to=outage.reminder_emails,
+            email_category=EmailCategory.TIMED_SERVICES,
+        )
     return HttpResponse()

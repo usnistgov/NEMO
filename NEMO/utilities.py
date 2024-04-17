@@ -404,6 +404,13 @@ def end_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
     return localize(midnight) if in_local_timezone else midnight
 
 
+def is_date_in_datetime_range(date_to_check: date, start_date: datetime, end_date: datetime) -> bool:
+    # use timezone of start_date for date_to_check
+    start_of_day = beginning_of_the_day(datetime.combine(date_to_check, time()))
+    end_of_day = end_of_the_day(datetime.combine(date_to_check, time()))
+    return start_date <= end_of_day and start_of_day <= end_date
+
+
 def remove_duplicates(iterable: Union[List, Set, Tuple]) -> List:
     if not iterable:
         return []
