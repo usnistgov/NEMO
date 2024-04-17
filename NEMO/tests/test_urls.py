@@ -139,6 +139,7 @@ url_kwargs_get_post = {
 }
 
 urls_to_skip = [
+    "api-root",
     "kiosk_tool_reservation",
     "cancel_reservation_from_kiosk",
     "create_reservation",
