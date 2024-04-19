@@ -228,6 +228,7 @@ class ToolAdmin(admin.ModelAdmin):
         "_category",
         "visible",
         "operational_display",
+        "_operation_mode",
         "problematic",
         "is_configurable",
         "has_pre_usage_questions",
@@ -239,6 +240,7 @@ class ToolAdmin(admin.ModelAdmin):
     list_filter = (
         "visible",
         "_operational",
+        "_operation_mode",
         "_category",
         "_location",
         ("_requires_area_access", admin.RelatedOnlyFieldListFilter),

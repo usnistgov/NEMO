@@ -80,8 +80,11 @@
 
     function mark_adjustment_as_applied(adjustment_id)
     {
-        let apply_url = "{% url "mark_adjustment_as_applied" 99999 %}".replace("99999", adjustment_id);
-        ajax_get(apply_url, undefined, function () {$("#apply_"+adjustment_id+", #applied_"+adjustment_id+", #edit_"+adjustment_id).remove()}, ajax_failure_callback("Request update failed", "There was a problem marking this adjustment as applied."));
+        if (confirm("Are you sure you want to mark this adjustment as applied?"))
+        {
+            let apply_url = "{% url "mark_adjustment_as_applied" 99999 %}".replace("99999", adjustment_id);
+            ajax_get(apply_url, undefined, function () {$("#apply_"+adjustment_id+", #applied_"+adjustment_id+", #edit_"+adjustment_id).remove()}, ajax_failure_callback("Request update failed", "There was a problem marking this adjustment as applied."));
+        }
     }
 
     function apply_adjustment(adjustment_id)
