@@ -32,7 +32,7 @@ from django.utils import timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
 from django.utils.text import slugify
-from django.utils.timezone import is_naive, localtime
+from django.utils.timezone import is_naive, localtime, make_aware
 
 utilities_logger = getLogger(__name__)
 
@@ -383,9 +383,9 @@ def as_timezone(dt):
 def localize(dt, tz=None):
     tz = tz or timezone.get_current_timezone()
     if isinstance(dt, list):
-        return [tz.localize(d) for d in dt]
+        return [make_aware(d, tz) for d in dt]
     else:
-        return tz.localize(dt)
+        return make_aware(dt, tz)
 
 
 def naive_local_current_datetime():
