@@ -156,7 +156,8 @@ class BaseDocumentModel(BaseModel):
         null=True, blank=True, max_length=200, help_text="The optional name to display for this document"
     )
     display_order = models.IntegerField(
-        help_text="The order in which choices are displayed on the landing page, from left to right, top to bottom. Lower values are displayed first."
+        default=1,
+        help_text="The order in which choices are displayed on the landing page, from left to right, top to bottom. Lower values are displayed first.",
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
