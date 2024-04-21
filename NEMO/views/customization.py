@@ -119,6 +119,12 @@ class CustomizationBase(ABC):
                 return default_value
 
     @classmethod
+    def get_all(cls) -> Dict:
+        customization_values = cls.all_variables()
+        customization_values.update({cust.name: cust.value for cust in Customization.objects.all() if cust.value})
+        return customization_values
+
+    @classmethod
     def get_int(cls, name: str, default=None, raise_exception=True) -> int:
         return quiet_int(cls.get(name, raise_exception), default)
 

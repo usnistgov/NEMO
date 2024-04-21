@@ -1,5 +1,6 @@
-from NEMO.models import Area, Customization, Notification, PhysicalAccessLevel, Tool, User
+from NEMO.models import Area, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.utilities import date_input_js_format, datetime_input_js_format, time_input_js_format
+from NEMO.views.customization import CustomizationBase
 from NEMO.views.notifications import get_notification_counts
 
 
@@ -63,11 +64,11 @@ def base_context(request):
         facility_managers_exist = User.objects.filter(is_active=True, is_facility_manager=True).exists()
     except:
         facility_managers_exist = False
-    customization_values = {customization.name: customization.value for customization in Customization.objects.all()}
+    customization_values = CustomizationBase.get_all()
     return {
-        "facility_name": customization_values.get("facility_name", "Facility"),
-        "recurring_charges_name": customization_values.get("recurring_charges_name", "Recurring charges"),
-        "site_title": customization_values.get("site_title", ""),
+        "facility_name": customization_values.get("facility_name"),
+        "recurring_charges_name": customization_values.get("recurring_charges_name"),
+        "site_title": customization_values.get("site_title"),
         "device": getattr(request, "device", "desktop"),
         "tools_exist": tools_exist,
         "areas_exist": areas_exist,
@@ -84,10 +85,10 @@ def base_context(request):
         "date_input_js_format": date_input_js_format,
         "datetime_input_js_format": datetime_input_js_format,
         "no_header": request.session.get("no_header", False),
-        "safety_menu_item": customization_values.get("safety_main_menu", "enabled") == "enabled",
-        "calendar_page_title": customization_values.get("calendar_page_title", "Calendar"),
-        "tool_control_page_title": customization_values.get("tool_control_page_title", "Tool control"),
-        "status_dashboard_page_title": customization_values.get("status_dashboard_page_title", "Status dashboard"),
-        "requests_page_title": customization_values.get("requests_page_title", "Requests"),
-        "safety_page_title": customization_values.get("safety_page_title", "Safety"),
+        "safety_menu_item": customization_values.get("safety_main_menu") == "enabled",
+        "calendar_page_title": customization_values.get("calendar_page_title"),
+        "tool_control_page_title": customization_values.get("tool_control_page_title"),
+        "status_dashboard_page_title": customization_values.get("status_dashboard_page_title"),
+        "requests_page_title": customization_values.get("requests_page_title"),
+        "safety_page_title": customization_values.get("safety_page_title"),
     }
