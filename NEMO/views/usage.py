@@ -258,7 +258,7 @@ def project_usage(request):
         "search_items": set(Account.objects.all())
         | set(Project.objects.all())
         | set(get_project_applications())
-        | set(User.objects.filter(is_active=True)),
+        | set(User.objects.all()),
         "area_access": area_access,
         "consumables": consumables,
         "missed_reservations": missed_reservations,
@@ -290,7 +290,7 @@ def project_billing(request):
         set(Account.objects.all())
         | set(Project.objects.all())
         | set(get_project_applications())
-        | set(User.objects.filter(is_active=True))
+        | set(User.objects.all())
     )
 
     project_id = None
