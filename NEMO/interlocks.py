@@ -32,6 +32,10 @@ class Interlock(ABC):
     The interlock type should be set at the end of this file in the dictionary. The key is the key from InterlockCategory, the value is the Interlock implementation.
     """
 
+    def __init__(self):
+        self.channel_name = "Channel/Relay/Coil"
+        self.unit_id_name = "Multiplier/Unit id/Bank"
+
     def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
         pass
 
@@ -121,6 +125,11 @@ class StanfordInterlock(Interlock):
     MIN_ENABLE_VALUE = 3200
     MAX_DISABLE_VALUE = 1000
     MIN_DISABLE_VALUE = 700
+
+    def __init__(self):
+        super().__init__()
+        self.channel_name = "Channel"
+        self.unit_id_name = "Multiplier"
 
     def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
         even_port = interlock_card_form.cleaned_data["even_port"]
@@ -294,6 +303,11 @@ class ProXrInterlock(Interlock):
     PXR_RELAY_OFF = 0
     PXR_RELAY_ON = 1
 
+    def __init__(self):
+        super().__init__()
+        self.channel_name = "Relay"
+        self.unit_id_name = "Bank"
+
     def clean_interlock(self, interlock_form: InterlockAdminForm):
         """Validates NEMO interlock configuration."""
         channel = interlock_form.cleaned_data["channel"]
@@ -368,6 +382,11 @@ class WebRelayHttpInterlock(Interlock):
     state_parameter_template = "relay{}"
     state_response_suffixes = ["", "state"]
 
+    def __init__(self):
+        super().__init__()
+        self.channel_name = "Relay"
+        self.unit_id_name = "Not used"
+
     def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
         username = interlock_card_form.cleaned_data["username"]
         password = interlock_card_form.cleaned_data["password"]
@@ -439,6 +458,11 @@ class ModbusTcpInterlock(Interlock):
     MODBUS_OFF = 0
     MODBUS_ON = 1
 
+    def __init__(self):
+        super().__init__()
+        self.channel_name = "Coil address"
+        self.unit_id_name = "Slave id"
+
     def clean_interlock(self, interlock_form: InterlockAdminForm):
         channel = interlock_form.cleaned_data["channel"]
         error = {}
@@ -486,7 +510,7 @@ class ModbusTcpInterlock(Interlock):
             client.close()
 
 
-def get(category: InterlockCardCategory, raise_exception=True):
+def get(category: InterlockCardCategory, raise_exception=True) -> Interlock:
     """Returns the corresponding interlock implementation, and raises an exception if not found."""
     interlock_impl = interlocks.get(category.key, False)
     if not interlock_impl:
