@@ -821,6 +821,17 @@ class InterlockAdminForm(forms.ModelForm):
         model = Interlock
         fields = "__all__"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if hasattr(self.instance, "card"):
+            from NEMO import interlocks
+
+            category = self.instance.card.category
+            if "channel" in self.fields:
+                self.fields["channel"].label = interlocks.get(category, False).channel_name
+            if "unit_id" in self.fields:
+                self.fields["unit_id"].label = interlocks.get(category, False).unit_id_name
+
     def clean(self):
         if any(self.errors):
             return
@@ -834,10 +845,11 @@ class InterlockAdminForm(forms.ModelForm):
 
 @register(Interlock)
 class InterlockAdmin(admin.ModelAdmin):
-    search_fields = ["card__name", "card__server"]
+    search_fields = ["name", "card__name", "card__server"]
     form = InterlockAdminForm
     list_display = (
         "id",
+        "name",
         "get_card_enabled",
         "card",
         "channel",

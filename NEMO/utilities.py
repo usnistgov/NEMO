@@ -258,6 +258,14 @@ def get_month_timeframe(date_str: str = None):
     return first_of_the_month, last_of_the_month
 
 
+def get_day_timeframe(day_date: datetime.date = None):
+    start = day_date
+    if not day_date:
+        start = date.today()
+    start = datetime.combine(start, time())
+    return beginning_of_the_day(start), end_of_the_day(start)
+
+
 def extract_optional_beginning_and_end_dates(parameters, date_only=False, time_only=False):
     """
     Extract the "start" and "end" parameters from an HTTP request

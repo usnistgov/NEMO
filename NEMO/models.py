@@ -3171,6 +3171,7 @@ class Interlock(BaseModel):
             (LOCKED, "Locked"),
         )
 
+    name = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
     card = models.ForeignKey(InterlockCard, on_delete=models.CASCADE)
     channel = models.PositiveIntegerField(blank=True, null=True, verbose_name="Channel/Relay/Coil")
     unit_id = models.PositiveIntegerField(null=True, blank=True, verbose_name="Multiplier/Unit id/Bank")
@@ -3192,7 +3193,18 @@ class Interlock(BaseModel):
         ordering = ["card__server", "card__number", "channel"]
 
     def __str__(self):
-        return str(self.card) + (", channel " + str(self.channel) if self.channel else "")
+        from NEMO import interlocks
+
+        category = self.card.category if self.card else None
+        channel_name = interlocks.get(category, raise_exception=False).channel_name
+        display_name = ""
+        if self.name:
+            display_name += f"{self.name}"
+        if self.channel:
+            if self.name:
+                display_name += ", "
+            display_name += f"{channel_name} " + str(self.channel)
+        return str(self.card) + (f", {display_name}" if display_name else "")
 
 
 class InterlockCardCategory(BaseModel):
