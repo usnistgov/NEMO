@@ -8,7 +8,7 @@ from NEMO.migrations_utils import create_news_for_version
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("NEMO", "0075_adjustmentrequest_applied"),
+        ("NEMO", "0077_interlock_name"),
     ]
 
     def new_version_news(apps, schema_editor):
