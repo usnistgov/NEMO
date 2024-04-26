@@ -1448,7 +1448,7 @@ class ClosureAdmin(admin.ModelAdmin):
                 display_title = f'<span style="font-weight:bold">{obj.name}</span><br>' if obj.name else ""
                 return iframe_content(
                     f'<div style="{alert_style}">{display_title}{linebreaksbr(obj.closuretime_set.first().alert_contents())}</div>',
-                    extra_style="padding-bottom: 20%",
+                    extra_style="padding-bottom: 15%",
                 )
             except Exception:
                 pass
@@ -1916,9 +1916,9 @@ class PermissionAdmin(admin.ModelAdmin):
     form = PermissionAdminForm
 
 
-def iframe_content(content, extra_style="padding-bottom: 75%") -> str:
+def iframe_content(content, extra_style="padding-bottom: 65%") -> str:
     return mark_safe(
-        f'<div style="position: relative; display: block; overflow: hidden; {extra_style}"><iframe style="position: absolute; width:100%; height:100%; border:none" src="data:text/html,{urlencode(content)}"></iframe></div>'
+        f'<div id="iframe-container" style="position: relative; display: block; overflow: hidden; width:100%; height:100%; {extra_style}"><iframe style="width:100%; height:100%; border:none" src="data:text/html,{urlencode(content)}"></iframe></div><script>django.jQuery("#iframe-container").parent(".readonly").css("flex","1");</script>'
     )
 
 
