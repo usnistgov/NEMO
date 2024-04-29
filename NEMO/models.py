@@ -2533,6 +2533,9 @@ class Account(SerializationByNameModel):
     class Meta:
         ordering = ["name"]
 
+    def sorted_active_projects(self):
+        return self.sorted_projects().filter(active=True)
+
     def sorted_projects(self):
         return self.project_set.all().order_by("-active", "name")
 

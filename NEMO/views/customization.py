@@ -210,6 +210,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
         "project_application_identifier_name": "Application identifier",
         "project_allow_document_upload": "",
         "account_list_active_only": "",
+        "account_project_list_active_only": "",
         "project_list_active_only": "",
         "account_list_collapse": "",
         "project_allow_pi_manage_users": "",
