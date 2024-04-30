@@ -2,6 +2,7 @@ import csv
 import importlib
 import os
 from calendar import monthrange
+from copy import deepcopy
 from datetime import date, datetime, time
 from email import encoders
 from email.mime.base import MIMEBase
@@ -760,6 +761,14 @@ def create_ics(
 
     attachment = create_email_attachment(ics, maintype="text", subtype="calendar", method=method_name)
     return attachment
+
+
+def new_model_copy(instance):
+    new_instance = deepcopy(instance)
+    new_instance.id = None
+    new_instance.pk = None
+    new_instance._state.adding = True
+    return new_instance
 
 
 def slugify_underscore(name: str):

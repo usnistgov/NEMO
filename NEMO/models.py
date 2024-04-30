@@ -49,6 +49,7 @@ from NEMO.utilities import (
     get_hazard_logo_filename,
     get_task_image_filename,
     get_tool_image_filename,
+    new_model_copy,
     render_email_template,
     send_mail,
     supported_embedded_extensions,
@@ -2738,9 +2739,7 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         return loads(self.question_data) if self.question_data else None
 
     def copy(self, new_start: datetime = None, new_end: datetime = None):
-        new_reservation = deepcopy(self)
-        new_reservation.id = None
-        new_reservation.pk = None
+        new_reservation = new_model_copy(self)
         if new_start:
             new_reservation.start = new_start
         if new_end:
@@ -2752,9 +2751,9 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         if self.configurationoption_set.exists():
             deferred_related_models = []
             for config_option in self.configurationoption_set.all():
-                config_option.pk = None
-                config_option.reservation = new_reservation
-                deferred_related_models.append(config_option)
+                new_config_option = new_model_copy(config_option)
+                new_config_option.reservation = new_reservation
+                deferred_related_models.append(new_config_option)
             new_reservation._deferred_related_models = deferred_related_models
         return new_reservation
 
