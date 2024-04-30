@@ -5,6 +5,7 @@ from django.utils.safestring import mark_safe
 
 from NEMO.models import Area, Configuration, Interlock, InterlockCard, Tool, User
 from NEMO.typing import QuerySetType
+from NEMO.utilities import new_model_copy
 from NEMO.views.access_requests import access_csv_export
 from NEMO.views.adjustment_requests import adjustments_csv_export
 
@@ -96,26 +97,26 @@ def duplicate_tool_configuration(model_admin, request, queryset):
                 old_superusers = tool.superusers.all()
                 old_reviewers = tool.adjustment_request_reviewers.all()
                 old_qualified_users = User.objects.filter(qualifications__id=tool.pk).distinct()
-                tool.pk = None
-                tool.interlock = None
-                tool.visible = False
-                tool.operational = False
-                tool.name = new_name
-                tool.image = None
-                tool.description = None
-                tool.serial = None
-                tool.save()
-                tool.required_resource_set.set(old_required_resources)
-                tool.nonrequired_resource_set.set(old_nonrequired_resources)
-                tool.backup_owners.set(old_backup_users)
-                tool.superusers.set(old_superusers)
-                tool.adjustment_request_reviewers.set(old_reviewers)
+                new_tool = new_model_copy(tool)
+                new_tool.interlock = None
+                new_tool.visible = False
+                new_tool.operational = False
+                new_tool.name = new_name
+                new_tool.image = None
+                new_tool.description = None
+                new_tool.serial = None
+                new_tool.save()
+                new_tool.required_resource_set.set(old_required_resources)
+                new_tool.nonrequired_resource_set.set(old_nonrequired_resources)
+                new_tool.backup_owners.set(old_backup_users)
+                new_tool.superusers.set(old_superusers)
+                new_tool.adjustment_request_reviewers.set(old_reviewers)
                 for user in old_qualified_users:
-                    user.qualifications.add(tool)
+                    user.qualifications.add(new_tool)
                 messages.success(
                     request,
                     mark_safe(
-                        f'A duplicate of {original_name} has been made as <a href="{reverse("admin:NEMO_tool_change", args=[tool.id])}">{tool.name}</a>'
+                        f'A duplicate of {original_name} has been made as <a href="{reverse("admin:NEMO_tool_change", args=[new_tool.id])}">{new_tool.name}</a>'
                     ),
                 )
         except Exception as error:
@@ -160,15 +161,15 @@ def duplicate_configuration(model_admin, request, queryset: QuerySetType[Configu
                 continue
             else:
                 old_maintainers = configuration.maintainers.all()
-                configuration.pk = None
-                configuration.name = new_name
-                configuration.save()
+                new_configuration = new_model_copy(configuration)
+                new_configuration.name = new_name
+                new_configuration.save()
                 for maintainer in old_maintainers:
-                    configuration.maintainers.add(maintainer)
+                    new_configuration.maintainers.add(maintainer)
                 messages.success(
                     request,
                     mark_safe(
-                        f'A duplicate of {original_name} has been made as <a href="{reverse("admin:NEMO_configuration_change", args=[configuration.id])}">{configuration.name}</a>'
+                        f'A duplicate of {original_name} has been made as <a href="{reverse("admin:NEMO_configuration_change", args=[new_configuration.id])}">{new_configuration.name}</a>'
                     ),
                 )
         except Exception as error:

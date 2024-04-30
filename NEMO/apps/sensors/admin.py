@@ -18,6 +18,7 @@ from NEMO.apps.sensors.models import (
     SensorData,
 )
 from NEMO.typing import QuerySetType
+from NEMO.utilities import new_model_copy
 
 
 def duplicate_sensor_configuration(model_admin, request, queryset: QuerySetType[Sensor]):
@@ -35,11 +36,9 @@ def duplicate_sensor_configuration(model_admin, request, queryset: QuerySetType[
                 )
                 continue
             else:
-                new_sensor: Sensor = deepcopy(sensor)
+                new_sensor: Sensor = new_model_copy(sensor)
                 new_sensor.name = new_name
                 new_sensor.read_frequency = 0
-                new_sensor.id = None
-                new_sensor.pk = None
                 new_sensor.save()
                 messages.success(
                     request,

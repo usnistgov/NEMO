@@ -54,6 +54,7 @@ from NEMO.utilities import (
     format_datetime,
     get_recurring_rule,
     localize,
+    new_model_copy,
     quiet_int,
 )
 from NEMO.views.customization import UserRequestsCustomization
@@ -556,10 +557,10 @@ def save_scheduled_outage(
             start_no_tz, frequency, date_until_no_tz, int(form.cleaned_data.get("recurrence_interval", 1))
         )
         for rule in list(rules):
-            outage.pk = None
-            outage.start = localize(start_no_tz.replace(year=rule.year, month=rule.month, day=rule.day))
-            outage.end = outage.start + duration
-            outage.save()
+            new_outage = new_model_copy(outage)
+            new_outage.start = localize(start_no_tz.replace(year=rule.year, month=rule.month, day=rule.day))
+            new_outage.end = new_outage.start + duration
+            new_outage.save()
     else:
         outage.save()
 
