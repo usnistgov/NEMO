@@ -1,4 +1,5 @@
 import csv
+import datetime
 from logging import getLogger
 from smtplib import SMTPException
 from typing import List, Optional
@@ -133,6 +134,7 @@ def compose_email(request):
         else:
             return HttpResponseBadRequest("You specified an invalid audience parameter")
     generic_email_sample = get_media_file_contents("generic_email.html")
+    all_users = list(users)
     dictionary = {
         "audience": audience,
         "selection": selection,
@@ -140,14 +142,34 @@ def compose_email(request):
         "users": users,
         "topic": topic,
         "user_emails": ";".join(
-            [email for user in users for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)]
+            [
+                email
+                for user in all_users
+                for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)
+            ]
         ),
         "active_user_emails": ";".join(
             [
                 email
-                for user in users
+                for user in all_users
                 for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)
                 if user.is_active
+            ]
+        ),
+        "active_access_user_emails": ";".join(
+            [
+                email
+                for user in all_users
+                for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)
+                if not user.has_access_expired()
+            ]
+        ),
+        "active_active_access_user_emails": ";".join(
+            [
+                email
+                for user in all_users
+                for email in user.get_emails(user.get_preferences().email_send_broadcast_emails)
+                if (user.is_active and not user.has_access_expired())
             ]
         ),
     }
@@ -170,12 +192,15 @@ def export_email_addresses(request):
         selection = request.GET.getlist("selection")
         no_type = request.GET.get("no_type") == "on"
         only_active_users = request.GET.get("active") == "on"
+        only_active_access_users = request.GET.get("active_access") == "on"
         users, topic = get_users_for_email(audience, selection, no_type)
         response = HttpResponse(content_type="text/csv")
         writer = csv.writer(response)
         writer.writerow(["First", "Last", "Username", "Email"])
         if only_active_users:
             users = [user for user in users if user.is_active]
+        if only_active_access_users:
+            users = [user for user in users if not user.has_access_expired()]
         for user in users:
             user: User = user
             for email in user.get_emails(user.get_preferences().email_send_broadcast_emails):
@@ -210,6 +235,7 @@ def send_broadcast_email(request):
     }
     content = render_email_template(content, dictionary, request)
     active_choice = form.cleaned_data["only_active_users"]
+    active_access_choice = form.cleaned_data["only_active_access_users"]
     try:
         audience = form.cleaned_data["audience"]
         selection = form.cleaned_data["selection"]
@@ -217,6 +243,8 @@ def send_broadcast_email(request):
         users, topic = get_users_for_email(audience, selection, no_type)
         if active_choice:
             users = users.filter(is_active=True)
+        if active_access_choice:
+            users = users.filter(Q(access_expiration__isnull=True) | Q(access_expiration__gte=datetime.date.today()))
     except Exception as error:
         warning_message = "Your email was not sent. There was a problem finding the users to send the email to."
         dictionary = {"error": warning_message}
@@ -334,6 +362,7 @@ def get_users_for_email(audience: str, selection: List, no_type: bool) -> (Query
             )
         elif no_type:
             users = users.filter(type_id__isnull=True)
+    users = users.prefetch_related("preferences")
     return users, topic
 
 

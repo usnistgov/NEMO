@@ -1,0 +1,6 @@
+[Unit]
+Description=Deactivate users with expired access in NEMO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin deactivate_access_expired_users

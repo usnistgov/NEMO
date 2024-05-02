@@ -595,6 +595,11 @@ if settings.ALLOW_CONDITIONAL_URLS:
         path(
             "manage_tool_qualifications/", timed_services.manage_tool_qualifications, name="manage_tool_qualifications"
         ),
+        path(
+            "deactivate_access_expired_users/",
+            timed_services.deactivate_access_expired_users,
+            name="deactivate_access_expired_users",
+        ),
         path("manage_recurring_charges/", timed_services.manage_recurring_charges, name="manage_recurring_charges"),
         path("auto_logout_users/", timed_services.auto_logout_users, name="auto_logout_users"),
         path(

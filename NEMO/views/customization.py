@@ -29,6 +29,7 @@ from NEMO.models import (
     RecurringConsumableCharge,
     TrainingSession,
     UserPreferences,
+    UserType,
 )
 from NEMO.utilities import RecurrenceFrequency, date_input_format, datetime_input_format, quiet_int
 
@@ -232,10 +233,23 @@ class UserCustomization(CustomizationBase):
         "user_list_active_only": "",
         "user_access_expiration_reminder_days": "",
         "user_access_expiration_reminder_cc": "",
+        "user_access_expiration_buffer_days": "",
+        "user_access_expiration_no_type": "",
+        "user_access_expiration_types": "-1",
         "user_allow_document_upload": "",
     }
 
+    def context(self) -> Dict:
+        context_dict = super().context()
+        context_dict["user_types"] = UserType.objects.all()
+        context_dict["user_access_expiration_types_list"] = self.get_list_int("user_access_expiration_types")
+        return context_dict
+
     def validate(self, name, value):
+        if name == "user_access_expiration_types" and value:
+            validate_comma_separated_integer_list(value)
+        if name == "user_access_expiration_buffer_days" and value:
+            validate_integer(value)
         if name == "user_access_expiration_reminder_days" and value:
             # Check that we have an integer or a list of integers
             validate_comma_separated_integer_list(value)
@@ -243,6 +257,17 @@ class UserCustomization(CustomizationBase):
             recipients = tuple([e for e in value.split(",") if e])
             for email in recipients:
                 validate_email(email)
+
+    def save(self, request, element=None) -> Dict[str, Dict[str, str]]:
+        errors = super().save(request, element)
+
+        user_types = ",".join(request.POST.getlist("user_access_expiration_types_list", []))
+        try:
+            self.validate("user_access_expiration_types", user_types)
+            type(self).set("user_access_expiration_types", user_types)
+        except (ValidationError, InvalidCustomizationException) as e:
+            errors["user_access_expiration_types"] = {"error": str(e.message or e.msg), "value": user_types}
+        return errors
 
 
 @customization(key="emails", title="Email addresses")
