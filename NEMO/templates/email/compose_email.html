@@ -22,11 +22,23 @@
                                 {% endif %}
                             </div>
                         </div>
-                        Active users are listed below in black. Inactive users are <span class="light-grey strikethrough">crossed out</span>.
+                        Active users are listed below in black.
+                        <div class="inactive-label" style="display: none">
+                            Inactive users are <span class="light-grey strikethrough">crossed out</span>.
+                        </div>
+                        <div class="access-expired-label" style="display: none">
+                            Users with expired access are <span class="light-grey strikethrough-double">double-crossed out</span>.
+                        </div>
                         <div class="checkbox">
                             <label>
                                 <input type="checkbox" name="only_active_users" onclick="updated_email_link()" checked>
                                 Only send this email to active users
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="only_active_access_users" onclick="updated_email_link()" checked>
+                                Only send this email to users with active {{ site_title }} access
                             </label>
                         </div>
                         <div class="checkbox">
@@ -36,8 +48,9 @@
                             </label>
                         </div>
                         {% for u in users %}
-                            <span {% if not u.is_active %}class="light-grey strikethrough"{% endif %}>{{ u }} - {{ u.email }}</span>
-                            <br>
+                            <div {% if not u.is_active %}class="light-grey strikethrough" style="display: none" {% elif u.has_access_expired %}class="light-grey strikethrough-double" style="display: none"{% endif %}>
+                                {{ u }} - {{ u.email }}
+                            </div>
                         {% endfor %}
                     </div>
                 {% endif %}
@@ -157,11 +170,13 @@
         {
             let export_url = "{% url 'export_email_addresses' %}?"
             let active_users_only = $('input[name=only_active_users]').is(':checked') ? 'on' : '';
-            export_url += "&active=" + active_users_only
-            export_url += "&audience=" + "{{ audience }}"
-            export_url += "&no_type=" + "{{ no_type|yesno:'on,' }}"
+            let access_active_users_only = $('input[name=only_active_access_users]').is(':checked') ? 'on' : '';
+            export_url += "&active=" + active_users_only;
+            export_url += "&active_access=" + access_active_users_only;
+            export_url += "&audience=" + "{{ audience }}";
+            export_url += "&no_type=" + "{{ no_type|yesno:'on,' }}";
             {% for selection_item in selection %}
-                export_url += "&selection=" + "{{ selection_item }}"
+                export_url += "&selection=" + "{{ selection_item }}";
             {% endfor %}
             window.open(export_url);
         }
@@ -170,7 +185,7 @@
         {
             {# If the user is not staff member, the email link is not visible, this function will be a NO OP #}
             {% if user.is_any_part_of_staff %}
-                email_using_client('{{ user.email }}', '{{ user_emails }}', '{{ active_user_emails }}')
+                email_using_client('{{ user.email }}', '{{ user_emails }}', '{{ active_user_emails }}', '{{ active_access_user_emails }}', '{{ active_active_access_user_emails }}')
             {%  endif %}
         }
 		function update_preview()
@@ -184,9 +199,12 @@
 			}
         }
         {% if user.is_any_part_of_staff %}
-        function email_using_client(user_email, user_emails, active_user_emails)
+        function email_using_client(user_email, user_emails, active_user_emails, active_access_user_emails, active_active_access_user_emails)
         {
+            let inactive_users = $("div.strikethrough, div.inactive-label");
+            let access_expired_users = $("div.strikethrough-double, div.access-expired-label");
             let only_active = $('input[name=only_active_users]')[0].checked;
+            let only_active_access = $('input[name=only_active_access_users]')[0].checked;
             let copy_me = $('input[name=copy_me]')[0].checked;
             let subject = $('input[name=subject]').val();
             let title = $('input[name=title]').val();
@@ -197,13 +215,29 @@
             {
                 mailto = mailto + user_email + ';';
             }
-            if (only_active)
+            if (only_active && only_active_access)
+            {
+                mailto = mailto + active_active_access_user_emails;
+                inactive_users.hide();
+                access_expired_users.hide();
+            }
+            else if (only_active)
             {
                 mailto = mailto + active_user_emails;
+                inactive_users.hide();
+                access_expired_users.show();
+            }
+            else if (only_active_access)
+            {
+                inactive_users.show();
+                access_expired_users.hide();
+                mailto = mailto + active_access_user_emails;
             }
             else
             {
                 mailto = mailto + user_emails;
+                inactive_users.show();
+                access_expired_users.show();
             }
             if (subject)
             {

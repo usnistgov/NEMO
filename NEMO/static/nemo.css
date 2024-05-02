@@ -1176,6 +1176,12 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	text-decoration: line-through;
 }
 
+.strikethrough-double
+{
+	text-decoration: line-through;
+	text-decoration-style: double;
+}
+
 #safety-tabs, #knowledge-base-tabs
 {
 	margin-top: 0;

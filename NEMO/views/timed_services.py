@@ -1003,3 +1003,29 @@ def send_email_scheduled_outage_reminders(request=None) -> HttpResponse:
             email_category=EmailCategory.TIMED_SERVICES,
         )
     return HttpResponse()
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def deactivate_access_expired_users(request):
+    return do_deactivate_access_expired_users()
+
+
+def do_deactivate_access_expired_users():
+    buffer_days = UserCustomization.get_int("user_access_expiration_buffer_days", 0)
+    user_types = UserCustomization.get_list_int("user_access_expiration_types")
+    user_no_type = UserCustomization.get_bool("user_access_expiration_no_type")
+    filter_type = Q()
+    filter_type |= Q(type__isnull=user_no_type)
+    if user_no_type:
+        filter_type |= Q(type__in=user_types)
+    else:
+        filter_type &= Q(type__in=user_types)
+    users_about_to_expire = User.objects.filter(
+        is_active=True, access_expiration__lte=date.today() + timedelta(days=buffer_days)
+    ).filter(filter_type)
+    for user in users_about_to_expire:
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+    return HttpResponse()

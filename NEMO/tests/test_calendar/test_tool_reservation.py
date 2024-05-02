@@ -41,7 +41,12 @@ class ReservationTestCase(TransactionTestCase):
         }
 
     def test_user_does_not_meet_conditions(self):
-        user = User.objects.create(username="noproj", first_name="scott", last_name="NoProj")
+        user = User.objects.create(
+            username="noproj",
+            first_name="scott",
+            last_name="NoProj",
+            access_expiration=timezone.now() - timedelta(days=10),
+        )
 
         start = datetime.now() + timedelta(hours=1)
         end = start + timedelta(hours=1)
@@ -62,7 +67,9 @@ class ReservationTestCase(TransactionTestCase):
             response,
             "You are not qualified to use this tool. Creating, moving, and resizing reservations is forbidden.",
         )
+        self.assertContains(response, "Your NEMO access has expired.")
 
+        user.access_expiration = None
         user.training_required = False
         user.save()
         login_as(self.client, user)
@@ -72,6 +79,7 @@ class ReservationTestCase(TransactionTestCase):
             response,
             "You are blocked from making reservations in the Facility. Please complete the Facility rules tutorial in order to create new reservations.",
         )
+        self.assertNotContains(response, "Your NEMO access has expired.")
         self.assertContains(
             response, "You do not belong to any active projects. Thus, you may not create any reservations."
         )

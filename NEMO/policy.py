@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import List, Optional, Union
 
 from django.db.models import Q
@@ -61,6 +61,7 @@ class NEMOPolicy:
         Check that the user is allowed to enable the tool. Enable the tool if the policy checks pass.
         """
         facility_name = ApplicationCustomization.get("facility_name")
+        site_title = ApplicationCustomization.get("site_title")
 
         # The tool must be visible (or the parent if it's a child tool) to users.
         visible = tool.parent_tool.visible if tool.is_child_tool() else tool.visible
@@ -165,6 +166,10 @@ class NEMOPolicy:
                 f"You are blocked from using all tools in the {facility_name}. Please complete the {facility_name} rules tutorial in order to use tools."
             )
 
+        # The tool operator must not have his access expired
+        if operator.has_access_expired():
+            return HttpResponseBadRequest(f"Your {site_title} access has expired.")
+
         # Users may only use a tool when delayed logoff is not in effect.
         # Staff and service personnel are exempt from this rule.
         if tool.delayed_logoff_in_progress() and not operator.is_staff and not operator.is_service_personnel:
@@ -216,6 +221,7 @@ class NEMOPolicy:
         user = new_reservation.user
 
         facility_name = ApplicationCustomization.get("facility_name")
+        site_title = ApplicationCustomization.get("site_title")
 
         # The function will check all policies. Policy problems are placed in the policy_problems list.
         # Overridable is True if the policy problems can be overridden by a staff member.
@@ -316,6 +322,13 @@ class NEMOPolicy:
                 policy_problems.append(
                     f"{str(user)} is blocked from making reservations in the {facility_name}. The user needs to complete the {facility_name} rules tutorial in order to create new reservations."
                 )
+
+        # The user must not have his access expired
+        if user.has_access_expired():
+            if user == user_creating_reservation:
+                policy_problems.append(f"Your {site_title} access has expired.")
+            else:
+                policy_problems.append(f"{str(user)}'s {site_title} access has expired.")
 
         # Users may only change their own reservations.
         # Staff may break this rule.
@@ -820,7 +833,7 @@ class NEMOPolicy:
         if user.active_project_count() < 1:
             raise NoActiveProjectsForUserError(user=user)
 
-        if user.access_expiration is not None and user.access_expiration < date.today():
+        if user.has_access_expired():
             raise PhysicalAccessExpiredUserError(user=user)
 
         user_has_access_to_at_least_one_area = user.accessible_access_levels().exists()
