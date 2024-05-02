@@ -158,7 +158,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-sm-2" for="access_expiration">Access expiration</label>
+            <label class="control-label col-sm-2" for="access_expiration">Active access expiration</label>
             <div class="col-sm-2">
                 <input id="access_expiration"
                        name="access_expiration"
@@ -178,21 +178,13 @@
             {% endif %}
         </div>
         <div class="form-group">
-            <div class="col-sm-offset-2 {% if not readonly and form.instance.id and form.is_active.value %}col-sm-2{% else %}col-sm-10{% endif %}">
+            <div class="col-sm-offset-2 {% if not readonly and form.instance.id and form.is_active.value %}col-sm-4 col-md-3{% else %}col-sm-10{% endif %}">
                 <div class="checkbox">
                     <label {% if form.instance.id and form.is_active.value %}data-toggle="tooltip" data-placement="left" title="Pro-tip: you can safely deactivate this user using the link on the right so that no future costs are incurred (such as missed reservations)."{% endif %}>
                         <input id="is_active" name="is_active" type="checkbox" {% if form.is_active.value %}checked{% endif %}>
-                        Active
+                        Active {{ site_title }} account
                     </label>
-                </div>
-            </div>
-            {% if not readonly and form.instance.id and form.is_active.value %}
-                <div class="control-label col-sm-8" style="text-align: left">
-                    <a href="{% url 'deactivate_user' form.instance.id %}">Safely deactivate this user</a>
-                </div>
-            {% endif %}
-            <div class="col-sm-offset-2 col-sm-4">
-                <div class="checkbox">
+                    <br>
                     <label>
                         <input id="is_service_personnel"
                                name="is_service_personnel"
@@ -210,6 +202,11 @@
                     </label>
                 </div>
             </div>
+            {% if not readonly and form.instance.id and form.is_active.value %}
+                <div class="control-label col-sm-6 col-md-7" style="text-align: left">
+                    <a href="{% url 'deactivate_user' form.instance.id %}">Safely deactivate this user</a>
+                </div>
+            {% endif %}
         </div>
         {% if form.instance.id %}
             <div class="form-group">

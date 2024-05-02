@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 import os
 import sys
-from copy import deepcopy
 from datetime import timedelta
 from enum import Enum
 from html import escape
@@ -747,6 +746,7 @@ class User(BaseModel, PermissionsMixin):
         help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.",
     )
     access_expiration = models.DateField(
+        verbose_name="active access expiration",
         blank=True,
         null=True,
         help_text="The user will lose all access rights after this date. Typically this is used to ensure that safety training has been completed by the user every year.",
@@ -755,7 +755,7 @@ class User(BaseModel, PermissionsMixin):
 
     # Permissions
     is_active = models.BooleanField(
-        "active",
+        "active account",
         default=True,
         help_text="Designates whether this user can log in. Unselect this instead of deleting accounts.",
     )
@@ -848,6 +848,9 @@ class User(BaseModel, PermissionsMixin):
                     "is_service_personnel": "A user cannot be both staff and service personnel. Please choose one or the other.",
                 }
             )
+
+    def has_access_expired(self) -> bool:
+        return self.access_expiration and self.access_expiration < datetime.date.today()
 
     def check_password(self, raw_password):
         return False
@@ -2945,7 +2948,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
                 errors["customer"] = (
                     "A consumable withdraw was requested for an inactive user. Only active users may withdraw consumables."
                 )
-            if self.customer.access_expiration and self.customer.access_expiration < datetime.date.today():
+            if self.customer.has_access_expired():
                 errors["customer"] = f"This user's access expired on {format_datetime(self.customer.access_expiration)}"
         if self.project_id:
             if not self.project.active:
@@ -3047,7 +3050,7 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
         if self.customer and not skip_customer:
             if not self.customer.is_active:
                 return "This user is inactive"
-            if self.customer.access_expiration and self.customer.access_expiration < datetime.date.today():
+            if self.customer.has_access_expired():
                 return (
                     f"The facility access for this user expired on {format_datetime(self.customer.access_expiration)}"
                 )
