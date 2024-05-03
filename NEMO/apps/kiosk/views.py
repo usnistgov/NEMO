@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
 from http import HTTPStatus
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
+from django.utils.html import format_html
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import synchronized
@@ -597,15 +599,20 @@ def report_problem(request):
 
         return render(request, "kiosk/tool_report_problem.html", dictionary)
 
+    if not settings.ALLOW_CONDITIONAL_URLS and form.cleaned_data["force_shutdown"]:
+        site_title = ApplicationCustomization.get("site_title")
+        dictionary["message"] = format_html(
+            '<ul class="errorlist"><li>{}</li></ul>'.format(
+                f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus.",
+            )
+        )
+        dictionary["form"] = form
+        return render(request, "kiosk/tool_report_problem.html", dictionary)
+
     task = form.save()
     task.estimated_resolution_time = estimated_resolution_time
 
-    save_error = save_task(request, task)
-
-    if save_error:
-        dictionary["message"] = save_error
-        dictionary["form"] = form
-        return render(request, "kiosk/tool_report_problem.html", dictionary)
+    save_task(request, task)
 
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
 
