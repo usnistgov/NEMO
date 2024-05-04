@@ -313,7 +313,18 @@ def get_users_for_email(audience: str, selection: List, no_type: bool) -> (Query
     users = User.objects.none()
     topic = None
     if audience == "tool":
-        users = User.objects.filter(qualifications__id__in=selection).distinct()
+        # add all owners to the list in case they are not directly qualified
+        owners_user_ids = []
+        for tool in Tool.objects.filter(id__in=selection).prefetch_related(
+            "_primary_owner", "_backup_owners", "_superusers"
+        ):
+            owners_user_ids.append(tool.primary_owner.id)
+            owners_user_ids.extend(tool.backup_owners.values_list("id", flat=True))
+            owners_user_ids.extend(tool.superusers.values_list("id", flat=True))
+        # combine the querysets
+        users = User.objects.filter(qualifications__id__in=selection)
+        users = users | User.objects.filter(id__in=owners_user_ids)
+        users = users.distinct()
         if len(selection) == 1:
             topic = Tool.objects.filter(pk=selection[0]).first().name
     elif audience == "tool-reservation":
