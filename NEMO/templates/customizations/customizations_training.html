@@ -36,6 +36,21 @@
                 <div class="help-block light-grey" style="margin-bottom: 0">Qualifications will still happen in real time</div>
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-lg-3 col-md-4 col-sm-5">Hidden Tools</label>
+            <div class="col-lg-9 col-md-8 col-sm-7">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="training_allow_hidden"
+                               name="training_allow_hidden"
+                               {% if training_allow_hidden %}checked{% endif %}
+                               value="enabled">
+                        Allow trainer to register trainings for hidden tools.
+                    </label>
+                </div>
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
