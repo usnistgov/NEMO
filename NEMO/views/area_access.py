@@ -308,12 +308,12 @@ def self_log_in(request, load_areas=True):
         policy.check_to_enter_any_area(user)
     except InactiveUserError:
         dictionary["error_message"] = (
-            f"Your account has been deactivated. Please visit the {facility_name} staff to resolve the problem."
+            f"Your account has been deactivated. Please contact {facility_name} staff to resolve the problem."
         )
         return render(request, "area_access/self_login.html", dictionary)
     except NoActiveProjectsForUserError:
         dictionary["error_message"] = (
-            f"You are not a member of any active projects. You won't be able to use any interlocked {facility_name} tools. Please visit the {facility_name} user office for more information."
+            f"You are not a member of any active projects. You won't be able to use any interlocked {facility_name} tools. Please contact {facility_name} staff for more information."
         )
         return render(request, "area_access/self_login.html", dictionary)
     except PhysicalAccessExpiredUserError:
