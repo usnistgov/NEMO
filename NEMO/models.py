@@ -832,20 +832,27 @@ class User(BaseModel, PermissionsMixin):
         return (self.get_username(),)
 
     def clean(self):
+        from NEMO.views.customization import UserCustomization
+
+        user_type_required = UserCustomization.get_bool("user_type_required")
+        if user_type_required and UserType.objects.exists() and not self.type_id:
+            raise ValidationError({"type": _("This field is required.")})
         username_pattern = getattr(settings, "USERNAME_REGEX", None)
         if self.username:
             if username_pattern and not match(username_pattern, self.username):
-                raise ValidationError({"username": "Invalid username format"})
+                raise ValidationError({"username": _("Invalid username format")})
             username_taken = User.objects.filter(username__iexact=self.username)
             if self.pk:
                 username_taken = username_taken.exclude(pk=self.pk)
             if username_taken.exists():
-                raise ValidationError({"username": "This username has already been taken"})
+                raise ValidationError({"username": _("This username has already been taken")})
         if self.is_staff and self.is_service_personnel:
             raise ValidationError(
                 {
-                    "is_staff": "A user cannot be both staff and service personnel. Please choose one or the other.",
-                    "is_service_personnel": "A user cannot be both staff and service personnel. Please choose one or the other.",
+                    "is_staff": _("A user cannot be both staff and service personnel. Please choose one or the other."),
+                    "is_service_personnel": _(
+                        "A user cannot be both staff and service personnel. Please choose one or the other."
+                    ),
                 }
             )
 

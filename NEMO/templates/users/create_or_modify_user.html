@@ -135,6 +135,9 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% if form.type.errors %}
+                    <div class="col-sm-6 form-control-static danger-highlight">{{ form.type.errors|striptags }}</div>
+                {% endif %}
             </div>
         {% endif %}
         <div class="form-group">
