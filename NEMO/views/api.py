@@ -27,6 +27,7 @@ from NEMO.models import (
     Project,
     ProjectDiscipline,
     Qualification,
+    RecurringConsumableCharge,
     Reservation,
     Resource,
     ScheduledOutage,
@@ -60,6 +61,7 @@ from NEMO.serializers import (
     ProjectDisciplineSerializer,
     ProjectSerializer,
     QualificationSerializer,
+    RecurringConsumableChargeSerializer,
     ReservationSerializer,
     ResourceSerializer,
     ScheduledOutageSerializer,
@@ -316,6 +318,31 @@ class ConfigurationOptionViewSet(ModelViewSet):
         "reservation": ["exact", "in", "isnull"],
         "configuration_id": ["exact", "in", "isnull"],
         "configuration": ["exact", "in", "isnull"],
+    }
+
+
+class RecurringConsumableChargesViewSet(ModelViewSet):
+    filename = "recurring_consumable_charges"
+    queryset = RecurringConsumableCharge.objects.all()
+    serializer_class = RecurringConsumableChargeSerializer
+    filterset_fields = {
+        "id": ["exact", "in"],
+        "customer_id": ["exact", "in", "isnull"],
+        "customer": ["exact", "in", "isnull"],
+        "consumable_id": ["exact", "in"],
+        "consumable": ["exact", "in"],
+        "project_id": ["exact", "in", "isnull"],
+        "project": ["exact", "in", "isnull"],
+        "quantity": ["exact", "gte", "lte", "gt", "lt"],
+        "last_charge": ["month", "year", "day", "gte", "gt", "lte", "lt", "isnull"],
+        "rec_start": ["month", "year", "day", "gte", "gt", "lte", "lt", "isnull"],
+        "rec_frequency": ["exact", "in", "isnull"],
+        "rec_interval": ["exact", "in", "isnull"],
+        "rec_until": ["month", "year", "day", "gte", "gt", "lte", "lt", "isnull"],
+        "rec_count": ["exact", "in", "isnull"],
+        "last_updated": ["month", "year", "day", "gte", "gt", "lte", "lt"],
+        "last_updated_by": ["exact", "in", "isnull"],
+        "last_updated_by_id": ["exact", "in", "isnull"],
     }
 
 

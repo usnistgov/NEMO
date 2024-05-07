@@ -35,6 +35,7 @@ from NEMO.models import (
     Project,
     ProjectDiscipline,
     Qualification,
+    RecurringConsumableCharge,
     Reservation,
     Resource,
     ScheduledOutage,
@@ -395,6 +396,18 @@ class InterlockSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         fields = "__all__"
         expandable_fields = {
             "card": "NEMO.serializers.InterlockCardSerializer",
+        }
+
+
+class RecurringConsumableChargeSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = RecurringConsumableCharge
+        fields = "__all__"
+        expandable_fields = {
+            "customer": "NEMO.serializers.UserSerializer",
+            "last_updated_by": "NEMO.serializers.UserSerializer",
+            "consumable": "NEMO.serializers.ConsumableSerializer",
+            "project": "NEMO.serializers.ProjectSerializer",
         }
 
 
