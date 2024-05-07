@@ -29,7 +29,7 @@ def training(request):
     user: User = request.user
     users = User.objects.filter(is_active=True).exclude(id=user.id)
     hidden_allowed = TrainingCustomization.get_bool("training_allow_hidden")
-    tools = Tool.objects
+    tools = Tool.objects.all()
     if not hidden_allowed:
         tools = tools.filter(visible=True)
     tool_groups = ToolQualificationGroup.objects.all()

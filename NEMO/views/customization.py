@@ -543,7 +543,7 @@ class RemoteWorkCustomization(CustomizationBase):
 
 @customization(key="training", title="Training")
 class TrainingCustomization(CustomizationBase):
-    variables = {"training_only_type": "", "training_allow_date": "", "training_allow_hidden": ""}
+    variables = {"training_only_type": "", "training_allow_date": "", "training_allow_hidden_tools": ""}
 
     def context(self) -> Dict:
         dictionary = super().context()
