@@ -28,7 +28,7 @@ def training(request):
     """Present a web page to allow staff or tool superusers to charge training and qualify users on particular tools."""
     user: User = request.user
     users = User.objects.filter(is_active=True).exclude(id=user.id)
-    hidden_allowed = TrainingCustomization.get_bool("training_allow_hidden")
+    hidden_allowed = TrainingCustomization.get_bool("training_allow_hidden_tools")
     tools = Tool.objects.all()
     if not hidden_allowed:
         tools = tools.filter(visible=True)
