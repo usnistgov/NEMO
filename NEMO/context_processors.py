@@ -49,7 +49,9 @@ def base_context(request):
         buddy_notification_count = 0
     try:
         staff_assistance_notification_count = notification_counts.get(Notification.Types.STAFF_ASSISTANCE_REQUEST, 0)
-        staff_assistance_notification_count += notification_counts.get(Notification.Types.STAFF_ASSISTANCE_REQUEST_REPLY, 0)
+        staff_assistance_notification_count += notification_counts.get(
+            Notification.Types.STAFF_ASSISTANCE_REQUEST_REPLY, 0
+        )
     except:
         staff_assistance_notification_count = 0
     try:

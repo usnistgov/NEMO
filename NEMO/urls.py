@@ -194,7 +194,11 @@ urlpatterns += [
     path("reset_tool_counter/<int:counter_id>/", tool_control.reset_tool_counter, name="reset_tool_counter"),
     # User requests
     path("user_requests/", user_requests.user_requests, name="user_requests"),
-    re_path(r"^user_requests/(?P<tab>buddy|access|adjustment|staff_assistance)/$", user_requests.user_requests, name="user_requests"),
+    re_path(
+        r"^user_requests/(?P<tab>buddy|access|adjustment|staff_assistance)/$",
+        user_requests.user_requests,
+        name="user_requests",
+    ),
     # Access requests
     path("access_requests/", access_requests.access_requests, name="access_requests"),
     path("create_access_request/", access_requests.create_access_request, name="create_access_request"),
@@ -210,11 +214,31 @@ urlpatterns += [
     path("delete_buddy_request/<int:request_id>/", buddy_requests.delete_buddy_request, name="delete_buddy_request"),
     path("buddy_request_reply/<int:request_id>/", buddy_requests.buddy_request_reply, name="buddy_request_reply"),
     # Staff assistance requests
-    path("staff_assistance_requests/", staff_assistance_requests.staff_assistance_requests, name="staff_assistance_requests"),
-    path("create_staff_assistance_request/", staff_assistance_requests.create_staff_assistance_request, name="create_staff_assistance_request"),
-    path("edit_staff_assistance_request/<int:request_id>/", staff_assistance_requests.create_staff_assistance_request, name="edit_staff_assistance_request"),
-    path("delete_staff_assistance_request/<int:request_id>/", staff_assistance_requests.delete_staff_assistance_request, name="delete_staff_assistance_request"),
-    path("staff_assistance_request_reply/<int:request_id>/", staff_assistance_requests.staff_assistance_request_reply, name="staff_assistance_request_reply"),
+    path(
+        "staff_assistance_requests/",
+        staff_assistance_requests.staff_assistance_requests,
+        name="staff_assistance_requests",
+    ),
+    path(
+        "create_staff_assistance_request/",
+        staff_assistance_requests.create_staff_assistance_request,
+        name="create_staff_assistance_request",
+    ),
+    path(
+        "edit_staff_assistance_request/<int:request_id>/",
+        staff_assistance_requests.create_staff_assistance_request,
+        name="edit_staff_assistance_request",
+    ),
+    path(
+        "delete_staff_assistance_request/<int:request_id>/",
+        staff_assistance_requests.delete_staff_assistance_request,
+        name="delete_staff_assistance_request",
+    ),
+    path(
+        "staff_assistance_request_reply/<int:request_id>/",
+        staff_assistance_requests.staff_assistance_request_reply,
+        name="staff_assistance_request_reply",
+    ),
     # Adjustment requests
     path("adjustment_requests/", adjustment_requests.adjustment_requests, name="adjustment_requests"),
     path("create_adjustment_request/", adjustment_requests.create_adjustment_request, name="create_adjustment_request"),

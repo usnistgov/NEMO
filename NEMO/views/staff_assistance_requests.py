@@ -110,7 +110,9 @@ def staff_assistance_request_reply(request, request_id):
 def email_interested_parties(reply: RequestMessage, reply_url):
     creator: User = reply.content_object.user
     for user in reply.content_object.creator_and_reply_users():
-        if user != reply.author and (user == creator or user.get_preferences().email_new_staff_assistance_request_reply):
+        if user != reply.author and (
+            user == creator or user.get_preferences().email_new_staff_assistance_request_reply
+        ):
             creator_display = f"{creator.get_name()}'s" if creator != user else "your"
             creator_display_his = creator_display if creator != reply.author else "his"
             subject = f"New reply on {creator_display} staff assistance request"

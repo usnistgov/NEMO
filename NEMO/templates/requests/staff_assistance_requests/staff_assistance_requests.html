@@ -30,7 +30,9 @@
                                         <div class="buddy-list-item-buttons">
                                             {% url 'edit_staff_assistance_request' br.id as edit_staff_assistance_request_url %}
                                             {% button type="edit" size="small" url=edit_staff_assistance_request_url value="Edit" %}
-                                            <form style="display: inline-block" action="{% url 'delete_staff_assistance_request' br.id %}" method="post">
+                                            <form style="display: inline-block"
+                                                  action="{% url 'delete_staff_assistance_request' br.id %}"
+                                                  method="post">
                                                 {% csrf_token %}
                                                 {% button type="delete" size="small" submit=True value="Delete" %}
                                             </form>
@@ -49,7 +51,9 @@
                             {% endfor %}
                             <li class="buddy-list-item" style="display: none">
                                 <div class="buddy-list-item-reply list-group-item-text">
-                                    <form id="staff_assistance_request_reply_{{ br.id }}" action="{% url 'staff_assistance_request_reply' br.id %}" method="post">
+                                    <form id="staff_assistance_request_reply_{{ br.id }}"
+                                          action="{% url 'staff_assistance_request_reply' br.id %}"
+                                          method="post">
                                         {% csrf_token %}
                                         <textarea required name="reply_content" aria-label="Reply content" style="width: 100%"></textarea>
                                     </form>

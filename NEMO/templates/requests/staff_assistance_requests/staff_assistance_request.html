@@ -36,6 +36,8 @@
                       placeholder="Describe your request"
                       required>{{ form.description.value|default_if_none:"" }}</textarea>
         </div>
-        <div class="text-right">{% button type="save" value=form.instance.id|yesno:"Save changes,Create staff assistance request" %}</div>
+        <div class="text-right">
+            {% button type="save" value=form.instance.id|yesno:"Save changes,Create staff assistance request" %}
+        </div>
     </form>
 {% endblock %}

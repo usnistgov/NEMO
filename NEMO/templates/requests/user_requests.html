@@ -25,8 +25,11 @@
             {% endif %}
             {% if buddy_system_areas_exist %}
                 <li class="{% if tab == 'staff_assistance' %}active{% endif %}">
-                    <a href="#staff-assistance-requests" onclick="location.href = '{% url "user_requests" "staff_assistance" %}'">{{ staff_assistance_requests_title }}
-                        {% if staff_assistance_notification_count %}<span class="badge badge-tab-top">{{ staff_assistance_notification_count }}</span>{% endif %}
+                    <a href="#staff-assistance-requests"
+                       onclick="location.href = '{% url "user_requests" "staff_assistance" %}'">{{ staff_assistance_requests_title }}
+                        {% if staff_assistance_notification_count %}
+                            <span class="badge badge-tab-top">{{ staff_assistance_notification_count }}</span>
+                        {% endif %}
                     </a>
                 </li>
             {% endif %}
