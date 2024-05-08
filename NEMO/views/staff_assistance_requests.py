@@ -26,9 +26,16 @@ def staff_assistance_requests(request):
     if not UserRequestsCustomization.get_bool("staff_assistance_requests_enabled"):
         return HttpResponseBadRequest("Staff assistance requests are not enabled")
 
-    staff_assistance_requests = StaffAssistanceRequest.objects.filter(resolved=False, deleted=False).order_by(
-        "-creation_time"
-    )
+    user: User = request.user
+    if user.is_staff:
+        staff_assistance_requests = StaffAssistanceRequest.objects.filter(resolved=False, deleted=False).order_by(
+            "creation_time"
+        )
+    else:
+        staff_assistance_requests = StaffAssistanceRequest.objects.filter(
+            user=user, resolved=False, deleted=False
+        ).order_by("-creation_time")
+
     dictionary = {
         "staff_assistance_requests": staff_assistance_requests,
         "staff_assistance_requests_description": UserRequestsCustomization.get("staff_assistance_requests_description"),
@@ -122,13 +129,11 @@ def staff_assistance_request_reply(request, request_id):
 def email_interested_parties(reply: RequestMessage, reply_url):
     creator: User = reply.content_object.user
     for user in reply.content_object.creator_and_reply_users():
-        if user != reply.author and (
-            user == creator or user.get_preferences().email_new_staff_assistance_request_reply
-        ):
+        if user != reply.author:
             creator_display = f"{creator.get_name()}'s" if creator != user else "your"
             creator_display_his = creator_display if creator != reply.author else "his"
             subject = f"New reply on {creator_display} staff assistance request"
-            message = f"""{reply.author.get_name()} also replied to {creator_display_his} buddy request:
+            message = f"""{reply.author.get_name()} also replied to {creator_display_his} staff assistance request:
 <br><br>
 {linebreaksbr(reply.content)}
 <br><br>

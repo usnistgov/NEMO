@@ -315,11 +315,6 @@ class UserPreferences(BaseModel):
         default=True,
         help_text="Whether or not to email the user of replies on buddy request he commented on",
     )
-    email_new_staff_assistance_request_reply = models.BooleanField(
-        "email_new_staff_assistance_request_reply",
-        default=True,
-        help_text="Whether or not to email the user of replies on staff assistance request he commented on",
-    )
     email_new_adjustment_request_reply = models.BooleanField(
         "email_new_adjustment_request_reply",
         default=True,
