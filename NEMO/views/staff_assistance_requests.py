@@ -28,13 +28,13 @@ def staff_assistance_requests(request):
 
     user: User = request.user
     if user.is_staff:
-        staff_assistance_requests = StaffAssistanceRequest.objects.filter(resolved=False, deleted=False).order_by(
-            "creation_time"
+        staff_assistance_requests = StaffAssistanceRequest.objects.filter(deleted=False).order_by(
+            "resolved", "-creation_time"
         )
     else:
-        staff_assistance_requests = StaffAssistanceRequest.objects.filter(
-            user=user, resolved=False, deleted=False
-        ).order_by("-creation_time")
+        staff_assistance_requests = StaffAssistanceRequest.objects.filter(user=user, deleted=False).order_by(
+            "resolved", "-creation_time"
+        )
 
     dictionary = {
         "staff_assistance_requests": staff_assistance_requests,
@@ -98,6 +98,28 @@ def delete_staff_assistance_request(request, request_id):
 
     staff_assistance_request.deleted = True
     staff_assistance_request.save(update_fields=["deleted"])
+    delete_notification(Notification.Types.STAFF_ASSISTANCE_REQUEST, staff_assistance_request.id)
+    return redirect("user_requests", "staff_assistance")
+
+
+@login_required
+@require_POST
+def resolve_staff_assistance_request(request, request_id):
+    if not UserRequestsCustomization.get_bool("staff_assistance_requests_enabled"):
+        return HttpResponseBadRequest("Staff assistance requests are not enabled")
+
+    staff_assistance_request = get_object_or_404(StaffAssistanceRequest, id=request_id)
+
+    if staff_assistance_request.replies.count() == 0:
+        return HttpResponseBadRequest("You are not allowed to resolve a request that has no replies.")
+    # staff_assistance_request.user != request.user and
+    if not request.user.is_staff:
+        return HttpResponseBadRequest(
+            "You are not allowed to resolve a request if you are not staff or you didn't create it."
+        )
+
+    staff_assistance_request.resolved = True
+    staff_assistance_request.save(update_fields=["resolved"])
     delete_notification(Notification.Types.STAFF_ASSISTANCE_REQUEST, staff_assistance_request.id)
     return redirect("user_requests", "staff_assistance")
 

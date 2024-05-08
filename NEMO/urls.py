@@ -235,6 +235,11 @@ urlpatterns += [
         name="delete_staff_assistance_request",
     ),
     path(
+        "resolve_staff_assistance_request/<int:request_id>/",
+        staff_assistance_requests.resolve_staff_assistance_request,
+        name="resolve_staff_assistance_request",
+    ),
+    path(
         "staff_assistance_request_reply/<int:request_id>/",
         staff_assistance_requests.staff_assistance_request_reply,
         name="staff_assistance_request_reply",

@@ -13,7 +13,7 @@
     </div>
 </div>
 {% if staff_assistance_requests %}
-    <div class="table-responsive staff-assistance-system-requests">
+    <div class="table-responsive staff-assistance-requests">
         {% regroup staff_assistance_requests by start as requests_by_date %}
         {% for date in requests_by_date %}
             <h3>{{ date.grouper|date }}</h3>
@@ -22,12 +22,13 @@
                     <li>
                         <ul class="staff-assistance-list list-unstyled">
                             {% if br.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
+                            {% if br.resolved %}<span class="label label-success">Resolved</span>{% endif %}
                             <b>{{ br.user.get_name }}</b> requested assistance on {{ br.creation_time }}
                             <li class="staff-assistance-list-item">
                                 <div class="staff-assistance-list-item list-group-item-info">
                                     <div class="staff-assistance-list-item-description">{{ br.description|linebreaksbr }}</div>
-                                    {% if br.user == request.user and br.replies.count == 0 %}
-                                        <div class="staff-assistance-list-item-buttons">
+                                    <div class="staff-assistance-list-item-buttons">
+                                        {% if br.user == request.user and br.replies.count == 0 %}
                                             {% url 'edit_staff_assistance_request' br.id as edit_staff_assistance_request_url %}
                                             {% button type="edit" size="small" url=edit_staff_assistance_request_url value="Edit" %}
                                             <form style="display: inline-block"
@@ -36,8 +37,16 @@
                                                 {% csrf_token %}
                                                 {% button type="delete" size="small" submit=True value="Delete" %}
                                             </form>
-                                        </div>
-                                    {% endif %}
+                                        {% endif %}
+                                        {% if user.is_staff and br.replies.count > 0 %}
+                                            <form style="display: inline-block"
+                                                  action="{% url 'resolve_staff_assistance_request' br.id %}"
+                                                  method="post">
+                                                {% csrf_token %}
+                                                {% button type="default" size="small" submit=True value="Resolve" %}
+                                            </form>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </li>
                             {% for message in br.replies %}
@@ -79,6 +88,20 @@
 {% endif %}
 <script>
     function show_or_send_reply(button_element, form_selector)
+    {
+        let form_element = $('#'+form_selector)
+        if (form_element.is(":visible"))
+        {
+            form_element.submit();
+        }
+        else
+        {
+            form_element.parents('li').fadeIn('50');
+            form_element.children('textarea').focus();
+            $(button_element).html('<i class="glyphicon glyphicon-send"></i> Send');
+        }
+    }
+    function resolve(button_element, form_selector)
     {
         let form_element = $('#'+form_selector)
         if (form_element.is(":visible"))
