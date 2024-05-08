@@ -364,8 +364,9 @@ class UserRequestsCustomization(CustomizationBase):
     variables = {
         "buddy_requests_title": "Buddy requests board",
         "buddy_board_description": "",
+        "staff_assistance_requests_enabled": "",
         "staff_assistance_requests_title": "Staff assistance requests",
-        "staff_assistance_board_description": "",
+        "staff_assistance_requests_description": "",
         "access_requests_title": "Access requests",
         "access_requests_description": "",
         "access_requests_minimum_users": "2",

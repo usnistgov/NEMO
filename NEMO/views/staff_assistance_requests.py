@@ -23,12 +23,15 @@ from NEMO.views.notifications import (
 @login_required
 @require_GET
 def staff_assistance_requests(request):
+    if not UserRequestsCustomization.get_bool("staff_assistance_requests_enabled"):
+        return HttpResponseBadRequest("Staff assistance requests are not enabled")
+
     staff_assistance_requests = StaffAssistanceRequest.objects.filter(resolved=False, deleted=False).order_by(
         "-creation_time"
     )
     dictionary = {
         "staff_assistance_requests": staff_assistance_requests,
-        "staff_assistance_board_description": UserRequestsCustomization.get("staff_assistance_board_description"),
+        "staff_assistance_requests_description": UserRequestsCustomization.get("staff_assistance_requests_description"),
         "request_notifications": get_notifications(request.user, Notification.Types.STAFF_ASSISTANCE_REQUEST),
         "reply_notifications": get_notifications(request.user, Notification.Types.STAFF_ASSISTANCE_REQUEST_REPLY),
     }
@@ -38,6 +41,9 @@ def staff_assistance_requests(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def create_staff_assistance_request(request, request_id=None):
+    if not UserRequestsCustomization.get_bool("staff_assistance_requests_enabled"):
+        return HttpResponseBadRequest("Staff assistance requests are not enabled")
+
     try:
         staff_assistance_request = StaffAssistanceRequest.objects.get(id=request_id)
     except StaffAssistanceRequest.DoesNotExist:
@@ -73,6 +79,9 @@ def create_staff_assistance_request(request, request_id=None):
 @login_required
 @require_POST
 def delete_staff_assistance_request(request, request_id):
+    if not UserRequestsCustomization.get_bool("staff_assistance_requests_enabled"):
+        return HttpResponseBadRequest("Staff assistance requests are not enabled")
+
     staff_assistance_request = get_object_or_404(StaffAssistanceRequest, id=request_id)
 
     if staff_assistance_request.replies.count() > 0:
@@ -89,6 +98,9 @@ def delete_staff_assistance_request(request, request_id):
 @login_required
 @require_POST
 def staff_assistance_request_reply(request, request_id):
+    if not UserRequestsCustomization.get_bool("staff_assistance_requests_enabled"):
+        return HttpResponseBadRequest("Staff assistance requests are not enabled")
+
     staff_assistance_request = get_object_or_404(StaffAssistanceRequest, id=request_id)
     user: User = request.user
     message_content = request.POST["reply_content"]

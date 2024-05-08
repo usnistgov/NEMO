@@ -1,10 +1,10 @@
 {% load custom_tags_and_filters %}
 <div style="margin: 15px 0">
     <div style="display: table-cell; width: 100%">
-        {% if staff_assistance_board_description %}
+        {% if staff_assistance_requests_description %}
             <div class="well" style="display: table; margin-right: 15px">
                 <span class="requests-description-info glyphicon glyphicon-info-sign primary-highlight"></span>
-                <div class="requests-description">{{ staff_assistance_board_description|safe|linebreaksbr }}</div>
+                <div class="requests-description">{{ staff_assistance_requests_description|safe|linebreaksbr }}</div>
             </div>
         {% endif %}
     </div>

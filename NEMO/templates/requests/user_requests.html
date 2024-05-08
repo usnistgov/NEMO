@@ -23,21 +23,21 @@
                     </a>
                 </li>
             {% endif %}
-            {% if buddy_system_areas_exist %}
-                <li class="{% if tab == 'staff_assistance' %}active{% endif %}">
-                    <a href="#staff-assistance-requests"
-                       onclick="location.href = '{% url "user_requests" "staff_assistance" %}'">{{ staff_assistance_requests_title }}
-                        {% if staff_assistance_notification_count %}
-                            <span class="badge badge-tab-top">{{ staff_assistance_notification_count }}</span>
-                        {% endif %}
-                    </a>
-                </li>
-            {% endif %}
             {% if adjustment_request_allowed and facility_managers_exist %}
                 <li class="{% if tab == 'adjustment' %}active{% endif %}">
                     <a href="#adjustment-requests" onclick="location.href = '{% url "user_requests" "adjustment" %}'">{{ adjustment_requests_title }}
                         {% if adjustment_notification_count %}
                             <span class="badge badge-tab-top">{{ adjustment_notification_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+            {% endif %}
+            {% if staff_assistance_request_allowed %}
+                <li class="{% if tab == 'staff_assistance' %}active{% endif %}">
+                    <a href="#staff-assistance-requests"
+                       onclick="location.href = '{% url "user_requests" "staff_assistance" %}'">{{ staff_assistance_requests_title }}
+                        {% if staff_assistance_notification_count %}
+                            <span class="badge badge-tab-top">{{ staff_assistance_notification_count }}</span>
                         {% endif %}
                     </a>
                 </li>
@@ -73,9 +73,11 @@
                 {# This will be loaded asynchronously #}
             </div>
         {% endif %}
-        <div class="tab-pane{% if tab == 'staff_assistance' %} active{% endif %}" id="staff-assistance-requests">
-            {# This will be loaded asynchronously #}
-        </div>
+        {% if staff_assistance_request_allowed %}
+            <div class="tab-pane{% if tab == 'staff_assistance' %} active{% endif %}" id="staff-assistance-requests">
+                {# This will be loaded asynchronously #}
+            </div>
+        {% endif %}
     </div>
     <script>
         $("#tabs").find("a").click(switch_tab);
@@ -103,6 +105,6 @@
         {% if tab == 'buddy' %}load_buddy_board();{% endif %}
         {% if tab == 'access' %}load_access_requests();{% endif %}
         {% if tab == 'adjustment' %}load_adjustment_requests();{% endif %}
-    {% if tab == 'staff_assistance' %}load_staff_assistance_requests();{% endif %}
+        {% if tab == 'staff_assistance' %}load_staff_assistance_requests();{% endif %}
     </script>
 {% endblock %}

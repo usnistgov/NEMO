@@ -36,7 +36,7 @@
                             </li>
                         {% endif %}
                     {% endif %}
-                    {% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist or adjustment_request_allowed and facility_managers_exist %}
+                    {% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist or adjustment_request_allowed and facility_managers_exist or staff_assistance_request_allowed %}
                         <li>
                             <a href="{% url 'user_requests' %}">
                                 {{ requests_page_title }}

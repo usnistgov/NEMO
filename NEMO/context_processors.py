@@ -82,6 +82,8 @@ def base_context(request):
         "buddy_system_areas_exist": buddy_system_areas_exist,
         "access_user_request_allowed_exist": access_user_request_allowed_exist,
         "adjustment_request_allowed": customization_values.get("adjustment_requests_enabled", "") == "enabled",
+        "staff_assistance_request_allowed": customization_values.get("staff_assistance_requests_enabled", "")
+        == "enabled",
         "notification_counts": notification_counts,
         "buddy_notification_count": buddy_notification_count,
         "staff_assistance_notification_count": staff_assistance_notification_count,
