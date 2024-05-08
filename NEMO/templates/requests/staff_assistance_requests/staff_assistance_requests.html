@@ -22,7 +22,7 @@
                     <li>
                         <ul class="staff-assistance-list list-unstyled">
                             {% if br.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
-                            {{ br.user.get_name }} needs staff assistance
+                            <b>{{ br.user.get_name }}</b> requested assistance on {{ br.creation_time }}
                             <li class="staff-assistance-list-item">
                                 <div class="staff-assistance-list-item list-group-item-info">
                                     <div class="staff-assistance-list-item-description">{{ br.description|linebreaksbr }}</div>
