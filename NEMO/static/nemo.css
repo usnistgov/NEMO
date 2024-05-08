@@ -857,6 +857,75 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	width: 90%;
 }
 
+.staff-assistance-system-requests
+{
+	margin-top: 20px;
+}
+
+.staff-assistance-list
+{
+	margin-top: 10px;
+}
+
+.staff-assistance-list-item
+{
+	display: table;
+	width: 100%;
+	margin-bottom: 5px;
+}
+
+.staff-assistance-list-item:first-child
+{
+	margin-top: 10px;
+}
+
+.staff-assistance-list-item-reply
+{
+	margin-top: 5px;
+}
+
+.staff-assistance-list-item-reply textarea
+{
+	padding: 10px;
+}
+
+.staff-assistance-list-item-description, .staff-assistance-list-item-buttons
+{
+	display: table-cell;
+	padding: 10px;
+}
+
+.staff-assistance-list-item-reply textarea, .staff-assistance-list .staff-assistance-list-item.list-group-item-info
+{
+	border-radius: 8px;
+}
+
+.staff-assistance-list-item-buttons
+{
+	vertical-align: middle;
+	text-align: right;
+	white-space: nowrap;
+}
+
+.staff-assistance-list-item-reply, .staff-assistance-list-item-message
+{
+	float: right;
+	width: 90%;
+}
+
+.staff-assistance-list-item-reply-buttons
+{
+	margin: 15px 0;
+	padding: 0 10px;
+}
+
+.staff-assistance-list-day
+{
+	margin-top: 20px;
+	padding-inline-start: 40px;
+	font-size: large;
+}
+
 .request-item-message-user
 {
 	position: absolute;

@@ -13,21 +13,21 @@
     </div>
 </div>
 {% if staff_assistance_requests %}
-    <div class="table-responsive buddy-system-requests">
+    <div class="table-responsive staff-assistance-system-requests">
         {% regroup staff_assistance_requests by start as requests_by_date %}
         {% for date in requests_by_date %}
             <h3>{{ date.grouper|date }}</h3>
-            <ul class="buddy-list-day">
+            <ul class="staff-assistance-list-day">
                 {% for br in date.list %}
                     <li>
-                        <ul class="buddy-list list-unstyled">
+                        <ul class="staff-assistance-list list-unstyled">
                             {% if br.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
                             {{ br.user.get_name }} needs staff assistance
-                            <li class="buddy-list-item">
-                                <div class="buddy-list-item list-group-item-info">
-                                    <div class="buddy-list-item-description">{{ br.description|linebreaksbr }}</div>
+                            <li class="staff-assistance-list-item">
+                                <div class="staff-assistance-list-item list-group-item-info">
+                                    <div class="staff-assistance-list-item-description">{{ br.description|linebreaksbr }}</div>
                                     {% if br.user == request.user and br.replies.count == 0 %}
-                                        <div class="buddy-list-item-buttons">
+                                        <div class="staff-assistance-list-item-buttons">
                                             {% url 'edit_staff_assistance_request' br.id as edit_staff_assistance_request_url %}
                                             {% button type="edit" size="small" url=edit_staff_assistance_request_url value="Edit" %}
                                             <form style="display: inline-block"
@@ -41,16 +41,16 @@
                                 </div>
                             </li>
                             {% for message in br.replies %}
-                                <li class="buddy-list-item" id="{{ message.id }}">
+                                <li class="staff-assistance-list-item" id="{{ message.id }}">
                                     {% if message.id in reply_notifications %}<span class="label label-success">New reply</span>{% endif %}
-                                    <div class="list-group-item buddy-list-item-message">
+                                    <div class="list-group-item staff-assistance-list-item-message">
                                         {{ message.content|linebreaksbr }}
                                         <div class="request-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
                                     </div>
                                 </li>
                             {% endfor %}
-                            <li class="buddy-list-item" style="display: none">
-                                <div class="buddy-list-item-reply list-group-item-text">
+                            <li class="staff-assistance-list-item" style="display: none">
+                                <div class="staff-assistance-list-item-reply list-group-item-text">
                                     <form id="staff_assistance_request_reply_{{ br.id }}"
                                           action="{% url 'staff_assistance_request_reply' br.id %}"
                                           method="post">
@@ -59,7 +59,7 @@
                                     </form>
                                 </div>
                             </li>
-                            <li class="buddy-list-item-reply-buttons list-group-item-text text-right">
+                            <li class="staff-assistance-list-item-reply-buttons list-group-item-text text-right">
                                 <span data-toggle="tooltip" title="{{ br.user_reply_error|default_if_none:'' }}">
                                     {% if br.user_reply_error %}
                                         {% button type="add" size="small" icon="glyphicon-send" value="Reply" disabled="disabled" %}
