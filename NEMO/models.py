@@ -4207,7 +4207,10 @@ class AdjustmentRequest(BaseModel):
                 else f"- {(previous_duration - new_duration)}"
             )
 
-    def editable_charge(self) -> bool:
+    def adjustable_charge(self):
+        return self.has_changed_time() or isinstance(self.item, Reservation)
+
+    def has_changed_time(self) -> bool:
         """Returns whether the original charge is editable, i.e. if it has a changed start or end"""
         return self.item and (self.get_new_end() or self.get_new_start())
 
@@ -4233,17 +4236,24 @@ class AdjustmentRequest(BaseModel):
         return facility_managers
 
     def apply_adjustment(self, user):
-        if self.status == RequestStatus.APPROVED and self.editable_charge():
-            new_start = self.get_new_start()
-            new_end = self.get_new_end()
-            if new_start:
-                self.item.start = new_start
-            if new_end:
-                self.item.end = new_end
-            self.item.save()
-            self.applied = True
-            self.applied_by = user
-            self.save()
+        if self.status == RequestStatus.APPROVED:
+            if self.has_changed_time():
+                new_start = self.get_new_start()
+                new_end = self.get_new_end()
+                if new_start:
+                    self.item.start = new_start
+                if new_end:
+                    self.item.end = new_end
+                self.item.save()
+                self.applied = True
+                self.applied_by = user
+                self.save()
+            elif isinstance(self.item, Reservation):
+                self.item.missed = False
+                self.item.save()
+                self.applied = True
+                self.applied_by = user
+                self.save()
 
     def delete(self, using=None, keep_parents=False):
         adjustment_id = self.id
