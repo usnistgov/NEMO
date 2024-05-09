@@ -3,7 +3,7 @@ from http import HTTPStatus
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from django.utils.html import format_html
@@ -11,18 +11,18 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.forms import CommentForm, nice_errors, TaskForm
+from NEMO.forms import CommentForm, TaskForm, nice_errors
 from NEMO.models import (
     BadgeReader,
     Project,
     Reservation,
     ReservationItemType,
+    TaskCategory,
+    TaskStatus,
     Tool,
     ToolWaitList,
     UsageEvent,
     User,
-    TaskCategory,
-    TaskStatus,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int
@@ -35,7 +35,6 @@ from NEMO.views.calendar import (
     shorten_reservation,
 )
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization
-from NEMO.views.status_dashboard import create_tool_summary
 from NEMO.views.tasks import save_task
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
@@ -409,7 +408,6 @@ def choices(request):
         "customer": customer,
         "usage_events": list(usage_events),
         "upcoming_reservations": tool_reservations,
-        "tool_summary": create_tool_summary(),
         "categories": categories,
         "unqualified_categories": unqualified_categories,
     }
@@ -435,7 +433,6 @@ def category_choices(request, category, user_id):
         "unqualified_tools": [
             tool for tool in tools if not customer.is_staff and tool not in customer.qualifications.all()
         ],
-        "tool_summary": create_tool_summary(),
     }
     return render(request, "kiosk/category_choices.html", dictionary)
 
