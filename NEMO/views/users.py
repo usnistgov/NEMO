@@ -468,6 +468,11 @@ def user_preferences(request):
         "form": form,
         "user_preferences": user.get_preferences(),
         "user_view": user_view,
+        "tool_list": (
+            user.qualifications.all()
+            if not (user.is_staff or user.is_facility_manager or user.is_service_personnel)
+            else Tool.objects.filter(visible=True)
+        ),
     }
     return render(request, "users/preferences.html", dictionary)
 

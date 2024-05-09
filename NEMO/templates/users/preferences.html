@@ -155,7 +155,7 @@
                 </div>
             </div>
         </div>
-        {% if user.is_staff or user.is_facility_manager or user.is_service_personnel %}
+        {% if "tool"|customization:"tool_problem_allow_regular_user_preferences" == "enabled" or "tool"|customization:"tool_task_updates_allow_regular_user_preferences" == "enabled" or user.is_staff or user.is_facility_manager or user.is_service_personnel %}
             <div class="panel panel-default">
                 <div class="panel-body">
                     <h3 id="adjustment_requests_label">Tool maintenance & notifications</h3>
@@ -342,10 +342,10 @@
                         {% endfor %}
                     {% endfor %}
                 {% endif %}
-                $('#tool_task_notification_search').autocomplete('tools', add_tool_task_notification, {{ form.fields.tool_task_notifications.queryset|json_search_base }});
+                $('#tool_task_notification_search').autocomplete('tools', add_tool_task_notification, {{ tool_list|json_search_base }});
                 {% if form.instance.id %}
                     {% for tool_id in form.tool_task_notifications.value %}
-                        {% for tool in form.fields.tool_task_notifications.queryset %}
+                        {% for tool in tool_list %}
                             {% if tool.id == tool_id|to_int %}
                                 add_tool_task_notification(null, {'name': '{{ tool.name }}', 'id': {{ tool.id }} });
                             {% endif %}

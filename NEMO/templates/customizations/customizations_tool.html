@@ -113,6 +113,13 @@
                                value="enabled">
                         Send new tool problems to all qualified users (but not updates)
                     </label>
+                    <label>
+                        <input type="checkbox"
+                               name="tool_problem_allow_regular_user_preferences"
+                               {% if tool_problem_allow_regular_user_preferences %}checked{% endif %}
+                               value="enabled">
+                        Allow users to subscribe to new tools problems in their preferences (only on qualified tools)
+                    </label>
                 </div>
             </div>
         </div>
@@ -135,6 +142,14 @@
                                {% if tool_task_updates_superusers %}checked{% endif %}
                                value="enabled">
                         Send all tool problem & updates to tool superusers
+                    </label>
+                    <br>
+                    <label>
+                        <input type="checkbox"
+                               name="tool_task_updates_allow_regular_user_preferences"
+                               {% if tool_task_updates_allow_regular_user_preferences %}checked{% endif %}
+                               value="enabled">
+                        Allow users to subscribe to tools updates in their preferences (only on qualified tools)
                     </label>
                 </div>
             </div>

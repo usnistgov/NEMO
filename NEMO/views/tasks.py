@@ -135,7 +135,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
             + (" shutdown" if task.force_shutdown else " problem")
         )
         message = render_email_template(message, dictionary, request)
-        recipients = get_task_email_recipients(task)
+        recipients = get_task_email_recipients(task, new=True)
         if ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
             recipients = set(recipients)
             for user in task.tool.user_set.all():
@@ -395,7 +395,7 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
     return task_images
 
 
-def get_task_email_recipients(task: Task) -> List[str]:
+def get_task_email_recipients(task: Task, new=False) -> List[str]:
     # Add all recipients, starting with primary owner
     recipient_users: Set[User] = {task.tool.primary_owner}
     # Add backup owners
@@ -416,6 +416,17 @@ def get_task_email_recipients(task: Task) -> List[str]:
         .filter(Q(is_staff=True) | Q(is_service_personnel=True))
         .filter(Q(preferences__tool_task_notifications__in=[task.tool]))
     )
+    # Add regular users with preferences set to receive notifications for this tool if it's allowed
+    send_email_to_regular_user = (
+        new
+        and ToolCustomization.get_bool("tool_problem_allow_regular_user_preferences")
+        or not new
+        and ToolCustomization.get_bool("tool_task_updates_allow_regular_user_preferences")
+    )
+    if send_email_to_regular_user:
+        recipient_users.update(
+            User.objects.filter(is_active=True).filter(Q(preferences__tool_task_notifications__in=[task.tool]))
+        )
     recipients = [
         email for user in recipient_users for email in user.get_emails(user.get_preferences().email_send_task_updates)
     ]
