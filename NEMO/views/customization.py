@@ -27,6 +27,7 @@ from NEMO.models import (
     Notification,
     Project,
     RecurringConsumableCharge,
+    Tool,
     TrainingSession,
     UserPreferences,
     UserType,
@@ -553,16 +554,30 @@ class RemoteWorkCustomization(CustomizationBase):
 
 @customization(key="training", title="Training")
 class TrainingCustomization(CustomizationBase):
-    variables = {"training_only_type": "", "training_allow_date": "", "training_allow_hidden_tools": ""}
+    variables = {"training_only_type": "", "training_allow_date": "", "training_included_hidden_tools": ""}
 
     def context(self) -> Dict:
         dictionary = super().context()
+        dictionary["tools"] = Tool.objects.all()
         dictionary["training_types"] = TrainingSession.Type.Choices
+        dictionary["included_hidden_tools"] = Tool.objects.filter(
+            id__in=self.get_list_int("training_included_hidden_tools")
+        )
         return dictionary
+
+    def validate(self, name, value):
+        if name == "training_included_hidden_tools" and value:
+            validate_comma_separated_integer_list(value)
 
     def save(self, request, element=None) -> Dict[str, Dict[str, str]]:
         errors = super().save(request, element)
         training_types = request.POST.getlist("training_type_list", [])
+        include_hidden_tools = ",".join(request.POST.getlist("training_included_hidden_tools_list", []))
+        try:
+            self.validate("training_included_hidden_tools", include_hidden_tools)
+            type(self).set("training_included_hidden_tools", include_hidden_tools)
+        except (ValidationError, InvalidCustomizationException) as e:
+            errors["training_included_hidden_tools"] = {"error": str(e.message or e.msg), "value": include_hidden_tools}
         if training_types and len(training_types) == 1:
             type(self).set("training_only_type", training_types[0])
         return errors
