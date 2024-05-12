@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
@@ -28,7 +28,10 @@ def training(request):
     """Present a web page to allow staff or tool superusers to charge training and qualify users on particular tools."""
     user: User = request.user
     users = User.objects.filter(is_active=True).exclude(id=user.id)
-    tools = Tool.objects.filter(visible=True)
+    tools = Tool.objects.filter(
+        Q(visible=True)
+        | Q(visible=False) & Q(id__in=TrainingCustomization.get_list_int("training_included_hidden_tools"))
+    )
     tool_groups = ToolQualificationGroup.objects.all()
     if not user.is_staff and user.is_tool_superuser:
         tools = tools.filter(_superusers__in=[user])
