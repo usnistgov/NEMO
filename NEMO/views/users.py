@@ -7,6 +7,7 @@ import requests
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Max
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -89,6 +90,9 @@ def create_or_modify_user(request, user_id):
         user = User.objects.get(id=user_id)
     except:
         user = None
+
+    last_access = AreaAccessRecord.objects.filter(customer=user).values("area_id").annotate(max_date=Max("start"))
+    dictionary["last_access"] = {item["area_id"]: item["max_date"] for item in last_access}
 
     timeout = identity_service.get("timeout", 3)
     site_title = ApplicationCustomization.get("site_title")
