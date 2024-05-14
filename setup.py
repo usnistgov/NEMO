@@ -7,7 +7,7 @@ setup(
     packages=find_namespace_packages(exclude=["resources", "resources.*", "build", "build.*"]),
     include_package_data=True,
     url="https://github.com/usnistgov/NEMO",
-    license="Public domain",
+    license="NIST-Software",
     author="Center for Nanoscale Science and Technology",
     author_email="CNSTapplications@nist.gov",
     description="NEMO is a laboratory logistics web application. Use it to schedule reservations, control tool access, track maintenance issues, and more.",
