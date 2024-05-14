@@ -98,12 +98,20 @@
                     onclick="clear_specific_user()"></button>
             {# The following menu tree code was take from an example at http://www.bootply.com/120625 #}
             <ul id="extra-links" class="nav nav-list" style="margin-top: 10px; margin-bottom: 8px;">
-                <li>
+                <li style="display: flex">
+                    <input type="checkbox"
+                           id="checkbox-personal-schedule-personal-schedule"
+                           name="item-checkbox"
+                           class="item-checkbox"
+                           data-item-id="personal-schedule"
+                           data-item-type="personal-schedule"
+                           style="display: none">
                     <a href="javascript:void(0)"
                        id="extra-links-personal-schedule"
                        class="selected personal_schedule"
                        data-item-id="personal_schedule"
-                       onclick="on_extra_link_click(this)">Personal schedule</a>
+                       data-item-type="personal-schedule"
+                       onclick="set_selected_item(this, true)">Personal schedule</a>
                 </li>
                 {% if calendar_all_tools %}
                     <li>
@@ -144,6 +152,7 @@
         <div id="calendar" class="application-content"></div>
         <input type="hidden" id="impersonate" name="impersonate" value="">
         <script type="text/javascript">
+let all_event_ids = {}; // we'll use this to remove potential duplicates
 let logged_in = false;
 {% if user.in_area %}logged_in = "{{ user.area_access_record.area.name }}";{% endif %}
 
@@ -173,9 +182,11 @@ function update_event_sources()
     if (event_type === 'reservations' || event_type === 'configuration agenda' || event_type === '{{ facility_name|lower }} usage')
 	{
 		let item = get_selected_item();
+        const checked_items = get_checked_items();
+		const has_checked_items = checked_items && checked_items.length > 0;
 		let scheduled_outage_button = $(".fc-scheduledOutage-button")[0];
 		$(scheduled_outage_button).attr("disabled", "true").addClass('fc-state-disabled');
-		if(item === 'personal_schedule')
+		if(item === 'personal_schedule' && !has_checked_items)
 		{
             add_item_to_event_feed_list(item_event_source_list, url, event_type, { personal_schedule: true });
 		}
@@ -193,9 +204,8 @@ function update_event_sources()
 		}
         else
         {
-            let selected_tree_item = item ? JSON.parse(item) : undefined;
-            const checked_items = get_checked_items();
-            const has_checked_items = checked_items && checked_items.length > 0;
+            let selected_tree_item = undefined;
+            try { if (item) { selected_tree_item = JSON.parse(item); } } catch (error) {}
             const one_item_checked_and_selected = selected_tree_item && checked_items && checked_items.length === 1 && checked_items[0].id === selected_tree_item.id && checked_items[0].type === selected_tree_item.type;
             const display_name = has_checked_items && !one_item_checked_and_selected;
 
@@ -214,11 +224,13 @@ function update_event_sources()
             {
                 {# If the checked item is not already selected #}
                 if(!selected_tree_item || selected_tree_item.id !== checked_item.id || selected_tree_item.type !== checked_item.type) {
-                    add_item_to_event_feed_list(item_event_source_list, url, event_type, {
+                    let feed_data = {
                         item_id: checked_item.id,
                         item_type: checked_item.type,
                         display_name,
-                    });
+                    }
+                    if (checked_item.type === "personal-schedule") feed_data = { personal_schedule: true };
+                    add_item_to_event_feed_list(item_event_source_list, url, event_type, feed_data);
                 }
             });
         }
@@ -310,6 +322,17 @@ function submit_event_with_more_information(ajax_post, success_callback)
 
 function event_render(event, element)
 {
+    // We should only have duplicates when there is a different origin (tool vs personal schedule for example)
+    // It turns out a event that spans multiple days is rendered more than once with the same id
+    let event_origin = event.source?.data?.personal_schedule || event.source?.data?.item_type;
+    if (event.id)
+    {
+        if (all_event_ids[event.id] && all_event_ids[event.id] !== event_origin)
+        {
+            return false;
+        }
+        all_event_ids[event.id] = event_origin;
+    }
 	if ('tooltip' in event)
 		element.attr('title', event.tooltip)
 	else if ('title' in event)
@@ -327,6 +350,7 @@ function event_render(event, element)
 
 function event_after_all_render()
 {
+    all_event_ids = {}; // clear the list of events rendered
 	{# Remove visible tooltips first otherwise they get stuck #}
 	$('.tooltip').remove();
 	{# Show tooltips for events #}

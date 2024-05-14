@@ -77,7 +77,7 @@ body.impersonating .application-sidebar, body.impersonating .application-content
     padding-right: 4px;
 }
 
-#sidebar #tool_tree input[type=checkbox], #sidebar #area_tree input[type=checkbox]
+#sidebar #tool_tree input[type=checkbox], #sidebar #area_tree input[type=checkbox], #sidebar #extra-links input[type=checkbox]
 {
 	margin-right: 5px;
 	margin-top: 0;
