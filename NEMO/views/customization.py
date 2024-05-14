@@ -344,6 +344,7 @@ class StatusDashboardCustomization(CustomizationBase):
         "dashboard_staff_status_absence_view_staff": "",
         "dashboard_staff_status_absence_view_user_office": "",
         "dashboard_staff_status_absence_view_accounting_officer": "",
+        "dashboard_tool_sort": "name",
     }
 
 

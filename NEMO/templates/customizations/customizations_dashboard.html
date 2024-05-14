@@ -40,6 +40,40 @@
         </div>
         <div class="form-group" style="margin-bottom: 0; border-top: dotted 1px #ddd">
             <div class="col-md-5">
+                <h5>Tools</h5>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3">Sort</label>
+            <div class="col-md-9">
+                <div class="radio">
+                    <label>
+                        <input type="radio"
+                               name="dashboard_tool_sort"
+                               {% if dashboard_tool_sort == "name" %}checked{% endif %}
+                               value="name">
+                        By name
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="dashboard_tool_sort"
+                               {% if dashboard_tool_sort == "time_desc" %}checked{% endif %}
+                               value="time_desc">
+                        By time descending
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="dashboard_tool_sort"
+                               {% if dashboard_tool_sort == "time_asc" %}checked{% endif %}
+                               value="time_asc">
+                        By time ascending
+                    </label>
+                    <br />
+                </div>
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0; border-top: dotted 1px #ddd">
+            <div class="col-md-5">
                 <h5>Staff status</h5>
             </div>
         </div>
