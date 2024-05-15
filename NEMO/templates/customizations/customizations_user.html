@@ -87,6 +87,23 @@
                 Check this box to allow uploading documents to users.
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-md-4 col-lg-3" for="user_list_active_only">Enable user profile view</label>
+            <div class="col-md-8 col-lg-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="user_allow_profile_view"
+                               {% if user_allow_profile_view %}checked{% endif %}
+                               value="enabled">
+                        Enable
+                    </label>
+                </div>
+            </div>
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
+                Check this box to enable users to view their own profile.
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Access expiration - reminders</h3>
         <div class="form-group {% if errors.user_access_expiration_reminder_days %}has-error{% endif %}">
