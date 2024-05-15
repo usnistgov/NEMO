@@ -150,6 +150,8 @@ urlpatterns += [
         name="get_projects_for_tool_control",
     ),
     path("get_projects_for_self/", get_projects.get_projects_for_self, name="get_projects_for_self"),
+    # User Profile:
+    path("user/view_user/<int:user_id>/", users.view_user, name="view_user"),
     # Tool control:
     # This tool_control URL is needed to be able to reverse when choosing items on mobile using next_page.
     # (see choose_item.html for details)
