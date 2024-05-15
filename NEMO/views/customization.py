@@ -239,6 +239,7 @@ class UserCustomization(CustomizationBase):
         "user_access_expiration_no_type": "",
         "user_access_expiration_types": "-1",
         "user_allow_document_upload": "",
+        "user_allow_profile_view": "",
     }
 
     def context(self) -> Dict:
