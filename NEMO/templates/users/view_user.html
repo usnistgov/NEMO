@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% load mptt_tags %}
+{% block title %}View user{% endblock %}
+{% block content %}
+    <div class="row col-sm-12">
+    {% if form.errors %}
+        <div class="col-sm-6 alert alert-danger">
+            Oops! Something went wrong. Please correct the errors highlighted below.<br>
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+    {% if warning %}
+        <div class="col-sm-6 alert alert-warning">
+            {{ warning }}
+        </div>
+    {% endif %}
+    </div>
+	<form id="view_user_form" class="form-horizontal" enctype="multipart/form-data" method="post" action="{% url 'view_user' form.instance.id %}">
+		{% csrf_token %}
+		{% block basic_info %}
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="basic_info_label">Basic Information</h3>
+				<ul>
+					<li><b>First name</b>: {{ form.instance.first_name }}</li>
+					<li><b>Last name</b>: {{ form.instance.last_name }}</li>
+					<li><b>Username</b>: {{ form.instance.username }}</li>
+					<li><b>Email</b>: {{ form.instance.email }}</li>
+					<li><b>Type</b>: {{ form.instance.type }}</li>
+					<li><b>Date joined</b>: {{ form.instance.date_joined }}</li>
+					<li><b>Last login</b>: {{ form.instance.last_login }}</li>
+				</ul>
+			</div>
+		</div>
+		{% endblock %}
+		{% block projects %}
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="projects_label">Projects</h3>
+				<div id="project-list">
+					This user has no assigned projects.
+				</div>
+			</div>
+		</div>
+		{% endblock %}
+		{% block tool_qualifications %}
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="tool_qualifications_label">Tool Qualifications</h3>
+				{% if tool_qualifications  %}
+					<ul>
+						{% for tool_qualification in tool_qualifications %}
+							<li>{{ tool_qualification }}</li>
+						{% endfor %}
+					</ul>
+				{% else %}
+					<p>Not qualified for any tools.</p>
+				{% endif %}
+			</div>
+		</div>
+		{% endblock %}
+		{% block groups %}
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="groups_label">Groups</h3>
+				{% if groups  %}
+					<ul>
+						{% for group in groups %}
+							<li>{{ group }}</li>
+						{% endfor %}
+					</ul>
+				{% else %}
+					<p>Not assigned to any groups.</p>
+				{% endif %}
+			</div>
+		</div>
+		{% endblock %}
+        {% button type="save" value="Save changes" %}
+	</form>
+{% endblock %}
