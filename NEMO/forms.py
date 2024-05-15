@@ -78,6 +78,12 @@ class UserForm(ModelForm):
             "preferences",
         ]
 
+class UserProjectForm(ModelForm):
+    class Meta:
+        model = User
+        fields = ["projects"]
+
+    pass
 
 class ProjectForm(ModelForm):
     class Meta:
