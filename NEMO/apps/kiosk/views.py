@@ -577,7 +577,7 @@ def report_problem(request):
     }
 
     """ Report a problem for a tool. """
-    form = TaskForm(request.user, data=request.POST)
+    form = TaskForm(customer, data=request.POST)
 
     try:
         date = parse_date(request.POST["estimated_resolution_dt"])
@@ -600,7 +600,7 @@ def report_problem(request):
     task = form.save()
     task.estimated_resolution_time = estimated_resolution_time
 
-    save_error = save_task(request, task)
+    save_error = save_task(request, task, customer)
 
     if save_error:
         dictionary["message"] = save_error
@@ -645,6 +645,6 @@ def post_comment(request):
 
         return render(request, "kiosk/tool_post_comment.html", dictionary)
 
-    save_comment(request.user, form)
+    save_comment(customer, form)
 
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
