@@ -484,10 +484,8 @@ def user_preferences(request):
 @login_required
 @require_http_methods(['GET', 'POST'])
 def view_user(request, user_id):
-
     user = get_object_or_404(User, pk=user_id)
-    if user.is_staff:
-        return create_or_modify_user(request, user_id)
+
     if request.user.id != user_id:
         return HttpResponseBadRequest("Cannot view another user")
 
@@ -499,7 +497,6 @@ def view_user(request, user_id):
         "groups": user.groups.all(),
     }
 
-    users_logger.info(request.method)
     if request.method == "GET":
         form = UserProjectForm(instance=user)
         dictionary["form"] = form
