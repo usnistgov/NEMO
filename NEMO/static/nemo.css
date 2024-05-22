@@ -836,6 +836,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 .buddy-list-item-description, .buddy-list-item-buttons
 {
 	display: table-cell;
+	word-break: break-word;
 	padding: 10px;
 }
 
@@ -892,6 +893,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 .staff-assistance-list-item-description, .staff-assistance-list-item-buttons
 {
 	display: table-cell;
+	word-break: break-word;
 	padding: 10px;
 }
 
