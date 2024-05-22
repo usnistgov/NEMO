@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from NEMO.decorators import any_staff_required, user_office_or_manager_required
-from NEMO.forms import UserForm, UserPreferencesForm, UserProjectForm
+from NEMO.forms import UserForm, UserPreferencesForm
 from NEMO.models import (
     ActivityHistory,
     Area,
@@ -498,11 +498,7 @@ def view_user(request, user_id):
     }
 
     if request.method == "GET":
-        form = UserProjectForm(instance=user)
-        dictionary["form"] = form
         return render(request, "users/view_user.html", dictionary)
-    else:
-        return HttpResponseBadRequest("Invalid method")
 
 
 def readonly_users(request):
