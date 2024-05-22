@@ -482,7 +482,7 @@ def user_preferences(request):
 
 
 @login_required
-@require_http_methods(['GET', 'POST'])
+@require_GET
 def view_user(request, user_id):
     user = get_object_or_404(User, pk=user_id)
 
