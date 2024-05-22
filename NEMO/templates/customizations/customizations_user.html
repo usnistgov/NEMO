@@ -88,11 +88,12 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-md-4 col-lg-3" for="user_list_active_only">Enable user profile view</label>
+            <label class="control-label col-md-4 col-lg-3" for="user_allow_profile_view">Enable user profile view</label>
             <div class="col-md-8 col-lg-9">
                 <div class="checkbox">
                     <label>
                         <input type="checkbox"
+                               id="user_allow_profile_view"
                                name="user_allow_profile_view"
                                {% if user_allow_profile_view %}checked{% endif %}
                                value="enabled">
