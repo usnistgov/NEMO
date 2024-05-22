@@ -3,19 +3,6 @@
 {% load mptt_tags %}
 {% block title %}View user{% endblock %}
 {% block content %}
-    <div class="row col-sm-12">
-    {% if form.errors %}
-        <div class="col-sm-6 alert alert-danger">
-            Oops! Something went wrong. Please correct the errors highlighted below.<br>
-            {{ form.non_field_errors }}
-        </div>
-    {% endif %}
-    {% if warning %}
-        <div class="col-sm-6 alert alert-warning">
-            {{ warning }}
-        </div>
-    {% endif %}
-    </div>
 	<form id="view_user_form" class="form-horizontal" enctype="multipart/form-data" method="post" action="{% url 'view_user' form.instance.id %}">
 		{% csrf_token %}
 		{% block basic_info %}
