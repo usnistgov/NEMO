@@ -4,7 +4,6 @@
 {% block title %}View user{% endblock %}
 {% block content %}
 	<form id="view_user_form" class="form-horizontal" enctype="multipart/form-data" method="post" action="{% url 'view_user' form.instance.id %}">
-		{% csrf_token %}
 		{% block basic_info %}
 		<div class="panel panel-default">
 			<div class="panel-body">
