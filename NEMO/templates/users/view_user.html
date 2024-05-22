@@ -23,9 +23,9 @@
 	<div class="panel panel-default">
 		<div class="panel-body">
 			<h3 id="projects_label">Projects</h3>
-			{% if projects  %}
+			{% if user.projects  %}
 				<ul>
-					{% for project in projects %}
+					{% for project in user.projects.all %}
 						<li>{{ project }}</li>
 					{% endfor %}
 				</ul>
