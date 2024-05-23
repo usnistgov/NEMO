@@ -497,8 +497,7 @@ def view_user(request, user_id):
         "groups": user.groups.all(),
     }
 
-    if request.method == "GET":
-        return render(request, "users/view_user.html", dictionary)
+    return render(request, "users/view_user.html", dictionary)
 
 
 def readonly_users(request):
