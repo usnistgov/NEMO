@@ -167,7 +167,7 @@ function hide_empty_tool_categories()
 		let categoryHasItem = false;
 		$(category).find("li>a").each((toolIdx, tool) =>
 		{
-			let toolStyle = $(tool).attr("style");
+			let toolStyle = $(tool).parent("li").attr("style");
 
 			if (toolStyle === undefined || toolStyle !== "display: none;")
 			{
