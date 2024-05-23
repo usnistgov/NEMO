@@ -487,7 +487,7 @@ def view_user(request, user_id):
     user = get_object_or_404(User, pk=user_id)
 
     if request.user.id != user_id:
-        return HttpResponseBadRequest("Cannot view another user")
+        return HttpResponseBadRequest("You are not allowed to view this user's profile")
 
     dictionary = {
         "user": user,
