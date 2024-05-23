@@ -72,6 +72,13 @@ def create_staff_assistance_request(request, request_id=None):
         if form.is_valid():
             form.instance.user = request.user
             created_staff_assistance_request = form.save()
+            send_new_request_emails(
+                created_staff_assistance_request,
+                get_full_url(
+                    f"{reverse('user_requests', kwargs={'tab': 'staff_assistance'})}?#request_{created_staff_assistance_request.id}",
+                    request,
+                ),
+            )
             create_staff_assistance_request_notification(created_staff_assistance_request)
             return redirect("user_requests", "staff_assistance")
         else:
@@ -155,13 +162,31 @@ def staff_assistance_request_reply(request, request_id):
         reply.author = user
         reply.save()
         create_request_message_notification(reply, Notification.Types.STAFF_ASSISTANCE_REQUEST_REPLY, expiration)
-        email_interested_parties(
-            reply, get_full_url(f"{reverse('user_requests', kwargs={'tab': 'staff_assistance'})}?#{reply.id}", request)
+        send_reply_emails(
+            reply,
+            get_full_url(f"{reverse('user_requests', kwargs={'tab': 'staff_assistance'})}?#reply_{reply.id}", request),
         )
     return redirect("user_requests", "staff_assistance")
 
 
-def email_interested_parties(reply: RequestMessage, reply_url):
+def send_new_request_emails(staff_assistance_request: StaffAssistanceRequest, request_url):
+    all_staff = User.objects.filter(is_active=True, is_staff=True)
+    for user in all_staff:
+        subject = f"New staff assistance request created by {staff_assistance_request.user.get_name()}"
+        message = f"""<br><br>
+{linebreaksbr(staff_assistance_request.description)}
+<br><br>
+Please visit {request_url} to reply"""
+        email_notification = user.get_preferences().email_send_staff_assistance_request_replies
+        user.email_user(
+            subject=subject,
+            message=message,
+            from_email=get_email_from_settings(),
+            email_notification=email_notification,
+        )
+
+
+def send_reply_emails(reply: RequestMessage, reply_url):
     creator: User = reply.content_object.user
     for user in reply.content_object.creator_and_reply_users():
         if user != reply.author:

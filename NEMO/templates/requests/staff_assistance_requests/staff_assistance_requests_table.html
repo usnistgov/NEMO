@@ -6,7 +6,7 @@
         <ul class="staff-assistance-list-day">
             {% for staff_assistance_request in date.list %}
                 <li>
-                    <ul class="staff-assistance-list list-unstyled">
+                    <ul class="staff-assistance-list list-unstyled" id="request_{{ staff_assistance_request.id }}">
                         {% if staff_assistance_request.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
                         {% url 'create_or_modify_user' staff_assistance_request.user.id as user_edit_url %}
                         {% if user.is_staff %}
@@ -33,7 +33,7 @@
                             </div>
                         </li>
                         {% for message in staff_assistance_request.replies %}
-                            <li class="staff-assistance-list-item" id="{{ message.id }}">
+                            <li class="staff-assistance-list-item" id="reply_{{ message.id }}">
                                 {% if message.id in reply_notifications %}<span class="label label-success">New reply</span>{% endif %}
                                 <div class="list-group-item staff-assistance-list-item-message">
                                     {{ message.content|linebreaksbr }}
