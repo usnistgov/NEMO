@@ -86,7 +86,7 @@ def create_buddy_request_notification(buddy_request: BuddyRequest):
 
 
 def create_staff_assistance_request_notification(staff_assistance_request: StaffAssistanceRequest):
-    users: List[User] = User.objects.filter(is_active=True).exclude(id=staff_assistance_request.user_id)
+    users: List[User] = User.objects.filter(is_active=True, is_staff=True).exclude(id=staff_assistance_request.user_id)
     created_at = staff_assistance_request.creation_time
     expiration = end_of_the_day(datetime(created_at.year, created_at.month, created_at.day))
     for u in users:
