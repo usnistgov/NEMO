@@ -1,0 +1,86 @@
+{% load custom_tags_and_filters %}
+<div class="table-responsive staff-assistance-requests">
+    {% regroup staff_assistance_request_list by creation_time|date as requests_by_date %}
+    {% for date in requests_by_date %}
+        <h3>{{ date.grouper }}</h3>
+        <ul class="staff-assistance-list-day">
+            {% for staff_assistance_request in date.list %}
+                <li>
+                    <ul class="staff-assistance-list list-unstyled">
+                        {% if staff_assistance_request.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
+                        {% url 'create_or_modify_user' staff_assistance_request.user.id as user_edit_url %}
+                        {% if user.is_staff %}
+                            <a href="{{ user_edit_url }}"><b>{{ staff_assistance_request.user.get_name }}</b></a>
+                        {% else %}
+                            <b>You</b>
+                        {% endif %}
+                        requested assistance at {{ staff_assistance_request.creation_time|time }}
+                        <li class="staff-assistance-list-item">
+                            <div class="staff-assistance-list-item list-group-item-info">
+                                <div class="staff-assistance-list-item-description">{{ staff_assistance_request.description|linebreaksbr }}</div>
+                                <div class="staff-assistance-list-item-buttons">
+                                    {% if staff_assistance_request.user == request.user and staff_assistance_request.replies.count == 0 %}
+                                        {% url 'edit_staff_assistance_request' staff_assistance_request.id as edit_staff_assistance_request_url %}
+                                        {% button type="edit" size="small" url=edit_staff_assistance_request_url value="Edit" %}
+                                        <form style="display: inline-block"
+                                              action="{% url 'delete_staff_assistance_request' staff_assistance_request.id %}"
+                                              method="post">
+                                            {% csrf_token %}
+                                            {% button type="delete" size="small" submit=True value="Delete" %}
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </li>
+                        {% for message in staff_assistance_request.replies %}
+                            <li class="staff-assistance-list-item" id="{{ message.id }}">
+                                {% if message.id in reply_notifications %}<span class="label label-success">New reply</span>{% endif %}
+                                <div class="list-group-item staff-assistance-list-item-message">
+                                    {{ message.content|linebreaksbr }}
+                                    <div class="request-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
+                                </div>
+                            </li>
+                        {% endfor %}
+                        <li class="staff-assistance-list-item" style="display: none">
+                            <div class="staff-assistance-list-item-reply list-group-item-text">
+                                <form id="staff_assistance_request_reply_{{ staff_assistance_request.id }}"
+                                      action="{% url 'staff_assistance_request_reply' staff_assistance_request.id %}"
+                                      method="post">
+                                    {% csrf_token %}
+                                    <textarea required name="reply_content" aria-label="Reply content" style="width: 100%"></textarea>
+                                </form>
+                            </div>
+                        </li>
+                        <li class="staff-assistance-list-item-reply-buttons list-group-item-text text-right">
+                            {% if not staff_assistance_request.resolved %}
+                                <span data-toggle="tooltip" title="{{ staff_assistance_request.user_reply_error|default_if_none:'' }}">
+                                    {% if staff_assistance_request.user_reply_error %}
+                                        {% button type="add" size="small" icon="glyphicon-send" value="Reply" disabled="disabled" %}
+                                    {% else %}
+                                        {% button type="add" size="small" icon="glyphicon-send" value="Reply" onclick="show_or_send_reply(this, 'staff_assistance_request_reply_"|concat:staff_assistance_request.id|concat:"')" %}
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                            {% if user.is_staff and not staff_assistance_request.resolved %}
+                                <form style="display: inline-block"
+                                      action="{% url 'resolve_staff_assistance_request' staff_assistance_request.id %}"
+                                      method="post">
+                                    {% csrf_token %}
+                                    {% button type="default" size="small" submit=True value="Resolve" %}
+                                </form>
+                            {% endif %}
+                            {% if user.is_staff and staff_assistance_request.resolved %}
+                                <form style="display: inline-block"
+                                      action="{% url 'reopen_staff_assistance_request' staff_assistance_request.id %}"
+                                      method="post">
+                                    {% csrf_token %}
+                                    {% button type="default" size="small" submit=True value="Reopen" %}
+                                </form>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+</div>

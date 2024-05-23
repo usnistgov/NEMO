@@ -28,16 +28,17 @@ def staff_assistance_requests(request):
 
     user: User = request.user
     if user.is_staff:
-        staff_assistance_requests = StaffAssistanceRequest.objects.filter(deleted=False).order_by(
-            "resolved", "-creation_time"
-        )
+        open_staff_assistance_requests = StaffAssistanceRequest.objects.filter(resolved=False, deleted=False)
+        resolved_staff_assistance_requests = StaffAssistanceRequest.objects.filter(resolved=True, deleted=False)
     else:
-        staff_assistance_requests = StaffAssistanceRequest.objects.filter(user=user, deleted=False).order_by(
-            "resolved", "-creation_time"
+        open_staff_assistance_requests = StaffAssistanceRequest.objects.filter(user=user, resolved=False, deleted=False)
+        resolved_staff_assistance_requests = StaffAssistanceRequest.objects.filter(
+            user=user, resolved=True, deleted=False
         )
 
     dictionary = {
-        "staff_assistance_requests": staff_assistance_requests,
+        "open_staff_assistance_requests": open_staff_assistance_requests.order_by("-creation_time"),
+        "resolved_staff_assistance_requests": resolved_staff_assistance_requests.order_by("-creation_time"),
         "staff_assistance_requests_description": UserRequestsCustomization.get("staff_assistance_requests_description"),
         "request_notifications": get_notifications(request.user, Notification.Types.STAFF_ASSISTANCE_REQUEST),
         "reply_notifications": get_notifications(request.user, Notification.Types.STAFF_ASSISTANCE_REQUEST_REPLY),
@@ -110,17 +111,29 @@ def resolve_staff_assistance_request(request, request_id):
 
     staff_assistance_request = get_object_or_404(StaffAssistanceRequest, id=request_id)
 
-    if staff_assistance_request.replies.count() == 0:
-        return HttpResponseBadRequest("You are not allowed to resolve a request that has no replies.")
-    # staff_assistance_request.user != request.user and
-    if not request.user.is_staff:
+    if not request.user.is_staff and not staff_assistance_request.user == request.user:
         return HttpResponseBadRequest(
             "You are not allowed to resolve a request if you are not staff or you didn't create it."
         )
 
     staff_assistance_request.resolved = True
     staff_assistance_request.save(update_fields=["resolved"])
-    delete_notification(Notification.Types.STAFF_ASSISTANCE_REQUEST, staff_assistance_request.id)
+    return redirect("user_requests", "staff_assistance")
+
+
+@login_required
+@require_POST
+def reopen_staff_assistance_request(request, request_id):
+    if not UserRequestsCustomization.get_bool("staff_assistance_requests_enabled"):
+        return HttpResponseBadRequest("Staff assistance requests are not enabled")
+
+    staff_assistance_request = get_object_or_404(StaffAssistanceRequest, id=request_id)
+
+    if not request.user.is_staff:
+        return HttpResponseBadRequest("You are not allowed to reopen a request if you are not staff.")
+
+    staff_assistance_request.resolved = False
+    staff_assistance_request.save(update_fields=["resolved"])
     return redirect("user_requests", "staff_assistance")
 
 
@@ -141,7 +154,7 @@ def staff_assistance_request_reply(request, request_id):
         reply.content = message_content
         reply.author = user
         reply.save()
-        create_request_message_notification(reply, Notification.Types.BUDDY_REQUEST_REPLY, expiration)
+        create_request_message_notification(reply, Notification.Types.STAFF_ASSISTANCE_REQUEST_REPLY, expiration)
         email_interested_parties(
             reply, get_full_url(f"{reverse('user_requests', kwargs={'tab': 'staff_assistance'})}?#{reply.id}", request)
         )

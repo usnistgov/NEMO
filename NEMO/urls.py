@@ -240,6 +240,11 @@ urlpatterns += [
         name="resolve_staff_assistance_request",
     ),
     path(
+        "reopen_staff_assistance_request/<int:request_id>/",
+        staff_assistance_requests.reopen_staff_assistance_request,
+        name="reopen_staff_assistance_request",
+    ),
+    path(
         "staff_assistance_request_reply/<int:request_id>/",
         staff_assistance_requests.staff_assistance_request_reply,
         name="staff_assistance_request_reply",
