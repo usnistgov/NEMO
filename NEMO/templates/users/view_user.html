@@ -3,7 +3,6 @@
 {% load mptt_tags %}
 {% block title %}View user{% endblock %}
 {% block content %}
-	{% block basic_info %}
 	<div class="panel panel-default">
 		<div class="panel-body">
 			<h3 id="basic_info_label">Basic Information</h3>
@@ -18,8 +17,6 @@
 			</ul>
 		</div>
 	</div>
-	{% endblock %}
-	{% block projects %}
 	<div class="panel panel-default">
 		<div class="panel-body">
 			<h3 id="projects_label">Projects</h3>
@@ -34,8 +31,6 @@
 			{% endif %}
 		</div>
 	</div>
-	{% endblock %}
-	{% block tool_qualifications %}
 	<div class="panel panel-default">
 		<div class="panel-body">
 			<h3 id="tool_qualifications_label">Tool Qualifications</h3>
@@ -50,8 +45,6 @@
 			{% endif %}
 		</div>
 	</div>
-	{% endblock %}
-	{% block groups %}
 	<div class="panel panel-default">
 		<div class="panel-body">
 			<h3 id="groups_label">Groups</h3>
@@ -66,5 +59,4 @@
 			{% endif %}
 		</div>
 	</div>
-	{% endblock %}
 {% endblock %}
