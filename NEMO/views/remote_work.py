@@ -186,11 +186,15 @@ def staff_charges(request):
     except:
         pass
     if customer:
-        if customer.active_project_count() > 0:
+        projects = [project for project in customer.active_projects() if project.allow_staff_charges]
+        if projects:
             dictionary["customer"] = customer
             return render(request, "staff_charges/choose_project.html", dictionary)
         else:
-            error = str(customer) + " does not have any active projects. You cannot bill staff time to this user."
+            error = (
+                str(customer)
+                + " does not have any active projects allowing staff charges. You cannot bill staff time to this user."
+            )
     users = User.objects.filter(is_active=True).exclude(id=request.user.id)
     dictionary["users"] = users
     dictionary["error"] = error
