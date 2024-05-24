@@ -348,7 +348,7 @@
             {% if tool.in_use %}
                 {% if tool.get_current_usage_event.operator.id == user.id or tool.get_current_usage_event.user.id == user.id %}
                     {{ post_usage_questions }}
-                    {% if tool.allow_delayed_logoff and not tool.delayed_logoff_in_progress %}
+                    {% if tool.max_delayed_logoff is not None and not tool.delayed_logoff_in_progress %}
                         <div class="form-group">
                             Prevent others from using the tool for
                             <input type="number"
@@ -359,7 +359,7 @@
                                    style="display:inline;
                                           width:auto"
                                    min="5"
-                                   max="120"
+                                   max="{{ tool.max_delayed_logoff }}"
                                    inputmode="numeric"
                                    pattern="[0-9]*"
                                    placeholder="0">

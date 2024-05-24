@@ -272,7 +272,7 @@
                 <h2>Post usage questions</h2>
                 {{ post_usage_questions }}
             {% endif %}
-            {% if tool.allow_delayed_logoff and not tool.delayed_logoff_in_progress %}
+            {% if tool.max_delayed_logoff is not None and not tool.delayed_logoff_in_progress %}
                 <h2>Delayed logoff</h2>
                 <div class="form-group">
                     Use the following field to prevent others from using the tool for
@@ -283,7 +283,7 @@
                            style="display:inline;
                                   width:auto"
                            min="5"
-                           max="120"
+                           max="{{ tool.max_delayed_logoff }}"
                            inputmode="numeric"
                            pattern="[0-9]*"
                            placeholder="0">

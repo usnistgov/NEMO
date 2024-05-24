@@ -198,13 +198,13 @@ class NEMOPolicy:
             )
         if downtime < timedelta():
             return HttpResponseBadRequest("Downtime cannot be negative.")
-        if downtime > timedelta(minutes=120):
-            return HttpResponseBadRequest("Post-usage tool downtime may not exceed 120 minutes.")
+        if downtime > timedelta(minutes=tool.max_delayed_logoff):
+            return HttpResponseBadRequest(f"Post-usage tool downtime may not exceed {tool.max_delayed_logoff} minutes.")
         if tool.delayed_logoff_in_progress() and downtime > timedelta():
             return HttpResponseBadRequest(
                 "The tool is already in a delayed-logoff state. You may not issue additional delayed logoffs until the existing one expires."
             )
-        if not tool.allow_delayed_logoff and downtime > timedelta():
+        if tool.max_delayed_logoff is None and downtime > timedelta():
             return HttpResponseBadRequest("Delayed logoff is not allowed for this tool.")
         return HttpResponse()
 

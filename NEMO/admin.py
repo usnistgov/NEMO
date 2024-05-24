@@ -313,7 +313,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "_grant_physical_access_level_upon_qualification",
                     "_grant_badge_reader_access_upon_qualification",
                     "_interlock",
-                    "_allow_delayed_logoff",
+                    "_max_delayed_logoff",
                     "_ask_to_leave_area_when_done_using",
                 )
             },
