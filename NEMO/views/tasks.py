@@ -53,8 +53,9 @@ def create(request):
     """
     This could be a problem report or shutdown notification.
     """
+    user: User = request.user
     images_form = TaskImagesForm(request.POST, request.FILES)
-    form = TaskForm(request.user, data=request.POST)
+    form = TaskForm(user, data=request.POST)
     if not form.is_valid() or not images_form.is_valid():
         errors = nice_errors(form)
         errors.update(nice_errors(images_form))
@@ -78,12 +79,12 @@ def create(request):
     task = form.save()
     task_images = save_task_images(request, task)
 
-    save_task(request, task, task_images)
+    save_task(request, task, user, task_images)
 
     return redirect("tool_control")
 
 
-def save_task(request, task: Task, task_images: List[TaskImages] = None):
+def save_task(request, task: Task, user: User, task_images: List[TaskImages] = None):
     task.save()
 
     if task.force_shutdown:
@@ -106,14 +107,14 @@ def save_task(request, task: Task, task_images: List[TaskImages] = None):
             + " problem was identified as a safety hazard.\n\n"
         )
         concern += task.problem_description
-        issue = SafetyIssue.objects.create(reporter=request.user, location=task.tool.location, concern=concern)
+        issue = SafetyIssue.objects.create(reporter=user, location=task.tool.location, concern=concern)
         send_safety_email_notification(request, issue)
 
-    send_new_task_emails(request, task, task_images)
-    set_task_status(request, task, request.POST.get("status"), request.user)
+    send_new_task_emails(request, task, user, task_images)
+    set_task_status(request, task, request.POST.get("status"), user)
 
 
-def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
+def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages]):
     message = get_media_file_contents("new_task_email.html")
     attachments = None
     if task_images:
@@ -124,7 +125,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
             "template_color": (
                 bootstrap_primary_color("danger") if task.force_shutdown else bootstrap_primary_color("warning")
             ),
-            "user": request.user,
+            "user": user,
             "task": task,
             "tool": task.tool,
             "tool_control_absolute_url": get_full_url(task.tool.get_absolute_url(), request),
@@ -146,7 +147,7 @@ def send_new_task_emails(request, task: Task, task_images: List[TaskImages]):
         send_mail(
             subject=subject,
             content=message,
-            from_email=request.user.email,
+            from_email=user.email,
             to=recipients,
             attachments=attachments,
             email_category=EmailCategory.TASKS,

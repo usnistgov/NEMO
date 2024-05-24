@@ -101,6 +101,7 @@ from NEMO.models import (
     TemporaryPhysicalAccess,
     TemporaryPhysicalAccessRequest,
     Tool,
+    ToolCredentials,
     ToolDocuments,
     ToolQualificationGroup,
     ToolUsageCounter,
@@ -312,7 +313,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "_grant_physical_access_level_upon_qualification",
                     "_grant_badge_reader_access_upon_qualification",
                     "_interlock",
-                    "_allow_delayed_logoff",
+                    "_max_delayed_logoff",
                     "_ask_to_leave_area_when_done_using",
                 )
             },
@@ -1571,6 +1572,7 @@ class LandingPageChoiceAdmin(admin.ModelAdmin):
 @register(Customization)
 class CustomizationAdmin(admin.ModelAdmin):
     list_display = ("name", "value")
+    search_fields = ["name"]
 
 
 @register(ScheduledOutageCategory)
@@ -1834,6 +1836,29 @@ class SafetyTrainingAdmin(admin.ModelAdmin):
 @register(OnboardingPhase)
 class OnboardingPhaseAdmin(admin.ModelAdmin):
     list_display = ("name", "display_order")
+
+
+class ToolCredentialsAdminForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["authorized_staff"].queryset = User.objects.filter(is_staff=True)
+
+
+@register(ToolCredentials)
+class ToolCredentialsAdmin(ModelAdminRedirectMixin, admin.ModelAdmin):
+    list_display = ["get_tool_category", "tool", "is_tool_visible", "username", "comments"]
+    list_filter = [("tool", admin.RelatedOnlyFieldListFilter), "tool__visible"]
+    autocomplete_fields = ["tool"]
+    filter_horizontal = ["authorized_staff"]
+    form = ToolCredentialsAdminForm
+
+    @display(ordering="tool___category", description="Tool category")
+    def get_tool_category(self, obj: ToolCredentials) -> str:
+        return obj.tool._category
+
+    @admin.display(ordering="tool__visible", boolean=True, description="Tool visible")
+    def is_tool_visible(self, obj: Configuration):
+        return obj.tool.visible
 
 
 @register(EmailLog)

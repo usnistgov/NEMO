@@ -865,3 +865,33 @@ function collapse_navbar(max_width, max_height)
 		$("body").addClass("force-navbar-collapse");
 	}
 }
+
+function table_search(table_id, always_show_rows)
+{
+	always_show_rows = always_show_rows || [];
+	return function ()
+	{
+		let rows = $("#"+table_id).find("tr").hide();
+		if (this.value.length)
+		{
+			let data = this.value.split(" ");
+			$.each(data, function (i, v)
+			{
+				$.each(rows, function(i, row)
+				{
+				   let $row = $(row);
+				   if (always_show_rows.includes(i)) {$row.show();return true;}
+				   // Only look in td within the row that don't have display:none, so we don't only look at visible cells
+				   if ($row.find("td").filter(function() { return $(this).css('display') !== 'none'; }).filter(":icontains('" + v + "')").length !== 0)
+				   {
+					   $row.show();
+				   }
+				});
+			});
+		}
+		else
+		{
+			rows.show();
+		}
+	}
+}

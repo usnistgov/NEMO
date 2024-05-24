@@ -272,6 +272,22 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Tool credentials</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="hidden" name="tool_control_show_tool_credentials" value="off" />
+                        <input type="checkbox"
+                               id="tool_control_show_tool_credentials"
+                               name="tool_control_show_tool_credentials"
+                               {% if tool_control_show_tool_credentials == "enabled" %}checked{% endif %}
+                               value="enabled">
+                        Show tool credentials to staff in tool control -> details tab
+                    </label>
+                </div>
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool wait list</h3>
         <div class="form-group">

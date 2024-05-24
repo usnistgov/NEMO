@@ -110,8 +110,17 @@ def tool_status(request, tool_id):
         if user_wait_list_entry
         else 0
     )
+    tool_credentials = []
+    if ToolCustomization.get_bool("tool_control_show_tool_credentials") and (user.is_staff or user.is_facility_manager):
+        if user.is_facility_manager:
+            tool_credentials = tool.toolcredentials_set.all()
+        else:
+            tool_credentials = tool.toolcredentials_set.filter(
+                Q(authorized_staff__isnull=True) | Q(authorized_staff__in=[user])
+            )
     dictionary = {
         "tool": tool,
+        "tool_credentials": tool_credentials,
         "tool_rate": rate_class.get_tool_rate(tool, user),
         "task_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
         "rendered_configuration_html": tool.configuration_widget(user),

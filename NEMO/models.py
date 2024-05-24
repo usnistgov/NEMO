@@ -1278,10 +1278,11 @@ class Tool(SerializationByNameModel):
         blank=True,
         help_text='The amount of time (in minutes) that a tool reservation may go unused before it is automatically marked as "missed" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.',
     )
-    _allow_delayed_logoff = models.BooleanField(
-        db_column="allow_delayed_logoff",
-        default=False,
-        help_text='Upon logging off users may enter a delay before another user may use the tool. Some tools require "spin-down" or cleaning time after use.',
+    _max_delayed_logoff = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_column="max_delayed_logoff",
+        help_text='[Optional] Maximum delay in minutes that users may enter upon logging off before another user may use the tool. Some tools require "spin-down" or cleaning time after use. Leave blank to disable.',
     )
     _pre_usage_questions = models.TextField(
         db_column="pre_usage_questions",
@@ -1586,13 +1587,13 @@ class Tool(SerializationByNameModel):
         self._missed_reservation_threshold = value
 
     @property
-    def allow_delayed_logoff(self):
-        return self.parent_tool.allow_delayed_logoff if self.is_child_tool() else self._allow_delayed_logoff
+    def max_delayed_logoff(self):
+        return self.parent_tool.max_delayed_logoff if self.is_child_tool() else self._max_delayed_logoff
 
-    @allow_delayed_logoff.setter
-    def allow_delayed_logoff(self, value):
-        self.raise_setter_error_if_child_tool("allow_delayed_logoff")
-        self._allow_delayed_logoff = value
+    @max_delayed_logoff.setter
+    def max_delayed_logoff(self, value):
+        self.raise_setter_error_if_child_tool("max_delayed_logoff")
+        self._max_delayed_logoff = value
 
     @property
     def pre_usage_questions(self):
@@ -4563,6 +4564,23 @@ class UserKnowledgeBaseItemDocuments(BaseDocumentModel):
 
     class Meta(BaseDocumentModel.Meta):
         verbose_name_plural = "User knowledge base item documents"
+
+
+class ToolCredentials(BaseModel):
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+    username = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    password = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    comments = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    authorized_staff = models.ManyToManyField(
+        User,
+        blank=True,
+        help_text="Selected staff will be the only ones allowed to see these credentials. Leave blank for all staff.",
+    )
+
+    class Meta:
+        ordering = ["-tool__visible", "tool___category", "tool__name"]
+        verbose_name = "Tool credentials"
+        verbose_name_plural = "Tool credentials"
 
 
 class EmailLog(BaseModel):

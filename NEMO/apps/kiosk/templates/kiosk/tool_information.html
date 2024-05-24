@@ -149,6 +149,30 @@
         {% endfor %}
     </div>
 {% endif %}
+{% if user.is_staff and tool_credentials %}
+    <div class="media" style="margin-bottom: 20px">
+        <a onclick="toggle_details(this)"
+           data-toggle="collapse"
+           data-target="#tool_credentials"
+           class="pointer">
+            <span class="glyphicon glyphicon-lock pull-left notification-icon warning-highlight"></span><span class="glyphicon glyphicon-chevron-right pull-left chevron"></span>
+        </a>
+        <div class="media-body">
+            <div style="margin-bottom: 15px">Credentials</div>
+            <div id="tool_credentials" class="collapse">
+                <ul>
+                    {% for cred in tool_credentials %}
+                        <li>
+                            <i class="glyphicon glyphicon-user"></i> {{ cred.username|default_if_none:"" }}
+                            {% if cred.password %}<i class="glyphicon glyphicon-lock"></i> {{ cred.password }}{% endif %}
+                            {% if cred.comments %}({{ cred.comments }}){% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endif %}
 {% if tool.problems %}
     <div class="tool-problems">
         {# Display all problems and shutdowns... #}
@@ -248,7 +272,7 @@
                 <h2>Post usage questions</h2>
                 {{ post_usage_questions }}
             {% endif %}
-            {% if tool.allow_delayed_logoff and not tool.delayed_logoff_in_progress %}
+            {% if tool.max_delayed_logoff is not None and not tool.delayed_logoff_in_progress %}
                 <h2>Delayed logoff</h2>
                 <div class="form-group">
                     Use the following field to prevent others from using the tool for
@@ -259,7 +283,7 @@
                            style="display:inline;
                                   width:auto"
                            min="5"
-                           max="120"
+                           max="{{ tool.max_delayed_logoff }}"
                            inputmode="numeric"
                            pattern="[0-9]*"
                            placeholder="0">

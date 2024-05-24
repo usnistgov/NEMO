@@ -55,6 +55,7 @@ from NEMO.views import (
     tasks,
     timed_services,
     tool_control,
+    tool_credentials,
     training,
     tutorials,
     usage,
@@ -680,6 +681,8 @@ if settings.ALLOW_CONDITIONAL_URLS:
         path(
             "delete_staff_absence/<int:absence_id>/", status_dashboard.delete_staff_absence, name="delete_staff_absence"
         ),
+        # Tool credentials
+        path("tool_credentials/", tool_credentials.tool_credentials_list, name="tool_credentials"),
         # Billing:
         path("billing/", usage.billing, name="billing"),
     ]

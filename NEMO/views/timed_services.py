@@ -500,6 +500,16 @@ def send_email_reservation_ending_reminders(request=None):
     ending_reservations = user_area_reservations.filter(time_filter)
     # Email a reminder to each user with a reservation ending soon.
     for reservation in ending_reservations:
+        starting_reservation = Reservation.objects.filter(
+            cancelled=False,
+            missed=False,
+            shortened=False,
+            area=reservation.area,
+            user=reservation.user,
+            start=reservation.end,
+        )
+        if starting_reservation.exists():
+            continue
         subject = reservation.reservation_item.name + " reservation ending soon"
         rendered_message = render_email_template(
             reservation_ending_reminder_message, {"reservation": reservation}, request
