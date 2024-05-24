@@ -494,7 +494,6 @@ def view_user(request, user_id):
             "user": user,
             "projects": Project.objects.filter(active=True, account__active=True),
             "tool_qualifications": user.qualifications.all(),
-            "allow_profile_view": UserCustomization.get_bool("user_allow_profile_view"),
             "groups": user.groups.all(),
         }
     
