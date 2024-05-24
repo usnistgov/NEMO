@@ -45,18 +45,20 @@
 			{% endif %}
 		</div>
 	</div>
-	<div class="panel panel-default">
-		<div class="panel-body">
-			<h3 id="groups_label">Groups</h3>
-			{% if groups  %}
-				<ul>
-					{% for group in groups %}
-						<li>{{ group }}</li>
-					{% endfor %}
-				</ul>
-			{% else %}
-				<p>Not assigned to any groups.</p>
-			{% endif %}
+	{% if user.is_any_part_of_staff %}
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<h3 id="groups_label">Groups</h3>
+				{% if groups  %}
+					<ul>
+						{% for group in groups %}
+							<li>{{ group }}</li>
+						{% endfor %}
+					</ul>
+				{% else %}
+					<p>Not assigned to any groups.</p>
+				{% endif %}
+			</div>
 		</div>
-	</div>
+	{% endif %}
 {% endblock %}
