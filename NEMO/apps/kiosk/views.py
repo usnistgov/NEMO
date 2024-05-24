@@ -3,6 +3,7 @@ from http import HTTPStatus
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
+from django.db.models import Q
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
@@ -457,9 +458,20 @@ def tool_information(request, tool_id, user_id, back):
         if user_wait_list_entry
         else 0
     )
+    tool_credentials = []
+    if ToolCustomization.get_bool("tool_control_show_tool_credentials") and (
+        customer.is_staff or customer.is_facility_manager
+    ):
+        if customer.is_facility_manager:
+            tool_credentials = tool.toolcredentials_set.all()
+        else:
+            tool_credentials = tool.toolcredentials_set.filter(
+                Q(authorized_staff__isnull=True) | Q(authorized_staff__in=[customer])
+            )
     dictionary = {
         "customer": customer,
         "tool": tool,
+        "tool_credentials": tool_credentials,
         "rendered_configuration_html": tool.configuration_widget(customer),
         "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render(
             "tool_usage_group_question", tool.id, virtual_inputs=True

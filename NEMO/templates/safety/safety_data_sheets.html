@@ -141,30 +141,7 @@
     {% endif %}
     <script>
         $("html").css("overflow", "hidden");
-        $("#search").keyup(function ()
-        {
-            let rows = $("#table-to-filter").find("tr").hide();
-            if (this.value.length)
-            {
-                let data = this.value.split(" ");
-                $.each(data, function (i, v)
-                {
-                    $.each(rows, function(i, row)
-                    {
-                       let $row = $(row);
-                       // Only look in td within the row that don't have display:none, so we don't look in keyworkds unless they are shown
-                       if ($row.find("td").filter(function() { return $(this).css('display') !== 'none'; }).filter(":icontains('" + v + "')").length !== 0)
-                       {
-                           $row.show();
-                       }
-                    });
-                });
-            }
-            else
-            {
-                rows.show();
-            }
-        });
+        $("#search").keyup(table_search("table-to-filter"));
 
         function resize_container()
         {

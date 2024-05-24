@@ -4565,6 +4565,23 @@ class UserKnowledgeBaseItemDocuments(BaseDocumentModel):
         verbose_name_plural = "User knowledge base item documents"
 
 
+class ToolCredentials(BaseModel):
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+    username = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    password = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    comments = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    authorized_staff = models.ManyToManyField(
+        User,
+        blank=True,
+        help_text="Selected staff will be the only ones allowed to see these credentials. Leave blank for all staff.",
+    )
+
+    class Meta:
+        ordering = ["-tool__visible", "tool___category", "tool__name"]
+        verbose_name = "Tool credentials"
+        verbose_name_plural = "Tool credentials"
+
+
 class EmailLog(BaseModel):
     category = models.IntegerField(choices=EmailCategory.Choices, default=EmailCategory.GENERAL)
     when = models.DateTimeField(null=False, auto_now_add=True)
