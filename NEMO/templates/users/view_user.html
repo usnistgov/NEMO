@@ -5,7 +5,7 @@
 {% block content %}
     <div class="panel panel-default">
         <div class="panel-body">
-            <h3 id="basic_info_label">Basic Information</h3>
+            <h3>Basic Information</h3>
             <ul>
                 <li>
                     <b>First name</b>: {{ user.first_name }}
@@ -19,9 +19,11 @@
                 <li>
                     <b>Email</b>: {{ user.email }}
                 </li>
-                <li>
-                    <b>Type</b>: {{ user.type }}
-                </li>
+                {% if user.is_any_part_of_staff and user.type %}
+                    <li>
+                        <b>Type</b>: {{ user.type }}
+                    </li>
+                {% endif %}
                 <li>
                     <b>Date joined</b>: {{ user.date_joined }}
                 </li>
@@ -33,7 +35,7 @@
     </div>
     <div class="panel panel-default">
         <div class="panel-body">
-            <h3 id="projects_label">Projects</h3>
+            <h3>Projects</h3>
             {% if user.projects %}
                 <ul>
                     {% for project in user.projects.all %}<li>{{ project }}</li>{% endfor %}
@@ -45,27 +47,33 @@
     </div>
     <div class="panel panel-default">
         <div class="panel-body">
-            <h3 id="tool_qualifications_label">Tool Qualifications</h3>
-            {% if tool_qualifications %}
+            <h3>Tool Qualifications</h3>
+            {% if user.qualifications.exists %}
                 <ul>
-                    {% for tool_qualification in tool_qualifications %}<li>{{ tool_qualification }}</li>{% endfor %}
+                    {% for tool_qualification in user.qualifications.all %}<li>{{ tool_qualification }}</li>{% endfor %}
                 </ul>
             {% else %}
                 <p>You are not qualified for any tools.</p>
             {% endif %}
         </div>
     </div>
-    {% if user.is_any_part_of_staff %}
+    {% if user.accessible_access_levels.exists %}
         <div class="panel panel-default">
             <div class="panel-body">
-                <h3 id="groups_label">Groups</h3>
-                {% if groups %}
-                    <ul>
-                        {% for group in groups %}<li>{{ group }}</li>{% endfor %}
-                    </ul>
-                {% else %}
-                    <p>Not assigned to any groups.</p>
-                {% endif %}
+                <h3>Physical access levels</h3>
+                <ul>
+                    {% for physical_access in user.accessible_access_levels.all %}<li>{{ physical_access }}</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+    {% if user.is_any_part_of_staff and user.groups.exists %}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3>Groups</h3>
+                <ul>
+                    {% for group in user.groups.all %}<li>{{ group }}</li>{% endfor %}
+                </ul>
             </div>
         </div>
     {% endif %}

@@ -493,8 +493,6 @@ def view_user(request, user_id):
         dictionary = {
             "user": user,
             "projects": Project.objects.filter(active=True, account__active=True),
-            "tool_qualifications": user.qualifications.all(),
-            "groups": user.groups.all(),
         }
 
         return render(request, "users/view_user.html", dictionary)
