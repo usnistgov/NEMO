@@ -486,20 +486,20 @@ def user_preferences(request):
 def view_user(request, user_id):
     if UserCustomization.get_bool("user_allow_profile_view"):
         user = get_object_or_404(User, pk=user_id)
-    
+
         if request.user.id != user_id:
             return HttpResponseBadRequest("You are not allowed to view this user's profile")
-    
+
         dictionary = {
             "user": user,
             "projects": Project.objects.filter(active=True, account__active=True),
             "tool_qualifications": user.qualifications.all(),
             "groups": user.groups.all(),
         }
-    
+
         return render(request, "users/view_user.html", dictionary)
     else:
-        return HttpResponseBadRequest("You cannot view this page")
+        return HttpResponseBadRequest("You are not allowed to view this page")
 
 
 def readonly_users(request):

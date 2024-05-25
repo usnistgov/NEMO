@@ -154,7 +154,13 @@
                 {% endif %}
                 {% block welcome_user %}
                     <li>
-                        <p class="navbar-text">Welcome, {% if allow_profile_view %}<a href="{% url 'view_user' user.id %}">{% endif %}{{ user.first_name }}</a></p>
+                        <p class="navbar-text">
+                            Welcome,
+                            {% if allow_profile_view %}
+                                <a href="{% url 'view_user' user.id %}">
+                                {% endif %}
+                            {{ user.first_name }}</a>
+                        </p>
                     </li>
                 {% endblock %}
                 <li class="navbar-preferences">
