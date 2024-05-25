@@ -152,9 +152,11 @@
                         <script>$("#staff_charge_link").tooltip();</script>
                     </li>
                 {% endif %}
-                <li>
-                    <p class="navbar-text">Welcome, {{ user.first_name }}</p>
-                </li>
+                {% block welcome_user %}
+                    <li>
+                        <p class="navbar-text">Welcome, {% if allow_profile_view %}<a href="{% url 'view_user' user.id %}">{% endif %}{{ user.first_name }}</a></p>
+                    </li>
+                {% endblock %}
                 <li class="navbar-preferences">
                     <a href="{% url 'user_preferences' %}">
                         <img src="{% static 'icons/preferences.png' %}" alt="preferences" />
