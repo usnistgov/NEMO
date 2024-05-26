@@ -38,7 +38,9 @@
             <h3>Projects</h3>
             {% if user.projects %}
                 <ul>
-                    {% for project in user.projects.all %}<li>{{ project }}</li>{% endfor %}
+                    {% for project in user.projects.all %}
+                        <li>{% project_selection_display project %}</li>
+                    {% endfor %}
                 </ul>
             {% else %}
                 <p>You do not have any projects.</p>
