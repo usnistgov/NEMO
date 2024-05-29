@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("NEMO", "0080_version_6_0_0"),
+        ("NEMO", "0081_oracle_django_4_rename"),
     ]
 
     operations = [

@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("NEMO", "0081_alter_userpreferences_tool_task_notifications"),
+        ("NEMO", "0082_alter_userpreferences_tool_task_notifications"),
     ]
 
     operations = [

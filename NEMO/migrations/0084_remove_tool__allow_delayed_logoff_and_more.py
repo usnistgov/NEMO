@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("NEMO", "0082_toolcredentials"),
+        ("NEMO", "0083_toolcredentials"),
     ]
 
     def migrate_tool_delayed_logoff(apps, schema_editor):
