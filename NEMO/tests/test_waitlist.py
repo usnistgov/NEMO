@@ -10,7 +10,7 @@ from NEMO.views.timed_services import do_check_and_update_wait_list
 from NEMO.views.tool_control import do_exit_wait_list
 
 
-class ToolTestCase(TestCase):
+class ToolWaitListTestCase(TestCase):
     def setUp(self) -> None:
         EmailsCustomization.set("user_office_email_address", "user_office_email_address@wait_list_test.com")
         store_media_file(

@@ -1081,6 +1081,13 @@
   },
   {
     "model": "NEMO.customization",
+    "pk": "user_allow_profile_view",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
     "pk": "consumable_user_self_checkout",
     "fields": {
       "value": "enabled"
