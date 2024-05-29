@@ -11,7 +11,6 @@ class Migration(migrations.Migration):
     ]
 
     def check_nemo_6_0_0_oracle_long_names(apps, schema_editor):
-        apply = True
         rename_table_sql = "ALTER TABLE %s RENAME TO %s;"
         rename_column_sql = "ALTER TABLE %s RENAME COLUMN %s to %s;"
         max_name_length = connection.ops.max_name_length()
@@ -50,14 +49,6 @@ class Migration(migrations.Migration):
                                     )
                                 )
 
-            if not apply:
-                print("-- RENAME tables")
-                for sql in table_renames:
-                    print(sql)
-                print("-- RENAME columns")
-                for sql in column_renames:
-                    print(sql)
-            else:
                 sql_queries = table_renames + column_renames
                 if not sql_queries:
                     print("No changes needed")
@@ -69,7 +60,6 @@ class Migration(migrations.Migration):
                             print("done")
 
     def check_nemo_6_0_0_oracle_long_names_reverse(apps, schema_editor):
-        apply = True
         rename_table_sql = "ALTER TABLE %s RENAME TO %s;"
         rename_column_sql = "ALTER TABLE %s RENAME COLUMN %s to %s;"
         max_name_length = connection.ops.max_name_length()
@@ -87,14 +77,13 @@ class Migration(migrations.Migration):
                     # Table names.
                     db_table = _model._meta.db_table
                     new_quoted_name = connection.ops.quote_name(db_table)
-                    old_quoted_name = new_quoted_name
                     if len(db_table) > max_name_length:
                         old_quoted_name = old_quote_name(_model._meta.db_table, max_name_length)
                         if old_quoted_name.lower() not in table_list:
                             table_renames.append(rename_table_sql % (new_quoted_name, old_quoted_name))
 
                     # Column names:
-                    column_list = connection.introspection.get_table_description(cursor, strip_quotes(old_quoted_name))
+                    column_list = connection.introspection.get_table_description(cursor, strip_quotes(new_quoted_name))
                     for field in _model._meta.local_fields:
                         if len(field.column) > max_name_length:
                             old_quoted_name = old_quote_name(field.column, max_name_length)
@@ -109,14 +98,6 @@ class Migration(migrations.Migration):
                                     )
                                 )
 
-            if not apply:
-                print("-- RENAME tables")
-                for sql in table_renames:
-                    print(sql)
-                print("-- RENAME columns")
-                for sql in column_renames:
-                    print(sql)
-            else:
                 sql_queries = table_renames + column_renames
                 if not sql_queries:
                     print("No changes needed")
