@@ -194,6 +194,7 @@ SERVER_DOMAIN = "https://{}".format(ALLOWED_HOSTS[0])
 # Uncomment the following line to use the "X_FORWARDED_HOST" header of the web server to build URLs.
 # This header needs to be configured in your Nginx/Apache web server. The host also needs to be in ALLOWED_HOSTS.
 # USE_X_FORWARDED_HOST = True
+CSRF_TRUSTED_ORIGINS = ["https://{}".format(ALLOWED_HOSTS[0])]
 
 # -------------------- Elevated roles --------------------
 # Admins will receive error emails when email admin handler is set in the logging configuration
