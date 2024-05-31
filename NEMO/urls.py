@@ -683,6 +683,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
         ),
         # Tool credentials
         path("tool_credentials/", tool_credentials.tool_credentials_list, name="tool_credentials"),
+        path("tool_credentials/export/", tool_credentials.export_tool_credentials, name="export_tool_credentials"),
         # Billing:
         path("billing/", usage.billing, name="billing"),
     ]
