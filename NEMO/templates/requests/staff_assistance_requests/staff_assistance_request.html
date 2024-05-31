@@ -8,10 +8,6 @@
         New staff assistance request
     {% endif %}
 {% endblock %}
-{% block extrahead %}
-    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
-    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
-{% endblock %}
 {% block content %}
     <h1 class="form-group">
         {% if form.instance.id %}
