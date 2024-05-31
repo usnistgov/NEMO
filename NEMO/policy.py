@@ -102,7 +102,7 @@ class NEMOPolicy:
             abuse_email_address = EmailsCustomization.get("abuse_email_address")
             message = get_media_file_contents("unauthorized_tool_access_email.html")
             if abuse_email_address and message:
-                dictionary = {"operator": operator, "tool": tool, "type": "access"}
+                dictionary = {"operator": operator, "tool": tool, "type": "area-access"}
                 rendered_message = render_email_template(message, dictionary)
                 send_mail(
                     subject="Area access requirement",
@@ -126,7 +126,7 @@ class NEMOPolicy:
                     dictionary = {
                         "operator": operator,
                         "tool": tool,
-                        "type": "reservation",
+                        "type": "area-reservation",
                     }
                     rendered_message = render_email_template(message, dictionary)
                     send_mail(
