@@ -490,11 +490,6 @@ class StaffAssistanceRequestForm(ModelForm):
         model = StaffAssistanceRequest
         fields = "__all__"
 
-    def clean(self):
-        if any(self.errors):
-            return
-        cleaned_data = super().clean()
-        return cleaned_data
 
 
 class TemporaryPhysicalAccessRequestForm(ModelForm):
