@@ -83,6 +83,7 @@ def schedule_outage(request, resource_id):
         "outage_categories": ScheduledOutageCategory.objects.all(),
         "recurrence_intervals": RecurrenceFrequency.choices(),
         "calendar_outage_recurrence_limit": calendar_outage_recurrence_limit,
+        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
     return render(request, "resources/scheduled_outage.html", dictionary)
 

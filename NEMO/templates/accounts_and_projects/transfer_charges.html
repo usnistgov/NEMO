@@ -165,6 +165,9 @@
             </table>
         {% endif %}
         <script>
+            moment.updateLocale('en', {
+                week: { dow: "{{ calendar_first_day_of_week }}" }
+            });
             const js_date_format = "{{ date_input_js_format }}";
 
             let start_date_jq = $('#start_date');

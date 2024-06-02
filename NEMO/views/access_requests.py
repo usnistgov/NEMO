@@ -32,6 +32,7 @@ from NEMO.utilities import (
     slugify_underscore,
 )
 from NEMO.views.customization import (
+    CalendarCustomization,
     UserRequestsCustomization,
     get_media_file_contents,
 )
@@ -97,6 +98,7 @@ def create_access_request(request, request_id=None):
     dictionary = {
         "physical_access_levels": PhysicalAccessLevel.objects.filter(allow_user_request=True),
         "other_users": User.objects.filter(is_active=True).exclude(id=user.id),
+        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
 
     if request.method == "POST":

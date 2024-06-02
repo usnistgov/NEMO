@@ -190,6 +190,9 @@
     </div>
 </div>
 <script>
+    moment.updateLocale('en', {
+        week: { dow: "{{ calendar_first_day_of_week }}" }
+    });
 	autofocus('#title');
 	$('#title').on('input', function() { if(this.value) $('#schedule_outage').prop('disabled', false); else $('#schedule_outage').prop('disabled', true); });
 	$('#recurrence_until').datetimepicker({format: '{{ date_input_js_format }}', useCurrent: false, maxDate: moment('{{ recurrence_date_start|input_date_format }}', '{{ date_input_js_format }}').add({{ calendar_outage_recurrence_limit }}, 'days').toDate(), minDate: moment('{{ recurrence_date_start|input_date_format }}', '{{ date_input_js_format }}')});

@@ -31,7 +31,12 @@ from NEMO.models import (
     record_local_many_to_many_changes,
 )
 from NEMO.utilities import queryset_search_filter
-from NEMO.views.customization import ApplicationCustomization, StatusDashboardCustomization, UserCustomization
+from NEMO.views.customization import (
+    ApplicationCustomization,
+    StatusDashboardCustomization,
+    UserCustomization,
+    CalendarCustomization,
+)
 from NEMO.views.pagination import SortedPaginator
 from NEMO.views.status_dashboard import show_staff_status
 
@@ -84,6 +89,7 @@ def create_or_modify_user(request, user_id):
         "identity_service_domains": identity_service.get("domains", []),
         "allow_document_upload": UserCustomization.get_bool("user_allow_document_upload"),
         "readonly": readonly,
+        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
     try:
         user = User.objects.get(id=user_id)

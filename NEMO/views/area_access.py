@@ -36,7 +36,7 @@ from NEMO.utilities import (
     quiet_int,
 )
 from NEMO.views.calendar import shorten_reservation
-from NEMO.views.customization import ApplicationCustomization
+from NEMO.views.customization import ApplicationCustomization, CalendarCustomization
 
 area_access_logger = getLogger(__name__)
 
@@ -73,6 +73,7 @@ def area_access(request):
     dictionary = {
         "today": reverse("area_access") + "?" + urlencode({"start": today, "end": today}),
         "yesterday": reverse("area_access") + "?" + urlencode({"start": yesterday, "end": yesterday}),
+        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
     try:
         if request.GET.get("start") or request.GET.get("end"):

@@ -7,6 +7,7 @@ from django.views.decorators.http import require_GET
 from NEMO.decorators import staff_member_required
 from NEMO.models import Task, TaskCategory, TaskStatus, User
 from NEMO.utilities import as_timezone
+from NEMO.views.customization import CalendarCustomization
 
 
 @staff_member_required
@@ -61,6 +62,7 @@ def task_details(request, task_id):
         "initial_assessment_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.INITIAL_ASSESSMENT),
         "completion_categories": TaskCategory.objects.filter(stage=TaskCategory.Stage.COMPLETION),
         "task_statuses": TaskStatus.objects.all(),
+        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
 
     if task.tool.is_configurable():

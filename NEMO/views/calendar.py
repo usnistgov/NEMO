@@ -646,6 +646,7 @@ def create_outage(request):
             "recurrence_intervals": RecurrenceFrequency.choices(),
             "recurrence_date_start": start.date(),
             "calendar_outage_recurrence_limit": calendar_outage_recurrence_limit,
+            "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
         }
         return render(request, "calendar/scheduled_outage_information.html", dictionary)
 

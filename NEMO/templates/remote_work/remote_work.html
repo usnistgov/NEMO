@@ -236,6 +236,9 @@
         </tbody>
     </table>
     <script>
+        moment.updateLocale('en', {
+            week: { dow: "{{ calendar_first_day_of_week }}" }
+        });
         const js_date_format = "{{ date_input_js_format }}";
 
 		function validate_charge(url, button, row)

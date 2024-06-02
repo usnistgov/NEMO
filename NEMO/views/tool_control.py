@@ -140,6 +140,7 @@ def tool_status(request, tool_id):
                 else wait_list.count() > 0
             )
         ),
+        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
 
     try:
@@ -268,6 +269,7 @@ def usage_data_history(request, tool_id):
             "data_history_user": User.objects.get(id=user_id) if user_id else None,
             "show_project_info": show_project_info or False,
             "users": User.objects.all(),
+            "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
         }
         return render(request, "tool_control/usage_data.html", dictionary)
 

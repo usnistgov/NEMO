@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
 from NEMO.models import Area, PhysicalAccessLevel, User
-from NEMO.views.customization import UserRequestsCustomization
+from NEMO.views.customization import UserRequestsCustomization, CalendarCustomization
 
 
 @login_required

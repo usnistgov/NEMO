@@ -30,7 +30,7 @@ from NEMO.models import (
 )
 from NEMO.utilities import date_input_format, queryset_search_filter
 from NEMO.views.api_billing import BillableItem, BillingFilterForm, get_billing_charges
-from NEMO.views.customization import ProjectsAccountsCustomization
+from NEMO.views.customization import ProjectsAccountsCustomization, CalendarCustomization
 from NEMO.views.pagination import SortedPaginator
 
 
@@ -127,6 +127,7 @@ def create_project(request):
         "account_list": Account.objects.all(),
         "user_list": User.objects.filter(is_active=True),
         "allow_document_upload": ProjectsAccountsCustomization.get_bool("project_allow_document_upload"),
+        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
         "form": form,
     }
     if request.method == "GET":
@@ -157,7 +158,7 @@ def create_project(request):
 @require_http_methods(["GET", "POST"])
 def create_account(request):
     form = AccountForm(request.POST or None)
-    dictionary = {"form": form}
+    dictionary = {"calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"), "form": form}
     if request.method == "GET":
         return render(request, "accounts_and_projects/create_account.html", dictionary)
     if not form.is_valid():
@@ -291,7 +292,15 @@ def transfer_charges(request):
                     )
             else:
                 dictionary["charges"] = charges
-    dictionary.update({"form": form, "project": project, "new_project": new_project, "customer": customer})
+    dictionary.update(
+        {
+            "form": form,
+            "project": project,
+            "new_project": new_project,
+            "customer": customer,
+            "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
+        }
+    )
     return render(request, "accounts_and_projects/transfer_charges.html", dictionary)
 
 
