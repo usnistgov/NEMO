@@ -2,7 +2,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name="NEMO",
-    version="5.6.1",
+    version="6.0.0.dev",
     python_requires=">=3.8, <4",
     packages=find_namespace_packages(exclude=["resources", "resources.*", "build", "build.*"]),
     include_package_data=True,
@@ -29,7 +29,7 @@ setup(
     ],
     install_requires=[
         "cryptography==42.0.5",
-        "Django==3.2.25",
+        "Django==4.2.11",
         "django-auditlog==3.0.0",
         "django-filter==23.5",
         "django-mptt==0.14.0",

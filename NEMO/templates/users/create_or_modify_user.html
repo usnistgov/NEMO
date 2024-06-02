@@ -135,6 +135,9 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% if form.type.errors %}
+                    <div class="col-sm-6 form-control-static danger-highlight">{{ form.type.errors|striptags }}</div>
+                {% endif %}
             </div>
         {% endif %}
         <div class="form-group">
@@ -214,7 +217,7 @@
                 <div class="col-sm-4 form-control-static">{{ form.instance.date_joined }}</div>
             </div>
             <div class="form-group">
-                <div class="control-label col-sm-2">Last login</div>
+                <div class="control-label col-sm-2">Last website login</div>
                 <div class="col-sm-4 form-control-static">{{ form.instance.last_login|default_if_none:"Never" }}</div>
             </div>
         {% endif %}
@@ -316,15 +319,27 @@
                                                 {% for level in area_access_dict|get_item:node.id %}
                                                     <div class="checkbox"
                                                          {% if not node.is_leaf_node %}style="display: inline-block;margin-left: -3px"{% endif %}>
-                                                        <label>
-                                                            <input name="physical_access_levels"
-                                                                   type="checkbox"
-                                                                   {% if form.instance.is_staff and level.allow_staff_access or form.instance.is_user_office and level.allow_staff_access %}disabled title="This access is automatically granted to staff users"{% endif %}
-                                                                   value="{{ level.id }}"
-                                                                   {% if level in checked_access_levels %}checked{% endif %}>
-                                                            {% if node.category %}({{ node.category }}){% endif %}
-                                                            {{ level }}
-                                                        </label>
+                                                        {% with last_user_access=last_access|get_item:level.area.id %}
+                                                            <label>
+                                                                <input name="physical_access_levels"
+                                                                       type="checkbox"
+                                                                       {% if form.instance.is_staff and level.allow_staff_access or form.instance.is_user_office and level.allow_staff_access %}disabled title="This access is automatically granted to staff users"{% endif %}
+                                                                       value="{{ level.id }}"
+                                                                       {% if level in checked_access_levels %}checked{% endif %}>
+                                                                {% if node.category %}({{ node.category }}){% endif %}
+                                                                {{ level }} (Last access:
+                                                                {% if last_user_access %}
+                                                                    {{ last_user_access|date:"SHORT_DATETIME_FORMAT" }}
+                                                                {% else %}
+                                                                    {% if level in checked_access_levels %}
+                                                                        <span class="danger-highlight">Never</span>
+                                                                    {% else %}
+                                                                        Never
+                                                                    {% endif %}
+                                                                {% endif %}
+                                                                )
+                                                            </label>
+                                                        {% endwith %}
                                                     </div>
                                                 {% endfor %}
                                                 {% if not node.is_leaf_node %}

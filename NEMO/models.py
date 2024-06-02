@@ -832,20 +832,27 @@ class User(BaseModel, PermissionsMixin):
         return (self.get_username(),)
 
     def clean(self):
+        from NEMO.views.customization import UserCustomization
+
+        user_type_required = UserCustomization.get_bool("user_type_required")
+        if user_type_required and UserType.objects.exists() and not self.type_id:
+            raise ValidationError({"type": _("This field is required.")})
         username_pattern = getattr(settings, "USERNAME_REGEX", None)
         if self.username:
             if username_pattern and not match(username_pattern, self.username):
-                raise ValidationError({"username": "Invalid username format"})
+                raise ValidationError({"username": _("Invalid username format")})
             username_taken = User.objects.filter(username__iexact=self.username)
             if self.pk:
                 username_taken = username_taken.exclude(pk=self.pk)
             if username_taken.exists():
-                raise ValidationError({"username": "This username has already been taken"})
+                raise ValidationError({"username": _("This username has already been taken")})
         if self.is_staff and self.is_service_personnel:
             raise ValidationError(
                 {
-                    "is_staff": "A user cannot be both staff and service personnel. Please choose one or the other.",
-                    "is_service_personnel": "A user cannot be both staff and service personnel. Please choose one or the other.",
+                    "is_staff": _("A user cannot be both staff and service personnel. Please choose one or the other."),
+                    "is_service_personnel": _(
+                        "A user cannot be both staff and service personnel. Please choose one or the other."
+                    ),
                 }
             )
 
@@ -1271,10 +1278,11 @@ class Tool(SerializationByNameModel):
         blank=True,
         help_text='The amount of time (in minutes) that a tool reservation may go unused before it is automatically marked as "missed" and hidden from the calendar. Usage can be from any user, regardless of who the reservation was originally created for. The cancellation process is triggered by a timed job on the web server.',
     )
-    _allow_delayed_logoff = models.BooleanField(
-        db_column="allow_delayed_logoff",
-        default=False,
-        help_text='Upon logging off users may enter a delay before another user may use the tool. Some tools require "spin-down" or cleaning time after use.',
+    _max_delayed_logoff = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_column="max_delayed_logoff",
+        help_text='[Optional] Maximum delay in minutes that users may enter upon logging off before another user may use the tool. Some tools require "spin-down" or cleaning time after use. Leave blank to disable.',
     )
     _pre_usage_questions = models.TextField(
         db_column="pre_usage_questions",
@@ -1579,13 +1587,13 @@ class Tool(SerializationByNameModel):
         self._missed_reservation_threshold = value
 
     @property
-    def allow_delayed_logoff(self):
-        return self.parent_tool.allow_delayed_logoff if self.is_child_tool() else self._allow_delayed_logoff
+    def max_delayed_logoff(self):
+        return self.parent_tool.max_delayed_logoff if self.is_child_tool() else self._max_delayed_logoff
 
-    @allow_delayed_logoff.setter
-    def allow_delayed_logoff(self, value):
-        self.raise_setter_error_if_child_tool("allow_delayed_logoff")
-        self._allow_delayed_logoff = value
+    @max_delayed_logoff.setter
+    def max_delayed_logoff(self, value):
+        self.raise_setter_error_if_child_tool("max_delayed_logoff")
+        self._max_delayed_logoff = value
 
     @property
     def pre_usage_questions(self):
@@ -2536,6 +2544,9 @@ class Account(SerializationByNameModel):
 
     class Meta:
         ordering = ["name"]
+
+    def sorted_active_projects(self):
+        return self.sorted_projects().filter(active=True)
 
     def sorted_projects(self):
         return self.project_set.all().order_by("-active", "name")
@@ -4197,7 +4208,10 @@ class AdjustmentRequest(BaseModel):
                 else f"- {(previous_duration - new_duration)}"
             )
 
-    def editable_charge(self) -> bool:
+    def adjustable_charge(self):
+        return self.has_changed_time() or isinstance(self.item, Reservation)
+
+    def has_changed_time(self) -> bool:
         """Returns whether the original charge is editable, i.e. if it has a changed start or end"""
         return self.item and (self.get_new_end() or self.get_new_start())
 
@@ -4223,17 +4237,24 @@ class AdjustmentRequest(BaseModel):
         return facility_managers
 
     def apply_adjustment(self, user):
-        if self.status == RequestStatus.APPROVED and self.editable_charge():
-            new_start = self.get_new_start()
-            new_end = self.get_new_end()
-            if new_start:
-                self.item.start = new_start
-            if new_end:
-                self.item.end = new_end
-            self.item.save()
-            self.applied = True
-            self.applied_by = user
-            self.save()
+        if self.status == RequestStatus.APPROVED:
+            if self.has_changed_time():
+                new_start = self.get_new_start()
+                new_end = self.get_new_end()
+                if new_start:
+                    self.item.start = new_start
+                if new_end:
+                    self.item.end = new_end
+                self.item.save()
+                self.applied = True
+                self.applied_by = user
+                self.save()
+            elif isinstance(self.item, Reservation):
+                self.item.missed = False
+                self.item.save()
+                self.applied = True
+                self.applied_by = user
+                self.save()
 
     def delete(self, using=None, keep_parents=False):
         adjustment_id = self.id
@@ -4543,6 +4564,23 @@ class UserKnowledgeBaseItemDocuments(BaseDocumentModel):
 
     class Meta(BaseDocumentModel.Meta):
         verbose_name_plural = "User knowledge base item documents"
+
+
+class ToolCredentials(BaseModel):
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+    username = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    password = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    comments = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    authorized_staff = models.ManyToManyField(
+        User,
+        blank=True,
+        help_text="Selected staff will be the only ones allowed to see these credentials. Leave blank for all staff.",
+    )
+
+    class Meta:
+        ordering = ["-tool__visible", "tool___category", "tool__name"]
+        verbose_name = "Tool credentials"
+        verbose_name_plural = "Tool credentials"
 
 
 class EmailLog(BaseModel):

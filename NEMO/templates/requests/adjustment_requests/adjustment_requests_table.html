@@ -34,7 +34,7 @@
                 <td class="text-right text-nowrap" rowspan="2">
                     {% if request_status == 'approved' or request_status == 'denied' %}
                         {{ a_request.reviewer.get_name }}
-                        {% if not a_request.applied and request_status == 'approved' and a_request.editable_charge %}
+                        {% if not a_request.applied and request_status == 'approved' and a_request.adjustable_charge %}
                             {% if "requests"|customization:"adjustment_requests_edit_charge_button" == "enabled" %}
                                 {% url "user_requests" "adjustment" as redirect_adjustment_url %}
                                 {% admin_edit_url a_request.item redirect_adjustment_url as edit_url %}

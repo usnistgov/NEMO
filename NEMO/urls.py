@@ -55,6 +55,7 @@ from NEMO.views import (
     tasks,
     timed_services,
     tool_control,
+    tool_credentials,
     training,
     tutorials,
     usage,
@@ -74,6 +75,7 @@ def sort_urls(url_path):
 router = routers.DefaultRouter()
 router.register(r"account_types", api.AccountTypeViewSet)
 router.register(r"accounts", api.AccountViewSet)
+router.register(r"adjustment_requests", api.AdjustmentRequestViewSet)
 router.register(r"alert_categories", api.AlertCategoryViewSet)
 router.register(r"alerts", api.AlertViewSet)
 router.register(r"area_access_records", api.AreaAccessRecordViewSet)
@@ -81,6 +83,7 @@ router.register(r"areas", api.AreaViewSet)
 router.register(r"auth_groups", api.GroupViewSet)
 router.register(r"auth_permissions", api.PermissionViewSet)
 router.register(r"billing", api.BillingViewSet, basename="billing")
+router.register(r"buddy_requests", api.BuddyRequestViewSet)
 router.register(r"configurations", api.ConfigurationViewSet)
 router.register(r"consumable_categories", api.ConsumableCategoryViewSet)
 router.register(r"consumable_withdrawals", api.ConsumableWithdrawViewSet)
@@ -89,9 +92,12 @@ router.register(r"content_types", api.ContentTypeViewSet)
 router.register(r"interlock_card_categories", api.InterlockCardCategoryViewSet)
 router.register(r"interlock_cards", api.InterlockCardViewSet)
 router.register(r"interlocks", api.InterlockViewSet)
+router.register(r"physical_access_levels", api.PhysicalAccessLevelViewSet)
+router.register(r"temporary_physical_access_requests", api.TemporaryPhysicalAccessRequestViewSet)
 router.register(r"project_disciplines", api.ProjectDisciplineViewSet)
 router.register(r"projects", api.ProjectViewSet)
 router.register(r"qualifications", api.QualificationViewSet)
+router.register(r"recurring_consumable_charges", api.RecurringConsumableChargesViewSet)
 router.register(r"reservations", api.ReservationViewSet)
 router.register(r"reservation_configuration_options", api.ConfigurationOptionViewSet)
 router.register(r"resources", api.ResourceViewSet)
@@ -149,6 +155,8 @@ urlpatterns += [
         name="get_projects_for_tool_control",
     ),
     path("get_projects_for_self/", get_projects.get_projects_for_self, name="get_projects_for_self"),
+    # User Profile:
+    path("user/view_user/<int:user_id>/", users.view_user, name="view_user"),
     # Tool control:
     # This tool_control URL is needed to be able to reverse when choosing items on mobile using next_page.
     # (see choose_item.html for details)
@@ -673,6 +681,9 @@ if settings.ALLOW_CONDITIONAL_URLS:
         path(
             "delete_staff_absence/<int:absence_id>/", status_dashboard.delete_staff_absence, name="delete_staff_absence"
         ),
+        # Tool credentials
+        path("tool_credentials/", tool_credentials.tool_credentials_list, name="tool_credentials"),
+        path("tool_credentials/export/", tool_credentials.export_tool_credentials, name="export_tool_credentials"),
         # Billing:
         path("billing/", usage.billing, name="billing"),
     ]

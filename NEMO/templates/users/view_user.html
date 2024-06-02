@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% load mptt_tags %}
+{% block title %}View user{% endblock %}
+{% block content %}
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <h3>Basic Information</h3>
+            <ul>
+                <li>
+                    <b>First name</b>: {{ user.first_name }}
+                </li>
+                <li>
+                    <b>Last name</b>: {{ user.last_name }}
+                </li>
+                <li>
+                    <b>Username</b>: {{ user.username }}
+                </li>
+                <li>
+                    <b>Email</b>: {{ user.email }}
+                </li>
+                {% if user.is_any_part_of_staff and user.type %}
+                    <li>
+                        <b>Type</b>: {{ user.type }}
+                    </li>
+                {% endif %}
+                <li>
+                    <b>Date joined</b>: {{ user.date_joined }}
+                </li>
+                <li>
+                    <b>Last login</b>: {{ user.last_login }}
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <h3>Projects</h3>
+            {% if user.projects %}
+                <ul>
+                    {% for project in user.projects.all %}
+                        <li>{% project_selection_display project %}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>You do not have any projects.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <h3>Tool Qualifications</h3>
+            {% if user.qualifications.exists %}
+                <ul>
+                    {% for tool_qualification in user.qualifications.all %}<li>{{ tool_qualification }}</li>{% endfor %}
+                </ul>
+            {% else %}
+                <p>You are not qualified for any tools.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% if user.accessible_access_levels.exists %}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3>Physical access levels</h3>
+                <ul>
+                    {% for physical_access in user.accessible_access_levels.all %}<li>{{ physical_access }}</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+    {% if user.is_any_part_of_staff and user.groups.exists %}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h3>Groups</h3>
+                <ul>
+                    {% for group in user.groups.all %}<li>{{ group }}</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

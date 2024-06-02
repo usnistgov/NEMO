@@ -52,7 +52,7 @@ function switch_tab(element)
 
 function set_item_link_callback(callback)
 {
-	$("a[data-item-type='tool'], a[data-item-type='area']").each(function()
+	$("a[data-item-type='tool'], a[data-item-type='area'], a[data-item-type='personal-schedule']").each(function()
 	{
 		$(this).click({"callback": callback}, callback);
 	});
@@ -60,7 +60,7 @@ function set_item_link_callback(callback)
 
 function set_item_checkbox_callback(callback)
 {
-	$("input[type='checkbox'][data-item-type='tool'], input[type='checkbox'][data-item-type='area']").each(function()
+	$("input[type='checkbox'][data-item-type='tool'], input[type='checkbox'][data-item-type='area'], input[type='checkbox'][data-item-type='personal-schedule']").each(function()
 	{
 		$(this).click({"callback": callback}, callback);
 	});
@@ -167,7 +167,7 @@ function hide_empty_tool_categories()
 		let categoryHasItem = false;
 		$(category).find("li>a").each((toolIdx, tool) =>
 		{
-			let toolStyle = $(tool).attr("style");
+			let toolStyle = $(tool).parent("li").attr("style");
 
 			if (toolStyle === undefined || toolStyle !== "display: none;")
 			{
@@ -863,5 +863,35 @@ function collapse_navbar(max_width, max_height)
 	else if ($("#site-navigation").height() > height)
 	{
 		$("body").addClass("force-navbar-collapse");
+	}
+}
+
+function table_search(table_id, always_show_rows)
+{
+	always_show_rows = always_show_rows || [];
+	return function ()
+	{
+		let rows = $("#"+table_id).find("tr").hide();
+		if (this.value.length)
+		{
+			let data = this.value.split(" ");
+			$.each(data, function (i, v)
+			{
+				$.each(rows, function(i, row)
+				{
+				   let $row = $(row);
+				   if (always_show_rows.includes(i)) {$row.show();return true;}
+				   // Only look in td within the row that don't have display:none, so we don't only look at visible cells
+				   if ($row.find("td").filter(function() { return $(this).css('display') !== 'none'; }).filter(":icontains('" + v + "')").length !== 0)
+				   {
+					   $row.show();
+				   }
+				});
+			});
+		}
+		else
+		{
+			rows.show();
+		}
 	}
 }

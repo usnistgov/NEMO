@@ -27,6 +27,7 @@ from NEMO.models import (
     Notification,
     Project,
     RecurringConsumableCharge,
+    Tool,
     TrainingSession,
     UserPreferences,
     UserType,
@@ -120,6 +121,12 @@ class CustomizationBase(ABC):
                 return default_value
 
     @classmethod
+    def get_all(cls) -> Dict:
+        customization_values = cls.all_variables()
+        customization_values.update({cust.name: cust.value for cust in Customization.objects.all() if cust.value})
+        return customization_values
+
+    @classmethod
     def get_int(cls, name: str, default=None, raise_exception=True) -> int:
         return quiet_int(cls.get(name, raise_exception), default)
 
@@ -205,6 +212,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
         "project_application_identifier_name": "Application identifier",
         "project_allow_document_upload": "",
         "account_list_active_only": "",
+        "account_project_list_active_only": "",
         "project_list_active_only": "",
         "account_list_collapse": "",
         "project_allow_pi_manage_users": "",
@@ -223,6 +231,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
 class UserCustomization(CustomizationBase):
     variables = {
         "default_user_training_not_required": "",
+        "user_type_required": "",
         "user_list_active_only": "",
         "user_access_expiration_reminder_days": "",
         "user_access_expiration_reminder_cc": "",
@@ -230,6 +239,7 @@ class UserCustomization(CustomizationBase):
         "user_access_expiration_no_type": "",
         "user_access_expiration_types": "-1",
         "user_allow_document_upload": "",
+        "user_allow_profile_view": "",
     }
 
     def context(self) -> Dict:
@@ -335,6 +345,7 @@ class StatusDashboardCustomization(CustomizationBase):
         "dashboard_staff_status_absence_view_staff": "",
         "dashboard_staff_status_absence_view_user_office": "",
         "dashboard_staff_status_absence_view_accounting_officer": "",
+        "dashboard_tool_sort": "name",
     }
 
 
@@ -469,18 +480,21 @@ class ToolCustomization(CustomizationBase):
         "tool_location_required": "enabled",
         "tool_task_updates_facility_managers": "enabled",
         "tool_task_updates_superusers": "",
+        "tool_task_updates_allow_regular_user_preferences": "",
         "tool_control_hide_data_history_users": "",
         "tool_control_configuration_setting_template": "{{ current_setting }}",
         "tool_control_broadcast_upcoming_reservation": "",
         "tool_control_show_task_details": "",
         "tool_control_show_qualified_users_to_all": "",
         "tool_control_show_documents_only_qualified_users": "",
+        "tool_control_show_tool_credentials": "enabled",
         "tool_qualification_reminder_days": "",
         "tool_qualification_expiration_days": "",
         "tool_qualification_expiration_never_used_days": "",
         "tool_qualification_cc": "",
         "tool_problem_max_image_size_pixels": "750",
         "tool_problem_send_to_all_qualified_users": "",
+        "tool_problem_allow_regular_user_preferences": "",
         "tool_configuration_near_future_days": "1",
         "tool_reservation_policy_superusers_bypass": "",
         "tool_wait_list_spot_expiration": "15",
@@ -543,16 +557,30 @@ class RemoteWorkCustomization(CustomizationBase):
 
 @customization(key="training", title="Training")
 class TrainingCustomization(CustomizationBase):
-    variables = {"training_only_type": "", "training_allow_date": ""}
+    variables = {"training_only_type": "", "training_allow_date": "", "training_included_hidden_tools": ""}
 
     def context(self) -> Dict:
         dictionary = super().context()
+        dictionary["tools"] = Tool.objects.all()
         dictionary["training_types"] = TrainingSession.Type.Choices
+        dictionary["included_hidden_tools"] = Tool.objects.filter(
+            id__in=self.get_list_int("training_included_hidden_tools")
+        )
         return dictionary
+
+    def validate(self, name, value):
+        if name == "training_included_hidden_tools" and value:
+            validate_comma_separated_integer_list(value)
 
     def save(self, request, element=None) -> Dict[str, Dict[str, str]]:
         errors = super().save(request, element)
         training_types = request.POST.getlist("training_type_list", [])
+        include_hidden_tools = ",".join(request.POST.getlist("training_included_hidden_tools_list", []))
+        try:
+            self.validate("training_included_hidden_tools", include_hidden_tools)
+            type(self).set("training_included_hidden_tools", include_hidden_tools)
+        except (ValidationError, InvalidCustomizationException) as e:
+            errors["training_included_hidden_tools"] = {"error": str(e.message or e.msg), "value": include_hidden_tools}
         if training_types and len(training_types) == 1:
             type(self).set("training_only_type", training_types[0])
         return errors
