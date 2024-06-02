@@ -1,6 +1,7 @@
 from NEMO.models import Area, Customization, Notification, PhysicalAccessLevel, Tool, User
 from NEMO.utilities import date_input_js_format, datetime_input_js_format, time_input_js_format
 from NEMO.views.notifications import get_notification_counts
+from NEMO.views.customization import CalendarCustomization
 
 
 def show_logout_button(request):
@@ -90,4 +91,5 @@ def base_context(request):
         "status_dashboard_page_title": customization_values.get("status_dashboard_page_title", "Status dashboard"),
         "requests_page_title": customization_values.get("requests_page_title", "Requests"),
         "safety_page_title": customization_values.get("safety_page_title", "Safety"),
+        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
