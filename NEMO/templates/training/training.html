@@ -28,9 +28,6 @@
         {% button id="record_training_sessions" type="save" value="Record training sessions" onclick="" %}
     </form>
     <script type="text/javascript">
-        moment.updateLocale('en', {
-            week: { dow: "{{ calendar_first_day_of_week }}" }
-        });
 		let timepicker_properties = {format: '{{ datetime_input_js_format }}'};
 		let current_entry_number = 1;
 		function add_participant(data)

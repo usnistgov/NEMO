@@ -194,9 +194,6 @@
         <div class="form-group">{% button type="save" value=editing|yesno:"Save changes,Create outage" %}</div>
     </form>
     <script>
-        moment.updateLocale('en', {
-            week: { dow: "{{ calendar_first_day_of_week }}" }
-        });
     	let start_jq = $('#start');
 	    let end_jq = $('#end');
         let recurrence_until_jq = $('#recurrence_until');

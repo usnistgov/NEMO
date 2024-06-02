@@ -27,7 +27,6 @@ from NEMO.utilities import (
 )
 from NEMO.views.customization import (
     ApplicationCustomization,
-    CalendarCustomization,
     EmailsCustomization,
     RecurringChargesCustomization,
     get_media_file_contents,
@@ -159,11 +158,7 @@ def make_withdrawals(request):
 @require_GET
 def recurring_charges(request):
     page = SortedPaginator(RecurringConsumableCharge.objects.all(), request, order_by="name").get_current_page()
-    dictionary = {
-        "page": page,
-        "extended_permissions": extended_permissions(request),
-        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
-    }
+    dictionary = {"page": page, "extended_permissions": extended_permissions(request)}
     return render(request, "consumables/recurring_charges.html", dictionary)
 
 
@@ -247,7 +242,6 @@ def create_recurring_charge(request, recurring_charge_id: int = None):
         or as_timezone(instance.last_charge).date() != date.today(),
         "force_quantity": RecurringChargesCustomization.get_int("recurring_charges_force_quantity", None),
         "consumables": consumables_options,
-        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
     if request.method == "POST":
         if form.is_valid():

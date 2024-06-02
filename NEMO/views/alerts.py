@@ -8,7 +8,6 @@ from django.views.decorators.http import require_POST, require_http_methods
 from NEMO.decorators import staff_member_or_user_office_required
 from NEMO.forms import AlertForm
 from NEMO.models import Alert, AlertCategory
-from NEMO.views.customization import CalendarCustomization
 
 
 @staff_member_or_user_office_required
@@ -35,7 +34,6 @@ def alerts(request):
         "alerts": Alert.objects.filter(user=None, expired=False, deleted=False),
         "now": datetime.datetime.now(),
         "alert_categories": AlertCategory.objects.all(),
-        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
     delete_expired_alerts()
     return render(request, "alerts.html", dictionary)

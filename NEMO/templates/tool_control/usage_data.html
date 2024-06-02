@@ -186,9 +186,6 @@
     <span class="italic">No usage data was found between these dates</span>
 {% endif %}
 <script>
-    moment.updateLocale('en', {
-        week: { dow: "{{ calendar_first_day_of_week }}" }
-    });
     function clear_selected_user()
     {
         $("#chosen_user").val('').hide();

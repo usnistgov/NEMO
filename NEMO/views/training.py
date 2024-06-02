@@ -16,7 +16,7 @@ from NEMO.exceptions import ProjectChargeException
 from NEMO.models import MembershipHistory, Project, Tool, ToolQualificationGroup, TrainingSession, User
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import datetime_input_format
-from NEMO.views.customization import TrainingCustomization, CalendarCustomization
+from NEMO.views.customization import TrainingCustomization
 from NEMO.views.users import get_identity_service
 
 training_logger = getLogger(__name__)
@@ -49,7 +49,6 @@ def training(request):
             "tools": list(tools),
             "tool_groups": list(tool_groups),
             "charge_types": training_types,
-            "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
         },
     )
 

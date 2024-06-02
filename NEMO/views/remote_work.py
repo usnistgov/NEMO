@@ -18,7 +18,7 @@ from NEMO.utilities import (
     month_list,
 )
 from NEMO.views.area_access import load_areas_for_use_in_template
-from NEMO.views.customization import RemoteWorkCustomization, CalendarCustomization
+from NEMO.views.customization import RemoteWorkCustomization
 
 
 @staff_member_required
@@ -135,7 +135,6 @@ def remote_work(request):
         "selected_staff": operator.id if operator else "all staff",
         "selected_project": project.id if project else "all projects",
         "remote_work_validation": RemoteWorkCustomization.get_bool("remote_work_validation"),
-        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
     return render(request, "remote_work/remote_work.html", dictionary)
 

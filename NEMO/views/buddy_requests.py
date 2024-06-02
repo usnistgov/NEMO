@@ -18,7 +18,7 @@ from NEMO.forms import BuddyRequestForm
 from NEMO.models import Area, BuddyRequest, Notification, RequestMessage, User
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import end_of_the_day, get_email_from_settings, get_full_url
-from NEMO.views.customization import CalendarCustomization, UserRequestsCustomization
+from NEMO.views.customization import UserRequestsCustomization
 from NEMO.views.notifications import (
     create_buddy_request_notification,
     create_request_message_notification,
@@ -54,10 +54,7 @@ def create_buddy_request(request, request_id=None):
     except BuddyRequest.DoesNotExist:
         buddy_request = None
 
-    dictionary = {
-        "areas": Area.objects.filter(buddy_system_allowed=True),
-        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
-    }
+    dictionary = {"areas": Area.objects.filter(buddy_system_allowed=True)}
 
     if buddy_request:
         if buddy_request.replies.count() > 0:

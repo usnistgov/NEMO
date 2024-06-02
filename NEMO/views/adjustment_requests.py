@@ -36,12 +36,7 @@ from NEMO.utilities import (
     render_email_template,
     send_mail,
 )
-from NEMO.views.customization import (
-    CalendarCustomization,
-    EmailsCustomization,
-    UserRequestsCustomization,
-    get_media_file_contents,
-)
+from NEMO.views.customization import EmailsCustomization, UserRequestsCustomization, get_media_file_contents
 from NEMO.views.notifications import (
     create_adjustment_request_notification,
     create_request_message_notification,
@@ -121,7 +116,6 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
     dictionary = {
         "change_times_allowed": change_times_allowed,
         "eligible_items": adjustment_eligible_items(user, adjustment_request.item),
-        "calendar_first_day_of_week": CalendarCustomization.get("calendar_first_day_of_week"),
     }
 
     if request.method == "POST":

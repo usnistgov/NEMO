@@ -73,9 +73,6 @@
         <div class="text-right">{% button type="save" value=form.instance.id|yesno:"Save changes,Create buddy request" %}</div>
     </form>
     <script>
-        moment.updateLocale('en', {
-            week: { dow: "{{ calendar_first_day_of_week }}" }
-        });
 		let timepicker_properties =
 		{
 			format: '{{ date_input_js_format }}',

@@ -860,9 +860,6 @@
                                class="form-control"
                                autocomplete="off">
                         <script>
-                            moment.updateLocale('en', {
-                                week: { dow: "{{ calendar_first_day_of_week }}" }
-                            });
 							let timepicker_properties =
 							{
                                 format: "{{ datetime_input_js_format }}",
@@ -936,9 +933,6 @@
     </div>
 </div>
 <script>
-    moment.updateLocale('en', {
-        week: { dow: "{{ calendar_first_day_of_week }}" }
-    });
 	$(".contact-info-tooltip").on('click', function () {
         $(".tooltip").remove();
       	$(this).tooltip({trigger: 'manual', html: 'true', title: $(this).data('title')}).tooltip('toggle');

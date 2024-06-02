@@ -9,7 +9,6 @@ from mptt.forms import TreeNodeChoiceField
 from NEMO.decorators import facility_manager_required
 from NEMO.forms import ReservationAbuseForm
 from NEMO.models import Area, Reservation, ReservationItemType, Tool, User
-from NEMO.views.customization import CalendarCustomization
 
 
 @facility_manager_required
@@ -60,7 +59,6 @@ def abuse(request):
     except ValidationError:
         form = ReservationAbuseForm()
     dictionary["form"] = form
-    dictionary["calendar_first_day_of_week"] = CalendarCustomization.get("calendar_first_day_of_week")
     return render(request, "abuse/abuse.html", dictionary)
 
 

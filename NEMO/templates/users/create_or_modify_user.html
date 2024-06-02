@@ -502,9 +502,6 @@
     {% endif %}
 {% endif %}
 <script>
-        moment.updateLocale('en', {
-            week: { dow: "{{ calendar_first_day_of_week }}" }
-        });
 		function on_search_selection(jquery_event, search_selection, dataset_name)
 		{
 			$(this).typeahead('val', '').focus();
