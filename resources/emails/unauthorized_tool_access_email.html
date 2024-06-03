@@ -18,7 +18,7 @@
                 <td style="padding: 10px;">
                     <p>
                         {{ operator }} attempted to access the {{ tool }}, which requires
-                        {% if type == "area-access"}
+                        {% if type == "area-access" %}
                             {{ tool.requires_area_access|lower }} access.
                             <br>
                             The user was not logged into the {{ tool.requires_area_access|lower }} at the time so the tool usage request was denied.
