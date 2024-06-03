@@ -37,8 +37,8 @@
             </div>
         </div>
         <div class="form-group {% if errors.training_included_hidden_tools %}has-error{% endif %}">
-            <label class="control-label col-md-3" for="include_hidden_tool">Included hidden tools</label>
-            <div class="col-md-7">
+            <label class="control-label col-lg-3 col-md-4 col-sm-5" for="include_hidden_tool">Included hidden tools</label>
+            <div class="col-lg-9 col-md-8 col-sm-7">
                 <input id="include_hidden_tool"
                        type="text"
                        autocomplete="off"
@@ -46,11 +46,16 @@
                        placeholder="Search for a non-visible tool to include">
             </div>
             {% if errors.training_included_hidden_tools %}
-                <div class="col-md-offset-3 col-md-9 help-block light-grey">{{ errors.training_included_hidden_tools.error }}</div>
+                <div class="col-lg-offset-3 col-md-offset-4 col-sm-offset-5 col-lg-9 col-md-8 col-sm-7 help-block light-grey">
+                    {{ errors.training_included_hidden_tools.error }}
+                </div>
             {% endif %}
         </div>
         <div class="form-group">
-            <div id="include-hidden-list" class="col-md-offset-3 col-md-4">No hidden tools are included.</div>
+            <div id="include-hidden-list"
+                 class="col-lg-offset-3 col-md-offset-4 col-sm-offset-5 col-lg-9 col-md-8 col-sm-7">
+                No hidden tools are included.
+            </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
