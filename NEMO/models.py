@@ -3764,7 +3764,8 @@ class ContactInformationCategory(BaseCategory):
 
 
 class ContactInformation(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    title = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, blank=True, null=True)
     image = models.ImageField(
         blank=True,
         help_text="Portraits are resized to 266 pixels high and 200 pixels wide. Crop portraits to these dimensions before uploading for optimal bandwidth usage",
@@ -3772,7 +3773,7 @@ class ContactInformation(BaseModel):
     category = models.ForeignKey(ContactInformationCategory, on_delete=models.CASCADE)
     email = models.EmailField(blank=True)
     office_phone = models.CharField(max_length=40, blank=True)
-    office_location = models.CharField(max_length=200, blank=True)
+    office_location = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, blank=True)
     mobile_phone = models.CharField(max_length=40, blank=True)
     mobile_phone_is_sms_capable = models.BooleanField(
         default=True,
