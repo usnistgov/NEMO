@@ -5,7 +5,7 @@
 {% block content %}
     <div class="panel panel-default">
         <div class="panel-body">
-            <h3>Basic Information</h3>
+            <h3 style="margin-top: 0">Basic Information</h3>
             <ul>
                 <li>
                     <b>First name</b>: {{ user.first_name }}
@@ -35,7 +35,7 @@
     </div>
     <div class="panel panel-default">
         <div class="panel-body">
-            <h3>Projects</h3>
+            <h3 style="margin-top: 0">Projects</h3>
             {% if user.projects %}
                 <ul>
                     {% for project in user.projects.all %}
@@ -49,7 +49,7 @@
     </div>
     <div class="panel panel-default">
         <div class="panel-body">
-            <h3>Tool Qualifications</h3>
+            <h3 style="margin-top: 0">Tool Qualifications</h3>
             {% if user.qualifications.exists %}
                 <ul>
                     {% for tool_qualification in user.qualifications.all %}<li>{{ tool_qualification }}</li>{% endfor %}
@@ -62,7 +62,7 @@
     {% if user.accessible_access_levels.exists %}
         <div class="panel panel-default">
             <div class="panel-body">
-                <h3>Physical access levels</h3>
+                <h3 style="margin-top: 0">Physical access levels</h3>
                 <ul>
                     {% for physical_access in user.accessible_access_levels.all %}<li>{{ physical_access }}</li>{% endfor %}
                 </ul>
@@ -72,7 +72,7 @@
     {% if user.is_any_part_of_staff and user.groups.exists %}
         <div class="panel panel-default">
             <div class="panel-body">
-                <h3>Groups</h3>
+                <h3 style="margin-top: 0">Groups</h3>
                 <ul>
                     {% for group in user.groups.all %}<li>{{ group }}</li>{% endfor %}
                 </ul>

@@ -125,6 +125,11 @@
                         <script>$("#staff_charge_link").tooltip();</script>
                     </li>
                 {% endif %}
+                {% if allow_profile_view %}
+                    <li class="visible-xs visible-sm">
+                        <a href="{% url 'view_user' user.id %}">My profile</a>
+                    </li>
+                {% endif %}
                 <li class="visible-xs visible-sm">
                     <a href="{% url 'user_preferences' %}">Preferences</a>
                 </li>
