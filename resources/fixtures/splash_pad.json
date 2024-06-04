@@ -9717,6 +9717,7 @@
     "pk": 1,
     "fields": {
       "name": "Captain Nemo",
+      "title": "Commander",
       "image": "Captain_Nemo.png",
       "category": [
         "Staff"
@@ -9736,6 +9737,7 @@
     "pk": 2,
     "fields": {
       "name": "Pierre Aronnax",
+      "title": "Professor of marine biology",
       "image": "Pierre_Aronnax.png",
       "category": [
         "Users"
@@ -9755,6 +9757,7 @@
     "pk": 3,
     "fields": {
       "name": "Ned Land",
+      "title": "Sailor",
       "image": "Ned_Land.png",
       "category": [
         "Users"
