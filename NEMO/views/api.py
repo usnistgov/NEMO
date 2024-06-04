@@ -38,6 +38,7 @@ from NEMO.models import (
     Task,
     TemporaryPhysicalAccessRequest,
     Tool,
+    ToolCredentials,
     TrainingSession,
     UsageEvent,
     User,
@@ -75,6 +76,7 @@ from NEMO.serializers import (
     StaffChargeSerializer,
     TaskSerializer,
     TemporaryPhysicalAccessRequestSerializer,
+    ToolCredentialsSerializer,
     ToolSerializer,
     ToolStatusSerializer,
     TrainingSessionSerializer,
@@ -568,6 +570,7 @@ class ContentTypeViewSet(XLSXFileMixin, viewsets.ReadOnlyModelViewSet):
     queryset = ContentType.objects.all()
     serializer_class = ContentTypeSerializer
     filterset_fields = {
+        "id": key_filters,
         "app_label": string_filters,
         "model": string_filters,
     }
@@ -581,6 +584,7 @@ class InterlockCardCategoryViewSet(ModelViewSet):
     queryset = InterlockCardCategory.objects.all()
     serializer_class = InterlockCardCategorySerializer
     filterset_fields = {
+        "id": key_filters,
         "name": string_filters,
         "key": string_filters,
     }
@@ -591,6 +595,7 @@ class InterlockCardViewSet(ModelViewSet):
     queryset = InterlockCard.objects.all()
     serializer_class = InterlockCardSerializer
     filterset_fields = {
+        "id": key_filters,
         "name": string_filters,
         "server": string_filters,
         "number": number_filters,
@@ -606,6 +611,7 @@ class InterlockViewSet(ModelViewSet):
     queryset = Interlock.objects.all()
     serializer_class = InterlockSerializer
     filterset_fields = {
+        "id": key_filters,
         "card": key_filters,
         "channel": number_filters,
         "unit_id": number_filters,
@@ -619,6 +625,7 @@ class PhysicalAccessLevelViewSet(ModelViewSet):
     queryset = PhysicalAccessLevel.objects.all()
     serializer_class = PhysicalAccessLevelSerializer
     filterset_fields = {
+        "id": key_filters,
         "name": string_filters,
         "area": key_filters,
         "schedule": number_filters,
@@ -634,6 +641,7 @@ class BuddyRequestViewSet(ModelViewSet):
     queryset = BuddyRequest.objects.all()
     serializer_class = BuddyRequestSerializer
     filterset_fields = {
+        "id": key_filters,
         "creation_time": datetime_filters,
         "start": date_filters,
         "end": date_filters,
@@ -650,6 +658,7 @@ class TemporaryPhysicalAccessRequestViewSet(ModelViewSet):
     queryset = TemporaryPhysicalAccessRequest.objects.all()
     serializer_class = TemporaryPhysicalAccessRequestSerializer
     filterset_fields = {
+        "id": key_filters,
         "creation_time": datetime_filters,
         "creator": key_filters,
         "last_updated": datetime_filters,
@@ -670,6 +679,7 @@ class AdjustmentRequestViewSet(ModelViewSet):
     queryset = AdjustmentRequest.objects.all()
     serializer_class = AdjustmentRequestSerializer
     filterset_fields = {
+        "id": key_filters,
         "creation_time": datetime_filters,
         "creator": key_filters,
         "last_updated": datetime_filters,
@@ -685,6 +695,20 @@ class AdjustmentRequestViewSet(ModelViewSet):
         "applied": boolean_filters,
         "applied_by": key_filters,
         "deleted": boolean_filters,
+    }
+
+
+class ToolCredentialsViewSet(ModelViewSet):
+    filename = "tool_credentials"
+    queryset = ToolCredentials.objects.all()
+    serializer_class = ToolCredentialsSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "tool": key_filters,
+        "username": string_filters,
+        "password": string_filters,
+        "comments": string_filters,
+        "authorized_staff": manykey_filters,
     }
 
 

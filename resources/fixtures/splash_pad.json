@@ -9938,6 +9938,28 @@
     }
   },
   {
+    "model": "NEMO.toolcredentials",
+    "pk": 1,
+    "fields": {
+      "tool": 4,
+      "username": "user",
+      "password": "password",
+      "comments": "user account",
+      "authorized_staff": []
+    }
+  },
+  {
+    "model": "NEMO.toolcredentials",
+    "pk": 2,
+    "fields": {
+      "tool": 4,
+      "username": "admin",
+      "password": "password",
+      "comments": "admin account",
+      "authorized_staff": []
+    }
+  },
+  {
     "model": "NEMO.trainingsession",
     "pk": 1,
     "fields": {
