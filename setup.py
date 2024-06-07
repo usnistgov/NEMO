@@ -28,7 +28,7 @@ setup(
         "Programming Language :: Python :: 3.12",
     ],
     install_requires=[
-        "cryptography==42.0.5",
+        "cryptography==42.0.8",
         "Django==4.2.11",
         "django-auditlog==3.0.0",
         "django-filter==23.5",
@@ -41,7 +41,7 @@ setup(
         "pymodbus==3.3.2",
         "python-dateutil==2.9.0",
         "pytz==2024.1",
-        "requests==2.31.0",
+        "requests==2.32.3",
     ],
     extras_require={"dev-tools": ["pre-commit", "djlint", "black"]},
     entry_points={
