@@ -31,8 +31,6 @@
     <div id="resolved_staff_assistance_requests" class="collapse">
         {% include 'requests/staff_assistance_requests/staff_assistance_requests_table.html' with staff_assistance_request_list=resolved_staff_assistance_requests %}
     </div>
-{% else %}
-    <div class="italic" style="margin-top: 20px">There are no open staff assistance requests</div>
 {% endif %}
 <script>
     function show_or_send_reply(button_element, form_selector)
