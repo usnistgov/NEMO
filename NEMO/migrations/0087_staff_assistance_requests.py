@@ -9,7 +9,7 @@ import django.utils.timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("NEMO", "0081_alter_userpreferences_tool_task_notifications"),
+        ("NEMO", "0086_adjustmentrequest_new_quantity"),
     ]
 
     operations = [
