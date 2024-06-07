@@ -5,6 +5,7 @@ from django.conf import settings
 from django.test import TestCase
 from django.utils import timezone
 from django.utils.formats import date_format, time_format
+from django.utils.timezone import make_aware
 
 from NEMO.utilities import format_daterange, format_datetime
 
@@ -52,7 +53,7 @@ class FormatTestCase(TestCase):
 
         tz = pytz.timezone("US/Pacific")
         self.assertEqual(settings.TIME_ZONE, "America/New_York")
-        start_tz = tz.localize(datetime.datetime(2022, 2, 11, 5, 0, 0))  # 5AM Pacific => 8AM Eastern
+        start_tz = make_aware(datetime.datetime(2022, 2, 11, 5, 0, 0), tz)  # 5AM Pacific => 8AM Eastern
         end_tz = start_tz + datetime.timedelta(days=2)
         self.assertNotEqual(
             format_daterange(start_tz, end_tz, dt_format=dt_format),
@@ -63,8 +64,10 @@ class FormatTestCase(TestCase):
             f"from 02/11/2022 @ 8:00 AM to 02/13/2022 @ 8:00 AM",
         )
 
-        start_midnight_tz = tz.localize(datetime.datetime(2022, 2, 11, 0, 0, 0))  # midnight Pacific -> 3AM Eastern
-        end_midnight_tz = tz.localize(datetime.datetime(2022, 2, 11, 23, 59, 0))  # 11:59 PM Pacific -> 2:59AM Eastern
+        start_midnight_tz = make_aware(datetime.datetime(2022, 2, 11, 0, 0, 0), tz)  # midnight Pacific -> 3AM Eastern
+        end_midnight_tz = make_aware(
+            datetime.datetime(2022, 2, 11, 23, 59, 0), tz
+        )  # 11:59 PM Pacific -> 2:59AM Eastern
         self.assertEqual(
             format_daterange(start_midnight_tz, end_midnight_tz, dt_format=dt_format),
             f"from 02/11/2022 @ 3:00 AM to 02/12/2022 @ 2:59 AM",

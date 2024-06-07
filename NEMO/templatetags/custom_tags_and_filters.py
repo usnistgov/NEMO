@@ -284,3 +284,11 @@ def button(
 def absolute_url(context, view_name, *args, **kwargs):
     url = reverse(view_name, args=args, kwargs=kwargs)
     return get_full_url(url, request=context["request"])
+
+
+@register.filter(name="can_be_adjusted")
+def can_be_adjusted(value, arg) -> bool:
+    if not issubclass(type(value), BillableItemMixin):
+        return False
+    else:
+        return value.can_be_adjusted(arg)

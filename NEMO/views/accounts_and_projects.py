@@ -90,8 +90,13 @@ def select_accounts_and_projects(request, kind=None, identifier=None):
             account = None
     except:
         account = None
+    account_projects = []
+    if account:
+        active_only = ProjectsAccountsCustomization.get_bool("account_project_list_active_only")
+        account_projects = account.sorted_active_projects() if active_only else account.sorted_projects()
     dictionary = {
         "account": account,
+        "account_projects": account_projects,
         "selected_project": selected_project,
         "accounts_and_projects": set(get_accounts_and_projects()),
         "users": User.objects.all(),

@@ -26,6 +26,23 @@
                 <div class="checkbox">
                     <label>
                         <input type="checkbox"
+                               id="account_project_list_active_only"
+                               name="account_project_list_active_only"
+                               {% if account_project_list_active_only %}checked{% endif %}
+                               value="enabled">
+                        Hide inactive projects in individual account page
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-offset-3 col-md-9 help-block light-grey">
+                Check this box to only show active projects when looking at an individual account.
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0">
+            <div class="col-md-offset-3 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
                                id="project_list_active_only"
                                name="project_list_active_only"
                                {% if project_list_active_only %}checked{% endif %}

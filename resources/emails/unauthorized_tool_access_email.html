@@ -17,9 +17,17 @@
             <tr>
                 <td style="padding: 10px;">
                     <p>
-                        {{ operator }} attempted to access the {{ tool }}, which requires {{ tool.requires_area_access|lower }} access.
-                        <br>
-                        The user was not signed into the {{ tool.requires_area_access|lower }} at the time so the tool usage request was denied.
+                        {{ operator }} attempted to access the {{ tool }}, which requires
+                        {% if type == "area-access" %}
+                            {{ tool.requires_area_access|lower }} access.
+                            <br>
+                            The user was not logged into the {{ tool.requires_area_access|lower }} at the time so the tool usage request was denied.
+                        {% else %}
+                            an active {{ tool.requires_area_access|lower }} reservation.
+                            <br>
+                            The user was logged into the {{ tool.requires_area_access|lower }} at the time, but their area reservation expired,
+                            so the tool usage request was denied.
+                        {% endif %}
                     </p>
                 </td>
             </tr>

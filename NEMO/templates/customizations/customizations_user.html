@@ -31,6 +31,28 @@
             </div>
         </div>
         <div class="form-group">
+            <label class="control-label col-md-4 col-lg-3" for="user_type_required">User type</label>
+            <div class="col-md-8 col-lg-9">
+                <div class="radio">
+                    <label>
+                        <input type="radio"
+                               id="user_type_required"
+                               name="user_type_required"
+                               {% if user_type_required %}checked{% endif %}
+                               value="enabled">
+                        Required
+                    </label>
+                    <label>
+                        <input type="radio" name="user_type_required" {% if not user_type_required %}checked{% endif %} value="">
+                        Not required
+                    </label>
+                </div>
+            </div>
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
+                Whether the user type is required when adding new users.
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-4 col-lg-3" for="user_list_active_only">User list</label>
             <div class="col-md-8 col-lg-9">
                 <div class="checkbox">
@@ -63,6 +85,24 @@
             </div>
             <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
                 Check this box to allow uploading documents to users.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-4 col-lg-3" for="user_allow_profile_view">Enable user profile view</label>
+            <div class="col-md-8 col-lg-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="user_allow_profile_view"
+                               name="user_allow_profile_view"
+                               {% if user_allow_profile_view %}checked{% endif %}
+                               value="enabled">
+                        Enable
+                    </label>
+                </div>
+            </div>
+            <div class="col-lg-offset-3 col-md-offset-4 col-md-8 col-lg-9 help-block light-grey">
+                Check this box to enable users to view their own profile by clicking on their name in the navigation bar.
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>

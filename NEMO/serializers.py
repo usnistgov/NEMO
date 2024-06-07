@@ -20,10 +20,12 @@ from rest_framework.utils import model_meta
 from NEMO.models import (
     Account,
     AccountType,
+    AdjustmentRequest,
     Alert,
     AlertCategory,
     Area,
     AreaAccessRecord,
+    BuddyRequest,
     Configuration,
     ConfigurationOption,
     Consumable,
@@ -32,16 +34,20 @@ from NEMO.models import (
     Interlock,
     InterlockCard,
     InterlockCardCategory,
+    PhysicalAccessLevel,
     Project,
     ProjectDiscipline,
     Qualification,
+    RecurringConsumableCharge,
     Reservation,
     Resource,
     ScheduledOutage,
     StaffCharge,
     Task,
     TaskHistory,
+    TemporaryPhysicalAccessRequest,
     Tool,
+    ToolCredentials,
     TrainingSession,
     UsageEvent,
     User,
@@ -395,6 +401,70 @@ class InterlockSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         fields = "__all__"
         expandable_fields = {
             "card": "NEMO.serializers.InterlockCardSerializer",
+        }
+
+
+class RecurringConsumableChargeSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = RecurringConsumableCharge
+        fields = "__all__"
+        expandable_fields = {
+            "customer": "NEMO.serializers.UserSerializer",
+            "last_updated_by": "NEMO.serializers.UserSerializer",
+            "consumable": "NEMO.serializers.ConsumableSerializer",
+            "project": "NEMO.serializers.ProjectSerializer",
+        }
+
+
+class PhysicalAccessLevelSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = PhysicalAccessLevel
+        fields = "__all__"
+        expandable_fields = {"area": "NEMO.serializers.AreaSerializer"}
+
+
+class BuddyRequestSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = BuddyRequest
+        fields = "__all__"
+        expandable_fields = {
+            "area": "NEMO.serializers.AreaSerializer",
+            "user": "NEMO.serializers.UserSerializer",
+        }
+
+
+class TemporaryPhysicalAccessRequestSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = TemporaryPhysicalAccessRequest
+        fields = "__all__"
+        expandable_fields = {
+            "creator": "NEMO.serializers.UserSerializer",
+            "last_updated_by": "NEMO.serializers.UserSerializer",
+            "physical_access_level": "NEMO.serializers.PhysicalAccessLevelSerializer",
+            "other_users": ("NEMO.serializers.UserSerializer", {"many": True}),
+        }
+
+
+class AdjustmentRequestSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = AdjustmentRequest
+        fields = "__all__"
+        expandable_fields = {
+            "creator": "NEMO.serializers.UserSerializer",
+            "last_updated_by": "NEMO.serializers.UserSerializer",
+            "reviewer": "NEMO.serializers.UserSerializer",
+            "item_type": "NEMO.serializers.ContentTypeSerializer",
+            "applied_by": "NEMO.serializers.UserSerializer",
+        }
+
+
+class ToolCredentialsSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = ToolCredentials
+        fields = "__all__"
+        expandable_fields = {
+            "tool": "NEMO.serializers.ToolSerializer",
+            "authorized_staff": ("NEMO.serializers.UserSerializer", {"many": True}),
         }
 
 

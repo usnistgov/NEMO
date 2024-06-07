@@ -1,26 +1,29 @@
 from datetime import datetime, timedelta
 from http import HTTPStatus
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render, redirect
+from django.db.models import Q
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
+from django.utils.html import format_html
 from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import synchronized
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.forms import CommentForm, nice_errors, TaskForm
+from NEMO.forms import CommentForm, TaskForm, nice_errors
 from NEMO.models import (
     BadgeReader,
     Project,
     Reservation,
     ReservationItemType,
+    TaskCategory,
+    TaskStatus,
     Tool,
     ToolWaitList,
     UsageEvent,
     User,
-    TaskCategory,
-    TaskStatus,
 )
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import localize, quiet_int
@@ -33,7 +36,6 @@ from NEMO.views.calendar import (
     shorten_reservation,
 )
 from NEMO.views.customization import ApplicationCustomization, ToolCustomization
-from NEMO.views.status_dashboard import create_tool_summary
 from NEMO.views.tasks import save_task
 from NEMO.views.tool_control import (
     email_managers_required_questions_disable_tool,
@@ -407,7 +409,6 @@ def choices(request):
         "customer": customer,
         "usage_events": list(usage_events),
         "upcoming_reservations": tool_reservations,
-        "tool_summary": create_tool_summary(),
         "categories": categories,
         "unqualified_categories": unqualified_categories,
     }
@@ -433,7 +434,6 @@ def category_choices(request, category, user_id):
         "unqualified_tools": [
             tool for tool in tools if not customer.is_staff and tool not in customer.qualifications.all()
         ],
-        "tool_summary": create_tool_summary(),
     }
     return render(request, "kiosk/category_choices.html", dictionary)
 
@@ -458,9 +458,20 @@ def tool_information(request, tool_id, user_id, back):
         if user_wait_list_entry
         else 0
     )
+    tool_credentials = []
+    if ToolCustomization.get_bool("tool_control_show_tool_credentials") and (
+        customer.is_staff or customer.is_facility_manager
+    ):
+        if customer.is_facility_manager:
+            tool_credentials = tool.toolcredentials_set.all()
+        else:
+            tool_credentials = tool.toolcredentials_set.filter(
+                Q(authorized_staff__isnull=True) | Q(authorized_staff__in=[customer])
+            )
     dictionary = {
         "customer": customer,
         "tool": tool,
+        "tool_credentials": tool_credentials,
         "rendered_configuration_html": tool.configuration_widget(customer),
         "pre_usage_questions": DynamicForm(tool.pre_usage_questions).render(
             "tool_usage_group_question", tool.id, virtual_inputs=True
@@ -597,15 +608,20 @@ def report_problem(request):
 
         return render(request, "kiosk/tool_report_problem.html", dictionary)
 
+    if not settings.ALLOW_CONDITIONAL_URLS and form.cleaned_data["force_shutdown"]:
+        site_title = ApplicationCustomization.get("site_title")
+        dictionary["message"] = format_html(
+            '<ul class="errorlist"><li>{}</li></ul>'.format(
+                f"Tool control is only available on campus. When creating a task, you can't force a tool shutdown while using {site_title} off campus.",
+            )
+        )
+        dictionary["form"] = form
+        return render(request, "kiosk/tool_report_problem.html", dictionary)
+
     task = form.save()
     task.estimated_resolution_time = estimated_resolution_time
 
-    save_error = save_task(request, task, customer)
-
-    if save_error:
-        dictionary["message"] = save_error
-        dictionary["form"] = form
-        return render(request, "kiosk/tool_report_problem.html", dictionary)
+    save_task(request, task, customer)
 
     return redirect("kiosk_tool_information", tool_id=tool.id, user_id=customer.id, back=back)
 

@@ -36,7 +36,44 @@
                 <div class="help-block light-grey" style="margin-bottom: 0">Qualifications will still happen in real time</div>
             </div>
         </div>
+        <div class="form-group {% if errors.training_included_hidden_tools %}has-error{% endif %}">
+            <label class="control-label col-lg-3 col-md-4 col-sm-5" for="include_hidden_tool">Included hidden tools</label>
+            <div class="col-lg-9 col-md-8 col-sm-7">
+                <input id="include_hidden_tool"
+                       type="text"
+                       autocomplete="off"
+                       class="form-control"
+                       placeholder="Search for a non-visible tool to include">
+            </div>
+            {% if errors.training_included_hidden_tools %}
+                <div class="col-lg-offset-3 col-md-offset-4 col-sm-offset-5 col-lg-9 col-md-8 col-sm-7 help-block light-grey">
+                    {{ errors.training_included_hidden_tools.error }}
+                </div>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <div id="include-hidden-list"
+                 class="col-lg-offset-3 col-md-offset-4 col-sm-offset-5 col-lg-9 col-md-8 col-sm-7">
+                No hidden tools are included.
+            </div>
+        </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
 </div>
+<script>
+	function add_tool(jquery_event, search_selection, dataset_name)
+	{
+        $(this).typeahead('val', '').focus();
+		add_to_list("#include-hidden-list", "remove_tool", search_selection.id, search_selection.name, "Remove " + search_selection.name, "training_included_hidden_tools_list");
+	}
+    function remove_tool(tool_id)
+	{
+		remove_from_list("#include-hidden-list", "#training_included_hidden_tools_list_" + tool_id, "No hidden tools are included.");
+	}
+	$('#include_hidden_tool').autocomplete('tools', add_tool, {{ tools|json_search_base }});
+    {% for tool in included_hidden_tools %}
+		add_tool(undefined, {name:'{{ tool.name }}', id:{{ tool.id }}});
+	{% endfor %}
+	auto_size_textarea(document.getElementById("training_request_default_message_placeholder"));
+</script>

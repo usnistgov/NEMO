@@ -41,7 +41,7 @@
                         </form>
                     </h2>
                 {% endif %}
-                {% for project in account.project_set.all %}
+                {% for project in account_projects %}
                     {% if not selected_project or project == selected_project %}
                         <div class="h3">
                             <a onclick="toggle_details(this)"

@@ -10,7 +10,7 @@
 {% elif reservation_requirement_failed %}
     <h2>However, you cannot enter since you don't have a current reservation for this area.</h2>
 {% endif %}
-<h2>Please visit the {{ facility_name }} staff if you believe this is an error.</h2>
+<h2>Please contact {{ facility_name }} staff if you believe this is an error.</h2>
 {% if not reservation_requirement_failed and not max_capacity_reached and not scheduled_outage_in_progress %}
     <h2>What would you like to do?</h2>
     <p>

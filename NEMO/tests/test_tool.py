@@ -60,7 +60,7 @@ class ToolTestCase(TestCase):
             "_minimum_time_between_reservations": 10,
             "_maximum_future_reservation_time": 20,
             "_missed_reservation_threshold": 30,
-            "_allow_delayed_logoff": True,
+            "_max_delayed_logoff": 120,
             "_post_usage_questions": '[{"type": "textbox", "name": "question_name", "title": "question_title", "max-width": "100%"}]',
             "_policy_off_between_times": True,
             "_policy_off_start_time": "5:00 PM",
@@ -115,7 +115,7 @@ class ToolTestCase(TestCase):
         self.assertEqual(tool.minimum_time_between_reservations, alternate_tool.minimum_time_between_reservations)
         self.assertEqual(tool.maximum_future_reservation_time, alternate_tool.maximum_future_reservation_time)
         self.assertEqual(tool.missed_reservation_threshold, alternate_tool.missed_reservation_threshold)
-        self.assertEqual(tool.allow_delayed_logoff, alternate_tool.allow_delayed_logoff)
+        self.assertEqual(tool.max_delayed_logoff, alternate_tool.max_delayed_logoff)
         self.assertEqual(tool.post_usage_questions, alternate_tool.post_usage_questions)
         self.assertEqual(tool.policy_off_between_times, alternate_tool.policy_off_between_times)
         self.assertEqual(tool.policy_off_start_time, alternate_tool.policy_off_start_time)

@@ -485,8 +485,8 @@
         <h3 class="customization-section-title" id="unauthorized_tool_access_email_id">Unauthorized tool access email</h3>
         <p>This email is sent when a user tries to access a tool:</p>
         <ul>
-            <li>without being logged in to the area in which the tool resides (type 'area').</li>
-            <li>without having a current area reservation (type 'reservation')</li>
+            <li>without being logged in to the area in which the tool resides (type 'area-access').</li>
+            <li>without having a current area reservation (type 'area-reservation')</li>
         </ul>
         <p>The following context variables are provided when the email is rendered:</p>
         <ul>
@@ -497,7 +497,7 @@
                 <b>tool</b> - the tool that the user was denied access to
             </li>
             <li>
-                <b>type</b> - the type of abuse ('area' or 'reservation')
+                <b>type</b> - the type of abuse ('area-access' or 'area-reservation')
             </li>
         </ul>
         {% include 'customizations/customizations_upload.html' with element=unauthorized_tool_access_email name='unauthorized tool access email' key='templates' %}

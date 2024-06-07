@@ -73,19 +73,17 @@
                                     {% endif %}
                                     {% if tools_exist %}
                                         {% navigation_url 'configuration_agenda' 'Configuration agenda' user.is_staff user.is_superuser %}
+                                        {% navigation_url 'maintenance' 'Maintenance' user.is_staff  user.is_superuser %}
+                                        {% navigation_url 'qualifications' 'Qualifications' user.is_staff user.is_superuser %}
+                                        {% navigation_url 'training' 'Training' user.is_staff user.is_superuser %}
+                                        {% navigation_url 'tool_credentials' 'Tool credentials' user.is_staff user.is_superuser %}
                                     {% endif %}
                                     {% if user.is_facility_manager or user.is_superuser or user.is_staff and "contracts"|customization:"contracts_view_staff" == "enabled" or user.is_user_office and "contracts"|customization:"contracts_view_user_office" == "enabled" or user.is_accounting_officer and "contracts"|customization:"contracts_view_accounting_officer" == "enabled" %}
                                         {% navigation_url 'service_contracts' 'Contracts & procurements' %}
                                     {% endif %}
                                     {% navigation_url 'customization' 'Customization' user.is_superuser %}
                                     {% navigation_url 'email_broadcast' 'Email' %}
-                                    {% if tools_exist %}
-                                        {% navigation_url 'maintenance' 'Maintenance' user.is_staff  user.is_superuser %}
-                                    {% endif %}
                                     {% navigation_url 'project_billing' 'Project billing' user.is_accounting_officer user.is_user_office user.is_superuser %}
-                                    {% if tools_exist %}
-                                        {% navigation_url 'qualifications' 'Qualifications' user.is_staff user.is_superuser %}
-                                    {% endif %}
                                     {% navigation_url 'recurring_charges' recurring_charges_name user.is_user_office user.is_facility_manager user.is_superuser %}
                                     {% navigation_url 'staff_charges' 'Remote work' user.is_staff user.is_superuser %}
                                     {% navigation_url 'resources' 'Resources' user.is_staff user.is_superuser %}
@@ -98,9 +96,6 @@
                                         </li>
                                     {% endif %}
                                     {% navigation_url 'consumables' 'Supplies' user.is_staff user.is_user_office user.is_superuser %}
-                                    {% if tools_exist %}
-                                        {% navigation_url 'training' 'Training' user.is_staff user.is_superuser %}
-                                    {% endif %}
                                     {% navigation_url 'users' 'Users' %}
                                     {% if "projects_and_accounts"|customization:"project_allow_transferring_charges" == "enabled" %}
                                         {% navigation_url 'transfer_charges' 'Transfer charges' user.is_accounting_officer user.is_facility_manager user.is_superuser %}
@@ -130,6 +125,11 @@
                         <script>$("#staff_charge_link").tooltip();</script>
                     </li>
                 {% endif %}
+                {% if allow_profile_view %}
+                    <li class="visible-xs visible-sm">
+                        <a href="{% url 'view_user' user.id %}">My profile</a>
+                    </li>
+                {% endif %}
                 <li class="visible-xs visible-sm">
                     <a href="{% url 'user_preferences' %}">Preferences</a>
                 </li>
@@ -157,9 +157,17 @@
                         <script>$("#staff_charge_link").tooltip();</script>
                     </li>
                 {% endif %}
-                <li>
-                    <p class="navbar-text">Welcome, {{ user.first_name }}</p>
-                </li>
+                {% block welcome_user %}
+                    <li>
+                        <p class="navbar-text">
+                            Welcome,
+                            {% if allow_profile_view %}
+                                <a href="{% url 'view_user' user.id %}">
+                                {% endif %}
+                            {{ user.first_name }}</a>
+                        </p>
+                    </li>
+                {% endblock %}
                 <li class="navbar-preferences">
                     <a href="{% url 'user_preferences' %}">
                         <img src="{% static 'icons/preferences.png' %}" alt="preferences" />

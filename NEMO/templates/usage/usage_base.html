@@ -150,12 +150,15 @@
 
 			function set_dates_from_month(month_input)
 			{
-				let month = moment(month_input, "MMMM, YYYY");
-				let firstOfMonth = month.startOf('month').format(js_date_format);
-				let lastOfMonth = month.endOf('month').format(js_date_format);
-
-				start_date_jq.val(firstOfMonth);
-				end_date_jq.val(lastOfMonth);
+                if (month_input)
+                {
+                    let month = moment(month_input, "MMMM, YYYY");
+                    let firstOfMonth = month.startOf('month').format(js_date_format);
+                    let lastOfMonth = month.endOf('month').format(js_date_format);
+    
+                    start_date_jq.val(firstOfMonth);
+                    end_date_jq.val(lastOfMonth);
+                }
 			}
 
 			function set_dropdown_selected()
@@ -167,7 +170,7 @@
 					if (start.month() === end.month() && start.year() === end.year() && start.day() === start.startOf('month').day() && end.day() === end.endOf('month').day())
 					{
 					    let month = start.format("MMMM, YYYY");
-						$('#month_list').val(month)
+						$('#month_list').val(month);
 					}
 				}
 			}
@@ -188,10 +191,8 @@
                 <div class="hidden-lg hidden-md hidden-sm">&nbsp;</div>
                 <div class="col-md-3">
                     {% button type="save" submit=False onclick="$('#csv_export').val('');this.form.submit();" value="Update" icon="glyphicon-refresh" %}
-                    {% if can_export %}
-                        <input id="csv_export" type="hidden" name="csv" value="">
-                        {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
-                    {% endif %}
+                    <input id="csv_export" type="hidden" name="csv" value="">
+                    {% button style="margin-left: 15px" type="export" onclick="$('#csv_export').val('true');this.form.submit();" value="Export" %}
                 </div>
             </div>
             <script>

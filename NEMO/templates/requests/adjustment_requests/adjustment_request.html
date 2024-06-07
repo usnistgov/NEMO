@@ -104,6 +104,27 @@
                     {% endif %}
                 </div>
             {% endif %}
+            {% if change_quantity_allowed and form.item_id.value and form.item_type.value %}
+                <div class="form-group">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6">
+                            <label for="new_quantity">New quantity</label>
+                            <input type="text"
+                                   class="form-control text-center"
+                                   name="new_quantity"
+                                   id="new_quantity"
+                                   value="{{ form.new_quantity.value }}">
+                        </div>
+                    </div>
+                    {% if form.new_quantity.errors %}
+                        <div class="row">
+                            <div class="col-md-3 col-sm-6">
+                                {% if form.new_quantity.errors %}<span style="color:red">{{ form.new_quantity.errors|striptags }}</span>{% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
             <div class="form-group">
                 <label for="description" class="control-label">Description</label>
                 {% if form.description.errors %}- <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
@@ -117,7 +138,9 @@
             {% if form.instance.get_status_display == "Pending" and instance_id and user in form.instance.reviewers %}
                 <div class="form-group">
                     <label for="manager_note" class="control-label">Feedback/Instructions</label>
-                    {% if form.description.errors %}- <span style="color:red">{{ form.manager_note.errors|striptags }}</span>{% endif %}
+                    {% if form.description.errors %}
+                        - <span style="color:red">{{ form.manager_note.errors|striptags }}</span>
+                    {% endif %}
                     <textarea class="form-control"
                               rows="3"
                               name="manager_note"
@@ -128,7 +151,7 @@
             <div class="text-right">
                 {% if form.instance.get_status_display == "Pending" %}
                     {% if instance_id and user in form.instance.reviewers %}
-                        {% if form.instance.editable_charge and "requests"|customization:"adjustment_requests_apply_button" == "enabled" %}
+                        {% if form.instance.adjustable_charge and "requests"|customization:"adjustment_requests_apply_button" == "enabled" %}
                             {% button type="save" submit=False name="approve_apply_request" title="Approve and adjust the original charge" icon="glyphicon-ok-circle" value="Approve and adjust" onclick="confirm_review_dialog(this, 'approve and adjust the actual charge of');" %}
                             {% button type="save" submit=False name="approve_request" title="Approve without adjusting" icon="glyphicon-ok-circle" value="Approve only" onclick="confirm_review_dialog(this);" %}
                         {% else %}

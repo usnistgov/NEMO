@@ -40,7 +40,7 @@ from NEMO.views.api_billing import (
     billable_items_training_sessions,
     billable_items_usage_events,
 )
-from NEMO.views.customization import UserRequestsCustomization
+from NEMO.views.customization import ProjectsAccountsCustomization, UserRequestsCustomization
 
 logger = getLogger(__name__)
 
@@ -152,7 +152,7 @@ def usage(request):
     usage_events = UsageEvent.objects.filter(user_filter).filter(end__gt=start_date, end__lte=end_date)
     if csv_export:
         return csv_export_response(
-            usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations
+            user, usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations
         )
     else:
         dictionary = {
@@ -251,7 +251,13 @@ def project_usage(request):
             usage_events = usage_events.filter(user=user)
         if bool(request.GET.get("csv", False)):
             return csv_export_response(
-                usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations
+                request.user,
+                usage_events,
+                area_access,
+                training_sessions,
+                staff_charges,
+                consumables,
+                missed_reservations,
             )
     except:
         pass
@@ -259,7 +265,7 @@ def project_usage(request):
         "search_items": set(Account.objects.all())
         | set(Project.objects.all())
         | set(get_project_applications())
-        | set(User.objects.filter(is_active=True)),
+        | set(User.objects.all()),
         "area_access": area_access,
         "consumables": consumables,
         "missed_reservations": missed_reservations,
@@ -291,7 +297,7 @@ def project_billing(request):
         set(Account.objects.all())
         | set(Project.objects.all())
         | set(get_project_applications())
-        | set(User.objects.filter(is_active=True))
+        | set(User.objects.all())
     )
 
     project_id = None
@@ -435,13 +441,19 @@ def billing_dict(start_date, end_date, user, formatted_applications, project_id=
     return dictionary
 
 
-def csv_export_response(usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations):
+def csv_export_response(
+    user: User, usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations
+):
     table_result = BasicDisplayTable()
     table_result.add_header(("type", "Type"))
     table_result.add_header(("user", "User"))
     table_result.add_header(("name", "Item"))
     table_result.add_header(("details", "Details"))
     table_result.add_header(("project", "Project"))
+    if user.is_any_part_of_staff:
+        table_result.add_header(
+            ("application", ProjectsAccountsCustomization.get("project_application_identifier_name"))
+        )
     table_result.add_header(("start", "Start time"))
     table_result.add_header(("end", "End time"))
     table_result.add_header(("quantity", "Quantity"))

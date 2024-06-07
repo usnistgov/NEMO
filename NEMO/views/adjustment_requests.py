@@ -3,6 +3,7 @@ from typing import List, Set
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import F, Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
@@ -17,6 +18,7 @@ from NEMO.models import (
     AdjustmentRequest,
     Area,
     AreaAccessRecord,
+    ConsumableWithdraw,
     Notification,
     RequestMessage,
     RequestStatus,
@@ -102,19 +104,24 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
     try:
         item_type = ContentType.objects.get_for_id(item_type_id)
         adjustment_request.item = item_type.get_object_for_this_type(pk=item_id)
-    # Show times if not missed reservation or if missed reservation but customization is set to show times anyway
     except ContentType.DoesNotExist:
         pass
 
+    # Show times if not missed reservation or if missed reservation but customization is set to show times anyway
     change_times_allowed = can_change_times(adjustment_request.item)
+    # Show quantity field if we have a consumable
+    change_quantity_allowed = isinstance(adjustment_request.item, ConsumableWithdraw)
 
     # only change the times if we are provided with a charge and it's allowed
     if item_type_id and adjustment_request.item and change_times_allowed:
         adjustment_request.new_start = adjustment_request.item.start
         adjustment_request.new_end = adjustment_request.item.end
+    if item_type_id and adjustment_request.item and change_quantity_allowed:
+        adjustment_request.new_quantity = adjustment_request.item.quantity
 
     dictionary = {
         "change_times_allowed": change_times_allowed,
+        "change_quantity_allowed": change_quantity_allowed,
         "eligible_items": adjustment_eligible_items(user, adjustment_request.item),
     }
 
@@ -184,6 +191,9 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
             item_id = form.cleaned_data.get("item_id")
             if item_type and item_id:
                 dictionary["change_times_allowed"] = can_change_times(item_type.get_object_for_this_type(pk=item_id))
+                dictionary["change_quantity_allowed"] = isinstance(
+                    item_type.get_object_for_this_type(pk=item_id), ConsumableWithdraw
+                )
             dictionary["form"] = form
             return render(request, "requests/adjustment_requests/adjustment_request.html", dictionary)
     else:
@@ -366,7 +376,11 @@ Please visit {reply_url} to reply"""
 
 def can_change_times(item):
     can_change_reservation_times = UserRequestsCustomization.get_bool("adjustment_requests_missed_reservation_times")
-    return item and (not isinstance(item, Reservation) or can_change_reservation_times)
+    return (
+        item
+        and not isinstance(item, ConsumableWithdraw)
+        and (not isinstance(item, Reservation) or can_change_reservation_times)
+    )
 
 
 def adjustment_eligible_items(user: User, current_item=None) -> List[BillableItemMixin]:
@@ -390,6 +404,27 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
             .filter(**end_filter)
             .order_by("-end")[:item_number]
         )
+    if UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_enabled"):
+        date_filter = {"date__gte": date_limit} if date_limit else {}
+        consumable_withdrawals = (
+            ConsumableWithdraw.objects.filter(customer=user).filter(**date_filter).order_by("-date")
+        )
+        self_checkout = UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_self_checkout")
+        staff_checkout = UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_staff_checkout")
+        usage_event = UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_usage_event")
+        type_filter = Q()
+        if not self_checkout:
+            type_filter = type_filter & ~Q(
+                consumable__allow_self_checkout=True, merchant=F("customer"), usage_event__isnull=True
+            )
+        if not staff_checkout:
+            type_filter = type_filter & (
+                Q(usage_event__isnull=False) | Q(merchant__is_staff=False) | Q(merchant=F("customer"))
+            )
+        if not usage_event:
+            type_filter = type_filter & ~Q(usage_event__isnull=False)
+        consumable_withdrawals = consumable_withdrawals.filter(type_filter)
+        items.extend(consumable_withdrawals[:item_number])
     if user.is_staff and UserRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled"):
         # Add all remote charges for staff to request for adjustment
         items.extend(
@@ -448,7 +483,8 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
                 "item": req.item.get_display() if req.item else "",
                 "new_start": req.new_start,
                 "new_end": req.new_end,
-                "difference": req.get_time_difference(),
+                "new_quantity": req.new_quantity,
+                "difference": req.get_time_difference() or req.get_quantity_difference(),
                 "reviewer": req.reviewer,
                 "applied": req.applied,
                 "applied_by": req.applied_by,

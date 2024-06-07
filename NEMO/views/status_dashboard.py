@@ -14,7 +14,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from NEMO.decorators import disable_session_expiry_refresh, facility_manager_required
 from NEMO.forms import StaffAbsenceForm
-from NEMO.model_tree import get_area_model_tree, ModelTreeHelper, TreeItem
+from NEMO.model_tree import ModelTreeHelper, TreeItem, get_area_model_tree
 from NEMO.models import (
     Area,
     AreaAccessRecord,
@@ -30,8 +30,8 @@ from NEMO.models import (
 )
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
-    as_timezone,
     BasicDisplayTable,
+    as_timezone,
     beginning_of_the_day,
     end_of_the_day,
     export_format_datetime,
@@ -354,7 +354,19 @@ def create_tool_summary(tooltip_info=False):
     )
     tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info)
     tool_summary = list(tool_summary.values())
-    tool_summary.sort(key=lambda x: x["name"])
+    tool_sort = StatusDashboardCustomization.get("dashboard_tool_sort")
+    max_date_aware = (datetime.max - timedelta(days=1)).astimezone()
+    if tool_sort == "name":
+        tool_summary.sort(key=lambda x: x["name"].lower())
+    elif tool_sort == "time_desc":
+        tool_summary.sort(
+            key=lambda x: (
+                (max_date_aware - x["in_use_since"]) if x["in_use_since"] else timedelta.max,
+                x["name"].lower(),
+            )
+        )
+    else:
+        tool_summary.sort(key=lambda x: (x["in_use_since"] if x["in_use_since"] else max_date_aware, x["name"].lower()))
     return tool_summary
 
 

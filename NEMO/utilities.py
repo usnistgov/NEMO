@@ -20,6 +20,7 @@ from django.apps import apps
 from django.conf import global_settings, settings
 from django.contrib.admin import ModelAdmin
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
@@ -33,7 +34,7 @@ from django.utils import timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
 from django.utils.text import slugify
-from django.utils.timezone import is_naive, localtime
+from django.utils.timezone import is_naive, localtime, make_aware
 
 utilities_logger = getLogger(__name__)
 
@@ -392,9 +393,9 @@ def as_timezone(dt):
 def localize(dt, tz=None):
     tz = tz or timezone.get_current_timezone()
     if isinstance(dt, list):
-        return [tz.localize(d) for d in dt]
+        return [make_aware(d, tz) for d in dt]
     else:
-        return tz.localize(dt)
+        return make_aware(dt, tz)
 
 
 def naive_local_current_datetime():
@@ -688,6 +689,14 @@ def get_model_name(content_type: ContentType):
         return model._meta.verbose_name.capitalize()
     except (LookupError, AttributeError):
         return ""
+
+
+def get_model_instance(content_type: ContentType, object_id: int):
+    try:
+        model = apps.get_model(content_type.app_label, content_type.model)
+        return model.objects.get(pk=object_id)
+    except (ObjectDoesNotExist, LookupError, AttributeError):
+        return None
 
 
 def get_email_from_settings() -> str:
