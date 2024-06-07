@@ -46,6 +46,7 @@ from NEMO.utilities import (
     get_chemical_document_filename,
     get_full_url,
     get_hazard_logo_filename,
+    get_model_instance,
     get_task_image_filename,
     get_tool_image_filename,
     new_model_copy,
@@ -4159,6 +4160,7 @@ class AdjustmentRequest(BaseModel):
     )
     new_start = models.DateTimeField(null=True, blank=True)
     new_end = models.DateTimeField(null=True, blank=True)
+    new_quantity = models.PositiveIntegerField(null=True, blank=True)
     status = models.IntegerField(choices=RequestStatus.choices_without_expired(), default=RequestStatus.PENDING)
     reviewer = models.ForeignKey(
         "User", null=True, blank=True, related_name="adjustment_requests_reviewed", on_delete=models.CASCADE
@@ -4197,6 +4199,11 @@ class AdjustmentRequest(BaseModel):
             else None
         )
 
+    def get_quantity_difference(self) -> int:
+        if self.item and self.new_quantity is not None:
+            return self.new_quantity - self.item.quantity
+        return 0
+
     def get_time_difference(self) -> str:
         if self.item and self.new_start and self.new_end:
             previous_duration = self.item.end.replace(microsecond=0, second=0) - self.item.start.replace(
@@ -4209,8 +4216,11 @@ class AdjustmentRequest(BaseModel):
                 else f"- {(previous_duration - new_duration)}"
             )
 
+    def get_difference(self):
+        return self.get_time_difference() or self.get_quantity_difference()
+
     def adjustable_charge(self):
-        return self.has_changed_time() or isinstance(self.item, Reservation)
+        return self.has_changed_time() or isinstance(self.item, Reservation) or self.get_quantity_difference()
 
     def has_changed_time(self) -> bool:
         """Returns whether the original charge is editable, i.e. if it has a changed start or end"""
@@ -4250,6 +4260,11 @@ class AdjustmentRequest(BaseModel):
                 self.applied = True
                 self.applied_by = user
                 self.save()
+            elif self.get_quantity_difference():
+                self.item.quantity = self.new_quantity
+                self.item.save()
+                self.applied = True
+                self.applied_by = user
             elif isinstance(self.item, Reservation):
                 self.item.missed = False
                 self.item.save()
@@ -4272,7 +4287,8 @@ class AdjustmentRequest(BaseModel):
     def clean(self):
         if not self.description:
             raise ValidationError({"description": _("This field is required.")})
-        if self.item:
+        item = get_model_instance(self.item_type, self.item_id)
+        if item:
             already_adjusted = AdjustmentRequest.objects.filter(
                 deleted=False, item_type_id=self.item_type_id, item_id=self.item_id
             )
@@ -4284,12 +4300,12 @@ class AdjustmentRequest(BaseModel):
                 raise ValidationError({"new_end": _("The end must be later than the start")})
             if (
                 self.new_start
-                and format_datetime(self.new_start) == format_datetime(self.item.start)
+                and format_datetime(self.new_start) == format_datetime(item.start)
                 and self.new_end
-                and format_datetime(self.new_end) == format_datetime(self.item.end)
-            ):
+                and format_datetime(self.new_end) == format_datetime(item.end)
+            ) or (self.new_quantity is not None and self.new_quantity == item.quantity):
                 raise ValidationError(
-                    {NON_FIELD_ERRORS: _("One of the dates must be different from the original charge")}
+                    {NON_FIELD_ERRORS: _("You must change at least one attribute (dates or quantity)")}
                 )
 
     class Meta:

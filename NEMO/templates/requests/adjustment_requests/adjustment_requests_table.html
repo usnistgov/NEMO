@@ -5,8 +5,7 @@
             <th>Created</th>
             {% if user_is_reviewer or user.is_any_part_of_staff %}<th>User</th>{% endif %}
             <th class="text-center">Charge</th>
-            <th class="text-center text-nowrap">New start</th>
-            <th class="text-center text-nowrap">New end</th>
+            <th class="text-center text-nowrap">Change</th>
             <th class="text-center">Difference</th>
             <th class="text-right text-nowrap">
                 {% if request_status == 'pending' and user_is_reviewer %}
@@ -28,9 +27,15 @@
                 </td>
                 {% if user_is_reviewer or user.is_any_part_of_staff %}<td>{{ a_request.creator.get_name }}</td>{% endif %}
                 <td class="text-center">{{ a_request.item.get_display }}</td>
-                <td class="text-center">{{ a_request.get_new_start|date:'SHORT_DATETIME_FORMAT' }}</td>
-                <td class="text-center">{{ a_request.get_new_end|date:'SHORT_DATETIME_FORMAT' }}</td>
-                <td class="text-center">{{ a_request.get_time_difference|default_if_none:"" }}</td>
+                <td class="text-center text-nowrap">
+                    {% if a_request.get_new_start %}
+                        start -> {{ a_request.get_new_start|date:'SHORT_DATETIME_FORMAT' }}
+                        {% if a_request.get_new_end %}<br>{% endif %}
+                    {% endif %}
+                    {% if a_request.get_new_end %}end -> {{ a_request.get_new_end|date:'SHORT_DATETIME_FORMAT' }}{% endif %}
+                    {% if a_request.new_quantity is not None %}quantity -> {{ a_request.new_quantity }}{% endif %}
+                </td>
+                <td class="text-center">{{ a_request.get_difference|default_if_none:"" }}</td>
                 <td class="text-right text-nowrap" rowspan="2">
                     {% if request_status == 'approved' or request_status == 'denied' %}
                         {{ a_request.reviewer.get_name }}

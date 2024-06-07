@@ -106,7 +106,47 @@
                         </label>
                         <br />
                     </div>
-                    <div class="row col-lg-4 col-xs-5">
+                    <div class="row col-xs-12">
+                        <input type="hidden" name="adjustment_requests_consumable_withdrawal_enabled" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_consumable_withdrawal_enabled"
+                                   {% if adjustment_requests_consumable_withdrawal_enabled == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            Consumable withdrawals
+                        </label>
+                    </div>
+                    <div class="row col-xs-offset-1 col-xs-8">
+                        <input type="hidden" name="adjustment_requests_consumable_withdrawal_self_checkout" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_consumable_withdrawal_self_checkout"
+                                   {% if adjustment_requests_consumable_withdrawal_self_checkout == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            self checked out items
+                        </label>
+                    </div>
+                    <div class="row col-xs-offset-1 col-xs-8">
+                        <input type="hidden" name="adjustment_requests_consumable_withdrawal_staff_checkout" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_consumable_withdrawal_staff_checkout"
+                                   {% if adjustment_requests_consumable_withdrawal_staff_checkout == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            staff checked out items
+                        </label>
+                    </div>
+                    <div class="row col-xs-offset-1 col-xs-8">
+                        <input type="hidden" name="adjustment_requests_consumable_withdrawal_usage_event" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_consumable_withdrawal_usage_event"
+                                   {% if adjustment_requests_consumable_withdrawal_usage_event == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            pre-post usage question items
+                        </label>
+                    </div>
+                    <div class="row col-xs-12">
                         <input type="hidden" name="adjustment_requests_missed_reservation_enabled" value="off" />
                         <label>
                             <input type="checkbox"
@@ -116,7 +156,7 @@
                             Missed reservation
                         </label>
                     </div>
-                    <div class="row col-xs-8">
+                    <div class="row col-xs-offset-1 col-xs-8">
                         <label>
                             <input type="checkbox"
                                    name="adjustment_requests_missed_reservation_times"
