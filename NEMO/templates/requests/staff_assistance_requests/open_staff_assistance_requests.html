@@ -71,14 +71,6 @@
                                     {% button type="default" size="small" submit=True value="Resolve" %}
                                 </form>
                             {% endif %}
-                            {% if user.is_staff and staff_assistance_request.resolved %}
-                                <form style="display: inline-block"
-                                      action="{% url 'reopen_staff_assistance_request' staff_assistance_request.id %}"
-                                      method="post">
-                                    {% csrf_token %}
-                                    {% button type="default" size="small" submit=True value="Reopen" %}
-                                </form>
-                            {% endif %}
                         </li>
                     </ul>
                 </li>
