@@ -40,7 +40,9 @@ def staff_assistance_requests(request):
         "open_staff_assistance_requests": open_staff_assistance_requests.order_by("-creation_time"),
         "resolved_staff_assistance_requests": resolved_staff_assistance_requests.order_by("-creation_time"),
         "staff_assistance_requests_description": UserRequestsCustomization.get("staff_assistance_requests_description"),
-        "request_notifications": get_notifications(request.user, Notification.Types.STAFF_ASSISTANCE_REQUEST),
+        "request_notifications": get_notifications(
+            request.user, Notification.Types.STAFF_ASSISTANCE_REQUEST, delete=False
+        ),
         "reply_notifications": get_notifications(request.user, Notification.Types.STAFF_ASSISTANCE_REQUEST_REPLY),
     }
     return render(request, "requests/staff_assistance_requests/staff_assistance_requests.html", dictionary)
@@ -125,6 +127,7 @@ def resolve_staff_assistance_request(request, request_id):
 
     staff_assistance_request.resolved = True
     staff_assistance_request.save(update_fields=["resolved"])
+    delete_notification(Notification.Types.STAFF_ASSISTANCE_REQUEST, staff_assistance_request.id)
     return redirect("user_requests", "staff_assistance")
 
 
@@ -141,6 +144,7 @@ def reopen_staff_assistance_request(request, request_id):
 
     staff_assistance_request.resolved = False
     staff_assistance_request.save(update_fields=["resolved"])
+    create_staff_assistance_request_notification(staff_assistance_request)
     return redirect("user_requests", "staff_assistance")
 
 

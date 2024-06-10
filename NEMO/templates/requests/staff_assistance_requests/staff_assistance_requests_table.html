@@ -7,7 +7,9 @@
             {% for staff_assistance_request in date.list %}
                 <li>
                     <ul class="staff-assistance-list list-unstyled" id="request_{{ staff_assistance_request.id }}">
-                        {% if staff_assistance_request.id in request_notifications %}<span class="label label-success">New</span>{% endif %}
+                        {% if staff_assistance_request.id in request_notifications and not staff_assistance_request.replies %}
+                            <span class="label label-danger">Unread</span>
+                        {% endif %}
                         {% url 'create_or_modify_user' staff_assistance_request.user.id as user_edit_url %}
                         {% if user.is_staff %}
                             <a href="{{ user_edit_url }}"><b>{{ staff_assistance_request.user.get_name }}</b></a>
