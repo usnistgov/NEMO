@@ -801,131 +801,61 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	padding-right: 10px;
 }
 
-.buddy-system-requests
+.buddy-system-requests, .staff-assistance-requests
 {
 	margin-top: 20px;
 }
 
-.buddy-list
+.buddy-list, .staff-assistance-list
 {
 	margin-top: 10px;
 }
 
-.buddy-list-item
+.buddy-list-item, .staff-assistance-list-item
 {
 	display: table;
 	width: 100%;
 	margin-bottom: 5px;
 }
 
-.buddy-list-item:first-child
+.buddy-list-item:first-child, .staff-assistance-list-item:first-child
 {
 	margin-top: 10px;
 }
 
-.buddy-list-item-reply
+.buddy-list-item-reply, .staff-assistance-list-item-reply
 {
 	margin-top: 5px;
 }
 
-.buddy-list-item-reply textarea
+.buddy-list-item-reply textarea, .staff-assistance-list-item-reply textarea
 {
 	padding: 10px;
 }
 
-.buddy-list-item-description, .buddy-list-item-buttons
+.buddy-list-item-description, .buddy-list-item-buttons, .staff-assistance-list-item-description, .staff-assistance-list-item-buttons
 {
 	display: table-cell;
 	word-break: break-word;
 	padding: 10px;
 }
 
-.buddy-list-item-reply textarea, .buddy-list .buddy-list-item.list-group-item-info
+.buddy-list-item-reply textarea, .buddy-list .buddy-list-item.list-group-item-info, .staff-assistance-list-item-reply textarea, .staff-assistance-list .staff-assistance-list-item.list-group-item-info
 {
 	border-radius: 8px;
 }
 
-.buddy-list-item-buttons
+.buddy-list-item-buttons, .staff-assistance-list-item-buttons
 {
 	vertical-align: middle;
 	text-align: right;
 	white-space: nowrap;
 }
 
-.buddy-list-item-reply, .buddy-list-item-message
+.buddy-list-item-reply, .buddy-list-item-message, .staff-assistance-list-item-reply, .staff-assistance-list-item-message
 {
 	float: right;
 	width: 90%;
-}
-
-.staff-assistance-requests
-{
-	margin-top: 20px;
-}
-
-.staff-assistance-list
-{
-	margin-top: 10px;
-}
-
-.staff-assistance-list-item
-{
-	display: table;
-	width: 100%;
-	margin-bottom: 5px;
-}
-
-.staff-assistance-list-item:first-child
-{
-	margin-top: 10px;
-}
-
-.staff-assistance-list-item-reply
-{
-	margin-top: 5px;
-}
-
-.staff-assistance-list-item-reply textarea
-{
-	padding: 10px;
-}
-
-.staff-assistance-list-item-description, .staff-assistance-list-item-buttons
-{
-	display: table-cell;
-	word-break: break-word;
-	padding: 10px;
-}
-
-.staff-assistance-list-item-reply textarea, .staff-assistance-list .staff-assistance-list-item.list-group-item-info
-{
-	border-radius: 8px;
-}
-
-.staff-assistance-list-item-buttons
-{
-	vertical-align: middle;
-	text-align: right;
-	white-space: nowrap;
-}
-
-.staff-assistance-list-item-reply, .staff-assistance-list-item-message
-{
-	float: right;
-	width: 90%;
-}
-
-.staff-assistance-list-item-reply-buttons
-{
-	margin: 15px 0;
-	padding: 0 10px;
-}
-
-.staff-assistance-list-day
-{
-	margin-top: 20px;
-	padding-inline-start: 40px;
-	font-size: large;
 }
 
 .request-item-message-user
@@ -942,13 +872,13 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	top: 5px;
 }
 
-.buddy-list-item-reply-buttons
+.buddy-list-item-reply-buttons, .staff-assistance-list-item-reply-buttons
 {
 	margin: 15px 0;
 	padding: 0 10px;
 }
 
-.buddy-list-day
+.buddy-list-day, .staff-assistance-list-day
 {
 	margin-top: 20px;
 	padding-inline-start: 40px;
