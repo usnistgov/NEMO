@@ -375,10 +375,13 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
             # The result of the formula must be an int, so let's add some random variables and check
             formula_and_values = {}
             for var in formula_variables:
+                form_name = var
+                if var in valid_question_names.values():
+                    form_name = [key for key, val in valid_question_names.items() if val == var][0]
                 if isinstance(self.all_questions_by_name[var], PostUsageNumberFieldQuestion):
-                    formula_and_values[var] = str(random.randint(1, 100))
+                    formula_and_values[form_name] = str(random.randint(1, 100))
                 elif isinstance(self.all_questions_by_name[var], PostUsageFloatFieldQuestion):
-                    formula_and_values[var] = str(random.uniform(1.0, 100.0))
+                    formula_and_values[form_name] = str(random.uniform(1.0, 100.0))
             http_request = EmptyHttpRequest()
             http_request.POST = QueryDict(mutable=True)
             http_request.POST.update(formula_and_values)

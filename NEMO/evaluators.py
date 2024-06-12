@@ -24,6 +24,8 @@ base_functions = {
     "trunc": trunc,
     "sqrt": sqrt,
     "sum": sum,
+    "max": max,
+    "min": min,
 }
 
 
