@@ -17,7 +17,7 @@ from django.template import Context, Template
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from NEMO import init_admin_site
+from NEMO.apps import init_admin_site
 from NEMO.decorators import administrator_required, customization
 from NEMO.exceptions import InvalidCustomizationException
 from NEMO.models import (
