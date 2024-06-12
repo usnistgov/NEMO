@@ -30,6 +30,8 @@ class TestAstEval(TestCase):
         self.assertEqual(5, evaluate_expression("abs(-5)"))
         self.assertEqual(12, evaluate_expression("trunc(12.123)"))
         self.assertEqual(2, evaluate_expression("sqrt(4)"))
+        self.assertEqual(4, evaluate_expression("min(4, 5)"))
+        self.assertEqual(5, evaluate_expression("max(4, 5)"))
 
     def test_boolean_evaluation(self):
         self.assertFalse(evaluate_boolean_expression("False"))
