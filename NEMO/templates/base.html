@@ -46,8 +46,8 @@
             <script type="text/javascript" src="{% static "typeahead.jquery.min.js" %}"></script>
             <script>
                 moment.updateLocale('en', {
-                    week: { dow: "{{ calendar_first_day_of_week }}" }
-                });
+                    week: { dow: {{ calendar_first_day_of_week }} }
+                 });
             </script>
         {% endblock %}
         {# NEMO #}
