@@ -23,7 +23,7 @@
                                 <div class="staff-assistance-list-item-buttons">
                                     {% if staff_assistance_request.user == request.user and staff_assistance_request.replies.count == 0 %}
                                         {% url 'edit_staff_assistance_request' staff_assistance_request.id as edit_staff_assistance_request_url %}
-                                        {% button type="edit" size="small" url=edit_staff_assistance_request_url value="Edit" %}
+                                        {% button type="edit" size="small" value="Edit" data_toggle="modal" data_target="#requestModal" data_request_description=staff_assistance_request.description data_request_url=edit_staff_assistance_request_url data_request_action="Edit" %}
                                         <form style="display: inline-block"
                                               action="{% url 'delete_staff_assistance_request' staff_assistance_request.id %}"
                                               method="post">

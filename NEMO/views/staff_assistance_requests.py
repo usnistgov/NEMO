@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import linebreaksbr
 from django.urls import reverse
-from django.views.decorators.http import require_GET, require_POST, require_http_methods
+from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.forms import StaffAssistanceRequestForm
 from NEMO.models import StaffAssistanceRequest, Notification, RequestMessage, User
@@ -49,7 +49,7 @@ def staff_assistance_requests(request):
 
 
 @login_required
-@require_http_methods(["GET", "POST"])
+@require_POST
 def create_staff_assistance_request(request, request_id=None):
     if not UserRequestsCustomization.get_bool("staff_assistance_requests_enabled"):
         return HttpResponseBadRequest("Staff assistance requests are not enabled")
@@ -59,38 +59,27 @@ def create_staff_assistance_request(request, request_id=None):
     except StaffAssistanceRequest.DoesNotExist:
         staff_assistance_request = None
 
-    dictionary = {}
-
     if staff_assistance_request:
         if staff_assistance_request.replies.count() > 0:
             return HttpResponseBadRequest("You are not allowed to edit a request that has replies.")
         if staff_assistance_request.user != request.user:
             return HttpResponseBadRequest("You are not allowed to edit a request you didn't create.")
 
-    if request.method == "POST":
-        form = StaffAssistanceRequestForm(request.POST, instance=staff_assistance_request)
-        form.fields["user"].required = False
-        form.fields["creation_time"].required = False
-        if form.is_valid():
-            form.instance.user = request.user
-            created_staff_assistance_request = form.save()
-            send_new_request_emails(
-                created_staff_assistance_request,
-                get_full_url(
-                    f"{reverse('user_requests', kwargs={'tab': 'staff_assistance'})}?#request_{created_staff_assistance_request.id}",
-                    request,
-                ),
-            )
-            create_staff_assistance_request_notification(created_staff_assistance_request)
-            return redirect("user_requests", "staff_assistance")
-        else:
-            dictionary["form"] = form
-            return render(request, "requests/staff_assistance_requests/staff_assistance_request.html", dictionary)
-    else:
-        form = StaffAssistanceRequestForm(instance=staff_assistance_request)
-        form.user = request.user
-        dictionary["form"] = form
-        return render(request, "requests/staff_assistance_requests/staff_assistance_request.html", dictionary)
+    form = StaffAssistanceRequestForm(request.POST, instance=staff_assistance_request)
+    form.fields["user"].required = False
+    form.fields["creation_time"].required = False
+    if form.is_valid():
+        form.instance.user = request.user
+        created_staff_assistance_request = form.save()
+        send_new_request_emails(
+            created_staff_assistance_request,
+            get_full_url(
+                f"{reverse('user_requests', kwargs={'tab': 'staff_assistance'})}?#request_{created_staff_assistance_request.id}",
+                request,
+            ),
+        )
+        create_staff_assistance_request_notification(created_staff_assistance_request)
+    return redirect("user_requests", "staff_assistance")
 
 
 @login_required

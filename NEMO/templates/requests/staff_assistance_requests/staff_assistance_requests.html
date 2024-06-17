@@ -10,8 +10,50 @@
     </div>
     <div class="text-right" style="display: table-cell; vertical-align: top">
         {% if not user.is_staff %}
-            {% button type="add" value="New request" url="create_staff_assistance_request" %}
+            {% url 'create_staff_assistance_request' as create_staff_assistance_request_url %}
+            {% button type="add" value="New request" data_toggle="modal" data_target="#requestModal" data_request_description="" data_request_url=create_staff_assistance_request_url data_request_action="Create" %}
         {% endif %}
+    </div>
+</div>
+<!-- Modal -->
+<div class="modal fade"
+     id="requestModal"
+     tabindex="-1"
+     role="dialog"
+     aria-labelledby="requestModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="requestModalLabel">New Request</h4>
+            </div>
+            <div class="modal-body">
+                <form id="staffAssistanceRequestForm"
+                      action="{% if form.instance.id %}{% url 'edit_staff_assistance_request' form.instance.id %}{% else %}{% url 'create_staff_assistance_request' %}{% endif %}"
+                      method="post">
+                    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        {% if form.description.errors %}- <span style="color:red">{{ form.description.errors|striptags }}</span>{% endif %}
+                        <textarea class="form-control"
+                                  rows="3"
+                                  name="description"
+                                  id="description"
+                                  style="resize: vertical"
+                                  maxlength="{{ form.fields.description.max_length }}"
+                                  placeholder="Describe your request"
+                                  required>{{ form.description.value|default_if_none:"" }}</textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                {% button type="save" icon="glyphicon-send" value="Send" form="staffAssistanceRequestForm" id="staffAssistanceRequestFormSubmitButton" %}
+            </div>
+        </div>
     </div>
 </div>
 {% if open_staff_assistance_requests %}
@@ -33,6 +75,19 @@
     </div>
 {% endif %}
 <script>
+    $('#requestModal').on('show.bs.modal', function (event) {
+        let button = $(event.relatedTarget);
+
+        let description = button.data('request-description');
+        let url = button.data('request-url');
+        let action = button.data('request-action');
+
+        let modal = $(this);
+        modal.find('form').attr("action", url);
+        modal.find('.modal-title').text(action + " Request");
+        modal.find('#description').val(description);
+    })
+
     function show_or_send_reply(button_element, form_selector)
     {
         let form_element = $('#'+form_selector)

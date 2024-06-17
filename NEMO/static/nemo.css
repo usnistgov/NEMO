@@ -1218,3 +1218,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	text-align: inherit;
 	border-top: inherit;
 }
+
+.modal-open[style] {
+padding-right: 0 !important;
+}
