@@ -1,5 +1,9 @@
 import datetime
-import zoneinfo
+
+try:
+    import zoneinfo
+except ImportError:
+    from backports import zoneinfo
 
 from django.conf import settings
 from django.test import TestCase
