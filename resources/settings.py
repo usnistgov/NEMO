@@ -78,6 +78,15 @@ DATETIME_INPUT_FORMATS = ["%m/%d/%Y %I:%M %p", *global_settings.DATE_INPUT_FORMA
 DATE_INPUT_FORMATS = ["%m/%d/%Y", *global_settings.DATE_INPUT_FORMATS]
 TIME_INPUT_FORMATS = ["%I:%M:%S %p", *global_settings.TIME_INPUT_FORMATS]
 
+# -------------------- Pick date and time formats --------------------
+# Those formats are optional in most cases and only used on kiosk or mobile views, when picking up date/time separately.
+# If not defined, a conversion from DATE_INPUT_FORMATS and TIME_INPUT_FORMATS will be attempted.
+# See allowed date formats at https://amsul.ca/pickadate.js/date/#formatting-rules
+# See allowed time formats at https://amsul.ca/pickadate.js/time/#formatting-rules
+# PICK_DATE_FORMAT = "mm/dd/yyyy"
+# PICK_TIME_FORMAT = "HH:i A"
+
+
 # -------------------- Internationalization and localization --------------------
 # A boolean that specifies whether Django’s translation system should be enabled.
 # This provides an easy way to turn it off, for performance.
