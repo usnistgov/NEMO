@@ -1,4 +1,5 @@
 import datetime
+from collections.abc import Mapping, Sequence
 from datetime import timedelta
 from importlib.metadata import PackageNotFoundError, version
 from urllib.parse import quote
@@ -125,8 +126,14 @@ def res_question_tbody(dictionary):
 
 
 @register.filter
-def get_item(dictionary, key):
-    return dictionary.get(key)
+def get_item(dict_or_array, key):
+    if isinstance(dict_or_array, Mapping):
+        return dict_or_array.get(key)
+    elif isinstance(dict_or_array, Sequence):
+        try:
+            return dict_or_array[key]
+        except IndexError:
+            pass
 
 
 @register.simple_tag

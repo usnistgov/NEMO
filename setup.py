@@ -40,7 +40,6 @@ setup(
         "Pillow==10.3.0",
         "pymodbus==3.3.2",
         "python-dateutil==2.9.0",
-        "pytz==2024.1",
         "requests==2.32.3",
     ],
     extras_require={"dev-tools": ["pre-commit", "djlint", "black"]},

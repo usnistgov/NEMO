@@ -3,7 +3,7 @@ import importlib
 import os
 from calendar import monthrange
 from copy import deepcopy
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from email import encoders
 from email.mime.base import MIMEBase
 from enum import Enum
@@ -12,7 +12,6 @@ from logging import getLogger
 from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
 from urllib.parse import urljoin
 
-import pytz
 from PIL import Image
 from dateutil import rrule
 from dateutil.parser import parse
@@ -30,11 +29,10 @@ from django.shortcuts import render
 from django.template import Template
 from django.template.context import make_context
 from django.urls import NoReverseMatch, reverse
-from django.utils import timezone
+from django.utils import timezone as django_timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
 from django.utils.text import slugify
-from django.utils.timezone import is_naive, localtime, make_aware
 
 utilities_logger = getLogger(__name__)
 
@@ -241,7 +239,7 @@ def parse_parameter_string(
 
 
 def month_list(since=datetime(year=2013, month=11, day=1)):
-    month_count = (timezone.now().year - since.year) * 12 + (timezone.now().month - since.month) + 1
+    month_count = (django_timezone.now().year - since.year) * 12 + (django_timezone.now().month - since.month) + 1
     result = list(rrule.rrule(rrule.MONTHLY, dtstart=since, count=month_count))
     result = localize(result)
     result.reverse()
@@ -252,7 +250,7 @@ def get_month_timeframe(date_str: str = None):
     if date_str:
         start = parse(date_str)
     else:
-        start = timezone.now()
+        start = django_timezone.now()
     first_of_the_month = localize(datetime(start.year, start.month, 1))
     last_of_the_month = localize(
         datetime(start.year, start.month, monthrange(start.year, start.month)[1], 23, 59, 59, 999999)
@@ -354,7 +352,7 @@ def format_daterange(
 
 
 def format_datetime(universal_time=None, df=None, as_current_timezone=True, use_l10n=None) -> str:
-    this_time = universal_time if universal_time else timezone.now() if as_current_timezone else datetime.now()
+    this_time = universal_time if universal_time else django_timezone.now() if as_current_timezone else datetime.now()
     local_time = as_timezone(this_time) if as_current_timezone else this_time
     if isinstance(local_time, time):
         return time_format(local_time, df or "TIME_FORMAT", use_l10n)
@@ -370,7 +368,7 @@ def export_format_datetime(
     This function returns a formatted date/time for export files.
     Default returns date + time format, with underscores
     """
-    this_time = date_time if date_time else timezone.now() if as_current_timezone else datetime.now()
+    this_time = date_time if date_time else django_timezone.now() if as_current_timezone else datetime.now()
     export_date_format = getattr(settings, "EXPORT_DATE_FORMAT", "m_d_Y").replace("-", "_")
     export_time_format = getattr(settings, "EXPORT_TIME_FORMAT", "h_i_s").replace("-", "_")
     if not underscore:
@@ -386,20 +384,20 @@ def export_format_datetime(
 
 
 def as_timezone(dt):
-    naive = type(dt) == date or is_naive(dt)
-    return timezone.localtime(dt) if not naive else dt
+    naive = type(dt) == date or django_timezone.is_naive(dt)
+    return django_timezone.localtime(dt) if not naive else dt
 
 
 def localize(dt, tz=None):
-    tz = tz or timezone.get_current_timezone()
+    tz = tz or django_timezone.get_current_timezone()
     if isinstance(dt, list):
-        return [make_aware(d, tz) for d in dt]
+        return [django_timezone.make_aware(d, tz) for d in dt]
     else:
-        return make_aware(dt, tz)
+        return django_timezone.make_aware(dt, tz)
 
 
 def naive_local_current_datetime():
-    return localtime(timezone.now()).replace(tzinfo=None)
+    return django_timezone.localtime(django_timezone.now()).replace(tzinfo=None)
 
 
 def beginning_of_the_day(t: datetime, in_local_timezone=True) -> datetime:
@@ -743,8 +741,8 @@ def create_ics(
     sequence = "SEQUENCE:2\n" if cancelled else "SEQUENCE:0\n"
     priority = "PRIORITY:5\n" if cancelled else "PRIORITY:0\n"
     now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-    start = start.astimezone(pytz.utc).strftime("%Y%m%dT%H%M%SZ")
-    end = end.astimezone(pytz.utc).strftime("%Y%m%dT%H%M%SZ")
+    start = start.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    end = end.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lines = [
         "BEGIN:VCALENDAR\n",
         "VERSION:2.0\n",
