@@ -32,14 +32,14 @@
                         {% else %}
                             allowed schedule for the
                         {% endif %}
-                        {{ reservation.area }} in the {{ facility.name }} ended at {{ reservation.end }}.
+                        {{ reservation.area }} in the {{ facility_name }} ended at {{ reservation.end }}.
                     </p>
                     <p>However, our records show that you are still logged in the {{ reservation.area }}.</p>
                     <p>If you simply forgot to log out, please contact a staff member</p>
                     <br>
                     <p>
                         {% if reservation.start %}
-                            Please remember that the {{ facility.name }} is a shared resource, and overstaying a reservation may inhibit the productivity of other facility users.
+                            Please remember that the {{ facility_name }} is a shared resource, and overstaying a reservation may inhibit the productivity of other facility users.
                         {% else %}
                             Please remember that users are not allowed to overstay in areas outside their allowed schedule.
                         {% endif %}
