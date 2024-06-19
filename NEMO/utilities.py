@@ -127,8 +127,8 @@ datetime_input_format = get_format("DATETIME_INPUT_FORMATS")[0]
 time_input_js_format = convert_py_format_to_js(time_input_format)
 date_input_js_format = convert_py_format_to_js(date_input_format)
 datetime_input_js_format = convert_py_format_to_js(datetime_input_format)
-date_pick_format = convert_py_to_pick_time(date_input_format)
-time_pick_format = convert_py_to_pick_time(time_input_format)
+pickadate_date_format = convert_py_to_pick_time(date_input_format)
+pickadate_time_format = convert_py_to_pick_time(time_input_format)
 
 supported_embedded_video_extensions = [".mp4", ".ogv", ".webm", ".3gp"]
 supported_embedded_pdf_extensions = [".pdf"]

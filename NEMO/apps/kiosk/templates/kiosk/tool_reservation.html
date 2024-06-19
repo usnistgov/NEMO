@@ -56,9 +56,9 @@
 	{% for item in tool_reservation_times %}
 	unavailable_times.push([{{ item.start|date:"U" }},{{ item.end|date:"U" }}]);
 	{% endfor %}
-	let date_picker = $('#date').pickadate({format: "{{ pick_date_format }}", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
-	let start_time_picker = $('#start').pickatime({interval: 15, format: "{{ pick_time_format }}", formatSubmit: "HH:i", hiddenName: true, formatLabel: format_label});
-	let end_time_picker = $('#end').pickatime({interval: 15, format: "{{ pick_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
+	let date_picker = $('#date').pickadate({format: "{{ pickadata_date_format }}", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
+	let start_time_picker = $('#start').pickatime({interval: 15, format: "{{ pickadate_time_format }}", formatSubmit: "HH:i", hiddenName: true, formatLabel: format_label});
+	let end_time_picker = $('#end').pickatime({interval: 15, format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
 	// set initial date
 	if ('{{ date|default_if_none:'' }}') {
 		date_picker.pickadate('picker').set('select', '{{ date }}', {format: 'yyyy-mm-dd'})
@@ -77,11 +77,11 @@
                 let start = times[0];
                 let end = times[1];
                 if (date_time_selected >= start && date_time_selected < end) {
-                    return '<sp !an>{{ pick_time_format }}</sp !an> <sm !all> !alre!ad!y re!serve!d</sm !all>';
+                    return '<sp !an>{{ pickadate_time_format }}</sp !an> <sm !all> !alre!ad!y re!serve!d</sm !all>';
                 }
             }
 		}
-		return '{{ pick_time_format }}';
+		return '{{ pickadate_time_format }}';
 	}
 	revert(120)
 </script>

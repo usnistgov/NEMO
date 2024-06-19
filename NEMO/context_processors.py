@@ -3,8 +3,8 @@ from NEMO.utilities import (
     date_input_js_format,
     datetime_input_js_format,
     time_input_js_format,
-    date_pick_format,
-    time_pick_format,
+    pickadate_date_format,
+    pickadate_time_format,
 )
 from NEMO.views.customization import CustomizationBase
 from NEMO.views.notifications import get_notification_counts
@@ -90,8 +90,8 @@ def base_context(request):
         "time_input_js_format": time_input_js_format,
         "date_input_js_format": date_input_js_format,
         "datetime_input_js_format": datetime_input_js_format,
-        "date_pick_format": date_pick_format,
-        "time_pick_format": time_pick_format,
+        "pickadate_date_format": pickadate_date_format,
+        "pickadate_time_format": pickadatetime_format,
         "no_header": request.session.get("no_header", False),
         "safety_menu_item": customization_values.get("safety_main_menu") == "enabled",
         "calendar_page_title": customization_values.get("calendar_page_title"),
