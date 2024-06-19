@@ -108,6 +108,13 @@ def convert_py_to_pick_time(string_format: str) -> str:
             .replace("%U", "")
             .replace("%W", "")
             .replace("%c", "")
+            .replace("%U", "")
+            .replace("%W", "")
+            .replace("%G", "")
+            .replace("%U", "")
+            .replace("%u", "")
+            .replace("%V", "")
+            .replace("%:z", "")
         )
         for py, pick in py_to_pick_date_formats.items():
             string_format = pick.join(string_format.split(py))
