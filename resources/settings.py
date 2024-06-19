@@ -83,8 +83,8 @@ TIME_INPUT_FORMATS = ["%I:%M:%S %p", *global_settings.TIME_INPUT_FORMATS]
 # If not defined, a conversion from DATE_INPUT_FORMATS and TIME_INPUT_FORMATS will be attempted.
 # See allowed date formats at https://amsul.ca/pickadate.js/date/#formatting-rules
 # See allowed time formats at https://amsul.ca/pickadate.js/time/#formatting-rules
-# PICK_DATE_FORMAT = "mm/dd/yyyy"
-# PICK_TIME_FORMAT = "HH:i A"
+# PICKADATE_DATE_FORMAT = "mm/dd/yyyy"
+# PICKADATE_TIME_FORMAT = "HH:i A"
 
 
 # -------------------- Internationalization and localization --------------------

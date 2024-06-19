@@ -92,30 +92,27 @@ def convert_py_format_to_js(string_format: str) -> str:
     return string_format
 
 
-def convert_py_to_pick_time(string_format: str) -> str:
-    try:
-        return settings.PICK_TIME_FORMAT
-    except AttributeError:
-        string_format = (
-            string_format.replace("%w", "")
-            .replace("%s", "")
-            .replace("%f", "")
-            .replace("%:z", "")
-            .replace("%z", "")
-            .replace("%Z", "")
-            .replace("%j", "")
-            .replace(":%S", "")
-            .replace("%S", "")
-            .replace("%U", "")
-            .replace("%W", "")
-            .replace("%c", "")
-            .replace("%G", "")
-            .replace("%u", "")
-            .replace("%V", "")
-        )
-        for py, pick in py_to_pick_date_formats.items():
-            string_format = pick.join(string_format.split(py))
-        return string_format
+def convert_py_format_to_pickadate(string_format: str) -> str:
+    string_format = (
+        string_format.replace("%w", "")
+        .replace("%s", "")
+        .replace("%f", "")
+        .replace("%:z", "")
+        .replace("%z", "")
+        .replace("%Z", "")
+        .replace("%j", "")
+        .replace(":%S", "")
+        .replace("%S", "")
+        .replace("%U", "")
+        .replace("%W", "")
+        .replace("%c", "")
+        .replace("%G", "")
+        .replace("%u", "")
+        .replace("%V", "")
+    )
+    for py, pick in py_to_pick_date_formats.items():
+        string_format = pick.join(string_format.split(py))
+    return string_format
 
 
 time_input_format = get_format("TIME_INPUT_FORMATS")[0]
@@ -124,8 +121,8 @@ datetime_input_format = get_format("DATETIME_INPUT_FORMATS")[0]
 time_input_js_format = convert_py_format_to_js(time_input_format)
 date_input_js_format = convert_py_format_to_js(date_input_format)
 datetime_input_js_format = convert_py_format_to_js(datetime_input_format)
-pickadate_date_format = convert_py_to_pick_time(date_input_format)
-pickadate_time_format = convert_py_to_pick_time(time_input_format)
+pickadate_date_format = getattr(settings, "PICKADATE_DATE_FORMAT", convert_py_format_to_pickadate(date_input_format))
+pickadate_time_format = getattr(settings, "PICKADATE_TIME_FORMAT", convert_py_format_to_pickadate(time_input_format))
 
 supported_embedded_video_extensions = [".mp4", ".ogv", ".webm", ".3gp"]
 supported_embedded_pdf_extensions = [".pdf"]
