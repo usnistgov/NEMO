@@ -57,7 +57,7 @@
 	unavailable_times.push([{{ item.start|date:"U" }},{{ item.end|date:"U" }}]);
 	{% endfor %}
 	let date_picker = $('#date').pickadate({format: "{{ pick_date_format }}", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
-	let start_time_picker = $('#start').pickatime({interval: 15, format: "{{ pick_time_format }}", formatSubmit: "HH:mm", hiddenName: true, formatLabel: format_label});
+	let start_time_picker = $('#start').pickatime({interval: 15, format: "{{ pick_time_format }}", formatSubmit: "HH:i", hiddenName: true, formatLabel: format_label});
 	let end_time_picker = $('#end').pickatime({interval: 15, format: "{{ pick_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
 	// set initial date
 	if ('{{ date|default_if_none:'' }}') {
