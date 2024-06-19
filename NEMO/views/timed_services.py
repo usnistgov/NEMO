@@ -439,51 +439,6 @@ def send_email_out_of_time_reservation_notification(request=None):
                 if ending_reservations.exists() and not starting_reservations.exists():
                     out_of_time_user_reservations.append(ending_reservations[0])
 
-        # Find all users logged in tools
-        usage_records: List[UsageEvent] = (
-            UsageEvent.objects.filter(end=None, user=F("operator"))
-            .prefetch_related("operator", "tool")
-            .only("operator", "tool")
-        )
-        for usage_record in usage_records:
-            # staff and service personnel are exempt from out of time notification
-            operator = usage_record.operator
-            tool = usage_record.tool
-            if operator.is_staff or operator.is_service_personnel:
-                continue
-            # Calculate the timestamp of how late a user can be logged in after a reservation ended.
-            threshold = (
-                trigger_time
-                if not tool.logout_grace_period
-                else trigger_time - timedelta(minutes=tool.logout_grace_period)
-            )
-            user_qualification = Qualification.objects.filter(user=operator, tool=tool).first()
-            # Check first if allowed schedule has just expired
-            if (
-                user_qualification
-                and user_qualification.qualification_level
-                and user_qualification.qualification_level.is_allowed(threshold - timedelta(minutes=1))
-                and not user_qualification.qualification_level.is_allowed(threshold)
-            ):
-                out_of_time_user_reservations.append(Reservation(user=operator, tool=tool, end=threshold))
-            else:
-                if tool.reservation_required:
-                    ending_reservations = Reservation.objects.filter(
-                        cancelled=False,
-                        missed=False,
-                        shortened=False,
-                        tool=tool,
-                        user=operator,
-                        start__lte=timezone.now(),
-                        end=threshold,
-                    )
-                    # find out if a reservation is starting right at the same time (in case of back to back reservations, in which case operator is good)
-                    starting_reservations = Reservation.objects.filter(
-                        cancelled=False, missed=False, shortened=False, tool=tool, user=operator, start=threshold
-                    )
-                    if ending_reservations.exists() and not starting_reservations.exists():
-                        out_of_time_user_reservations.append(ending_reservations[0])
-
     for reservation in out_of_time_user_reservations:
         send_out_of_time_reservation_notification(reservation, request)
 
