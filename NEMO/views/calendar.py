@@ -175,6 +175,19 @@ def event_feed(request):
     facility_name = ApplicationCustomization.get("facility_name")
     if event_type == "reservations":
         return reservation_event_feed(request, start, end)
+    if event_type == "reservations and usage":
+        # We need to remove the json array brackets from the original responses (last [ of reservations and first ] of usage)
+        reservation_feed = reservation_event_feed(request, start, end)
+        reservation_feed_content = reservation_feed.content
+        position = reservation_feed_content.rfind("]".encode())
+        if position != -1:
+            reservation_feed_content = (
+                reservation_feed_content[:position] + "".encode() + reservation_feed_content[position + 1 :]
+            )
+        reservation_feed.content = reservation_feed_content + usage_event_feed(request, start, end).content.replace(
+            "[".encode(), "".encode(), 1
+        )
+        return reservation_feed
     elif event_type == f"{facility_name.lower()} usage":
         return usage_event_feed(request, start, end)
     # Only staff may request a specific user's history...

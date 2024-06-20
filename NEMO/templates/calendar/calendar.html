@@ -34,6 +34,11 @@
                            href="javascript:void(0)"
                            onclick="change_calendar_event_type(this)">{{ facility_name }} usage</a>
                     </li>
+                    <li data-toggle="tooltip" data-placement="right" title="Displays both usage and reservations.">
+                        <a aria-describedby="event_type_help"
+                           href="javascript:void(0)"
+                           onclick="change_calendar_event_type(this)">Reservations and usage</a>
+                    </li>
                     <li data-toggle="tooltip" data-placement="right" title="Displays the tool configuration agenda.">
                         <a aria-describedby="event_type_help"
                            href="javascript:void(0)"
@@ -179,7 +184,7 @@ function update_event_sources()
     let item_event_source_list = [];
     let url = "{% url 'event_feed' %}";
 
-    if (event_type === 'reservations' || event_type === 'configuration agenda' || event_type === '{{ facility_name|lower }} usage')
+    if (event_type === 'reservations' || event_type === 'configuration agenda' || event_type === '{{ facility_name|lower }} usage' || event_type === 'reservations and usage')
 	{
 		let item = get_selected_item();
         const checked_items = get_checked_items();
@@ -833,7 +838,7 @@ function change_calendar_event_type(calling_element)
         $(scheduled_outage_button).hide();
         update_event_sources();
 	}
-	else if(event_type === "{{ facility_name|lower }} usage")
+	else if(event_type === "{{ facility_name|lower }} usage" || event_type === "reservations and usage")
 	{
 		user_search.hide();
 		chosen_user_button.hide();
