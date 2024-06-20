@@ -625,6 +625,7 @@ class TemplatesCustomization(CustomizationBase):
         ("weekend_access_email", ".html"),
         ("recurring_charges_reminder_email", ".html"),
         ("wait_list_notification_email", ".html"),
+        ("tool_required_unanswered_questions_email", ".html"),
     ]
 
 

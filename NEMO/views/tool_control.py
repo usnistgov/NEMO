@@ -51,7 +51,6 @@ from NEMO.utilities import (
 from NEMO.views.area_access import able_to_self_log_out_of_area
 from NEMO.views.calendar import shorten_reservation
 from NEMO.views.customization import (
-    ApplicationCustomization,
     CalendarCustomization,
     EmailsCustomization,
     InterlockCustomization,
@@ -731,38 +730,28 @@ def email_managers_required_questions_disable_tool(
 ):
     user_office_email = EmailsCustomization.get("user_office_email_address")
     abuse_email_address = EmailsCustomization.get("abuse_email_address")
-    cc_users: List[User] = [staff_member, tool.primary_owner]
-    # Add facility managers as CC based on their tool notification preferences if any
-    cc_users.extend(
-        User.objects.filter(is_active=True, is_facility_manager=True).filter(
-            Q(preferences__tool_task_notifications__isnull=True) | Q(preferences__tool_task_notifications__in=[tool])
+    message = get_media_file_contents("tool_required_unanswered_questions_email.html")
+    if message:
+        cc_users: List[User] = [staff_member, tool.primary_owner]
+        # Add facility managers as CC based on their tool notification preferences if any
+        cc_users.extend(
+            User.objects.filter(is_active=True, is_facility_manager=True).filter(
+                Q(preferences__tool_task_notifications__isnull=True)
+                | Q(preferences__tool_task_notifications__in=[tool])
+            )
         )
-    )
-    facility_name = ApplicationCustomization.get("facility_name")
-    ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
-    ccs.append(abuse_email_address)
-    display_questions = "".join(
-        [linebreaksbr(mark_safe(question.render_as_text())) + "<br/><br/>" for question in questions]
-    )
-    message = f"""
-Dear {tool_user.get_name()},<br/>
-You have been logged off by staff from the {tool} that requires answers to the following post-usage questions:<br/>
-<br/>
-{display_questions}
-<br/>
-Regards,<br/>
-<br/>
-{facility_name} Management<br/>
-"""
-    tos = tool_user.get_emails(EmailNotificationType.BOTH_EMAILS)
-    send_mail(
-        subject=f"Unanswered post‑usage questions after logoff from the {tool.name}",
-        content=message,
-        from_email=user_office_email,
-        to=tos,
-        cc=ccs,
-        email_category=EmailCategory.ABUSE,
-    )
+        ccs = [email for user in cc_users for email in user.get_emails(EmailNotificationType.BOTH_EMAILS)]
+        ccs.append(abuse_email_address)
+        rendered_message = render_email_template(message, {"user": tool_user, "tool": tool, "questions": questions})
+        tos = tool_user.get_emails(EmailNotificationType.BOTH_EMAILS)
+        send_mail(
+            subject=f"Unanswered post‑usage questions after logoff from the {tool.name}",
+            content=rendered_message,
+            from_email=user_office_email,
+            to=tos,
+            cc=ccs,
+            email_category=EmailCategory.ABUSE,
+        )
 
 
 def send_tool_usage_counter_email(counter: ToolUsageCounter):

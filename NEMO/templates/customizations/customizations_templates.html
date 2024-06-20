@@ -482,6 +482,28 @@
         <div class="customization-separation"></div>
     </div>
     <div class="panel-body">
+        <h3 class="customization-section-title" id="tool_required_unanswered_questions_email_id">
+            Tool required unanswered questions email
+        </h3>
+        <p>
+            This email is sent to users when someone forces them off a tool and there were unanswered, required, post usage questions
+            The following context variables are provided when the email is rendered:
+        </p>
+        <ul>
+            <li>
+                <b>user</b> - the user who was using the tool
+            </li>
+            <li>
+                <b>tool</b> - the tool the user was using
+            </li>
+            <li>
+                <b>questions</b> - the questions the user needs to answer
+            </li>
+        </ul>
+        {% include 'customizations/customizations_upload.html' with element=tool_required_unanswered_questions_email name='tool required unanswered questions email' key='templates' %}
+        <div class="customization-separation"></div>
+    </div>
+    <div class="panel-body">
         <h3 class="customization-section-title" id="unauthorized_tool_access_email_id">Unauthorized tool access email</h3>
         <p>This email is sent when a user tries to access a tool:</p>
         <ul>
