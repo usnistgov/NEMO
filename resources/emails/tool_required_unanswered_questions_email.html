@@ -17,9 +17,7 @@
             <tr>
                 <td style="padding: 10px;">
                     <p>Dear {{ user.get_name }},</p>
-                    <p>
-                        You have been logged off by staff from the {{ tool }} that requires answers to the following post-usage questions:
-                    </p>
+                    <p>You have been logged off from the {{ tool }} that requires answers to the following post-usage questions:</p>
                     {% for question in questions %}
                         {{ question.render_as_text|safe|linebreaksbr }}
                         <br>
