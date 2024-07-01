@@ -402,6 +402,50 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Staff assistance requests settings</h3>
+        <div class="form-group">
+            <label class="control-label col-md-4">Enable staff assistance requests</label>
+            <div class="col-md-8">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="staff_assistance_requests_enabled"
+                               {% if staff_assistance_requests_enabled %}checked{% endif %}
+                               value="enabled">
+                        Check this box to allow users to request staff assistance.
+                    </label>
+                    <br />
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-4" for="staff_assistance_requests_title">Staff assistance request tab title</label>
+            <div class="col-md-7">
+                <input type="text"
+                       id="staff_assistance_requests_title"
+                       name="staff_assistance_requests_title"
+                       class="form-control"
+                       value="{{ staff_assistance_requests_title }}" />
+            </div>
+            <div class="col-md-offset-4 col-md-8 help-block light-grey">
+                The title for the staff assistance request tab of the user requests page.
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-4" for="staff_assistance_requests_description">
+                Staff assistance requests description
+            </label>
+            <div class="col-md-7">
+                <textarea oninput="auto_size_textarea(this);"
+                          id="staff_assistance_requests_description"
+                          name="staff_assistance_requests_description"
+                          class="form-control">{{ staff_assistance_requests_description }}</textarea>
+            </div>
+            <div class="col-md-offset-4 col-md-8 help-block light-grey">
+                The description/instructions to display on the staff assistance requests page.
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
     <script type="text/javascript">
