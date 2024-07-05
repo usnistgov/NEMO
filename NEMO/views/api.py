@@ -629,8 +629,8 @@ class PhysicalAccessLevelViewSet(ModelViewSet):
         "name": string_filters,
         "area": key_filters,
         "schedule": number_filters,
-        "weekdays_start_time": datetime_filters,
-        "weekdays_end_time": datetime_filters,
+        "weekdays_start_time": time_filters,
+        "weekdays_end_time": time_filters,
         "allow_staff_access": boolean_filters,
         "allow_user_request": boolean_filters,
     }
