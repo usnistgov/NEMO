@@ -4243,8 +4243,9 @@ class AdjustmentRequest(BaseModel):
     def reviewers(self) -> QuerySetType[User]:
         # Create the list of users to notify/show request to. If the adjustment request has a tool/area and their
         # list of reviewers is empty, send/show to all facility managers
-        tool: Tool = getattr(self.item, "tool", None) if self.item else None
-        area: Area = getattr(self.item, "area", None) if self.item else None
+        item = get_model_instance(self.item_type, self.item_id)
+        tool: Tool = getattr(item, "tool", None) if item else None
+        area: Area = getattr(item, "area", None) if item else None
         facility_managers = User.objects.filter(is_active=True, is_facility_manager=True)
         if tool:
             tool_reviewers = tool._adjustment_request_reviewers.filter(is_active=True)
