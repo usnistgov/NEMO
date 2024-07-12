@@ -33,7 +33,7 @@ setup(
         "django-auditlog==3.0.0",
         "django-filter==23.5",
         "django-mptt==0.14.0",
-        "djangorestframework==3.15.1",
+        "djangorestframework==3.15.2",
         "drf-excel==2.4.0",
         "drf-flex-fields==1.0.2",
         "ldap3==2.9.1",
