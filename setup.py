@@ -29,7 +29,7 @@ setup(
     ],
     install_requires=[
         "cryptography==42.0.8",
-        "Django==4.2.11",
+        "Django==4.2.14",
         "django-auditlog==3.0.0",
         "django-filter==23.5",
         "django-mptt==0.14.0",
