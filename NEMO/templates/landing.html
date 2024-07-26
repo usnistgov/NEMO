@@ -105,7 +105,7 @@
                 {% endif %}
                 {% if usage_events or user.in_area or self_log_in or user.is_staff and user.charging_staff_time %}
                     <div class="col-lg-4">
-                        <h3>Current {{ facility_name }} usage</h3>
+                        <h3>Current {{ facility_name }} use</h3>
                         <div id="facility-usage">
                             {% if user.is_staff and user.charging_staff_time %}
                                 <a href="{% url 'staff_charges' %}" style="text-decoration: none">

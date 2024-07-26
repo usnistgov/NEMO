@@ -175,7 +175,7 @@ def event_feed(request):
     facility_name = ApplicationCustomization.get("facility_name")
     if event_type == "reservations":
         return reservation_event_feed(request, start, end)
-    if event_type == "reservations and usage":
+    if event_type == "reservations and use":
         # We need to remove the json array brackets from the original responses (last [ of reservations and first ] of usage)
         reservation_feed = reservation_event_feed(request, start, end)
         reservation_feed_content = reservation_feed.content
@@ -188,7 +188,7 @@ def event_feed(request):
             "[".encode(), "".encode(), 1
         )
         return reservation_feed
-    elif event_type == f"{facility_name.lower()} usage":
+    elif event_type == f"{facility_name.lower()} use":
         return usage_event_feed(request, start, end)
     # Only staff may request a specific user's history...
     elif event_type == "specific user" and request.user.is_staff:

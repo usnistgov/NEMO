@@ -29,15 +29,15 @@
                     </li>
                     <li data-toggle="tooltip"
                         data-placement="right"
-                        title="Displays your {{ facility_name }} usage. This includes{% if areas %} area access,{% endif %}{% if tools %} tool usage,{% endif %} and missed reservations (which are all billable items).">
+                        title="Displays your {{ facility_name }} use. This includes{% if areas %} area access,{% endif %}{% if tools %} tool usage,{% endif %} and missed reservations (which are all billable items).">
                         <a aria-describedby="event_type_help"
                            href="javascript:void(0)"
-                           onclick="change_calendar_event_type(this)">{{ facility_name }} usage</a>
+                           onclick="change_calendar_event_type(this)">{{ facility_name }} use</a>
                     </li>
-                    <li data-toggle="tooltip" data-placement="right" title="Displays both usage and reservations.">
+                    <li data-toggle="tooltip" data-placement="right" title="Displays both use and reservations.">
                         <a aria-describedby="event_type_help"
                            href="javascript:void(0)"
-                           onclick="change_calendar_event_type(this)">Reservations and usage</a>
+                           onclick="change_calendar_event_type(this)">Reservations and use</a>
                     </li>
                     <li data-toggle="tooltip" data-placement="right" title="Displays the tool configuration agenda.">
                         <a aria-describedby="event_type_help"
@@ -47,7 +47,7 @@
                     {% if user.is_staff %}
                         <li data-toggle="tooltip"
                             data-placement="right"
-                            title="Displays {{ facility_name }} reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations.">
+                            title="Displays {{ facility_name }} reservations and use for a specific user. This includes reservations, area access, tool usage, and missed reservations.">
                             <a aria-describedby="event_type_help"
                                href="javascript:void(0)"
                                onclick="change_calendar_event_type(this)">Specific user</a>
@@ -184,7 +184,7 @@ function update_event_sources()
     let item_event_source_list = [];
     let url = "{% url 'event_feed' %}";
 
-    if (event_type === 'reservations' || event_type === 'configuration agenda' || event_type === '{{ facility_name|lower }} usage' || event_type === 'reservations and usage')
+    if (event_type === 'reservations' || event_type === 'configuration agenda' || event_type === '{{ facility_name|lower }} use' || event_type === 'reservations and use')
 	{
 		let item = get_selected_item();
         const checked_items = get_checked_items();
@@ -369,7 +369,7 @@ function create(start, end, jsEvent, view)
 	let item = $(".selected");
 	{# Only allow reservations to be created when a item has been selected. #}
 	let item_selected = (item != null);
-	{# Only allow selection to proceed when we're in reservation view (instead of usage view). #}
+	{# Only allow selection to proceed when we're in reservation view (instead of use view). #}
 	let reservation_view = get_event_type() === 'reservations';
 	{# Users may not create reservations when viewing their personal schedule. #}
 	let personal_schedule = item.hasClass('personal_schedule');
@@ -838,7 +838,7 @@ function change_calendar_event_type(calling_element)
         $(scheduled_outage_button).hide();
         update_event_sources();
 	}
-	else if(event_type === "{{ facility_name|lower }} usage" || event_type === "reservations and usage")
+	else if(event_type === "{{ facility_name|lower }} use" || event_type === "reservations and use")
 	{
 		user_search.hide();
 		chosen_user_button.hide();
