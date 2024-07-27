@@ -2181,6 +2181,9 @@ class ConfigurationOption(BaseModel, ConfigurationMixin):
         selected = f", current value: {self.current_setting}" if self.current_setting else ""
         return f"{self.name}, options: {self.available_settings_as_list()}{selected}"
 
+    class Meta:
+        ordering = ["configuration__display_order"]
+
 
 class TrainingSession(BaseModel, BillableItemMixin):
     class Type(object):
