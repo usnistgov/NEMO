@@ -242,13 +242,13 @@ def usage_data_history(request, tool_id):
     table_pre_run_data.add_header(("user", "User"))
     if show_project_info:
         table_pre_run_data.add_header(("project", "Project"))
-    table_pre_run_data.add_header(("date", "Date"))
+    table_pre_run_data.add_header(("date", "Start date"))
 
     table_run_data = BasicDisplayTable()
     table_run_data.add_header(("user", "User"))
     if show_project_info:
         table_run_data.add_header(("project", "Project"))
-    table_run_data.add_header(("date", "Date"))
+    table_run_data.add_header(("date", "End date"))
 
     for usage_event in pre_usage_events:
         if usage_event.pre_run_data:
