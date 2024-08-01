@@ -1723,6 +1723,7 @@ class AdjustmentRequestAdmin(admin.ModelAdmin):
     )
     date_hierarchy = "last_updated"
     actions = [adjustment_requests_export_csv, adjustment_requests_mark_as_applied]
+    readonly_fields = ["creation_time"]
 
     @admin.display(description="Diff")
     def get_time_difference(self, adjustment_request: AdjustmentRequest):

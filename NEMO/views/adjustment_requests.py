@@ -311,7 +311,7 @@ def send_request_received_email(request, adjustment_request: AdjustmentRequest, 
             "template_color": bootstrap_primary_color(color_type),
             "adjustment_request": adjustment_request,
             "status": status,
-            "adjustment_requests_url": absolute_url,
+            "adjustment_request_url": absolute_url,
             "manager_note": adjustment_request.manager_note if status == "denied" else None,
             "user_office": False,
         }
