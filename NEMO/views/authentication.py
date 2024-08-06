@@ -295,11 +295,36 @@ def impersonate(request):
         return redirect(reverse("landing"))
     if not request.user.has_perm("NEMO.can_impersonate_users"):
         return HttpResponseForbidden()
+    user: User = request.user
     if request.method == "POST":
         user_id = request.POST["user_id"]
+        impersonated_user: User = User.objects.get(pk=user_id)
+        # check roles to make sure regular users cannot impersonate admins or facility managers
+        if user.is_superuser:
+            pass
+        elif user.is_facility_manager:
+            # Facility managers can impersonate anyone except admins
+            if impersonated_user.is_superuser:
+                return HttpResponseForbidden("You cannot impersonate an administrator")
+        else:
+            # Anyone else (staff non admin, non facility manager and regular users) can only impersonate regular users
+            if impersonated_user.is_any_part_of_staff:
+                return HttpResponseForbidden("You cannot only impersonate regular users")
         request.session["impersonate_id"] = int(user_id)
-        request.session["impersonated_user"] = str(User.objects.get(pk=user_id))
+        request.session["impersonated_user"] = str(impersonated_user)
         return redirect(reverse("landing"))
     else:
         users = User.objects.filter(is_active=True)
+        if user.is_superuser:
+            pass
+        elif user.is_facility_manager:
+            users = users.exclude(is_superuser=True)
+        else:
+            users = (
+                users.exclude(is_facility_manager=True)
+                .exclude(is_superuser=True)
+                .exclude(is_accounting_officer=True)
+                .exclude(is_staff=True)
+                .exclude(is_user_office=True)
+            )
         return render(request, "impersonate.html", {"users": users})
