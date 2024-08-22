@@ -139,10 +139,15 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
         recipients = get_task_email_recipients(task, new=True)
         if ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
             recipients = set(recipients)
-            for user in task.tool.user_set.all():
-                if user.is_active:
+            for qualified_user in task.tool.user_set.all():
+                if qualified_user.is_active:
                     recipients.update(
-                        [email for email in user.get_emails(user.get_preferences().email_send_task_updates)]
+                        [
+                            email
+                            for email in qualified_user.get_emails(
+                                qualified_user.get_preferences().email_send_task_updates
+                            )
+                        ]
                     )
         send_mail(
             subject=subject,
