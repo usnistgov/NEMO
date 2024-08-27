@@ -569,6 +569,7 @@ class ContentTypeViewSet(XLSXFileMixin, viewsets.ReadOnlyModelViewSet):
     filename = "content_types"
     queryset = ContentType.objects.all()
     serializer_class = ContentTypeSerializer
+    pagination_class = None
     filterset_fields = {
         "id": key_filters,
         "app_label": string_filters,
@@ -727,6 +728,7 @@ class PermissionViewSet(XLSXFileMixin, viewsets.ReadOnlyModelViewSet):
     filename = "permissions"
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
+    pagination_class = None
     filterset_fields = {
         "name": string_filters,
         "codename": string_filters,
