@@ -8,6 +8,9 @@
         {% else %}
             &nbsp;
         {% endif %}
-        - <a href="https://www.nist.gov/cnst" target="_blank">Developed by CNST, NIST</a>
+        -
+        {% if not no_links %}<a href="https://www.nist.gov/cnst" target="_blank">{% endif %}
+            Developed by CNST, NIST
+            {% if not no_links %}</a>{% endif %}
     </div>
 </footer>

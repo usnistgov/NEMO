@@ -92,7 +92,7 @@
             </div>
             <div class="countdown" style="position: fixed; bottom: 0; right: 0;font-size: x-large"></div>
         </div>
-        {% include 'base/footer.html' %}
+        {% include 'base/footer.html' with no_links=True %}
         <script type="text/javascript">
         {% with show_badge_number="application"|customization:"show_badge_number" %}
 		let kiosk_badge_reader = new BadgeReader(send_badge_number, "{{ badge_reader.send_key }}", {% if badge_reader.record_key %}"{{ badge_reader.record_key }}"{% else %}undefined{% endif %}, {{ show_badge_number|yesno:"true,false" }});
