@@ -3637,6 +3637,11 @@ class Door(BaseModel):
         blank=True,
         help_text="The welcome message will be displayed on the tablet login page. You can use HTML and JavaScript.",
     )
+    farewell_message = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The farewell message will be displayed on the tablet logout page. You can use HTML and JavaScript.",
+    )
     areas = TreeManyToManyField(Area, related_name="doors", blank=False)
     interlock = models.OneToOneField(Interlock, null=True, blank=True, on_delete=models.PROTECT)
 
