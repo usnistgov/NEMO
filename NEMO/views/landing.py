@@ -63,6 +63,7 @@ def landing(request):
         "landing_page_choices": landing_page_choices,
         "self_log_in": able_to_self_log_in_to_area(request.user),
         "self_log_out": able_to_self_log_out_of_area(request.user),
+        "script_name": settings.FORCE_SCRIPT_NAME,
     }
     return render(request, "landing.html", dictionary)
 
