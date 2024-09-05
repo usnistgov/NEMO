@@ -81,11 +81,7 @@
         else
         {
             {# Set up new tooltip #}
-            var tooltip =$(this).tooltip({template: '<div class="tooltip '+tooltip_class+'" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>', trigger: 'manual', html: 'true', container: '#tools'}).tooltip("show").data('bs.tooltip');
-            {# Set auto hide to 30 seconds #}
-            setTimeout(function() {
-                tooltip.hide();
-            }.bind(this), 30000);
+            $(this).tooltip({template: '<div class="tooltip '+tooltip_class+'" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>', trigger: 'manual', html: 'true', container: '#tools'}).tooltip("show");
         }
     });
     $("[data-toggle='tooltip']").tooltip({html: 'true'});
