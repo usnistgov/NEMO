@@ -5,7 +5,6 @@ import re
 import sys
 from collections import Counter
 from copy import copy
-from distutils.util import strtobool
 from json import dumps, loads
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Optional, Type
@@ -17,7 +16,7 @@ from django.utils.safestring import mark_safe
 from NEMO.evaluators import evaluate_expression, get_expression_variables
 from NEMO.exceptions import RequiredUnansweredQuestionsException
 from NEMO.models import Consumable, ToolUsageCounter
-from NEMO.utilities import EmptyHttpRequest, quiet_int, slugify_underscore
+from NEMO.utilities import EmptyHttpRequest, quiet_int, slugify_underscore, strtobool
 from NEMO.views.consumables import make_withdrawal
 
 dynamic_form_logger = getLogger(__name__)

@@ -1,5 +1,3 @@
-from distutils.util import strtobool
-
 from django import forms
 from django.core import validators
 from django.core.exceptions import ValidationError
@@ -8,6 +6,8 @@ from django.db import models
 from django.db.models import Field, TextField
 from django.db.models.lookups import BuiltinLookup
 from django.utils.translation import gettext_lazy as _
+
+from NEMO.utilities import strtobool
 
 DEFAULT_SEPARATOR = ","
 
