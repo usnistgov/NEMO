@@ -456,7 +456,13 @@
                 $(item).data('keyboard').close(false);
             })
         }
-	
+        {# Auto hide tooltips on kiosk page after 30 seconds #}
+	    $(document).on('shown.bs.tooltip',  function () {
+          var tooltip = $('.tooltip');
+          setTimeout(function () {
+            tooltip.hide();
+          }, 30000);
+        });
         </script>
     </body>
 </html>
