@@ -3,6 +3,7 @@ from copy import deepcopy
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core import validators
+from django.utils.translation import gettext_lazy as _
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.fields import (
@@ -17,6 +18,7 @@ from rest_framework.fields import (
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.utils import model_meta
 
+from NEMO.fields import DEFAULT_SEPARATOR, MultiEmailField
 from NEMO.models import (
     Account,
     AccountType,
@@ -55,8 +57,31 @@ from NEMO.models import (
 from NEMO.views.constants import CHAR_FIELD_MAXIMUM_LENGTH
 
 
+class MultiEmailSerializerField(serializers.CharField):
+    def __init__(self, separator=DEFAULT_SEPARATOR, **kwargs):
+        self.email_validator = validators.EmailValidator(
+            message=_("Enter a valid email address or a list separated by {}").format(separator)
+        )
+        self.separator = separator
+        kwargs.setdefault("max_length", 2000)
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        emails = data.split(self.separator)
+        for email in emails:
+            email = email.strip()
+            self.email_validator(email)
+        return emails
+
+    def to_representation(self, value):
+        return ",".join(value)
+
+
 # Overriding validate to call model full_clean
 class ModelSerializer(serializers.ModelSerializer):
+    serializer_field_mapping = serializers.ModelSerializer.serializer_field_mapping.copy()
+    serializer_field_mapping[MultiEmailField] = MultiEmailSerializerField
+
     def validate(self, attrs):
         attributes_data = dict(attrs)
         ModelClass = self.Meta.model
@@ -110,7 +135,7 @@ class ModelSerializer(serializers.ModelSerializer):
         instance.full_clean(exclude, validate_unique)
 
 
-class AlertCategorySerializer(serializers.ModelSerializer):
+class AlertCategorySerializer(ModelSerializer):
     class Meta:
         model = AlertCategory
         fields = "__all__"
