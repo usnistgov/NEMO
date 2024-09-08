@@ -580,13 +580,13 @@ def do_exit_wait_list(entry, time):
 @login_required
 @require_GET
 def past_comments_and_tasks(request):
-    user: User = request.user
-    start, end = extract_optional_beginning_and_end_times(request.GET)
-    search = request.GET.get("search")
-    if not start and not end and not search:
-        return HttpResponseBadRequest("Please enter a search keyword, start date or end date.")
-    tool_id = request.GET.get("tool_id")
     try:
+        user: User = request.user
+        start, end = extract_optional_beginning_and_end_times(request.GET)
+        search = request.GET.get("search")
+        if not start and not end and not search:
+            return HttpResponseBadRequest("Please enter a search keyword, start date or end date.")
+        tool_id = request.GET.get("tool_id")
         tasks = Task.objects.filter(tool_id=tool_id)
         comments = Comment.objects.filter(tool_id=tool_id)
         if not user.is_staff:
