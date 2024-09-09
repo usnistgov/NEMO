@@ -221,7 +221,7 @@ class URLsTestCase(TestCase):
             "event_feed",
             {
                 "get": {
-                    "event_type": f"{facility_name.lower()} usage",
+                    "event_type": f"{facility_name.lower()} use",
                     "start": start.strftime("%Y-%m-%d"),
                     "end": end_one_day.strftime("%Y-%m-%d"),
                     "item_type": "tool",
@@ -234,7 +234,7 @@ class URLsTestCase(TestCase):
             "event_feed",
             {
                 "get": {
-                    "event_type": f"{facility_name.lower()} usage",
+                    "event_type": f"{facility_name.lower()} use",
                     "start": start.strftime("%Y-%m-%d"),
                     "end": end_one_day.strftime("%Y-%m-%d"),
                     "personal_schedule": "yes",
@@ -246,7 +246,7 @@ class URLsTestCase(TestCase):
             "event_feed",
             {
                 "get": {
-                    "event_type": f"{facility_name.lower()} usage",
+                    "event_type": f"{facility_name.lower()} use",
                     "start": start.strftime("%Y-%m-%d"),
                     "end": end_one_day.strftime("%Y-%m-%d"),
                     "all_tools": "yes",
@@ -258,7 +258,7 @@ class URLsTestCase(TestCase):
             "event_feed",
             {
                 "get": {
-                    "event_type": f"{facility_name.lower()} usage",
+                    "event_type": f"{facility_name.lower()} use",
                     "start": start.strftime("%Y-%m-%d"),
                     "end": end_one_day.strftime("%Y-%m-%d"),
                     "all_areas": "yes",
@@ -270,7 +270,7 @@ class URLsTestCase(TestCase):
             "event_feed",
             {
                 "get": {
-                    "event_type": f"{facility_name.lower()} usage",
+                    "event_type": f"{facility_name.lower()} use",
                     "start": start.strftime("%Y-%m-%d"),
                     "end": end_one_day.strftime("%Y-%m-%d"),
                     "all_areastools": "yes",
