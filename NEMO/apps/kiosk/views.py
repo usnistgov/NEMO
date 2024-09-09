@@ -255,11 +255,14 @@ def reserve_tool(request):
 
     """ Create a reservation for a user. """
     try:
-        date = parse_date(request.POST["date"])
-        start = localize(datetime.combine(date, parse_time(request.POST["start"])))
-        end = localize(datetime.combine(date, parse_time(request.POST["end"])))
+        start_date = parse_date(request.POST["start_date"])
+        end_date = parse_date(request.POST["end_date"])
+        start = localize(datetime.combine(start_date, parse_time(request.POST["start"])))
+        end = localize(datetime.combine(end_date, parse_time(request.POST["end"])))
     except:
-        dictionary["message"] = "Please enter a valid date, start time, and end time for the reservation."
+        dictionary["message"] = (
+            "Please enter a valid start date, start time, end date and end time for the reservation."
+        )
         return render(request, "kiosk/error.html", dictionary)
     # Create the new reservation:
     reservation = Reservation()
