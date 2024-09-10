@@ -9,13 +9,15 @@ from json import dumps, loads
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Optional, Type
 
+from django.core.exceptions import ValidationError
 from django.http import QueryDict
 from django.urls import NoReverseMatch, reverse
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 
 from NEMO.evaluators import evaluate_expression, get_expression_variables
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.models import Consumable, ToolUsageCounter
+from NEMO.models import Consumable, Task, ToolUsageCounter, UsageEvent
 from NEMO.utilities import EmptyHttpRequest, quiet_int, slugify_underscore, strtobool
 from NEMO.views.consumables import make_withdrawal
 
@@ -56,6 +58,7 @@ class PostUsageQuestion:
         self.choices = self._init_property("choices")
         self.labels = self._init_property("labels")
         self.formula = self._init_property("formula")
+        self.options = self._init_property("options")
         self.group_add_button_name = self._init_property("group_add_button_name") or "Add"
         self.index = index
         if index and not isinstance(self, PostUsageGroupQuestion):
@@ -436,6 +439,27 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
         return evaluate_expression(formula, **extracted_form_values) if all_valid else None
 
 
+class PostUsageRadioReportProblemQuestion(PostUsageRadioQuestion):
+    question_type = "Question of type radio report problem"
+
+    def __init__(self, properties: Dict, index: int = None):
+        properties["choices"] = ["true", "false"]
+        if not properties.get("labels"):
+            properties["labels"] = ["Yes", "No"]
+        super().__init__(properties, index)
+
+    def validate(self):
+        super().validate()
+        self.validate_property_exists("options")
+        task = Task(**self.options)
+        try:
+            if not task.problem_description:
+                raise ValidationError({"problem_description": _("This field is required")})
+            task.full_clean(exclude=["tool", "creator", "urgency", "safety_hazard", "force_shutdown"])
+        except ValidationError as e:
+            raise Exception(f"{self.question_type} options are invalid: {e.message_dict}")
+
+
 class PostUsageGroupQuestion(PostUsageQuestion):
     question_type = "Question of type group"
 
@@ -455,6 +479,8 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         self.validate_property_exists("questions")
         self.validate_property_exists("max_number")
         for sub_question in self.sub_questions:
+            if isinstance(sub_question, PostUsageRadioReportProblemQuestion):
+                raise Exception(f"{sub_question.question_type} cannot be used inside a group question")
             sub_question.validate()
 
     def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
@@ -638,15 +664,20 @@ class DynamicForm:
                         results.append(sub_question)
         return results
 
-    def charge_for_consumables(self, usage_event, run_data: str, request=None):
-        customer = usage_event.user
-        merchant = usage_event.operator
-        project = usage_event.project
+    def process_run_data(self, usage_event: UsageEvent, run_data: str, request=None):
         try:
             run_data_json = loads(run_data)
         except Exception as error:
             dynamic_form_logger.debug(error)
             return
+        self._charge_for_consumables(usage_event, run_data_json, request)
+        self._update_tool_counters(usage_event, run_data_json)
+        self._report_problems(usage_event, run_data_json, request)
+
+    def _charge_for_consumables(self, usage_event, run_data_json: Dict, request=None):
+        customer = usage_event.user
+        merchant = usage_event.operator
+        project = usage_event.project
         for question in self.questions:
             input_data = run_data_json[question.name] if question.name in run_data_json else None
             withdraw_consumable_for_question(question, input_data, customer, merchant, project, usage_event, request)
@@ -656,14 +687,9 @@ class DynamicForm:
                         sub_question, input_data, customer, merchant, project, usage_event, request
                     )
 
-    def update_tool_counters(self, run_data: str, tool_id: int):
+    def _update_tool_counters(self, usage_event: UsageEvent, run_data_json: Dict):
         # This function increments all counters associated with the given tool
-        try:
-            run_data_json = loads(run_data)
-        except Exception as error:
-            dynamic_form_logger.debug(error)
-            return
-        active_counters = ToolUsageCounter.objects.filter(is_active=True, tool_id=tool_id)
+        active_counters = ToolUsageCounter.objects.filter(is_active=True, tool_id=usage_event.tool_id)
         for counter in active_counters:
             additional_value = 0
             for question in self.questions:
@@ -679,6 +705,26 @@ class DynamicForm:
             if additional_value:
                 counter.value += additional_value
                 counter.save()
+
+    def _report_problems(self, usage_event: UsageEvent, run_data_json: Dict, request):
+        for question in self.questions:
+            input_data = run_data_json[question.name] if question.name in run_data_json else None
+            if isinstance(question, PostUsageRadioReportProblemQuestion):
+                if "user_input" in input_data and input_data["user_input"] == "true":
+                    from NEMO.views.tasks import save_task
+
+                    task = Task(**question.options)
+                    if task.force_shutdown is None:
+                        task.force_shutdown = False
+                    if task.safety_hazard is None:
+                        task.safety_hazard = False
+                    task.creator = usage_event.operator
+                    task.tool = usage_event.tool
+                    if task.urgency is None:
+                        task.urgency = (
+                            Task.Urgency.HIGH if task.safety_hazard or task.force_shutdown else Task.Urgency.NORMAL
+                        )
+                    save_task(request, task, usage_event.operator)
 
 
 def get_submitted_user_inputs(user_data: str) -> Dict:
@@ -804,6 +850,7 @@ question_types: Dict[str, Type[PostUsageQuestion]] = {
     "textbox": PostUsageTextFieldQuestion,
     "textarea": PostUsageTextAreaFieldQuestion,
     "radio": PostUsageRadioQuestion,
+    "radio_report_problem": PostUsageRadioReportProblemQuestion,
     "checkbox": PostUsageCheckboxQuestion,
     "dropdown": PostUsageDropdownQuestion,
     "formula": PostUsageFormulaQuestion,

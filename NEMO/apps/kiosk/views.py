@@ -100,11 +100,10 @@ def do_enable_tool(request, tool_id):
         wait_list_entry.update(deleted=True, date_exited=timezone.now())
 
     try:
-        dynamic_form.charge_for_consumables(new_usage_event, new_usage_event.pre_run_data, request)
+        dynamic_form.process_run_data(new_usage_event, new_usage_event.pre_run_data, request)
     except Exception as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
-    dynamic_form.update_tool_counters(new_usage_event.pre_run_data, tool.id)
 
     dictionary = {"message": "You can now use the {}".format(tool), "badge_number": customer.badge_number}
     return render(request, "kiosk/acknowledgement.html", dictionary)
@@ -160,11 +159,10 @@ def do_disable_tool(request, tool_id):
             return render(request, "kiosk/acknowledgement.html", dictionary)
 
     try:
-        dynamic_form.charge_for_consumables(current_usage_event, current_usage_event.run_data, request)
+        dynamic_form.process_run_data(current_usage_event, current_usage_event.run_data, request)
     except Exception as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
-    dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
 
     current_usage_event.save()
     dictionary = {

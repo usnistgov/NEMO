@@ -446,10 +446,9 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
         wait_list_entry.update(deleted=True, date_exited=timezone.now())
 
     try:
-        dynamic_form.charge_for_consumables(new_usage_event, new_usage_event.pre_run_data, request)
+        dynamic_form.process_run_data(new_usage_event, new_usage_event.pre_run_data, request)
     except Exception as e:
         return HttpResponseBadRequest(str(e))
-    dynamic_form.update_tool_counters(new_usage_event.pre_run_data, tool.id)
 
     return response
 
@@ -506,10 +505,9 @@ def disable_tool(request, tool_id):
             return HttpResponseBadRequest(str(e))
 
     try:
-        dynamic_form.charge_for_consumables(current_usage_event, current_usage_event.run_data, request)
+        dynamic_form.process_run_data(current_usage_event, current_usage_event.run_data, request)
     except Exception as e:
         return HttpResponseBadRequest(str(e))
-    dynamic_form.update_tool_counters(current_usage_event.run_data, tool.id)
 
     current_usage_event.save()
     if user.charging_staff_time():
