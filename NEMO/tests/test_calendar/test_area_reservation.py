@@ -243,7 +243,7 @@ class AreaReservationTestCase(TransactionTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            "Separate reservations for this area that belong to you must be at least 120 minutes apart from each other. The proposed reservation ends too close to another reservation.",
+            "Separate reservations for this area that belong to you must be at least 120 minutes apart from each other. The proposed reservation begins too close to another reservation.",
         )
 
         data = self.get_reservation_data(start + timedelta(minutes=30), start + timedelta(minutes=90), area)

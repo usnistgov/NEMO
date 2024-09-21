@@ -3,7 +3,7 @@ import importlib
 import os
 from calendar import monthrange
 from copy import deepcopy
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from email import encoders
 from email.mime.base import MIMEBase
 from enum import Enum
@@ -839,3 +839,84 @@ def strtobool(val):
         return 0
     else:
         raise ValueError("invalid truth value %r" % (val,))
+
+
+# This method will subtract weekend time if applicable and weekdays time between weekday_start_time_off and weekday_end_time_off
+def get_duration_with_off_schedule(
+    start: datetime,
+    end: datetime,
+    weekend_off: bool,
+    policy_off_times: bool,
+    weekday_start_time_off: time,
+    weekday_end_time_off: time,
+) -> timedelta:
+    duration = end - start
+    local_start, local_end = start.astimezone(), end.astimezone()
+    current_date = beginning_of_the_day(local_start)
+    while current_date <= local_end:
+        begin = beginning_of_the_day(current_date)
+        midnight = beginning_of_the_day(current_date + timedelta(days=1))
+        current_start, current_end = max(begin, local_start), min(midnight, local_end)
+        if current_date.weekday() in [5, 6] and weekend_off:
+            # If it's a weekend day and weekends are off, subtract the days' duration
+            duration = duration - (current_end - current_start)
+        elif (
+            current_date.weekday() not in [5, 6]
+            and policy_off_times
+            and weekday_start_time_off
+            and weekday_end_time_off
+        ):
+            # we have time offs during weekdays
+            if weekday_start_time_off < weekday_end_time_off != midnight:
+                duration = duration - find_overlapping_duration(
+                    current_date, current_start, current_end, weekday_start_time_off, weekday_end_time_off
+                )
+            else:
+                # reverse time off with overnight. i.e. 6pm -> 6am
+                # we are just splitting into 2 and running same algorithm
+                duration = duration - find_overlapping_duration(
+                    current_date, current_start, current_end, weekday_start_time_off, time.min
+                )
+                duration = duration - find_overlapping_duration(
+                    current_date, current_start, current_end, time.min, weekday_end_time_off
+                )
+        current_date += timedelta(days=1)
+
+    return duration
+
+
+# given a date, a start and end time and a start time of day and end time of day
+# return the overlapping duration
+def find_overlapping_duration(
+    current_date: datetime,
+    current_start: datetime,
+    current_end: datetime,
+    weekday_start_time_off: time,
+    weekday_end_time_off: time,
+) -> timedelta:
+    current_start_time_off, current_end_time_off = get_local_date_times_for_item_policy_times(
+        current_date, weekday_start_time_off, weekday_end_time_off
+    )
+    # double-check the start or end time off is actually included in the date range
+    if current_start <= current_start_time_off < current_end or current_start < current_end_time_off <= current_end:
+        return min(current_end, current_end_time_off) - max(current_start, current_start_time_off)
+    return timedelta(0)
+
+
+# This method return datetime objects for start and end date of a policy off range
+# i.e. given Fri, Sep 20 and policy off 6pm -> 9pm it will return (Fri Sep 20 @ 6pm, Fri Sep 20 @ 9pm)
+# if the policy is overnight (6pm -> 6am) it will return (Fri Sep 20 @ 6pm, Sat Sep 21 @ 6am)
+def get_local_date_times_for_item_policy_times(
+    current_date: datetime, weekday_start_time_off: time, weekday_end_time_off: time
+) -> (datetime, datetime):
+    # Convert to local time since we will be using .date()
+    current_date = current_date.astimezone()
+    current_start_time_off = datetime.combine(current_date.date(), weekday_start_time_off, tzinfo=current_date.tzinfo)
+    if weekday_end_time_off < weekday_start_time_off:
+        # If the end is before the start, add a day so it counts as overnight
+        current_end_time_off = datetime.combine(
+            (current_date + timedelta(days=1)).date(), weekday_end_time_off, tzinfo=current_date.tzinfo
+        )
+    else:
+        current_end_time_off = datetime.combine(current_date.date(), weekday_end_time_off, tzinfo=current_date.tzinfo)
+    return current_start_time_off, current_end_time_off

@@ -44,6 +44,7 @@ from NEMO.utilities import (
     format_daterange,
     format_datetime,
     get_chemical_document_filename,
+    get_duration_with_off_schedule,
     get_full_url,
     get_hazard_logo_filename,
     get_model_instance,
@@ -2717,6 +2718,21 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def duration(self):
         return self.end - self.start
+
+    def duration_for_policy(self):
+        # This method returns the duration that counts for policy checks.
+        # i.e. reservation duration minus any time when the policy is off
+        item = self.reservation_item
+        if item and isinstance(item, (Tool, Area)):
+            return get_duration_with_off_schedule(
+                self.start,
+                self.end,
+                item.policy_off_weekend,
+                item.policy_off_between_times,
+                item.policy_off_start_time,
+                item.policy_off_end_time,
+            )
+        return self.duration()
 
     def has_not_ended(self):
         return False if self.end < timezone.now() else True
