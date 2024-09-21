@@ -9,6 +9,7 @@ from json import dumps, loads
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Optional, Type
 
+from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import QueryDict
 from django.urls import NoReverseMatch, reverse
@@ -725,6 +726,8 @@ class DynamicForm:
                             Task.Urgency.HIGH if task.safety_hazard or task.force_shutdown else Task.Urgency.NORMAL
                         )
                     save_task(request, task, usage_event.operator)
+                    message = f"A problem report was automatically send to staff{' and the tool was shutdown' if task.force_shutdown else ''}"
+                    messages.success(request, message, extra_tags="data-speed=9000")
 
 
 def get_submitted_user_inputs(user_data: str) -> Dict:
