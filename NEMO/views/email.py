@@ -222,7 +222,7 @@ def send_broadcast_email(request):
         )
     form = EmailBroadcastForm(request.POST)
     if not form.is_valid():
-        return render(request, "email/compose_email.html", {"form": form})
+        return render(request, "email/compose_email.html", {"form": form, "error": form.errors.as_text()})
     # Check if the user is allowed to broadcast email
     error = check_user_allowed(request.user, form.cleaned_data["audience"], form.cleaned_data["selection"])
     if error:
