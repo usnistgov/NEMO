@@ -689,22 +689,20 @@ class DynamicForm:
                     )
 
     def _update_tool_counters(self, usage_event: UsageEvent, run_data_json: Dict):
-        # This function increments all counters associated with the given tool
+        # This function increments/decrements all counters associated with the given tool
         active_counters = ToolUsageCounter.objects.filter(is_active=True, tool_id=usage_event.tool_id)
         for counter in active_counters:
             additional_value = 0
             for question in self.questions:
                 input_data = run_data_json[question.name] if question.name in run_data_json else None
-                additional_value += get_counter_increment_for_question(
-                    question, input_data, counter.tool_usage_question
-                )
+                additional_value += get_counter_value_for_question(question, input_data, counter.tool_usage_question)
                 if isinstance(question, PostUsageGroupQuestion):
                     for sub_question in question.sub_questions:
-                        additional_value += get_counter_increment_for_question(
+                        additional_value += get_counter_value_for_question(
                             sub_question, input_data, counter.tool_usage_question
                         )
             if additional_value:
-                counter.value += additional_value
+                counter.value += counter.counter_direction * additional_value
                 counter.save()
 
     def _report_problems(self, usage_event: UsageEvent, run_data_json: Dict, request):
@@ -795,7 +793,7 @@ def withdraw_consumable_for_question(question, input_data, customer, merchant, p
                 )
 
 
-def get_counter_increment_for_question(question, input_data, counter_question):
+def get_counter_value_for_question(question, input_data, counter_question):
     additional_value = 0
     if isinstance(question, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion)):
         if question.name == counter_question and "user_input" in input_data and input_data["user_input"]:

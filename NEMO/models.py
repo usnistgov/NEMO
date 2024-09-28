@@ -4067,42 +4067,102 @@ class BadgeReader(BaseModel):
 
 
 class ToolUsageCounter(BaseModel):
-    name = models.CharField(max_length=200, help_text="The name of this counter")
+    class CounterDirection(object):
+        INCREMENT = +1
+        DECREMENT = -1
+        Choices = (
+            (INCREMENT, _("Increment")),
+            (DECREMENT, _("Decrement")),
+        )
+
+    name = models.CharField(max_length=200, help_text=_("The name of this counter"))
     description = models.TextField(
-        null=True, blank=True, help_text="The counter description to be displayed next to it on the tool control page"
+        null=True,
+        blank=True,
+        help_text=_("The counter description to be displayed next to it on the tool control page"),
     )
-    value = models.FloatField(default=0, help_text="The current value of this counter")
-    tool = models.ForeignKey(Tool, help_text="The tool this counter is for.", on_delete=models.CASCADE)
+    value = models.FloatField(help_text=_("The current value of this counter"))
+    default_value = models.FloatField(help_text=_("The default value to reset this counter to"))
+    counter_direction = models.IntegerField(default=CounterDirection.INCREMENT, choices=CounterDirection.Choices)
+    tool = models.ForeignKey(Tool, help_text=_("The tool this counter is for."), on_delete=models.CASCADE)
     tool_usage_question = models.CharField(
         max_length=200,
-        help_text="The name of the tool's post usage question which should be used to increment this counter",
+        help_text=_("The name of the tool's post usage question which should be used to increment this counter"),
     )
-    last_reset_value = models.FloatField(null=True, blank=True, help_text="The last value before the counter was reset")
-    last_reset = models.DateTimeField(null=True, blank=True, help_text="The date and time this counter was last reset")
+    staff_members_can_reset = models.BooleanField(
+        default=True, help_text=_("Check this box to allow staff to reset this counter")
+    )
+    superusers_can_reset = models.BooleanField(
+        default=False, help_text=_("Check this box to allow tool superusers to reset this counter")
+    )
+    qualified_users_can_reset = models.BooleanField(
+        default=False, help_text=_("Check this box to allow qualified users to reset this counter")
+    )
+    last_reset_value = models.FloatField(
+        null=True, blank=True, help_text=_("The last value before the counter was reset")
+    )
+    last_reset = models.DateTimeField(
+        null=True, blank=True, help_text=_("The date and time this counter was last reset")
+    )
     last_reset_by = models.ForeignKey(
-        User, null=True, blank=True, help_text="The user who last reset this counter", on_delete=models.SET_NULL
+        User, null=True, blank=True, help_text=_("The user who last reset this counter"), on_delete=models.SET_NULL
+    )
+    email_facility_managers_when_reset = models.BooleanField(
+        default=True, help_text=_("Check this box to email facility managers when this counter is reset")
     )
     warning_threshold = models.FloatField(
         null=True,
         blank=True,
-        help_text="When set in combination with the email address, a warning email will be sent when the counter reaches this value.",
+        help_text=_(
+            "When set in combination with the email address, a warning email will be sent when the counter reaches this value."
+        ),
     )
     warning_email = fields.MultiEmailField(
-        null=True, blank=True, help_text="The address to send the warning email to. A comma-separated list can be used."
+        null=True,
+        blank=True,
+        help_text=_("The address to send the warning email to. A comma-separated list can be used."),
     )
     warning_threshold_reached = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True, help_text="The state of the counter")
+    is_active = models.BooleanField(default=True, help_text=_("The state of the counter"))
 
     def value_color(self):
         color = None
         if self.warning_threshold:
-            if self.value < self.warning_threshold:
+            effective_value = self.counter_direction * self.value
+            effective_warning_threshold = self.counter_direction * self.warning_threshold
+            if effective_value < effective_warning_threshold:
                 color = "success"
-            elif self.value == self.warning_threshold:
+            elif effective_value == effective_warning_threshold:
                 color = "warning"
-            elif self.value > self.warning_threshold:
+            elif effective_value > effective_warning_threshold:
                 color = "danger"
         return bootstrap_primary_color(color)
+
+    def reset_permitted_users(self) -> QuerySetType[User]:
+        user_filter = Q(is_facility_manager=True) | Q(is_superuser=True)
+        if self.staff_members_can_reset:
+            user_filter |= Q(is_staff=True)
+        if self.superusers_can_reset:
+            user_filter |= Q(superuser_for_tools__in=[self.tool])
+        if self.qualified_users_can_reset:
+            user_filter |= Q(id__in=Qualification.objects.filter(tool=self.tool).values_list("user_id", flat=True))
+        return User.objects.filter(Q(is_active=True) & user_filter).distinct()
+
+    def clean(self):
+        errors = {}
+        if self.warning_threshold:
+            effective_warning_threshold = self.counter_direction * self.warning_threshold
+            effective_default_value = self.counter_direction * self.default_value
+            if effective_default_value > effective_warning_threshold:
+                errors.update(
+                    {
+                        "warning_threshold": _(
+                            f"The warning threshold ({self.warning_threshold}) needs to be {'higher' if self.counter_direction > 0 else 'lower'} than the default value ({self.default_value})"
+                        )
+                    }
+                )
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self):
         return str(self.name)
@@ -4116,17 +4176,19 @@ class ToolUsageCounter(BaseModel):
 def check_tool_usage_counter_threshold(sender, instance: ToolUsageCounter, **kwargs):
     try:
         if instance.warning_threshold:
+            effective_warning_threshold = instance.counter_direction * instance.warning_threshold
+            effective_value = instance.counter_direction * instance.value
             if (
                 instance.is_active
                 and not instance.warning_threshold_reached
-                and instance.value >= instance.warning_threshold
+                and effective_value >= effective_warning_threshold
             ):
-                # value is over threshold. set flag and send email
+                # value is under/over threshold. set flag and send email
                 instance.warning_threshold_reached = True
                 from NEMO.views.tool_control import send_tool_usage_counter_email
 
                 send_tool_usage_counter_email(instance)
-            if instance.warning_threshold_reached and instance.value < instance.warning_threshold:
+            if instance.warning_threshold_reached and effective_value < effective_warning_threshold:
                 # it has been reset. reset flag
                 instance.warning_threshold_reached = False
     except Exception as e:

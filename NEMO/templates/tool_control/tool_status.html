@@ -133,11 +133,11 @@
                         <div class="tool-counter-name">
                             {{ counter.name }}: <span style="font-weight: bold; {% if counter.value_color %}color: {{ counter.value_color }}{% endif %}">{{ counter.value|floatformat:-2 }}</span>
                         </div>
-                        {% if user.is_staff %}
+                        {% if user in counter.reset_permitted_users %}
                             <div class="tool-counter-reset">
                                 <a class="btn btn-xs btn-warning"
                                    href="{% url 'reset_tool_counter' counter.id %}"
-                                   onclick="return confirm('You are about to reset the {{ counter.name }} counter to 0.\nAre you sure?')">Reset</a>
+                                   onclick="return confirm('You are about to reset the {{ counter.name }} counter to {{ counter.default_value }}.\nAre you sure?')">Reset</a>
                             </div>
                         {% endif %}
                         <div class="tool-counter-description">{{ counter.description|linebreaksbr }}</div>

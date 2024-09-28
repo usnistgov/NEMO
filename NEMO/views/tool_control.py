@@ -667,12 +667,14 @@ def tool_usage_group_question(request, tool_id, group_name):
     )
 
 
-@staff_member_required
+@login_required
 @require_GET
 def reset_tool_counter(request, counter_id):
     counter = get_object_or_404(ToolUsageCounter, id=counter_id)
+    if request.user not in counter.reset_permitted_users():
+        return redirect("landing")
     counter.last_reset_value = counter.value
-    counter.value = 0
+    counter.value = counter.default_value
     counter.last_reset = datetime.now()
     counter.last_reset_by = request.user
     counter.save()
@@ -680,28 +682,29 @@ def reset_tool_counter(request, counter_id):
     # Save a comment about the counter being reset.
     comment = Comment()
     comment.tool = counter.tool
-    comment.content = f"The {counter.name} counter was reset to 0. Its last value was {counter.last_reset_value}."
+    comment.content = f"The {counter.name} counter was reset to {counter.default_value}. Its last value was {counter.last_reset_value}."
     comment.author = request.user
     comment.expiration_date = timezone.now()
     comment.save()
 
-    # Email Lab Managers about the counter being reset.
-    facility_managers = [
-        email
-        for manager in User.objects.filter(is_active=True, is_facility_manager=True)
-        for email in manager.get_emails(manager.get_preferences().email_send_task_updates)
-    ]
-    if facility_managers:
-        message = f"""The {counter.name} counter for the {counter.tool.name} was reset to 0 on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.
-	
-Its last value was {counter.last_reset_value}."""
-        send_mail(
-            subject=f"{counter.tool.name} counter reset",
-            content=message,
-            from_email=get_email_from_settings(),
-            to=facility_managers,
-            email_category=EmailCategory.SYSTEM,
-        )
+    if counter.email_facility_managers_when_reset:
+        # Email Lab Managers about the counter being reset.
+        facility_managers = [
+            email
+            for manager in User.objects.filter(is_active=True, is_facility_manager=True)
+            for email in manager.get_emails(manager.get_preferences().email_send_task_updates)
+        ]
+        if facility_managers:
+            message = f"""The {counter.name} counter for the {counter.tool.name} was reset to {counter.default_value} on {formats.localize(counter.last_reset)} by {counter.last_reset_by}.
+        
+    Its last value was {counter.last_reset_value}."""
+            send_mail(
+                subject=f"{counter.tool.name} counter reset",
+                content=message,
+                from_email=get_email_from_settings(),
+                to=facility_managers,
+                email_category=EmailCategory.SYSTEM,
+            )
     return redirect("tool_control")
 
 

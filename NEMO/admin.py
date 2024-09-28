@@ -1667,11 +1667,21 @@ class ToolUsageCounterAdmin(admin.ModelAdmin):
         "tool_usage_question",
         "value",
         "warning_threshold",
+        "default_value",
+        "staff_members_can_reset",
+        "qualified_users_can_reset",
+        "superusers_can_reset",
         "last_reset",
         "last_reset_by",
         "is_active",
     )
-    list_filter = (("tool", admin.RelatedOnlyFieldListFilter), "last_reset")
+    list_filter = (
+        "staff_members_can_reset",
+        "qualified_users_can_reset",
+        "superusers_can_reset",
+        ("tool", admin.RelatedOnlyFieldListFilter),
+        "last_reset",
+    )
     readonly_fields = ("warning_threshold_reached",)
     form = ToolUsageCounterAdminForm
     autocomplete_fields = ["tool", "last_reset_by"]
