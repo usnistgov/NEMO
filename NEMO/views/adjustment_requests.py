@@ -107,19 +107,20 @@ def create_adjustment_request(request, request_id=None, item_type_id=None, item_
     except ContentType.DoesNotExist:
         pass
 
+    edit = bool(adjustment_request.id)
+    initial_data = {"creator": adjustment_request.creator if edit else user}
     # set those initial properties on the form if we just changed the item
     item_changed = bool(item_type_id)
     if item_changed and adjustment_request.item and adjustment_request.item.can_times_be_changed():
-        adjustment_request.new_start = adjustment_request.item.start
-        adjustment_request.new_end = adjustment_request.item.end
+        initial_data["new_start"] = adjustment_request.item.start
+        initial_data["new_end"] = adjustment_request.item.end
     if item_changed and adjustment_request.item and adjustment_request.item.can_quantity_be_changed():
-        adjustment_request.new_quantity = adjustment_request.item.quantity
+        initial_data["new_quantity"] = adjustment_request.item.quantity
 
-    edit = bool(adjustment_request.id)
     form = AdjustmentRequestForm(
         request.POST or None,
         instance=adjustment_request,
-        initial={"creator": adjustment_request.creator if edit else user},
+        initial=initial_data,
     )
 
     item_type = form.data.get("item_type") if form.is_bound else None
@@ -373,8 +374,10 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
             Reservation.objects.filter(user=user, missed=True).filter(**end_filter).order_by("-end")[:item_number]
         )
     if AdjustmentRequestsCustomization.get_bool("adjustment_requests_tool_usage_enabled"):
+        # also add non-remote work on behalf of user
         items.extend(
-            UsageEvent.objects.filter(user=user, operator=user, end__isnull=False)
+            UsageEvent.objects.filter(end__isnull=False)
+            .filter(Q(user=user, operator=user) | Q(user=user, remote_work=False))
             .filter(**end_filter)
             .order_by("-end")[:item_number]
         )
@@ -410,9 +413,10 @@ def adjustment_eligible_items(user: User, current_item=None) -> List[BillableIte
         consumable_withdrawals = consumable_withdrawals.filter(type_filter)
         items.extend(consumable_withdrawals[:item_number])
     if user.is_staff and AdjustmentRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled"):
-        # Add all remote charges for staff to request for adjustment
+        # Add all charges where staff is the operator and remove the ones where user is the operator
         items.extend(
-            UsageEvent.objects.filter(remote_work=True, operator=user, end__isnull=False)
+            UsageEvent.objects.filter(operator=user, end__isnull=False)
+            .exclude(user=F("operator"))
             .filter(**end_filter)
             .order_by("-end")[:item_number]
         )
@@ -453,6 +457,7 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
     table_result.add_header(("new_start", "New start"))
     table_result.add_header(("new_end", "New end"))
     table_result.add_header(("difference", "Difference"))
+    table_result.add_header(("waived", "Waive requested"))
     table_result.add_header(("reviewer", "Reviewer"))
     table_result.add_header(("applied", "Applied"))
     table_result.add_header(("applied_by", "Applied by"))
@@ -469,6 +474,7 @@ def adjustments_csv_export(request_list: List[AdjustmentRequest]) -> HttpRespons
                 "new_end": req.new_end,
                 "new_quantity": req.new_quantity,
                 "difference": req.get_time_difference() or req.get_quantity_difference(),
+                "waived": req.waive,
                 "reviewer": req.reviewer,
                 "applied": req.applied,
                 "applied_by": req.applied_by,

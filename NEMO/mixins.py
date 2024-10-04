@@ -152,7 +152,12 @@ class BillableItemMixin:
                     usage_enabled
                     and time_limit_condition
                     and user_project_condition
-                    and self.get_customer() == self.get_operator()
+                    and (self.get_customer() == self.get_operator() or not self.remote_work)
+                ) or (
+                    remote_enabled
+                    and self.get_operator() == user
+                    and user.is_staff
+                    and self.get_operator() != self.get_customer()
                 )
         elif self.get_real_type() == BillableItemMixin.REMOTE_WORK:
             remote_enabled = AdjustmentRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled")

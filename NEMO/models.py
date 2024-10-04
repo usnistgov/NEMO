@@ -4382,7 +4382,6 @@ class AdjustmentRequest(BaseModel):
     def get_quantity_difference(self) -> int:
         if self.item and self.new_quantity is not None:
             return self.new_quantity - self.item.quantity
-        return 0
 
     def get_time_difference(self) -> str:
         if self.item and self.new_start and self.new_end:
@@ -4498,16 +4497,6 @@ class AdjustmentRequest(BaseModel):
                 raise ValidationError({NON_FIELD_ERRORS: _("There is already an adjustment request for this charge")})
             if self.new_start and self.new_end and self.new_start > self.new_end:
                 raise ValidationError({"new_end": _("The end must be later than the start")})
-            if (
-                not self.waive
-                and self.new_start
-                and format_datetime(self.new_start) == format_datetime(item.start)
-                and self.new_end
-                and format_datetime(self.new_end) == format_datetime(item.end)
-            ) or (not self.waive and self.new_quantity is not None and self.new_quantity == item.quantity):
-                raise ValidationError(
-                    {NON_FIELD_ERRORS: _("You must change at least one attribute (dates or quantity)")}
-                )
 
     class Meta:
         ordering = ["-creation_time"]
