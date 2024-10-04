@@ -126,25 +126,25 @@ class BillableItemMixin:
 
     def can_be_adjusted(self, user: User):
         # determine if the given user can make an adjustment request for this charge
-        from NEMO.views.customization import UserRequestsCustomization
+        from NEMO.views.customization import AdjustmentRequestsCustomization
         from NEMO.views.usage import get_managed_projects
 
         pi_projects = get_managed_projects(user)
 
-        time_limit = UserRequestsCustomization.get_date_limit()
+        time_limit = AdjustmentRequestsCustomization.get_date_limit()
         time_limit_condition = not time_limit or time_limit <= self.get_end()
         user_project_condition = self.get_customer() == user or self.project in pi_projects
         operator_is_staff = self.get_operator() == user and user.is_staff
         if self.get_real_type() == BillableItemMixin.AREA_ACCESS:
-            access_enabled = UserRequestsCustomization.get_bool("adjustment_requests_area_access_enabled")
-            remote_enabled = UserRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled")
+            access_enabled = AdjustmentRequestsCustomization.get_bool("adjustment_requests_area_access_enabled")
+            remote_enabled = AdjustmentRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled")
             if self.staff_charge:
                 return remote_enabled and time_limit_condition and operator_is_staff
             else:
                 return access_enabled and user_project_condition and time_limit_condition
         elif self.get_real_type() == BillableItemMixin.TOOL_USAGE:
-            remote_enabled = UserRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled")
-            usage_enabled = UserRequestsCustomization.get_bool("adjustment_requests_tool_usage_enabled")
+            remote_enabled = AdjustmentRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled")
+            usage_enabled = AdjustmentRequestsCustomization.get_bool("adjustment_requests_tool_usage_enabled")
             if self.remote_work:
                 return remote_enabled and time_limit_condition and operator_is_staff
             else:
@@ -155,15 +155,23 @@ class BillableItemMixin:
                     and self.get_customer() == self.get_operator()
                 )
         elif self.get_real_type() == BillableItemMixin.REMOTE_WORK:
-            remote_enabled = UserRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled")
+            remote_enabled = AdjustmentRequestsCustomization.get_bool("adjustment_requests_staff_staff_charges_enabled")
             return remote_enabled and time_limit_condition and operator_is_staff
         elif self.get_real_type() == BillableItemMixin.TRAINING:
             return f"{self.get_type_display()} training"
         elif self.get_real_type() == BillableItemMixin.CONSUMABLE:
-            withdrawal_enabled = UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_enabled")
-            self_check = UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_self_checkout")
-            staff_check = UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_staff_checkout")
-            usage_event = UserRequestsCustomization.get_bool("adjustment_requests_consumable_withdrawal_usage_event")
+            withdrawal_enabled = AdjustmentRequestsCustomization.get_bool(
+                "adjustment_requests_consumable_withdrawal_enabled"
+            )
+            self_check = AdjustmentRequestsCustomization.get_bool(
+                "adjustment_requests_consumable_withdrawal_self_checkout"
+            )
+            staff_check = AdjustmentRequestsCustomization.get_bool(
+                "adjustment_requests_consumable_withdrawal_staff_checkout"
+            )
+            usage_event = AdjustmentRequestsCustomization.get_bool(
+                "adjustment_requests_consumable_withdrawal_usage_event"
+            )
             type_condition = True
             if not self_check:
                 consumable_self_checked = (
@@ -181,29 +189,31 @@ class BillableItemMixin:
                 type_condition = type_condition and not self.usage_event
             return withdrawal_enabled and time_limit_condition and type_condition and user_project_condition
         elif self.get_real_type() == BillableItemMixin.MISSED_RESERVATION:
-            missed_resa_enabled = UserRequestsCustomization.get_bool("adjustment_requests_missed_reservation_enabled")
+            missed_resa_enabled = AdjustmentRequestsCustomization.get_bool(
+                "adjustment_requests_missed_reservation_enabled"
+            )
             return missed_resa_enabled and time_limit_condition and user_project_condition
 
     def can_be_waived(self):
-        from NEMO.views.customization import UserRequestsCustomization
+        from NEMO.views.customization import AdjustmentRequestsCustomization
         from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, UsageEvent
 
         return (
             isinstance(self, AreaAccessRecord)
-            and UserRequestsCustomization.get_bool("adjustment_requests_waive_area_access_enabled")
+            and AdjustmentRequestsCustomization.get_bool("adjustment_requests_waive_area_access_enabled")
             or isinstance(self, UsageEvent)
-            and UserRequestsCustomization.get_bool("adjustment_requests_waive_tool_usage_enabled")
+            and AdjustmentRequestsCustomization.get_bool("adjustment_requests_waive_tool_usage_enabled")
             or isinstance(self, ConsumableWithdraw)
-            and UserRequestsCustomization.get_bool("adjustment_requests_waive_consumable_withdrawal_enabled")
+            and AdjustmentRequestsCustomization.get_bool("adjustment_requests_waive_consumable_withdrawal_enabled")
             or isinstance(self, Reservation)
-            and UserRequestsCustomization.get_bool("adjustment_requests_waive_missed_reservation_enabled")
+            and AdjustmentRequestsCustomization.get_bool("adjustment_requests_waive_missed_reservation_enabled")
         )
 
     def can_times_be_changed(item):
-        from NEMO.views.customization import UserRequestsCustomization
+        from NEMO.views.customization import AdjustmentRequestsCustomization
         from NEMO.models import ConsumableWithdraw, Reservation
 
-        can_change_reservation_times = UserRequestsCustomization.get_bool(
+        can_change_reservation_times = AdjustmentRequestsCustomization.get_bool(
             "adjustment_requests_missed_reservation_times"
         )
         return (

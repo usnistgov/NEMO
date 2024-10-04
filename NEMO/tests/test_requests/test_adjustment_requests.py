@@ -21,15 +21,15 @@ from NEMO.tests.test_utilities import (
     login_as_user,
     validate_model_error,
 )
-from NEMO.views.customization import UserRequestsCustomization
+from NEMO.views.customization import AdjustmentRequestsCustomization
 
 
 class AdjustmentRequestTestCase(TestCase):
     def setUp(self) -> None:
-        UserRequestsCustomization.set("adjustment_requests_enabled", "enabled")
+        AdjustmentRequestsCustomization.set("adjustment_requests_enabled", "enabled")
 
     def test_enable_adjustment_requests(self):
-        UserRequestsCustomization.set("adjustment_requests_enabled", "")
+        AdjustmentRequestsCustomization.set("adjustment_requests_enabled", "")
         login_as_user(self.client)
         response = self.client.get(reverse("adjustment_requests"))
         self.assertContains(response, "not enabled", status_code=400)

@@ -40,7 +40,7 @@ from NEMO.views.api_billing import (
     billable_items_training_sessions,
     billable_items_usage_events,
 )
-from NEMO.views.customization import ProjectsAccountsCustomization, UserRequestsCustomization
+from NEMO.views.customization import AdjustmentRequestsCustomization, ProjectsAccountsCustomization
 
 logger = getLogger(__name__)
 
@@ -104,7 +104,7 @@ def date_parameters_dictionary(request, default_function: Callable = get_month_t
         "identifier": identifier,
         "tab_url": get_url_for_other_tab(request) if get_billing_service().get("available", False) else "",
         "billing_service": get_billing_service().get("available", False),
-        "adjustment_time_limit": UserRequestsCustomization.get_date_limit(),
+        "adjustment_time_limit": AdjustmentRequestsCustomization.get_date_limit(),
         "existing_adjustments": existing_adjustments,
     }
     return dictionary, start_date, end_date, kind, identifier
