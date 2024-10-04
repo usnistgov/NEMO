@@ -19,13 +19,16 @@ from NEMO.fields import MultiEmailField
 from NEMO.models import BaseModel, InterlockCard
 from NEMO.typing import QuerySetType
 from NEMO.utilities import EmailCategory, format_datetime, get_email_from_settings, send_mail
+from NEMO.views.constants import CHAR_FIELD_MEDIUM_LENGTH, CHAR_FIELD_SMALL_LENGTH
 
 models_logger = getLogger(__name__)
 
 
 class SensorCardCategory(BaseModel):
-    name = models.CharField(max_length=200, help_text="The name for this sensor card category")
-    key = models.CharField(max_length=100, help_text="The key to identify this sensor card category by in sensors.py")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The name for this sensor card category")
+    key = models.CharField(
+        max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The key to identify this sensor card category by in sensors.py"
+    )
 
     class Meta:
         verbose_name_plural = "Sensor card categories"
@@ -36,12 +39,12 @@ class SensorCardCategory(BaseModel):
 
 
 class SensorCard(BaseModel):
-    name = models.CharField(max_length=200)
-    server = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    server = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     port = models.PositiveIntegerField()
     category = models.ForeignKey(SensorCardCategory, on_delete=models.CASCADE)
-    username = models.CharField(max_length=100, blank=True, null=True)
-    password = models.CharField(max_length=100, blank=True, null=True)
+    username = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
+    password = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
     enabled = models.BooleanField(blank=False, null=False, default=True)
 
     class Meta:
@@ -53,7 +56,7 @@ class SensorCard(BaseModel):
 
 
 class SensorCategory(BaseModel):
-    name = models.CharField(max_length=200, help_text="The name for this sensor category")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The name for this sensor category")
     parent = models.ForeignKey(
         "SensorCategory", related_name="children", null=True, blank=True, on_delete=models.SET_NULL
     )
@@ -95,16 +98,22 @@ class SensorCategory(BaseModel):
 
 
 class Sensor(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     visible = models.BooleanField(
         default=True, help_text="Specifies whether this sensor is visible in the sensor dashboard"
     )
     sensor_card = models.ForeignKey(SensorCard, blank=True, null=True, on_delete=models.CASCADE)
     interlock_card = models.ForeignKey(InterlockCard, blank=True, null=True, on_delete=models.CASCADE)
     sensor_category = models.ForeignKey(SensorCategory, blank=True, null=True, on_delete=models.SET_NULL)
-    data_label = models.CharField(blank=True, null=True, max_length=200, help_text="Label for graph and table data")
-    data_prefix = models.CharField(blank=True, null=True, max_length=100, help_text="Prefix for sensor data values")
-    data_suffix = models.CharField(blank=True, null=True, max_length=100, help_text="Suffix for sensor data values")
+    data_label = models.CharField(
+        blank=True, null=True, max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="Label for graph and table data"
+    )
+    data_prefix = models.CharField(
+        blank=True, null=True, max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="Prefix for sensor data values"
+    )
+    data_suffix = models.CharField(
+        blank=True, null=True, max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="Suffix for sensor data values"
+    )
     unit_id = models.PositiveIntegerField(null=True, blank=True)
     read_address = models.PositiveIntegerField(null=True, blank=True)
     number_of_values = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])

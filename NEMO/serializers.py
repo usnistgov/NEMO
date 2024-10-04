@@ -54,7 +54,7 @@ from NEMO.models import (
     UsageEvent,
     User,
 )
-from NEMO.views.constants import CHAR_FIELD_MAXIMUM_LENGTH
+from NEMO.views.constants import CHAR_FIELD_LARGE_LENGTH, CHAR_FIELD_MEDIUM_LENGTH
 
 
 class MultiEmailSerializerField(serializers.CharField):
@@ -525,16 +525,16 @@ class BillableItemSerializer(serializers.Serializer):
     type = ChoiceField(
         ["missed_reservation", "tool_usage", "area_access", "consumable", "staff_charge", "training_session"]
     )
-    name = CharField(max_length=200, read_only=True)
+    name = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     item_id = IntegerField(read_only=True)
     details = CharField(max_length=500, read_only=True)
-    account = CharField(max_length=200, read_only=True)
+    account = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     account_id = IntegerField(read_only=True)
-    project = CharField(max_length=200, read_only=True)
+    project = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     project_id = IntegerField(read_only=True)
-    application = CharField(max_length=200, read_only=True)
-    user = CharField(max_length=255, read_only=True)
-    username = CharField(max_length=200, read_only=True)
+    application = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
+    user = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
+    username = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     user_id = IntegerField(read_only=True)
     start = DateTimeField(read_only=True)
     end = DateTimeField(read_only=True)
@@ -557,37 +557,37 @@ class BillableItemSerializer(serializers.Serializer):
 
 class ToolStatusSerializer(serializers.Serializer):
     id = IntegerField(read_only=True)
-    name = CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, read_only=True)
-    category = CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, read_only=True)
+    name = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
+    category = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     in_use = BooleanField(read_only=True)
     visible = BooleanField(read_only=True)
     operational = BooleanField(read_only=True)
     problematic = BooleanField(read_only=True)
-    problem_descriptions = CharField(default=None, max_length=1000, read_only=True)
+    problem_descriptions = CharField(default=None, max_length=CHAR_FIELD_LARGE_LENGTH, read_only=True)
     customer_id = IntegerField(default=None, source="get_current_usage_event.user.id", read_only=True)
     customer_name = CharField(
         default=None,
         source="get_current_usage_event.user.get_name",
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         read_only=True,
     )
     customer_username = CharField(
         default=None,
         source="get_current_usage_event.user.username",
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         read_only=True,
     )
     operator_id = IntegerField(default=None, source="get_current_usage_event.operator.id", read_only=True)
     operator_name = CharField(
         default=None,
         source="get_current_usage_event.operator.get_name",
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         read_only=True,
     )
     operator_username = CharField(
         default=None,
         source="get_current_usage_event.operator.username",
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         read_only=True,
     )
     current_usage_id = IntegerField(default=None, source="get_current_usage_event.id", read_only=True)

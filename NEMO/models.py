@@ -56,7 +56,13 @@ from NEMO.utilities import (
     supported_embedded_extensions,
 )
 from NEMO.validators import color_hex_list_validator, color_hex_validator
-from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH, CHAR_FIELD_MAXIMUM_LENGTH, MEDIA_PROTECTED
+from NEMO.views.constants import (
+    ADDITIONAL_INFORMATION_MAXIMUM_LENGTH,
+    CHAR_FIELD_LARGE_LENGTH,
+    CHAR_FIELD_MEDIUM_LENGTH,
+    CHAR_FIELD_SMALL_LENGTH,
+    MEDIA_PROTECTED,
+)
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
 models_logger = getLogger(__name__)
@@ -132,7 +138,7 @@ class SerializationByNameModel(BaseModel):
 
 
 class BaseCategory(SerializationByNameModel):
-    name = models.CharField(max_length=200, unique=True, help_text="The unique name for this item")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text="The unique name for this item")
     display_order = models.IntegerField(
         help_text="The display order is used to sort these items. The lowest value category is displayed first."
     )
@@ -147,15 +153,18 @@ class BaseCategory(SerializationByNameModel):
 
 class BaseDocumentModel(BaseModel):
     document = models.FileField(
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         null=True,
         blank=True,
         upload_to=document_filename_upload,
         verbose_name="Document",
     )
-    url = models.CharField(null=True, blank=True, max_length=200, verbose_name="URL")
+    url = models.URLField(null=True, blank=True, verbose_name="URL")
     name = models.CharField(
-        null=True, blank=True, max_length=200, help_text="The optional name to display for this document"
+        null=True,
+        blank=True,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
+        help_text="The optional name to display for this document",
     )
     display_order = models.IntegerField(
         default=1,
@@ -323,7 +332,7 @@ class UserPreferences(BaseModel):
     )
     staff_status_view = models.CharField(
         "staff_status_view",
-        max_length=100,
+        max_length=CHAR_FIELD_SMALL_LENGTH,
         default="day",
         choices=[("day", "Day"), ("week", "Week"), ("month", "Month")],
         help_text="Preferred view for staff status page",
@@ -390,7 +399,7 @@ class UserPreferences(BaseModel):
         null=True,
         blank=True,
         default="60,7",
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="The number of days to send a reminder before a recurring charge is due. A comma-separated list can be used for multiple reminders.",
     )
     create_reservation_confirmation_override = models.BooleanField(
@@ -442,7 +451,7 @@ class UserType(BaseCategory):
 
 
 class ProjectDiscipline(BaseCategory):
-    name = models.CharField(max_length=200, unique=True, help_text="The name of the discipline")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text="The name of the discipline")
 
 
 class PhysicalAccessLevel(BaseModel):
@@ -456,7 +465,7 @@ class PhysicalAccessLevel(BaseModel):
             (WEEKENDS, "Weekends"),
         )
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     area = TreeForeignKey("Area", on_delete=models.CASCADE)
     schedule = models.IntegerField(choices=Schedule.Choices)
     weekdays_start_time = models.TimeField(
@@ -626,7 +635,7 @@ class TemporaryPhysicalAccessRequest(BaseModel):
 
 class Closure(BaseModel):
     name = models.CharField(
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="The name of this closure, that will be displayed as the policy problem and alert (if applicable).",
     )
     alert_days_before = models.PositiveIntegerField(
@@ -727,13 +736,15 @@ class OnboardingPhase(BaseCategory):
 
 class User(BaseModel, PermissionsMixin):
     # Personal information:
-    username = models.CharField(max_length=100, unique=True)
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    username = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, unique=True)
+    first_name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
+    last_name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     email = models.EmailField(verbose_name="email address")
     type = models.ForeignKey(UserType, null=True, blank=True, on_delete=models.SET_NULL)
     domain = models.CharField(
-        max_length=100, blank=True, help_text="The Active Directory domain that the account resides on"
+        max_length=CHAR_FIELD_SMALL_LENGTH,
+        blank=True,
+        help_text="The Active Directory domain that the account resides on",
     )
     onboarding_phases = models.ManyToManyField(OnboardingPhase, blank=True)
     safety_trainings = models.ManyToManyField(SafetyTraining, blank=True)
@@ -1121,7 +1132,7 @@ class Tool(SerializationByNameModel):
         HYBRID = 2
         Choices = ((REGULAR, "Regular"), (WAIT_LIST, "Wait List"), (HYBRID, "Hybrid"))
 
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, unique=True)
     parent_tool = models.ForeignKey(
         "Tool",
         related_name="tool_children_set",
@@ -1134,7 +1145,9 @@ class Tool(SerializationByNameModel):
     _description = models.TextField(
         db_column="description", null=True, blank=True, help_text="HTML syntax could be used"
     )
-    _serial = models.CharField(db_column="serial", null=True, blank=True, max_length=100, help_text="Serial Number")
+    _serial = models.CharField(
+        db_column="serial", null=True, blank=True, max_length=CHAR_FIELD_SMALL_LENGTH, help_text="Serial Number"
+    )
     _image = models.ImageField(
         db_column="image",
         upload_to=get_tool_image_filename,
@@ -1152,7 +1165,7 @@ class Tool(SerializationByNameModel):
         db_column="category",
         null=True,
         blank=True,
-        max_length=1000,
+        max_length=CHAR_FIELD_LARGE_LENGTH,
         help_text='Create sub-categories using slashes. For example "Category 1/Sub-category 1".',
     )
     _operational = models.BooleanField(
@@ -1192,8 +1205,10 @@ class Tool(SerializationByNameModel):
         help_text="Users who can approve/deny adjustment requests for this tool. Defaults to facility managers if left blank.",
     )
     # Extra info
-    _location = models.CharField(db_column="location", null=True, blank=True, max_length=100)
-    _phone_number = models.CharField(db_column="phone_number", null=True, blank=True, max_length=100)
+    _location = models.CharField(db_column="location", null=True, blank=True, max_length=CHAR_FIELD_SMALL_LENGTH)
+    _phone_number = models.CharField(
+        db_column="phone_number", null=True, blank=True, max_length=CHAR_FIELD_SMALL_LENGTH
+    )
     _notification_email_address = models.EmailField(
         db_column="notification_email_address",
         blank=True,
@@ -1232,7 +1247,7 @@ class Tool(SerializationByNameModel):
     )
     _grant_badge_reader_access_upon_qualification = models.CharField(
         db_column="grant_badge_reader_access_upon_qualification",
-        max_length=100,
+        max_length=CHAR_FIELD_SMALL_LENGTH,
         null=True,
         blank=True,
         help_text="Badge reader access is granted to the user upon qualification for this tool.",
@@ -2010,7 +2025,7 @@ class ToolDocuments(BaseDocumentModel):
 
 
 class ToolQualificationGroup(SerializationByNameModel):
-    name = models.CharField(max_length=200, unique=True, help_text="The name of this tool group")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text="The name of this tool group")
     tools = models.ManyToManyField(Tool, blank=False)
 
     def __str__(self):
@@ -2029,7 +2044,7 @@ class Qualification(BaseModel):
 
 class Configuration(BaseModel, ConfigurationMixin):
     name = models.CharField(
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="The name of this overall configuration. This text is displayed as a label on the tool control page.",
     )
     tool = models.ForeignKey(
@@ -2038,7 +2053,7 @@ class Configuration(BaseModel, ConfigurationMixin):
     configurable_item_name = models.CharField(
         blank=True,
         null=True,
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="The name of the tool part being configured. This text is displayed as a label on the tool control page. Leave this field blank if there is only one configuration slot.",
     )
     advance_notice_limit = models.PositiveIntegerField(
@@ -2067,7 +2082,10 @@ class Configuration(BaseModel, ConfigurationMixin):
         validators=[color_hex_list_validator],
     )
     absence_string = models.CharField(
-        max_length=100, blank=True, null=True, help_text="The text that appears to indicate absence of a choice."
+        max_length=CHAR_FIELD_SMALL_LENGTH,
+        blank=True,
+        null=True,
+        help_text="The text that appears to indicate absence of a choice.",
     )
     maintainers = models.ManyToManyField(
         User, blank=True, help_text="Select the users that are allowed to change this configuration."
@@ -2129,7 +2147,7 @@ class Configuration(BaseModel, ConfigurationMixin):
 
 
 class ConfigurationOption(BaseModel, ConfigurationMixin):
-    name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     configuration = models.ForeignKey(
         Configuration,
         null=True,
@@ -2146,7 +2164,7 @@ class ConfigurationOption(BaseModel, ConfigurationMixin):
     current_setting = models.CharField(
         null=True,
         blank=True,
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="The current value for this configuration option",
     )
     available_settings = models.TextField(
@@ -2161,7 +2179,10 @@ class ConfigurationOption(BaseModel, ConfigurationMixin):
         validators=[color_hex_list_validator],
     )
     absence_string = models.CharField(
-        max_length=100, blank=True, null=True, help_text="The text that appears to indicate absence of a choice."
+        max_length=CHAR_FIELD_SMALL_LENGTH,
+        blank=True,
+        null=True,
+        help_text="The text that appears to indicate absence of a choice.",
     )
 
     def get_color(self):
@@ -2255,7 +2276,7 @@ class StaffCharge(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
 class Area(MPTTModel):
     name = models.CharField(
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="What is the name of this area? The name will be displayed on the tablet login and logout pages.",
     )
     parent_area = TreeForeignKey(
@@ -2270,7 +2291,7 @@ class Area(MPTTModel):
         db_column="category",
         null=True,
         blank=True,
-        max_length=1000,
+        max_length=CHAR_FIELD_LARGE_LENGTH,
         help_text='Create sub-categories using slashes. For example "Category 1/Sub-category 1".',
     )
     abuse_email: List[str] = fields.MultiEmailField(
@@ -2552,7 +2573,7 @@ class ConfigurationHistory(BaseModel):
     configuration = models.ForeignKey(Configuration, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     modification_time = models.DateTimeField(default=timezone.now)
-    item_name = models.CharField(null=True, blank=False, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    item_name = models.CharField(null=True, blank=False, max_length=CHAR_FIELD_MEDIUM_LENGTH)
     slot = models.PositiveIntegerField()
     setting = models.TextField()
 
@@ -2569,7 +2590,7 @@ class AccountType(BaseCategory):
 
 
 class Account(SerializationByNameModel):
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, unique=True)
     type = models.ForeignKey(AccountType, null=True, blank=True, on_delete=models.SET_NULL)
     start_date = models.DateField(null=True, blank=True)
     active = models.BooleanField(
@@ -2594,8 +2615,8 @@ class Account(SerializationByNameModel):
 
 
 class Project(SerializationByNameModel):
-    name = models.CharField(max_length=100, unique=True)
-    application_identifier = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_LARGE_LENGTH, unique=True)
+    application_identifier = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     start_date = models.DateField(null=True, blank=True)
     account = models.ForeignKey(
         Account,
@@ -2710,7 +2731,7 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     title = models.TextField(
         default="",
         blank=True,
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).",
     )
     question_data = models.TextField(null=True, blank=True)
@@ -2841,7 +2862,7 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
 
 class ReservationQuestions(BaseModel):
-    name = models.CharField(max_length=100, help_text="The name of this ")
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The name of this ")
     questions = models.TextField(
         help_text="Upon making a reservation, the user will be asked these questions. This field will only accept JSON format"
     )
@@ -2907,7 +2928,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
 
 class Consumable(BaseModel):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     category = models.ForeignKey("ConsumableCategory", blank=True, null=True, on_delete=models.CASCADE)
     quantity = models.IntegerField(help_text="The number of items currently in stock.")
     reusable = models.BooleanField(
@@ -2974,7 +2995,7 @@ def check_consumable_quantity_threshold(sender, instance: Consumable, **kwargs):
 
 
 class ConsumableCategory(BaseModel):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
 
     class Meta:
         ordering = ["name"]
@@ -3071,7 +3092,9 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
 
 
 class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
-    name = models.CharField(max_length=200, help_text="The name/identifier for this recurring charge.")
+    name = models.CharField(
+        max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The name/identifier for this recurring charge."
+    )
     customer = models.ForeignKey(
         User,
         null=True,
@@ -3228,15 +3251,15 @@ class RecurringConsumableCharge(BaseModel, RecurrenceMixin):
 
 
 class InterlockCard(BaseModel):
-    name = models.CharField(max_length=100, blank=True, null=True)
-    server = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
+    server = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     port = models.PositiveIntegerField()
     number = models.PositiveIntegerField(blank=True, null=True)
     even_port = models.PositiveIntegerField(blank=True, null=True)
     odd_port = models.PositiveIntegerField(blank=True, null=True)
     category = models.ForeignKey("InterlockCardCategory", blank=False, null=False, on_delete=models.CASCADE, default=1)
-    username = models.CharField(max_length=100, blank=True, null=True)
-    password = models.CharField(max_length=100, blank=True, null=True)
+    username = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
+    password = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
     enabled = models.BooleanField(blank=False, null=False, default=True)
 
     class Meta:
@@ -3262,7 +3285,7 @@ class Interlock(BaseModel):
             (LOCKED, "Locked"),
         )
 
-    name = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    name = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
     card = models.ForeignKey(InterlockCard, on_delete=models.CASCADE)
     channel = models.PositiveIntegerField(blank=True, null=True, verbose_name="Channel/Relay/Coil")
     unit_id = models.PositiveIntegerField(null=True, blank=True, verbose_name="Multiplier/Unit id/Bank")
@@ -3304,8 +3327,10 @@ class Interlock(BaseModel):
 
 
 class InterlockCardCategory(BaseModel):
-    name = models.CharField(max_length=200, help_text="The name for this interlock category")
-    key = models.CharField(max_length=100, help_text="The key to identify this interlock category by in interlocks.py")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The name for this interlock category")
+    key = models.CharField(
+        max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The key to identify this interlock category by in interlocks.py"
+    )
 
     class Meta:
         verbose_name_plural = "Interlock card categories"
@@ -3467,7 +3492,7 @@ class TaskCategory(BaseModel):
             (COMPLETION, "Completion"),
         )
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     stage = models.IntegerField(choices=Stage.Choices)
 
     class Meta:
@@ -3479,7 +3504,7 @@ class TaskCategory(BaseModel):
 
 
 class TaskStatus(SerializationByNameModel):
-    name = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True)
     notify_primary_tool_owner = models.BooleanField(
         default=False, help_text="Notify the primary tool owner when a task transitions to this status"
     )
@@ -3511,7 +3536,7 @@ class TaskHistory(BaseModel):
         related_name="history",
         on_delete=models.CASCADE,
     )
-    status = models.CharField(max_length=200, help_text="A text description of the task's status")
+    status = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="A text description of the task's status")
     time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the task status was changed")
     user = models.ForeignKey(User, help_text="The user that changed the task to this status", on_delete=models.CASCADE)
 
@@ -3548,7 +3573,7 @@ class Comment(BaseModel):
 
 
 class ResourceCategory(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
 
     def __str__(self):
         return str(self.name)
@@ -3559,7 +3584,7 @@ class ResourceCategory(BaseModel):
 
 
 class Resource(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     category = models.ForeignKey(ResourceCategory, blank=True, null=True, on_delete=models.SET_NULL)
     available = models.BooleanField(default=True, help_text="Indicates whether the resource is available to be used.")
     fully_dependent_tools = models.ManyToManyField(
@@ -3703,7 +3728,7 @@ def calculate_duration(start, end, unfinished_reason):
 
 
 class Door(BaseModel):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
     welcome_message = models.TextField(
         null=True,
         blank=True,
@@ -3732,7 +3757,7 @@ class SafetyIssue(BaseModel):
     reporter = models.ForeignKey(
         User, blank=True, null=True, related_name="reported_safety_issues", on_delete=models.SET_NULL
     )
-    location = models.CharField(null=True, blank=True, max_length=200)
+    location = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
     creation_time = models.DateTimeField(auto_now_add=True)
     visible = models.BooleanField(
         default=True,
@@ -3765,7 +3790,7 @@ class SafetyCategory(BaseCategory):
 
 
 class SafetyItem(BaseModel):
-    name = models.CharField(max_length=200, help_text="The safety item name.")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The safety item name.")
     description = models.TextField(
         null=True, blank=True, help_text="The description for this safety item. HTML can be used."
     )
@@ -3797,7 +3822,7 @@ class SafetyItemDocuments(BaseDocumentModel):
 
 
 class AlertCategory(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
 
     class Meta:
         ordering = ["name"]
@@ -3808,8 +3833,10 @@ class AlertCategory(BaseModel):
 
 
 class Alert(BaseModel):
-    title = models.CharField(blank=True, max_length=150)
-    category = models.CharField(blank=True, max_length=200, help_text="A category/type for this alert.")
+    title = models.CharField(blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    category = models.CharField(
+        blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="A category/type for this alert."
+    )
     contents = models.TextField()
     creation_time = models.DateTimeField(default=timezone.now)
     creator = models.ForeignKey(User, null=True, blank=True, related_name="+", on_delete=models.SET_NULL)
@@ -3852,8 +3879,8 @@ class ContactInformationCategory(BaseCategory):
 
 
 class ContactInformation(BaseModel):
-    name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH)
-    title = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, blank=True, null=True)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    title = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, blank=True, null=True)
     image = models.ImageField(
         blank=True,
         help_text="Portraits are resized to 266 pixels high and 200 pixels wide. Crop portraits to these dimensions before uploading for optimal bandwidth usage",
@@ -3861,7 +3888,7 @@ class ContactInformation(BaseModel):
     category = models.ForeignKey(ContactInformationCategory, on_delete=models.CASCADE)
     email = models.EmailField(blank=True)
     office_phone = models.CharField(max_length=40, blank=True)
-    office_location = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, blank=True)
+    office_location = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, blank=True)
     mobile_phone = models.CharField(max_length=40, blank=True)
     mobile_phone_is_sms_capable = models.BooleanField(
         default=True,
@@ -3908,7 +3935,7 @@ class Notification(BaseModel):
 
     user = models.ForeignKey(User, related_name="notifications", on_delete=models.CASCADE)
     expiration = models.DateTimeField()
-    notification_type = models.CharField(max_length=100, choices=Types.Choices)
+    notification_type = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, choices=Types.Choices)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
@@ -3918,9 +3945,10 @@ class LandingPageChoice(BaseModel):
     image = models.ImageField(
         help_text="An image that symbolizes the choice. It is automatically resized to 128x128 pixels when displayed, so set the image to this size before uploading to optimize bandwidth usage and landing page load time"
     )
-    name = models.CharField(max_length=40, help_text="The textual name that will be displayed underneath the image")
-    url = models.CharField(
-        max_length=200,
+    name = models.CharField(
+        max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The textual name that will be displayed underneath the image"
+    )
+    url = models.URLField(
         verbose_name="URL",
         help_text="The URL that the choice leads to when clicked. Relative paths such as /calendar/ are used when linking within the site. Use fully qualified URL paths such as https://www.google.com/ to link to external sites.",
     )
@@ -3949,7 +3977,7 @@ class LandingPageChoice(BaseModel):
         help_text="Hides this choice from staff and technicians. When checked, only normal users, facility managers and super-users can see the choice",
     )
     notifications = models.CharField(
-        max_length=100,
+        max_length=CHAR_FIELD_SMALL_LENGTH,
         blank=True,
         null=True,
         choices=Notification.Types.Choices,
@@ -3964,7 +3992,7 @@ class LandingPageChoice(BaseModel):
 
 
 class Customization(BaseModel):
-    name = models.CharField(primary_key=True, max_length=100)
+    name = models.CharField(primary_key=True, max_length=CHAR_FIELD_SMALL_LENGTH)
     value = models.TextField()
 
     class Meta:
@@ -3975,7 +4003,7 @@ class Customization(BaseModel):
 
 
 class ScheduledOutageCategory(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
 
     class Meta:
         ordering = ["name"]
@@ -3989,14 +4017,16 @@ class ScheduledOutage(BaseModel):
     start = models.DateTimeField()
     end = models.DateTimeField()
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=100, help_text="A brief description to quickly inform users about the outage")
+    title = models.CharField(
+        max_length=CHAR_FIELD_SMALL_LENGTH, help_text="A brief description to quickly inform users about the outage"
+    )
     details = models.TextField(
         blank=True,
         help_text="A detailed description of why there is a scheduled outage, and what users can expect during the outage",
     )
     category = models.CharField(
         blank=True,
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text="A categorical reason for why this outage is scheduled. Useful for trend analytics.",
     )
     tool = models.ForeignKey(Tool, blank=True, null=True, on_delete=models.CASCADE)
@@ -4005,7 +4035,7 @@ class ScheduledOutage(BaseModel):
     reminder_days = models.CharField(
         null=True,
         blank=True,
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         validators=[validate_comma_separated_integer_list],
         help_text="The number of days to send a reminder before a scheduled outage. A comma-separated list can be used for multiple reminders.",
     )
@@ -4072,7 +4102,7 @@ class ScheduledOutage(BaseModel):
 
 
 class News(BaseModel):
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     pinned = models.BooleanField(
         default=False, help_text="Check this box to keep this story at the top of the news feed"
     )
@@ -4098,7 +4128,7 @@ class News(BaseModel):
 
 
 class BadgeReader(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     send_key = models.CharField(
         max_length=20,
         help_text="The name of the key which submits the badge number ('F2', 'Shift', 'Meta', 'Enter', 'a' etc.)",
@@ -4131,7 +4161,7 @@ class ToolUsageCounter(BaseModel):
             (DECREMENT, _("Decrement")),
         )
 
-    name = models.CharField(max_length=200, help_text=_("The name of this counter"))
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text=_("The name of this counter"))
     description = models.TextField(
         null=True,
         blank=True,
@@ -4142,7 +4172,7 @@ class ToolUsageCounter(BaseModel):
     counter_direction = models.IntegerField(default=CounterDirection.INCREMENT, choices=CounterDirection.Choices)
     tool = models.ForeignKey(Tool, help_text=_("The tool this counter is for."), on_delete=models.CASCADE)
     tool_usage_question = models.CharField(
-        max_length=200,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text=_("The name of the tool's post usage question which should be used to increment this counter"),
     )
     staff_members_can_reset = models.BooleanField(
@@ -4496,9 +4526,9 @@ class RequestMessage(BaseModel):
 
 
 class StaffAbsenceType(BaseModel):
-    name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The name of this absence type.")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The name of this absence type.")
     description = models.CharField(
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The description for this absence type."
+        max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The description for this absence type."
     )
 
     def __str__(self):
@@ -4606,10 +4636,10 @@ class ChemicalHazard(BaseCategory):
 
 
 class Chemical(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     hazards = models.ManyToManyField(ChemicalHazard, blank=True, help_text="Select the hazards for this chemical.")
     document = models.FileField(null=True, blank=True, upload_to=get_chemical_document_filename, max_length=500)
-    url = models.CharField(null=True, blank=True, max_length=200, verbose_name="URL")
+    url = models.URLField(null=True, blank=True, verbose_name="URL")
     keywords = models.TextField(null=True, blank=True)
 
     class Meta:
@@ -4682,7 +4712,7 @@ class StaffKnowledgeBaseCategory(BaseCategory):
 
 
 class StaffKnowledgeBaseItem(BaseModel):
-    name = models.CharField(max_length=200, help_text="The item name.")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The item name.")
     description = models.TextField(null=True, blank=True, help_text="The description for this item. HTML can be used.")
     category = models.ForeignKey(
         StaffKnowledgeBaseCategory,
@@ -4721,7 +4751,7 @@ class UserKnowledgeBaseCategory(BaseCategory):
 
 
 class UserKnowledgeBaseItem(BaseModel):
-    name = models.CharField(max_length=200, help_text="The item name.")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The item name.")
     description = models.TextField(null=True, blank=True, help_text="The description for this item. HTML can be used.")
     category = models.ForeignKey(
         UserKnowledgeBaseCategory,
@@ -4756,9 +4786,9 @@ class UserKnowledgeBaseItemDocuments(BaseDocumentModel):
 
 class ToolCredentials(BaseModel):
     tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
-    username = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
-    password = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
-    comments = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH)
+    username = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    password = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    comments = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH)
     authorized_staff = models.ManyToManyField(
         User,
         blank=True,
@@ -4776,7 +4806,7 @@ class EmailLog(BaseModel):
     when = models.DateTimeField(null=False, auto_now_add=True)
     sender = models.EmailField(null=False, blank=False)
     to = models.TextField(null=False, blank=False)
-    subject = models.CharField(null=False, max_length=254)
+    subject = models.CharField(null=False, max_length=CHAR_FIELD_MEDIUM_LENGTH)
     content = models.TextField(null=False)
     ok = models.BooleanField(null=False, default=True)
     attachments = models.TextField(null=True)
