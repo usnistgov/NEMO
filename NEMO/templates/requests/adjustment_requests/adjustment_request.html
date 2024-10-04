@@ -60,7 +60,7 @@
                                 {% with charge_type=charge|content_type %}
                                     <option url="{% if instance_id %}{% url 'edit_adjustment_request' instance_id charge_type.id charge.id %}{% else %}{% url 'create_adjustment_request' charge_type.id charge.id %}{% endif %}"
                                             value="{{ charge_type.id }}|{{ charge.id }}"
-                                            {% if form.item_type.value == charge_type and form.item_id.value|to_int == charge.id %}selected{% endif %}>
+                                            {% if form.item_type.value|to_int == charge_type.id and form.item_id.value|to_int == charge.id %}selected{% endif %}>
                                         {{ charge|billable_display:user }}
                                     </option>
                                 {% endwith %}
@@ -72,8 +72,8 @@
                     </div>
                 </div>
             </div>
-            {% if change_times_allowed and form.item_id.value and form.item_type.value %}
-                <div class="form-group">
+            {% if item.can_times_be_changed and form.item_id.value and form.item_type.value %}
+                <div class="form-group" id="new_times">
                     <div class="row">
                         <div class="col-md-3 col-sm-6">
                             <label for="new_start">New start</label>
@@ -104,8 +104,8 @@
                     {% endif %}
                 </div>
             {% endif %}
-            {% if change_quantity_allowed and form.item_id.value and form.item_type.value %}
-                <div class="form-group">
+            {% if item.can_quantity_be_changed and form.item_id.value and form.item_type.value %}
+                <div class="form-group" id="new_quantity">
                     <div class="row">
                         <div class="col-md-3 col-sm-6">
                             <label for="new_quantity">New quantity</label>
@@ -113,7 +113,7 @@
                                    class="form-control text-center"
                                    name="new_quantity"
                                    id="new_quantity"
-                                   value="{{ form.new_quantity.value }}">
+                                   value="{{ form.new_quantity.value|default_if_none:'' }}">
                         </div>
                     </div>
                     {% if form.new_quantity.errors %}
@@ -123,6 +123,19 @@
                             </div>
                         </div>
                     {% endif %}
+                </div>
+            {% endif %}
+            {% if item.can_be_waived %}
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox"
+                               id="waive_charge"
+                               name="waive"
+                               {% if form.waive.value %}checked{% endif %}
+                               value="waive"
+                               onchange="toggle_waive_fields();">
+                        I request that this charge be waived
+                    </label>
                 </div>
             {% endif %}
             <div class="form-group">
@@ -197,6 +210,15 @@
                 submit_and_disable(review_button)
             }
         }
-	
+	    function toggle_waive_fields()
+        {
+            let waive_checkbox = $("#waive_charge")[0];
+            if (waive_checkbox)
+            {
+                $("#new_quantity, #new_times").toggle(!waive_checkbox.checked);
+            }
+        }
+        
+        toggle_waive_fields();
     </script>
 {% endblock %}

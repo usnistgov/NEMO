@@ -3,6 +3,7 @@ from django.db.models import Max
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
+from NEMO.mixins import BillableItemMixin
 from NEMO.models import Area, Configuration, Interlock, InterlockCard, Tool, User
 from NEMO.typing import QuerySetType
 from NEMO.utilities import new_model_copy
@@ -176,3 +177,10 @@ def duplicate_configuration(model_admin, request, queryset: QuerySetType[Configu
             messages.error(
                 request, f"{original_name} could not be duplicated because of the following error: {str(error)}"
             )
+
+
+@admin.action(description="Waive selected charges")
+def waive_selected_charges(model_admin, request, queryset: QuerySetType[BillableItemMixin]):
+    for charge in queryset:
+        charge.waive(request.user)
+        messages.success(request, f"{model_admin.model.__name__} #{charge.id} has been successfully waived")

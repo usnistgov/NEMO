@@ -91,6 +91,19 @@ class BillableItemMixin:
         elif self.get_real_type() == BillableItemMixin.MISSED_RESERVATION:
             return f"{self.tool or self.area} missed reservation"
 
+    def waive(self, user: User):
+        if hasattr(self, "waived"):
+            self.waived = True
+            self.waived_by = user
+            self.waived_on = timezone.now()
+            self.save(update_fields=["waived", "waived_by", "waived_on"])
+
+    def validate(self, user: User):
+        if hasattr(self, "validated"):
+            self.validated = True
+            self.validated_by = user
+            self.save(update_fields=["validated", "validated_by"])
+
     def get_start(self) -> Optional[datetime.datetime]:
         if self.get_real_type() in [
             BillableItemMixin.AREA_ACCESS,
@@ -112,7 +125,7 @@ class BillableItemMixin:
             return self.date
 
     def can_be_adjusted(self, user: User):
-        # determine if a charge can be adjusted
+        # determine if the given user can make an adjustment request for this charge
         from NEMO.views.customization import UserRequestsCustomization
         from NEMO.views.usage import get_managed_projects
 
@@ -170,6 +183,39 @@ class BillableItemMixin:
         elif self.get_real_type() == BillableItemMixin.MISSED_RESERVATION:
             missed_resa_enabled = UserRequestsCustomization.get_bool("adjustment_requests_missed_reservation_enabled")
             return missed_resa_enabled and time_limit_condition and user_project_condition
+
+    def can_be_waived(self):
+        from NEMO.views.customization import UserRequestsCustomization
+        from NEMO.models import AreaAccessRecord, ConsumableWithdraw, Reservation, UsageEvent
+
+        return (
+            isinstance(self, AreaAccessRecord)
+            and UserRequestsCustomization.get_bool("adjustment_requests_waive_area_access_enabled")
+            or isinstance(self, UsageEvent)
+            and UserRequestsCustomization.get_bool("adjustment_requests_waive_tool_usage_enabled")
+            or isinstance(self, ConsumableWithdraw)
+            and UserRequestsCustomization.get_bool("adjustment_requests_waive_consumable_withdrawal_enabled")
+            or isinstance(self, Reservation)
+            and UserRequestsCustomization.get_bool("adjustment_requests_waive_missed_reservation_enabled")
+        )
+
+    def can_times_be_changed(item):
+        from NEMO.views.customization import UserRequestsCustomization
+        from NEMO.models import ConsumableWithdraw, Reservation
+
+        can_change_reservation_times = UserRequestsCustomization.get_bool(
+            "adjustment_requests_missed_reservation_times"
+        )
+        return (
+            item
+            and not isinstance(item, ConsumableWithdraw)
+            and (not isinstance(item, Reservation) or can_change_reservation_times)
+        )
+
+    def can_quantity_be_changed(self):
+        from NEMO.models import ConsumableWithdraw
+
+        return isinstance(self, ConsumableWithdraw)
 
     def get_operator_action(self) -> str:
         if self.get_real_type() == BillableItemMixin.AREA_ACCESS:

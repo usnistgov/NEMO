@@ -170,6 +170,55 @@
         </div>
         <br>
         <div class="form-group">
+            <label class="control-label col-md-4">Users can request to waive charges for:</label>
+            <div class="col-md-8">
+                <div class="checkbox">
+                    <div class="row col-md-12">
+                        <input type="hidden" name="adjustment_requests_waive_tool_usage_enabled" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_waive_tool_usage_enabled"
+                                   {% if adjustment_requests_waive_tool_usage_enabled == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            Tool usage
+                        </label>
+                        <br />
+                    </div>
+                    <div class="row col-md-12">
+                        <input type="hidden" name="adjustment_requests_waive_area_access_enabled" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_waive_area_access_enabled"
+                                   {% if adjustment_requests_waive_area_access_enabled == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            Area access
+                        </label>
+                        <br />
+                    </div>
+                    <div class="row col-xs-12">
+                        <input type="hidden" name="adjustment_requests_waive_consumable_withdrawal_enabled" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_waive_consumable_withdrawal_enabled"
+                                   {% if adjustment_requests_waive_consumable_withdrawal_enabled == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            Consumable withdrawals
+                        </label>
+                    </div>
+                    <div class="row col-xs-12">
+                        <input type="hidden" name="adjustment_requests_waive_missed_reservation_enabled" value="off" />
+                        <label>
+                            <input type="checkbox"
+                                   name="adjustment_requests_waive_missed_reservation_enabled"
+                                   {% if adjustment_requests_waive_missed_reservation_enabled == "enabled" %}checked{% endif %}
+                                   value="enabled">
+                            Missed reservation
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-md-4" for="adjustment_requests_charges_display_number">
                 Restrict number of charges
             </label>

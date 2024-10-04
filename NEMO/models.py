@@ -9,7 +9,7 @@ from html import escape
 from json import loads
 from logging import getLogger
 from re import match
-from typing import List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 from django.conf import settings
 from django.contrib.auth.models import BaseUserManager, Group, Permission, PermissionsMixin
@@ -2206,6 +2206,16 @@ class TrainingSession(BaseModel, BillableItemMixin):
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="training_validated_set", on_delete=models.CASCADE
     )
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="training_waived_set", on_delete=models.CASCADE
+    )
+
+    def clean(self):
+        errors = validate_waive_information(self)
+        if errors:
+            raise ValidationError(errors)
 
     class Meta:
         ordering = ["-date"]
@@ -2225,6 +2235,16 @@ class StaffCharge(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="staff_charge_validated_set", on_delete=models.CASCADE
     )
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="staff_charge_waived_set", on_delete=models.CASCADE
+    )
+
+    def clean(self):
+        errors = validate_waive_information(self)
+        if errors:
+            raise ValidationError(errors)
 
     class Meta:
         ordering = ["-start"]
@@ -2508,6 +2528,16 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="area_access_validated_set", on_delete=models.CASCADE
     )
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="area_access_waived_set", on_delete=models.CASCADE
+    )
+
+    def clean(self):
+        errors = validate_waive_information(self)
+        if errors:
+            raise ValidationError(errors)
 
     class Meta:
         indexes = [
@@ -2688,6 +2718,11 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="reservation_validated_set", on_delete=models.CASCADE
     )
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="reservation_waived_set", on_delete=models.CASCADE
+    )
 
     @property
     def reservation_item(self) -> Union[Tool, Area]:
@@ -2793,6 +2828,11 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
             new_reservation._deferred_related_models = deferred_related_models
         return new_reservation
 
+    def clean(self):
+        errors = validate_waive_information(self)
+        if errors:
+            raise ValidationError(errors)
+
     class Meta:
         ordering = ["-start"]
 
@@ -2845,6 +2885,16 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     remote_work = models.BooleanField(default=False)
     pre_run_data = models.TextField(null=True, blank=True)
     run_data = models.TextField(null=True, blank=True)
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="usage_event_waived_set", on_delete=models.CASCADE
+    )
+
+    def clean(self):
+        errors = validate_waive_information(self)
+        if errors:
+            raise ValidationError(errors)
 
     def duration(self):
         return calculate_duration(self.start, self.end, "In progress")
@@ -2966,6 +3016,11 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="consumable_withdrawal_validated_set", on_delete=models.CASCADE
     )
+    waived = models.BooleanField(default=False)
+    waived_on = models.DateTimeField(null=True, blank=True)
+    waived_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="consumable_withdrawal_waived_set", on_delete=models.CASCADE
+    )
 
     class Meta:
         ordering = ["-date"]
@@ -3007,6 +3062,7 @@ class ConsumableWithdraw(BaseModel, BillableItemMixin):
                 policy.check_billing_to_project(self.project, self.customer, self.consumable, self)
             except ProjectChargeException as e:
                 errors["project"] = e.msg
+        errors.update(validate_waive_information(self))
         if errors:
             raise ValidationError(errors)
 
@@ -4254,6 +4310,7 @@ class AdjustmentRequest(BaseModel):
     new_start = models.DateTimeField(null=True, blank=True)
     new_end = models.DateTimeField(null=True, blank=True)
     new_quantity = models.PositiveIntegerField(null=True, blank=True)
+    waive = models.BooleanField(default=False)
     status = models.IntegerField(choices=RequestStatus.choices_without_expired(), default=RequestStatus.PENDING)
     reviewer = models.ForeignKey(
         "User", null=True, blank=True, related_name="adjustment_requests_reviewed", on_delete=models.CASCADE
@@ -4310,10 +4367,18 @@ class AdjustmentRequest(BaseModel):
             )
 
     def get_difference(self):
-        return self.get_time_difference() or self.get_quantity_difference()
+        if self.waive:
+            return "Waived" if self.item and self.item.waived else "Waive requested"
+        else:
+            return (self.get_time_difference() or self.get_quantity_difference()) if self.item else ""
 
     def adjustable_charge(self):
-        return self.has_changed_time() or isinstance(self.item, Reservation) or self.get_quantity_difference()
+        return (
+            self.waive
+            or self.has_changed_time()
+            or isinstance(self.item, Reservation)
+            or self.get_quantity_difference()
+        )
 
     def has_changed_time(self) -> bool:
         """Returns whether the original charge is editable, i.e. if it has a changed start or end"""
@@ -4343,7 +4408,12 @@ class AdjustmentRequest(BaseModel):
 
     def apply_adjustment(self, user):
         if self.status == RequestStatus.APPROVED:
-            if self.has_changed_time():
+            if self.waive:
+                self.item.waive(user)
+                self.applied = True
+                self.applied_by = user
+                self.save()
+            elif self.has_changed_time():
                 new_start = self.get_new_start()
                 new_end = self.get_new_end()
                 if new_start:
@@ -4360,11 +4430,9 @@ class AdjustmentRequest(BaseModel):
                 self.applied = True
                 self.applied_by = user
             elif isinstance(self.item, Reservation):
-                self.item.missed = False
-                self.item.save()
-                self.applied = True
-                self.applied_by = user
-                self.save()
+                # in this case the times have not been changed so we are essentially waiving the charge
+                self.waive = True
+                self.apply_adjustment(user)
 
     def delete(self, using=None, keep_parents=False):
         adjustment_id = self.id
@@ -4377,6 +4445,14 @@ class AdjustmentRequest(BaseModel):
                 Notification.Types.ADJUSTMENT_REQUEST_REPLY,
             ],
         ).delete()
+
+    def save(self, *args, **kwargs):
+        # We are removing new start, new end and new quantity just in case
+        if self.waive:
+            self.new_end = None
+            self.new_start = None
+            self.new_quantity = None
+        super().save(*args, **kwargs)
 
     def clean(self):
         if not self.description:
@@ -4393,11 +4469,12 @@ class AdjustmentRequest(BaseModel):
             if self.new_start and self.new_end and self.new_start > self.new_end:
                 raise ValidationError({"new_end": _("The end must be later than the start")})
             if (
-                self.new_start
+                not self.waive
+                and self.new_start
                 and format_datetime(self.new_start) == format_datetime(item.start)
                 and self.new_end
                 and format_datetime(self.new_end) == format_datetime(item.end)
-            ) or (self.new_quantity is not None and self.new_quantity == item.quantity):
+            ) or (not self.waive and self.new_quantity is not None and self.new_quantity == item.quantity):
                 raise ValidationError(
                     {NON_FIELD_ERRORS: _("You must change at least one attribute (dates or quantity)")}
                 )
@@ -4706,6 +4783,16 @@ class EmailLog(BaseModel):
 
     class Meta:
         ordering = ["-when"]
+
+
+def validate_waive_information(item: [BillableItemMixin]) -> Dict:
+    errors = {}
+    if item.waived:
+        if not item.waived_by:
+            errors["waived_by"] = _("This field is required")
+        if not item.waived_on:
+            errors["waived_on"] = _("This field is required")
+    return errors
 
 
 def record_remote_many_to_many_changes_and_save(request, obj, form, change, many_to_many_field, save_function_pointer):

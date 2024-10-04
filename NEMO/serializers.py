@@ -539,6 +539,11 @@ class BillableItemSerializer(serializers.Serializer):
     start = DateTimeField(read_only=True)
     end = DateTimeField(read_only=True)
     quantity = DecimalField(read_only=True, decimal_places=2, max_digits=8)
+    validated = BooleanField(read_only=True)
+    validated_by = IntegerField(read_only=True, source="validated_by.id")
+    waived = BooleanField(read_only=True)
+    waived_by = IntegerField(read_only=True, source="waived_by.id")
+    waived_on = DateTimeField(read_only=True)
 
     def update(self, instance, validated_data):
         pass

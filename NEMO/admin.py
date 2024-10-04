@@ -29,6 +29,7 @@ from NEMO.actions import (
     rebuild_area_tree,
     synchronize_with_tool_usage,
     unlock_selected_interlocks,
+    waive_selected_charges,
 )
 from NEMO.forms import BuddyRequestForm, RecurringConsumableChargeForm, UserPreferencesForm
 from NEMO.mixins import ModelAdminRedirectMixin, ObjPermissionAdminMixin
@@ -486,7 +487,8 @@ class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, adm
         ("trainee", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "date"
-    autocomplete_fields = ["trainer", "trainee", "tool", "project", "validated_by"]
+    autocomplete_fields = ["trainer", "trainee", "tool", "project", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """We only want staff user and tool superusers to be possible trainers"""
@@ -504,7 +506,8 @@ class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
         ("staff_member", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "start"
-    autocomplete_fields = ["staff_member", "customer", "project", "validated_by"]
+    autocomplete_fields = ["staff_member", "customer", "project", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
 
 @register(AreaAccessRecord)
@@ -512,7 +515,8 @@ class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, ad
     list_display = ("id", "customer", "area", "project", "start", "end")
     list_filter = (("area", TreeRelatedFieldListFilter), "start")
     date_hierarchy = "start"
-    autocomplete_fields = ["customer", "project", "validated_by"]
+    autocomplete_fields = ["customer", "project", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
 
 @register(Configuration)
@@ -667,7 +671,8 @@ class ReservationAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
     )
     date_hierarchy = "start"
     inlines = [ConfigurationOptionInline]
-    autocomplete_fields = ["user", "creator", "tool", "project", "cancelled_by", "validated_by"]
+    autocomplete_fields = ["user", "creator", "tool", "project", "cancelled_by", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
 
 class ReservationQuestionsForm(forms.ModelForm):
@@ -745,7 +750,8 @@ class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.Mo
     list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work")
     list_filter = ("remote_work", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "start"
-    autocomplete_fields = ["tool", "user", "operator", "project", "validated_by"]
+    autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
 
 @register(Consumable)
@@ -777,7 +783,8 @@ class ConsumableWithdrawAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, 
     list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date")
     list_filter = ("date", ("consumable", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "date"
-    autocomplete_fields = ["customer", "merchant", "consumable", "project", "validated_by"]
+    autocomplete_fields = ["customer", "merchant", "consumable", "project", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
 
 @register(RecurringConsumableCharge)
