@@ -383,11 +383,14 @@ class ReservationViewSet(ModelViewSet):
         "tool": key_filters,
         "area_id": key_filters,
         "area": key_filters,
+        "question_data": string_filters,
         "cancelled": boolean_filters,
         "missed": boolean_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
-        "question_data": string_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -409,6 +412,9 @@ class UsageEventViewSet(ModelViewSet):
         "tool": key_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -430,6 +436,9 @@ class AreaAccessRecordViewSet(ModelViewSet):
         "staff_charge": key_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -492,9 +501,12 @@ class StaffChargeViewSet(ModelViewSet):
         "project": key_filters,
         "start": datetime_filters,
         "end": datetime_filters,
+        "note": string_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
-        "note": string_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -518,6 +530,9 @@ class TrainingSessionViewSet(ModelViewSet):
         "qualified": boolean_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -562,6 +577,9 @@ class ConsumableWithdrawViewSet(ModelViewSet):
         "date": datetime_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 

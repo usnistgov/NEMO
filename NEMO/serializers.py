@@ -278,6 +278,8 @@ class ReservationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "project": "NEMO.serializers.ProjectSerializer",
             "descendant": "NEMO.serializers.ReservationSerializer",
             "configuration_options": ("NEMO.serializers.ConfigurationOptionSerializer", {"many": True}),
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -290,6 +292,8 @@ class UsageEventSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "operator": "NEMO.serializers.UserSerializer",
             "tool": "NEMO.serializers.ToolSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -302,6 +306,8 @@ class AreaAccessRecordSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "area": "NEMO.serializers.AreaSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
             "staff_charge": "NEMO.serializers.StaffChargeSerializer",
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -347,6 +353,8 @@ class TrainingSessionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "trainee": "NEMO.serializers.UserSerializer",
             "tool": "NEMO.serializers.ToolSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -358,6 +366,8 @@ class StaffChargeSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "customer": "NEMO.serializers.UserSerializer",
             "staff_member": "NEMO.serializers.UserSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -396,6 +406,8 @@ class ConsumableWithdrawSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "merchant": "NEMO.serializers.UserSerializer",
             "consumable": "NEMO.serializers.ConsumableSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
