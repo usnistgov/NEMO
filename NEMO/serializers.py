@@ -18,6 +18,7 @@ from rest_framework.fields import (
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.utils import model_meta
 
+from NEMO.constants import CHAR_FIELD_LARGE_LENGTH, CHAR_FIELD_MEDIUM_LENGTH
 from NEMO.fields import DEFAULT_SEPARATOR, MultiEmailField
 from NEMO.models import (
     Account,
@@ -54,7 +55,6 @@ from NEMO.models import (
     UsageEvent,
     User,
 )
-from NEMO.views.constants import CHAR_FIELD_LARGE_LENGTH, CHAR_FIELD_MEDIUM_LENGTH
 
 
 class MultiEmailSerializerField(serializers.CharField):

@@ -15,10 +15,10 @@ from django.utils.formats import localize_input
 from django.utils.html import escape, escapejs, format_html
 from django.utils.safestring import mark_safe
 
+from NEMO.constants import NEXT_PARAMETER_NAME
 from NEMO.mixins import BillableItemMixin
 from NEMO.models import User
 from NEMO.utilities import get_full_url
-from NEMO.views.constants import NEXT_PARAMETER_NAME
 from NEMO.views.customization import CustomizationBase, ProjectsAccountsCustomization
 
 register = template.Library()

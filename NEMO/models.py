@@ -32,6 +32,13 @@ from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from NEMO import fields
+from NEMO.constants import (
+    ADDITIONAL_INFORMATION_MAXIMUM_LENGTH,
+    CHAR_FIELD_LARGE_LENGTH,
+    CHAR_FIELD_MEDIUM_LENGTH,
+    CHAR_FIELD_SMALL_LENGTH,
+    MEDIA_PROTECTED,
+)
 from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, ConfigurationMixin, RecurrenceMixin
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
@@ -56,13 +63,6 @@ from NEMO.utilities import (
     supported_embedded_extensions,
 )
 from NEMO.validators import color_hex_list_validator, color_hex_validator
-from NEMO.views.constants import (
-    ADDITIONAL_INFORMATION_MAXIMUM_LENGTH,
-    CHAR_FIELD_LARGE_LENGTH,
-    CHAR_FIELD_MEDIUM_LENGTH,
-    CHAR_FIELD_SMALL_LENGTH,
-    MEDIA_PROTECTED,
-)
 from NEMO.widgets.configuration_editor import ConfigurationEditor
 
 models_logger = getLogger(__name__)

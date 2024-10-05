@@ -10,8 +10,8 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.shortcuts import redirect
 from django.utils import timezone
 
+from NEMO.constants import NEXT_PARAMETER_NAME
 from NEMO.utilities import RecurrenceFrequency, beginning_of_the_day, format_datetime, get_recurring_rule
-from NEMO.views.constants import NEXT_PARAMETER_NAME
 
 if TYPE_CHECKING:
     from NEMO.models import User

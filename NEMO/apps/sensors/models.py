@@ -13,13 +13,13 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from NEMO.apps.sensors.customizations import SensorCustomization
+from NEMO.constants import CHAR_FIELD_MEDIUM_LENGTH, CHAR_FIELD_SMALL_LENGTH
 from NEMO.decorators import postpone
 from NEMO.evaluators import evaluate_boolean_expression
 from NEMO.fields import MultiEmailField
 from NEMO.models import BaseModel, InterlockCard
 from NEMO.typing import QuerySetType
 from NEMO.utilities import EmailCategory, format_datetime, get_email_from_settings, send_mail
-from NEMO.views.constants import CHAR_FIELD_MEDIUM_LENGTH, CHAR_FIELD_SMALL_LENGTH
 
 models_logger = getLogger(__name__)
 

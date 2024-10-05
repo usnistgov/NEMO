@@ -15,6 +15,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import make_aware
 from django.views.decorators.http import require_GET, require_POST
 
+from NEMO.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.decorators import disable_session_expiry_refresh, postpone, staff_member_required, synchronized
 from NEMO.exceptions import ProjectChargeException, RequiredUnansweredQuestionsException
 from NEMO.forms import ScheduledOutageForm, save_scheduled_outage
@@ -50,7 +51,6 @@ from NEMO.utilities import (
     render_email_template,
     send_mail,
 )
-from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import (
     ApplicationCustomization,
     CalendarCustomization,

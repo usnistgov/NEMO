@@ -15,6 +15,7 @@ from django.views.generic import RedirectView
 from django.views.static import serve
 from rest_framework import routers
 
+from NEMO.constants import MEDIA_PROTECTED
 from NEMO.decorators import any_staff_required
 from NEMO.models import ReservationItemType
 from NEMO.views import (
@@ -62,7 +63,6 @@ from NEMO.views import (
     user_requests,
     users,
 )
-from NEMO.views.constants import MEDIA_PROTECTED
 
 logger = logging.getLogger(__name__)
 

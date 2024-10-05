@@ -6,8 +6,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from NEMO.apps.contracts.customization import ContractsCustomization
+from NEMO.constants import CHAR_FIELD_MEDIUM_LENGTH, MEDIA_PROTECTED
 from NEMO.models import BaseDocumentModel, BaseModel, User
-from NEMO.views.constants import CHAR_FIELD_MEDIUM_LENGTH, MEDIA_PROTECTED
 
 
 class Procurement(BaseModel):
