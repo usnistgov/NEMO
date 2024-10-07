@@ -761,7 +761,7 @@ def get_submitted_user_inputs(user_data: Union[str, dict]) -> Dict:
     """Takes the user data as a string or dict and returns a dictionary of inputs or a list of inputs for group fields"""
     user_input = {}
     try:
-        user_data_json = loads(user_data) if isinstance(user_data, str) else user_data
+        user_data_json = loads(user_data) if isinstance(user_data, str) and user_data else user_data
         if user_data_json:
             for field_name, data in user_data_json.items():
                 if "user_input" in data:
