@@ -38,12 +38,12 @@
                             </li>
                         {% endif %}
                     {% endif %}
-                    {% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist or adjustment_request_allowed and facility_managers_exist %}
+                    {% if buddy_system_areas_exist or access_user_request_allowed_exist and facility_managers_exist or adjustment_request_allowed and facility_managers_exist or staff_assistance_request_allowed %}
                         <li>
                             <a href="{% url 'user_requests' %}">
                                 {{ requests_page_title }}
-                                {% if buddy_notification_count or temporary_access_notification_count or adjustment_notification_count %}
-                                    <span class="badge active">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count }}</span>
+                                {% if buddy_notification_count or temporary_access_notification_count or adjustment_notification_count or staff_assistance_notification_count %}
+                                    <span class="badge active">{{ buddy_notification_count|add:temporary_access_notification_count|add:adjustment_notification_count|add:staff_assistance_notification_count }}</span>
                                 {% endif %}
                             </a>
                         </li>

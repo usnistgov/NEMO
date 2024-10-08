@@ -54,6 +54,13 @@ def base_context(request):
     except:
         buddy_notification_count = 0
     try:
+        staff_assistance_notification_count = notification_counts.get(Notification.Types.STAFF_ASSISTANCE_REQUEST, 0)
+        staff_assistance_notification_count += notification_counts.get(
+            Notification.Types.STAFF_ASSISTANCE_REQUEST_REPLY, 0
+        )
+    except:
+        staff_assistance_notification_count = 0
+    try:
         temporary_access_notification_count = notification_counts.get(Notification.Types.TEMPORARY_ACCESS_REQUEST, 0)
     except:
         temporary_access_notification_count = 0
@@ -81,8 +88,11 @@ def base_context(request):
         "buddy_system_areas_exist": buddy_system_areas_exist,
         "access_user_request_allowed_exist": access_user_request_allowed_exist,
         "adjustment_request_allowed": customization_values.get("adjustment_requests_enabled", "") == "enabled",
+        "staff_assistance_request_allowed": customization_values.get("staff_assistance_requests_enabled", "")
+        == "enabled",
         "notification_counts": notification_counts,
         "buddy_notification_count": buddy_notification_count,
+        "staff_assistance_notification_count": staff_assistance_notification_count,
         "temporary_access_notification_count": temporary_access_notification_count,
         "adjustment_notification_count": adjustment_notification_count,
         "safety_notification_count": safety_notification_count,
