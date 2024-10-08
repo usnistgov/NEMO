@@ -272,7 +272,8 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 
     def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         maxlength = f'maxlength="{self.maxlength}"' if self.maxlength else ""
-        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} style="{max_width}" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
     def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
         if virtual_inputs:
