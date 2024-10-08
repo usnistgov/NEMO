@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Choose PDF template{% endblock %}
+{% block content %}
+    <h1>
+        <label for="choose_pdf_template">Choose PDF template</label>
+    </h1>
+    <div class="row col-md-6">
+        <select id="choose_pdf_template"
+                class="form-control"
+                onchange='window.location.href = "{% url 'create_credit_card_order_with_template' '99999' %}".replace("99999", $(this).val())'>
+            <option value="" selected disabled>Select a pdf template to continue</option>
+            {% for pdf_template in pdf_templates %}<option value="{{ pdf_template.id }}">{{ pdf_template }}</option>{% endfor %}
+        </select>
+    </div>
+    <script>
+        window.addEventListener("pageshow", function ()
+        {
+            $("#choose_pdf_template").val("");
+        });
+    </script>
+{% endblock %}

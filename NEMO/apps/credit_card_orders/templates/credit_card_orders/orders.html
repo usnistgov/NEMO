@@ -1,0 +1,67 @@
+{% extends 'credit_card_orders/orders_base.html' %}
+{% load custom_tags_and_filters %}
+{% block add_button %}
+    {% if pdf_templates and user_can_add %}
+        {% url 'create_credit_card_order' as create_credit_card_order_url %}
+        {% button type="add" value="Add" url=create_credit_card_order_url %}
+    {% endif %}
+{% endblock %}
+{% block pagination_content %}
+    <table class="table table-bordered table-condensed table-align-middle table-striped table-hover thead-light"
+           style="margin-bottom: 0">
+        <thead>
+            <tr>
+                <th>{% include 'pagination/pagination_column.html' with order_by='order_number' name='Order number' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='creation_time' name='Created' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='created_by' name='Created by' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='status' name='Status' %}</th>
+                <th class="text-right button-column-minimum">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for credit_card_order in page %}
+                <tr class="{% if credit_card_order.status == "DENIED" %}danger{% elif credit_card_order.status == "FULFILLED" %}success{% else %}default{% endif %}">
+                    <td>{{ credit_card_order.order_number|default_if_none:"" }}</td>
+                    <td>{{ credit_card_order.creation_time|date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>{{ credit_card_order.creator }}</td>
+                    <td>{{ credit_card_order.get_status_display }}</td>
+                    <td class="text-right text-nowrap">
+                        {% url 'render_credit_card_order_pdf' credit_card_order.id as render_credit_card_order_pdf_url %}
+                        {% button size="small" type="export" value="Render pdf" url=render_credit_card_order_pdf_url %}
+                        {% if credit_card_order.notes %}
+                            {% button icon="glyphicon-info-sign" type="warn" size="small" value="Notes" title=credit_card_order.notes|default_if_none:""|linebreaksbr data_toggle="tooltip-notes" %}
+                        {% endif %}
+                        {% if credit_card_order.creditcardorderdocuments_set.all %}
+                            <form method="post" style="display: inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="title" value="{{ credit_card_order.name }} documents">
+                                {% for document in credit_card_order.creditcardorderdocuments_set.all %}
+                                    {% with content_type=document|content_type %}
+                                        <input type="hidden" name="document_info" value="{{ content_type.id }}__{{ document.id }}">
+                                    {% endwith %}
+                                {% endfor %}
+                                {% button icon="glyphicon-list-alt" size="small" type="export" value="Docs" onclick="document_view(this.form);" %}
+                            </form>
+                        {% endif %}
+                        {% if user_can_add or user in credit_card_order.next_approval_candidates %}
+                            {% url "edit_credit_card_order" credit_card_order.id as edit_credit_card_order_url %}
+                            {% button size="small" type="edit" value="Edit" url=edit_credit_card_order_url %}
+                        {% endif %}
+                        {% if credit_card_order.next_approval_level %}
+                            {% if user in credit_card_order.next_approval_candidates %}
+                                {% if self_approval_allowed or user != credit_card_order.creator %}
+                                    {% url 'approval_credit_card_order' credit_card_order.id as approval_cc_order_url %}
+                                    {% button size="small" type="info" value="Approve" url=approval_cc_order_url %}
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+{% block table_empty_content %}
+    You do not have any credit card orders.
+    {% if not pdf_templates %}<br>{% endif %}
+{% endblock %}

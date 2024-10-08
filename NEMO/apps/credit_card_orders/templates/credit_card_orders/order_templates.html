@@ -1,0 +1,44 @@
+{% extends 'credit_card_orders/orders_base.html' %}
+{% load custom_tags_and_filters %}
+{% block add_button %}
+    {% admin_add_url 'credit_card_orders' 'creditcardorderpdftemplate' request.path as add_credit_card_order_template_url %}
+    {% if add_credit_card_order_template_url %}
+        {% button type="add" value="Add" url=add_credit_card_order_template_url %}
+    {% endif %}
+{% endblock %}
+{% block pagination_content %}
+    <table class="table table-bordered table-condensed table-align-middle table-striped table-hover thead-light"
+           style="margin-bottom: 0">
+        <thead>
+            <tr>
+                <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
+                <th>{% include 'pagination/pagination_column.html' with order_by='form' name='PDF' %}</th>
+                <th>Special mappings</th>
+                <th>Approvals</th>
+                <th class="text-right button-column-minimum">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for credit_card_order_template in page %}
+                <tr>
+                    <td>{{ credit_card_order_template.name }}</td>
+                    <td>
+                        {% with content_type=credit_card_order_template|content_type %}
+                            <a href="#"
+                               onclick="open_doc('{% url 'media_view' popup='true' content_type_id=content_type.id document_id=credit_card_order_template.id %}')">{{ credit_card_order_template.filename }}</a>
+                        {% endwith %}
+                    </td>
+                    <td>{{ credit_card_order_template.special_mappings_display|safe|linebreaksbr }}</td>
+                    <td>{{ credit_card_order_template.approvals_display|safe|linebreaksbr }}</td>
+                    <td class="text-right text-nowrap">
+                        {% admin_edit_url credit_card_order_template request.path as change_credit_card_order_template_url %}
+                        {% if change_credit_card_order_template_url %}
+                            {% button size="small" type="edit" value="Edit" url=change_credit_card_order_template_url %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+{% block table_empty_content %}You do not have any credit card orders.{% endblock %}

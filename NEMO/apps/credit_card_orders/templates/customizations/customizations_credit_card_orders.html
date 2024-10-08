@@ -1,0 +1,119 @@
+{% load custom_tags_and_filters %}
+<div class="panel-body">
+    <form method="POST" action="{% url 'customize' 'credit_card_orders' %}" class="form-horizontal">
+        {% csrf_token %}
+        <h3 class="customization-section-title">Credit card orders</h3>
+        <div class="form-group">
+            <label class="control-label col-xs-4 col-md-3">View permissions</label>
+            <div class="col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="credit_card_order_view_staff"
+                               {% if credit_card_order_view_staff %}checked{% endif %}
+                               value="enabled">
+                        Technical staff
+                    </label>
+                    <br />
+                </div>
+            </div>
+            <div class="col-xs-offset-4 col-md-offset-3 col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="credit_card_order_view_user_office"
+                               {% if credit_card_order_view_user_office %}checked{% endif %}
+                               value="enabled">
+                        User office
+                    </label>
+                    <br />
+                </div>
+            </div>
+            <div class="col-xs-offset-4 col-md-offset-3 col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="credit_card_order_view_accounting_officer"
+                               {% if credit_card_order_view_accounting_officer %}checked{% endif %}
+                               value="enabled">
+                        Accounting staff
+                    </label>
+                    <br />
+                </div>
+            </div>
+            <div class="col-xs-offset-4 col-md-offset-3 col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" checked disabled>
+                        Facility managers
+                    </label>
+                    <br />
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-xs-4 col-md-3">Create permissions</label>
+            <div class="col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="credit_card_order_create_staff"
+                               {% if credit_card_order_create_staff %}checked{% endif %}
+                               value="enabled">
+                        Technical staff
+                    </label>
+                    <br />
+                </div>
+            </div>
+            <div class="col-xs-offset-4 col-md-offset-3 col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="credit_card_order_create_user_office"
+                               {% if credit_card_order_create_user_office %}checked{% endif %}
+                               value="enabled">
+                        User office
+                    </label>
+                    <br />
+                </div>
+            </div>
+            <div class="col-xs-offset-4 col-md-offset-3 col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="credit_card_order_create_accounting_officer"
+                               {% if credit_card_order_create_accounting_officer %}checked{% endif %}
+                               value="enabled">
+                        Accounting staff
+                    </label>
+                    <br />
+                </div>
+            </div>
+            <div class="col-xs-offset-4 col-md-offset-3 col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" checked disabled>
+                        Facility managers
+                    </label>
+                    <br />
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-xs-4 col-md-3">Self approval</label>
+            <div class="col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="credit_card_order_self_approval_allowed"
+                               {% if credit_card_order_self_approval_allowed %}checked{% endif %}
+                               value="enabled">
+                        Allow the same person to create and approve a credit card order
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <div class="text-center">{% button type="save" value="Save settings" %}</div>
+    </form>
+</div>

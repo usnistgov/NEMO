@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load custom_tags_and_filters %}
+{% block title %}
+    {% if form.instance.id %}
+        Modify credit card order
+    {% else %}
+        New credit card order
+    {% endif %}
+{% endblock %}
+{% block content %}
+    <h1 class="form-group">
+        {% if form.instance.id %}
+            Modify credit card order
+        {% else %}
+            New credit card order
+        {% endif %}
+    </h1>
+    <form id="order_form"
+          class="well"
+          action="{% if form.instance.id %}{% url 'edit_credit_card_order' form.instance.id %}{% else %}{% url 'create_credit_card_order_with_template' selected_template_id %}{% endif %}"
+          enctype="multipart/form-data"
+          method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="form-group"></div>
+        {% if form.template_data.errors %}<div class="alert alert-danger">{{ form.template_data.errors }}</div>{% endif %}
+        {{ dynamic_form_fields }}
+        <div class="form-group">
+            <label for="notes" class="control-label">Notes</label>
+            {% if form.notes.errors %}- <span style="color:red">{{ form.notes.errors|striptags }}</span>{% endif %}
+            <textarea oninput="auto_size_textarea(this, 5);"
+                      class="form-control"
+                      name="notes"
+                      id="notes"
+                      maxlength="{{ form.fields.description.max_length }}"
+                      placeholder="Provide additional details if needed">{{ form.description.value|default_if_none:"" }}</textarea>
+        </div>
+        <div class="form-group">
+            <span class="control-label">Documents</span>
+            <div class="">
+                {% for d in form.instance.creditcardorderdocuments_set.all %}
+                    <div id="document_{{ d.id }}">
+                        {% if not readonly %}
+                            <a href="javascript:mark_document_for_removal('{{ d.id }}')"
+                               class="grey hover-black"
+                               title="Remove {{ d.filename }}"><span class="glyphicon glyphicon-remove-circle"></span></a>
+                        {% endif %}
+                        <a href="{{ d.document.url }}" target="_blank" style="margin-right: 5px">{{ d.filename }}</a>
+                    </div>
+                {% empty %}
+                    <div class="form-control-static">This order doesn't have any documents.</div>
+                {% endfor %}
+                <div style="padding-top: 10px">
+                    <input aria-label="File upload" id="fileupload" type="file" name="order_documents" multiple>
+                </div>
+            </div>
+        </div>
+        {% if form.instance.get_status_display != "Fulfilled" %}
+            <div class="form-group row">
+                <div class="col-xs-6 text-left">
+                    {% if form.instance.id %}
+                        {% url 'cancel_credit_card_order' form.instance.id as cancel_credit_card_order_url %}
+                        {% button type="delete" submit=False title="Cancel order" icon="glyphicon-ban-circle" value="Cancel" onclick="if (confirm('Are you sure you want to cancel this request?')) {window.location.href="|concat:cancel_credit_card_order_url|concat:"' }" %}
+                    {% endif %}
+                </div>
+                <div class="col-xs-6 text-right">
+                    {% button type="save" value=form.instance.id|yesno:"Save changes,Create order" %}
+                </div>
+            </div>
+        {% endif %}
+    </form>
+    <script>
+        window.addEventListener("load", function ()
+        {
+            auto_size_textarea($("#notes")[0], 5);
+        });
+        
+        function mark_document_for_removal(document_id)
+        {
+            $("#document_"+document_id).remove();
+            $("#order_form").append('<input type="hidden" name="remove_documents" value="'+document_id+'" />');
+		}
+    </script>
+{% endblock %}

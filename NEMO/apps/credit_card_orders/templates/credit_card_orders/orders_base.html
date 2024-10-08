@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load custom_tags_and_filters %}
+{% block extrahead %}
+    {% load static %}
+    <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
+{% endblock %}
+{% block title %}Credit card orders{% endblock %}
+{% block content %}
+    <h1 style="margin-top: 0; margin-bottom: 25px">Credit card orders</h1>
+    {% if user.is_superuser %}
+        <ul class="nav nav-tabs">
+            {% url 'credit_card_order_templates' as credit_card_order_templates_url %}
+            {% url 'credit_card_orders' as credit_card_orders_url %}
+            <li class="nav-item{% if credit_card_orders_url in request.path and not credit_card_order_templates_url in request.path %} active{% endif %}">
+                <a class="nav-link" href="{{ credit_card_orders_url }}">Credit card orders</a>
+            </li>
+            <li class="nav-item{% if credit_card_order_templates_url in request.path %} active{% endif %}">
+                <a class="nav-link" href="{{ credit_card_order_templates_url }}">Templates</a>
+            </li>
+        </ul>
+        <div id="credit-card-orders-panel-content"
+             class="tab-content panel panel-default panel-tab-content info-tooltip-container">
+            <div class="panel-body">
+            {% endif %}
+            {% block tab_content %}
+                {% block before_pagination %}
+                    <div class="pull-right" style="{% if page %}margin-bottom: 15px;{% endif %}">
+                        {% if not credit_card_order_templates_url in request.path %}
+                            {% button type="export" value="Export" url=request.path|concat:"?csv=true" target="_blank" %}
+                        {% endif %}
+                        {% block add_button %}{% endblock %}
+                    </div>
+                {% endblock %}
+                {% if page %}
+                    {% with paginator=page.paginator %}
+                        {% block pagination_header %}
+                            <div class="pagination pull-right" style="clear: both">{% include "pagination/pagination_selector.html" %}</div>
+                        {% endblock %}
+                        <div class="table-responsive" style="width: 100%">
+                            {% block pagination_content %}{% endblock %}
+                        </div>
+                        {% block pagination_footer %}
+                            <div class="pagination pull-right" style="margin-bottom: 0">{% include "pagination/pagination_pages.html" %}</div>
+                        {% endblock %}
+                    {% endwith %}
+                {% else %}
+                    <div class="pull-left form-control-static">
+                        <i>
+                            {% block table_empty_content %}{% endblock %}
+                        </i>
+                    </div>
+                {% endif %}
+                {% block after_pagination %}{% endblock %}
+            {% endblock %}
+            {% if user.is_superuser %}
+            </div>
+        </div>
+    {% endif %}
+    <script>
+        {# Set a global click handler to dismiss manual tooltips #}
+        $('html').on('click', function(e)
+        {
+            {# Only dismiss tooltips when clicking outside of them #}
+            let target_id = $(e.target).parents('.tooltip').attr('id');
+            if (typeof $(e.target).data('original-title') == 'undefined')
+            {
+                $(".tooltip").not('#'+target_id).remove();
+            }
+        });
+        $("[data-toggle='tooltip-notes']").on('click', function ()
+        {
+            {# Remove associated data to prevent toggling issues #}
+            $(this).removeData('bs.tooltip');
+            $(".tooltip").remove();
+            $(this).tooltip({trigger: 'manual', html: 'true', container: '#credit-card-orders-panel-content'}).tooltip('toggle');
+        });
+        $("[data-toggle='tooltip']").tooltip({html: 'true'});
+
+        function document_view(form)
+        {
+            let data = $(form).serialize();
+            ajax_post('{% url "media_list_view" allow_zip="true" popup="true" %}', data, ajax_success_callback);
+        }
+
+        function open_doc(url)
+        {
+            ajax_get(url, undefined, ajax_success_callback, ajax_failure_callback("Unable to display document"));
+        }
+    </script>
+{% endblock %}
