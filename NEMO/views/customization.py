@@ -515,6 +515,7 @@ class ToolCustomization(CustomizationBase):
         "tool_reservation_policy_superusers_bypass": "",
         "tool_wait_list_spot_expiration": "15",
         "tool_wait_list_reservation_buffer": "15",
+        "tool_freed_time_notification_include_username": "",
     }
 
     def validate(self, name, value):
