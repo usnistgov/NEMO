@@ -1066,7 +1066,7 @@ def cancel_the_reservation(
                 if reservation.area:
                     recipients.extend(reservation.area.reservation_email_list())
                 if reservation.user.get_preferences().attach_cancelled_reservation:
-                    event_name = f"{reservation.reservation_item.name} Reservation"
+                    event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
                     attachment = create_ics(
                         reservation.id, event_name, reservation.start, reservation.end, reservation.user, cancelled=True
                     )
@@ -1108,7 +1108,7 @@ def send_user_created_reservation_notification(reservation: Reservation):
         user_office_email = EmailsCustomization.get("user_office_email_address")
         # We don't need to check for existence of reservation_created_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
         if user_office_email:
-            event_name = f"{reservation.reservation_item.name} Reservation"
+            event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
             attachment = create_ics(reservation.id, event_name, reservation.start, reservation.end, reservation.user)
             send_mail(
                 subject=subject, content=message, from_email=user_office_email, to=recipients, attachments=[attachment]
@@ -1135,7 +1135,7 @@ def send_user_cancelled_reservation_notification(reservation: Reservation):
         user_office_email = EmailsCustomization.get("user_office_email_address")
         # We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
         if user_office_email:
-            event_name = f"{reservation.reservation_item.name} Reservation"
+            event_name = reservation.title or f"{reservation.reservation_item.name} Reservation"
             attachment = create_ics(
                 reservation.id, event_name, reservation.start, reservation.end, reservation.user, cancelled=True
             )
