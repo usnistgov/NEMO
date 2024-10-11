@@ -517,6 +517,7 @@ class ToolCustomization(CustomizationBase):
         "tool_wait_list_spot_expiration": "15",
         "tool_wait_list_reservation_buffer": "15",
         "tool_freed_time_notification_include_username": "",
+        "kiosk_only_show_qualified_tools": "",
     }
 
     def validate(self, name, value):

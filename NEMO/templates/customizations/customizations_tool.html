@@ -75,6 +75,22 @@
                 </div>
             </div>
         </div>
+        {% if "NEMO.apps.kiosk"|app_installed %}
+            <div class="form-group">
+                <label class="control-label col-sm-4 col-md-3">Kiosk tools</label>
+                <div class="col-sm-8 col-md-9">
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox"
+                                   name="kiosk_only_show_qualified_tools"
+                                   {% if kiosk_only_show_qualified_tools %}checked{% endif %}
+                                   value="enabled">
+                            Only show tools the user is qualified on in the kiosk
+                        </label>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool configuration</h3>
         <div class="form-group {% if errors.tool_control_configuration_setting_template %}has-error{% endif %}">
