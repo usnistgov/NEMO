@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import List, Set
+from typing import List, Set, Tuple
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -140,7 +140,7 @@ def send_new_task_emails(request, task: Task, user, task_images: List[TaskImages
         if ToolCustomization.get_bool("tool_problem_send_to_all_qualified_users"):
             for qualified_user in task.tool.user_set.all():
                 if qualified_user.is_active:
-                    bcc.update(
+                    bcc.extend(
                         [
                             email
                             for email in qualified_user.get_emails(
@@ -402,7 +402,7 @@ def save_task_images(request, task: Task) -> List[TaskImages]:
     return task_images
 
 
-def get_task_email_recipients(task: Task, new=False) -> (List[str], List[str]):
+def get_task_email_recipients(task: Task, new=False) -> Tuple[List[str], List[str]]:
     # Add all recipients, starting with primary owner
     recipient_users: Set[User] = {task.tool.primary_owner}
     bcc_users: Set[User] = set()
