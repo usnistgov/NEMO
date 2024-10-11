@@ -240,12 +240,14 @@ def usage_data_history(request, tool_id):
 
     table_pre_run_data = BasicDisplayTable()
     table_pre_run_data.add_header(("user", "User"))
+    table_pre_run_data.add_header(("operator", "Operator"))
     if show_project_info:
         table_pre_run_data.add_header(("project", "Project"))
     table_pre_run_data.add_header(("date", "Start date"))
 
     table_run_data = BasicDisplayTable()
     table_run_data.add_header(("user", "User"))
+    table_run_data.add_header(("operator", "Operator"))
     if show_project_info:
         table_run_data.add_header(("project", "Project"))
     table_run_data.add_header(("date", "End date"))
@@ -778,6 +780,7 @@ def format_usage_data(
 
     try:
         user_data = f"{usage_event.user.first_name} {usage_event.user.last_name}"
+        operator_data = f"{usage_event.operator.first_name} {usage_event.operator.last_name}"
         run_data: Dict = loads(usage_run_data)
         for question_key, question in run_data.items():
             if "user_input" in question:
@@ -796,6 +799,7 @@ def format_usage_data(
                                 group_usage_data[name] = user_input
                             if group_usage_data:
                                 group_usage_data["user"] = user_data
+                                group_usage_data["operator"] = operator_data
                                 group_usage_data["date"] = date_data
                                 if show_project_info:
                                     group_usage_data["project"] = usage_event.project.name
@@ -805,6 +809,7 @@ def format_usage_data(
                     usage_data[question_key] = question["user_input"]
         if usage_data:
             usage_data["user"] = user_data
+            usage_data["operator"] = operator_data
             usage_data["date"] = date_data
             if show_project_info:
                 usage_data["project"] = usage_event.project.name
