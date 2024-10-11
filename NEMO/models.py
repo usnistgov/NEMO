@@ -2920,6 +2920,12 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
     def duration(self):
         return calculate_duration(self.start, self.end, "In progress")
 
+    def pre_run_data_json(self):
+        return loads(self.pre_run_data) if self.pre_run_data else None
+
+    def post_run_data_json(self):
+        return loads(self.run_data) if self.run_data else None
+
     class Meta:
         ordering = ["-start"]
 
