@@ -1,6 +1,6 @@
 {% load custom_tags_and_filters %}
 <div>
-    {% with hide_data_history="tool"|customization:"tool_control_hide_data_history_users" %}
+    {% with hide_data_history="tool"|customization:"tool_control_hide_data_history_users" documents_separate_tab="tool"|customization:"tool_control_documents_in_separate_tab" %}
         {% if device == 'mobile' %}
             <h1>{{ tool.name_or_child_in_use_name }}</h1>
             <ul class="nav nav-pills" id="tabs" style="margin-bottom:10px">
@@ -27,6 +27,11 @@
                 <li style="width:48%; text-align:center">
                     <a href="#comment" style="padding: 10px 5px">Post a comment</a>
                 </li>
+                {% if documents_separate_tab == "enabled" and tool.tooldocuments_set.all and user_can_see_documents %}
+                    <li style="width:48%; text-align:center">
+                        <a href="#documents" style="padding: 10px 5px">Documents</a>
+                    </li>
+                {% endif %}
             </ul>
         {% else %}
             <h1 class="pull-left" style="margin-right:20px; margin-top:0; margin-bottom:10px">
@@ -55,6 +60,11 @@
                 <li>
                     <a href="#comment">Post a comment</a>
                 </li>
+                {% if documents_separate_tab == "enabled" and tool.tooldocuments_set.all and user_can_see_documents %}
+                    <li>
+                        <a href="#documents">Documents</a>
+                    </li>
+                {% endif %}
             </ul>
         {% endif %}
     {% endwith %}
@@ -551,7 +561,7 @@
                 </div>
             {% endfor %}
         {% endif %}
-        {% if tool.description or tool.image or tool.tooldocuments_set.all and user_can_see_documents %}
+        {% if tool.description or tool.image or "tool"|customization:"tool_control_documents_in_separate_tab" != "enabled" and tool.tooldocuments_set.all and user_can_see_documents %}
             <div style="background-color: #f5f5f5;">
                 <div class="row" style="margin:0; padding: 15px 0">
                     {% if tool.description %}
@@ -568,7 +578,7 @@
                                         max-height:300px">
                         </div>
                     {% endif %}
-                    {% if tool.tooldocuments_set.all and user_can_see_documents %}
+                    {% if "tool"|customization:"tool_control_documents_in_separate_tab" != "enabled" and tool.tooldocuments_set.all and user_can_see_documents %}
                         <div class="col-md-12">
                             Documents:
                             <ul>
@@ -955,6 +965,19 @@
         </form>
         <div style="height:150px">{# Spacer #}</div>
     </div>
+    {% if "tool"|customization:"tool_control_documents_in_separate_tab" == "enabled" and tool.tooldocuments_set.all and user_can_see_documents %}
+        <div class="tab-pane" id="documents">
+            <div style="margin-top: 20px">Documents:</div>
+            <ul>
+                {% for tool_doc in tool.tooldocuments_set.all %}
+                    <li>
+                        <a href="{{ tool_doc.link }}" target="_blank">{{ tool_doc.filename }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+            <div style="height:150px">{# Spacer #}</div>
+        </div>
+    {% endif %}
 </div>
 <script>
 	$(".contact-info-tooltip").on('click', function () {

@@ -215,7 +215,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-sm-4 col-md-3">Show tool documents to</label>
+            <label class="control-label col-sm-4 col-md-3">Tool documents</label>
             <div class="col-sm-8 col-md-9">
                 <div class="radio">
                     <label>
@@ -224,7 +224,7 @@
                                name="tool_control_show_documents_only_qualified_users"
                                {% if not tool_control_show_documents_only_qualified_users %}checked{% endif %}
                                value="">
-                        Everyone
+                        Everyone can see tool documents
                     </label>
                     <br>
                     <label>
@@ -233,7 +233,21 @@
                                name="tool_control_show_documents_only_qualified_users"
                                {% if tool_control_show_documents_only_qualified_users %}checked{% endif %}
                                value="enabled">
-                        Only qualified users
+                        Only show documents to qualified users
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-offset-4 col-md-offset-3 col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_documents_in_separate_tab"
+                               name="tool_control_documents_in_separate_tab"
+                               {% if tool_control_documents_in_separate_tab %}checked{% endif %}
+                               value="enabled">
+                        Show tool documents in separate tab in tool control
                     </label>
                 </div>
             </div>
