@@ -144,7 +144,10 @@ class Sensor(BaseModel):
         return sensors.get(self.card.category, raise_exception).read_values(self, raise_exception)
 
     def last_data_point(self):
-        return SensorData.objects.filter(sensor=self).latest("created_date")
+        try:
+            return SensorData.objects.filter(sensor=self).latest("created_date")
+        except:
+            return None
 
     def clean(self):
         from NEMO.apps.sensors import sensors
