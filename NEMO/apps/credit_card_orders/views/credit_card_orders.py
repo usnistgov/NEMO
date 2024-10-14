@@ -267,3 +267,4 @@ def form_fields_group(request, form_id, group_name):
 # TODO: figure out setting the order number automatically
 # TODO: make form readonly when approving and not allowed to edit
 # TODO: concatenate all documents with the pdf form
+# TODO: make document upload work with type
