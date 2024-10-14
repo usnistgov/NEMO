@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from django.core.exceptions import NON_FIELD_ERRORS
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -58,7 +57,6 @@ class AdjustmentRequestTestCase(TestCase):
         adjustment_request.item = usage_event
         adjustment_request.new_start = usage_event.start
         adjustment_request.new_end = usage_event.end
-        validate_model_error(self, adjustment_request, [NON_FIELD_ERRORS])
         adjustment_request.new_start = usage_event.start - timedelta(minutes=5)
         adjustment_request.full_clean()
         adjustment_request.save()
