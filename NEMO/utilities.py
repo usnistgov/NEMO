@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import csv
 import importlib
 import os
@@ -9,7 +11,7 @@ from email.mime.base import MIMEBase
 from enum import Enum
 from io import BytesIO, StringIO
 from logging import getLogger
-from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
 from urllib.parse import urljoin
 
 from PIL import Image
@@ -33,6 +35,9 @@ from django.utils import timezone as django_timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
 from django.utils.text import slugify
+
+if TYPE_CHECKING:
+    from NEMO.models import User
 
 utilities_logger = getLogger(__name__)
 
@@ -765,8 +770,8 @@ def create_ics(
     event_name,
     start: datetime,
     end: datetime,
-    user,
-    organizer=None,
+    user: User,
+    organizer: User = None,
     cancelled: bool = False,
     description: str = None,
 ) -> MIMEBase:
