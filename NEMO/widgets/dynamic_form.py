@@ -783,20 +783,20 @@ def render_group_questions(request, questions, group_question_url, group_item_id
 
 
 def render_grid_questions(questions, group_question_url: str, group_item_id: int, virtual_inputs: bool):
-    visible_questions = [q for q in questions if not isinstance(q, PostUsageFormulaQuestion)]
-    use_grid = max([q.form_row for q in visible_questions if q.form_row], default=0)
+    # only use the grid if we have "form_row" defined for at least one item
+    use_grid = max([q.form_row for q in questions if q.form_row], default=0)
     result = ""
-    for row in sort_question_for_grid(visible_questions):
+    for row in sort_question_for_grid(questions):
         if row:
             extra_class = ""
-            if use_grid:
-                max_cells = len(row)
+            max_cells = len([q for q in row if not isinstance(q, PostUsageFormulaQuestion)])
+            if use_grid and max_cells:
                 cell_width = 12 // max_cells
                 result += '<div class="row">'
                 extra_class = f"col-md-{cell_width or 12}"
             for question in row:
                 result += question.render(virtual_inputs, group_question_url, group_item_id, extra_class)
-            if use_grid:
+            if use_grid and max_cells:
                 result += "</div>"
     return result
 
