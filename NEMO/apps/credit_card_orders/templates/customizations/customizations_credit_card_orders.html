@@ -2,7 +2,7 @@
 <div class="panel-body">
     <form method="POST" action="{% url 'customize' 'credit_card_orders' %}" class="form-horizontal">
         {% csrf_token %}
-        <h3 class="customization-section-title">Credit card orders</h3>
+        <h3 class="customization-section-title">Permissions</h3>
         <div class="form-group">
             <label class="control-label col-xs-4 col-md-3">View permissions</label>
             <div class="col-xs-8 col-md-9">
@@ -114,6 +114,100 @@
             </div>
         </div>
         <div class="customization-separation" style="margin-bottom: 15px"></div>
+        <h3 class="customization-section-title">Order number</h3>
+        <div class="form-group">
+            <label class="control-label col-xs-4 col-md-3">Auto generate</label>
+            <div class="col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="credit_card_order_number_template_enabled"
+                               id="credit_card_order_number_template_enabled"
+                               onchange="toggle_credit_card_auto_enabled()"
+                               {% if credit_card_order_number_template_enabled %}checked{% endif %}
+                               value="enabled">
+                        Auto generate order number
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group" id="current_number_user">
+            <label class="control-label col-xs-4 col-md-3">Current number per user</label>
+            <div class="col-xs-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="credit_card_order_number_template_user"
+                               {% if credit_card_order_number_template_user %}checked{% endif %}
+                               value="enabled">
+                        Current number is separate for each user generating it
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-offset-3 col-xs-offset-4 col-xs-8 col-md-9 help-block light-grey">
+                This means each user generating an order number will have a separate count.
+            </div>
+        </div>
+        <div id="current_number_year">
+            <div class="form-group">
+                <label class="control-label col-xs-4 col-md-3">Current number per year</label>
+                <div class="col-xs-8 col-md-9">
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox"
+                                   id="credit_card_order_number_year"
+                                   onchange="toggle_credit_card_year()"
+                                   {% if credit_card_order_number_template_year %}checked{% endif %}
+                                   value="enabled">
+                            Current number is separate for each year
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" id="current_number_user_2">
+                <div class="col-md-offset-3 col-xs-offset-4 col-xs-4 col-md-3">
+                    <input type="text"
+                           name="credit_card_order_number_template_year"
+                           id="credit_card_order_number_template_year"
+                           class="form-control"
+                           value="{{ credit_card_order_number_template_year }}">
+                </div>
+                <div class="col-md-offset-3 col-xs-offset-4 col-xs-8 col-md-9 help-block light-grey">
+                    This means each time this field is changed to a new year, a separate count is created. If both this and count by user are enabled, then each user will have a separate count every time this is changed
+                </div>
+            </div>
+        </div>
+        {% for current_number_key, current_number_value in current_numbers.items %}
+            {{ current_number_key }}: {{ current_number_value }}
+            <br>
+        {% endfor %}
+        <div class="customization-separation" style="margin-bottom: 15px"></div>
         <div class="text-center">{% button type="save" value="Save settings" %}</div>
     </form>
 </div>
+<script>
+    function toggle_credit_card_auto_enabled()
+    {
+        let enabled_checkbox = $("#credit_card_order_number_template_enabled")[0];
+        if (enabled_checkbox)
+        {
+            $("#current_number_year, #current_number_user").toggle(enabled_checkbox.checked);
+        }
+    }
+    
+    function toggle_credit_card_year()
+    {
+        let year_enabled_checkbox = $("#credit_card_order_number_year")[0];
+        if (year_enabled_checkbox)
+        {
+            if (!year_enabled_checkbox.checked)
+            {
+                $("#credit_card_order_number_template_year").val("")
+            }
+            $("#current_number_user_2").toggle(year_enabled_checkbox.checked);
+        }
+    }
+
+    toggle_credit_card_auto_enabled();
+    toggle_credit_card_year();
+</script>

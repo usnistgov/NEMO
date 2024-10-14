@@ -10,7 +10,11 @@
 {% block content %}
     <h1 class="form-group">
         {% if form.instance.id %}
-            Modify credit card order
+            {% if approval_level %}
+                Credit card order approval
+            {% else %}
+                Modify credit card order
+            {% endif %}
         {% else %}
             New credit card order
         {% endif %}
@@ -60,11 +64,18 @@
                 <div class="col-xs-6 text-left">
                     {% if form.instance.id %}
                         {% url 'cancel_credit_card_order' form.instance.id as cancel_credit_card_order_url %}
-                        {% button type="delete" submit=False title="Cancel order" icon="glyphicon-ban-circle" value="Cancel" onclick="if (confirm('Are you sure you want to cancel this request?')) {window.location.href="|concat:cancel_credit_card_order_url|concat:"' }" %}
+                        {% button type="delete" submit=False title="Cancel order" icon="glyphicon-ban-circle" value="Cancel order" onclick="if (confirm('Are you sure you want to cancel this request?')) {window.location.href='"|concat:cancel_credit_card_order_url|concat:"' }" %}
                     {% endif %}
                 </div>
                 <div class="col-xs-6 text-right">
-                    {% button type="save" value=form.instance.id|yesno:"Save changes,Create order" %}
+                    {% if user in form.instance.next_approval_candidates %}
+                        {% if self_approval_allowed or user != form.instance.creator %}
+                            {% button type="save" submit=False name="approve_order" title="Approve order" icon="glyphicon-ok-circle" value="Approve order" onclick="confirm_review_dialog(this);" %}
+                            {% button type="delete" submit=False name="deny_order" title="Deny order" icon="glyphicon-ban-circle" value="Deny order" onclick="confirm_review_dialog(this);" %}
+                        {% endif %}
+                    {% else %}
+                        {% button type="save" value=form.instance.id|yesno:"Save changes,Create order" %}
+                    {% endif %}
                 </div>
             </div>
         {% endif %}
@@ -80,5 +91,16 @@
             $("#document_"+document_id).remove();
             $("#order_form").append('<input type="hidden" name="remove_documents" value="'+document_id+'" />');
 		}
+
+        function confirm_review_dialog(review_button, decision_text)
+        {
+            let decision = review_button.innerText.trim().toLowerCase();
+            decision_text = decision_text || decision
+            let dialog_text = "Are you sure you want to "+decision_text+" this request?";
+            if (confirm(dialog_text))
+            {
+                submit_and_disable(review_button)
+            }
+        }
     </script>
 {% endblock %}

@@ -10,6 +10,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.template.defaultfilters import yesno
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from NEMO.apps.credit_card_orders.customization import CreditCardOrderCustomization
 from NEMO.apps.credit_card_orders.pdf_utils import (
@@ -28,12 +30,12 @@ re_ends_with_number = r"\d+$"
 
 class CreditCardOrderPDFTemplate(SerializationByNameModel):
     name = models.CharField(
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH, unique=True, help_text="The unique name for this order template"
+        max_length=CHAR_FIELD_MAXIMUM_LENGTH, unique=True, help_text=_("The unique name for this order template")
     )
     form = models.FileField(
-        upload_to=document_filename_upload, validators=[validate_is_pdf_form], help_text="The pdf form"
+        upload_to=document_filename_upload, validators=[validate_is_pdf_form], help_text=_("The pdf form")
     )
-    form_fields = models.TextField(help_text="JSON formatted fields list")
+    form_fields = models.TextField(help_text=_("JSON formatted fields list"))
 
     def get_filename_upload(self, filename):
         from django.template.defaultfilters import slugify
@@ -98,10 +100,13 @@ class CreditCardOrderPDFTemplate(SerializationByNameModel):
 class CreditCardOrderApprovalLevel(BaseModel):
     template = models.ForeignKey(CreditCardOrderPDFTemplate, on_delete=models.CASCADE)
     level = models.PositiveIntegerField(
-        help_text="The approval level number. Approval will be asked in ascending order"
+        help_text=_("The approval level number. Approval will be asked in ascending order")
     )
     permission = models.CharField(
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The role/permission required for users to approve"
+        max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text=_("The role/permission required for users to approve")
+    )
+    can_edit_order = models.BooleanField(
+        default=True, help_text=_("Check this box if the reviewer can make changes to the order")
     )
 
     class Meta:
@@ -178,23 +183,23 @@ class CreditCardOrderSpecialMapping(BaseModel):
 
     template = models.ForeignKey(CreditCardOrderPDFTemplate, on_delete=models.CASCADE)
     field_name = models.CharField(
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text="The pdf template field name to map this value to"
+        max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text=_("The pdf template field name to map this value to")
     )
     field_value = models.CharField(
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH, choices=FieldValue.Choices, help_text="The special value to map it to"
+        max_length=CHAR_FIELD_MAXIMUM_LENGTH, choices=FieldValue.Choices, help_text=_("The special value to map it to")
     )
     field_value_approval = models.ForeignKey(
         CreditCardOrderApprovalLevel,
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        help_text="The approval level (for approval mappings only)",
+        help_text=_("The approval level (for approval mappings only)"),
     )
     field_value_boolean = models.CharField(
         max_length=CHAR_FIELD_MAXIMUM_LENGTH,
         null=True,
         blank=True,
-        help_text="Comma separated values to map approved/denied states, i.e. 'Yes,No'",
+        help_text=_("Comma separated values to map approved/denied states, i.e. 'Yes,No'"),
     )
 
     class Meta:
@@ -203,18 +208,20 @@ class CreditCardOrderSpecialMapping(BaseModel):
 
     def clean(self):
         if self.field_value in self.FieldValue.ApprovalValues and not self.field_value_approval_id:
-            raise ValidationError({"field_value_approval": "This field is required when using an approval field value"})
+            raise ValidationError(
+                {"field_value_approval": _("This field is required when using an approval field value")}
+            )
         if self.field_value not in self.FieldValue.ApprovalValues and self.field_value_approval_id:
             raise ValidationError(
-                {"field_value_approval": "This field should be left blank when using non approval field values"}
+                {"field_value_approval": _("This field should be left blank when using non approval field values")}
             )
         if self.field_value_boolean and self.field_value != self.FieldValue.ORDER_APPROVED:
             raise ValidationError(
-                {"field_value_boolean": "This field only applies to field value 'Order approved/denied'"}
+                {"field_value_boolean": _("This field only applies to field value 'Order approved/denied'")}
             )
         if self.template_id:
             if self.field_name not in self.template.pdf_form_fields():
-                raise ValidationError({"field_name": "This field name could not be found in the template fields"})
+                raise ValidationError({"field_name": _("This field name could not be found in the template fields")})
             if self.field_value == self.FieldValue.ORDER_APPROVED:
                 try:
                     true_value = yesno(True, self.field_value_boolean)
@@ -225,19 +232,25 @@ class CreditCardOrderSpecialMapping(BaseModel):
                         if true_value not in states:
                             raise ValidationError(
                                 {
-                                    "field_value_boolean": f"'{true_value}' is not a valid option for '{self.field_name}': {states}"
+                                    "field_value_boolean": _(
+                                        f"'{true_value}' is not a valid option for '{self.field_name}': {states}"
+                                    )
                                 }
                             )
                         elif false_value not in states:
                             raise ValidationError(
                                 {
-                                    "field_value_boolean": f"'{false_value}' is not a valid option for '{self.field_name}': {states}"
+                                    "field_value_boolean": _(
+                                        f"'{false_value}' is not a valid option for '{self.field_name}': {states}"
+                                    )
                                 }
                             )
                         elif none_value not in states:
                             raise ValidationError(
                                 {
-                                    "field_value_boolean": f"'{none_value}' is not a valid option for '{self.field_name}': {states}"
+                                    "field_value_boolean": _(
+                                        f"'{none_value}' is not a valid option for '{self.field_name}': {states}"
+                                    )
                                 }
                             )
                 except ValidationError:
@@ -281,22 +294,24 @@ class CreditCardOrder(BaseModel):
         )
 
     order_number = models.CharField(null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH, unique=True)
-    creation_time = models.DateTimeField(auto_now_add=True, help_text="The date and time when the order was created.")
+    creation_time = models.DateTimeField(
+        auto_now_add=True, help_text=_("The date and time when the order was created.")
+    )
     creator = models.ForeignKey(User, related_name="credit_card_orders_created", on_delete=models.CASCADE)
-    last_updated = models.DateTimeField(auto_now=True, help_text="The last time this order was modified.")
+    last_updated = models.DateTimeField(auto_now=True, help_text=_("The last time this order was modified."))
     last_updated_by = models.ForeignKey(
         User,
         null=True,
         blank=True,
         related_name="credit_card_orders_updated",
-        help_text="The last user who modified this order.",
+        help_text=_("The last user who modified this order."),
         on_delete=models.SET_NULL,
     )
     status = models.IntegerField(choices=OrderStatus.Choices, default=OrderStatus.PENDING)
     template = models.ForeignKey(CreditCardOrderPDFTemplate, on_delete=models.CASCADE)
     template_data = models.TextField(null=True, blank=True)
     notes = models.TextField(null=True, blank=True)
-    cancelled = models.BooleanField(default=False, help_text="Indicates the order has been cancelled.")
+    cancelled = models.BooleanField(default=False, help_text=_("Indicates the order has been cancelled."))
     cancellation_time = models.DateTimeField(null=True, blank=True)
     cancelled_by = models.ForeignKey(
         User, related_name="credit_card_orders_cancelled", null=True, blank=True, on_delete=models.SET_NULL
@@ -311,11 +326,9 @@ class CreditCardOrder(BaseModel):
         return self.order_number or f"{self.get_status_display()} Order {self.id}"
 
     def next_approval_level(self) -> Optional[CreditCardOrderApprovalLevel]:
-        return (
-            self.template.creditcardorderapprovallevel_set.order_by("level")
-            .filter(creditcardorderapproval__isnull=True)
-            .first()
-        )
+        for approval_level in self.template.creditcardorderapprovallevel_set.order_by("level"):
+            if not CreditCardOrderApproval.objects.filter(approval_level=approval_level, order=self).exists():
+                return approval_level
 
     def next_approval_candidates(self) -> Set[User]:
         users = set()
@@ -367,6 +380,13 @@ class CreditCardOrder(BaseModel):
             self.status = self.OrderStatus.APPROVED
             self.save(update_fields=["status"])
 
+    def cancel(self, user: User, reason: str = None):
+        self.cancelled = True
+        self.cancelled_by = user
+        self.cancellation_time = timezone.now()
+        self.cancellation_reason = reason
+        self.save()
+
     def __str__(self):
         return f"{self.name} by {self.creator}"
 
@@ -390,15 +410,15 @@ class CreditCardOrderApproval(BaseModel):
     order = models.ForeignKey(CreditCardOrder, on_delete=models.CASCADE)
     approval_level = models.ForeignKey(CreditCardOrderApprovalLevel, on_delete=models.CASCADE)
     approval_time = models.DateTimeField(
-        auto_now_add=True, help_text="The date and time when the order was approved/denied."
+        auto_now_add=True, help_text=_("The date and time when the order was approved/denied.")
     )
     approved_by = models.ForeignKey(
         User,
         related_name="credit_card_orders_reviewed",
-        help_text="The user who approved the order",
+        help_text=_("The user who approved the order"),
         on_delete=models.CASCADE,
     )
-    approved = models.BooleanField(default=False, help_text="Whether this order was approved or not")
+    approved = models.BooleanField(default=False, help_text=_("Whether this order was approved or not"))
 
     class Meta:
         ordering = ["-approval_time"]
@@ -407,27 +427,27 @@ class CreditCardOrderApproval(BaseModel):
     def clean(self):
         if self.order_id:
             if self.order.cancelled:
-                raise ValidationError({"order": "This credit card order was cancelled and cannot be approved"})
+                raise ValidationError({"order": _("This credit card order was cancelled and cannot be approved")})
             if self.order.status in [
                 CreditCardOrder.OrderStatus.APPROVED,
                 CreditCardOrder.OrderStatus.DENIED,
                 CreditCardOrder.OrderStatus.FULFILLED,
             ]:
                 raise ValidationError(
-                    {"order": f"This credit card order has already been {self.order.get_status_display().lower()}"}
+                    {"order": _(f"This credit card order has already been {self.order.get_status_display().lower()}")}
                 )
             if self.approval_level_id:
                 if self.order.next_approval_level() != self.approval_level:
                     raise ValidationError(
-                        {"approval_level": "This credit card order has already been approved at this level"}
+                        {"approval_level": _("This credit card order has already been approved at this level")}
                     )
             if self.approved_by_id:
                 self_approval_allowed = CreditCardOrderCustomization.get_bool("credit_card_order_self_approval_allowed")
                 if not self_approval_allowed and self.approved_by == self.order.creator:
                     raise ValidationError(
-                        {"approved_by": "The creator is not allowed to approve its own credit card order"}
+                        {"approved_by": _("The creator is not allowed to approve its own credit card order")}
                     )
                 if self.approved_by not in self.order.next_approval_candidates():
                     raise ValidationError(
-                        {"approved_by": "This person is not allowed to approve this credit card order"}
+                        {"approved_by": _("This person is not allowed to approve this credit card order")}
                     )

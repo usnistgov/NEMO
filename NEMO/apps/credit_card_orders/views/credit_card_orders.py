@@ -9,7 +9,6 @@ from django.views.decorators.http import require_GET, require_http_methods
 from NEMO.apps.credit_card_orders.customization import CreditCardOrderCustomization
 from NEMO.apps.credit_card_orders.models import (
     CreditCardOrder,
-    CreditCardOrderApprovalLevel,
     CreditCardOrderDocuments,
     CreditCardOrderPDFTemplate,
 )
@@ -68,7 +67,9 @@ def can_edit_cc_order(user: User, credit_card_order: CreditCardOrder) -> bool:
         CreditCardOrder.OrderStatus.FULFILLED,
     ]:
         return False
-    return can_create_cc_order(user) or can_approve_cc_order(user, credit_card_order)
+    return (
+        can_create_cc_order(user) and credit_card_order.creator == user or can_approve_cc_order(user, credit_card_order)
+    )
 
 
 class CreditCardOrderForm(forms.ModelForm):
@@ -148,11 +149,14 @@ def credit_card_order_templates(request):
 @require_http_methods(["GET", "POST"])
 def create_credit_card_order(request, pdf_template_id=None, credit_card_order_id=None):
     user: User = request.user
+    is_approval = [state for state in ["approve_order", "deny_order"] if state in request.POST]
 
     try:
         cc_order: Optional[CreditCardOrder] = CreditCardOrder.objects.get(id=credit_card_order_id)
         pdf_template = cc_order.template
     except CreditCardOrder.DoesNotExist:
+        if is_approval:
+            raise
         cc_order = None
         if not can_create_cc_order(user):
             return redirect("landing")
@@ -166,11 +170,17 @@ def create_credit_card_order(request, pdf_template_id=None, credit_card_order_id
         except CreditCardOrderPDFTemplate.DoesNotExist:
             return render(request, "credit_card_orders/choose_template.html", {"pdf_templates": templates})
 
+    approval_level = cc_order.next_approval_level() if cc_order else None
+    if is_approval and approval_level and not can_approve_cc_order(user, cc_order, approval_level.id):
+        return redirect("landing")
+
     edit = bool(cc_order)
 
     form = CreditCardOrderForm(request.POST or None, instance=cc_order)
 
     if edit and not can_edit_cc_order(user, cc_order):
+        # because this can be a GET, we need to initialize cleaned_data
+        form.cleaned_data = getattr(form, "cleaned_data", {})
         if cc_order.cancelled:
             form.add_error(None, "You are not allowed to edit cancelled orders.")
         elif cc_order.status in [CreditCardOrder.OrderStatus.DENIED, CreditCardOrder.OrderStatus.FULFILLED]:
@@ -183,6 +193,8 @@ def create_credit_card_order(request, pdf_template_id=None, credit_card_order_id
             "credit_card_orders_form_fields_group", pdf_template.id
         ),
         "selected_template_id": pdf_template.id,
+        "approval_level": approval_level,
+        "self_approval_allowed": CreditCardOrderCustomization.get_bool("credit_card_order_self_approval_allowed"),
     }
 
     if request.method == "POST":
@@ -196,15 +208,18 @@ def create_credit_card_order(request, pdf_template_id=None, credit_card_order_id
 
             form.instance.last_updated_by = user
             form.instance.template = pdf_template
-            new_cc_order = form.save()
+            if not is_approval or approval_level.can_edit_order:
+                new_cc_order = form.save()
 
-            # Handle file uploads
-            for f in request.FILES.getlist("order_documents"):
-                CreditCardOrderDocuments.objects.create(document=f, credit_card_order=new_cc_order)
-            CreditCardOrderDocuments.objects.filter(id__in=request.POST.getlist("remove_documents")).delete()
+                # Handle file uploads
+                for f in request.FILES.getlist("order_documents"):
+                    CreditCardOrderDocuments.objects.create(document=f, credit_card_order=new_cc_order)
+                CreditCardOrderDocuments.objects.filter(id__in=request.POST.getlist("remove_documents")).delete()
 
-            # create_credit_card_order_notification(new_cc_order)
-            # send_order_received_email(request, new_cc_order, edit)
+                # TODO: create_credit_card_order_notification(new_cc_order)
+                # TODO: send_order_received_email(request, new_cc_order, edit)
+            if is_approval:
+                cc_order.process_approval(user, approval_level, is_approval == ["approve_order"])
             return redirect("credit_card_orders")
         else:
             if request.FILES.getlist("order_documents") or request.POST.get("remove_documents"):
@@ -216,20 +231,12 @@ def create_credit_card_order(request, pdf_template_id=None, credit_card_order_id
 
 
 @login_required
-@require_GET
-def approve_credit_card_order(request, credit_card_order_id, approved=None):
-    # TODO: finish and test this
-    user: User = request.user
+@require_http_methods(["GET", "POST"])
+def cancel_credit_card_order(request, credit_card_order_id):
     cc_order = get_object_or_404(CreditCardOrder, pk=credit_card_order_id)
-    if not cc_order.next_approval_level():
-        return redirect("landing")
-    approval_level = get_object_or_404(CreditCardOrderApprovalLevel, pk=cc_order.next_approval_level().id)
-    if not can_approve_cc_order(user, cc_order, cc_order.next_approval_level().id):
-        return redirect("landing")
-    if approved is None:
-        return render(request, "credit_card_orders/order_approval.html", {"credit_card_order": cc_order})
-    else:
-        cc_order.process_approval(user, approval_level, approved)
+    user: User = request.user
+    if can_edit_cc_order(user, cc_order):
+        cc_order.cancel(user)
     return redirect("credit_card_orders")
 
 
@@ -257,10 +264,6 @@ def form_fields_group(request, form_id, group_name):
     )
 
 
-# TODO: figure this out
-# def set_order_number_from_template(credit_card_order: CreditCardOrder, user: User) -> str:
-#     order_number_template_enabled = CreditCardOrderCustomization.get_bool("credit_card_order_number_template_enabled")
-#     order_number_template = CreditCardOrderCustomization.get("credit_card_order_number_template")
-#     if order_number_template_enabled and order_number_template:
-#         order_number = Template(order_number_template).render(Context({"user": user}))
-#         return order_number
+# TODO: figure out setting the order number automatically
+# TODO: make form readonly when approving and not allowed to edit
+# TODO: concatenate all documents with the pdf form

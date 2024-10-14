@@ -13,6 +13,7 @@ from NEMO.apps.credit_card_orders.models import (
     CreditCardOrderPDFTemplate,
     CreditCardOrderSpecialMapping,
 )
+from NEMO.fields import DatalistWidget
 from NEMO.widgets.dynamic_form import DynamicForm
 
 
@@ -21,7 +22,9 @@ class CreditCardOrderApprovalLevelFormset(forms.BaseInlineFormSet):
 
     def add_fields(self, form, index):
         super().add_fields(form, index)
-        form.fields["permission"] = forms.ChoiceField(choices=CreditCardOrderApprovalLevel.permission_choices())
+        form.fields["permission"] = forms.ChoiceField(
+            choices=CreditCardOrderApprovalLevel.permission_choices(), widget=DatalistWidget
+        )
 
 
 class CreditCardOrderSpecialMappingFormset(forms.BaseInlineFormSet):
