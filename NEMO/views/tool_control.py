@@ -7,6 +7,7 @@ from typing import Dict, List
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -406,6 +407,12 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     except RequiredUnansweredQuestionsException as e:
         return HttpResponseBadRequest(str(e))
 
+    # Validate usage event
+    try:
+        new_usage_event.full_clean()
+    except ValidationError as e:
+        return HttpResponseBadRequest(str(e))
+
     # All policy checks passed so enable the tool for the user.
     if tool.interlock and not tool.interlock.unlock():
         if bypass_interlock and interlock_bypass_allowed(user):
@@ -436,6 +443,10 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
             area_access.staff_charge = new_staff_charge
             area_access.customer = new_staff_charge.customer
             area_access.project = new_staff_charge.project
+            try:
+                area_access.full_clean()
+            except ValidationError as e:
+                return HttpResponseBadRequest(str(e))
             area_access.save()
 
     # Now we can safely save the usage event

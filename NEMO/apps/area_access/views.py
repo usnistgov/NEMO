@@ -1,6 +1,7 @@
 from time import sleep
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.defaultfilters import linebreaksbr
@@ -243,7 +244,10 @@ def login_to_area(request, door_id):
 
             delay_lock_door(door.id)
 
-        log_in_user_to_area(area, user, project)
+        try:
+            log_in_user_to_area(area, user, project)
+        except ValidationError as e:
+            return render(request, "area_access/physical_access_denied.html", {"message": str(e)})
 
         dictionary = {
             "door": door,
