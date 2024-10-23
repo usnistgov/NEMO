@@ -3,6 +3,7 @@ from http import HTTPStatus
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -92,6 +93,13 @@ def do_enable_tool(request, tool_id):
     except RequiredUnansweredQuestionsException as e:
         dictionary = {"message": str(e), "delay": 10}
         return render(request, "kiosk/acknowledgement.html", dictionary)
+
+    # Validate usage event
+    try:
+        new_usage_event.full_clean()
+    except ValidationError as e:
+        return render(request, "kiosk/acknowledgement.html", {"message": str(e)})
+
     new_usage_event.save()
 
     # Remove wait list entry if it exists

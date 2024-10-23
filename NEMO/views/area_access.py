@@ -3,6 +3,7 @@ from html.parser import HTMLParser
 from logging import getLogger
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db.models import F
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -193,6 +194,11 @@ def new_area_access_record(request):
         if record.project not in record.customer.active_projects():
             dictionary["error_message"] = "{} is not authorized to bill that project.".format(record.customer)
             return render(request, "area_access/new_area_access_record.html", dictionary)
+        try:
+            record.full_clean()
+        except ValidationError as e:
+            dictionary["error_message"] = str(e)
+            return render(request, "area_access/new_area_access_record.html", dictionary)
         record.save()
         dictionary["success"] = "{} is now logged in to the {}.".format(record.customer, record.area.name)
         return render(request, "area_access/new_area_access_record.html", dictionary)
@@ -258,6 +264,10 @@ def change_project(request, new_project=None):
     record.area = area
     record.customer = request.user
     record.project = new_project
+    try:
+        record.full_clean()
+    except ValidationError as e:
+        return render(request, "area_access/change_project.html", {"error": str(e)})
     record.save()
     return redirect(reverse("landing"))
 
@@ -375,6 +385,9 @@ def self_log_in(request, load_areas=True):
                 f"You do not have a current reservation for the {error.area.name}. Please make a reservation before trying to access this area."
             )
             return render(request, "area_access/self_login.html", dictionary)
+        except ValidationError as e:
+            dictionary["area_error_message"] = str(e)
+            return render(request, "area_access/self_login.html", dictionary)
         except Exception as error:
             area_access_logger.exception(error)
             dictionary["area_error_message"] = "unexpected error"
@@ -418,7 +431,10 @@ def occupancy(request):
 
 @synchronized("user")
 def log_in_user_to_area(area, user, project):
-    return AreaAccessRecord.objects.create(area=area, customer=user, project=project)
+    area_access_record = AreaAccessRecord(area=area, customer=user, project=project)
+    area_access_record.full_clean()
+    area_access_record.save()
+    return area_access_record
 
 
 @synchronized("user")

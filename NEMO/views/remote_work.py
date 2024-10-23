@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -260,6 +261,10 @@ def begin_staff_area_charge(request):
         return HttpResponseBadRequest(e.msg)
     except:
         return HttpResponseBadRequest("Invalid area")
+    try:
+        record.full_clean()
+    except ValidationError as e:
+        return HttpResponseBadRequest(str(e))
     # No errors, save it
     record.save()
     return redirect(reverse("staff_charges"))

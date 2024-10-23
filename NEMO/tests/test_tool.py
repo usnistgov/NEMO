@@ -1,6 +1,7 @@
 from datetime import timedelta
 from typing import Optional
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -16,6 +17,7 @@ from NEMO.models import (
     PhysicalAccessLevel,
     Project,
     Tool,
+    UsageEvent,
     User,
 )
 from NEMO.tests.test_utilities import create_user_and_project, login_as
@@ -209,3 +211,10 @@ class ToolTestCase(TestCase):
         self.assertTrue(alternate_tool.in_use())
         # make sure both return the same usage event
         self.assertEqual(tool.get_current_usage_event(), alternate_tool.get_current_usage_event())
+
+    def test_tool_already_in_use(self):
+        user, project = create_user_and_project()
+        usage = UsageEvent(user=user, operator=user, project=project, tool=tool, start=timezone.now())
+        usage.save()
+        usage_2 = UsageEvent(user=user, operator=user, project=project, tool=tool, start=timezone.now())
+        self.assertRaises(ValidationError, usage_2.full_clean)
