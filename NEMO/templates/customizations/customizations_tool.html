@@ -216,6 +216,21 @@
             </div>
         </div>
         <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Next reservation</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_show_next_reservation_user"
+                               name="tool_control_show_next_reservation_user"
+                               {% if tool_control_show_next_reservation_user %}checked{% endif %}
+                               value="enabled">
+                        Check to show information about the next reservation in tool control
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">Qualified users list</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">

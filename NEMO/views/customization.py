@@ -505,6 +505,7 @@ class ToolCustomization(CustomizationBase):
         "tool_control_show_qualified_users_to_all": "",
         "tool_control_show_documents_only_qualified_users": "",
         "tool_control_show_tool_credentials": "enabled",
+        "tool_control_show_next_reservation_user": "",
         "tool_qualification_reminder_days": "",
         "tool_qualification_expiration_days": "",
         "tool_qualification_expiration_never_used_days": "",

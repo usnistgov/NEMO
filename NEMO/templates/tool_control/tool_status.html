@@ -128,6 +128,16 @@
                     </h2>
                 </div>
             {% endif %}
+            {% if next_reservation and "tool"|customization:"tool_control_show_next_reservation_user" %}
+                {% now "Y-m-d" as today %}
+                The next reservation is
+                {% if today == next_reservation.start|date:"Y-m-d" %}
+                    at {{ next_reservation.start|date:"TIME_FORMAT" }}
+                {% else %}
+                    on {{ next_reservation.start }}
+                {% endif %}
+                for <a href="{% url 'get_email_form_for_user' next_reservation.user.id %}">{{ next_reservation.user }}</a>
+            {% endif %}
         </div>
         {% if tool_rate %}
             <div class="tool-rates">

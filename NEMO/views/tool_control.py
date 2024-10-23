@@ -166,6 +166,18 @@ def tool_status(request, tool_id):
     except Reservation.DoesNotExist:
         pass
 
+    dictionary["next_reservation"] = (
+        Reservation.objects.filter(
+            start__gt=timezone.now(),
+            cancelled=False,
+            missed=False,
+            shortened=False,
+            tool=tool,
+        )
+        .order_by("start")
+        .first()
+    )
+
     # Staff need the user list to be able to qualify users for the tool.
     if user.is_staff:
         dictionary["users"] = User.objects.filter(is_active=True)
