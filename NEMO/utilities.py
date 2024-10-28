@@ -11,7 +11,7 @@ from email.mime.base import MIMEBase
 from enum import Enum
 from io import BytesIO, StringIO
 from logging import getLogger
-from typing import Dict, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
 from urllib.parse import urljoin
 
 from PIL import Image
@@ -825,7 +825,7 @@ def new_model_copy(instance):
     return new_instance
 
 
-def slugify_underscore(name: str):
+def slugify_underscore(name: Any):
     # Slugify and replaces dashes by underscores
     return slugify(name).replace("-", "_")
 
