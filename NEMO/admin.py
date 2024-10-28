@@ -1884,7 +1884,10 @@ class EmailLogAdmin(admin.ModelAdmin):
     list_display = ["id", "category", "sender", "to", "subject", "when", "ok"]
     list_filter = ["category", "ok"]
     search_fields = ["subject", "content", "to"]
-    readonly_fields = ("content_preview",)
+    readonly_fields = (
+        "when",
+        "content_preview",
+    )
     date_hierarchy = "when"
 
     def content_preview(self, obj):
