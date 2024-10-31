@@ -594,10 +594,15 @@ class ProjectDocumentsInline(DocumentModelAdmin):
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("name", "id", "get_application_identifier", "account", "active", "start_date")
+    list_display = ("name", "id", "get_application_identifier", "account", "active", "get_managers", "start_date")
     filter_horizontal = ("only_allow_tools",)
     search_fields = ("name", "application_identifier", "account__name")
-    list_filter = ("active", ("account", admin.RelatedOnlyFieldListFilter), "start_date")
+    list_filter = (
+        "active",
+        ("account", admin.RelatedOnlyFieldListFilter),
+        "start_date",
+        ("manager_set", admin.RelatedOnlyFieldListFilter),
+    )
     inlines = [ProjectDocumentsInline]
     form = ProjectAdminForm
     autocomplete_fields = ["account"]
@@ -605,6 +610,10 @@ class ProjectAdmin(admin.ModelAdmin):
     @display(ordering="application_identifier")
     def get_application_identifier(self, project: Project):
         return project.application_identifier
+
+    @display(description="PIs", ordering="manager_set")
+    def get_managers(self, project: Project):
+        return mark_safe("<br>".join([pi.get_name() for pi in project.manager_set.all()]))
 
     def save_model(self, request, obj, form, change):
         """
