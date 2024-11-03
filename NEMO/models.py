@@ -2570,8 +2570,10 @@ class AreaAccessRecord(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def validate_unique(self, exclude=None):
         super().validate_unique(exclude)
-        already_logged_in = AreaAccessRecord.objects.filter(
-            customer_id=self.customer_id, area_id=self.area_id, end=None
+        already_logged_in = (
+            AreaAccessRecord.objects.filter(customer_id=self.customer_id, area_id=self.area_id, end=None)
+            .exclude(id=self.id)
+            .exists()
         )
         if self.area and self.customer and not self.end and already_logged_in:
             raise ValidationError(_("You are already logged in to this area"))
@@ -2942,7 +2944,11 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
     def validate_unique(self, exclude=None):
         super().validate_unique(exclude)
-        tool_already_in_use = UsageEvent.objects.filter(tool_id__in=self.tool.get_family_tool_ids(), end=None).exists()
+        tool_already_in_use = (
+            UsageEvent.objects.filter(tool_id__in=self.tool.get_family_tool_ids(), end=None)
+            .exclude(id=self.id)
+            .exists()
+        )
         if self.tool and not self.end and tool_already_in_use:
             raise ValidationError(_("This tool is already in use"))
 
