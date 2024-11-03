@@ -4,6 +4,39 @@
     <form method="POST" action="{% url 'customize' 'training' %}" class="form-horizontal">
         {% csrf_token %}
         <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Tool control (trainers only)</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input onchange="show_hide_training_options()"
+                               type="checkbox"
+                               id="show_training_option"
+                               {% if training_show_self_option_in_tool_control or training_show_behalf_option_in_tool_control %}checked{% endif %}>
+                        Check to show option to use a tool for training
+                    </label>
+                    <div id="training_options" class="col-md-offset-1" style="display: none;margin-top: 5px">
+                        <label>
+                            <input type="checkbox"
+                                   id="training_show_self_option_in_tool_control"
+                                   name="training_show_self_option_in_tool_control"
+                                   {% if training_show_self_option_in_tool_control %}checked{% endif %}
+                                   value="enabled">
+                            When using the tool for self
+                        </label>
+                        <br>
+                        <label>
+                            <input type="checkbox"
+                                   id="training_show_behalf_option_in_tool_control"
+                                   name="training_show_behalf_option_in_tool_control"
+                                   {% if training_show_behalf_option_in_tool_control %}checked{% endif %}
+                                   value="enabled">
+                            When using the tool on behalf of someone else (staff only)
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-lg-3 col-md-4 col-sm-5">Training types allowed</label>
             <div class="col-lg-9 col-md-8 col-sm-7">
                 <div class="checkbox">
@@ -67,13 +100,21 @@
         $(this).typeahead('val', '').focus();
 		add_to_list("#include-hidden-list", "remove_tool", search_selection.id, search_selection.name, "Remove " + search_selection.name, "training_included_hidden_tools_list");
 	}
+
     function remove_tool(tool_id)
 	{
 		remove_from_list("#include-hidden-list", "#training_included_hidden_tools_list_" + tool_id, "No hidden tools are included.");
 	}
+
+    function show_hide_training_options()
+    {
+        $('#training_options').toggle($('#show_training_option').prop('checked'));
+    }
+
 	$('#include_hidden_tool').autocomplete('tools', add_tool, {{ tools|json_search_base }});
     {% for tool in included_hidden_tools %}
 		add_tool(undefined, {name:'{{ tool.name }}', id:{{ tool.id }}});
 	{% endfor %}
 	auto_size_textarea(document.getElementById("training_request_default_message_placeholder"));
+    show_hide_training_options();
 </script>

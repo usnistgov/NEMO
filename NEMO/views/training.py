@@ -13,7 +13,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from NEMO.decorators import staff_member_or_tool_superuser_required
 from NEMO.exceptions import ProjectChargeException
-from NEMO.models import MembershipHistory, Project, Tool, ToolQualificationGroup, TrainingSession, User
+from NEMO.models import MembershipHistory, Project, Tool, ToolQualificationGroup, TrainingSession, UsageEvent, User
 from NEMO.policy import policy_class as policy
 from NEMO.utilities import datetime_input_format
 from NEMO.views.customization import TrainingCustomization
@@ -26,6 +26,10 @@ training_logger = getLogger(__name__)
 @require_GET
 def training(request):
     """Present a web page to allow staff or tool superusers to charge training and qualify users on particular tools."""
+    return render(request, "training/training.html", get_training_dictionary(request))
+
+
+def get_training_dictionary(request):
     user: User = request.user
     users = User.objects.filter(is_active=True).exclude(id=user.id)
     tools = Tool.objects.filter(
@@ -44,27 +48,33 @@ def training(request):
     if training_only_type is not None:
         # only keep the one type
         training_types = [training_type for training_type in training_types if training_type[0] == training_only_type]
-    return render(
-        request,
-        "training/training.html",
-        {
-            "users": users,
-            "tools": list(tools),
-            "tool_groups": list(tool_groups),
-            "charge_types": training_types,
-        },
-    )
+    usage_event = None
+    if request.GET.get("usage_event_id", None):
+        usage_event = UsageEvent.objects.filter(id=request.GET.get("usage_event_id", None) or None).first()
+    dictionary = {
+        "users": users,
+        "tools": list(tools),
+        "tool_groups": list(tool_groups),
+        "charge_types": training_types,
+        "duration": usage_event.duration_minutes() if usage_event else None,
+        "date": usage_event.end if usage_event else None,
+        "usage_event": usage_event,
+    }
+    return dictionary
 
 
 @staff_member_or_tool_superuser_required
 @require_GET
 def training_entry(request):
     entry_number = int(request.GET["entry_number"])
-    return render(
-        request,
-        "training/training_entry.html",
-        {"entry_number": entry_number, "charge_types": TrainingSession.Type.Choices},
-    )
+    dictionary = get_training_dictionary(request)
+    dictionary["entry_number"] = entry_number
+    # Pass in any eligible data to the training entry for prefilling
+    eligible_data = ["duration", "charge_type_id"]
+    for key, value in request.GET.items():
+        if key in eligible_data:
+            dictionary[key] = value
+    return render(request, "training/training_entry.html", dictionary)
 
 
 def is_valid_field(field):
@@ -81,6 +91,7 @@ def charge_training(request):
     date_allowed = TrainingCustomization.get_bool("training_allow_date")
     try:
         charges = {}
+        usage_event_id = request.POST.get("usage_event_id", None) or None
         for key, value in request.POST.items():
             if is_valid_field(key):
                 attribute, separator, index = key.partition("__")
@@ -88,6 +99,7 @@ def charge_training(request):
                 if index not in charges:
                     charges[index] = TrainingSession()
                     charges[index].trainer = trainer
+                    charges[index].usage_event_id = usage_event_id
                 if attribute == "chosen_user":
                     charges[index].trainee = User.objects.get(id=to_int_or_negative(value))
                 if attribute == "chosen_tool":
@@ -144,7 +156,7 @@ def charge_training(request):
         dictionary = {
             "title": "Success!",
             "content": "Training charges were successfully saved.",
-            "redirect": reverse("landing"),
+            "redirect": reverse("training"),
         }
         return render(request, "display_success_and_redirect.html", dictionary)
 

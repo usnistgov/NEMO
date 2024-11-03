@@ -47,6 +47,7 @@ from NEMO.utilities import (
     get_email_from_settings,
     quiet_int,
     render_email_template,
+    response_js_redirect,
     send_mail,
 )
 from NEMO.views.area_access import able_to_self_log_out_of_area
@@ -392,6 +393,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
     user = get_object_or_404(User, id=user_id)
     project = get_object_or_404(Project, id=project_id)
     staff_charge = staff_charge == "true"
+    is_training = request.POST.get("training", "false") == "true"
     bypass_interlock = request.POST.get("bypass", "False") == "True"
     # Figure out if the tool usage is part of remote work
     # 1: Staff charge means it's always remote work
@@ -463,6 +465,8 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 
     # Now we can safely save the usage event
     new_usage_event.remote_work = remote_work
+    if (user.is_staff or user in tool.superusers.all()) and not remote_work and is_training:
+        new_usage_event.training = True
     new_usage_event.save()
 
     # Remove wait list entry if it exists
@@ -542,6 +546,9 @@ def disable_tool(request, tool_id):
     area_record = user.area_access_record()
     if area_record and tool.ask_to_leave_area_when_done_using and able_to_self_log_out_of_area(user):
         return render(request, "tool_control/logout_user.html", {"area": area_record.area, "tool": tool})
+
+    if current_usage_event.training:
+        return response_js_redirect("training", query_string=f"usage_event_id={current_usage_event.id}")
 
     return HttpResponse()
 

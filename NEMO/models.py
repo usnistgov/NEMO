@@ -2223,6 +2223,12 @@ class TrainingSession(BaseModel, BillableItemMixin):
     qualified = models.BooleanField(
         default=False, help_text="Indicates that after this training session the user was qualified to use the tool."
     )
+    usage_event = models.ForeignKey(
+        "UsageEvent",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
     validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(
         User, null=True, blank=True, related_name="training_validated_set", on_delete=models.CASCADE
@@ -2914,6 +2920,7 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         User, null=True, blank=True, related_name="usage_event_validated_set", on_delete=models.CASCADE
     )
     remote_work = models.BooleanField(default=False)
+    training = models.BooleanField(default=False)
     pre_run_data = models.TextField(null=True, blank=True)
     run_data = models.TextField(null=True, blank=True)
     waived = models.BooleanField(default=False)
@@ -2927,8 +2934,14 @@ class UsageEvent(BaseModel, CalendarDisplayMixin, BillableItemMixin):
         if errors:
             raise ValidationError(errors)
 
+    def self_usage(self):
+        return self.user == self.operator
+
     def duration(self):
         return calculate_duration(self.start, self.end, "In progress")
+
+    def duration_minutes(self) -> int:
+        return int(self.duration().total_seconds() // 60)
 
     def pre_run_data_json(self):
         return loads(self.pre_run_data) if self.pre_run_data else None
