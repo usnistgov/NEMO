@@ -115,9 +115,10 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="landingpagechoice",
             name="url",
-            field=models.URLField(
+            field=models.CharField(
                 help_text="The URL that the choice leads to when clicked. Relative paths such as /calendar/ are used when linking within the site. Use fully qualified URL paths such as https://www.google.com/ to link to external sites.",
                 verbose_name="URL",
+                max_length=255,
             ),
         ),
         migrations.AlterField(

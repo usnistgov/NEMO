@@ -3968,7 +3968,8 @@ class LandingPageChoice(BaseModel):
     name = models.CharField(
         max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The textual name that will be displayed underneath the image"
     )
-    url = models.URLField(
+    url = models.CharField(
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         verbose_name="URL",
         help_text="The URL that the choice leads to when clicked. Relative paths such as /calendar/ are used when linking within the site. Use fully qualified URL paths such as https://www.google.com/ to link to external sites.",
     )
