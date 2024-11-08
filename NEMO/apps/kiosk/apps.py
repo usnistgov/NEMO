@@ -1,9 +1,8 @@
 from django.apps import AppConfig
 
 
-class ContractsConfig(AppConfig):
-    name = "NEMO.apps.contracts"
-    label = "contracts"
+class KioskConfig(AppConfig):
+    name = "NEMO.apps.kiosk"
 
     def ready(self):
         """

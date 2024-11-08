@@ -1,9 +1,9 @@
 from django.apps import AppConfig
 
 
-class ContractsConfig(AppConfig):
-    name = "NEMO.apps.contracts"
-    label = "contracts"
+class SensorsConfig(AppConfig):
+    name = "NEMO.apps.sensors"
+    label = "sensors"
 
     def ready(self):
         """

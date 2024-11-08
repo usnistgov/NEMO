@@ -1,9 +1,8 @@
 from django.apps import AppConfig
 
 
-class ContractsConfig(AppConfig):
-    name = "NEMO.apps.contracts"
-    label = "contracts"
+class AreaAccessConfig(AppConfig):
+    name = "NEMO.apps.area_access"
 
     def ready(self):
         """
