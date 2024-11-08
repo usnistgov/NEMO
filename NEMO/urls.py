@@ -123,16 +123,22 @@ for app in apps.get_app_configs():
     app_name = app.name
     if app_name != "NEMO" and app_name.startswith("NEMO"):
         try:
-            mod = import_module("%s.urls" % app_name)
-        except ModuleNotFoundError:
-            logger.warning(f"no urls found for NEMO plugin: {app_name}")
-            pass
-        except Exception as e:
-            logger.exception(f"could not import urls for NEMO plugin: {app_name}")
-            pass
-        else:
-            urlpatterns += [path("", include("%s.urls" % app_name))]
-            logger.debug(f"automatically including urls for plugin: {app_name}")
+            plugin_urls = "%s.urls" % app_name
+            try:
+                mod = import_module(plugin_urls)
+            except ModuleNotFoundError as e:
+                if e.name == plugin_urls:
+                    logger.debug(f"no urls found for NEMO plugin: {app_name}")
+                else:
+                    raise
+            else:
+                urlpatterns += [path("", include(plugin_urls))]
+                logger.debug(f"automatically including urls for plugin: {app_name}")
+        except Exception:
+            if getattr(app, "critical", False):
+                raise
+            else:
+                logger.exception(f"Failure when loading URLs for app: {app_name}")
 
 # The order matters for some tests to run properly
 urlpatterns += [
