@@ -432,12 +432,20 @@
                     {% if user.is_staff or user.is_service_personnel and tool in user.qualifications.all %}
                         <h4 id="what_to_do_label">What would you like to do?</h4>
                         <input type="hidden" id="remote_work" name="remote_work" value="">
+                        <input type="hidden" id="training" name="training" value="">
                         <div class="radio" role="group" aria-labelledby="what_to_do_label">
                             <label>
                                 <input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">
                                 Use this tool for my own project
                             </label>
                             {% if user.is_staff %}
+                                {% if "training"|customization:"training_show_self_option_in_tool_control" == "enabled" %}
+                                    <br>
+                                    <label>
+                                        <input type="radio" onchange="use_tool_for_self(true)" name="staff_charge" value="false">
+                                        Use this tool for my own project for training
+                                    </label>
+                                {% endif %}
                                 <br>
                                 <label>
                                     <input type="radio" onchange="use_tool_for_other()" name="staff_charge" value="false">
@@ -445,6 +453,13 @@
                                     {% if "remote_work"|customization:"remote_work_ask_explicitly" %}(no remote){% endif %}
                                 </label>
                                 {% if "remote_work"|customization:"remote_work_ask_explicitly" %}
+                                    {% if "training"|customization:"training_show_behalf_option_in_tool_control" == "enabled" %}
+                                        <br>
+                                        <label>
+                                            <input type="radio" onchange="use_tool_for_other('', true)" name="staff_charge" value="false">
+                                            Use this tool on behalf of another user for training
+                                        </label>
+                                    {% endif %}
                                     <br>
                                     <label>
                                         <input type="radio" onchange="use_tool_for_other(true)" name="staff_charge" value="false">
@@ -486,6 +501,24 @@
                                         {% endif %}
                                     </label>
                                 {% endif %}
+                            {% endif %}
+                        </div>
+                        <div id="project_choice"></div>
+                    {% elif user in tool.superusers.all and "training"|customization:"training_show_self_option_in_tool_control" == "enabled" %}
+                        {# When user is not staff/service personnel but is a tool superuser and training option is enabled #}
+                        <h4 id="what_to_do_label_superuser">What would you like to do?</h4>
+                        <input type="hidden" id="training" name="training" value="">
+                        <div class="radio" role="group" aria-labelledby="what_to_do_label_superuser">
+                            <label>
+                                <input type="radio" onchange="use_tool_for_self()" name="staff_charge" value="false">
+                                Use this tool for my own project
+                            </label>
+                            {% if "training"|customization:"training_show_self_option_in_tool_control" == "enabled" %}
+                                <br>
+                                <label>
+                                    <input type="radio" onchange="use_tool_for_self(true)" name="staff_charge" value="false">
+                                    Use this tool for my own project for training
+                                </label>
                             {% endif %}
                         </div>
                         <div id="project_choice"></div>

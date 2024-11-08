@@ -476,7 +476,18 @@ class AreaAdmin(DraggableMPTTAdmin):
 
 @register(TrainingSession)
 class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ("id", "trainer", "trainee", "tool", "project", "type", "date", "duration", "qualified")
+    list_display = (
+        "id",
+        "trainer",
+        "trainee",
+        "tool",
+        "project",
+        "type",
+        "date",
+        "duration",
+        "qualified",
+        "usage_event",
+    )
     list_filter = (
         "qualified",
         "date",
@@ -757,7 +768,7 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 @register(UsageEvent)
 class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
     list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work")
-    list_filter = ("remote_work", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
+    list_filter = ("remote_work", "training", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "start"
     autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by"]
     actions = [waive_selected_charges]

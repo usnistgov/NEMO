@@ -99,8 +99,9 @@
 			}
 		}
 
-		function use_tool_for_self()
+		function use_tool_for_self(training)
 		{
+            $("#training").val(training || "");
 			$("#project_choice").html("Fetching project list...").show().load("{% url 'get_projects_for_self' %}", undefined, load_projects_completion_callback);
 		}
 
@@ -230,9 +231,10 @@
 
 			{# Only staff can perform the functions in this if-block. #}
 
-			function use_tool_for_other(remote_work)
+			function use_tool_for_other(remote_work, training)
 			{
                 $("#remote_work").val(remote_work || "");
+                $("#training").val(training || "");
 				$("#start").hide();
                 $("#pre_usage_questions").hide();
 				$("#project_choice").html("Fetching user list...").show().load("{% url 'use_tool_for_other' %}", undefined, load_projects_completion_callback);

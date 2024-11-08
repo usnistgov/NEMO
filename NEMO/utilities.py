@@ -27,7 +27,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse, QueryDict
-from django.shortcuts import render
+from django.shortcuts import render, resolve_url
 from django.template import Template
 from django.template.context import make_context
 from django.urls import NoReverseMatch, reverse
@@ -925,3 +925,11 @@ def get_local_date_times_for_item_policy_times(
     else:
         current_end_time_off = datetime.combine(current_date.date(), weekday_end_time_off, tzinfo=current_date.tzinfo)
     return current_start_time_off, current_end_time_off
+
+
+def response_js_redirect(to, query_string=None, *args, **kwargs):
+    return HttpResponse(
+        f"<script>window.location.href = '{resolve_url(to, *args, **kwargs)}?{query_string or ''}';</script>",
+        content_type="text/javascript",
+        status=202,
+    )
