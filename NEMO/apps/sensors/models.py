@@ -181,7 +181,7 @@ class Sensor(BaseModel):
 
 class SensorData(BaseModel):
     sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
-    created_date = models.DateTimeField(auto_now_add=True)
+    created_date = models.DateTimeField(auto_now_add=True, db_index=True)
     value = models.FloatField()
 
     def display_value(self):
