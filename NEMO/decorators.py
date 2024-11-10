@@ -60,11 +60,8 @@ def synchronized(method_argument=""):
         def wrapper(*args, **kwargs):
             func_args = inspect.signature(function).bind(*args, **kwargs).arguments
             attribute_value = slugify_underscore(str(func_args.get(method_argument, "")))
-            lock_name = (
-                slugify_underscore(
-                    f"{function.__module__.replace('.', '_')}_{function.__qualname__}{'_' if attribute_value else ''}"
-                )
-                + attribute_value
+            lock_name = slugify_underscore(
+                f"{function.__module__.replace('.', '_')}_{function.__qualname__}_{attribute_value}"
             )
             lock = locks.setdefault(lock_name, Lock())
             with lock:
