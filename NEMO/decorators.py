@@ -3,7 +3,7 @@ import inspect
 import sys
 from functools import wraps
 from logging import getLogger
-from threading import Lock, RLock, Thread
+from threading import Lock, Thread
 
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import user_passes_test
@@ -11,6 +11,8 @@ from django.contrib.auth.decorators import user_passes_test
 from NEMO.utilities import slugify_underscore
 
 decorators_logger = getLogger(__name__)
+
+locks = {}
 
 
 def disable_session_expiry_refresh(f):
@@ -53,25 +55,24 @@ def postpone(function):
 # For example, @synchronized('tool_id') on a do_this(tool_id) function will only prevent do_this from being called
 # at the same time with the same tool_id. If do_this is called twice with different tool_id, it won't be locked
 def synchronized(method_argument=""):
-    def inner(function):
-        def decorator(*args, **kwargs):
+    def decorator(function):
+        @wraps(function)
+        def wrapper(*args, **kwargs):
             func_args = inspect.signature(function).bind(*args, **kwargs).arguments
             attribute_value = slugify_underscore(str(func_args.get(method_argument, "")))
-            lock_name = "__" + function.__name__ + "_lock_" + attribute_value + "__"
-            lock: RLock = vars(function).get(lock_name, None)
-            if lock is None:
-                meta_lock = vars(decorator).setdefault("_synchronized_meta_lock", Lock())
-                with meta_lock:
-                    lock = vars(function).get(lock_name, None)
-                    if lock is None:
-                        lock = RLock()
-                        setattr(function, lock_name, lock)
+            lock_name = (
+                slugify_underscore(
+                    f"{function.__module__.replace('.', '_')}_{function.__qualname__}{'_' if attribute_value else ''}"
+                )
+                + attribute_value
+            )
+            lock = locks.setdefault(lock_name, Lock())
             with lock:
                 return function(*args, **kwargs)
 
-        return decorator
+        return wrapper
 
-    return inner
+    return decorator
 
 
 # Use this decorator annotation to register your own customizations which will be shown in the customization page

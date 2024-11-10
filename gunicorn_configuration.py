@@ -5,6 +5,7 @@ import os
 from multiprocessing import cpu_count
 
 bind = "0.0.0.0:8000"
+preload_app = True
 worker_class = os.getenv("GUNICORN_WORKER_CLASS", "gthread") or "gthread"
 # The following value was decided based on the Gunicorn documentation and configuration example:
 # http://docs.gunicorn.org/en/stable/configure.html#configuration-file
