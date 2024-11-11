@@ -1049,6 +1049,15 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 #additional_event_parameters input:invalid, #additional_event_parameters select:invalid, #additional_event_parameters textarea:invalid
 {
 	border-color: #dc3545!important;
+	border-width: 2px;
+	background: #ffebeb;
+}
+#tool_control input:invalid::placeholder, #tool_control select:invalid::placeholder, #tool_control textarea:invalid::placeholder,
+#additional_event_parameters input:invalid::placeholder, #additional_event_parameters select:invalid::placeholder, #additional_event_parameters textarea:invalid::placeholder
+{
+    color: #505050  ;
+}
+
 .required-question-star
 {
     color:red;
