@@ -178,6 +178,9 @@ class Sensor(BaseModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ["name"]
+
 
 class SensorData(BaseModel):
     sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
