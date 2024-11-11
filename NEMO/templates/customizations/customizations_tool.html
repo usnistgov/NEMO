@@ -138,6 +138,13 @@
                 <div class="checkbox">
                     <label>
                         <input type="checkbox"
+                               name="tool_problem_safety_hazard_automatic_shutdown"
+                               {% if tool_problem_safety_hazard_automatic_shutdown %}checked{% endif %}
+                               value="enabled">
+                        Automatically shutdown tool when a safety hazard problem is reported
+                    </label>
+                    <label>
+                        <input type="checkbox"
                                name="tool_problem_send_to_all_qualified_users"
                                {% if tool_problem_send_to_all_qualified_users %}checked{% endif %}
                                value="enabled">

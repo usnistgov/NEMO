@@ -87,7 +87,11 @@ def create(request):
 def save_task(request, task: Task, user: User, task_images: List[TaskImages] = None):
     task.save()
 
-    if task.force_shutdown:
+    if (
+        task.force_shutdown
+        or task.safety_hazard
+        and ToolCustomization.get_bool("tool_problem_safety_hazard_automatic_shutdown")
+    ):
         # Shut down the tool.
         task.tool.operational = False
         task.tool.save()
