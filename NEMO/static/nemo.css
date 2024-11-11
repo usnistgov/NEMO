@@ -1049,6 +1049,11 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 #additional_event_parameters input:invalid, #additional_event_parameters select:invalid, #additional_event_parameters textarea:invalid
 {
 	border-color: #dc3545!important;
+.required-question-star
+{
+    color:red;
+    font-size: 20px;
+    font-weight: bold;
 }
 
 /* Make form-control look like plain text */

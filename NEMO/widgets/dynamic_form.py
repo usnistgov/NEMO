@@ -31,7 +31,7 @@ GROUP_TYPE_FIELD_KEY = "group"
 class PostUsageQuestion:
     question_type = "Question"
 
-    required_span = '<span style="color:red">*</span>'
+    required_span = '<span class="required-question-star">*</span>'
 
     def __init__(self, properties: Dict, index: int = None, initial_data=None):
         self.properties = properties
