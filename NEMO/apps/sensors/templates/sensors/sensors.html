@@ -36,9 +36,9 @@
                         {{ sensor.name }}
                         <br>
                         <br>
-                        {{ sensor.last_data_point.created_date|date:"SHORT_DATETIME_FORMAT" }}
+                        {{ sensor.last_read|date:"SHORT_DATETIME_FORMAT" }}
                         <br>
-                        {{ sensor.last_data_point.display_value }}
+                        {{ sensor.last_value_display }}
                     </li>
                 {% endfor %}
             {% endif %}

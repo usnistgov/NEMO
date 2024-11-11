@@ -129,6 +129,8 @@ class Sensor(BaseModel):
         validators=[MaxValueValidator(1440), MinValueValidator(0)],
         help_text="Enter the read frequency in minutes. Every 2 hours = 120, etc. Max value is 1440 min (24hrs). Use 0 to disable sensor data read.",
     )
+    last_read = models.DateTimeField(null=True, blank=True)
+    last_value = models.FloatField(null=True, blank=True)
 
     @property
     def card(self):
@@ -143,11 +145,8 @@ class Sensor(BaseModel):
 
         return sensors.get(self.card.category, raise_exception).read_values(self, raise_exception)
 
-    def last_data_point(self):
-        try:
-            return SensorData.objects.filter(sensor=self).latest("created_date")
-        except:
-            return None
+    def last_value_display(self):
+        return display_sensor_value(self, self.last_value)
 
     def clean(self):
         from NEMO.apps.sensors import sensors
@@ -188,7 +187,7 @@ class SensorData(BaseModel):
     value = models.FloatField()
 
     def display_value(self):
-        return f"{self.sensor.data_prefix + ' ' if self.sensor.data_prefix else ''}{self.value}{' ' + self.sensor.data_suffix if self.sensor.data_suffix else ''}"
+        return display_sensor_value(self.sensor, self.value)
 
     class Meta:
         verbose_name_plural = "Sensor data"
@@ -369,3 +368,9 @@ def get_alert_description(time, reset: bool, condition: str, no_data: bool, valu
     if trigger_reason:
         alert_description += f" because {trigger_reason}."
     return alert_description
+
+
+def display_sensor_value(sensor: Sensor, value: float) -> str:
+    if not value:
+        return ""
+    return f"{sensor.data_prefix + ' ' if sensor.data_prefix else ''}{value}{' ' + sensor.data_suffix if sensor.data_suffix else ''}"

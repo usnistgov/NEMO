@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin import register
@@ -211,8 +209,8 @@ class SensorAdmin(admin.ModelAdmin):
         "read_address",
         "number_of_values",
         "get_read_frequency",
-        "get_last_read",
-        "get_last_read_at",
+        "last_read",
+        "last_value",
     )
     list_filter = (
         "visible",
@@ -222,20 +220,11 @@ class SensorAdmin(admin.ModelAdmin):
     )
     actions = [duplicate_sensor_configuration, read_selected_sensors, hide_selected_sensors, show_selected_sensors]
     autocomplete_fields = ["sensor_card", "interlock_card"]
+    readonly_fields = ["last_read", "last_value"]
 
     @display(boolean=True, ordering="sensor_card__enabled", description="Card Enabled")
     def get_card_enabled(self, obj: Sensor):
         return obj.card.enabled
-
-    @display(description="Last read")
-    def get_last_read(self, obj: Sensor):
-        last_data_point = obj.last_data_point()
-        return last_data_point.value if last_data_point else ""
-
-    @display(description="Last read at")
-    def get_last_read_at(self, obj: Sensor):
-        last_data_point = obj.last_data_point()
-        return last_data_point.created_date if last_data_point else ""
 
     @display(ordering="read_frequency", description="Read frequency")
     def get_read_frequency(self, obj: Sensor):
