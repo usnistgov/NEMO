@@ -174,7 +174,8 @@ class ModbusTcpSensor(Sensor):
                 raise ValidationError({"formula": str(e)})
 
     def do_read_values(self, sensor: Sensor_model) -> List:
-        client = ModbusTcpClient(sensor.card.server, port=sensor.card.port)
+        timeout = sensor.card.extra_args_dict.get("timeout", 3)
+        client = ModbusTcpClient(sensor.card.server, port=sensor.card.port, timeout=timeout)
         try:
             valid_connection = client.connect()
             if not valid_connection:

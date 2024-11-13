@@ -486,7 +486,8 @@ class ModbusTcpInterlock(Interlock):
     @classmethod
     def set_relay_state(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
         coil = interlock.channel
-        client = ModbusTcpClient(interlock.card.server, port=interlock.card.port)
+        timeout = interlock.card.extra_args_dict.get("timeout", 3)
+        client = ModbusTcpClient(interlock.card.server, port=interlock.card.port, timeout=timeout)
         try:
             valid_connection = client.connect()
             if not valid_connection:

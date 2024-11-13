@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 import random
 from logging import getLogger
 from typing import List, Optional
@@ -11,6 +12,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 
 from NEMO.apps.sensors.customizations import SensorCustomization
 from NEMO.constants import CHAR_FIELD_MEDIUM_LENGTH, CHAR_FIELD_SMALL_LENGTH
@@ -45,7 +47,17 @@ class SensorCard(BaseModel):
     category = models.ForeignKey(SensorCardCategory, on_delete=models.CASCADE)
     username = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
     password = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
+    extra_args = models.TextField(
+        null=True, blank=True, help_text=_("Json formatted extra arguments to pass to the sensor card implementation.")
+    )
     enabled = models.BooleanField(blank=False, null=False, default=True)
+
+    @property
+    def extra_args_dict(self):
+        try:
+            return json.loads(self.extra_args)
+        except:
+            return {}
 
     class Meta:
         ordering = ["name"]

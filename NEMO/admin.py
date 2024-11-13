@@ -825,6 +825,14 @@ class InterlockCardAdminForm(forms.ModelForm):
         widgets = {"password": forms.PasswordInput(render_value=True)}
         fields = "__all__"
 
+    def clean_extra_args(self):
+        extra_args = self.cleaned_data["extra_args"]
+        try:
+            return json.dumps(json.loads(extra_args), indent=4)
+        except:
+            pass
+        return extra_args
+
     def clean(self):
         if any(self.errors):
             return
