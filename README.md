@@ -1,7 +1,7 @@
 [![Code style: black](https://img.shields.io/badge/python%20style-black-000000.svg)](https://github.com/psf/black)
 [![Code style: djlint](https://img.shields.io/badge/html%20style-djlint-black.svg)](https://www.djlint.com)
 
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/NEMO?label=python)](https://www.python.org/downloads/release/python-380/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/NEMO?label=python)](https://www.python.org/downloads/release/python-390/)
 [![Docker Image Version (latest semver)](https://img.shields.io/docker/v/nanofab/nemo?label=NEMO%20docker%20version)](https://hub.docker.com/r/nanofab/nemo)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/usnistgov/nemo?label=NEMO%20github%20version)](https://github.com/usnistgov/NEMO/releases)
 [![PyPI](https://img.shields.io/pypi/v/nemo?label=NEMO%20pypi%20version)](https://pypi.org/project/NEMO/)
