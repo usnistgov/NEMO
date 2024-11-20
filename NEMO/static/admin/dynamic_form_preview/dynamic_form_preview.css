@@ -185,7 +185,7 @@ div.dynamic_form_preview:empty
 {
     border-color: #dc3545!important;
     border-width: 2px!important;
-	background: #ffebeb!important;
+    background: #ffebeb!important;
 }
 
 .dynamic_form_preview input:invalid::placeholder
