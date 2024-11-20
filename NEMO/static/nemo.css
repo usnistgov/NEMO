@@ -1062,6 +1062,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
     color:red;
     font-size: 20px;
     font-weight: bold;
+    line-height: .75;
 }
 
 /* Make form-control look like plain text */
