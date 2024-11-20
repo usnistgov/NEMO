@@ -613,7 +613,7 @@ class DynamicForm:
         result = ""
         if self.questions:
             result += "<script>if (!$) { $ = django.jQuery; }</script>"
-        result += render_grid_questions(self.questions, group_question_url, group_item_id, virtual_inputs)
+        result += f'<div class="dynamic_form">{render_grid_questions(self.questions, group_question_url, group_item_id, virtual_inputs)}</div>'
         return mark_safe(result)
 
     def validate(self, group_question_url: str, group_item_id: int):
