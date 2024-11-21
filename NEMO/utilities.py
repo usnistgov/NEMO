@@ -27,7 +27,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse, QueryDict
-from django.shortcuts import render, resolve_url
+from django.shortcuts import resolve_url
 from django.template import Template
 from django.template.context import make_context
 from django.urls import NoReverseMatch, reverse
@@ -35,6 +35,11 @@ from django.utils import timezone as django_timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
 from django.utils.text import slugify
+
+# For backwards compatibility
+import plugins.utils
+
+render_combine_responses = plugins.utils.render_combine_responses
 
 if TYPE_CHECKING:
     from NEMO.models import User
@@ -633,14 +638,6 @@ def resize_image(image: InMemoryUploadedFile, max_size: int, quality=85) -> InMe
 
 def distinct_qs_value_list(qs: QuerySet, field_name: str) -> Set:
     return set(list(qs.values_list(field_name, flat=True)))
-
-
-# Useful function to render and combine 2 separate django templates
-def render_combine_responses(request, original_response: HttpResponse, template_name, context):
-    """Combines contents of an original http response with a new one"""
-    additional_content = render(request, template_name, context)
-    original_response.content += additional_content.content
-    return original_response
 
 
 def render_email_template(template, dictionary: dict, request=None):
