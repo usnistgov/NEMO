@@ -41,6 +41,7 @@ setup(
         "pymodbus==3.3.2",
         "python-dateutil==2.9.0",
         "requests==2.32.3",
+        "packaging==24.0.0",
     ],
     extras_require={"dev-tools": ["pre-commit", "djlint", "black"]},
     entry_points={
