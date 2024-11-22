@@ -37,9 +37,9 @@ from django.utils.html import format_html
 from django.utils.text import slugify
 
 # For backwards compatibility
-import plugins.utils
+import NEMO.plugins.utils
 
-render_combine_responses = plugins.utils.render_combine_responses
+render_combine_responses = NEMO.plugins.utils.render_combine_responses
 
 if TYPE_CHECKING:
     from NEMO.models import User
