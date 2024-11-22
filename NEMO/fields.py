@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.admin.widgets import AutocompleteMixin
 from django.core import validators
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
@@ -143,3 +144,28 @@ class MultiEmailField(models.CharField):
     def value_to_string(self, obj):
         value = self.value_from_object(obj)
         return self.get_prep_value(value)
+
+
+# Django admin special widget to allow select2 autocomplete for choice fields
+class AdminAutocompleteSelectWidget(forms.Select):
+    def __init__(self, choices=(), attrs=None):
+        super().__init__(attrs)
+        self.choices = choices
+
+    def render(self, name, value, attrs=None, renderer=None):
+        select_html = super().render(name, value, attrs, renderer)
+        select2_script = f"""
+        <script type="text/javascript">
+            (function($) {{
+                $(document).ready(function() {{
+                    $('#id_{name}').select2();
+                }});
+            }})(django.jQuery);
+        </script>
+        """
+        return select_html + select2_script
+
+    @property
+    def media(self):
+        # Reuse the AutocompleteMixin's media files
+        return AutocompleteMixin(None, None).media
