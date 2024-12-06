@@ -1,10 +1,15 @@
 import importlib.metadata
-from typing import List, Optional, Union
+from logging import getLogger
+from typing import List, Optional, Union, Tuple
 
+from django.core.exceptions import FieldDoesNotExist
+from django.db.models import Field
 from django.http import HttpResponse
 from django.shortcuts import render
 from packaging.requirements import Requirement
 from packaging.version import InvalidVersion, Version
+
+utils_logger = getLogger(__name__)
 
 
 # Useful function to render and combine 2 separate django templates
@@ -49,3 +54,23 @@ def get_extra_requires(app_name, extra_name: str) -> List[Requirement]:
         if requirement.marker and requirement.marker.evaluate({"extra": extra_name}):
             requirements.append(requirement)
     return requirements
+
+
+# Use this function in apps config ready function to add new types of notifications to NEMO
+def add_dynamic_notification_types(notification_types: List[Tuple[str, str]]):
+    from NEMO.models import Notification, LandingPageChoice
+
+    add_dynamic_notifications_to_field(Notification._meta.get_field("notification_type"), notification_types)
+    add_dynamic_notifications_to_field(LandingPageChoice._meta.get_field("notifications"), notification_types)
+
+
+def add_dynamic_notifications_to_field(field: Field, notification_types: List[Tuple[str, str]]):
+    try:
+        original_choices = list(field.choices)
+
+        for notification_type in notification_types:
+            if notification_type not in original_choices:
+                original_choices.append(notification_type)
+        field.choices = original_choices
+    except FieldDoesNotExist:
+        utils_logger.exception("Error adding dynamic notifications: {}".format(notification_types))
