@@ -743,11 +743,14 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
     form = ReservationQuestionsForm
     filter_horizontal = ("only_for_tools", "only_for_areas", "only_for_projects")
     readonly_fields = ("questions_preview",)
+    list_filter = ["enabled", "tool_reservations", "area_reservations"]
+    list_display = ["name", "enabled", "tool_reservations", "area_reservations"]
     fieldsets = (
         (
             None,
             {
                 "fields": (
+                    "enabled",
                     "name",
                     "questions",
                     "questions_preview",

@@ -2879,6 +2879,7 @@ class Reservation(BaseModel, CalendarDisplayMixin, BillableItemMixin):
 
 
 class ReservationQuestions(BaseModel):
+    enabled = models.BooleanField(default=True)
     name = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The name of this ")
     questions = models.TextField(
         help_text="Upon making a reservation, the user will be asked these questions. This field will only accept JSON format"

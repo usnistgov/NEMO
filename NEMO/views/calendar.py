@@ -969,7 +969,7 @@ def reservation_group_question(request, reservation_question_id, group_name):
 def get_and_combine_reservation_questions(
     item_type: ReservationItemType, item_id: int, project: Project = None
 ) -> List[ReservationQuestions]:
-    reservation_questions = ReservationQuestions.objects.all()
+    reservation_questions = ReservationQuestions.objects.filter(enabled=True)
     if item_type == ReservationItemType.TOOL:
         reservation_questions = reservation_questions.filter(tool_reservations=True)
         reservation_questions = reservation_questions.filter(Q(only_for_tools=None) | Q(only_for_tools__in=[item_id]))
