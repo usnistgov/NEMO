@@ -110,6 +110,7 @@ router.register(r"tool_status", api.ToolStatusViewSet, basename="tool_status")
 router.register(r"training_sessions", api.TrainingSessionViewSet)
 router.register(r"usage_events", api.UsageEventViewSet)
 router.register(r"users", api.UserViewSet)
+router.register(r"user_documents", api.UserDocumentsViewSet)
 router.registry.sort(key=sort_urls)
 
 reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'

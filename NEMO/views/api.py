@@ -42,6 +42,7 @@ from NEMO.models import (
     TrainingSession,
     UsageEvent,
     User,
+    UserDocuments,
 )
 from NEMO.rest_pagination import NEMOPageNumberPagination
 from NEMO.serializers import (
@@ -82,6 +83,7 @@ from NEMO.serializers import (
     TrainingSessionSerializer,
     UsageEventSerializer,
     UserSerializer,
+    UserDocumentSerializer,
 )
 from NEMO.typing import QuerySetType
 from NEMO.utilities import export_format_datetime, remove_duplicates
@@ -211,6 +213,13 @@ class UserViewSet(ModelViewSet):
         "access_expiration": date_filters,
         "physical_access_levels": manykey_filters,
     }
+
+
+class UserDocumentsViewSet(ModelViewSet):
+    filename = "user_documents"
+    queryset = UserDocuments.objects.all()
+    serializer_class = UserDocumentSerializer
+    filterset_fields = {"id": key_filters, "user": key_filters, "name": string_filters, "display_order": number_filters}
 
 
 class ProjectDisciplineViewSet(ModelViewSet):

@@ -54,6 +54,7 @@ from NEMO.models import (
     TrainingSession,
     UsageEvent,
     User,
+    UserDocuments,
 )
 
 
@@ -152,6 +153,8 @@ class AlertSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
 
 class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    user_documents = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
     class Meta:
         model = User
         exclude = ["preferences"]
@@ -159,6 +162,7 @@ class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "projects": ("NEMO.serializers.ProjectSerializer", {"many": True}),
             "managed_projects": ("NEMO.serializers.ProjectSerializer", {"many": True}),
             "groups": ("NEMO.serializers.GroupSerializer", {"many": True}),
+            "user_documents": ("NEMO.serializers.UserDocumentSerializer", {"many": True}),
             "user_permissions": ("NEMO.serializers.PermissionSerializer", {"many": True}),
         }
 
@@ -175,6 +179,17 @@ class ProjectDisciplineSerializer(ModelSerializer):
     class Meta:
         model = ProjectDiscipline
         fields = "__all__"
+
+
+class UserDocumentSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    user = PrimaryKeyRelatedField(many=False, queryset=User.objects.all(), allow_null=True, required=False)
+
+    class Meta:
+        model = UserDocuments
+        fields = "__all__"
+        expandable_fields = {
+            "user": ("NEMO.serializers.UserSerializer", {"many": False, "read_only": True}),
+        }
 
 
 class ProjectSerializer(FlexFieldsSerializerMixin, ModelSerializer):
