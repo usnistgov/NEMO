@@ -182,13 +182,13 @@ class ProjectDisciplineSerializer(ModelSerializer):
 
 
 class UserDocumentSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    user = PrimaryKeyRelatedField(many=False, queryset=User.objects.all(), allow_null=True, required=False)
+    user = PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
         model = UserDocuments
         fields = "__all__"
         expandable_fields = {
-            "user": ("NEMO.serializers.UserSerializer", {"many": False, "read_only": True}),
+            "user": "NEMO.serializers.UserSerializer",
         }
 
 

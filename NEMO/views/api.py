@@ -82,8 +82,8 @@ from NEMO.serializers import (
     ToolStatusSerializer,
     TrainingSessionSerializer,
     UsageEventSerializer,
-    UserSerializer,
     UserDocumentSerializer,
+    UserSerializer,
 )
 from NEMO.typing import QuerySetType
 from NEMO.utilities import export_format_datetime, remove_duplicates
@@ -219,7 +219,14 @@ class UserDocumentsViewSet(ModelViewSet):
     filename = "user_documents"
     queryset = UserDocuments.objects.all()
     serializer_class = UserDocumentSerializer
-    filterset_fields = {"id": key_filters, "user": key_filters, "name": string_filters, "display_order": number_filters}
+    filterset_fields = {
+        "id": key_filters,
+        "user": key_filters,
+        "name": string_filters,
+        "url": string_filters,
+        "display_order": number_filters,
+        "uploaded_at": datetime_filters,
+    }
 
 
 class ProjectDisciplineViewSet(ModelViewSet):
