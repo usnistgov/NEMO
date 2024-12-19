@@ -607,21 +607,39 @@ class NEMOPolicy:
         item = reservation.reservation_item
         start_time = reservation.start.astimezone()
         end_time = reservation.end.astimezone()
-        if item.policy_off_weekend and start_time.weekday() >= 5 and end_time.weekday() >= 5:
+        if (
+            item.policy_off_weekend
+            and start_time.weekday() >= 5
+            and end_time.weekday() >= 5
+            and reservation.duration() <= timedelta(days=2)
+        ):
             should_enforce = False
         if item.policy_off_between_times and item.policy_off_start_time and item.policy_off_end_time:
             if item.policy_off_start_time <= item.policy_off_end_time:
                 """Range is similar to 6am-6pm"""
+                policy_duration = datetime.combine(datetime.today(), item.policy_off_start_time) - datetime.combine(
+                    datetime.today(), item.policy_off_end_time
+                )
+                duration_ok = reservation.duration() <= policy_duration
                 if (
-                    item.policy_off_start_time <= start_time.time() <= item.policy_off_end_time
+                    duration_ok
+                    and item.policy_off_start_time <= start_time.time() <= item.policy_off_end_time
                     and item.policy_off_start_time <= end_time.time() <= item.policy_off_end_time
                 ):
                     should_enforce = False
             else:
                 """Range is similar to 6pm-6am"""
+                policy_duration = datetime.combine(
+                    datetime.today() + timedelta(days=1), item.policy_off_end_time
+                ) - datetime.combine(datetime.today(), item.policy_off_start_time)
+                duration_ok = reservation.duration() <= policy_duration
                 if (
-                    item.policy_off_start_time <= start_time.time() or start_time.time() <= item.policy_off_end_time
-                ) and (item.policy_off_start_time <= end_time.time() or end_time.time() <= item.policy_off_end_time):
+                    duration_ok
+                    and (
+                        item.policy_off_start_time <= start_time.time() or start_time.time() <= item.policy_off_end_time
+                    )
+                    and (item.policy_off_start_time <= end_time.time() or end_time.time() <= item.policy_off_end_time)
+                ):
                     should_enforce = False
         return should_enforce
 
