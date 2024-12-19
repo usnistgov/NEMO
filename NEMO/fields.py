@@ -169,3 +169,29 @@ class AdminAutocompleteSelectWidget(forms.Select):
     def media(self):
         # Reuse the AutocompleteMixin's media files
         return AutocompleteMixin(None, None).media
+
+
+class DynamicChoicesCharField(models.CharField):
+    """
+    Represents a dynamic choices character field for Django models.
+
+    This will make sure migrations are not triggered when the choices are updated.
+    """
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs.pop("choices", None)
+        return name, path, args, kwargs
+
+
+class DynamicChoicesIntegerField(models.IntegerField):
+    """
+    Represents a dynamic choices integer field for Django models.
+
+    This will make sure migrations are not triggered when the choices are updated.
+    """
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs.pop("choices", None)
+        return name, path, args, kwargs
