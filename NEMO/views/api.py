@@ -1,3 +1,6 @@
+import platform
+from importlib import metadata
+
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
@@ -5,9 +8,11 @@ from django.utils.safestring import mark_safe
 from drf_excel.mixins import XLSXFileMixin
 from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 from rest_framework.serializers import ListSerializer
+from rest_framework.views import APIView
 
 from NEMO.models import (
     Account,
@@ -85,12 +90,14 @@ from NEMO.serializers import (
     UserDocumentSerializer,
     UserSerializer,
 )
+from NEMO.templatetags.custom_tags_and_filters import app_version
 from NEMO.typing import QuerySetType
 from NEMO.utilities import export_format_datetime, remove_duplicates
 from NEMO.views.api_billing import (
     BillingFilterForm,
     get_billing_charges,
 )
+from NEMO.views.customization import ApplicationCustomization
 
 date_filters = ["exact", "in", "month", "year", "day", "gte", "gt", "lte", "lt", "isnull"]
 time_filters = ["exact", "in", "hour", "minute", "second", "gte", "gt", "lte", "lt", "isnull"]
@@ -832,3 +839,34 @@ class ToolStatusViewSet(XLSXFileMixin, viewsets.GenericViewSet):
 
     def get_filename(self, *args, **kwargs):
         return f"tool_status-{export_format_datetime()}.xlsx"
+
+
+class MetadataAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        metadata_dict = get_app_metadata()
+        metadata_dict["authenticators"] = [
+            authenticator.__class__.__name__ for authenticator in self.get_authenticators()
+        ]
+        return Response(metadata_dict)
+
+
+def get_app_metadata():
+    nemo_packages = []
+    other_packages = []
+
+    for package in metadata.distributions():
+        if package.name.lower().startswith("nemo"):
+            nemo_packages.append(f"{package.name}=={package.version}")
+        else:
+            other_packages.append(f"{package.name}=={package.version}")
+    return {
+        "nemo_version": app_version(),
+        "python_version": platform.python_version(),
+        "os_version": platform.platform(),
+        "site_title": ApplicationCustomization.get("site_title"),
+        "facility_name": ApplicationCustomization.get("facility_name"),
+        "nemo_plugins": nemo_packages,
+        "other_packages": other_packages,
+    }

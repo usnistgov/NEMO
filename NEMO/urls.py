@@ -568,6 +568,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
     urlpatterns += [
         # REST API
         path("api/", include(router.urls)),
+        path(r"api/metadata/", api.MetadataAPIView.as_view(), name="api_metadata"),
         path("api/file_import/", api_file_import.file_import, name="api_file_import"),
         # Area access
         path("area_access/", area_access.area_access, name="area_access"),
