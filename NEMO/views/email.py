@@ -4,6 +4,7 @@ from logging import getLogger
 from smtplib import SMTPException
 from typing import List, Optional
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.validators import validate_email
@@ -23,8 +24,10 @@ from NEMO.utilities import (
     EmailCategory,
     create_email_attachment,
     export_format_datetime,
+    quiet_int,
     render_email_template,
     send_mail,
+    split_into_chunks,
 )
 from NEMO.views.customization import (
     ApplicationCustomization,
@@ -74,6 +77,7 @@ def send_email(request):
             from_email=sender,
             bcc=recipient_list,
             email_category=EmailCategory.DIRECT_CONTACT,
+            fail_silently=False,
         )
     except SMTPException as error:
         site_title = ApplicationCustomization.get("site_title")
@@ -270,14 +274,18 @@ def send_broadcast_email(request):
         for attachment in request.FILES.getlist("attachments", [])
     ]
     try:
-        send_mail(
-            subject=subject,
-            content=content,
-            from_email=sender.email,
-            bcc=set(users),
-            attachments=attachments,
-            email_category=EmailCategory.BROADCAST_EMAIL,
-        )
+        users_set = set(users)
+        chunk_size = quiet_int(getattr(settings, "EMAIL_BROADCAST_BCC_CHUNK_SIZE", len(users_set)), len(users_set))
+        for users_chunk in split_into_chunks(users_set, chunk_size):
+            send_mail(
+                subject=subject,
+                content=content,
+                from_email=sender.email,
+                bcc=users_chunk,
+                attachments=attachments,
+                email_category=EmailCategory.BROADCAST_EMAIL,
+                fail_silently=False,
+            )
     except SMTPException as error:
         site_title = ApplicationCustomization.get("site_title")
         error_message = (

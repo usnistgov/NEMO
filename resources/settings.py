@@ -228,6 +228,8 @@ RESERVATION_ORGANIZER = "NEMO"
 RESERVATION_ORGANIZER_EMAIL = "no_reply"
 # Change this default value to True if you want new users to get ICS calendar invite for reservations by default.
 USER_RESERVATION_PREFERENCES_DEFAULT = False
+# Change the following to split bcc users into chunks when sending broadcast emails. This can be useful to avoid trigger spam/security measures.
+EMAIL_BROADCAST_BCC_CHUNK_SIZE = None
 
 # -------------------- SMTP Server config --------------------
 # Uncomment the following if using an email SMTP server

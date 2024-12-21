@@ -11,7 +11,8 @@ from email.mime.base import MIMEBase
 from enum import Enum
 from io import BytesIO, StringIO
 from logging import getLogger
-from typing import Any, Dict, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
+from smtplib import SMTPAuthenticationError, SMTPConnectError, SMTPServerDisconnected
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Tuple, Union
 from urllib.parse import urljoin
 
 from PIL import Image
@@ -519,7 +520,18 @@ def send_mail(
     if mail.recipients():
         email_record = create_email_log(mail, email_category)
         try:
-            msg_sent = mail.send()
+            # retry once if we get one of the connection errors
+            for i in range(2):
+                try:
+                    msg_sent = mail.send()
+                    break
+                except (SMTPServerDisconnected, SMTPConnectError, SMTPAuthenticationError) as e:
+                    if i == 0:
+                        utilities_logger.exception(str(e))
+                        utilities_logger.warning(f"Email sending got an error, retrying once")
+                    else:
+                        utilities_logger.warning(f"Retrying didn't work")
+                        raise
         except Exception as e:
             email_record.ok = False
             if not fail_silently:
@@ -930,3 +942,12 @@ def response_js_redirect(to, query_string=None, *args, **kwargs):
         content_type="text/javascript",
         status=202,
     )
+
+
+def split_into_chunks(iterable: Set, chunk_size: int) -> Iterator[List]:
+    """
+    Splits a set into chunks of the specified size.
+    """
+    iterable = list(iterable)  # Convert set to list to support slicing
+    for i in range(0, len(iterable), chunk_size):
+        yield iterable[i : i + chunk_size]
