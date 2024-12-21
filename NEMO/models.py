@@ -3988,7 +3988,7 @@ class Notification(BaseModel):
 
     user = models.ForeignKey(User, related_name="notifications", on_delete=models.CASCADE)
     expiration = models.DateTimeField()
-    notification_type = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, choices=Types.Choices)
+    notification_type = fields.DynamicChoicesCharField(max_length=CHAR_FIELD_SMALL_LENGTH, choices=Types.Choices)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
@@ -4030,7 +4030,7 @@ class LandingPageChoice(BaseModel):
         default=False,
         help_text="Hides this choice from staff and technicians. When checked, only normal users, facility managers and super-users can see the choice",
     )
-    notifications = models.CharField(
+    notifications = fields.DynamicChoicesCharField(
         max_length=CHAR_FIELD_SMALL_LENGTH,
         blank=True,
         null=True,
