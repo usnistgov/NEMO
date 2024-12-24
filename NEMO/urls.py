@@ -514,8 +514,11 @@ urlpatterns += [
     path("force_area_logout/<int:user_id>/", area_access.force_area_logout, name="force_area_logout"),
     path("self_log_in/", area_access.self_log_in, name="self_log_in"),
     path("self_log_out/<int:user_id>/", area_access.self_log_out, name="self_log_out"),
+    # For backwards compatibility
+    path("usage/", RedirectView.as_view(pattern_name="user_usage", permanent=True), name="usage"),
     # Facility usage:
-    path("usage/", usage.usage, name="usage"),
+    path("usage/user/", usage.user_usage, name="user_usage"),
+    path("usage/staff/", usage.staff_usage, name="staff_usage"),
     # Alerts:
     path("alerts/", alerts.alerts, name="alerts"),
     path("delete_alert/<int:alert_id>/", alerts.delete_alert, name="delete_alert"),

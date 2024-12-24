@@ -1,18 +1,6 @@
 {% extends 'usage/usage_base.html' %}
 {% load custom_tags_and_filters %}
 {% block usage_content %}
-    <div style="margin-top:10px">
-        <ul class="nav nav-pills" id="tabs">
-            <li class="active">
-                <a>Usage</a>
-            </li>
-            {% if billing_service %}
-                <li>
-                    <a href="{{ tab_url }}">Billing Information</a>
-                </li>
-            {% endif %}
-        </ul>
-    </div>
     <div id="content" class="tab-content">
         <div class="tab-pane active" id="usage">
             <br />
@@ -30,7 +18,7 @@
                     <div class="usage-charge alert alert-danger">
                         <span style="font-weight:bold">{{ m.reservation_item }}</span>
                         <br>
-                        {% if project_autocomplete or selected_project %}
+                        {% if explicitly_display_customer %}
                             Missed by {{ m.user }}
                             <br>
                         {% endif %}
@@ -49,7 +37,7 @@
                     <div class="usage-charge alert alert-info">
                         <span style="font-weight:bold">{{ c.consumable }}</span>
                         <br>
-                        {% if project_autocomplete or selected_project %}
+                        {% if explicitly_display_customer %}
                             <span style="font-weight:bold">For {{ c.customer }}</span>
                             <br>
                         {% endif %}
@@ -69,7 +57,7 @@
                 {% for s in staff_charges %}
                     <div class="usage-charge alert alert-info">
                         <span style="font-weight:bold">Work performed by {{ s.staff_member }}
-                            {% if project_autocomplete or selected_project %}
+                            {% if explicitly_display_customer %}
                                 on behalf of {{ s.customer }}
                             {% else %}
                                 on your behalf
@@ -96,7 +84,7 @@
                 {% for t in training_sessions %}
                     <div class="usage-charge alert alert-info">
                         <span style="font-weight:bold">{{ t.tool }}</span> {{ t.get_type_display }} training
-                        {% if project_autocomplete or selected_project %}for {{ t.trainee }}{% endif %}
+                        {% if explicitly_display_customer %}for {{ t.trainee }}{% endif %}
                         <br>
                         Trained by <span style="font-weight:bold">{{ t.trainer }}</span>
                         <br>
@@ -114,7 +102,7 @@
                         <br>
                         {% if a.staff_charge %}
                             <span style="font-weight:bold">Area accessed by {{ a.staff_charge.staff_member }}
-                                {% if project_autocomplete or selected_project %}
+                                {% if explicitly_display_customer %}
                                     on behalf of {{ a.customer }}
                                 {% else %}
                                     on your behalf
@@ -122,7 +110,7 @@
                             </span>
                             <br>
                         {% else %}
-                            {% if project_autocomplete or selected_project %}
+                            {% if explicitly_display_customer %}
                                 <span style="font-weight:bold">Area accessed by {{ a.customer }}</span>
                                 <br>
                             {% endif %}
@@ -146,7 +134,7 @@
                         <br>
                         {% if u.user != u.operator %}
                             <span style="font-weight:bold">Operated by {{ u.operator }}
-                                {% if project_autocomplete or selected_project %}
+                                {% if explicitly_display_customer %}
                                     on behalf of {{ u.user }}
                                 {% else %}
                                     on your behalf
@@ -154,7 +142,7 @@
                             </span>
                             <br>
                         {% else %}
-                            {% if project_autocomplete or selected_project %}
+                            {% if explicitly_display_customer %}
                                 <span style="font-weight:bold">Operated by {{ u.user }}</span>
                                 <br>
                             {% endif %}
@@ -172,4 +160,15 @@
             {% endif %}
         </div>
     </div>
+    <script>
+        // on tab click, submit the form with the appropriate URL
+        $(document).ready(function() {
+            $(".usage_tab_link").on("click", function(event) {
+                event.preventDefault(); // Prevent default anchor behavior
+                let form = $("#usage_form");
+                form.attr("action", $(this).attr("href"));
+                form.submit();
+            });
+        });
+    </script>
 {% endblock %}
