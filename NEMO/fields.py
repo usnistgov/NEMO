@@ -1,20 +1,23 @@
+from __future__ import annotations
+
+from typing import List, Tuple
+
 from django import forms
 from django.contrib.admin.widgets import AutocompleteMixin
+from django.contrib.auth.models import Group, Permission
 from django.core import validators
-from django.core.exceptions import ValidationError
-from django.core.validators import EmailValidator
+from django.core.exceptions import FieldError, ValidationError
 from django.db import models
-from django.db.models import Field, TextField
-from django.db.models.lookups import BuiltinLookup
 from django.utils.translation import gettext_lazy as _
 
-from NEMO.utilities import strtobool
+from NEMO.typing import QuerySetType
+from NEMO.utilities import quiet_int, strtobool
 
 DEFAULT_SEPARATOR = ","
 
 
-@Field.register_lookup
-class IsEmpty(BuiltinLookup):
+@models.Field.register_lookup
+class IsEmpty(models.lookups.BuiltinLookup):
     # Custom lookup allowing to use __isempty in filters and REST API
     lookup_name = "isempty"
     prepare_rhs = False
@@ -25,7 +28,7 @@ class IsEmpty(BuiltinLookup):
         if condition:
             return "%s IS NULL or %s = ''" % (sql, sql), params
         else:
-            if getattr(connection, "vendor", "") == "oracle" and isinstance(self.lhs.field, TextField):
+            if getattr(connection, "vendor", "") == "oracle" and isinstance(self.lhs.field, models.TextField):
                 # we need to handle textfields for oracle differently as they are set as clobs
                 return "length(%s) <> 0" % sql, params
             else:
@@ -100,7 +103,7 @@ class MultiEmailField(models.CharField):
     description = "A multi e-mail field stored as a configurable character separated string"
 
     def __init__(self, separator=DEFAULT_SEPARATOR, *args, **kwargs):
-        self.email_validator = EmailValidator(
+        self.email_validator = validators.EmailValidator(
             message=_("Enter a valid email address or a list separated by {}").format(separator)
         )
         self.separator = separator
@@ -195,3 +198,98 @@ class DynamicChoicesIntegerField(models.IntegerField):
         name, path, args, kwargs = super().deconstruct()
         kwargs.pop("choices", None)
         return name, path, args, kwargs
+
+
+# Choice field for picking roles, groups or permissions
+# Usage: role = RoleGroupPermissionChoiceField(roles=True/False, groups=True/False, permissions=True/False)
+class RoleGroupPermissionChoiceField(DynamicChoicesCharField):
+    def __init__(
+        self,
+        *args,
+        roles=True,
+        groups=False,
+        permissions=False,
+        empty_value=models.fields.BLANK_CHOICE_DASH[0][0],
+        empty_label=models.fields.BLANK_CHOICE_DASH[0][1],
+        **kwargs,
+    ):
+        self.roles = roles
+        self.groups = groups
+        self.permissions = permissions
+        self.empty_label = empty_label
+        self.empty_value = empty_value
+        super().__init__(*args, **kwargs)
+
+    def role_choices(self) -> List[Tuple[str, str]]:
+        role_choice_list = [(self.empty_value, self.empty_label)]
+        if self.roles:
+            role_choice_list.extend(
+                [
+                    ("is_staff", "Role: Staff"),
+                    ("is_user_office", "Role: User Office"),
+                    ("is_accounting_officer", "Role: Accounting officers"),
+                    ("is_facility_manager", "Role: Facility managers"),
+                    ("is_superuser", "Role: Administrators"),
+                ]
+            )
+        if self.groups:
+            role_choice_list.extend([(str(group.id), f"Group: {group.name}") for group in Group.objects.all()])
+        if self.permissions:
+            role_choice_list.extend(
+                [(p["codename"], f'Permission: {p["name"]}') for p in Permission.objects.values("codename", "name")]
+            )
+        return role_choice_list
+
+    def has_user_role(self, role: str, user) -> bool:
+        if not user.is_active:
+            return False
+        if self.roles:
+            if hasattr(user, role):
+                return getattr(user, role, False)
+        if self.groups:
+            # check that it's a number
+            if quiet_int(role, None):
+                group = Group.objects.filter(id=role).exists()
+                if group:
+                    return user.groups.filter(id=role).exists()
+        if self.permissions:
+            permission = Permission.objects.filter(codename__iexact=role).first()
+            if permission:
+                return user.has_perm(permission)
+        return False
+
+    def users_with_role(self, role: str) -> QuerySetType:
+        from NEMO.models import User
+
+        users = User.objects.filter(is_active=True)
+        if role:
+            role_users = User.objects.none()
+            group_users = User.objects.none()
+            permission_users = User.objects.none()
+            if self.roles:
+                try:
+                    role_users = users.filter(**{role: True})
+                except FieldError:
+                    # we expect this if it's not a real role
+                    pass
+            if self.groups and role.isdigit():
+                group_users = users.filter(groups__id__in=role)
+            if self.permissions:
+                permission_users = users.filter(
+                    models.Q(user_permissions__codename__iexact=role) | models.Q(is_superuser=True)
+                )
+            return role_users | group_users | permission_users
+        return User.objects.none()
+
+    def role_display(self, role: str) -> str:
+        for key, value in self.role_choices():
+            if key == role:
+                return value
+        return ""
+
+    def formfield(self, **kwargs):
+        self.choices = kwargs.pop("choices", self.role_choices())
+        submitted_widget = kwargs.pop("widget", AdminAutocompleteSelectWidget(attrs={"style": "width: 400px;"}))
+        empty_label = kwargs.pop("empty_label", self.empty_label)
+        empty_value = kwargs.pop("empty_value", self.empty_value)
+        return super().formfield(widget=submitted_widget, empty_label=empty_label, empty_value=empty_value, **kwargs)
