@@ -195,7 +195,12 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
             label = self.labels[index] if self.labels else choice
             result += f'<div class="checkbox{"-inline" if self.inline else ""}">'
             required = f"""onclick="checkbox_required('{self.form_name}')" """ if self.required else ""
-            is_default_choice = "checked" if self.get_default_value() and self.get_default_value() == choice else ""
+            is_default_choice = (
+                "checked"
+                if self.get_default_value()
+                and (self.get_default_value() == choice or choice in self.get_default_value())
+                else ""
+            )
             result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
             result += "</div>"
         result += "</div>"
