@@ -57,7 +57,11 @@ class PostUsageQuestion:
         self.required = self._init_property("required", boolean=True)
         self.inline = self._init_property("inline", boolean=True)
         # For backwards compatibility keep default choice
-        self.default_value = self._init_property("default_value") or self._init_property("default_choice")
+        self.default_value = (
+            self._init_property("default_value")
+            if self._init_property("default_value") is not None
+            else self._init_property("default_choice")
+        )
         self.choices = self._init_property("choices")
         self.labels = self._init_property("labels")
         self.formula = self._init_property("formula")
@@ -170,7 +174,9 @@ class PostUsageRadioQuestion(PostUsageQuestion):
             label = self.labels[index] if self.labels else choice
             result += f'<div class="radio{"-inline" if self.inline else ""}">'
             required = "required" if self.required else ""
-            is_default_choice = "checked" if self.get_default_value() and self.get_default_value() == choice else ""
+            is_default_choice = (
+                "checked" if self.get_default_value() is not None and self.get_default_value() == choice else ""
+            )
             result += f'<label><input type="radio" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
             result += "</div>"
         result += "</div>"
@@ -197,8 +203,12 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
             required = f"""onclick="checkbox_required('{self.form_name}')" """ if self.required else ""
             is_default_choice = (
                 "checked"
-                if self.get_default_value()
-                and (self.get_default_value() == choice or choice in self.get_default_value())
+                if self.get_default_value() is not None
+                and (
+                    self.get_default_value() == choice
+                    or isinstance(self.get_default_value(), List)
+                    and choice in self.get_default_value()
+                )
                 else ""
             )
             result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
@@ -245,7 +255,9 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
         result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
         for index, choice in enumerate(self.choices):
             label = self.labels[index] if self.labels else choice
-            is_default_choice = "selected" if self.get_default_value() and self.get_default_value() == choice else ""
+            is_default_choice = (
+                "selected" if self.get_default_value() is not None and self.get_default_value() == choice else ""
+            )
             result += f'<option value="{choice}" {is_default_choice}>{label}</option>'
         result += "</select>"
         if self.help:
@@ -270,7 +282,7 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
         required = "required" if self.required else ""
         pattern = f'pattern="{self.pattern}"' if self.pattern else ""
         placeholder = f'placeholder="{self.placeholder}"' if self.placeholder else ""
-        default_value = f'value="{self.get_default_value()}"' if self.get_default_value() else ""
+        default_value = f'value="{self.get_default_value()}"' if self.get_default_value() is not None else ""
         result += self.render_input(required, pattern, placeholder, default_value)
         if self.suffix:
             result += f'<span class="input-group-addon">{self.suffix}</span>'
