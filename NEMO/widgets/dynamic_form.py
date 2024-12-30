@@ -55,6 +55,7 @@ class PostUsageQuestion:
         self.consumable = self._init_property("consumable")
         self.consumable_id = self._init_property("consumable_id")
         self.required = self._init_property("required", boolean=True)
+        self.inline = self._init_property("inline", boolean=True)
         # For backwards compatibility keep default choice
         self.default_value = self._init_property("default_value") or self._init_property("default_choice")
         self.choices = self._init_property("choices")
@@ -162,14 +163,17 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 
     def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        result = f'<div class="form-group {extra_class}"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
+        result = f'<div class="form-group {extra_class}">'
+        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
+        result += f"<div class='{'form-control-static' if self.inline else ''}'>"
         for index, choice in enumerate(self.choices):
             label = self.labels[index] if self.labels else choice
-            result += '<div class="radio">'
+            result += f'<div class="radio{"-inline" if self.inline else ""}">'
             required = "required" if self.required else ""
             is_default_choice = "checked" if self.get_default_value() and self.get_default_value() == choice else ""
             result += f'<label><input type="radio" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
             result += "</div>"
+        result += "</div>"
         result += "</div>"
         return result
 
@@ -183,15 +187,18 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
 
     def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        result = f'<div class="form-group {extra_class}"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
+        result = f'<div class="form-group {extra_class}">'
+        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         result += f'<input aria-label="hidden field used for required answer" id="required_{ self.form_name }" type="checkbox" value="" style="display: none" { "required" if self.required else "" }/>'
+        result += f"<div class='{'form-control-static' if self.inline else ''}'>"
         for index, choice in enumerate(self.choices):
             label = self.labels[index] if self.labels else choice
-            result += '<div class="checkbox">'
+            result += f'<div class="checkbox{"-inline" if self.inline else ""}">'
             required = f"""onclick="checkbox_required('{self.form_name}')" """ if self.required else ""
             is_default_choice = "checked" if self.get_default_value() and self.get_default_value() == choice else ""
             result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
             result += "</div>"
+        result += "</div>"
         result += "</div>"
         return result
 
@@ -223,12 +230,11 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 
     def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        result = f'<div class="form-group {extra_class}"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
+        result = f'<div class="form-group {extra_class}">'
+        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         required = "required" if self.required else ""
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
-        result += (
-            f'<select name="{self.form_name}" {required} style="margin-top: 5px;{max_width}" class="form-control">'
-        )
+        result += f'<select name="{self.form_name}" {required} style="{max_width}" class="form-control">'
         blank_disabled = 'disabled="disabled"' if required else ""
         placeholder = self.placeholder if self.placeholder else "Select an option"
         result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
