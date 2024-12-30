@@ -132,7 +132,7 @@ div.dynamic_form_preview:empty
 {
     min-height: 34px;
     padding-top: 7px;
-    padding-bottom: 7px;
+    /*padding-bottom: 7px;*/
     margin-bottom: 0;
 }
 
@@ -156,7 +156,7 @@ div.dynamic_form_preview:empty
 .dynamic_form_preview .form-group .radio input[type="radio"], .dynamic_form_preview .form-group .radio-inline input[type="radio"], .dynamic_form_preview .form-group .checkbox input[type="checkbox"], .dynamic_form_preview .form-group .checkbox-inline input[type="checkbox"]
 {
     position: absolute;
-    margin-top: 4px \9;
+    margin-top: 4px;
     margin-left: -20px;
 }
 
