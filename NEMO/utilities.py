@@ -27,7 +27,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
-from django.db.models import QuerySet
+from django.db.models import FileField, QuerySet
 from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import resolve_url
 from django.template import Template
@@ -954,7 +954,15 @@ def split_into_chunks(iterable: Set, chunk_size: int) -> Iterator[List]:
         yield iterable[i : i + chunk_size]
 
 
-def update_media_file(old_file_name, new_file_name, delete_old=True):
+def copy_media_file(old_file_name, new_file_name, delete_old=False):
+    """
+    Copies a media file from an old file name to a new file name in the storage.
+
+    Args:
+        old_file_name (str): The name of the file to be copied.
+        new_file_name (str): The name of the new file to save. If it is the same as old_file_name, no new file is created.
+        delete_old (bool): Determines if the old file should be deleted after copying. Defaults to False.
+    """
     if default_storage.exists(old_file_name):
         if new_file_name and new_file_name != old_file_name:
             # Save new file if it's different
@@ -965,9 +973,42 @@ def update_media_file(old_file_name, new_file_name, delete_old=True):
             default_storage.delete(old_file_name)
 
 
-def move_media_file(old_file_name, new_file_name):
-    update_media_file(old_file_name, new_file_name, delete_old=True)
+def update_media_file_on_model_update(instance, file_field_name):
+    """
+    Ensures that when updating a model instance with a file field, the old file associated with
+    the field is appropriately handled. If the new file is different from the old one, the old file
+    is deleted. If the file name changes but the file content remains the same, the file is renamed.
 
+    Parameters:
+        instance (Model): The model instance being updated. Must be a valid instance of a Django
+        model.
 
-def copy_media_file(old_file_name, new_file_name):
-    update_media_file(old_file_name, new_file_name, delete_old=False)
+        file_field_name (str): The name of the file field being updated. Must be the attribute name
+        of a FileField in the model.
+
+    Raises:
+        TypeError: If the field specified by `file_field_name` is not a FileField.
+    """
+    model_class = type(instance)
+    field_instance = model_class._meta.get_field(file_field_name)
+    if not isinstance(field_instance, FileField):
+        raise TypeError(f"Field {file_field_name} is not a FileField")
+
+    if not instance.pk:
+        return
+
+    try:
+        old_file = getattr(model_class.objects.get(pk=instance.pk), file_field_name)
+    except (model_class.DoesNotExist, AttributeError):
+        return
+
+    if old_file:
+        new_file = getattr(instance, file_field_name)
+        new_file_name = field_instance.generate_filename(instance, os.path.basename(new_file.name))
+        if old_file != new_file:
+            # if new file is different from old file, delete old file
+            old_file.delete(save=False)
+        elif new_file_name != old_file.name:
+            # if the new filename if different but it's the same file, rename it
+            copy_media_file(old_file.name, new_file_name, delete_old=True)
+            new_file.name = new_file_name

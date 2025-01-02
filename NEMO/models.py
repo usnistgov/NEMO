@@ -62,6 +62,7 @@ from NEMO.utilities import (
     render_email_template,
     send_mail,
     supported_embedded_extensions,
+    update_media_file_on_model_update,
 )
 from NEMO.validators import color_hex_list_validator, color_hex_validator
 from NEMO.widgets.configuration_editor import ConfigurationEditor
@@ -217,29 +218,15 @@ def auto_delete_file_on_document_delete(sender, instance: BaseDocumentModel, **k
         return
     """	Deletes file from filesystem when corresponding object is deleted.	"""
     if instance.document:
-        if os.path.isfile(instance.document.path):
-            os.remove(instance.document.path)
+        instance.document.delete(False)
 
 
 @receiver(models.signals.pre_save)
-def auto_delete_file_on_document_change(sender, instance: BaseDocumentModel, **kwargs):
+def auto_update_file_on_document_change(sender, instance: BaseDocumentModel, **kwargs):
+    """Updates old file from filesystem when corresponding object is updated with new file."""
     if not issubclass(sender, BaseDocumentModel):
         return
-    """	Deletes old file from filesystem when corresponding object is updated with new file. """
-    if not instance.pk:
-        return False
-
-    model_class = type(instance)
-
-    try:
-        old_file = model_class.objects.get(pk=instance.pk).document
-    except model_class.DoesNotExist:
-        return False
-
-    new_file = instance.document
-    if old_file and not old_file == new_file:
-        if os.path.isfile(old_file.path):
-            os.remove(old_file.path)
+    return update_media_file_on_model_update(instance, "document")
 
 
 class ReservationItemType(Enum):
@@ -3488,52 +3475,27 @@ class TaskImages(BaseModel):
 def auto_delete_file_on_tool_delete(sender, instance: Tool, **kwargs):
     """Deletes file from filesystem when corresponding `Tool` object is deleted."""
     if instance.image:
-        if os.path.isfile(instance.image.path):
-            os.remove(instance.image.path)
+        instance.image.delete(False)
 
 
 @receiver(models.signals.pre_save, sender=Tool)
-def auto_delete_file_on_tool_change(sender, instance: Tool, **kwargs):
-    """Deletes old file from filesystem when corresponding `Tool` object is updated with new file."""
-    if not instance.pk:
-        return False
-
-    try:
-        old_file = Tool.objects.get(pk=instance.pk).image
-    except Tool.DoesNotExist:
-        return False
-
-    if old_file:
-        new_file = instance.image
-        if not old_file == new_file:
-            if os.path.isfile(old_file.path):
-                os.remove(old_file.path)
+def auto_update_file_on_tool_change(sender, instance: Tool, **kwargs):
+    """Updates old file from filesystem when corresponding `Tool` object is updated with new file."""
+    return update_media_file_on_model_update(instance, "_image")
 
 
 # These two auto-delete task images from filesystem when they are unneeded:
 @receiver(models.signals.post_delete, sender=TaskImages)
-def auto_delete_file_on_delete(sender, instance: TaskImages, **kwargs):
+def auto_delete_file_on_task_image_delete(sender, instance: TaskImages, **kwargs):
     """Deletes file from filesystem when corresponding `TaskImages` object is deleted."""
     if instance.image:
-        if os.path.isfile(instance.image.path):
-            os.remove(instance.image.path)
+        instance.image.delete(False)
 
 
 @receiver(models.signals.pre_save, sender=TaskImages)
-def auto_delete_file_on_change(sender, instance: TaskImages, **kwargs):
-    """Deletes old file from filesystem when corresponding `TaskImages` object is updated with new file."""
-    if not instance.pk:
-        return False
-
-    try:
-        old_file = TaskImages.objects.get(pk=instance.pk).image
-    except TaskImages.DoesNotExist:
-        return False
-
-    new_file = instance.image
-    if not old_file == new_file:
-        if os.path.isfile(old_file.path):
-            os.remove(old_file.path)
+def auto_update_file_on_task_image_change(sender, instance: TaskImages, **kwargs):
+    """Updates old file from filesystem when corresponding `TaskImages` object is updated with new file."""
+    return update_media_file_on_model_update(instance, "image")
 
 
 class TaskCategory(BaseModel):
@@ -4700,26 +4662,13 @@ class Chemical(BaseModel):
 def auto_delete_file_on_hazard_delete(sender, instance: ChemicalHazard, **kwargs):
     """Deletes file from filesystem when corresponding `ChemicalHazard` object is deleted."""
     if instance.logo:
-        if os.path.isfile(instance.logo.path):
-            os.remove(instance.logo.path)
+        instance.logo.delete(False)
 
 
 @receiver(models.signals.pre_save, sender=ChemicalHazard)
-def auto_delete_file_on_hazard_change(sender, instance: ChemicalHazard, **kwargs):
-    """Deletes old file from filesystem when corresponding `ChemicalHazard` object is updated with new file."""
-    if not instance.pk:
-        return False
-
-    try:
-        old_file = ChemicalHazard.objects.get(pk=instance.pk).logo
-    except ChemicalHazard.DoesNotExist:
-        return False
-
-    if old_file:
-        new_file = instance.logo
-        if not old_file == new_file:
-            if os.path.isfile(old_file.path):
-                os.remove(old_file.path)
+def auto_update_file_on_hazard_change(sender, instance: ChemicalHazard, **kwargs):
+    """Updates old file from filesystem when corresponding `ChemicalHazard` object is updated with new file."""
+    return update_media_file_on_model_update(instance, "logo")
 
 
 # These two auto-delete chemical document from filesystem when they are unneeded:
@@ -4727,26 +4676,13 @@ def auto_delete_file_on_hazard_change(sender, instance: ChemicalHazard, **kwargs
 def auto_delete_file_on_chemical_delete(sender, instance: Chemical, **kwargs):
     """Deletes file from filesystem when corresponding `Chemical` object is deleted."""
     if instance.document:
-        if os.path.isfile(instance.document.path):
-            os.remove(instance.document.path)
+        instance.document.delete(False)
 
 
 @receiver(models.signals.pre_save, sender=Chemical)
-def auto_delete_file_on_chemical_change(sender, instance: Chemical, **kwargs):
-    """Deletes old file from filesystem when corresponding `Chemical` object is updated with new file."""
-    if not instance.pk:
-        return False
-
-    try:
-        old_file = Chemical.objects.get(pk=instance.pk).document
-    except Chemical.DoesNotExist:
-        return False
-
-    if old_file:
-        new_file = instance.document
-        if not old_file == new_file:
-            if os.path.isfile(old_file.path):
-                os.remove(old_file.path)
+def auto_update_file_on_chemical_change(sender, instance: Chemical, **kwargs):
+    """Updates old file from filesystem when corresponding `Chemical` object is updated with new file."""
+    return update_media_file_on_model_update(instance, "document")
 
 
 class StaffKnowledgeBaseCategory(BaseCategory):
