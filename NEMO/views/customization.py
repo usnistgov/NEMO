@@ -5,7 +5,7 @@ from typing import Dict, Iterable, List
 from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.core.files.storage import get_storage_class
+from django.core.files.storage import default_storage
 from django.core.validators import (
     validate_comma_separated_integer_list,
     validate_email,
@@ -668,10 +668,9 @@ class RatesCustomization(CustomizationBase):
 
 def get_media_file_contents(file_name):
     """Get the contents of a media file if it exists. Return a blank string if it does not exist."""
-    storage = get_storage_class()()
-    if not storage.exists(file_name):
+    if not default_storage.exists(file_name):
         return ""
-    with storage.open(file_name) as opened_file:
+    with default_storage.open(file_name) as opened_file:
         read_file = opened_file.read()
         try:
             return read_file.decode().strip()
@@ -684,10 +683,9 @@ def store_media_file(content, file_name):
     Delete any existing media file with the same name and save the new content into file_name in the media directory.
     If the content is blank then no new file is created.
     """
-    storage = get_storage_class()()
-    storage.delete(file_name)
+    default_storage.delete(file_name)
     if content:
-        storage.save(file_name, content)
+        default_storage.save(file_name, content)
 
 
 # This method should not be used anymore. Instead, use XCustomization.get(name)

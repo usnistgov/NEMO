@@ -24,6 +24,7 @@ from django.contrib.admin import ModelAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.db.models import QuerySet
@@ -951,3 +952,22 @@ def split_into_chunks(iterable: Set, chunk_size: int) -> Iterator[List]:
     iterable = list(iterable)  # Convert set to list to support slicing
     for i in range(0, len(iterable), chunk_size):
         yield iterable[i : i + chunk_size]
+
+
+def update_media_file(old_file_name, new_file_name, delete_old=True):
+    if default_storage.exists(old_file_name):
+        if new_file_name and new_file_name != old_file_name:
+            # Save new file if it's different
+            with default_storage.open(old_file_name, "rb") as file:
+                default_storage.save(new_file_name, file)
+        if delete_old and (not new_file_name or new_file_name != old_file_name):
+            # Delete old file if no new file name is provided or if it was different
+            default_storage.delete(old_file_name)
+
+
+def move_media_file(old_file_name, new_file_name):
+    update_media_file(old_file_name, new_file_name, delete_old=True)
+
+
+def copy_media_file(old_file_name, new_file_name):
+    update_media_file(old_file_name, new_file_name, delete_old=False)
