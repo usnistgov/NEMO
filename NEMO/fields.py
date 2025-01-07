@@ -231,6 +231,7 @@ class RoleGroupPermissionChoiceField(DynamicChoicesCharField):
         if self.roles:
             role_choice_list.extend(
                 [
+                    ("is_authenticated", "Role: Anyone"),
                     ("is_staff", "Role: Staff"),
                     ("is_user_office", "Role: User Office"),
                     ("is_accounting_officer", "Role: Accounting officers"),
