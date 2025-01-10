@@ -6,8 +6,10 @@ from django import forms
 from django.contrib.admin.widgets import AutocompleteMixin
 from django.contrib.auth.models import Group, Permission
 from django.core import validators
+from django.core.cache import cache
 from django.core.exceptions import FieldError, ValidationError
 from django.db import models
+from django.db.models.signals import post_delete, post_save
 from django.utils.translation import gettext_lazy as _
 
 from NEMO.typing import QuerySetType
@@ -203,6 +205,9 @@ class DynamicChoicesIntegerField(models.IntegerField):
 # Choice field for picking roles, groups or permissions
 # Usage: role = RoleGroupPermissionChoiceField(roles=True/False, groups=True/False, permissions=True/False)
 class RoleGroupPermissionChoiceField(DynamicChoicesCharField):
+    GROUPS_CACHE_KEY = "group_choices"
+    PERMISSIONS_CACHE_KEY = "permission_choices"
+
     def __init__(
         self,
         *args,
@@ -222,9 +227,11 @@ class RoleGroupPermissionChoiceField(DynamicChoicesCharField):
 
     def role_choices(self) -> List[Tuple[str, str]]:
         role_choice_list = [(self.empty_value, self.empty_label)]
+
         if self.roles:
             role_choice_list.extend(
                 [
+                    ("is_authenticated", "Role: Anyone"),
                     ("is_staff", "Role: Staff"),
                     ("is_user_office", "Role: User Office"),
                     ("is_accounting_officer", "Role: Accounting officers"),
@@ -232,12 +239,23 @@ class RoleGroupPermissionChoiceField(DynamicChoicesCharField):
                     ("is_superuser", "Role: Administrators"),
                 ]
             )
+
         if self.groups:
-            role_choice_list.extend([(str(group.id), f"Group: {group.name}") for group in Group.objects.all()])
+            group_choices = cache.get(self.GROUPS_CACHE_KEY)
+            if group_choices is None:
+                group_choices = [(str(group.id), f"Group: {group.name}") for group in Group.objects.all()]
+                cache.set(self.GROUPS_CACHE_KEY, group_choices)
+            role_choice_list.extend(group_choices)
+
         if self.permissions:
-            role_choice_list.extend(
-                [(p["codename"], f'Permission: {p["name"]}') for p in Permission.objects.values("codename", "name")]
-            )
+            permission_choices = cache.get(self.PERMISSIONS_CACHE_KEY)
+            if permission_choices is None:
+                permission_choices = [
+                    (p["codename"], f'Permission: {p["name"]}') for p in Permission.objects.values("codename", "name")
+                ]
+                cache.set(self.PERMISSIONS_CACHE_KEY, permission_choices)
+            role_choice_list.extend(permission_choices)
+
         return role_choice_list
 
     def has_user_role(self, role: str, user) -> bool:
@@ -293,3 +311,23 @@ class RoleGroupPermissionChoiceField(DynamicChoicesCharField):
         empty_label = kwargs.pop("empty_label", self.empty_label)
         empty_value = kwargs.pop("empty_value", self.empty_value)
         return super().formfield(widget=submitted_widget, empty_label=empty_label, empty_value=empty_value, **kwargs)
+
+    # Signal handlers for cache invalidation
+    @staticmethod
+    def invalidate_group_cache(sender, **kwargs):
+        cache.delete(RoleGroupPermissionChoiceField.GROUPS_CACHE_KEY)
+
+    @staticmethod
+    def invalidate_permission_cache(sender, **kwargs):
+        cache.delete(RoleGroupPermissionChoiceField.PERMISSIONS_CACHE_KEY)
+
+    # Connect the invalidation signals
+    @classmethod
+    def connect_signals(cls):
+        post_save.connect(cls.invalidate_group_cache, sender=Group)
+        post_delete.connect(cls.invalidate_group_cache, sender=Group)
+        post_save.connect(cls.invalidate_permission_cache, sender=Permission)
+        post_delete.connect(cls.invalidate_permission_cache, sender=Permission)
+
+
+RoleGroupPermissionChoiceField.connect_signals()
