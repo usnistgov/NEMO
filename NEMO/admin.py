@@ -5,6 +5,7 @@ from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin import register
 from django.contrib.admin.decorators import display
+from django.contrib.admin.models import LogEntry
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.admin import GroupAdmin
 from django.contrib.auth.models import Group, Permission
@@ -1991,6 +1992,25 @@ class PermissionAdminForm(forms.ModelForm):
 class PermissionAdmin(admin.ModelAdmin):
     search_fields = ("name", "codename")
     form = PermissionAdminForm
+
+
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "action_time", "content_type", "object_id", "object_repr", "action_flag")
+    list_filter = [("user", admin.RelatedOnlyFieldListFilter), "action_flag"]
+
+    def __init__(self, model, admin_site):
+        model._meta.verbose_name_plural = "Detailed admin history"
+        super().__init__(model, admin_site)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 def iframe_content(content, extra_style="padding-bottom: 65%") -> str:
