@@ -162,6 +162,7 @@ urls_to_skip = [
     "new_reservation",
     "media_view",
     "media_list_view",
+    "api_media",
     "remove_document_from_project",
     "enter_wait_list_from_kiosk",
     "exit_wait_list_from_kiosk",
