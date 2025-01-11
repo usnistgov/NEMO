@@ -573,6 +573,7 @@ if settings.ALLOW_CONDITIONAL_URLS:
         path("api/", include(router.urls)),
         path(r"api/metadata/", api.MetadataAPIView.as_view(), name="api_metadata"),
         path("api/file_import/", api_file_import.file_import, name="api_file_import"),
+        re_path(r"^api/media/(?P<path>.*)$", api.media, name="api_media"),
         # Area access
         path("area_access/", area_access.area_access, name="area_access"),
         path("new_area_access_record/", area_access.new_area_access_record, name="new_area_access_record"),

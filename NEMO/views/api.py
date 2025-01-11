@@ -1,10 +1,16 @@
+import mimetypes
 import platform
 from importlib import metadata
+from urllib.parse import unquote
 
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core.files.storage import get_storage_class
 from django.db import transaction
+from django.http import FileResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
 from django.utils.safestring import mark_safe
+from django.views.decorators.http import require_GET
 from drf_excel.mixins import XLSXFileMixin
 from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
@@ -97,6 +103,7 @@ from NEMO.views.api_billing import (
     BillingFilterForm,
     get_billing_charges,
 )
+from NEMO.views.constants import MEDIA_PROTECTED
 from NEMO.views.customization import ApplicationCustomization
 
 date_filters = ["exact", "in", "month", "year", "day", "gte", "gt", "lte", "lt", "isnull"]
@@ -870,3 +877,21 @@ def get_app_metadata():
         "nemo_plugins": nemo_packages,
         "other_packages": other_packages,
     }
+
+
+@login_required
+@require_GET
+def media(request, path):
+    clean_path = unquote(path)
+    user: User = request.user
+    if clean_path.startswith(MEDIA_PROTECTED) and not user.is_any_part_of_staff:
+        return HttpResponseForbidden()
+    storage = get_storage_class()()
+    if not clean_path or not storage.exists(clean_path):
+        return HttpResponseNotFound()
+    # Guess the MIME type of the media file from its extension.
+    # This is good enough since those files are ours, and we typically use the correct extensions.
+    mimetype, encoding = mimetypes.guess_type(path, strict=True)
+    if not mimetype:
+        return HttpResponseBadRequest()
+    return FileResponse(storage.open(clean_path), content_type=mimetype)
