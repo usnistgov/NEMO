@@ -612,7 +612,7 @@ def send_csv_interlock_report(interlock_list: QuerySetType[Interlock_model], use
             "Please find attached the interlock report.",
             from_email=None,
             attachments=[report_attachment],
-            email_category=EmailCategory.SYSTEM,
+            email_category=EmailCategory.TIMED_SERVICES,
         )
 
 
