@@ -626,6 +626,11 @@ if settings.ALLOW_CONDITIONAL_URLS:
         path(
             "check_and_update_wait_list/", timed_services.check_and_update_wait_list, name="check_and_update_wait_list"
         ),
+        path(
+            "email_interlock_status_report/",
+            timed_services.email_csv_interlock_status_report,
+            name="email_interlock_status_report",
+        ),
         # Abuse:
         path("abuse/", abuse.abuse, name="abuse"),
         path("abuse/user_drill_down/", abuse.user_drill_down, name="user_drill_down"),

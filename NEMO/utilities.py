@@ -185,12 +185,33 @@ class BasicDisplayTable(object):
         return value
 
     def to_csv(self) -> HttpResponse:
-        response = HttpResponse(content_type="text/csv")
-        writer = csv.writer(response)
+        return self.to_csv_stream(HttpResponse(content_type="text/csv"))
+
+    def to_csv_http_response(self, filename) -> HttpResponse:
+        response: HttpResponse = self.to_csv_stream(HttpResponse(content_type="text/csv"))
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    def to_csv_file(self) -> bytes:
+        with StringIO() as file_stream:
+            file_bytes = self.to_csv_stream(file_stream)
+            file_bytes.seek(0)
+            return file_bytes.read()
+
+    def to_csv_attachment(self, filename) -> MIMEBase:
+        attachment = MIMEBase("text", "csv")
+        attachment.set_payload(self.to_csv_file())
+        attachment.set_charset("utf-8")
+        encoders.encode_base64(attachment)
+        attachment.add_header("Content-Disposition", "attachment", filename=filename)
+        return attachment
+
+    def to_csv_stream(self, stream):
+        writer = csv.writer(stream)
         writer.writerow([capitalize(display_value) for key, display_value in self.headers])
         for row in self.rows:
             writer.writerow([self.formatted_value(row.get(key, "")) for key, display_value in self.headers])
-        return response
+        return stream
 
 
 def bootstrap_primary_color(color_type):

@@ -22,6 +22,7 @@ from NEMO.actions import (
     adjustment_requests_export_csv,
     adjustment_requests_mark_as_applied,
     create_next_interlock,
+    csv_interlock_status_report,
     disable_selected_cards,
     duplicate_configuration,
     duplicate_tool_configuration,
@@ -906,7 +907,13 @@ class InterlockAdmin(admin.ModelAdmin):
         ("tool", admin.RelatedOnlyFieldListFilter),
         ("door", admin.RelatedOnlyFieldListFilter),
     )
-    actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage, create_next_interlock]
+    actions = [
+        lock_selected_interlocks,
+        unlock_selected_interlocks,
+        synchronize_with_tool_usage,
+        create_next_interlock,
+        csv_interlock_status_report,
+    ]
     readonly_fields = ["state", "most_recent_reply", "most_recent_reply_time"]
     autocomplete_fields = ["card"]
 
