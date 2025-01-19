@@ -527,7 +527,11 @@
 		}
 		function add_project(project_name, project_id)
 		{
-			add_to_list("#project-list", "remove_project", project_id, project_name, "Remove this user from " + project_name, "projects", {{ readonly|yesno:"true,false" }});
+            let project_text = project_name;
+            {% if user.is_accounting_officer or user.is_user_office or user.is_facility_manager or user.is_superuser %}
+            project_text += " <a style='text-decoration: none;color: inherit' title='Go to the project\'s page' href='"+"{% url "project" 999 %}".replace("999", project_id)+"'><i style='font-size: small;' class='glyphicon glyphicon-link'></i></a>";
+            {% endif %}
+			add_to_list("#project-list", "remove_project", project_id, project_text, "Remove this user from " + project_name, "projects", {{ readonly|yesno:"true,false" }});
 		}
 		function remove_project(project_id)
 		{

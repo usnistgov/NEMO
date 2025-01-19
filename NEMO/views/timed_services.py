@@ -12,6 +12,7 @@ from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET
 
 from NEMO.forms import nice_errors
+from NEMO.interlocks import send_csv_interlock_report
 from NEMO.models import (
     Alert,
     Area,
@@ -19,6 +20,8 @@ from NEMO.models import (
     Closure,
     ClosureTime,
     EmailNotificationType,
+    Interlock,
+    PhysicalAccessLevel,
     Qualification,
     RecurringConsumableCharge,
     RequestStatus,
@@ -1045,4 +1048,17 @@ def do_deactivate_access_expired_users():
     for user in users_about_to_expire:
         user.is_active = False
         user.save(update_fields=["is_active"])
+    return HttpResponse()
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def email_csv_interlock_status_report(request):
+    usernames = request.GET.getlist("username")
+    return do_email_csv_interlock_status_report(usernames)
+
+
+def do_email_csv_interlock_status_report(usernames: List[str]):
+    send_csv_interlock_report(Interlock.objects.all(), User.objects.filter(username__in=usernames))
     return HttpResponse()

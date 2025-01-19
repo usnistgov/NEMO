@@ -572,8 +572,8 @@ if settings.ALLOW_CONDITIONAL_URLS:
         # REST API
         path("api/", include(router.urls)),
         path(r"api/metadata/", api.MetadataAPIView.as_view(), name="api_metadata"),
+        re_path(r"^api/media/(?P<path>.*)$", api.MediaAPIView.as_view(), name="api_media"),
         path("api/file_import/", api_file_import.file_import, name="api_file_import"),
-        re_path(r"^api/media/(?P<path>.*)$", api.media, name="api_media"),
         # Area access
         path("area_access/", area_access.area_access, name="area_access"),
         path("new_area_access_record/", area_access.new_area_access_record, name="new_area_access_record"),
@@ -625,6 +625,11 @@ if settings.ALLOW_CONDITIONAL_URLS:
         path("auto_logout_users/", timed_services.auto_logout_users, name="auto_logout_users"),
         path(
             "check_and_update_wait_list/", timed_services.check_and_update_wait_list, name="check_and_update_wait_list"
+        ),
+        path(
+            "email_interlock_status_report/",
+            timed_services.email_csv_interlock_status_report,
+            name="email_interlock_status_report",
         ),
         # Abuse:
         path("abuse/", abuse.abuse, name="abuse"),

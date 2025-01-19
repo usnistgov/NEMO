@@ -3343,6 +3343,11 @@ class Interlock(BaseModel):
 
         return interlocks.get(self.card.category).lock(self)
 
+    def ping(self) -> str:
+        from NEMO import interlocks
+
+        return interlocks.get(self.card.category).ping(self)
+
     class Meta:
         ordering = ["card__server", "card__number", "channel"]
 

@@ -1,0 +1,6 @@
+[Unit]
+Description=Email interlock status report to given users
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec nemo django-admin send_email_interlock_usage_report <username> <username>

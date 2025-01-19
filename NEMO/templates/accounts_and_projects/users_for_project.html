@@ -20,6 +20,10 @@
         {% else %}
             <span class="strikethrough light-grey" title="This user is inactive">{{ u }}</span>
         {% endif %}
+        <a style="text-decoration: none;
+                  color: inherit"
+           title="Go to user's page"
+           href="{% url "create_or_modify_user" u.id %}"><i style="font-size: small;" class="glyphicon glyphicon-link"></i></a>
         <br>
     {% empty %}
         This project does not have any members.
