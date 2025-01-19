@@ -125,6 +125,40 @@ def convert_py_format_to_pickadate(string_format: str) -> str:
     return string_format
 
 
+class DelimiterSeparatedListConverter:
+    """
+    DelimiterSeparatedListConverter is a utility class for handling conversion
+    between delimited strings and Python list objects. It facilitates easy
+    serialization and deserialization of data types that use custom delimiters.
+
+    This class is useful in scenarios where data needs to be stored or transmitted
+    as delimited strings, such as in a database or a configuration file, and later
+    retrieved and manipulated as Python list objects.
+    """
+
+    def __init__(self, separator=",", *args, **kwargs):
+        self.separator = separator
+        super().__init__(*args, **kwargs)
+
+    def to_list(self, value) -> List:
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(self.separator) if item.strip()]
+        # Handle unexpected input types gracefully
+        raise ValueError("Invalid value for {}".format(self.__class__.__name__))
+
+    def to_str(self, value) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, list):
+            return self.separator.join(map(str, value))
+        # Handle other potential cases like single values
+        return str(value)
+
+
 time_input_format = get_format("TIME_INPUT_FORMATS")[0]
 date_input_format = get_format("DATE_INPUT_FORMATS")[0]
 datetime_input_format = get_format("DATETIME_INPUT_FORMATS")[0]
@@ -137,6 +171,7 @@ pickadate_time_format = getattr(settings, "PICKADATE_TIME_FORMAT", convert_py_fo
 supported_embedded_video_extensions = [".mp4", ".ogv", ".webm", ".3gp"]
 supported_embedded_pdf_extensions = [".pdf"]
 supported_embedded_extensions = supported_embedded_pdf_extensions + supported_embedded_video_extensions
+CommaSeparatedListConverter = DelimiterSeparatedListConverter()
 
 
 class EmptyHttpRequest(HttpRequest):

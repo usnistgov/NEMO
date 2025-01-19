@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List, Tuple
 
 from django import forms
-from django.contrib.admin.widgets import AutocompleteMixin
+from django.contrib.admin.widgets import AutocompleteMixin, FilteredSelectMultiple
 from django.contrib.auth.models import Group, Permission
 from django.core import validators
 from django.core.cache import cache
@@ -13,7 +13,7 @@ from django.db.models.signals import post_delete, post_save
 from django.utils.translation import gettext_lazy as _
 
 from NEMO.typing import QuerySetType
-from NEMO.utilities import quiet_int, strtobool
+from NEMO.utilities import CommaSeparatedListConverter, quiet_int, strtobool
 
 DEFAULT_SEPARATOR = ","
 
@@ -39,7 +39,6 @@ class IsEmpty(models.lookups.BuiltinLookup):
 
 # This widget can be used with ChoiceField as or with CharField (choices needs to be used in attrs)
 class DatalistWidget(forms.TextInput):
-
     def __init__(self, attrs=None):
         if attrs is not None:
             attrs = attrs.copy()
@@ -176,11 +175,28 @@ class AdminAutocompleteSelectWidget(forms.Select):
         return AutocompleteMixin(None, None).media
 
 
-class DynamicChoicesCharField(models.CharField):
+class CommaSeparatedTextMultipleChoiceField(forms.MultipleChoiceField):
     """
-    Represents a dynamic choices character field for Django models.
+    Custom form field for multiple choice options represented as a comma-separated
+    text string.
 
-    This will make sure migrations are not triggered when the choices are updated.
+    This class extends `forms.MultipleChoiceField` to handle input where multiple
+    choices are provided as a single string of values separated by commas.
+    It converts the input value into a list of choices for processing.
+    """
+
+    def prepare_value(self, value) -> List:
+        return CommaSeparatedListConverter.to_list(value)
+
+
+class DynamicChoicesMixin:
+    """
+    Mixin class to handle dynamic choices for a field.
+
+    This class allows choices to be dynamically modified or excluded during
+    serialization such as migration serialization. It provides utility for
+    fields that require dynamic handling of their choices attribute. This can
+    help prevent hardcoding choices into migrations.
     """
 
     def deconstruct(self):
@@ -189,22 +205,43 @@ class DynamicChoicesCharField(models.CharField):
         return name, path, args, kwargs
 
 
-class DynamicChoicesIntegerField(models.IntegerField):
+class DynamicChoicesIntegerField(DynamicChoicesMixin, models.IntegerField):
     """
-    Represents a dynamic choices integer field for Django models.
-
-    This will make sure migrations are not triggered when the choices are updated.
+    IntegerField with support for dynamic choices.
     """
 
-    def deconstruct(self):
-        name, path, args, kwargs = super().deconstruct()
-        kwargs.pop("choices", None)
-        return name, path, args, kwargs
+    pass
+
+
+class DynamicChoicesCharField(DynamicChoicesMixin, models.CharField):
+    """
+    CharField with support for dynamic choices.
+    """
+
+    pass
+
+
+class DynamicChoicesTextField(DynamicChoicesMixin, models.TextField):
+    """
+    TextField with support for dynamic choices.
+    """
+
+    pass
 
 
 # Choice field for picking roles, groups or permissions
 # Usage: role = RoleGroupPermissionChoiceField(roles=True/False, groups=True/False, permissions=True/False)
-class RoleGroupPermissionChoiceField(DynamicChoicesCharField):
+class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
+    class Role(models.TextChoices):
+        IS_AUTHENTICATED = "is_authenticated", _("Role: Anyone")
+        IS_STAFF = "is_staff", _("Role: Staff")
+        IS_USER_OFFICE = "is_user_office", _("Role: User Office")
+        IS_ACCOUNTING_OFFICER = "is_accounting_officer", _("Role: Accounting officers")
+        IS_SERVICE_PERSONNEL = "is_service_personnel", _("Role: Service Personnel")
+        IS_TECHNICIAN = "is_technician", _("Role: Technician")
+        IS_FACILITY_MANAGER = "is_facility_manager", _("Role: Facility managers")
+        IS_SUPERUSER = "is_superuser", _("Role: Administrators")
+
     GROUPS_CACHE_KEY = "group_choices"
     PERMISSIONS_CACHE_KEY = "permission_choices"
 
@@ -223,22 +260,15 @@ class RoleGroupPermissionChoiceField(DynamicChoicesCharField):
         self.permissions = permissions
         self.empty_label = empty_label
         self.empty_value = empty_value
+        if not any([roles, groups, permissions]):
+            raise ValueError("At least one of roles, groups or permissions must be selected.")
         super().__init__(*args, **kwargs)
 
-    def role_choices(self) -> List[Tuple[str, str]]:
-        role_choice_list = [(self.empty_value, self.empty_label)]
+    def role_choices(self, include_blank=True) -> List[Tuple[str, str]]:
+        role_choice_list = [(self.empty_value, self.empty_label)] if include_blank else []
 
         if self.roles:
-            role_choice_list.extend(
-                [
-                    ("is_authenticated", "Role: Anyone"),
-                    ("is_staff", "Role: Staff"),
-                    ("is_user_office", "Role: User Office"),
-                    ("is_accounting_officer", "Role: Accounting officers"),
-                    ("is_facility_manager", "Role: Facility managers"),
-                    ("is_superuser", "Role: Administrators"),
-                ]
-            )
+            role_choice_list.extend(self.Role.choices)
 
         if self.groups:
             group_choices = cache.get(self.GROUPS_CACHE_KEY)
@@ -328,6 +358,48 @@ class RoleGroupPermissionChoiceField(DynamicChoicesCharField):
         post_delete.connect(cls.invalidate_group_cache, sender=Group)
         post_save.connect(cls.invalidate_permission_cache, sender=Permission)
         post_delete.connect(cls.invalidate_permission_cache, sender=Permission)
+
+
+class MultiRoleGroupPermissionChoiceField(RoleGroupPermissionChoiceField):
+    """
+    A specialized field that extends RoleGroupPermissionChoiceField for handling multiple role permissions.
+
+    This class adds functionality for handling multiple roles, including displaying roles in a readable format,
+    converting them for storage or form usage, and verifying user role permissions.
+    """
+
+    def formfield(self, **kwargs):
+        choices = kwargs.pop("choices", self.role_choices(include_blank=False))
+        is_stacked = kwargs.pop("is_stacked", False)
+        kwargs["widget"] = FilteredSelectMultiple("Roles", is_stacked=is_stacked)
+        return super(models.TextField, self).formfield(
+            choices=choices, form_class=CommaSeparatedTextMultipleChoiceField, **kwargs
+        )
+
+    def to_python(self, value) -> List:
+        return CommaSeparatedListConverter.to_list(value)
+
+    def get_prep_value(self, value) -> str:
+        return CommaSeparatedListConverter.to_string(value)
+
+    def has_user_roles(self, roles, user):
+        """
+        Override to check a list of roles instead of a single one.
+        """
+        if not user.is_active:
+            return False
+
+        return any(self.has_user_role(role, user) for role in roles)
+
+    def roles_display(self, roles: List[str]) -> str:
+        """
+        Convert the list of selected roles to a string for display purposes.
+        """
+        return ", ".join(self.role_display(role) for role in roles)
+
+    def get_choices(self, *args, **kwargs):
+        kwargs["include_blank"] = False
+        return super().get_choices(*args, **kwargs)
 
 
 RoleGroupPermissionChoiceField.connect_signals()
