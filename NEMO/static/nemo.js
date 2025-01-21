@@ -472,6 +472,32 @@ function serialize(form_selector, ajax_message)
 	return ajax_message;
 }
 
+
+/**
+ * Merges two query strings into one, optionally overriding existing parameters.
+ */
+function merge_query_strings(query_string, new_query_string, override_existing_parameters)
+{
+	override_existing_parameters = override_existing_parameters || false;
+    query_string = query_string.startsWith('?') ? query_string.substring(1) : query_string;
+
+	let original_params = new URLSearchParams(query_string);
+	let new_params = new URLSearchParams(new_query_string);
+
+	let result_params = new URLSearchParams();
+	// If overriding, only add the parameters from the original params who are not present in the new params
+	original_params.forEach((value, key) =>
+	{
+		if (!override_existing_parameters || !new_params.has(key))
+		{
+			result_params.append(key, value);
+		}
+	});
+	// Now add all the ones from new params
+	new_params.forEach((value, key) => {result_params.append(key, value)});
+	return result_params.toString();
+}
+
 function ajax_get(url, contents, success_callback, failure_callback, always_callback, traditional_serialization)
 {
 	ajax_message(url, "GET", contents, success_callback, failure_callback, always_callback, traditional_serialization)
@@ -561,7 +587,11 @@ function add_to_list(list_selector, on_click, id, text, removal_title, input_nam
 	addition += text +
 	'<input type="hidden" name="' + input_name + '" value="' + id + '"><br>' +
 	'</div>';
-	if($(list_selector).find('input').length === 0) // If the list is empty then replace the empty message with the list item.
+	const non_empty_inputs = $(list_selector).find('input').filter(function()
+	{
+    	return $(this).val().trim() !== '';
+	});
+	if(non_empty_inputs.length === 0) // If the list is empty then replace the empty message with the list item.
 	{
 		$(list_selector).html(addition);
 	}

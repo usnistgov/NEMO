@@ -316,7 +316,7 @@ function submit_event_with_more_information(ajax_post, success_callback)
     {
         ajax_post.data = $.param(ajax_post.data)
     }
-    ajax_post.data += "&" + $("#additional_event_parameters").serialize();
+    ajax_post.data = merge_query_strings(ajax_post.data, $("#additional_event_parameters").serialize(), true);
 	jQuery.ajax(ajax_post)
 		.fail(ajax_failure_callback("Oops, something went wrong!"))
 		.done(function(response, status, xml_http_request)
