@@ -8,12 +8,12 @@ from django.contrib.auth.models import Group, Permission
 from django.core import validators
 from django.core.cache import cache
 from django.core.exceptions import FieldError, ValidationError
-from django.db import models
+from django.db import connection, models
 from django.db.models.signals import post_delete, post_save
 from django.utils.translation import gettext_lazy as _
 
 from NEMO.typing import QuerySetType
-from NEMO.utilities import CommaSeparatedListConverter, quiet_int, strtobool
+from NEMO.utilities import CommaSeparatedListConverter, DelimiterSeparatedListConverter, quiet_int, strtobool
 
 DEFAULT_SEPARATOR = ","
 
@@ -73,7 +73,7 @@ class MultiEmailWidget(forms.TextInput):
         elif isinstance(value, str):
             return value
         elif isinstance(value, list):
-            return self.separator.join(value)
+            return DelimiterSeparatedListConverter(self.separator).to_string(value)
         raise ValidationError("Invalid format.")
 
     def render(self, name, value, **kwargs):
@@ -95,7 +95,7 @@ class MultiEmailFormField(forms.CharField):
 
     def prepare_value(self, value):
         if type(value) is list:
-            return self.separator.join(value)
+            return DelimiterSeparatedListConverter(self.separator).to_string(value)
         else:
             return value
 
@@ -108,6 +108,7 @@ class MultiEmailField(models.CharField):
             message=_("Enter a valid email address or a list separated by {}").format(separator)
         )
         self.separator = separator
+        self.delimiter_separated_list = DelimiterSeparatedListConverter(self.separator)
         kwargs.setdefault("max_length", 2000)
         super().__init__(*args, **kwargs)
 
@@ -136,14 +137,10 @@ class MultiEmailField(models.CharField):
     def get_prep_value(self, value):
         if value is None:
             return value
-        return self.separator.join(value)
+        return self.delimiter_separated_list.to_string(value)
 
     def to_python(self, value):
-        if isinstance(value, list):
-            return value
-        if value is None:
-            return []
-        return [address.strip() for address in value.split(self.separator) if address]
+        return self.delimiter_separated_list.to_list(value)
 
     def value_to_string(self, obj):
         value = self.value_from_object(obj)
@@ -270,14 +267,14 @@ class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
         if self.roles:
             role_choice_list.extend(self.Role.choices)
 
-        if self.groups:
+        if self.groups and "auth_group" in connection.introspection.table_names():
             group_choices = cache.get(self.GROUPS_CACHE_KEY)
             if group_choices is None:
                 group_choices = [(str(group.id), f"Group: {group.name}") for group in Group.objects.all()]
                 cache.set(self.GROUPS_CACHE_KEY, group_choices)
             role_choice_list.extend(group_choices)
 
-        if self.permissions:
+        if self.permissions and "auth_permission" in connection.introspection.table_names():
             permission_choices = cache.get(self.PERMISSIONS_CACHE_KEY)
             if permission_choices is None:
                 permission_choices = [
@@ -379,10 +376,13 @@ class MultiRoleGroupPermissionChoiceField(RoleGroupPermissionChoiceField):
     def to_python(self, value) -> List:
         return CommaSeparatedListConverter.to_list(value)
 
+    def from_db_value(self, value, *args, **kwargs) -> List:
+        return self.to_python(value)
+
     def get_prep_value(self, value) -> str:
         return CommaSeparatedListConverter.to_string(value)
 
-    def has_user_roles(self, roles, user):
+    def has_user_roles(self, roles: List[str], user):
         """
         Override to check a list of roles instead of a single one.
         """

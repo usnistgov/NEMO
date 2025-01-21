@@ -150,7 +150,7 @@ class DelimiterSeparatedListConverter:
         # Handle unexpected input types gracefully
         raise ValueError("Invalid value for {}".format(self.__class__.__name__))
 
-    def to_str(self, value) -> str:
+    def to_string(self, value) -> str:
         if value is None:
             return ""
         if isinstance(value, list):
