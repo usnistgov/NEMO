@@ -1231,3 +1231,12 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	text-align: inherit;
 	border-top: inherit;
 }
+
+.progress-bar-default
+{
+ 	background-color: initial;
+ 	background-image: initial;
+  	-webkit-box-shadow: none;
+	box-shadow: none;
+	color: gray;
+}

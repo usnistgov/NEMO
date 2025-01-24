@@ -230,17 +230,21 @@ class DynamicChoicesTextField(DynamicChoicesMixin, models.TextField):
 # Usage: role = RoleGroupPermissionChoiceField(roles=True/False, groups=True/False, permissions=True/False)
 class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
     class Role(models.TextChoices):
-        IS_AUTHENTICATED = "is_authenticated", _("Role: Anyone")
-        IS_STAFF = "is_staff", _("Role: Staff")
-        IS_USER_OFFICE = "is_user_office", _("Role: User Office")
-        IS_ACCOUNTING_OFFICER = "is_accounting_officer", _("Role: Accounting officers")
-        IS_SERVICE_PERSONNEL = "is_service_personnel", _("Role: Service Personnel")
-        IS_TECHNICIAN = "is_technician", _("Role: Technician")
-        IS_FACILITY_MANAGER = "is_facility_manager", _("Role: Facility managers")
-        IS_SUPERUSER = "is_superuser", _("Role: Administrators")
+        IS_AUTHENTICATED = "is_authenticated", _("Anyone")
+        IS_STAFF = "is_staff", _("Staff")
+        IS_USER_OFFICE = "is_user_office", _("User Office")
+        IS_ACCOUNTING_OFFICER = "is_accounting_officer", _("Accounting officers")
+        IS_SERVICE_PERSONNEL = "is_service_personnel", _("Service Personnel")
+        IS_TECHNICIAN = "is_technician", _("Technician")
+        IS_FACILITY_MANAGER = "is_facility_manager", _("Facility managers")
+        IS_SUPERUSER = "is_superuser", _("Administrators")
 
     GROUPS_CACHE_KEY = "group_choices"
     PERMISSIONS_CACHE_KEY = "permission_choices"
+
+    PREFIX_ROLE_DISPLAY = _("Role: ")
+    PREFIX_GROUP_DISPLAY = _("Group: ")
+    PREFIX_PERMISSION_DISPLAY = _("Permission: ")
 
     def __init__(
         self,
@@ -261,27 +265,31 @@ class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
             raise ValueError("At least one of roles, groups or permissions must be selected.")
         super().__init__(*args, **kwargs)
 
-    def role_choices(self, include_blank=True) -> List[Tuple[str, str]]:
+    def role_choices(self, admin_display=False, include_blank=True) -> List[Tuple[str, str]]:
         role_choice_list = [(self.empty_value, self.empty_label)] if include_blank else []
 
         if self.roles:
-            role_choice_list.extend(self.Role.choices)
+            prefix = self.PREFIX_ROLE_DISPLAY if admin_display else ""
+            for role_choice in self.Role.choices:
+                role_choice_list.append((role_choice[0], prefix + role_choice[1]))
 
         if self.groups and "auth_group" in connection.introspection.table_names():
             group_choices = cache.get(self.GROUPS_CACHE_KEY)
+            prefix = self.PREFIX_GROUP_DISPLAY if admin_display else ""
             if group_choices is None:
-                group_choices = [(str(group.id), f"Group: {group.name}") for group in Group.objects.all()]
+                group_choices = [(str(group.id), group.name) for group in Group.objects.all()]
                 cache.set(self.GROUPS_CACHE_KEY, group_choices)
-            role_choice_list.extend(group_choices)
+            role_choice_list.extend([(group_choice[0], prefix + group_choice[1]) for group_choice in group_choices])
 
         if self.permissions and "auth_permission" in connection.introspection.table_names():
             permission_choices = cache.get(self.PERMISSIONS_CACHE_KEY)
+            prefix = self.PREFIX_PERMISSION_DISPLAY if admin_display else ""
             if permission_choices is None:
                 permission_choices = [
-                    (p["codename"], f'Permission: {p["name"]}') for p in Permission.objects.values("codename", "name")
+                    (p["codename"], prefix + p["name"]) for p in Permission.objects.values("codename", "name")
                 ]
                 cache.set(self.PERMISSIONS_CACHE_KEY, permission_choices)
-            role_choice_list.extend(permission_choices)
+            role_choice_list.extend([(perm_choice[0], prefix + perm_choice[1]) for perm_choice in permission_choices])
 
         return role_choice_list
 
@@ -326,14 +334,14 @@ class RoleGroupPermissionChoiceField(DynamicChoicesTextField):
             return role_users | group_users | permission_users
         return User.objects.none()
 
-    def role_display(self, role: str) -> str:
-        for key, value in self.role_choices():
+    def role_display(self, role: str, admin_display=False) -> str:
+        for key, value in self.role_choices(admin_display=admin_display):
             if key == role:
                 return value
         return ""
 
     def formfield(self, **kwargs):
-        self.choices = kwargs.pop("choices", self.role_choices())
+        self.choices = kwargs.pop("choices", self.role_choices(admin_display=True))
         submitted_widget = kwargs.pop("widget", AdminAutocompleteSelectWidget(attrs={"style": "width: 400px;"}))
         empty_label = kwargs.pop("empty_label", self.empty_label)
         empty_value = kwargs.pop("empty_value", self.empty_value)
@@ -366,7 +374,7 @@ class MultiRoleGroupPermissionChoiceField(RoleGroupPermissionChoiceField):
     """
 
     def formfield(self, **kwargs):
-        choices = kwargs.pop("choices", self.role_choices(include_blank=False))
+        choices = kwargs.pop("choices", self.role_choices(admin_display=True, include_blank=False))
         is_stacked = kwargs.pop("is_stacked", False)
         kwargs["widget"] = FilteredSelectMultiple("Roles", is_stacked=is_stacked)
         return super(models.TextField, self).formfield(
@@ -391,11 +399,11 @@ class MultiRoleGroupPermissionChoiceField(RoleGroupPermissionChoiceField):
 
         return any(self.has_user_role(role, user) for role in roles)
 
-    def roles_display(self, roles: List[str]) -> str:
+    def roles_display(self, roles: List[str], admin_display=True) -> str:
         """
         Convert the list of selected roles to a string for display purposes.
         """
-        return ", ".join(self.role_display(role) for role in roles)
+        return ", ".join(self.role_display(role, admin_display=admin_display) for role in roles)
 
     def get_choices(self, *args, **kwargs):
         kwargs["include_blank"] = False
