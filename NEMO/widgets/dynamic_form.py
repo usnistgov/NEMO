@@ -142,7 +142,17 @@ class PostUsageQuestion:
     def validate_labels_and_choices(self):
         self.validate_property_exists("choices")
         if "labels" in self.properties:
-            if len(self.properties["labels"]) != len(self.properties["choices"]):
+            labels = self.properties["labels"]
+            if not isinstance(labels, dict):
+                label_length = len(labels)
+            else:
+                label_length = 0
+                for element, value in labels.items():
+                    if isinstance(value, list):  # Recursively check if the element is a sublist
+                        label_length += len(value)
+                    else:
+                        label_length += 1
+            if label_length != len(self.properties["choices"]):
                 raise Exception("When using labels you need one for each choice")
 
     @staticmethod
@@ -253,17 +263,36 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
         blank_disabled = 'disabled="disabled"' if required else ""
         placeholder = self.placeholder if self.placeholder else "Select an option"
         result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
-        for index, choice in enumerate(self.choices):
-            label = self.labels[index] if self.labels else choice
-            is_default_choice = (
-                "selected" if self.get_default_value() is not None and self.get_default_value() == choice else ""
-            )
-            result += f'<option value="{choice}" {is_default_choice}>{label}</option>'
+        index = 0
+        for key in self.labels or self.choices:
+            if not self.labels:
+                label = self.choices[index]
+            elif isinstance(self.labels, dict):
+                label = self.labels[key]
+            else:
+                label = self.labels[index]
+            if isinstance(label, list):
+                result += f'<optgroup label="{key}">\n'
+                for item in label:
+                    choice = self.choices[index]
+                    result += self._render_choice_option(choice, item)
+                    index += 1
+                result += "</optgroup>\n"
+            else:
+                choice = self.choices[index]
+                result += self._render_choice_option(choice, label)
+                index += 1
         result += "</select>"
         if self.help:
             result += f'<div style="font-size:smaller;color:#999;{max_width}">{self.help}</div>'
         result += "</div>"
         return result
+
+    def _render_choice_option(self, choice, label) -> str:
+        is_default_choice = (
+            "selected" if self.get_default_value() is not None and self.get_default_value() == choice else ""
+        )
+        return f'<option value="{choice}" {is_default_choice}>{label}</option>'
 
 
 class PostUsageTextFieldQuestion(PostUsageQuestion):
