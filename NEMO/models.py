@@ -438,6 +438,10 @@ class UserType(BaseCategory):
     pass
 
 
+class FundType(BaseCategory):
+    pass
+
+
 class ProjectDiscipline(BaseCategory):
     name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, unique=True, help_text="The name of the discipline")
 
@@ -2628,6 +2632,7 @@ class Project(SerializationByNameModel):
         on_delete=models.CASCADE,
     )
     discipline = models.ForeignKey(ProjectDiscipline, null=True, blank=True, on_delete=models.SET_NULL)
+    fund_types = models.ManyToManyField(FundType, blank=True)
     active = models.BooleanField(
         default=True,
         help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).",

@@ -29,6 +29,7 @@
                     <th>{% include 'pagination/pagination_column.html' with order_by='type' name='Account type' %}</th>
                 {% endif %}
                 <th>{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}</th>
+                {% if fund_types %}<th>Fund types</th>{% endif %}
                 <th class="button-column-minimum">
                     {% include 'pagination/pagination_column.html' with order_by='active' name='Active' %}
                 </th>
@@ -56,6 +57,11 @@
                     <td data-toggle="collapse"
                         data-target=".projects_{{ account.id }}"
                         onclick="toggle_details($('#chevron_{{ account.id }}'))"></td>
+                    {% if fund_types %}
+                        <td data-toggle="collapse"
+                            data-target=".projects_{{ account.id }}"
+                            onclick="toggle_details($('#chevron_{{ account.id }}'))"></td>
+                    {% endif %}
                     <td class="text-center">
                         <form method="post" action="{% url 'toggle_active' 'account' account.id %}">
                             {% csrf_token %}
@@ -86,6 +92,13 @@
                                 <td style="padding-left: 28px">{{ project.name }}</td>
                                 {% if account_types %}<td></td>{% endif %}
                                 <td>{{ project.application_identifier }}</td>
+                                {% if fund_types %}
+                                    <td data-toggle="collapse"
+                                        data-target=".projects_{{ account.id }}"
+                                        onclick="toggle_details($('#chevron_{{ account.id }}'))">
+                                        {{ project.fund_types.all|join:", " }}
+                                    </td>
+                                {% endif %}
                                 <td class="text-center">
                                     <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
                                         {% csrf_token %}

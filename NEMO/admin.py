@@ -62,6 +62,7 @@ from NEMO.models import (
     Customization,
     Door,
     EmailLog,
+    FundType,
     Interlock,
     InterlockCard,
     InterlockCardCategory,
@@ -607,14 +608,24 @@ class ProjectDocumentsInline(DocumentModelAdmin):
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("name", "id", "get_application_identifier", "account", "active", "get_managers", "start_date")
-    filter_horizontal = ("only_allow_tools",)
+    list_display = (
+        "name",
+        "id",
+        "get_application_identifier",
+        "account",
+        "active",
+        "get_managers",
+        "get_fund_types",
+        "start_date",
+    )
+    filter_horizontal = ("only_allow_tools", "fund_types")
     search_fields = ("name", "application_identifier", "account__name")
     list_filter = (
         "active",
         ("account", admin.RelatedOnlyFieldListFilter),
         "start_date",
         ("manager_set", admin.RelatedOnlyFieldListFilter),
+        ("fund_types", admin.RelatedOnlyFieldListFilter),
     )
     inlines = [ProjectDocumentsInline]
     form = ProjectAdminForm
@@ -627,6 +638,10 @@ class ProjectAdmin(admin.ModelAdmin):
     @display(description="PIs", ordering="manager_set")
     def get_managers(self, project: Project):
         return mark_safe("<br>".join([pi.get_name() for pi in project.manager_set.all()]))
+
+    @display(description="Fund types", ordering="fund_types")
+    def get_fund_types(self, project: Project):
+        return mark_safe("<br>".join([fund.name for fund in project.fund_types.all()]))
 
     def save_model(self, request, obj, form, change):
         """
@@ -1051,11 +1066,6 @@ class MembershipHistoryAdmin(admin.ModelAdmin):
     @admin.display(description="Child")
     def get_child(self, obj: MembershipHistory):
         return admin_get_item(obj.child_content_type, obj.child_object_id)
-
-
-@register(UserType)
-class UserTypeAdmin(admin.ModelAdmin):
-    list_display = ("name",)
 
 
 @register(UserPreferences)
@@ -2042,6 +2052,8 @@ admin.site.has_permission = has_admin_site_permission
 
 # Register other models
 admin.site.register(ProjectDiscipline)
+admin.site.register(UserType)
+admin.site.register(FundType)
 admin.site.register(AccountType)
 admin.site.register(ResourceCategory)
 admin.site.unregister(Group)

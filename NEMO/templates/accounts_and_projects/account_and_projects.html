@@ -70,7 +70,7 @@
                         </div>
                         <div style="margin-left:34px">
                             {% if selected_project %}
-                                <label class="control-label">Account:</label>
+                                <span class="control-label">Account:</span>
                                 <a href="{% url 'account' project.account.id %}">{{ project.account }}</a>
                             {% endif %}
                             {% if project.manager_set.all %}
@@ -84,6 +84,12 @@
                                     <span class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</span>
                                     <span>{{ project.application_identifier }}</span>
                                 </div>
+                                {% if project.fund_types.all %}
+                                    <div>
+                                        <span class="control-label">Fund types:</span>
+                                        <span>{{ project.fund_types.all|join:", " }}</span>
+                                    </div>
+                                {% endif %}
                                 {% if project.discipline %}
                                     <div>
                                         <span class="control-label">Discipline:</span>

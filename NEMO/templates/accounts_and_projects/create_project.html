@@ -93,6 +93,21 @@
             </div>
             <div class="col-sm-6 form-control-static danger-highlight">{{ form.start_date.errors|striptags }}</div>
         </div>
+        {% if form.fields.fund_types.queryset %}
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="fund_type_search">Fund types</label>
+                <div class="col-sm-4">
+                    <input id="fund_type_search"
+                           type="text"
+                           autocomplete="off"
+                           class="form-control"
+                           placeholder="Add a fund type">
+                </div>
+            </div>
+            <div class="form-group">
+                <div id="fund-type-list" class="col-sm-offset-2 col-sm-4">This project has no fund types.</div>
+            </div>
+        {% endif %}
         <div class="form-group">
             <label class="control-label col-sm-2" for="pi_search">PIs</label>
             <div class="col-sm-4">
@@ -139,6 +154,15 @@
         {
             remove_from_list("#pi-list", "#principal_investigators_" + id, "This project has no principal investigators.")
         }
+        function select_fund_type(jquery_event, search_selection, dataset_name)
+        {
+            add_to_list("#fund-type-list", "remove_fund_type", search_selection.id, search_selection.name, "remove " + search_selection.name + " fund type", "fund_types");
+            $("#fund_type_search").typeahead('val', '');
+        }
+        function remove_fund_type(id)
+        {
+            remove_from_list("#fund-type-list", "#fund_types_" + id, "This project has no fund types.")
+        }
 		function select_account(jquery_event, search_selection, dataset_name)
 		{
 			$('#account_search').prop('required', false).typeahead('val', search_selection.id).hide();
@@ -153,6 +177,7 @@
 		{
 		    $('#start_date').datetimepicker({format: '{{ date_input_js_format }}'});
             $('#pi_search').autocomplete('pis', select_pi, {{ user_list|json_search_base }});
+            $('#fund_type_search').autocomplete('fund_types', select_fund_type, {{ form.fields.fund_types.queryset|json_search_base }});
 			$('#account_search').autocomplete('account', select_account, {{ account_list|json_search_base }});
             {% if form.account.value %}
                 {% for account in account_list %}
@@ -162,6 +187,11 @@
             {% for pi in form.principal_investigators.value %}
                 {% for user in user_list %}
                     {% if user.id == pi|to_int %}select_pi(null, {"id": "{{ user.id }}", "name": "{{ user }}"});{% endif %}
+                {% endfor %}
+            {% endfor %}
+            {% for fund_type in form.fund_types.value %}
+                {% for fund in form.fields.fund_types.queryset %}
+                    {% if fund.id == fund_type|to_int %}select_fund_type(null, {"id": "{{ fund.id }}", "name": "{{ fund }}"});{% endif %}
                 {% endfor %}
             {% endfor %}
 		});

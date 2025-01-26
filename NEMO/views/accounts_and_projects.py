@@ -19,6 +19,7 @@ from NEMO.models import (
     ActivityHistory,
     AreaAccessRecord,
     ConsumableWithdraw,
+    FundType,
     MembershipHistory,
     Project,
     ProjectDocuments,
@@ -68,7 +69,8 @@ def accounts_and_projects(request):
 
     dictionary = {
         "page": page,
-        "account_types": AccountType.objects.all(),
+        "account_types": AccountType.objects.exists(),
+        "fund_types": FundType.objects.exists(),
         "accounts_and_projects": get_accounts_and_projects(),
         "project_list_active_only": ProjectsAccountsCustomization.get_bool("project_list_active_only"),
         "account_list_collapse": ProjectsAccountsCustomization.get_bool("account_list_collapse"),

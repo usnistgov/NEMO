@@ -9244,6 +9244,13 @@
     }
   },
   {
+    "model": "NEMO.fundtype",
+    "fields": {
+      "name": "CHIPS",
+      "display_order": 1
+    }
+  },
+  {
     "model": "NEMO.project",
     "fields": {
       "name": "Cleanroom Eng",
@@ -9252,6 +9259,7 @@
       "account": [
         "Cleanroom Staff"
       ],
+      "fund_types": [["CHIPS"]],
       "discipline": null,
       "active": true,
       "allow_consumable_withdrawals": true,
