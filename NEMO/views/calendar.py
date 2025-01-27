@@ -70,7 +70,7 @@ def calendar(request, item_type=None, item_id=None):
     user: User = request.user
     if request.device == "mobile":
         if item_type and item_type == "tool" and item_id:
-            return redirect("view_calendar", item_id)
+            return redirect("view_calendar", "tool", item_id)
         else:
             return redirect("choose_item", "view_calendar")
 
