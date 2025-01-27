@@ -1269,6 +1269,12 @@ class Tool(SerializationByNameModel):
         blank=True,
         help_text="The maximum number of reservations a user may make per day for this tool.",
     )
+    _maximum_future_reservations = models.PositiveIntegerField(
+        db_column="maximum_future_reservations",
+        null=True,
+        blank=True,
+        help_text="The maximum number of reservations a user may make in the future for this tool.",
+    )
     _minimum_time_between_reservations = models.PositiveIntegerField(
         db_column="minimum_time_between_reservations",
         null=True,
@@ -1555,6 +1561,17 @@ class Tool(SerializationByNameModel):
     def maximum_reservations_per_day(self, value):
         self.raise_setter_error_if_child_tool("maximum_reservations_per_day")
         self._maximum_reservations_per_day = value
+
+    @property
+    def maximum_future_reservations(self):
+        return (
+            self.parent_tool.maximum_future_reservations if self.is_child_tool() else self._maximum_future_reservations
+        )
+
+    @maximum_future_reservations.setter
+    def maximum_future_reservations(self, value):
+        self.raise_setter_error_if_child_tool("maximum_future_reservations")
+        self._maximum_future_reservations = value
 
     @property
     def minimum_time_between_reservations(self):
@@ -2391,6 +2408,12 @@ class Area(MPTTModel):
         null=True,
         blank=True,
         help_text="The maximum number of reservations a user may make per day for this area.",
+    )
+    maximum_future_reservations = models.PositiveIntegerField(
+        db_column="maximum_future_reservations",
+        null=True,
+        blank=True,
+        help_text="The maximum number of reservations a user may make in the future for this area.",
     )
     minimum_time_between_reservations = models.PositiveIntegerField(
         db_column="minimum_time_between_reservations",

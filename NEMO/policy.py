@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from typing import List, Optional, Union
 
 from django.db.models import Q
@@ -718,6 +718,54 @@ class NEMOPolicy:
                 else:
                     item_policy_problems.append(
                         f"{str(user)} may only have {str(item.maximum_reservations_per_day)} reservations for this {item_type.value} per day. Missed reservations are included when counting the number of reservations per day."
+                    )
+
+        # If there is a limit on number of future reservations per user then verify that the user has not exceeded it.
+        # Staff may break this rule.
+        # An explicit policy override allows this rule to be broken.
+        # Policy off: only exclude reservations that start and end inside the policy off time
+        # Reservations that overlap at any point should count
+        # Weekends are fine since it's all day and the should_enforce_policy method should return False
+        if item.maximum_future_reservations:
+            future_reservations = Reservation.objects.filter(
+                cancelled=False, shortened=False, start__gte=timezone.now(), user=user
+            )
+            if item.policy_off_between_times:
+                if item.policy_off_start_time < item.policy_off_end_time:
+                    future_reservations = future_reservations.exclude(
+                        start__time__gte=item.policy_off_start_time,
+                        end__time__lte=item.policy_off_end_time,
+                    )
+                else:
+                    # Start on or after start and end before midnight
+                    start_end_before_midnight = Q(
+                        start__time__gte=item.policy_off_start_time,
+                        end__time__gte=item.policy_off_start_time,
+                        end__time__lte=time(hour=23, minute=59),
+                    )
+                    # Start after midnight and end within the same overnight range
+                    start_end_after_midnight = Q(
+                        start__time__lt=item.policy_off_end_time, end__time__lte=item.policy_off_end_time
+                    )
+                    # Start before midnight but end before policy end (overlap across midnight)
+                    start_end_overlap = Q(
+                        start__time__gte=item.policy_off_start_time, end__time__lt=item.policy_off_end_time
+                    )
+                    future_reservations = future_reservations.exclude(
+                        start_end_before_midnight | start_end_after_midnight | start_end_overlap
+                    )
+            future_reservations = future_reservations.filter(**new_reservation.reservation_item_filter)
+            # Exclude any reservation that is being cancelled.
+            if cancelled_reservation and cancelled_reservation.id:
+                future_reservations = future_reservations.exclude(id=cancelled_reservation.id)
+            if future_reservations.count() >= item.maximum_future_reservations:
+                if user == user_creating_reservation:
+                    item_policy_problems.append(
+                        f"You may only have {str(item.maximum_future_reservations)} future reservations for this {item_type.value}."
+                    )
+                else:
+                    item_policy_problems.append(
+                        f"{str(user)} may only have {str(item.maximum_future_reservations)} future reservations for this {item_type.value}."
                     )
 
         # A minimum amount of time between reservations for the same user & same tool can be enforced.

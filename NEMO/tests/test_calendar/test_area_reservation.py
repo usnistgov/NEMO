@@ -199,6 +199,28 @@ class AreaReservationTestCase(TransactionTestCase):
         )
         self.assertEqual(Reservation.objects.filter(area=area).count(), 0)
 
+        # max future reservations
+        first_future_reservation = Reservation.objects.create(
+            area=area,
+            start=start.astimezone(),
+            end=end.astimezone(),
+            creator=consumer,
+            user=consumer,
+            short_notice=False,
+        )
+        area.maximum_future_reservations = 1
+        area.minimum_usage_block_time = None
+        area._maximum_usage_block_time = None
+        area.save()
+        data = self.get_reservation_data(start + timedelta(hours=2), end + timedelta(hours=2), area)
+        response = self.client.post(reverse("create_reservation"), data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "You may only have 1 future reservations for this area.",
+        )
+        first_future_reservation.delete()
+
         # max reservations per day
         first_of_the_day = Reservation.objects.create(
             area=area,
@@ -208,9 +230,8 @@ class AreaReservationTestCase(TransactionTestCase):
             user=consumer,
             short_notice=False,
         )
+        area.maximum_future_reservations = None
         area.maximum_reservations_per_day = 1
-        area.minimum_usage_block_time = None
-        area._maximum_usage_block_time = None
         area.save()
         data = self.get_reservation_data(start + timedelta(hours=2), end + timedelta(hours=2), area)
         response = self.client.post(reverse("create_reservation"), data, follow=True)

@@ -304,6 +304,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "_minimum_usage_block_time",
                     "_maximum_usage_block_time",
                     "_maximum_reservations_per_day",
+                    "_maximum_future_reservations",
                     "_minimum_time_between_reservations",
                     "_maximum_future_reservation_time",
                 )
@@ -447,6 +448,7 @@ class AreaAdmin(DraggableMPTTAdmin):
                     "minimum_usage_block_time",
                     "maximum_usage_block_time",
                     "maximum_reservations_per_day",
+                    "maximum_future_reservations",
                     "minimum_time_between_reservations",
                     "maximum_future_reservation_time",
                 )
