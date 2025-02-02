@@ -438,7 +438,7 @@ class UserType(BaseCategory):
     pass
 
 
-class FundType(BaseCategory):
+class ProjectType(BaseCategory):
     pass
 
 
@@ -2648,14 +2648,14 @@ class Account(SerializationByNameModel):
 class Project(SerializationByNameModel):
     name = models.CharField(max_length=CHAR_FIELD_LARGE_LENGTH, unique=True)
     application_identifier = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH)
-    start_date = models.DateField(null=True, blank=True)
+    project_types = models.ManyToManyField(ProjectType, blank=True)
     account = models.ForeignKey(
         Account,
         help_text="All charges for this project will be billed to the selected account.",
         on_delete=models.CASCADE,
     )
+    start_date = models.DateField(null=True, blank=True)
     discipline = models.ForeignKey(ProjectDiscipline, null=True, blank=True, on_delete=models.SET_NULL)
-    fund_types = models.ManyToManyField(FundType, blank=True)
     active = models.BooleanField(
         default=True,
         help_text="Users may only charge to a project if it is active. Deactivate the project to block billable activity (such as tool usage and consumable check-outs).",

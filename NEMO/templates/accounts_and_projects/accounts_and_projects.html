@@ -25,11 +25,8 @@
         <thead>
             <tr>
                 <th>{% include 'pagination/pagination_column.html' with order_by='name' name='Name' %}</th>
-                {% if account_types %}
-                    <th>{% include 'pagination/pagination_column.html' with order_by='type' name='Account type' %}</th>
-                {% endif %}
+                {% if project_types or account_types %}<th>Type(s)</th>{% endif %}
                 <th>{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}</th>
-                {% if fund_types %}<th>Fund types</th>{% endif %}
                 <th class="button-column-minimum">
                     {% include 'pagination/pagination_column.html' with order_by='active' name='Active' %}
                 </th>
@@ -47,7 +44,7 @@
                         <span class="glyphicon glyphicon-chevron-{% if account_list_collapse %}right{% else %}down{% endif %} pull-left chevron"></span>
                         {{ account.name }}
                     </td>
-                    {% if account_types %}
+                    {% if account_types or project_types %}
                         <td data-toggle="collapse"
                             data-target=".projects_{{ account.id }}"
                             onclick="toggle_details($('#chevron_{{ account.id }}'))">
@@ -57,11 +54,6 @@
                     <td data-toggle="collapse"
                         data-target=".projects_{{ account.id }}"
                         onclick="toggle_details($('#chevron_{{ account.id }}'))"></td>
-                    {% if fund_types %}
-                        <td data-toggle="collapse"
-                            data-target=".projects_{{ account.id }}"
-                            onclick="toggle_details($('#chevron_{{ account.id }}'))"></td>
-                    {% endif %}
                     <td class="text-center">
                         <form method="post" action="{% url 'toggle_active' 'account' account.id %}">
                             {% csrf_token %}
@@ -90,15 +82,8 @@
                         {% for project in project_list.list %}
                             <tr class="collapse {% if not account_list_collapse %}in{% endif %} projects_{{ account.id }}">
                                 <td style="padding-left: 28px">{{ project.name }}</td>
-                                {% if account_types %}<td></td>{% endif %}
+                                {% if account_types or project_types %}<td>{{ project.project_types.all|join:", " }}</td>{% endif %}
                                 <td>{{ project.application_identifier }}</td>
-                                {% if fund_types %}
-                                    <td data-toggle="collapse"
-                                        data-target=".projects_{{ account.id }}"
-                                        onclick="toggle_details($('#chevron_{{ account.id }}'))">
-                                        {{ project.fund_types.all|join:", " }}
-                                    </td>
-                                {% endif %}
                                 <td class="text-center">
                                     <form style="display:inline" method="post" action="{% url 'toggle_active' 'project' project.id %}">
                                         {% csrf_token %}

@@ -84,10 +84,12 @@
                                     <span class="control-label">{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}:</span>
                                     <span>{{ project.application_identifier }}</span>
                                 </div>
-                                {% if project.fund_types.all %}
+                                {% if project.project_types.all %}
                                     <div>
-                                        <span class="control-label">Fund types:</span>
-                                        <span>{{ project.fund_types.all|join:", " }}</span>
+                                        <span class="control-label">Project type
+                                            {% if "projects_and_accounts"|customization:"project_type_allow_multiple" %}(s){% endif %}
+                                        :</span>
+                                        <span>{{ project.project_types.all|join:", " }}</span>
                                     </div>
                                 {% endif %}
                                 {% if project.discipline %}

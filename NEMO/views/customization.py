@@ -217,6 +217,7 @@ class ProjectsAccountsCustomization(CustomizationBase):
         "account_list_collapse": "",
         "project_allow_pi_manage_users": "",
         "project_allow_transferring_charges": "",
+        "project_type_allow_multiple": "",
     }
 
     def validate(self, name, value):

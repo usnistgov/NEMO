@@ -62,7 +62,6 @@ from NEMO.models import (
     Customization,
     Door,
     EmailLog,
-    FundType,
     Interlock,
     InterlockCard,
     InterlockCardCategory,
@@ -76,6 +75,7 @@ from NEMO.models import (
     Project,
     ProjectDiscipline,
     ProjectDocuments,
+    ProjectType,
     RecurringConsumableCharge,
     RequestMessage,
     Reservation,
@@ -603,6 +603,14 @@ class ProjectAdminForm(forms.ModelForm):
             self.fields["members"].initial = self.instance.user_set.all()
             self.fields["principal_investigators"].initial = self.instance.manager_set.all()
 
+    def clean_project_types(self):
+        data = self.cleaned_data["project_types"]
+        if not ProjectsAccountsCustomization.get_bool("project_type_allow_multiple") and data.count() > 1:
+            self.add_error(
+                "project_types", f"Only one project type is allowed. Go to Customizations to allow multiple."
+            )
+        return data
+
 
 class ProjectDocumentsInline(DocumentModelAdmin):
     model = ProjectDocuments
@@ -617,17 +625,17 @@ class ProjectAdmin(admin.ModelAdmin):
         "account",
         "active",
         "get_managers",
-        "get_fund_types",
+        "get_project_types",
         "start_date",
     )
-    filter_horizontal = ("only_allow_tools", "fund_types")
+    filter_horizontal = ("only_allow_tools", "project_types")
     search_fields = ("name", "application_identifier", "account__name")
     list_filter = (
         "active",
         ("account", admin.RelatedOnlyFieldListFilter),
         "start_date",
         ("manager_set", admin.RelatedOnlyFieldListFilter),
-        ("fund_types", admin.RelatedOnlyFieldListFilter),
+        ("project_types", admin.RelatedOnlyFieldListFilter),
     )
     inlines = [ProjectDocumentsInline]
     form = ProjectAdminForm
@@ -641,9 +649,9 @@ class ProjectAdmin(admin.ModelAdmin):
     def get_managers(self, project: Project):
         return mark_safe("<br>".join([pi.get_name() for pi in project.manager_set.all()]))
 
-    @display(description="Fund types", ordering="fund_types")
-    def get_fund_types(self, project: Project):
-        return mark_safe("<br>".join([fund.name for fund in project.fund_types.all()]))
+    @display(description="Project type(s)", ordering="project_types")
+    def get_project_types(self, project: Project):
+        return mark_safe("<br>".join([project_type.name for project_type in project.project_types.all()]))
 
     def save_model(self, request, obj, form, change):
         """
@@ -2055,7 +2063,7 @@ admin.site.has_permission = has_admin_site_permission
 # Register other models
 admin.site.register(ProjectDiscipline)
 admin.site.register(UserType)
-admin.site.register(FundType)
+admin.site.register(ProjectType)
 admin.site.register(AccountType)
 admin.site.register(ResourceCategory)
 admin.site.unregister(Group)
