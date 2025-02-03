@@ -1191,6 +1191,22 @@ def send_tool_free_time_notification(
             formatted_time = f"{freed_time:0.0f}"
             link = get_full_url(reverse("calendar"), request)
             user_ids = distinct_qs_value_list(tool_notifications, "user")
+            # Special case when shortened, where we notify the user who has the next reservation
+            notify_next_res = ToolCustomization.get_bool("tool_freed_time_notify_next_reservation_enabled")
+            min_freed_time = ToolCustomization.get_int("tool_freed_time_notify_next_reservation_min_freed_time")
+            if notify_next_res and missed_or_shortened and cancelled_reservation.end and freed_time >= min_freed_time:
+                # get next reservation user who had a reservation starting within
+                hours_within = ToolCustomization.get_int("tool_freed_time_notify_next_reservation_starts_within")
+                next_reservations = Reservation.objects.filter(
+                    cancelled=False,
+                    tool=tool,
+                    start__gt=cancelled_reservation.end,
+                    start__lte=cancelled_reservation.end + timedelta(hours=hours_within),
+                )
+                if next_reservations:
+                    next_reservation = next_reservations.earliest("start")
+                    if next_reservation and next_reservation.user_id not in user_ids:
+                        user_ids.add(next_reservation.user_id)
             include_username = ToolCustomization.get_bool("tool_freed_time_notification_include_username")
             for user in User.objects.in_bulk(user_ids).values():
                 if user != cancelled_reservation.user:

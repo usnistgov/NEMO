@@ -72,6 +72,34 @@
                                value="enabled">
                         Include username of the person freeing time in the notification email
                     </label>
+                    <br>
+                    <label style="display: inline;">
+                        <input type="checkbox"
+                               name="tool_freed_time_notify_next_reservation_enabled"
+                               {% if tool_freed_time_notify_next_reservation_enabled %}checked{% endif %}
+                               value="enabled">
+                        When a reservation is shortened, automatically notify the person who has a reservation next
+                    </label>
+                    <span>if at least</span>
+                    <span class="input-group-sm" style="display: inline-table; width: 40%">
+                        <input type="number"
+                               min="1"
+                               id="tool_freed_time_notify_next_reservation_min_freed_time"
+                               name="tool_freed_time_notify_next_reservation_min_freed_time"
+                               class="form-control text-right"
+                               value="{{ tool_freed_time_notify_next_reservation_min_freed_time }}" />
+                        <span class="input-group-addon">minutes</span>
+                    </span>
+                    <span>are freed and the reservation starts within</span>
+                    <span class="input-group-sm" style="display: inline-table; width: 30%">
+                        <input type="number"
+                               min="1"
+                               id="tool_freed_time_notify_next_reservation_starts_within"
+                               name="tool_freed_time_notify_next_reservation_starts_within"
+                               class="form-control text-right"
+                               value="{{ tool_freed_time_notify_next_reservation_starts_within }}" />
+                        <span class="input-group-addon">hour</span>
+                    </span>
                 </div>
             </div>
         </div>

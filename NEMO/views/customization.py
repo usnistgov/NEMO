@@ -520,6 +520,9 @@ class ToolCustomization(CustomizationBase):
         "tool_wait_list_spot_expiration": "15",
         "tool_wait_list_reservation_buffer": "15",
         "tool_freed_time_notification_include_username": "",
+        "tool_freed_time_notify_next_reservation_enabled": "",
+        "tool_freed_time_notify_next_reservation_min_freed_time": "15",
+        "tool_freed_time_notify_next_reservation_starts_within": "1",
         "kiosk_only_show_qualified_tools": "",
     }
 

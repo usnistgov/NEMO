@@ -5,9 +5,10 @@ from django.test import TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from NEMO.models import Account, Area, EmailLog, Project, Reservation, Tool, User, UserPreferences
+from NEMO.models import Account, Area, EmailLog, Project, Reservation, Tool, UsageEvent, User, UserPreferences
 from NEMO.tests.test_utilities import login_as
 from NEMO.utilities import format_datetime
+from NEMO.views.customization import ToolCustomization
 
 
 class ReservationTestCase(TransactionTestCase):
@@ -31,6 +32,8 @@ class ReservationTestCase(TransactionTestCase):
         self.consumer.projects.add(self.project)
         self.consumer.save()
         self.staff.projects.add(self.project)
+        # make sure it's on
+        ToolCustomization.set("tool_freed_time_notify_next_reservation_enabled", "enabled")
 
     def test_cancel_reservation(self):
         prefs: UserPreferences = self.consumer.get_preferences()
@@ -251,6 +254,394 @@ class ReservationTestCase(TransactionTestCase):
         # moved 130 minutes earlier a 7-hour reservation, so time freed starts at end - 130
         start_of_freed_time = end + timedelta(minutes=minutes)
         self.assertTrue(Reservation.objects.get(id=reservation.id).cancelled, True)
+        self.assertEqual(
+            EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,
+            email_subject(self.tool, minutes, start_of_freed_time),
+        )
+
+    def test_notify_next_reservation_no_notifications(self):
+        consumer_2 = User.objects.create(
+            username="jsmith2",
+            first_name="John2",
+            last_name="Smith2",
+            training_required=False,
+            email="jsmith2@test.com",
+        )
+        # start an hour ago, so we can simulate shortening
+        start = timezone.now() - timedelta(hours=1)
+        end = start + timedelta(hours=3)
+        reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=start,
+            end=end,
+            user=consumer_2,
+            creator=consumer_2,
+            project=self.project,
+            short_notice=False,
+        )
+        # engage the tool then disengage
+        UsageEvent.objects.create(
+            operator=consumer_2,
+            user=consumer_2,
+            tool=self.tool,
+            project=self.project,
+        )
+        login_as(self.client, consumer_2)
+        self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
+        # Wait a second since the freed time notification is asynchronous
+        sleep(0.5)
+        # no one should have been notified
+        self.assertTrue(Reservation.objects.get(id=reservation.id).shortened, True)
+        self.assertFalse(EmailLog.objects.exists())
+
+    def test_notify_next_reservation_no_notifications_too_late(self):
+        consumer_2 = User.objects.create(
+            username="jsmith2",
+            first_name="John2",
+            last_name="Smith2",
+            training_required=False,
+            email="jsmith2@test.com",
+        )
+        # start an hour ago, so we can simulate shortening
+        start = timezone.now() - timedelta(hours=1)
+        end = start + timedelta(hours=3)
+        reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=start,
+            end=end,
+            user=consumer_2,
+            creator=consumer_2,
+            project=self.project,
+            short_notice=False,
+        )
+        # Add a reservation more than 1h later for another user
+        next_reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=end + timedelta(hours=1.5),
+            end=end + timedelta(hours=3.5),
+            user=self.consumer,
+            creator=self.consumer,
+            project=self.project,
+            short_notice=False,
+        )
+        # engage the tool then disengage
+        UsageEvent.objects.create(
+            operator=consumer_2,
+            user=consumer_2,
+            tool=self.tool,
+            project=self.project,
+        )
+        login_as(self.client, consumer_2)
+        self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
+        # Wait a second since the freed time notification is asynchronous
+        sleep(0.5)
+        # still nothing (too late)
+        self.assertTrue(Reservation.objects.get(id=reservation.id).shortened, True)
+        self.assertFalse(EmailLog.objects.exists())
+
+    def test_notify_next_reservation_no_notification_too_little_freed_time(self):
+        consumer_2 = User.objects.create(
+            username="jsmith2",
+            first_name="John2",
+            last_name="Smith2",
+            training_required=False,
+            email="jsmith2@test.com",
+        )
+        # start an hour ago, so we can simulate shortening, but only freeing less than 15 minutes
+        start = timezone.now() - timedelta(hours=1)
+        end = timezone.now() + timedelta(minutes=14)
+        reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=start,
+            end=end,
+            user=consumer_2,
+            creator=consumer_2,
+            project=self.project,
+            short_notice=False,
+        )
+        # new reservation closer to it (starts less than an hour after original ended)
+        next_reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=end + timedelta(hours=0.5),
+            end=end + timedelta(hours=3.5),
+            user=self.consumer,
+            creator=self.consumer,
+            project=self.project,
+            short_notice=False,
+        )
+        # engage the tool then disengage
+        UsageEvent.objects.create(
+            operator=consumer_2,
+            user=consumer_2,
+            tool=self.tool,
+            project=self.project,
+        )
+        login_as(self.client, consumer_2)
+        self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
+        # Wait a second since the freed time notification is asynchronous
+        sleep(0.5)
+        # Should
+        # still nothing (too little freed time)
+        self.assertTrue(Reservation.objects.get(id=reservation.id).shortened, True)
+        self.assertFalse(EmailLog.objects.exists())
+
+    def test_notify_next_reservation_notification(self):
+        consumer_2 = User.objects.create(
+            username="jsmith2",
+            first_name="John2",
+            last_name="Smith2",
+            training_required=False,
+            email="jsmith2@test.com",
+        )
+        # start an hour ago, so we can simulate shortening
+        start = timezone.now() - timedelta(hours=1)
+        end = start + timedelta(hours=3)
+        reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=start,
+            end=end,
+            user=consumer_2,
+            creator=consumer_2,
+            project=self.project,
+            short_notice=False,
+        )
+        # new reservation closer to it (starts less than an hour after original ended)
+        next_reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=end + timedelta(hours=0.5),
+            end=end + timedelta(hours=3.5),
+            user=self.consumer,
+            creator=self.consumer,
+            project=self.project,
+            short_notice=False,
+        )
+        # engage the tool then disengage
+        UsageEvent.objects.create(
+            operator=consumer_2,
+            user=consumer_2,
+            tool=self.tool,
+            project=self.project,
+        )
+        login_as(self.client, consumer_2)
+        self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
+        # Wait a second since the freed time notification is asynchronous
+        sleep(0.5)
+        # This time it should work
+        minutes = (timezone.now() - reservation.end).total_seconds() // 60
+        start_of_freed_time = reservation.end + timedelta(minutes=minutes)
+        self.assertEqual(
+            EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,
+            email_subject(self.tool, minutes, start_of_freed_time),
+        )
+
+    def test_notify_next_reservation_notification_first_one(self):
+        consumer_2 = User.objects.create(
+            username="jsmith2",
+            first_name="John2",
+            last_name="Smith2",
+            training_required=False,
+            email="jsmith2@test.com",
+        )
+        # start an hour ago, so we can simulate shortening
+        start = timezone.now() - timedelta(hours=1)
+        end = start + timedelta(hours=3)
+        reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=start,
+            end=end,
+            user=consumer_2,
+            creator=consumer_2,
+            project=self.project,
+            short_notice=False,
+        )
+        # multiple new reservation closer to it (starts less than an hour after original ended)
+        Reservation.objects.create(
+            tool=self.tool,
+            start=end + timedelta(hours=0.7),
+            end=end + timedelta(hours=0.8),
+            user=self.staff,
+            creator=self.staff,
+            project=self.project,
+            short_notice=False,
+        )
+        Reservation.objects.create(
+            tool=self.tool,
+            start=end + timedelta(hours=0.5),
+            end=end + timedelta(hours=0.6),
+            user=self.consumer,
+            creator=self.consumer,
+            project=self.project,
+            short_notice=False,
+        )
+        Reservation.objects.create(
+            tool=self.tool,
+            start=end + timedelta(hours=0.6),
+            end=end + timedelta(hours=0.7),
+            user=self.staff,
+            creator=self.staff,
+            project=self.project,
+            short_notice=False,
+        )
+        # engage the tool then disengage
+        UsageEvent.objects.create(
+            operator=consumer_2,
+            user=consumer_2,
+            tool=self.tool,
+            project=self.project,
+        )
+        login_as(self.client, consumer_2)
+        self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
+        # Wait a second since the freed time notification is asynchronous
+        sleep(0.5)
+        # This time it should work, but only for the first one (consumer)
+        self.assertFalse(EmailLog.objects.filter(to=self.staff.email).exists())
+        minutes = (timezone.now() - reservation.end).total_seconds() // 60
+        start_of_freed_time = reservation.end + timedelta(minutes=minutes)
+        self.assertEqual(
+            EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,
+            email_subject(self.tool, minutes, start_of_freed_time),
+        )
+
+    def test_notify_next_reservation_notifications_not_enabled(self):
+        # turn them off
+        ToolCustomization.set("tool_freed_time_notify_next_reservation_enabled", "")
+        consumer_2 = User.objects.create(
+            username="jsmith2",
+            first_name="John2",
+            last_name="Smith2",
+            training_required=False,
+            email="jsmith2@test.com",
+        )
+        # start an hour ago, so we can simulate shortening
+        start = timezone.now() - timedelta(hours=1)
+        end = start + timedelta(hours=3)
+        reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=start,
+            end=end,
+            user=consumer_2,
+            creator=consumer_2,
+            project=self.project,
+            short_notice=False,
+        )
+        # new reservation closer to it (starts less than an hour after original ended)
+        next_reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=end + timedelta(hours=0.5),
+            end=end + timedelta(hours=3.5),
+            user=self.consumer,
+            creator=self.consumer,
+            project=self.project,
+            short_notice=False,
+        )
+        # engage the tool then disengage
+        UsageEvent.objects.create(
+            operator=consumer_2,
+            user=consumer_2,
+            tool=self.tool,
+            project=self.project,
+        )
+        login_as(self.client, consumer_2)
+        self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
+        # Wait a second since the freed time notification is asynchronous
+        sleep(0.5)
+        # no one should have been notified
+        self.assertTrue(Reservation.objects.get(id=reservation.id).shortened, True)
+        self.assertFalse(EmailLog.objects.exists())
+
+    def test_notify_next_reservation_too_little_customization(self):
+        consumer_2 = User.objects.create(
+            username="jsmith2",
+            first_name="John2",
+            last_name="Smith2",
+            training_required=False,
+            email="jsmith2@test.com",
+        )
+        # min freed time of a bit more than 2 hours
+        ToolCustomization.set("tool_freed_time_notify_next_reservation_min_freed_time", "121")
+        # start an hour ago, so we can simulate shortening
+        start = timezone.now() - timedelta(hours=1)
+        end = start + timedelta(hours=3)
+        reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=start,
+            end=end,
+            user=consumer_2,
+            creator=consumer_2,
+            project=self.project,
+            short_notice=False,
+        )
+        # new reservation closer to it (starts less than an hour after original ended)
+        next_reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=end + timedelta(hours=0.5),
+            end=end + timedelta(hours=3.5),
+            user=self.consumer,
+            creator=self.consumer,
+            project=self.project,
+            short_notice=False,
+        )
+        # engage the tool then disengage
+        UsageEvent.objects.create(
+            operator=consumer_2,
+            user=consumer_2,
+            tool=self.tool,
+            project=self.project,
+        )
+        login_as(self.client, consumer_2)
+        self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
+        # Wait a second since the freed time notification is asynchronous
+        sleep(0.5)
+        # still nothing (too little freed time)
+        self.assertTrue(Reservation.objects.get(id=reservation.id).shortened, True)
+        self.assertFalse(EmailLog.objects.exists())
+
+    def test_notify_next_reservation_later_customization_notification(self):
+        consumer_2 = User.objects.create(
+            username="jsmith2",
+            first_name="John2",
+            last_name="Smith2",
+            training_required=False,
+            email="jsmith2@test.com",
+        )
+        # ok with starting later (2 hours later here)
+        ToolCustomization.set("tool_freed_time_notify_next_reservation_starts_within", "2")
+        # start an hour ago, so we can simulate shortening
+        start = timezone.now() - timedelta(hours=1)
+        end = start + timedelta(hours=3)
+        reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=start,
+            end=end,
+            user=consumer_2,
+            creator=consumer_2,
+            project=self.project,
+            short_notice=False,
+        )
+        # new reservation closer to it (starts 2 hours after original ended)
+        next_reservation = Reservation.objects.create(
+            tool=self.tool,
+            start=end + timedelta(hours=2),
+            end=end + timedelta(hours=3.5),
+            user=self.consumer,
+            creator=self.consumer,
+            project=self.project,
+            short_notice=False,
+        )
+        # engage the tool then disengage
+        UsageEvent.objects.create(
+            operator=consumer_2,
+            user=consumer_2,
+            tool=self.tool,
+            project=self.project,
+        )
+        login_as(self.client, consumer_2)
+        self.client.post(reverse("disable_tool", args=[self.tool.id]), follow=True)
+        # Wait a second since the freed time notification is asynchronous
+        sleep(0.5)
+        # This time it should work
+        minutes = (timezone.now() - reservation.end).total_seconds() // 60
+        start_of_freed_time = reservation.end + timedelta(minutes=minutes)
         self.assertEqual(
             EmailLog.objects.filter(to=self.consumer.email, subject__startswith=f"[{self.tool.name}]").first().subject,
             email_subject(self.tool, minutes, start_of_freed_time),
