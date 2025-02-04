@@ -679,9 +679,10 @@ function matcher(items, search_fields)
 	// $('#search').autocomplete('fruits', on_select, [{name:'apple', id:1}, {name:'banana', id:2}, {name:'cherry', id:3}]);
 	// It can also be used with a URL
 	// $('#search').autocomplete('fruits', on_select, 'search_url');
-	$.fn.autocomplete = function(dataset_name, on_select, items_or_url, hide_type)
+	$.fn.autocomplete = function(dataset_name, on_select, items_or_url, hide_type, show_on_focus)
 	{
 		hide_type = hide_type || false;
+		show_on_focus = show_on_focus || false;
 		let search_fields = ['name', 'application_identifier'];
 		let dataset =
 		{
@@ -728,13 +729,24 @@ function matcher(items, search_fields)
 		}
 		this.typeahead(
 			{
-				minLength: 1,
+				minLength: show_on_focus ? 0: 1,
 				hint: false,
 				highlight: false
 			},
 			dataset
 		);
 		this.bind('typeahead:selected', on_select);
+		let el = this;
+		if (show_on_focus)
+		{
+			el.on('typeahead:opened', function()
+			{
+        		let ev = $.Event("keydown");
+    			ev.keyCode = ev.which = 40;
+    			el.trigger(ev);
+    			return true
+			});
+		}
 		return this;
 	};
 }(jQuery));
