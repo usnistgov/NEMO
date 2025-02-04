@@ -15,156 +15,208 @@
             {{ form.non_field_errors }}
         </div>
     {% endif %}
-    <form method="post"
-          action="{% url 'create_project' %}"
-          class="form-horizontal"
-          enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="form-group">
-            <label for="name" class="control-label col-sm-2">
-                <b>Name</b>
-            </label>
-            <div class="col-sm-4">
-                <input type="text"
-                       name="name"
-                       id="name"
-                       maxlength="100"
-                       class="form-control"
-                       value="{{ form.name.value|default_if_none:'' }}"
-                       autofocus
-                       required>
-            </div>
-            <div class="col-sm-6 form-control-static danger-highlight">{{ form.name.errors|striptags }}</div>
-        </div>
-        <div class="form-group">
-            <label for="account_search" class="control-label col-sm-2">
-                <b>Account</b>
-            </label>
-            <div class="col-sm-4">
-                <input type="text" id="account_search" name="account" class="form-control" required>
-                <input type="button"
-                       id="selected_account"
-                       class="btn btn-default"
-                       onclick="clear_account_selection()"
-                       style="display:none">
-            </div>
-            <div class="col-sm-6 form-control-static danger-highlight">{{ form.account.errors|striptags }}</div>
-        </div>
-        <div class="form-group">
-            <label for="application_identifier" class="control-label col-sm-2">
-                <b>{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}</b>
-            </label>
-            <div class="col-sm-4">
-                <input type="text"
-                       name="application_identifier"
-                       id="application_identifier"
-                       maxlength="100"
-                       class="form-control"
-                       value="{{ form.application_identifier.value|default_if_none:'' }}"
-                       required>
-            </div>
-            <div class="col-sm-6 form-control-static danger-highlight">{{ form.application_identifier.errors|striptags }}</div>
-        </div>
-        {% if form.fields.discipline.choices.queryset %}
+    {% with project_types_allow_multiple="projects_and_accounts"|customization:"project_type_allow_multiple" %}
+        <form method="post"
+              action="{% url 'create_project' %}"
+              class="form-horizontal"
+              enctype="multipart/form-data">
+            {% csrf_token %}
             <div class="form-group">
-                <label for="discipline" class="control-label col-sm-2">Discipline</label>
+                <label for="name" class="control-label col-sm-2">
+                    <b>Name</b>
+                </label>
                 <div class="col-sm-4">
-                    <select name="discipline" id="discipline" class="form-control">
-                        {% for discipline_id, discipline_name in form.fields.discipline.choices %}
-                            <option value="{{ discipline_id }}"
-                                    {% if discipline_id == form.discipline.value|to_int %}selected{% endif %}>
-                                {{ discipline_name|default_if_none:'' }}
-                            </option>
-                        {% endfor %}
-                    </select>
+                    <input type="text"
+                           name="name"
+                           id="name"
+                           maxlength="100"
+                           class="form-control"
+                           value="{{ form.name.value|default_if_none:'' }}"
+                           autofocus
+                           required>
                 </div>
-                <div class="col-sm-6 form-control-static danger-highlight">{{ form.discipline.errors|striptags }}</div>
+                <div class="col-sm-6 form-control-static danger-highlight">{{ form.name.errors|striptags }}</div>
             </div>
-        {% endif %}
-        <div class="form-group">
-            <label for="start_date" class="control-label col-sm-2">Start date</label>
-            <div class="col-sm-4">
-                <input type="text"
-                       id="start_date"
-                       name="start_date"
-                       class="form-control"
-                       placeholder="Choose a date"
-                       value="{{ form.start_date.value|input_date_format }}">
-            </div>
-            <div class="col-sm-6 form-control-static danger-highlight">{{ form.start_date.errors|striptags }}</div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-sm-2" for="pi_search">PIs</label>
-            <div class="col-sm-4">
-                <input id="pi_search"
-                       type="text"
-                       autocomplete="off"
-                       class="form-control"
-                       placeholder="Add a principal investigator">
-            </div>
-        </div>
-        <div class="form-group">
-            <div id="pi-list" class="col-sm-offset-2 col-sm-4">This project has no principal investigators.</div>
-        </div>
-        {% if allow_document_upload %}
             <div class="form-group">
-                <label for="project_documents" class="control-label col-sm-2">Documents</label>
+                <label for="account_search" class="control-label col-sm-2">
+                    <b>Account</b>
+                </label>
                 <div class="col-sm-4">
-                    <input type="file" id="project_documents" name="project_documents" class="form-control-static" multiple>
+                    <input type="text" id="account_search" name="account" class="form-control" required>
+                    <input type="button"
+                           id="selected_account"
+                           class="btn btn-default"
+                           onclick="clear_account_selection()"
+                           style="display:none">
                 </div>
-                <div class="col-sm-6 form-control-static danger-highlight">{{ form.project_documents.errors|striptags }}</div>
+                <div class="col-sm-6 form-control-static danger-highlight">{{ form.account.errors|striptags }}</div>
             </div>
-        {% endif %}
-        <div class="form-group">
-            <div class="col-sm-offset-2 col-sm-10">
-                <div class="checkbox">
-                    <label>
-                        <input type="checkbox" name="active" {% if form.active.value %}checked{% endif %}>
-                        Active
-                    </label>
+            <div class="form-group">
+                <label for="application_identifier" class="control-label col-sm-2">
+                    <b>{{ "projects_and_accounts"|customization:"project_application_identifier_name" }}</b>
+                </label>
+                <div class="col-sm-4">
+                    <input type="text"
+                           name="application_identifier"
+                           id="application_identifier"
+                           maxlength="100"
+                           class="form-control"
+                           value="{{ form.application_identifier.value|default_if_none:'' }}"
+                           required>
                 </div>
+                <div class="col-sm-6 form-control-static danger-highlight">{{ form.application_identifier.errors|striptags }}</div>
             </div>
-        </div>
-        <div class="form-group">
-            <div class="col-sm-offset-2 col-sm-10">{% button type="save" value="Create new project" %}</div>
-        </div>
-    </form>
-    <script>
-        function select_pi(jquery_event, search_selection, dataset_name)
-        {
-            add_to_list("#pi-list", "remove_pi", search_selection.id, search_selection.name, "remove " + search_selection.name + " as principal investigator", "principal_investigators");
-            $("#pi_search").typeahead('val', '');
-        }
-        function remove_pi(id)
-        {
-            remove_from_list("#pi-list", "#principal_investigators_" + id, "This project has no principal investigators.")
-        }
-		function select_account(jquery_event, search_selection, dataset_name)
-		{
-			$('#account_search').prop('required', false).typeahead('val', search_selection.id).hide();
-			$("#selected_account").val(search_selection.name).show();
-		}
-		function clear_account_selection()
-		{
-			$("#selected_account").hide();
-			$('#account_search').prop('required', true).typeahead('val', '').show().focus();
-		}
-		window.addEventListener("load", function ()
-		{
-		    $('#start_date').datetimepicker({format: '{{ date_input_js_format }}'});
-            $('#pi_search').autocomplete('pis', select_pi, {{ user_list|json_search_base }});
-			$('#account_search').autocomplete('account', select_account, {{ account_list|json_search_base }});
-            {% if form.account.value %}
-                {% for account in account_list %}
-                    {% if account.id == form.account.value|to_int %}select_account(null, {"id": "{{ account.id }}", "name": "{{ account.name }}"});{% endif %}
-                {% endfor %}
+            {% if form.fields.project_types.queryset %}
+                {% if project_types_allow_multiple %}
+                    <div class="form-group">
+                        <label class="control-label col-sm-2" for="project_type_search">Project types</label>
+                        <div class="col-sm-4">
+                            <input id="project_type_search"
+                                   type="text"
+                                   autocomplete="off"
+                                   class="form-control"
+                                   placeholder="Add a project type">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div id="project-type-list" class="col-sm-offset-2 col-sm-4">This project has no project types.</div>
+                    </div>
+                {% else %}
+                    <div class="form-group">
+                        <label for="project_types" class="control-label col-sm-2">Project type</label>
+                        <div class="col-sm-4">
+                            <select name="project_types" id="project_types" class="form-control">
+                                <option value="">---------</option>
+                                {% for project_type_id, project_type_name in form.fields.project_types.choices %}
+                                    <option value="{{ project_type_id }}"
+                                            {% if project_type_id|stringformat:'s' in form.project_types.value %}selected{% endif %}>
+                                        {{ project_type_name|default_if_none:'' }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-6 form-control-static danger-highlight">{{ form.project_types.errors|striptags }}</div>
+                    </div>
+                {% endif %}
             {% endif %}
-            {% for pi in form.principal_investigators.value %}
-                {% for user in user_list %}
-                    {% if user.id == pi|to_int %}select_pi(null, {"id": "{{ user.id }}", "name": "{{ user }}"});{% endif %}
+            {% if form.fields.discipline.choices.queryset %}
+                <div class="form-group">
+                    <label for="discipline" class="control-label col-sm-2">Discipline</label>
+                    <div class="col-sm-4">
+                        <select name="discipline" id="discipline" class="form-control">
+                            {% for discipline_id, discipline_name in form.fields.discipline.choices %}
+                                <option value="{{ discipline_id }}"
+                                        {% if discipline_id == form.discipline.value|to_int %}selected{% endif %}>
+                                    {{ discipline_name|default_if_none:'' }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-sm-6 form-control-static danger-highlight">{{ form.discipline.errors|striptags }}</div>
+                </div>
+            {% endif %}
+            <div class="form-group">
+                <label for="start_date" class="control-label col-sm-2">Start date</label>
+                <div class="col-sm-4">
+                    <input type="text"
+                           id="start_date"
+                           name="start_date"
+                           class="form-control"
+                           placeholder="Choose a date"
+                           value="{{ form.start_date.value|input_date_format }}">
+                </div>
+                <div class="col-sm-6 form-control-static danger-highlight">{{ form.start_date.errors|striptags }}</div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="pi_search">PIs</label>
+                <div class="col-sm-4">
+                    <input id="pi_search"
+                           type="text"
+                           autocomplete="off"
+                           class="form-control"
+                           placeholder="Add a principal investigator">
+                </div>
+            </div>
+            <div class="form-group">
+                <div id="pi-list" class="col-sm-offset-2 col-sm-4">This project has no principal investigators.</div>
+            </div>
+            {% if allow_document_upload %}
+                <div class="form-group">
+                    <label for="project_documents" class="control-label col-sm-2">Documents</label>
+                    <div class="col-sm-4">
+                        <input type="file" id="project_documents" name="project_documents" class="form-control-static" multiple>
+                    </div>
+                    <div class="col-sm-6 form-control-static danger-highlight">{{ form.project_documents.errors|striptags }}</div>
+                </div>
+            {% endif %}
+            <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="active" {% if form.active.value %}checked{% endif %}>
+                            Active
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">{% button type="save" value="Create new project" %}</div>
+            </div>
+        </form>
+        <script>
+            function select_pi(jquery_event, search_selection, dataset_name)
+            {
+                add_to_list("#pi-list", "remove_pi", search_selection.id, search_selection.name, "remove " + search_selection.name + " as principal investigator", "principal_investigators");
+                $("#pi_search").typeahead('val', '');
+            }
+            function remove_pi(id)
+            {
+                remove_from_list("#pi-list", "#principal_investigators_" + id, "This project has no principal investigators.")
+            }
+            function select_project_type(jquery_event, search_selection, dataset_name)
+            {
+                add_to_list("#project-type-list", "remove_project_type", search_selection.id, search_selection.name, "remove " + search_selection.name + " project type", "project_types");
+                $("#project_type_search").typeahead('val', '');
+            }
+            function remove_project_type(id)
+            {
+                remove_from_list("#project-type-list", "#project_types_" + id, "This project has no project types.")
+            }
+            function select_account(jquery_event, search_selection, dataset_name)
+            {
+                $('#account_search').prop('required', false).typeahead('val', search_selection.id).hide();
+                $("#selected_account").val(search_selection.name).show();
+            }
+            function clear_account_selection()
+            {
+                $("#selected_account").hide();
+                $('#account_search').prop('required', true).typeahead('val', '').show().focus();
+            }
+            window.addEventListener("load", function ()
+            {
+                $('#start_date').datetimepicker({format: '{{ date_input_js_format }}'});
+                $('#pi_search').autocomplete('pis', select_pi, {{ user_list|json_search_base }});
+                $('#account_search').autocomplete('account', select_account, {{ account_list|json_search_base }});
+                {% if form.account.value %}
+                    {% for account in account_list %}
+                        {% if account.id == form.account.value|to_int %}select_account(null, {"id": "{{ account.id }}", "name": "{{ account.name }}"});{% endif %}
+                    {% endfor %}
+                {% endif %}
+                {% for pi in form.principal_investigators.value %}
+                    {% for user in user_list %}
+                        {% if user.id == pi|to_int %}select_pi(null, {"id": "{{ user.id }}", "name": "{{ user }}"});{% endif %}
+                    {% endfor %}
                 {% endfor %}
-            {% endfor %}
-		});
-	
-    </script>
+                {% if project_types_allow_multiple %}
+                    $('#project_type_search').autocomplete('project_types', select_project_type, {{ form.fields.project_types.queryset|json_search_base }});
+                    {% for project_type in form.project_types.value %}
+                        {% for form_project_type in form.fields.project_types.queryset %}
+                            {% if form_project_type.id == project_type|to_int %}select_project_type(null, {"id": "{{ form_project_type.id }}", "name": "{{ form_project_type }}"});{% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                {% endif %}
+            });
+
+        </script>
+    {% endwith %}
 {% endblock %}

@@ -5,6 +5,7 @@ from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin import register
 from django.contrib.admin.decorators import display
+from django.contrib.admin.models import LogEntry
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.admin import GroupAdmin
 from django.contrib.auth.models import Group, Permission
@@ -21,6 +22,7 @@ from NEMO.actions import (
     adjustment_requests_export_csv,
     adjustment_requests_mark_as_applied,
     create_next_interlock,
+    csv_interlock_status_report,
     disable_selected_cards,
     duplicate_configuration,
     duplicate_tool_configuration,
@@ -29,6 +31,7 @@ from NEMO.actions import (
     rebuild_area_tree,
     synchronize_with_tool_usage,
     unlock_selected_interlocks,
+    waive_selected_charges,
 )
 from NEMO.forms import BuddyRequestForm, RecurringConsumableChargeForm, UserPreferencesForm
 from NEMO.mixins import ModelAdminRedirectMixin, ObjPermissionAdminMixin
@@ -72,6 +75,7 @@ from NEMO.models import (
     Project,
     ProjectDiscipline,
     ProjectDocuments,
+    ProjectType,
     RecurringConsumableCharge,
     RequestMessage,
     Reservation,
@@ -300,6 +304,7 @@ class ToolAdmin(admin.ModelAdmin):
                     "_minimum_usage_block_time",
                     "_maximum_usage_block_time",
                     "_maximum_reservations_per_day",
+                    "_maximum_future_reservations",
                     "_minimum_time_between_reservations",
                     "_maximum_future_reservation_time",
                 )
@@ -443,6 +448,7 @@ class AreaAdmin(DraggableMPTTAdmin):
                     "minimum_usage_block_time",
                     "maximum_usage_block_time",
                     "maximum_reservations_per_day",
+                    "maximum_future_reservations",
                     "minimum_time_between_reservations",
                     "maximum_future_reservation_time",
                 )
@@ -475,7 +481,18 @@ class AreaAdmin(DraggableMPTTAdmin):
 
 @register(TrainingSession)
 class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ("id", "trainer", "trainee", "tool", "project", "type", "date", "duration", "qualified")
+    list_display = (
+        "id",
+        "trainer",
+        "trainee",
+        "tool",
+        "project",
+        "type",
+        "date",
+        "duration",
+        "qualified",
+        "usage_event",
+    )
     list_filter = (
         "qualified",
         "date",
@@ -486,7 +503,8 @@ class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, adm
         ("trainee", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "date"
-    autocomplete_fields = ["trainer", "trainee", "tool", "project", "validated_by"]
+    autocomplete_fields = ["trainer", "trainee", "tool", "project", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """We only want staff user and tool superusers to be possible trainers"""
@@ -504,7 +522,8 @@ class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
         ("staff_member", admin.RelatedOnlyFieldListFilter),
     )
     date_hierarchy = "start"
-    autocomplete_fields = ["staff_member", "customer", "project", "validated_by"]
+    autocomplete_fields = ["staff_member", "customer", "project", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
 
 @register(AreaAccessRecord)
@@ -512,7 +531,8 @@ class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, ad
     list_display = ("id", "customer", "area", "project", "start", "end")
     list_filter = (("area", TreeRelatedFieldListFilter), "start")
     date_hierarchy = "start"
-    autocomplete_fields = ["customer", "project", "validated_by"]
+    autocomplete_fields = ["customer", "project", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
 
 @register(Configuration)
@@ -583,6 +603,14 @@ class ProjectAdminForm(forms.ModelForm):
             self.fields["members"].initial = self.instance.user_set.all()
             self.fields["principal_investigators"].initial = self.instance.manager_set.all()
 
+    def clean_project_types(self):
+        data = self.cleaned_data["project_types"]
+        if not ProjectsAccountsCustomization.get_bool("project_type_allow_multiple") and data.count() > 1:
+            self.add_error(
+                "project_types", f"Only one project type is allowed. Go to Customizations to allow multiple."
+            )
+        return data
+
 
 class ProjectDocumentsInline(DocumentModelAdmin):
     model = ProjectDocuments
@@ -590,10 +618,25 @@ class ProjectDocumentsInline(DocumentModelAdmin):
 
 @register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("name", "id", "get_application_identifier", "account", "active", "start_date")
-    filter_horizontal = ("only_allow_tools",)
+    list_display = (
+        "name",
+        "id",
+        "get_application_identifier",
+        "account",
+        "active",
+        "get_managers",
+        "get_project_types",
+        "start_date",
+    )
+    filter_horizontal = ("only_allow_tools", "project_types")
     search_fields = ("name", "application_identifier", "account__name")
-    list_filter = ("active", ("account", admin.RelatedOnlyFieldListFilter), "start_date")
+    list_filter = (
+        "active",
+        ("account", admin.RelatedOnlyFieldListFilter),
+        "start_date",
+        ("manager_set", admin.RelatedOnlyFieldListFilter),
+        ("project_types", admin.RelatedOnlyFieldListFilter),
+    )
     inlines = [ProjectDocumentsInline]
     form = ProjectAdminForm
     autocomplete_fields = ["account"]
@@ -601,6 +644,14 @@ class ProjectAdmin(admin.ModelAdmin):
     @display(ordering="application_identifier")
     def get_application_identifier(self, project: Project):
         return project.application_identifier
+
+    @display(description="PIs", ordering="manager_set")
+    def get_managers(self, project: Project):
+        return mark_safe("<br>".join([pi.get_name() for pi in project.manager_set.all()]))
+
+    @display(description="Project type(s)", ordering="project_types")
+    def get_project_types(self, project: Project):
+        return mark_safe("<br>".join([project_type.name for project_type in project.project_types.all()]))
 
     def save_model(self, request, obj, form, change):
         """
@@ -667,7 +718,8 @@ class ReservationAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
     )
     date_hierarchy = "start"
     inlines = [ConfigurationOptionInline]
-    autocomplete_fields = ["user", "creator", "tool", "project", "cancelled_by", "validated_by"]
+    autocomplete_fields = ["user", "creator", "tool", "project", "cancelled_by", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
 
 class ReservationQuestionsForm(forms.ModelForm):
@@ -718,11 +770,14 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
     form = ReservationQuestionsForm
     filter_horizontal = ("only_for_tools", "only_for_areas", "only_for_projects")
     readonly_fields = ("questions_preview",)
+    list_filter = ["enabled", "tool_reservations", "area_reservations"]
+    list_display = ["name", "enabled", "tool_reservations", "area_reservations"]
     fieldsets = (
         (
             None,
             {
                 "fields": (
+                    "enabled",
                     "name",
                     "questions",
                     "questions_preview",
@@ -743,9 +798,10 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 @register(UsageEvent)
 class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
     list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work")
-    list_filter = ("remote_work", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
+    list_filter = ("remote_work", "training", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "start"
-    autocomplete_fields = ["tool", "user", "operator", "project", "validated_by"]
+    autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
 
 @register(Consumable)
@@ -777,7 +833,8 @@ class ConsumableWithdrawAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, 
     list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date")
     list_filter = ("date", ("consumable", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "date"
-    autocomplete_fields = ["customer", "merchant", "consumable", "project", "validated_by"]
+    autocomplete_fields = ["customer", "merchant", "consumable", "project", "validated_by", "waived_by"]
+    actions = [waive_selected_charges]
 
 
 @register(RecurringConsumableCharge)
@@ -797,6 +854,14 @@ class InterlockCardAdminForm(forms.ModelForm):
         model = InterlockCard
         widgets = {"password": forms.PasswordInput(render_value=True)}
         fields = "__all__"
+
+    def clean_extra_args(self):
+        extra_args = self.cleaned_data["extra_args"]
+        try:
+            return json.dumps(json.loads(extra_args), indent=4)
+        except:
+            pass
+        return extra_args
 
     def clean(self):
         if any(self.errors):
@@ -867,7 +932,13 @@ class InterlockAdmin(admin.ModelAdmin):
         ("tool", admin.RelatedOnlyFieldListFilter),
         ("door", admin.RelatedOnlyFieldListFilter),
     )
-    actions = [lock_selected_interlocks, unlock_selected_interlocks, synchronize_with_tool_usage, create_next_interlock]
+    actions = [
+        lock_selected_interlocks,
+        unlock_selected_interlocks,
+        synchronize_with_tool_usage,
+        create_next_interlock,
+        csv_interlock_status_report,
+    ]
     readonly_fields = ["state", "most_recent_reply", "most_recent_reply_time"]
     autocomplete_fields = ["card"]
 
@@ -1005,11 +1076,6 @@ class MembershipHistoryAdmin(admin.ModelAdmin):
     @admin.display(description="Child")
     def get_child(self, obj: MembershipHistory):
         return admin_get_item(obj.child_content_type, obj.child_object_id)
-
-
-@register(UserType)
-class UserTypeAdmin(admin.ModelAdmin):
-    list_display = ("name",)
 
 
 @register(UserPreferences)
@@ -1667,11 +1733,21 @@ class ToolUsageCounterAdmin(admin.ModelAdmin):
         "tool_usage_question",
         "value",
         "warning_threshold",
+        "default_value",
+        "staff_members_can_reset",
+        "qualified_users_can_reset",
+        "superusers_can_reset",
         "last_reset",
         "last_reset_by",
         "is_active",
     )
-    list_filter = (("tool", admin.RelatedOnlyFieldListFilter), "last_reset")
+    list_filter = (
+        "staff_members_can_reset",
+        "qualified_users_can_reset",
+        "superusers_can_reset",
+        ("tool", admin.RelatedOnlyFieldListFilter),
+        "last_reset",
+    )
     readonly_fields = ("warning_threshold_reached",)
     form = ToolUsageCounterAdminForm
     autocomplete_fields = ["tool", "last_reset_by"]
@@ -1723,6 +1799,7 @@ class AdjustmentRequestAdmin(admin.ModelAdmin):
     )
     date_hierarchy = "last_updated"
     actions = [adjustment_requests_export_csv, adjustment_requests_mark_as_applied]
+    readonly_fields = ["creation_time"]
 
     @admin.display(description="Diff")
     def get_time_difference(self, adjustment_request: AdjustmentRequest):
@@ -1866,7 +1943,10 @@ class EmailLogAdmin(admin.ModelAdmin):
     list_display = ["id", "category", "sender", "to", "subject", "when", "ok"]
     list_filter = ["category", "ok"]
     search_fields = ["subject", "content", "to"]
-    readonly_fields = ("content_preview",)
+    readonly_fields = (
+        "when",
+        "content_preview",
+    )
     date_hierarchy = "when"
 
     def content_preview(self, obj):
@@ -1941,6 +2021,25 @@ class PermissionAdmin(admin.ModelAdmin):
     form = PermissionAdminForm
 
 
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "action_time", "content_type", "object_id", "object_repr", "action_flag")
+    list_filter = [("user", admin.RelatedOnlyFieldListFilter), "action_flag"]
+
+    def __init__(self, model, admin_site):
+        model._meta.verbose_name_plural = "Detailed admin history"
+        super().__init__(model, admin_site)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 def iframe_content(content, extra_style="padding-bottom: 65%") -> str:
     return mark_safe(
         f'<div id="iframe-container" style="position: relative; display: block; overflow: hidden; width:100%; height:100%; {extra_style}"><iframe style="width:100%; height:100%; border:none" src="data:text/html,{urlencode(content)}"></iframe></div><script>django.jQuery("#iframe-container").parent(".readonly").css("flex","1");</script>'
@@ -1963,6 +2062,8 @@ admin.site.has_permission = has_admin_site_permission
 
 # Register other models
 admin.site.register(ProjectDiscipline)
+admin.site.register(UserType)
+admin.site.register(ProjectType)
 admin.site.register(AccountType)
 admin.site.register(ResourceCategory)
 admin.site.unregister(Group)

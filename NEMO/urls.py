@@ -15,6 +15,7 @@ from django.views.generic import RedirectView
 from django.views.static import serve
 from rest_framework import routers
 
+from NEMO.constants import MEDIA_PROTECTED
 from NEMO.decorators import any_staff_required
 from NEMO.models import ReservationItemType
 from NEMO.views import (
@@ -63,7 +64,6 @@ from NEMO.views import (
     user_requests,
     users,
 )
-from NEMO.views.constants import MEDIA_PROTECTED
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +111,7 @@ router.register(r"tool_status", api.ToolStatusViewSet, basename="tool_status")
 router.register(r"training_sessions", api.TrainingSessionViewSet)
 router.register(r"usage_events", api.UsageEventViewSet)
 router.register(r"users", api.UserViewSet)
+router.register(r"user_documents", api.UserDocumentsViewSet)
 router.registry.sort(key=sort_urls)
 
 reservation_item_types = f'(?P<item_type>{"|".join(ReservationItemType.values())})'
@@ -124,16 +125,22 @@ for app in apps.get_app_configs():
     app_name = app.name
     if app_name != "NEMO" and app_name.startswith("NEMO"):
         try:
-            mod = import_module("%s.urls" % app_name)
-        except ModuleNotFoundError:
-            logger.warning(f"no urls found for NEMO plugin: {app_name}")
-            pass
-        except Exception as e:
-            logger.exception(f"could not import urls for NEMO plugin: {app_name}")
-            pass
-        else:
-            urlpatterns += [path("", include("%s.urls" % app_name))]
-            logger.debug(f"automatically including urls for plugin: {app_name}")
+            plugin_urls = "%s.urls" % app_name
+            try:
+                mod = import_module(plugin_urls)
+            except ModuleNotFoundError as e:
+                if e.name == plugin_urls:
+                    logger.debug(f"no urls found for NEMO plugin: {app_name}")
+                else:
+                    raise
+            else:
+                urlpatterns += [path("", include(plugin_urls))]
+                logger.debug(f"automatically including urls for plugin: {app_name}")
+        except Exception:
+            if getattr(app, "critical", False):
+                raise
+            else:
+                logger.exception(f"Failure when loading URLs for app: {app_name}")
 
 # The order matters for some tests to run properly
 urlpatterns += [
@@ -548,8 +555,11 @@ urlpatterns += [
     path("force_area_logout/<int:user_id>/", area_access.force_area_logout, name="force_area_logout"),
     path("self_log_in/", area_access.self_log_in, name="self_log_in"),
     path("self_log_out/<int:user_id>/", area_access.self_log_out, name="self_log_out"),
+    # For backwards compatibility
+    path("usage/", RedirectView.as_view(pattern_name="user_usage", permanent=True), name="usage"),
     # Facility usage:
-    path("usage/", usage.usage, name="usage"),
+    path("usage/user/", usage.user_usage, name="user_usage"),
+    path("usage/staff/", usage.staff_usage, name="staff_usage"),
     # Alerts:
     path("alerts/", alerts.alerts, name="alerts"),
     path("delete_alert/<int:alert_id>/", alerts.delete_alert, name="delete_alert"),
@@ -602,6 +612,8 @@ if settings.ALLOW_CONDITIONAL_URLS:
     urlpatterns += [
         # REST API
         path("api/", include(router.urls)),
+        path(r"api/metadata/", api.MetadataAPIView.as_view(), name="api_metadata"),
+        re_path(r"^api/media/(?P<path>.*)$", api.MediaAPIView.as_view(), name="api_media"),
         path("api/file_import/", api_file_import.file_import, name="api_file_import"),
         # Area access
         path("area_access/", area_access.area_access, name="area_access"),
@@ -654,6 +666,11 @@ if settings.ALLOW_CONDITIONAL_URLS:
         path("auto_logout_users/", timed_services.auto_logout_users, name="auto_logout_users"),
         path(
             "check_and_update_wait_list/", timed_services.check_and_update_wait_list, name="check_and_update_wait_list"
+        ),
+        path(
+            "email_interlock_status_report/",
+            timed_services.email_csv_interlock_status_report,
+            name="email_interlock_status_report",
         ),
         # Abuse:
         path("abuse/", abuse.abuse, name="abuse"),

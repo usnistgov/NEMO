@@ -18,9 +18,8 @@ class Migration(migrations.Migration):
         table_renames = []
         column_renames = []
 
-        if not getattr(connection, "vendor", "") == "oracle":
-            print("This is only needed for ORACLE databases")
-        else:
+        if getattr(connection, "vendor", "") == "oracle":
+            print("We have an ORACLE db, we need to fix tables for django 4.0")
             with connection.cursor() as cursor:
                 table_list = connection.introspection.get_table_list(cursor)
 
@@ -67,9 +66,8 @@ class Migration(migrations.Migration):
         table_renames = []
         column_renames = []
 
-        if not getattr(connection, "vendor", "") == "oracle":
-            print("This is only needed for ORACLE databases")
-        else:
+        if getattr(connection, "vendor", "") == "oracle":
+            print("We have an ORACLE db, we need to fix tables for django 4.0")
             with connection.cursor() as cursor:
                 table_list = connection.introspection.get_table_list(cursor)
 

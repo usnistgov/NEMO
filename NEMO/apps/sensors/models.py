@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 import random
 from logging import getLogger
 from typing import List, Optional
@@ -11,8 +12,10 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 
 from NEMO.apps.sensors.customizations import SensorCustomization
+from NEMO.constants import CHAR_FIELD_MEDIUM_LENGTH, CHAR_FIELD_SMALL_LENGTH
 from NEMO.decorators import postpone
 from NEMO.evaluators import evaluate_boolean_expression
 from NEMO.fields import MultiEmailField
@@ -24,8 +27,10 @@ models_logger = getLogger(__name__)
 
 
 class SensorCardCategory(BaseModel):
-    name = models.CharField(max_length=200, help_text="The name for this sensor card category")
-    key = models.CharField(max_length=100, help_text="The key to identify this sensor card category by in sensors.py")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The name for this sensor card category")
+    key = models.CharField(
+        max_length=CHAR_FIELD_SMALL_LENGTH, help_text="The key to identify this sensor card category by in sensors.py"
+    )
 
     class Meta:
         verbose_name_plural = "Sensor card categories"
@@ -36,13 +41,23 @@ class SensorCardCategory(BaseModel):
 
 
 class SensorCard(BaseModel):
-    name = models.CharField(max_length=200)
-    server = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
+    server = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     port = models.PositiveIntegerField()
     category = models.ForeignKey(SensorCardCategory, on_delete=models.CASCADE)
-    username = models.CharField(max_length=100, blank=True, null=True)
-    password = models.CharField(max_length=100, blank=True, null=True)
+    username = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
+    password = models.CharField(max_length=CHAR_FIELD_SMALL_LENGTH, blank=True, null=True)
+    extra_args = models.TextField(
+        null=True, blank=True, help_text=_("Json formatted extra arguments to pass to the sensor card implementation.")
+    )
     enabled = models.BooleanField(blank=False, null=False, default=True)
+
+    @property
+    def extra_args_dict(self):
+        try:
+            return json.loads(self.extra_args)
+        except:
+            return {}
 
     class Meta:
         ordering = ["name"]
@@ -53,7 +68,7 @@ class SensorCard(BaseModel):
 
 
 class SensorCategory(BaseModel):
-    name = models.CharField(max_length=200, help_text="The name for this sensor category")
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="The name for this sensor category")
     parent = models.ForeignKey(
         "SensorCategory", related_name="children", null=True, blank=True, on_delete=models.SET_NULL
     )
@@ -95,16 +110,22 @@ class SensorCategory(BaseModel):
 
 
 class Sensor(BaseModel):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH)
     visible = models.BooleanField(
         default=True, help_text="Specifies whether this sensor is visible in the sensor dashboard"
     )
     sensor_card = models.ForeignKey(SensorCard, blank=True, null=True, on_delete=models.CASCADE)
     interlock_card = models.ForeignKey(InterlockCard, blank=True, null=True, on_delete=models.CASCADE)
     sensor_category = models.ForeignKey(SensorCategory, blank=True, null=True, on_delete=models.SET_NULL)
-    data_label = models.CharField(blank=True, null=True, max_length=200, help_text="Label for graph and table data")
-    data_prefix = models.CharField(blank=True, null=True, max_length=100, help_text="Prefix for sensor data values")
-    data_suffix = models.CharField(blank=True, null=True, max_length=100, help_text="Suffix for sensor data values")
+    data_label = models.CharField(
+        blank=True, null=True, max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="Label for graph and table data"
+    )
+    data_prefix = models.CharField(
+        blank=True, null=True, max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="Prefix for sensor data values"
+    )
+    data_suffix = models.CharField(
+        blank=True, null=True, max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text="Suffix for sensor data values"
+    )
     unit_id = models.PositiveIntegerField(null=True, blank=True)
     read_address = models.PositiveIntegerField(null=True, blank=True)
     number_of_values = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
@@ -120,6 +141,8 @@ class Sensor(BaseModel):
         validators=[MaxValueValidator(1440), MinValueValidator(0)],
         help_text="Enter the read frequency in minutes. Every 2 hours = 120, etc. Max value is 1440 min (24hrs). Use 0 to disable sensor data read.",
     )
+    last_read = models.DateTimeField(null=True, blank=True)
+    last_value = models.FloatField(null=True, blank=True)
 
     @property
     def card(self):
@@ -134,8 +157,8 @@ class Sensor(BaseModel):
 
         return sensors.get(self.card.category, raise_exception).read_values(self, raise_exception)
 
-    def last_data_point(self):
-        return SensorData.objects.filter(sensor=self).latest("created_date")
+    def last_value_display(self):
+        return display_sensor_value(self, self.last_value)
 
     def clean(self):
         from NEMO.apps.sensors import sensors
@@ -166,14 +189,17 @@ class Sensor(BaseModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ["name"]
+
 
 class SensorData(BaseModel):
     sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
-    created_date = models.DateTimeField(auto_now_add=True)
+    created_date = models.DateTimeField(auto_now_add=True, db_index=True)
     value = models.FloatField()
 
     def display_value(self):
-        return f"{self.sensor.data_prefix + ' ' if self.sensor.data_prefix else ''}{self.value}{' ' + self.sensor.data_suffix if self.sensor.data_suffix else ''}"
+        return display_sensor_value(self.sensor, self.value)
 
     class Meta:
         verbose_name_plural = "Sensor data"
@@ -354,3 +380,9 @@ def get_alert_description(time, reset: bool, condition: str, no_data: bool, valu
     if trigger_reason:
         alert_description += f" because {trigger_reason}."
     return alert_description
+
+
+def display_sensor_value(sensor: Sensor, value: float) -> str:
+    if not value:
+        return ""
+    return f"{sensor.data_prefix + ' ' if sensor.data_prefix else ''}{value}{' ' + sensor.data_suffix if sensor.data_suffix else ''}"

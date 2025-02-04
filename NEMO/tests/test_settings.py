@@ -94,7 +94,7 @@ EMAIL_PORT = 25
 
 EMAIL_FILE_PATH = "./email_logs"
 
-TIME_ZONE = "America/New_York"
+TIME_ZONE = "US/Eastern"
 
 DATABASES = {
     "default": {

@@ -1,4 +1,6 @@
 {% extends 'area_access/base.html' %}
 {% block title %}Farewell{% endblock %}
-{% block default_content %}<h1>Scan your badge to log out.</h1>{% endblock %}
+{% block default_content %}
+    {{ door.farewell_message|default_if_none:"<h1>Scan your badge to log out.</h1>"|safe }}
+{% endblock %}
 {% block action %}exit_area(badge_number);{% endblock %}

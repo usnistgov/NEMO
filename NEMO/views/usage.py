@@ -4,13 +4,13 @@ from typing import Callable, List, Set
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import F, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET
 from requests import get
 
-from NEMO.decorators import accounting_or_user_office_or_manager_required
+from NEMO.decorators import accounting_or_user_office_or_manager_required, any_staff_required
 from NEMO.models import (
     Account,
     AdjustmentRequest,
@@ -40,7 +40,7 @@ from NEMO.views.api_billing import (
     billable_items_training_sessions,
     billable_items_usage_events,
 )
-from NEMO.views.customization import ProjectsAccountsCustomization, UserRequestsCustomization
+from NEMO.views.customization import AdjustmentRequestsCustomization, ProjectsAccountsCustomization
 
 logger = getLogger(__name__)
 
@@ -53,24 +53,6 @@ class Application(object):
 
     def __str__(self):
         return self.name
-
-
-# We want to keep all the parameters of the request when switching tabs, so we are just replacing usage <-> billing urls
-def get_url_for_other_tab(request):
-    full_path_request = request.get_full_path()
-    usage_url = reverse("usage")
-    billing_url = reverse("billing")
-    project_usage_url = reverse("project_usage")
-    project_billing_url = reverse("project_billing")
-    if project_usage_url in full_path_request:
-        full_path_request = full_path_request.replace(project_usage_url, project_billing_url)
-    elif project_billing_url in full_path_request:
-        full_path_request = full_path_request.replace(project_billing_url, project_usage_url)
-    elif usage_url in full_path_request:
-        full_path_request = full_path_request.replace(usage_url, billing_url)
-    elif billing_url in full_path_request:
-        full_path_request = full_path_request.replace(billing_url, usage_url)
-    return full_path_request
 
 
 def get_project_applications():
@@ -96,15 +78,25 @@ def date_parameters_dictionary(request, default_function: Callable = get_month_t
         AdjustmentRequest.objects.filter(deleted=False, creator=request.user).values("item_type", "item_id").distinct()
     ):
         existing_adjustments[values["item_type"]].append(values["item_id"])
+    title = ""
+    if reverse("staff_usage") in request.get_full_path():
+        title += "staff "
+    elif reverse("project_usage") in request.get_full_path() or reverse("project_billing") in request.get_full_path():
+        title += "facility "
+    if reverse("billing") in request.get_full_path() or reverse("project_billing") in request.get_full_path():
+        title += "billing"
+    else:
+        title += "usage"
     dictionary = {
         "month_list": month_list(),
         "start_date": start_date,
         "end_date": end_date,
         "kind": kind,
         "identifier": identifier,
-        "tab_url": get_url_for_other_tab(request) if get_billing_service().get("available", False) else "",
+        "title": title.capitalize(),
+        "explicitly_display_customer": reverse("user_usage") not in request.get_full_path(),
         "billing_service": get_billing_service().get("available", False),
-        "adjustment_time_limit": UserRequestsCustomization.get_date_limit(),
+        "adjustment_time_limit": AdjustmentRequestsCustomization.get_date_limit(),
         "existing_adjustments": existing_adjustments,
     }
     return dictionary, start_date, end_date, kind, identifier
@@ -112,21 +104,74 @@ def date_parameters_dictionary(request, default_function: Callable = get_month_t
 
 @login_required
 @require_GET
-def usage(request):
+def user_usage(request):
     user: User = request.user
     user_managed_projects = get_managed_projects(user)
-    base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_month_timeframe)
     customer_filter = Q(customer=user) | Q(project__in=user_managed_projects)
     user_filter = Q(user=user) | Q(project__in=user_managed_projects)
     trainee_filter = Q(trainee=user) | Q(project__in=user_managed_projects)
-    project_id = request.GET.get("project") or request.GET.get("pi_project")
-    csv_export = bool(request.GET.get("csv", False))
     show_only_my_usage = user_managed_projects and request.GET.get("show_only_my_usage", "enabled") == "enabled"
+    csv_export = bool(request.GET.get("csv", False))
     if show_only_my_usage:
         # Forcing to be user only
         customer_filter &= Q(customer=user)
         user_filter &= Q(user=user)
         trainee_filter &= Q(trainee=user)
+        csv_export = bool(request.GET.get("csv", False))
+    return usage(
+        request,
+        usage_filter=user_filter,
+        area_access_filter=customer_filter,
+        staff_charges_filter=customer_filter,
+        consumable_filter=customer_filter,
+        reservation_filter=user_filter,
+        training_filter=trainee_filter,
+        show_only_my_usage=show_only_my_usage,
+        csv_export=csv_export,
+        user_managed_projects=user_managed_projects,
+    )
+
+
+@any_staff_required
+@require_GET
+def staff_usage(request):
+    user: User = request.user
+    usage_filter = Q(operator=user) & ~Q(user=F("operator"))
+    area_access_filter = Q(staff_charge__staff_member=user)
+    staff_charges_filter = Q(staff_member=user)
+    consumable_filter = Q(merchant=user)
+    user_filter = Q(pk__in=[])
+    trainee_filter = Q(trainer=user)
+    csv_export = bool(request.GET.get("csv", False))
+    return usage(
+        request,
+        usage_filter=usage_filter,
+        area_access_filter=area_access_filter,
+        staff_charges_filter=staff_charges_filter,
+        consumable_filter=consumable_filter,
+        reservation_filter=user_filter,
+        training_filter=trainee_filter,
+        show_only_my_usage=None,
+        csv_export=csv_export,
+        user_managed_projects=set(),
+    )
+
+
+def usage(
+    request,
+    usage_filter,
+    area_access_filter,
+    staff_charges_filter,
+    consumable_filter,
+    reservation_filter,
+    training_filter,
+    show_only_my_usage,
+    csv_export,
+    user_managed_projects,
+):
+    user: User = request.user
+    base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_month_timeframe)
+    project_id = request.GET.get("project") or request.GET.get("pi_project")
     if user_managed_projects:
         base_dictionary["selected_project"] = "all"
     if project_id:
@@ -135,21 +180,25 @@ def usage(request):
             base_dictionary["selected_user_project"] = project
         else:
             base_dictionary["selected_project"] = project
-        customer_filter = customer_filter & Q(project=project)
-        user_filter = user_filter & Q(project=project)
-        trainee_filter = trainee_filter & Q(project=project)
+            base_dictionary["explicitly_display_customer"] = True
+        area_access_filter &= Q(project=project)
+        staff_charges_filter &= Q(project=project)
+        usage_filter &= Q(project=project)
+        consumable_filter &= Q(project=project)
+        reservation_filter &= Q(project=project)
+        training_filter &= Q(project=project)
     area_access = (
-        AreaAccessRecord.objects.filter(customer_filter)
+        AreaAccessRecord.objects.filter(area_access_filter)
         .filter(end__gt=start_date, end__lte=end_date)
         .order_by("-start")
     )
-    consumables = ConsumableWithdraw.objects.filter(customer_filter).filter(date__gt=start_date, date__lte=end_date)
-    missed_reservations = Reservation.objects.filter(user_filter).filter(
+    consumables = ConsumableWithdraw.objects.filter(consumable_filter).filter(date__gt=start_date, date__lte=end_date)
+    missed_reservations = Reservation.objects.filter(reservation_filter).filter(
         missed=True, end__gt=start_date, end__lte=end_date
     )
-    staff_charges = StaffCharge.objects.filter(customer_filter).filter(end__gt=start_date, end__lte=end_date)
-    training_sessions = TrainingSession.objects.filter(trainee_filter).filter(date__gt=start_date, date__lte=end_date)
-    usage_events = UsageEvent.objects.filter(user_filter).filter(end__gt=start_date, end__lte=end_date)
+    staff_charges = StaffCharge.objects.filter(staff_charges_filter).filter(end__gt=start_date, end__lte=end_date)
+    training_sessions = TrainingSession.objects.filter(training_filter).filter(date__gt=start_date, date__lte=end_date)
+    usage_events = UsageEvent.objects.filter(usage_filter).filter(end__gt=start_date, end__lte=end_date)
     if csv_export:
         return csv_export_response(
             user, usage_events, area_access, training_sessions, staff_charges, consumables, missed_reservations
@@ -162,6 +211,17 @@ def usage(request):
             "staff_charges": staff_charges,
             "training_sessions": training_sessions,
             "usage_events": usage_events,
+            "charges_projects": Project.objects.filter(
+                id__in=set(
+                    list(user.active_projects().values_list("id", flat=True))
+                    + list(usage_events.values_list("project", flat=True))
+                    + list(area_access.values_list("project", flat=True))
+                    + list(missed_reservations.values_list("project", flat=True))
+                    + list(consumables.values_list("project", flat=True))
+                    + list(staff_charges.values_list("project", flat=True))
+                    + list(training_sessions.values_list("project", flat=True))
+                )
+            ),
         }
         if user_managed_projects:
             dictionary["pi_projects"] = user_managed_projects
@@ -183,7 +243,7 @@ def billing(request):
     user: User = request.user
     base_dictionary, start_date, end_date, kind, identifier = date_parameters_dictionary(request, get_month_timeframe)
     if not base_dictionary["billing_service"]:
-        return redirect("usage")
+        return redirect("user_usage")
     user_project_applications = list(user.active_projects().values_list("application_identifier", flat=True)) + list(
         user.managed_projects.values_list("application_identifier", flat=True)
     )
@@ -478,22 +538,25 @@ def get_managed_projects(user: User) -> Set[Project]:
     billing_service = get_billing_service()
     if billing_service.get("available", False):
         # if we have a billing service, use it to determine project lead
-        project_lead_url = billing_service["project_lead_url"]
-        keyword_arguments = billing_service["keyword_arguments"]
-        latest_pis_params = {"$format": "json"}
-        latest_pis_response = get(project_lead_url, params=latest_pis_params, **keyword_arguments)
-        latest_pis_data = latest_pis_response.json()["d"]
-        for project_lead in latest_pis_data:
-            if project_lead["username"] == user.username or (
-                project_lead["first_name"] == user.first_name and project_lead["last_name"] == user.last_name
-            ):
-                try:
-                    for managed_project in Project.objects.filter(
-                        application_identifier=project_lead["application_name"]
-                    ):
-                        managed_projects.add(managed_project)
-                except Project.DoesNotExist:
-                    pass
+        try:
+            project_lead_url = billing_service["project_lead_url"]
+            keyword_arguments = billing_service["keyword_arguments"]
+            latest_pis_params = {"$format": "json"}
+            latest_pis_response = get(project_lead_url, params=latest_pis_params, **keyword_arguments)
+            latest_pis_data = latest_pis_response.json()["d"]
+            for project_lead in latest_pis_data:
+                if project_lead["username"] == user.username or (
+                    project_lead["first_name"] == user.first_name and project_lead["last_name"] == user.last_name
+                ):
+                    try:
+                        for managed_project in Project.objects.filter(
+                            application_identifier=project_lead["application_name"]
+                        ):
+                            managed_projects.add(managed_project)
+                    except Project.DoesNotExist:
+                        pass
+        except Exception:
+            logger.exception("error loading project leads from billing service")
     return managed_projects
 
 

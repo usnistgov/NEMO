@@ -61,6 +61,64 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Freed time notification</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="tool_freed_time_notification_include_username"
+                               {% if tool_freed_time_notification_include_username %}checked{% endif %}
+                               value="enabled">
+                        Include username of the person freeing time in the notification email
+                    </label>
+                    <br>
+                    <label style="display: inline;">
+                        <input type="checkbox"
+                               name="tool_freed_time_notify_next_reservation_enabled"
+                               {% if tool_freed_time_notify_next_reservation_enabled %}checked{% endif %}
+                               value="enabled">
+                        When a reservation is shortened, automatically notify the person who has a reservation next
+                    </label>
+                    <span>if at least</span>
+                    <span class="input-group-sm" style="display: inline-table; width: 40%">
+                        <input type="number"
+                               min="1"
+                               id="tool_freed_time_notify_next_reservation_min_freed_time"
+                               name="tool_freed_time_notify_next_reservation_min_freed_time"
+                               class="form-control text-right"
+                               value="{{ tool_freed_time_notify_next_reservation_min_freed_time }}" />
+                        <span class="input-group-addon">minutes</span>
+                    </span>
+                    <span>are freed and the reservation starts within</span>
+                    <span class="input-group-sm" style="display: inline-table; width: 30%">
+                        <input type="number"
+                               min="1"
+                               id="tool_freed_time_notify_next_reservation_starts_within"
+                               name="tool_freed_time_notify_next_reservation_starts_within"
+                               class="form-control text-right"
+                               value="{{ tool_freed_time_notify_next_reservation_starts_within }}" />
+                        <span class="input-group-addon">hour</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% if "NEMO.apps.kiosk"|app_installed %}
+            <div class="form-group">
+                <label class="control-label col-sm-4 col-md-3">Kiosk tools</label>
+                <div class="col-sm-8 col-md-9">
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox"
+                                   name="kiosk_only_show_qualified_tools"
+                                   {% if kiosk_only_show_qualified_tools %}checked{% endif %}
+                                   value="enabled">
+                            Only show tools the user is qualified on in the kiosk
+                        </label>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         <div class="customization-separation" style="margin-bottom: 15px"></div>
         <h3 class="customization-section-title">Tool configuration</h3>
         <div class="form-group {% if errors.tool_control_configuration_setting_template %}has-error{% endif %}">
@@ -106,6 +164,13 @@
             <label class="control-label col-sm-4 col-md-3">New problems</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               name="tool_problem_safety_hazard_automatic_shutdown"
+                               {% if tool_problem_safety_hazard_automatic_shutdown %}checked{% endif %}
+                               value="enabled">
+                        Automatically shutdown tool when a safety hazard problem is reported
+                    </label>
                     <label>
                         <input type="checkbox"
                                name="tool_problem_send_to_all_qualified_users"
@@ -186,6 +251,21 @@
             </div>
         </div>
         <div class="form-group">
+            <label class="control-label col-sm-4 col-md-3">Next reservation</label>
+            <div class="col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_show_next_reservation_user"
+                               name="tool_control_show_next_reservation_user"
+                               {% if tool_control_show_next_reservation_user %}checked{% endif %}
+                               value="enabled">
+                        Check to show information about the next reservation in tool control
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
             <label class="control-label col-sm-4 col-md-3">Qualified users list</label>
             <div class="col-sm-8 col-md-9">
                 <div class="checkbox">
@@ -201,7 +281,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label class="control-label col-sm-4 col-md-3">Show tool documents to</label>
+            <label class="control-label col-sm-4 col-md-3">Tool documents</label>
             <div class="col-sm-8 col-md-9">
                 <div class="radio">
                     <label>
@@ -210,7 +290,7 @@
                                name="tool_control_show_documents_only_qualified_users"
                                {% if not tool_control_show_documents_only_qualified_users %}checked{% endif %}
                                value="">
-                        Everyone
+                        Everyone can see tool documents
                     </label>
                     <br>
                     <label>
@@ -219,7 +299,21 @@
                                name="tool_control_show_documents_only_qualified_users"
                                {% if tool_control_show_documents_only_qualified_users %}checked{% endif %}
                                value="enabled">
-                        Only qualified users
+                        Only show documents to qualified users
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-offset-4 col-md-offset-3 col-sm-8 col-md-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox"
+                               id="tool_control_documents_in_separate_tab"
+                               name="tool_control_documents_in_separate_tab"
+                               {% if tool_control_documents_in_separate_tab %}checked{% endif %}
+                               value="enabled">
+                        Show tool documents in separate tab in tool control
                     </label>
                 </div>
             </div>

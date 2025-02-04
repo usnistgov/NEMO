@@ -3,6 +3,7 @@ from copy import deepcopy
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core import validators
+from django.utils.translation import gettext_lazy as _
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.fields import (
@@ -17,6 +18,8 @@ from rest_framework.fields import (
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.utils import model_meta
 
+from NEMO.constants import CHAR_FIELD_LARGE_LENGTH, CHAR_FIELD_MEDIUM_LENGTH
+from NEMO.fields import DEFAULT_SEPARATOR, MultiEmailField
 from NEMO.models import (
     Account,
     AccountType,
@@ -51,12 +54,35 @@ from NEMO.models import (
     TrainingSession,
     UsageEvent,
     User,
+    UserDocuments,
 )
-from NEMO.views.constants import CHAR_FIELD_MAXIMUM_LENGTH
+
+
+class MultiEmailSerializerField(serializers.CharField):
+    def __init__(self, separator=DEFAULT_SEPARATOR, **kwargs):
+        self.email_validator = validators.EmailValidator(
+            message=_("Enter a valid email address or a list separated by {}").format(separator)
+        )
+        self.separator = separator
+        kwargs.setdefault("max_length", 2000)
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        emails = data.split(self.separator)
+        for email in emails:
+            email = email.strip()
+            self.email_validator(email)
+        return emails
+
+    def to_representation(self, value):
+        return ",".join(value)
 
 
 # Overriding validate to call model full_clean
 class ModelSerializer(serializers.ModelSerializer):
+    serializer_field_mapping = serializers.ModelSerializer.serializer_field_mapping.copy()
+    serializer_field_mapping[MultiEmailField] = MultiEmailSerializerField
+
     def validate(self, attrs):
         attributes_data = dict(attrs)
         ModelClass = self.Meta.model
@@ -110,7 +136,7 @@ class ModelSerializer(serializers.ModelSerializer):
         instance.full_clean(exclude, validate_unique)
 
 
-class AlertCategorySerializer(serializers.ModelSerializer):
+class AlertCategorySerializer(ModelSerializer):
     class Meta:
         model = AlertCategory
         fields = "__all__"
@@ -127,6 +153,8 @@ class AlertSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
 
 class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    user_documents = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
     class Meta:
         model = User
         exclude = ["preferences"]
@@ -134,6 +162,7 @@ class UserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "projects": ("NEMO.serializers.ProjectSerializer", {"many": True}),
             "managed_projects": ("NEMO.serializers.ProjectSerializer", {"many": True}),
             "groups": ("NEMO.serializers.GroupSerializer", {"many": True}),
+            "user_documents": ("NEMO.serializers.UserDocumentSerializer", {"many": True}),
             "user_permissions": ("NEMO.serializers.PermissionSerializer", {"many": True}),
         }
 
@@ -150,6 +179,17 @@ class ProjectDisciplineSerializer(ModelSerializer):
     class Meta:
         model = ProjectDiscipline
         fields = "__all__"
+
+
+class UserDocumentSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    user = PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = UserDocuments
+        fields = "__all__"
+        expandable_fields = {
+            "user": "NEMO.serializers.UserSerializer",
+        }
 
 
 class ProjectSerializer(FlexFieldsSerializerMixin, ModelSerializer):
@@ -253,6 +293,8 @@ class ReservationSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "project": "NEMO.serializers.ProjectSerializer",
             "descendant": "NEMO.serializers.ReservationSerializer",
             "configuration_options": ("NEMO.serializers.ConfigurationOptionSerializer", {"many": True}),
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -265,6 +307,8 @@ class UsageEventSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "operator": "NEMO.serializers.UserSerializer",
             "tool": "NEMO.serializers.ToolSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -277,6 +321,8 @@ class AreaAccessRecordSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "area": "NEMO.serializers.AreaSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
             "staff_charge": "NEMO.serializers.StaffChargeSerializer",
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -322,6 +368,8 @@ class TrainingSessionSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "trainee": "NEMO.serializers.UserSerializer",
             "tool": "NEMO.serializers.ToolSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -333,6 +381,8 @@ class StaffChargeSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "customer": "NEMO.serializers.UserSerializer",
             "staff_member": "NEMO.serializers.UserSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -371,6 +421,8 @@ class ConsumableWithdrawSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "merchant": "NEMO.serializers.UserSerializer",
             "consumable": "NEMO.serializers.ConsumableSerializer",
             "project": "NEMO.serializers.ProjectSerializer",
+            "validated_by": "NEMO.serializers.UserSerializer",
+            "waived_by": "NEMO.serializers.UserSerializer",
         }
 
 
@@ -500,20 +552,25 @@ class BillableItemSerializer(serializers.Serializer):
     type = ChoiceField(
         ["missed_reservation", "tool_usage", "area_access", "consumable", "staff_charge", "training_session"]
     )
-    name = CharField(max_length=200, read_only=True)
+    name = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     item_id = IntegerField(read_only=True)
     details = CharField(max_length=500, read_only=True)
-    account = CharField(max_length=200, read_only=True)
+    account = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     account_id = IntegerField(read_only=True)
-    project = CharField(max_length=200, read_only=True)
+    project = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     project_id = IntegerField(read_only=True)
-    application = CharField(max_length=200, read_only=True)
-    user = CharField(max_length=255, read_only=True)
-    username = CharField(max_length=200, read_only=True)
+    application = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
+    user = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
+    username = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     user_id = IntegerField(read_only=True)
     start = DateTimeField(read_only=True)
     end = DateTimeField(read_only=True)
     quantity = DecimalField(read_only=True, decimal_places=2, max_digits=8)
+    validated = BooleanField(read_only=True)
+    validated_by = CharField(read_only=True, source="validated_by.username", allow_null=True)
+    waived = BooleanField(read_only=True)
+    waived_by = CharField(read_only=True, source="waived_by.username", allow_null=True)
+    waived_on = DateTimeField(read_only=True)
 
     def update(self, instance, validated_data):
         pass
@@ -527,37 +584,37 @@ class BillableItemSerializer(serializers.Serializer):
 
 class ToolStatusSerializer(serializers.Serializer):
     id = IntegerField(read_only=True)
-    name = CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, read_only=True)
-    category = CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, read_only=True)
+    name = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
+    category = CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, read_only=True)
     in_use = BooleanField(read_only=True)
     visible = BooleanField(read_only=True)
     operational = BooleanField(read_only=True)
     problematic = BooleanField(read_only=True)
-    problem_descriptions = CharField(default=None, max_length=1000, read_only=True)
+    problem_descriptions = CharField(default=None, max_length=CHAR_FIELD_LARGE_LENGTH, read_only=True)
     customer_id = IntegerField(default=None, source="get_current_usage_event.user.id", read_only=True)
     customer_name = CharField(
         default=None,
         source="get_current_usage_event.user.get_name",
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         read_only=True,
     )
     customer_username = CharField(
         default=None,
         source="get_current_usage_event.user.username",
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         read_only=True,
     )
     operator_id = IntegerField(default=None, source="get_current_usage_event.operator.id", read_only=True)
     operator_name = CharField(
         default=None,
         source="get_current_usage_event.operator.get_name",
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         read_only=True,
     )
     operator_username = CharField(
         default=None,
         source="get_current_usage_event.operator.username",
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         read_only=True,
     )
     current_usage_id = IntegerField(default=None, source="get_current_usage_event.id", read_only=True)

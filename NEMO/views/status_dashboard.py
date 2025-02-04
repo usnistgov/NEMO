@@ -355,7 +355,7 @@ def create_tool_summary(tooltip_info=False):
     tool_summary = merge(tools, tasks, unavailable_resources, usage_events, scheduled_outages, tooltip_info)
     tool_summary = list(tool_summary.values())
     tool_sort = StatusDashboardCustomization.get("dashboard_tool_sort")
-    max_date_aware = (datetime.max - timedelta(days=1)).astimezone()
+    max_date_aware = datetime.max.replace(tzinfo=timezone.get_default_timezone())
     if tool_sort == "name":
         tool_summary.sort(key=lambda x: x["name"].lower())
     elif tool_sort == "time_desc":

@@ -3,7 +3,7 @@ import struct
 from abc import ABC, abstractmethod
 from logging import getLogger
 from time import sleep
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from xml.etree import ElementTree
 
 import requests
@@ -12,13 +12,26 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from pymodbus.client import ModbusTcpClient
+from pymodbus.exceptions import ConnectionException
+from requests import Response
 
 from NEMO.admin import InterlockAdminForm, InterlockCardAdminForm
 from NEMO.exceptions import InterlockError
-from NEMO.models import Interlock as Interlock_model, InterlockCardCategory
-from NEMO.utilities import format_datetime
+from NEMO.models import Interlock as Interlock_model, InterlockCardCategory, User
+from NEMO.typing import QuerySetType
+from NEMO.utilities import BasicDisplayTable, EmailCategory, export_format_datetime, format_datetime
 
 interlocks_logger = getLogger(__name__)
+
+DEFAULT_CHANNEL_NAME = "Channel/Relay/Coil"
+DEFAULT_UNIT_ID_NAME = "Multiplier/Unit id/Bank"
+
+INTERLOCK_STATUS_OK = "Ok"
+INTERLOCK_STATUS_ERROR = "Interlock error"
+INTERLOCK_STATUS_NO_CONNECTION = "No connection"
+INTERLOCK_STATUS_CARD_DISABLED = "Card disabled"
+INTERLOCK_STATUS_INTERLOCKS_DISABLED = "Interlocks are disabled"
+INTERLOCK_STATUS_NOT_IMPLEMENTED = "Not implemented"
 
 
 class Interlock(ABC):
@@ -33,8 +46,8 @@ class Interlock(ABC):
     """
 
     def __init__(self):
-        self.channel_name = "Channel/Relay/Coil"
-        self.unit_id_name = "Multiplier/Unit id/Bank"
+        self.channel_name = DEFAULT_CHANNEL_NAME
+        self.unit_id_name = DEFAULT_UNIT_ID_NAME
 
     def clean_interlock_card(self, interlock_card_form: InterlockCardAdminForm):
         pass
@@ -114,6 +127,23 @@ class Interlock(ABC):
     def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
         pass
 
+    def ping(self, interlock: Interlock_model) -> str:
+        """
+        Check the connectivity of the interlock.
+
+        Returns:
+            str: A message indicating the connectivity status of the interlock.
+        """
+        interlocks_enabled = getattr(settings, "INTERLOCKS_ENABLED", False)
+        if not interlocks_enabled:
+            return INTERLOCK_STATUS_INTERLOCKS_DISABLED
+        elif not interlock.card.enabled:
+            return INTERLOCK_STATUS_CARD_DISABLED
+        return self._ping(interlock)
+
+    def _ping(self, interlock: Interlock_model) -> str:
+        return INTERLOCK_STATUS_NOT_IMPLEMENTED
+
 
 class NoOpInterlock(Interlock):
     def _send_command(self, interlock: Interlock_model, command_type: Interlock_model.State) -> Interlock_model.State:
@@ -189,7 +219,8 @@ class StanfordInterlock(Interlock):
         # Create a TCP socket to send the interlock command.
         sock = socket.socket()
         try:
-            sock.settimeout(3.0)  # Set the send/receive timeout to be 3 seconds.
+            timeout = interlock.card.extra_args_dict.get("timeout", 3.0)
+            sock.settimeout(timeout)  # Set the send/receive timeout to be 3 seconds.
             server_address = (interlock.card.server, interlock.card.port)
             sock.connect(server_address)
             sock.send(command_message)
@@ -292,6 +323,19 @@ class StanfordInterlock(Interlock):
         finally:
             sock.close()
 
+    def _ping(self, interlock: Interlock_model) -> str:
+        try:
+            sock = socket.socket()
+            sock.settimeout(3.0)
+            server_address = (interlock.card.server, interlock.card.port)
+            with sock.connect(server_address):
+                pass
+        except OSError:
+            return INTERLOCK_STATUS_NO_CONNECTION
+        except Exception as error:
+            return INTERLOCK_STATUS_ERROR + f": {str(error)}"
+        return INTERLOCK_STATUS_OK
+
 
 class ProXrInterlock(Interlock):
     """
@@ -359,7 +403,10 @@ class ProXrInterlock(Interlock):
         # Backward compatibility, no bank means bank 1
         bank = interlock.unit_id if interlock.unit_id is not None else 1
         try:
-            with socket.create_connection((interlock.card.server, interlock.card.port), 10) as relay_socket:
+            timeout = interlock.card.extra_args_dict.get("timeout", 10)
+            with socket.create_connection(
+                (interlock.card.server, interlock.card.port), timeout=timeout
+            ) as relay_socket:
                 if command_type == Interlock_model.State.LOCKED:
                     # turn the interlock channel off
                     off_command = (99 + interlock.channel) if interlock.channel != 0 else 129
@@ -373,6 +420,19 @@ class ProXrInterlock(Interlock):
         except Exception as error:
             raise InterlockError(interlock=interlock, msg="Communication error: " + str(error))
         return state
+
+    def _ping(self, interlock: Interlock_model) -> str:
+        try:
+            with socket.create_connection((interlock.card.server, interlock.card.port), 5) as relay_socket:
+                bank = interlock.unit_id if interlock.unit_id is not None else 1
+                # Try to read the state
+                try:
+                    self._get_state(relay_socket, interlock.channel, bank)
+                except Exception as error:
+                    return INTERLOCK_STATUS_ERROR + f": {str(error)}"
+        except:
+            return INTERLOCK_STATUS_NO_CONNECTION
+        return INTERLOCK_STATUS_OK
 
 
 class WebRelayHttpInterlock(Interlock):
@@ -408,21 +468,28 @@ class WebRelayHttpInterlock(Interlock):
         return state
 
     @classmethod
-    def set_relay_state(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
+    def get_response(cls, interlock: Interlock_model, parameters_str, timeout=5) -> Response:
         response, auth, response_error = None, None, None
         if interlock.card.username and interlock.card.password:
             auth = (interlock.card.username, interlock.card.password)
         for state_xml_name in cls.state_xml_names:
-            url = f"{interlock.card.server}:{interlock.card.port}/{state_xml_name}?{cls.state_parameter_template.format(interlock.channel or '')}={state}"
+            url = f"{interlock.card.server}:{interlock.card.port}/{state_xml_name}?{parameters_str}"
             if not url.startswith("http") and not url.startswith("https"):
                 url = "http://" + url
-            response = requests.get(url, auth=auth)
+            timeout = interlock.card.extra_args_dict.get("timeout", 3)
+            response = requests.get(url, auth=auth, timeout=timeout)
             response_error = cls.check_response_error(response)
             if not response_error:
                 break
         # At this point we have tried all combination so raise an error
         if response_error:
             raise Exception(f"Communication error: {response_error}")
+        return response
+
+    @classmethod
+    def set_relay_state(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
+        param = f"{cls.state_parameter_template.format(interlock.channel or '')}={state}"
+        response = cls.get_response(interlock, param)
         # No errors, continue and read relay state
         response_xml = ElementTree.fromstring(response.content)
         state = None
@@ -439,6 +506,13 @@ class WebRelayHttpInterlock(Interlock):
             return Interlock_model.State.UNLOCKED
         else:
             raise Exception(f"Unexpected state received from interlock: {state}")
+
+    def _ping(self, interlock: Interlock_model) -> str:
+        try:
+            self.get_response(interlock, "")
+        except Exception as error:
+            return INTERLOCK_STATUS_ERROR + f": {str(error)}"
+        return INTERLOCK_STATUS_OK
 
     @staticmethod
     def check_response_error(response) -> Optional[str]:
@@ -486,7 +560,8 @@ class ModbusTcpInterlock(Interlock):
     @classmethod
     def set_relay_state(cls, interlock: Interlock_model, state: {0, 1}) -> Interlock_model.State:
         coil = interlock.channel
-        client = ModbusTcpClient(interlock.card.server, port=interlock.card.port)
+        timeout = interlock.card.extra_args_dict.get("timeout", 3)
+        client = ModbusTcpClient(interlock.card.server, port=interlock.card.port, timeout=timeout)
         try:
             valid_connection = client.connect()
             if not valid_connection:
@@ -508,6 +583,69 @@ class ModbusTcpInterlock(Interlock):
                 return Interlock_model.State.UNLOCKED
         finally:
             client.close()
+
+    def _ping(self, interlock: Interlock_model) -> str:
+        try:
+            with ModbusTcpClient(interlock.card.server, port=interlock.card.port) as client:
+                valid_connection = client.connect()
+                if not valid_connection:
+                    return INTERLOCK_STATUS_NO_CONNECTION
+                else:
+                    kwargs = {"slave": interlock.unit_id} if interlock.unit_id is not None else {}
+                    read_reply = client.read_coils(interlock.channel, 1, **kwargs)
+                    if read_reply.isError():
+                        return INTERLOCK_STATUS_ERROR + f": {str(read_reply)}"
+        except ConnectionException:
+            return INTERLOCK_STATUS_NO_CONNECTION
+        except Exception as error:
+            return INTERLOCK_STATUS_ERROR + f": {str(error)}"
+        return INTERLOCK_STATUS_OK
+
+
+def send_csv_interlock_report(interlock_list: QuerySetType[Interlock_model], users: List[User]):
+    filename = "interlocks_report_" + export_format_datetime() + ".csv"
+    report_attachment = get_interlock_report(interlock_list).to_csv_attachment(filename)
+    for user in users:
+        user: User = user
+        user.email_user(
+            f"Interlock status report {format_datetime()}",
+            "Please find attached the interlock report.",
+            from_email=None,
+            attachments=[report_attachment],
+            email_category=EmailCategory.TIMED_SERVICES,
+        )
+
+
+def get_interlock_report(interlock_list: QuerySetType[Interlock_model]) -> BasicDisplayTable:
+    interlock_report = BasicDisplayTable()
+    interlock_report.headers = [
+        ("status", "Status"),
+        ("name", "Name"),
+        ("card", "Card"),
+        ("channel", DEFAULT_CHANNEL_NAME),
+        ("unit_id", DEFAULT_UNIT_ID_NAME),
+        ("state", "State"),
+        ("tool", "Tool"),
+        ("door", "Door"),
+        ("id", "ID"),
+    ]
+    for interlock in interlock_list:
+        interlock: Interlock_model = interlock
+        interlock_report.add_row(
+            {
+                "status": interlock.ping(),
+                "name": interlock.name,
+                "card": str(interlock.card),
+                "channel": interlock.channel,
+                "unit_id": interlock.unit_id,
+                "state": interlock.get_state_display(),
+                "tool": str(interlock.tool) if hasattr(interlock, "tool") else "",
+                "door": str(interlock.door) if hasattr(interlock, "door") else "",
+                "id": interlock.id,
+            }
+        )
+
+    return interlock_report
 
 
 def get(category: InterlockCardCategory, raise_exception=True) -> Interlock:

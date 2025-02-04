@@ -78,6 +78,15 @@ DATETIME_INPUT_FORMATS = ["%m/%d/%Y %I:%M %p", *global_settings.DATE_INPUT_FORMA
 DATE_INPUT_FORMATS = ["%m/%d/%Y", *global_settings.DATE_INPUT_FORMATS]
 TIME_INPUT_FORMATS = ["%I:%M:%S %p", *global_settings.TIME_INPUT_FORMATS]
 
+# -------------------- Pick date and time formats --------------------
+# Those formats are optional in most cases and only used on kiosk or mobile views, when picking up date/time separately.
+# If not defined, a conversion from DATE_INPUT_FORMATS and TIME_INPUT_FORMATS will be attempted.
+# See allowed date formats at https://amsul.ca/pickadate.js/date/#formatting-rules
+# See allowed time formats at https://amsul.ca/pickadate.js/time/#formatting-rules
+# PICKADATE_DATE_FORMAT = "mm/dd/yyyy"
+# PICKADATE_TIME_FORMAT = "HH:i A"
+
+
 # -------------------- Internationalization and localization --------------------
 # A boolean that specifies whether Django’s translation system should be enabled.
 # This provides an easy way to turn it off, for performance.
@@ -219,6 +228,8 @@ RESERVATION_ORGANIZER = "NEMO"
 RESERVATION_ORGANIZER_EMAIL = "no_reply"
 # Change this default value to True if you want new users to get ICS calendar invite for reservations by default.
 USER_RESERVATION_PREFERENCES_DEFAULT = False
+# Change the following to split bcc users into chunks when sending broadcast emails. This can be useful to avoid trigger spam/security measures.
+EMAIL_BROADCAST_BCC_CHUNK_SIZE = None
 
 # -------------------- SMTP Server config --------------------
 # Uncomment the following if using an email SMTP server

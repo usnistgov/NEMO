@@ -6,21 +6,21 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from NEMO.apps.contracts.customization import ContractsCustomization
+from NEMO.constants import CHAR_FIELD_MEDIUM_LENGTH, MEDIA_PROTECTED
 from NEMO.models import BaseDocumentModel, BaseModel, User
-from NEMO.views.constants import CHAR_FIELD_MAXIMUM_LENGTH, MEDIA_PROTECTED
 
 
 class Procurement(BaseModel):
-    name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text=_("The name of the contract"))
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text=_("The name of the contract"))
     submitted_date = models.DateField(null=True, blank=True, help_text=_("The date this contract was submitted"))
     award_date = models.DateField(null=True, blank=True, help_text=_("The date this contract was awarded"))
     contract_number = models.CharField(
-        null=True, blank=True, max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text=_("The contract number")
+        null=True, blank=True, max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text=_("The contract number")
     )
     requisition_number = models.CharField(
         null=True,
         blank=True,
-        max_length=CHAR_FIELD_MAXIMUM_LENGTH,
+        max_length=CHAR_FIELD_MEDIUM_LENGTH,
         help_text=_("The requisition number for this contract"),
     )
     cost = models.DecimalField(
@@ -76,7 +76,7 @@ class ServiceContract(Procurement):
 
 
 class ContractorAgreement(BaseModel):
-    name = models.CharField(max_length=CHAR_FIELD_MAXIMUM_LENGTH, help_text=_("The name of the contractor"))
+    name = models.CharField(max_length=CHAR_FIELD_MEDIUM_LENGTH, help_text=_("The name of the contractor"))
     contract = models.ForeignKey(
         Procurement,
         null=True,

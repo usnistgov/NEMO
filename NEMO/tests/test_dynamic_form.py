@@ -4,10 +4,78 @@ from django.http import QueryDict
 from django.test import TestCase
 
 from NEMO.utilities import EmptyHttpRequest
-from NEMO.widgets.dynamic_form import DynamicForm
+from NEMO.widgets.dynamic_form import DynamicForm, PostUsageGroupQuestion
 
 
 class TestDynamicForm(TestCase):
+
+    def test_question_with_initial_data(self):
+        # question and initial data
+        initial_data = {"test": {"type": "number", "user_input": "2"}}
+        data = [
+            {"name": "test", "type": "number", "title": "Pair of wafer trays", "max-width": 250},
+        ]
+        data_with_default = [
+            {"name": "test", "type": "number", "title": "Pair of wafer trays", "max-width": 250, "default_value": "1"},
+        ]
+
+        # question with initial and no default => initial
+        dynamic_form = DynamicForm(json.dumps(data), initial_data=initial_data)
+        dynamic_form.validate("tool_usage_group_question", 1)
+        question = [question for question in dynamic_form.questions if question.name == "test"][0]
+        self.assertEqual(question.get_default_value(), initial_data["test"]["user_input"])
+
+        # question with no initial data at all => None
+        dynamic_form = DynamicForm(json.dumps(data), initial_data=None)
+        question = [question for question in dynamic_form.questions if question.name == "test"][0]
+        self.assertEqual(question.get_default_value(), None)
+
+        # question with no initial data but default in question => default
+        dynamic_form = DynamicForm(json.dumps(data_with_default))
+        question = [question for question in dynamic_form.questions if question.name == "test"][0]
+        self.assertEqual(question.get_default_value(), data_with_default[0]["default_value"])
+
+        # question with initial data and default in question => initial
+        dynamic_form = DynamicForm(json.dumps(data_with_default))
+        question = [question for question in dynamic_form.questions if question.name == "test"][0]
+        self.assertEqual(question.get_default_value(), data_with_default[0]["default_value"])
+
+        # question with group questions
+        group_user_input = {
+            "test_group": {
+                "type": "group",
+                "user_input": {
+                    "0": {
+                        "test": "2",
+                    },
+                    "1": {
+                        "test": "3",
+                    },
+                },
+            }
+        }
+        group_data = [
+            {
+                "name": "test_group",
+                "type": "group",
+                "title": "This is a test group",
+                "max_number": 2,
+                "questions": [
+                    {"name": "test", "type": "number", "title": "Pair of wafer trays", "max-width": 250},
+                ],
+            }
+        ]
+        dynamic_form = DynamicForm(json.dumps(group_data), initial_data=group_user_input)
+        question: PostUsageGroupQuestion = [
+            question for question in dynamic_form.questions if question.name == "test_group"
+        ][0]
+        for index, data in enumerate(list(group_user_input["test_group"]["user_input"].values())):
+            question.load_sub_questions(index, data)
+            sub_question = [question for question in question.sub_questions if question.initial_name == "test"][0]
+            self.assertEqual(
+                sub_question.get_default_value(), group_user_input["test_group"]["user_input"][str(index)]["test"]
+            )
+
     def test_formula_number_field(self):
         data = [
             {"name": "test", "type": "number", "title": "Pair of wafer trays", "max-width": 250},

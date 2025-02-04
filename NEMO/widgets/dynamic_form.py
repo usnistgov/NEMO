@@ -5,19 +5,21 @@ import re
 import sys
 from collections import Counter
 from copy import copy
-from distutils.util import strtobool
 from json import dumps, loads
 from logging import getLogger
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
+from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.http import QueryDict
 from django.urls import NoReverseMatch, reverse
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 
 from NEMO.evaluators import evaluate_expression, get_expression_variables
 from NEMO.exceptions import RequiredUnansweredQuestionsException
-from NEMO.models import Consumable, ToolUsageCounter
-from NEMO.utilities import EmptyHttpRequest, quiet_int, slugify_underscore
+from NEMO.models import Consumable, Task, ToolUsageCounter, UsageEvent
+from NEMO.utilities import EmptyHttpRequest, quiet_int, slugify_underscore, strtobool
 from NEMO.views.consumables import make_withdrawal
 
 dynamic_form_logger = getLogger(__name__)
@@ -29,11 +31,12 @@ GROUP_TYPE_FIELD_KEY = "group"
 class PostUsageQuestion:
     question_type = "Question"
 
-    required_span = '<span style="color:red">*</span>'
+    required_span = '<span class="required-question-star">*</span>'
 
-    def __init__(self, properties: Dict, index: int = None):
+    def __init__(self, properties: Dict, index: int = None, initial_data=None):
         self.properties = properties
         self.name = self._init_property("name")
+        self.initial_name = self.name
         self.title = self._init_property("title")
         self.title_html = self._init_property("title_html")
         self.help = self._init_property("help")
@@ -51,12 +54,20 @@ class PostUsageQuestion:
         self.rows = self._init_property("rows")
         self.consumable = self._init_property("consumable")
         self.consumable_id = self._init_property("consumable_id")
-        self.required = self._init_property("required", True)
+        self.required = self._init_property("required", boolean=True)
+        self.inline = self._init_property("inline", boolean=True)
         # For backwards compatibility keep default choice
-        self.default_value = self._init_property("default_value") or self._init_property("default_choice")
+        self.default_value = (
+            self._init_property("default_value")
+            if self._init_property("default_value") is not None
+            else self._init_property("default_choice")
+        )
         self.choices = self._init_property("choices")
         self.labels = self._init_property("labels")
         self.formula = self._init_property("formula")
+        self.options = self._init_property("options")
+        self.form_row = self._init_property("form_row")
+        self.form_cell = self._init_property("form_cell")
         self.group_add_button_name = self._init_property("group_add_button_name") or "Add"
         self.index = index
         if index and not isinstance(self, PostUsageGroupQuestion):
@@ -65,6 +76,11 @@ class PostUsageQuestion:
         self.form_name = f"df_{slugify_underscore(self.name)}"
         self.all_questions: List[PostUsageQuestion] = []
         self.is_sub_question: bool = False
+        self.initial_data = initial_data
+
+    def get_default_value(self):
+        # Initial data always has precedence over the default value from the question definition
+        return self.initial_data if self.initial_data is not None else self.default_value
 
     def _init_property(self, prop: str, boolean: bool = False) -> Any:
         if boolean:
@@ -88,8 +104,8 @@ class PostUsageQuestion:
         self.validate_property_exists("title")
         self.validate_property_exists("type")
 
-    def render(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
-        return self.render_element(virtual_inputs, group_question_url, group_item_id) + self.render_script(
+    def render(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
+        return self.render_element(virtual_inputs, group_question_url, group_item_id, extra_class) + self.render_script(
             virtual_inputs, group_question_url, group_item_id
         )
 
@@ -100,7 +116,7 @@ class PostUsageQuestion:
             result += " (possible choices: " + "|".join(self.choices) + ")"
         return result
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         return ""
 
     def render_script(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
@@ -126,15 +142,29 @@ class PostUsageQuestion:
     def validate_labels_and_choices(self):
         self.validate_property_exists("choices")
         if "labels" in self.properties:
-            if len(self.properties["labels"]) != len(self.properties["choices"]):
+            labels = self.properties["labels"]
+            if not isinstance(labels, dict):
+                label_length = len(labels)
+            else:
+                label_length = 0
+                for element, value in labels.items():
+                    if isinstance(value, list):  # Recursively check if the element is a sublist
+                        label_length += len(value)
+                    else:
+                        label_length += 1
+            if label_length != len(self.properties["choices"]):
                 raise Exception("When using labels you need one for each choice")
 
     @staticmethod
-    def load_questions(questions: Optional[List[Dict]], index: int = None):
+    def load_questions(questions: Optional[List[Dict]], index: int = None, initial_data: Union[Dict, str] = None):
+        user_inputs = get_submitted_user_inputs(initial_data)
         questions_to_load = questions or []
         post_usage_questions: List[PostUsageQuestion] = []
         for question in questions_to_load:
-            post_usage_questions.append(question_types.get(question["type"], PostUsageQuestion)(question, index))
+            question_initial_data = user_inputs[question["name"]] if question["name"] in user_inputs else None
+            post_usage_questions.append(
+                question_types.get(question["type"], PostUsageQuestion)(question, index, question_initial_data)
+            )
         return post_usage_questions
 
 
@@ -145,16 +175,21 @@ class PostUsageRadioQuestion(PostUsageQuestion):
         super().validate()
         self.validate_labels_and_choices()
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
+        result = f'<div class="form-group {extra_class}">'
+        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
+        result += f"<div class='{'form-control-static' if self.inline else ''}'>"
         for index, choice in enumerate(self.choices):
             label = self.labels[index] if self.labels else choice
-            result += '<div class="radio">'
+            result += f'<div class="radio{"-inline" if self.inline else ""}">'
             required = "required" if self.required else ""
-            is_default_choice = "checked" if self.default_value and self.default_value == choice else ""
+            is_default_choice = (
+                "checked" if self.get_default_value() is not None and self.get_default_value() == choice else ""
+            )
             result += f'<label><input type="radio" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
             result += "</div>"
+        result += "</div>"
         result += "</div>"
         return result
 
@@ -166,17 +201,29 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
         super().validate()
         self.validate_labels_and_choices()
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
+        result = f'<div class="form-group {extra_class}">'
+        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         result += f'<input aria-label="hidden field used for required answer" id="required_{ self.form_name }" type="checkbox" value="" style="display: none" { "required" if self.required else "" }/>'
+        result += f"<div class='{'form-control-static' if self.inline else ''}'>"
         for index, choice in enumerate(self.choices):
             label = self.labels[index] if self.labels else choice
-            result += '<div class="checkbox">'
+            result += f'<div class="checkbox{"-inline" if self.inline else ""}">'
             required = f"""onclick="checkbox_required('{self.form_name}')" """ if self.required else ""
-            is_default_choice = "checked" if self.default_value and self.default_value == choice else ""
+            is_default_choice = (
+                "checked"
+                if self.get_default_value() is not None
+                and (
+                    self.get_default_value() == choice
+                    or isinstance(self.get_default_value(), List)
+                    and choice in self.get_default_value()
+                )
+                else ""
+            )
             result += f'<label><input type="checkbox" name="{self.form_name}" value="{choice}" {required} {is_default_choice}>{label}</label>'
             result += "</div>"
+        result += "</div>"
         result += "</div>"
         return result
 
@@ -204,42 +251,57 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 
     def validate(self):
         super().validate()
-        self.validate_property_exists("max-width")
         self.validate_labels_and_choices()
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        max_width = f"max-width:{self.max_width}px"
-        result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</div>'
+        result = f'<div class="form-group {extra_class}">'
+        result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         required = "required" if self.required else ""
-        result += (
-            f'<select name="{self.form_name}" {required} style="margin-top: 5px;{max_width}" class="form-control">'
-        )
+        max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+        result += f'<select name="{self.form_name}" {required} style="{max_width}" class="form-control">'
         blank_disabled = 'disabled="disabled"' if required else ""
         placeholder = self.placeholder if self.placeholder else "Select an option"
         result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
-        for index, choice in enumerate(self.choices):
-            label = self.labels[index] if self.labels else choice
-            is_default_choice = "selected" if self.default_value and self.default_value == choice else ""
-            result += f'<option value="{choice}" {is_default_choice}>{label}</option>'
+        index = 0
+        for key in self.labels or self.choices:
+            if not self.labels:
+                label = self.choices[index]
+            elif isinstance(self.labels, dict):
+                label = self.labels[key]
+            else:
+                label = self.labels[index]
+            if isinstance(label, list):
+                result += f'<optgroup label="{key}">\n'
+                for item in label:
+                    choice = self.choices[index]
+                    result += self._render_choice_option(choice, item)
+                    index += 1
+                result += "</optgroup>\n"
+            else:
+                choice = self.choices[index]
+                result += self._render_choice_option(choice, label)
+                index += 1
         result += "</select>"
         if self.help:
             result += f'<div style="font-size:smaller;color:#999;{max_width}">{self.help}</div>'
         result += "</div>"
         return result
 
+    def _render_choice_option(self, choice, label) -> str:
+        is_default_choice = (
+            "selected" if self.get_default_value() is not None and self.get_default_value() == choice else ""
+        )
+        return f'<option value="{choice}" {is_default_choice}>{label}</option>'
+
 
 class PostUsageTextFieldQuestion(PostUsageQuestion):
     question_type = "Question of type text"
 
-    def validate(self):
-        super().validate()
-        self.validate_property_exists("max-width")
-
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        max_width = f"max-width:{self.max_width}px"
-        result = '<div class="form-group">'
+        max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+        result = f'<div class="form-group {extra_class}">'
         result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         input_group_required = True if self.prefix or self.suffix else False
         if input_group_required:
@@ -249,7 +311,7 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
         required = "required" if self.required else ""
         pattern = f'pattern="{self.pattern}"' if self.pattern else ""
         placeholder = f'placeholder="{self.placeholder}"' if self.placeholder else ""
-        default_value = f'value="{self.default_value}"' if self.default_value else ""
+        default_value = f'value="{self.get_default_value()}"' if self.get_default_value() is not None else ""
         result += self.render_input(required, pattern, placeholder, default_value)
         if self.suffix:
             result += f'<span class="input-group-addon">{self.suffix}</span>'
@@ -262,7 +324,8 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
 
     def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         maxlength = f'maxlength="{self.maxlength}"' if self.maxlength else ""
-        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} style="{max_width}" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
     def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
         if virtual_inputs:
@@ -284,7 +347,7 @@ class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
 
     def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         rows = f'rows="{str(self.rows)}"' if self.rows else ""
-        return f'<textarea class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} style="max-width:{self.max_width}px;height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.default_value or ""}</textarea>'
+        return f'<textarea class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} style="max-width:{self.max_width}px;height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.get_default_value() or ""}</textarea>'
 
 
 class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
@@ -348,7 +411,7 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
     def all_questions_by_form_name(self):
         return {question.form_name: question for question in self.all_questions}
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         return f'<input type="hidden" id="{self.form_name}" name="{self.form_name}">'
 
     def validate(self):
@@ -437,44 +500,85 @@ class PostUsageFormulaQuestion(PostUsageQuestion):
         return evaluate_expression(formula, **extracted_form_values) if all_valid else None
 
 
+class PostUsageRadioReportProblemQuestion(PostUsageRadioQuestion):
+    question_type = "Question of type radio report problem"
+
+    def __init__(self, properties: Dict, index: int = None, initial_data=None):
+        properties["choices"] = ["true", "false"]
+        if not properties.get("labels"):
+            properties["labels"] = ["Yes", "No"]
+        super().__init__(properties, index, initial_data)
+
+    def validate(self):
+        super().validate()
+        self.validate_property_exists("options")
+        task = Task(**self.options)
+        try:
+            if not task.problem_description:
+                raise ValidationError({"problem_description": _("This field is required")})
+            task.full_clean(exclude=["tool", "creator", "urgency", "safety_hazard", "force_shutdown"])
+        except ValidationError as e:
+            raise Exception(f"{self.question_type} options are invalid: {e.message_dict}")
+
+
 class PostUsageGroupQuestion(PostUsageQuestion):
     question_type = "Question of type group"
 
-    def __init__(self, properties: Dict, index: int = None):
-        super().__init__(properties, index)
+    def __init__(self, properties: Dict, index: int = None, initial_data=None):
+        super().__init__(properties, index, initial_data)
         self.max_number = self._init_property("max_number")
         # we need a safe group name to use in js function and variable names
         self.group_name = slugify_underscore(self.name)
-        self.sub_questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(
-            self._init_property("questions"), index
-        )
+        self.load_sub_questions(index)
         for sub_question in self.sub_questions:
             sub_question.is_sub_question = True
+
+    def load_sub_questions(self, index, initial_data=None):
+        self.sub_questions = PostUsageQuestion.load_questions(self._init_property("questions"), index)
+        if initial_data:
+            for sub_question in self.sub_questions:
+                sub_question.initial_data = initial_data.get(sub_question.initial_name, None)
 
     def validate(self):
         super().validate()
         self.validate_property_exists("questions")
         self.validate_property_exists("max_number")
         for sub_question in self.sub_questions:
+            if isinstance(sub_question, PostUsageRadioReportProblemQuestion):
+                raise Exception(f"{sub_question.question_type} cannot be used inside a group question")
             sub_question.validate()
 
-    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
+    def get_initial_data_for_subquestion(self, sub_question_name):
+        if self.initial_data and self.index is not None and self.index < len(self.initial_data):
+            index_data = self.initial_data[self.index] or {}
+            return index_data.get(sub_question_name, None)
+
+    def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        result = f'<div class="form-group"><div style="white-space: pre-wrap">{title}</div></div>'
+        result = f'<div class="{extra_class}">'
+        result += f'<div class="form-group"><div style="white-space: pre-wrap">{title}</div></div>'
         result += f'<div id="{self.group_name}_container">'
-        result += self.render_group_question(virtual_inputs, group_question_url, group_item_id)
-        result += "</div>"
+        # It's a bit more complicated here, we need to render multiple groups if we have initial data
+        # So we change the index, reload sub questions and render each of them
+        if self.initial_data:
+            for index, data in enumerate(self.initial_data):
+                self.load_sub_questions(index, data)
+                result += self.render_group_question(virtual_inputs, group_question_url, group_item_id)
+                result += "</div>"
+        else:
+            result += self.render_group_question(virtual_inputs, group_question_url, group_item_id)
+            result += "</div>"
         result += "</div>"
         result += '<div class="form-group">'
         result += f'<button id="{self.group_name}_add_button" type="button" onclick="add_question_{self.group_name}()">{self.group_add_button_name}</button>'
+        result += "</div>"
         result += "</div>"
         return result
 
     def render_group_question(self, virtual_inputs: bool, group_question_url: str, group_item_id: int) -> str:
         result = ""
         result += f'<div class="{self.group_name}_question" style="padding-top: 10px; padding-bottom: 10px; border-top: 1px solid lightgray">'
-        for sub_question in self.sub_questions:
-            result += sub_question.render(virtual_inputs, group_question_url, group_item_id)
+        result += render_grid_questions(self.sub_questions, group_question_url, group_item_id, virtual_inputs)
         if self.index:
             result += f'<button type="button" onclick="remove_question_{self.group_name}(this);">Remove</button>'
         return result
@@ -483,7 +587,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
         return f"""
 		<script>
 			if (!$) {{ $ = django.jQuery; }}
-			var {self.group_name}_question_index=1;
+			var {self.group_name}_question_index={len(self.initial_data) if self.initial_data else '1'};
 			function update_add_button_{self.group_name}()
 			{{
 				if ($(".{self.group_name}_question").length < {self.max_number})
@@ -494,7 +598,7 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 				{{
 					$("#{self.group_name}_add_button").hide();
 				}}
-			}};
+			}}
 			function remove_question_{self.group_name}(element)
 			{{
 				$(element).parents(".{self.group_name}_question").remove();
@@ -540,12 +644,14 @@ class PostUsageGroupQuestion(PostUsageQuestion):
 
 
 class DynamicForm:
-    def __init__(self, questions):
+    def __init__(self, questions, initial_data=None):
         self.untreated_questions = []
         self.questions = []
         if questions:
             self.untreated_questions = loads(questions)
-            self.questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(self.untreated_questions)
+            self.questions: List[PostUsageQuestion] = PostUsageQuestion.load_questions(
+                self.untreated_questions, initial_data=initial_data
+            )
         # Add all the questions to each question, for extra processing if needed (in Formula for example)
         subs = [sub_q for q in self.questions if isinstance(q, PostUsageGroupQuestion) for sub_q in q.sub_questions]
         all_questions = self.questions + subs
@@ -559,8 +665,7 @@ class DynamicForm:
         result = ""
         if self.questions:
             result += "<script>if (!$) { $ = django.jQuery; }</script>"
-        for question in self.questions:
-            result += question.render(virtual_inputs, group_question_url, group_item_id)
+        result += f'<div class="dynamic_form">{render_grid_questions(self.questions, group_question_url, group_item_id, virtual_inputs)}</div>'
         return mark_safe(result)
 
     def validate(self, group_question_url: str, group_item_id: int):
@@ -639,15 +744,20 @@ class DynamicForm:
                         results.append(sub_question)
         return results
 
-    def charge_for_consumables(self, usage_event, run_data: str, request=None):
-        customer = usage_event.user
-        merchant = usage_event.operator
-        project = usage_event.project
+    def process_run_data(self, usage_event: UsageEvent, run_data: str, request=None):
         try:
             run_data_json = loads(run_data)
         except Exception as error:
             dynamic_form_logger.debug(error)
             return
+        self._charge_for_consumables(usage_event, run_data_json, request)
+        self._update_tool_counters(usage_event, run_data_json)
+        self._report_problems(usage_event, run_data_json, request)
+
+    def _charge_for_consumables(self, usage_event, run_data_json: Dict, request=None):
+        customer = usage_event.user
+        merchant = usage_event.operator
+        project = usage_event.project
         for question in self.questions:
             input_data = run_data_json[question.name] if question.name in run_data_json else None
             withdraw_consumable_for_question(question, input_data, customer, merchant, project, usage_event, request)
@@ -657,41 +767,60 @@ class DynamicForm:
                         sub_question, input_data, customer, merchant, project, usage_event, request
                     )
 
-    def update_tool_counters(self, run_data: str, tool_id: int):
-        # This function increments all counters associated with the given tool
-        try:
-            run_data_json = loads(run_data)
-        except Exception as error:
-            dynamic_form_logger.debug(error)
-            return
-        active_counters = ToolUsageCounter.objects.filter(is_active=True, tool_id=tool_id)
+    def _update_tool_counters(self, usage_event: UsageEvent, run_data_json: Dict):
+        # This function increments/decrements all counters associated with the given tool
+        active_counters = ToolUsageCounter.objects.filter(is_active=True, tool_id=usage_event.tool_id)
         for counter in active_counters:
             additional_value = 0
             for question in self.questions:
                 input_data = run_data_json[question.name] if question.name in run_data_json else None
-                additional_value += get_counter_increment_for_question(
-                    question, input_data, counter.tool_usage_question
-                )
+                additional_value += get_counter_value_for_question(question, input_data, counter.tool_usage_question)
                 if isinstance(question, PostUsageGroupQuestion):
                     for sub_question in question.sub_questions:
-                        additional_value += get_counter_increment_for_question(
+                        additional_value += get_counter_value_for_question(
                             sub_question, input_data, counter.tool_usage_question
                         )
             if additional_value:
-                counter.value += additional_value
+                counter.value += counter.counter_direction * additional_value
                 counter.save()
 
+    def _report_problems(self, usage_event: UsageEvent, run_data_json: Dict, request):
+        for question in self.questions:
+            input_data = run_data_json[question.name] if question.name in run_data_json else None
+            if isinstance(question, PostUsageRadioReportProblemQuestion):
+                if "user_input" in input_data and input_data["user_input"] == "true":
+                    from NEMO.views.tasks import save_task
 
-def get_submitted_user_inputs(user_data: str) -> Dict:
-    """Takes the user data as a string and returns a dictionary of inputs or a list of inputs for group fields"""
+                    task = Task(**question.options)
+                    if task.force_shutdown is None:
+                        task.force_shutdown = False
+                    if task.safety_hazard is None:
+                        task.safety_hazard = False
+                    task.creator = usage_event.operator
+                    task.tool = usage_event.tool
+                    if task.urgency is None:
+                        task.urgency = (
+                            Task.Urgency.HIGH if task.safety_hazard or task.force_shutdown else Task.Urgency.NORMAL
+                        )
+                    save_task(request, task, usage_event.operator)
+                    message = f"A problem report was automatically send to staff{' and the tool was shutdown' if task.force_shutdown else ''}"
+                    messages.success(request, message, extra_tags="data-speed=9000")
+
+
+def get_submitted_user_inputs(user_data: Union[str, dict]) -> Dict:
+    """Takes the user data as a string or dict and returns a dictionary of inputs or a list of inputs for group fields"""
     user_input = {}
-    user_data_json = loads(user_data)
-    for field_name, data in user_data_json.items():
-        if "user_input" in data:
-            if data["type"] != "group":
-                user_input[field_name] = data["user_input"]
-            else:
-                user_input[field_name] = data["user_input"].values()
+    try:
+        user_data_json = loads(user_data) if isinstance(user_data, str) and user_data else user_data
+        if user_data_json:
+            for field_name, data in user_data_json.items():
+                if "user_input" in data:
+                    if data["type"] != "group":
+                        user_input[field_name] = data["user_input"]
+                    else:
+                        user_input[field_name] = list(data["user_input"].values())
+    except Exception as e:
+        dynamic_form_logger.exception(e)
     return user_input
 
 
@@ -703,6 +832,25 @@ def render_group_questions(request, questions, group_question_url, group_item_id
             if isinstance(question, PostUsageGroupQuestion) and question.group_name == group_name:
                 return question.render_group_question(virtual_inputs, group_question_url, group_item_id)
     return ""
+
+
+def render_grid_questions(questions, group_question_url: str, group_item_id: int, virtual_inputs: bool):
+    # only use the grid if we have "form_row" defined for at least one item
+    use_grid = max([q.form_row for q in questions if q.form_row], default=0)
+    result = ""
+    for row in sort_question_for_grid(questions):
+        if row:
+            extra_class = ""
+            max_cells = len([q for q in row if not isinstance(q, PostUsageFormulaQuestion)])
+            if use_grid and max_cells:
+                cell_width = 12 // max_cells
+                result += '<div class="row">'
+                extra_class = f"col-md-{cell_width or 12}"
+            for question in row:
+                result += question.render(virtual_inputs, group_question_url, group_item_id, extra_class)
+            if use_grid and max_cells:
+                result += "</div>"
+    return result
 
 
 def validate_consumable_for_question(question: PostUsageQuestion):
@@ -747,7 +895,7 @@ def withdraw_consumable_for_question(question, input_data, customer, merchant, p
                 )
 
 
-def get_counter_increment_for_question(question, input_data, counter_question):
+def get_counter_value_for_question(question, input_data, counter_question):
     additional_value = 0
     if isinstance(question, (PostUsageNumberFieldQuestion, PostUsageFloatFieldQuestion)):
         if question.name == counter_question and "user_input" in input_data and input_data["user_input"]:
@@ -794,6 +942,27 @@ def admin_render_dynamic_form_preview(dynamic_form_json: str, group_url: str, it
     )
 
 
+def sort_question_for_grid(questions: List[PostUsageQuestion]) -> List[List[PostUsageQuestion]]:
+    rows: List[List[PostUsageQuestion]] = []
+
+    # Sorting the list of questions by row, None last
+    row_cells = sorted(questions, key=lambda x: (x.form_row is None, x.form_row))
+
+    # Extracting the unique rows
+    unique_rows = sorted(set(q.form_row for q in row_cells if q.form_row is not None))
+    # Adding row None at the end
+    unique_rows.append(None)
+
+    for row in unique_rows:
+        # Extracting cells for the current row and sorting them
+        cells_in_row = sorted(
+            [q for q in row_cells if q.form_row == row], key=lambda x: (x.form_cell is None, x.form_cell)
+        )
+        rows.append(cells_in_row)
+
+    return rows
+
+
 def match_group_index(form_name: str) -> Optional[re.Pattern]:
     # This will match form_name or any combination of form_name_1, form_name_2 etc.
     return re.compile("^" + form_name + "(_(\d+))?$")
@@ -805,6 +974,7 @@ question_types: Dict[str, Type[PostUsageQuestion]] = {
     "textbox": PostUsageTextFieldQuestion,
     "textarea": PostUsageTextAreaFieldQuestion,
     "radio": PostUsageRadioQuestion,
+    "radio_report_problem": PostUsageRadioReportProblemQuestion,
     "checkbox": PostUsageCheckboxQuestion,
     "dropdown": PostUsageDropdownQuestion,
     "formula": PostUsageFormulaQuestion,

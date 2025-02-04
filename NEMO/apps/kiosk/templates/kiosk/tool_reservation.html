@@ -24,11 +24,11 @@
     <h4>When would you like to reserve the {{ tool }}?</h4>
     <div class="form-group">
         <input type="text"
-               id="date"
-               name="date"
-               aria-label="Reservation date"
+               id="start_date"
+               name="start_date"
+               aria-label="Reservation start date"
                class="form-control"
-               placeholder="Choose a date">
+               placeholder="Choose a start date">
     </div>
     <div class="form-group">
         <input type="text"
@@ -37,6 +37,14 @@
                aria-label="Reservation start time"
                class="form-control"
                placeholder="Choose a start time">
+    </div>
+    <div class="form-group">
+        <input type="text"
+               id="end_date"
+               name="end_date"
+               aria-label="Reservation end date"
+               class="form-control"
+               placeholder="Choose an end date">
     </div>
     <div class="form-group">
         <input type="text"
@@ -56,32 +64,41 @@
 	{% for item in tool_reservation_times %}
 	unavailable_times.push([{{ item.start|date:"U" }},{{ item.end|date:"U" }}]);
 	{% endfor %}
-	let date_picker = $('#date').pickadate({format: "dddd, mmmm d", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
-	let start_time_picker = $('#start').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
-	let end_time_picker = $('#end').pickatime({interval: 15, formatSubmit: "H:i", hiddenName: true, formatLabel: format_label});
+	let start_date_picker = $('#start_date').pickadate({format: "{{ pickadate_date_format }}", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: function(event) {
+        var date = start_date_picker.pickadate('picker').get('select', '{{ pickadate_date_format }}');
+        end_date_picker.pickadate('picker').set('select', date);
+	    refresh_times;
+	 }
+	});
+	let end_date_picker = $('#end_date').pickadate({format: "{{ pickadate_date_format }}", formatSubmit: "yyyy-mm-dd", firstDay: 1, hiddenName: true, onSet: refresh_times});
+	let start_time_picker = $('#start').pickatime({interval: 15, format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_labels(true)});
+	let end_time_picker = $('#end').pickatime({interval: 15, format: "{{ pickadate_time_format }}", formatSubmit: "H:i", hiddenName: true, formatLabel: format_labels(false)});
 	// set initial date
-	if ('{{ date|default_if_none:'' }}') {
-		date_picker.pickadate('picker').set('select', '{{ date }}', {format: 'yyyy-mm-dd'})
+	if ('{{ start_date|default_if_none:'' }}') {
+		start_date_picker.pickadate('picker').set('select', '{{ start_date }}', {format: '{{ pickadate_date_format }}'})
 	}
 	function refresh_times() {
 		start_time_picker.pickatime('picker').render();
 		end_time_picker.pickatime('picker').render();
 	}
-	function format_label(time) {
-		if (date_picker.pickadate('picker').get('select') && unavailable_times.length > 0) {
-			let date_selected = date_picker.pickadate('picker').get('select').pick; // selected date in milliseconds
-			let time_selected = time.pick * 60 * 1000; // time in milliseconds
-			let date_time_selected = (date_selected + time_selected)/1000; // back to seconds to compare with python timestamp
-			for (let i=0 ; i < unavailable_times.length; i++) {
-                let times = unavailable_times[i];
-                let start = times[0];
-                let end = times[1];
-                if (date_time_selected >= start && date_time_selected < end) {
-                    return '<sp !an>h:i A</sp !an> <sm !all> !alre!ad!y re!serve!d</sm !all>';
+	function format_labels(is_start){
+        return function format_label(time) {
+            let date_picker = is_start ? start_date_picker : end_date_picker;
+            if (date_picker.pickadate('picker').get('select') && unavailable_times.length > 0) {
+                let date_selected = date_picker.pickadate('picker').get('select').pick; // selected date in milliseconds
+                let time_selected = time.pick * 60 * 1000; // time in milliseconds
+                let date_time_selected = (date_selected + time_selected)/1000; // back to seconds to compare with python timestamp
+                for (let i=0 ; i < unavailable_times.length; i++) {
+                    let times = unavailable_times[i];
+                    let start = times[0];
+                    let end = times[1];
+                    if (date_time_selected >= start && date_time_selected < end) {
+                        return '<sp !an>{{ pickadate_time_format }}</sp !an> <sm !all> !alre!ad!y re!serve!d</sm !all>';
+                    }
                 }
             }
-		}
-		return "h:i A";
-	}
+            return '{{ pickadate_time_format }}';
+        }
+    }
 	revert(120)
 </script>

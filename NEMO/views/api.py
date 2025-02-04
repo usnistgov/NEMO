@@ -1,13 +1,22 @@
+import mimetypes
+import platform
+from importlib import metadata
+from urllib.parse import unquote
+
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core.files.storage import default_storage
 from django.db import transaction
+from django.http import FileResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
 from django.utils.safestring import mark_safe
 from drf_excel.mixins import XLSXFileMixin
 from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 from rest_framework.serializers import ListSerializer
+from rest_framework.views import APIView
 
 from NEMO.models import (
     Account,
@@ -42,6 +51,7 @@ from NEMO.models import (
     TrainingSession,
     UsageEvent,
     User,
+    UserDocuments,
 )
 from NEMO.rest_pagination import NEMOPageNumberPagination
 from NEMO.serializers import (
@@ -81,14 +91,18 @@ from NEMO.serializers import (
     ToolStatusSerializer,
     TrainingSessionSerializer,
     UsageEventSerializer,
+    UserDocumentSerializer,
     UserSerializer,
 )
+from NEMO.templatetags.custom_tags_and_filters import app_version
 from NEMO.typing import QuerySetType
 from NEMO.utilities import export_format_datetime, remove_duplicates
 from NEMO.views.api_billing import (
     BillingFilterForm,
     get_billing_charges,
 )
+from NEMO.views.constants import MEDIA_PROTECTED
+from NEMO.views.customization import ApplicationCustomization
 
 date_filters = ["exact", "in", "month", "year", "day", "gte", "gt", "lte", "lt", "isnull"]
 time_filters = ["exact", "in", "hour", "minute", "second", "gte", "gt", "lte", "lt", "isnull"]
@@ -210,6 +224,20 @@ class UserViewSet(ModelViewSet):
         "last_login": datetime_filters,
         "access_expiration": date_filters,
         "physical_access_levels": manykey_filters,
+    }
+
+
+class UserDocumentsViewSet(ModelViewSet):
+    filename = "user_documents"
+    queryset = UserDocuments.objects.all()
+    serializer_class = UserDocumentSerializer
+    filterset_fields = {
+        "id": key_filters,
+        "user": key_filters,
+        "name": string_filters,
+        "url": string_filters,
+        "display_order": number_filters,
+        "uploaded_at": datetime_filters,
     }
 
 
@@ -383,11 +411,14 @@ class ReservationViewSet(ModelViewSet):
         "tool": key_filters,
         "area_id": key_filters,
         "area": key_filters,
+        "question_data": string_filters,
         "cancelled": boolean_filters,
         "missed": boolean_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
-        "question_data": string_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -407,8 +438,12 @@ class UsageEventViewSet(ModelViewSet):
         "operator": key_filters,
         "tool_id": key_filters,
         "tool": key_filters,
+        "training": boolean_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -430,6 +465,9 @@ class AreaAccessRecordViewSet(ModelViewSet):
         "staff_charge": key_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -492,9 +530,12 @@ class StaffChargeViewSet(ModelViewSet):
         "project": key_filters,
         "start": datetime_filters,
         "end": datetime_filters,
+        "note": string_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
-        "note": string_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -512,12 +553,17 @@ class TrainingSessionViewSet(ModelViewSet):
         "tool": key_filters,
         "project_id": key_filters,
         "project": key_filters,
+        "usage_event_id": key_filters,
+        "usage_event": key_filters,
         "duration": number_filters,
         "type": number_filters,
         "date": datetime_filters,
         "qualified": boolean_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -562,6 +608,9 @@ class ConsumableWithdrawViewSet(ModelViewSet):
         "date": datetime_filters,
         "validated": boolean_filters,
         "validated_by": key_filters,
+        "waived": boolean_filters,
+        "waived_on": datetime_filters,
+        "waived_by": key_filters,
     }
 
 
@@ -569,6 +618,7 @@ class ContentTypeViewSet(XLSXFileMixin, viewsets.ReadOnlyModelViewSet):
     filename = "content_types"
     queryset = ContentType.objects.all()
     serializer_class = ContentTypeSerializer
+    pagination_class = None
     filterset_fields = {
         "id": key_filters,
         "app_label": string_filters,
@@ -629,8 +679,8 @@ class PhysicalAccessLevelViewSet(ModelViewSet):
         "name": string_filters,
         "area": key_filters,
         "schedule": number_filters,
-        "weekdays_start_time": datetime_filters,
-        "weekdays_end_time": datetime_filters,
+        "weekdays_start_time": time_filters,
+        "weekdays_end_time": time_filters,
         "allow_staff_access": boolean_filters,
         "allow_user_request": boolean_filters,
     }
@@ -727,6 +777,7 @@ class PermissionViewSet(XLSXFileMixin, viewsets.ReadOnlyModelViewSet):
     filename = "permissions"
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
+    pagination_class = None
     filterset_fields = {
         "name": string_filters,
         "codename": string_filters,
@@ -793,3 +844,52 @@ class ToolStatusViewSet(XLSXFileMixin, viewsets.GenericViewSet):
 
     def get_filename(self, *args, **kwargs):
         return f"tool_status-{export_format_datetime()}.xlsx"
+
+
+class MetadataAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        metadata_dict = get_app_metadata()
+        metadata_dict["authenticators"] = [
+            authenticator.__class__.__name__ for authenticator in self.get_authenticators()
+        ]
+        return Response(metadata_dict)
+
+
+def get_app_metadata():
+    nemo_packages = []
+    other_packages = []
+
+    for package in metadata.distributions():
+        if package.name.lower().startswith("nemo"):
+            nemo_packages.append(f"{package.name}=={package.version}")
+        else:
+            other_packages.append(f"{package.name}=={package.version}")
+    return {
+        "nemo_version": app_version(),
+        "python_version": platform.python_version(),
+        "os_version": platform.platform(),
+        "site_title": ApplicationCustomization.get("site_title"),
+        "facility_name": ApplicationCustomization.get("facility_name"),
+        "nemo_plugins": nemo_packages,
+        "other_packages": other_packages,
+    }
+
+
+class MediaAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, path, *args, **kwargs):
+        clean_path = unquote(path)
+        user: User = request.user
+        if clean_path.startswith(MEDIA_PROTECTED) and not user.is_any_part_of_staff:
+            return HttpResponseForbidden()
+        if not clean_path or not default_storage.exists(clean_path):
+            return HttpResponseNotFound()
+        # Guess the MIME type of the media file from its extension.
+        # This is good enough since those files are ours, and we typically use the correct extensions.
+        mimetype, encoding = mimetypes.guess_type(path, strict=True)
+        if not mimetype:
+            return HttpResponseBadRequest()
+        return FileResponse(default_storage.open(clean_path), content_type=mimetype)

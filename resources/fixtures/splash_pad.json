@@ -8746,6 +8746,7 @@
       "name": "Total gold used",
       "description": "",
       "value": 203,
+      "default_value": 0,
       "tool": ["Unaxis ICP Etcher"],
       "tool_usage_question": "gold_used",
       "last_reset_value": null,
@@ -9243,6 +9244,13 @@
     }
   },
   {
+    "model": "NEMO.projecttype",
+    "fields": {
+      "name": "CHIPS",
+      "display_order": 1
+    }
+  },
+  {
     "model": "NEMO.project",
     "fields": {
       "name": "Cleanroom Eng",
@@ -9251,6 +9259,7 @@
       "account": [
         "Cleanroom Staff"
       ],
+      "project_types": [["CHIPS"]],
       "discipline": null,
       "active": true,
       "allow_consumable_withdrawals": true,

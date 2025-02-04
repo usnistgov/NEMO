@@ -12,6 +12,7 @@ from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET
 
 from NEMO.forms import nice_errors
+from NEMO.interlocks import send_csv_interlock_report
 from NEMO.models import (
     Alert,
     Area,
@@ -19,6 +20,8 @@ from NEMO.models import (
     Closure,
     ClosureTime,
     EmailNotificationType,
+    Interlock,
+    PhysicalAccessLevel,
     Qualification,
     RecurringConsumableCharge,
     RequestStatus,
@@ -385,7 +388,7 @@ def email_out_of_time_reservation_notification(request):
 
 def send_email_out_of_time_reservation_notification(request=None):
     """
-    Out of time reservation notification for areas is when a user is still logged in an area but his reservation expired.
+    Out of time reservation notification for areas is when a user is still logged in an area but either their reservation expired or they are outside of their permitted access hours.
     """
     # Exit early if the out of time reservation email template has not been customized for the organization yet.
     # This feature only sends emails, so if the template is not defined there nothing to do.
@@ -394,7 +397,8 @@ def send_email_out_of_time_reservation_notification(request=None):
             "The out of time reservation email template has not been customized for your organization yet. Please visit the customization page to upload a template, then out of time email notifications can be sent."
         )
 
-    out_of_time_user_area = []
+    out_of_time_user_reservations = []
+    trigger_time = timezone.now().replace(second=0, microsecond=0)  # Round down to the nearest minute.
 
     # Find all logged users
     access_records: List[AreaAccessRecord] = (
@@ -409,31 +413,36 @@ def send_email_out_of_time_reservation_notification(request=None):
         if customer.is_staff or customer.is_service_personnel:
             continue
 
-        if area.requires_reservation:
-            # Calculate the timestamp of how late a user can be logged in after a reservation ended.
-            threshold = (
-                timezone.now()
-                if not area.logout_grace_period
-                else timezone.now() - timedelta(minutes=area.logout_grace_period)
-            )
-            threshold = datetime.replace(threshold, second=0, microsecond=0)  # Round down to the nearest minute.
-            ending_reservations = Reservation.objects.filter(
-                cancelled=False,
-                missed=False,
-                shortened=False,
-                area=area,
-                user=customer,
-                start__lte=timezone.now(),
-                end=threshold,
-            )
-            # find out if a reservation is starting right at the same time (in case of back to back reservations, in which case customer is good)
-            starting_reservations = Reservation.objects.filter(
-                cancelled=False, missed=False, shortened=False, area=area, user=customer, start=threshold
-            )
-            if ending_reservations.exists() and not starting_reservations.exists():
-                out_of_time_user_area.append(ending_reservations[0])
+        threshold = (
+            trigger_time if not area.logout_grace_period else trigger_time - timedelta(minutes=area.logout_grace_period)
+        )
+        physical_access = PhysicalAccessLevel.objects.filter(user=customer, area=area).first()
+        # Check first if allowed schedule has just expired
+        if (
+            physical_access
+            and physical_access.accessible_at(threshold - timedelta(minutes=1))
+            and not physical_access.accessible_at(threshold)
+        ):
+            out_of_time_user_reservations.append(Reservation(user=customer, area=area, end=threshold))
+        else:
+            if area.requires_reservation:
+                ending_reservations = Reservation.objects.filter(
+                    cancelled=False,
+                    missed=False,
+                    shortened=False,
+                    area=area,
+                    user=customer,
+                    start__lte=timezone.now(),
+                    end=threshold,
+                )
+                # find out if a reservation is starting right at the same time (in case of back to back reservations, in which case customer is good)
+                starting_reservations = Reservation.objects.filter(
+                    cancelled=False, missed=False, shortened=False, area=area, user=customer, start=threshold
+                )
+                if ending_reservations.exists() and not starting_reservations.exists():
+                    out_of_time_user_reservations.append(ending_reservations[0])
 
-    for reservation in out_of_time_user_area:
+    for reservation in out_of_time_user_reservations:
         send_out_of_time_reservation_notification(reservation, request)
 
     return HttpResponse()
@@ -443,7 +452,8 @@ def send_out_of_time_reservation_notification(reservation: Reservation, request=
     message = get_media_file_contents("out_of_time_reservation_email.html")
     user_office_email = EmailsCustomization.get("user_office_email_address")
     if message and user_office_email:
-        subject = "Out of time in the " + str(reservation.area.name)
+        name = str(reservation.area.name)
+        subject = "Out of time for the " + name if reservation.start else "Out of allowed schedule for the " + name
         message = render_email_template(message, {"reservation": reservation}, request)
         recipients = reservation.user.get_emails(
             reservation.user.get_preferences().email_send_reservation_ending_reminders
@@ -1038,4 +1048,17 @@ def do_deactivate_access_expired_users():
     for user in users_about_to_expire:
         user.is_active = False
         user.save(update_fields=["is_active"])
+    return HttpResponse()
+
+
+@login_required
+@require_GET
+@permission_required("NEMO.trigger_timed_services", raise_exception=True)
+def email_csv_interlock_status_report(request):
+    usernames = request.GET.getlist("username")
+    return do_email_csv_interlock_status_report(usernames)
+
+
+def do_email_csv_interlock_status_report(usernames: List[str]):
+    send_csv_interlock_report(Interlock.objects.all(), User.objects.filter(username__in=usernames))
     return HttpResponse()

@@ -1,0 +1,8 @@
+[Unit]
+Description=Email interlock status report to given users
+
+[Timer]
+OnCalendar=daily
+
+[Install]
+WantedBy=multi-user.target

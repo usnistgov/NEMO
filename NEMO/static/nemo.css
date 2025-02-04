@@ -1046,10 +1046,24 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 }
 
 /* Invalid input for post usage/reservation questions and additional event parameters */
-#tool_control input:invalid, #tool_control select:invalid, #tool_control textarea:invalid,
-#additional_event_parameters input:invalid, #additional_event_parameters select:invalid, #additional_event_parameters textarea:invalid
+.dynamic_form input:invalid
 {
 	border-color: #dc3545!important;
+	border-width: 2px;
+	background: #ffebeb;
+}
+
+.dynamic_form input:invalid::placeholder
+{
+    color: #505050  ;
+}
+
+.required-question-star
+{
+    color:red;
+    font-size: 20px;
+    font-weight: bold;
+    line-height: .75;
 }
 
 /* Make form-control look like plain text */
@@ -1220,5 +1234,14 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 }
 
 .modal-open[style] {
-padding-right: 0 !important;
+	padding-right: 0 !important;
+}
+
+.progress-bar-default
+{
+ 	background-color: initial;
+ 	background-image: initial;
+  	-webkit-box-shadow: none;
+	box-shadow: none;
+	color: gray;
 }

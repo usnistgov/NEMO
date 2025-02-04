@@ -1,24 +1,115 @@
 {% extends popup_view|yesno:"base/popup.html,base.html" %}
+{% load custom_tags_and_filters %}
 {% block title %}{{ event.tool }} usage details{% endblock %}
 {% block content %}
     {% if not popup_view %}<h1>{{ event.tool }} usage details</h1>{% endif %}
-    User: {{ event.user }}
-    <br>
-    Operator: {{ event.operator }}
-    <br>
-    Project: {{ event.project.name }}
-    <br>
-    Tool: {{ event.tool }}
-    <br>
-    Start: {{ event.start }}
-    <br>
-    {% if event.end %}
-        End: {{ event.end }}
-        <br>
-    {% else %}
-        This tool is currently in use.
-        <br>
+    <table class="table table-striped" style="margin-bottom: 0">
+        <tr>
+            <td>User:</td>
+            <td>{{ event.user }}</td>
+        </tr>
+        <tr>
+            <td>Operator:</td>
+            <td>{{ event.operator }}</td>
+        </tr>
+        <tr>
+            <td>Project:</td>
+            <td>{{ event.project.name }}</td>
+        </tr>
+        <tr>
+            <td>Tool:</td>
+            <td>{{ event.tool }}</td>
+        </tr>
+        <tr>
+            <td>Start:</td>
+            <td>{{ event.start }}</td>
+        </tr>
+        <tr>
+            <td>End:</td>
+            <td>
+                {% if event.end %}
+                    {{ event.end }}
+                {% else %}
+                    This tool is currently in use.
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td>Identifier:</td>
+            <td>{{ event.id }}</td>
+        </tr>
+        {% if "tool"|customization:"tool_control_hide_data_history_users" != "enabled" or user.is_staff or user == event.user %}
+            {% if event.pre_run_data_json.items %}
+                <tr>
+                    <td>Pre run data:</td>
+                    <td style="padding: 0;">
+                        <table class="table table-striped" style="margin-bottom: 0;">
+                            {% for question_name, data in event.pre_run_data_json.items %}
+                                {% if data.type == 'group' %}
+                                    <tr>
+                                        <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                            {{ data.title }}
+                                            {% if data.title|slice:"-1:" != ":" %}:{% endif %}
+                                        </td>
+                                        <td style="padding: 0;{% if forloop.first %}border-top:none;{% endif %}">
+                                            <table class="table table-striped" style="margin-bottom: 0;">
+                                                {% res_question_tbody data.user_input %}
+                                            </table>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                            {{ data.title }}
+                                            {% if data.title|slice:"-1:" != ":" %}:{% endif %}
+                                        </td>
+                                        <td {% if forloop.first %}style="border-top:none;"{% endif %}>{{ data.user_input|linebreaksbr }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </table>
+                    </td>
+                </tr>
+            {% endif %}
+            {% if event.post_run_data_json.items %}
+                <tr>
+                    <td>Post run data:</td>
+                    <td style="padding: 0;">
+                        <table class="table table-striped" style="margin-bottom: 0;">
+                            {% for question_name, data in event.post_run_data_json.items %}
+                                {% if data.type == 'group' %}
+                                    <tr>
+                                        <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                            {{ data.title }}
+                                            {% if data.title|slice:"-1:" != ":" %}:{% endif %}
+                                        </td>
+                                        <td style="padding: 0;{% if forloop.first %}border-top:none;{% endif %}">
+                                            <table class="table table-striped" style="margin-bottom: 0;">
+                                                {% res_question_tbody data.user_input %}
+                                            </table>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td {% if forloop.first %}style="border-top:none;"{% endif %}>
+                                            {{ data.title }}
+                                            {% if data.title|slice:"-1:" != ":" %}:{% endif %}
+                                        </td>
+                                        <td {% if forloop.first %}style="border-top:none;"{% endif %}>{{ data.user_input|linebreaksbr }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </table>
+                    </td>
+                </tr>
+            {% endif %}
+        {% endif %}
+    </table>
+    {% if popup_view %}
+        {% if "tool"|customization:"tool_control_hide_data_history_users" != "enabled" or user.is_staff or user == event.user %}
+            {% if event.pre_run_data_json.items or event.post_run_data_json.items %}
+                <script>$('#dialog .modal-dialog').addClass('modal-lg');</script>
+            {% endif %}
+        {% endif %}
     {% endif %}
-    Identifier: {{ event.id }}
-    <br>
 {% endblock %}

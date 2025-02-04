@@ -1,22 +1,22 @@
 {% extends 'base.html' %}
 {% load custom_tags_and_filters %}
 {% load static %}
-{% block title %}
-    Usage
-    {% if billing_service %}and billing information{% endif %}
-{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 {% block extrahead %}
     <script type="text/javascript" src="{% static "datetimepicker/bootstrap-datetimepicker.js" %}"></script>
     <link rel="stylesheet" type="text/css" href="{% static "datetimepicker/bootstrap-datetimepicker.css" %}" />
 {% endblock %}
 {% block content %}
+    {% url 'user_usage' as usage_url %}
+    {% url 'staff_usage' as staff_usage_url %}
+    {% url 'project_usage' as project_usage_url %}
+    {% url 'billing' as billing_url %}
+    {% url 'project_billing' as project_billing_url %}
     <h1>
-        Usage
-        {% if billing_service %}and billing information{% endif %}
-        <small class="light-grey">between {{ start_date|date }} and {{ end_date|date }}</small>
+        {{ title }} <small class="light-grey">between {{ start_date|date }} and {{ end_date|date }}</small>
     </h1>
     <p>
-        This page presents a monthly report of your {{ facility_name }} usage
+        This page presents a monthly report of your {{ facility_name }} use
         {% if billing_service %}and billing information{% endif %}
         . Approved adjustments are
         {% if not billing_service %}not{% endif %}
@@ -25,7 +25,7 @@
         in the usage data.
     </p>
     <div style="height: 20px"></div>
-    <form class="form-horizontal" role="form">
+    <form id="usage_form" class="form-horizontal" role="form">
         <div class="form-group">
             <label for="month_list" class="control-label col-sm-2">Select month</label>
             <div class="col-sm-3 col-md-3 col-lg-2">
@@ -98,7 +98,7 @@
                     </div>
                 </div>
             {% endif %}
-            {% if user.active_projects %}
+            {% if charges_projects %}
             </div>
             <div class="form-group">
                 <div class="control-label col-sm-2">
@@ -111,7 +111,7 @@
                             style="text-align-last:center"
                             title="Select a project to see usage for only that project">
                         <option selected value="">All</option>
-                        {% for project in user.active_projects %}
+                        {% for project in charges_projects %}
                             <option value="{{ project.id }}"
                                     {% if selected_user_project and selected_user_project.id == project.id %}selected{% endif %}>
                                 {{ project.name }}
@@ -121,10 +121,10 @@
                 </div>
             {% endif %}
             {% if not project_autocomplete %}
-                <div class="hidden-lg hidden-md {% if user.active_projects or pi_projects %}hidden-sm{% else %}col-sm-12{% endif %}">
+                <div class="hidden-lg hidden-md {% if charges_projects or pi_projects %}hidden-sm{% else %}col-sm-12{% endif %}">
                     &nbsp;
                 </div>
-                <div class="col-sm-4 col-lg-3 {% if user.active_projects or pi_projects %}text-right{% else %}col-md-3{% endif %}">
+                <div class="col-sm-4 col-lg-3 {% if charges_projects or pi_projects %}text-right{% else %}col-md-3{% endif %}">
                     {% button type="save" submit=False onclick="$('#csv_export').val('');this.form.submit();" value="Update" icon="glyphicon-refresh" %}
                     <input id="csv_export" type="hidden" name="csv" value="">
                     {% if not billing_service %}
@@ -219,6 +219,24 @@
         {% endif %}
     </form>
     <div style="height: 5px; border-top: 1px dotted #eee"></div>
-    {% block usage_content %}
-    {% endblock %}
+    <div style="margin-top:10px">
+        <ul class="nav nav-pills" id="tabs">
+            <li class="{% if usage_url in request.path or project_usage_url in request.path %}active{% endif %}">
+                <a class="usage_tab_link"
+                   href="{% if project_autocomplete %}{{ project_usage_url }}{% else %}{{ usage_url }}{% endif %}">Usage</a>
+            </li>
+            {% if user.is_any_part_of_staff and not project_autocomplete %}
+                <li class="{% if staff_usage_url in request.path %}active{% endif %}">
+                    <a class="usage_tab_link" href="{{ staff_usage_url }}">Staff usage</a>
+                </li>
+            {% endif %}
+            {% if billing_service %}
+                <li class="{% if billing_url in request.path or project_billing_url in request.path %}active{% endif %}">
+                    <a class="usage_tab_link"
+                       href="{% if project_autocomplete %}{{ project_billing_url }}{% else %}{{ billing_url }}{% endif %}">Billing Information</a>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+    {% block usage_content %}{% endblock %}
 {% endblock %}

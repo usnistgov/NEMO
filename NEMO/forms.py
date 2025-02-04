@@ -516,6 +516,31 @@ class AdjustmentRequestForm(ModelForm):
         model = AdjustmentRequest
         exclude = ["creation_time", "creator", "last_updated", "last_updated_by", "status", "reviewer", "deleted"]
 
+    def clean(self) -> dict:
+        cleaned_data = super().clean()
+        edit = bool(self.instance.pk)
+        item_type = cleaned_data.get("item_type")
+        item_id = cleaned_data.get("item_id")
+        if item_type and item_id and not edit:
+            item = item_type.get_object_for_this_type(pk=item_id)
+            new_start = cleaned_data.get("new_start")
+            new_end = cleaned_data.get("new_end")
+            # If the dates/quantities are not changed, remove them
+            # We are comparing formatted dates so we have the correct precision (otherwise user input might not have seconds/milliseconds and they would not be equal)
+            if (
+                new_start
+                and new_end
+                and format_datetime(new_start) == format_datetime(item.start)
+                and format_datetime(new_end) == format_datetime(item.end)
+            ):
+                cleaned_data["new_start"] = None
+                cleaned_data["new_end"] = None
+            # also remove quantity if not changed
+            new_quantity = cleaned_data.get("new_quantity")
+            if new_quantity and new_quantity == item.quantity:
+                cleaned_data["new_quantity"] = None
+        return cleaned_data
+
 
 class StaffAbsenceForm(ModelForm):
     class Meta:

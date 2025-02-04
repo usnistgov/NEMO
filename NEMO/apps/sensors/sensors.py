@@ -5,6 +5,8 @@ from typing import Dict, List
 from unittest import mock
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from pymodbus.bit_read_message import ReadCoilsRequest, ReadCoilsResponse
 from pymodbus.client import ModbusTcpClient
@@ -78,7 +80,13 @@ class Sensor(ABC):
                         continue
             data_value = self.evaluate_sensor(sensor, registers=registers)
             if data_value is not None:
-                data = SensorData.objects.create(sensor=sensor, value=data_value)
+                now = timezone.now()
+                # Saving the data point in both sensor data and sensor
+                with transaction.atomic():
+                    data = SensorData.objects.create(sensor=sensor, value=data_value, created_date=now)
+                    sensor.last_read = now
+                    sensor.last_value = data_value
+                    sensor.save(update_fields=["last_read", "last_value"])
                 process_alerts(sensor, data)
                 return data
         except Exception as error:
@@ -166,7 +174,8 @@ class ModbusTcpSensor(Sensor):
                 raise ValidationError({"formula": str(e)})
 
     def do_read_values(self, sensor: Sensor_model) -> List:
-        client = ModbusTcpClient(sensor.card.server, port=sensor.card.port)
+        timeout = sensor.card.extra_args_dict.get("timeout", 3)
+        client = ModbusTcpClient(sensor.card.server, port=sensor.card.port, timeout=timeout)
         try:
             valid_connection = client.connect()
             if not valid_connection:

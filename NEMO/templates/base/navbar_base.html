@@ -17,9 +17,11 @@
         <div class="navbar-collapse collapse" id="site-navigation">
             <ul class="nav navbar-nav">
                 {% block navbar_main %}
-                    <li>
-                        <a href="{% url 'calendar' %}">{{ calendar_page_title }}</a>
-                    </li>
+                    {% if tools_exist or areas_exist %}
+                        <li>
+                            <a href="{% url 'calendar' %}">{{ calendar_page_title }}</a>
+                        </li>
+                    {% endif %}
                     {% if tools_exist %}
                         <li>
                             <a href="{% url 'tool_control' %}">{{ tool_control_page_title }}</a>

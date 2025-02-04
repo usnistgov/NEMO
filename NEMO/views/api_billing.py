@@ -59,6 +59,11 @@ class BillableItem(object):
         self.name: Optional[str] = None
         self.details: Optional[str] = ""
         self.item_id: Optional[int] = None
+        self.validated: bool = False
+        self.validated_by: Optional[User] = None
+        self.waived: bool = False
+        self.waived_by: Optional[User] = None
+        self.waived_on: Optional[datetime] = None
         if project:
             self.account: Optional[str] = project.account.name
             self.account_id: Optional[int] = project.account.id
@@ -217,6 +222,11 @@ def billable_items_usage_events(usage_events: QuerySetType[UsageEvent]) -> List[
         item.start = usage_event.start
         item.end = usage_event.end
         item.quantity = get_minutes_between_dates(usage_event.start, usage_event.end)
+        item.validated = usage_event.validated
+        item.validated_by = usage_event.validated_by
+        item.waived = usage_event.waived
+        item.waived_on = usage_event.waived_on
+        item.waived_by = usage_event.waived_by
         billable_items.append(item)
     return billable_items
 
@@ -235,6 +245,11 @@ def billable_items_area_access_records(area_access_records: QuerySetType[AreaAcc
         item.start = area_access_record.start
         item.end = area_access_record.end
         item.quantity = get_minutes_between_dates(area_access_record.start, area_access_record.end)
+        item.validated = area_access_record.validated
+        item.validated_by = area_access_record.validated_by
+        item.waived = area_access_record.waived
+        item.waived_on = area_access_record.waived_on
+        item.waived_by = area_access_record.waived_by
         billable_items.append(item)
     return billable_items
 
@@ -248,6 +263,11 @@ def billable_items_consumable_withdrawals(withdrawals: QuerySetType[ConsumableWi
         item.start = consumable_withdrawal.date
         item.end = consumable_withdrawal.date
         item.quantity = consumable_withdrawal.quantity
+        item.validated = consumable_withdrawal.validated
+        item.validated_by = consumable_withdrawal.validated_by
+        item.waived = consumable_withdrawal.waived
+        item.waived_on = consumable_withdrawal.waived_on
+        item.waived_by = consumable_withdrawal.waived_by
         billable_items.append(item)
     return billable_items
 
@@ -261,6 +281,11 @@ def billable_items_missed_reservations(missed_reservations: QuerySetType[Reserva
         item.start = missed_reservation.start
         item.end = missed_reservation.end
         item.quantity = 1
+        item.validated = missed_reservation.validated
+        item.validated_by = missed_reservation.validated_by
+        item.waived = missed_reservation.waived
+        item.waived_on = missed_reservation.waived_on
+        item.waived_by = missed_reservation.waived_by
         billable_items.append(item)
     return billable_items
 
@@ -275,6 +300,11 @@ def billable_items_staff_charges(staff_charges: QuerySetType[StaffCharge]) -> Li
         item.start = staff_charge.start
         item.end = staff_charge.end
         item.quantity = get_minutes_between_dates(staff_charge.start, staff_charge.end)
+        item.validated = staff_charge.validated
+        item.validated_by = staff_charge.validated_by
+        item.waived = staff_charge.waived
+        item.waived_on = staff_charge.waived_on
+        item.waived_by = staff_charge.waived_by
         billable_items.append(item)
     return billable_items
 
@@ -289,6 +319,11 @@ def billable_items_training_sessions(training_sessions: QuerySetType[TrainingSes
         item.start = training_session.date
         item.end = training_session.date
         item.quantity = training_session.duration
+        item.validated = training_session.validated
+        item.validated_by = training_session.validated_by
+        item.waived = training_session.waived
+        item.waived_on = training_session.waived_on
+        item.waived_by = training_session.waived_by
         billable_items.append(item)
     return billable_items
 
