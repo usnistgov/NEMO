@@ -42,7 +42,6 @@ url_kwargs_get_post = {
     "login_to_area": {"kwargs": {"door_id": 1}, "post": {"badge_number": 1}},
     "logout_of_area": {"kwargs": {"door_id": 1}, "post": {"badge_number": 1}},
     "open_door": {"kwargs": {"door_id": 1}, "post": {"badge_number": 1}},
-    "sensor_details": {"kwargs": {"sensor_id": 1}},
     "get_projects": {"get": {"user_id": 1}},
     "get_projects_for_consumables": {"get": {"user_id": 1}},
     "get_projects_for_tool_control": {"get": {"user_id": 1}},

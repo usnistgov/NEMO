@@ -27,7 +27,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
-from django.db.models import FileField, QuerySet
+from django.db.models import FileField, IntegerChoices, QuerySet
 from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import resolve_url
 from django.template import Template
@@ -37,6 +37,7 @@ from django.utils import timezone as django_timezone
 from django.utils.formats import date_format, get_format, time_format
 from django.utils.html import format_html
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
 # For backwards compatibility
 import NEMO.plugins.utils
@@ -261,33 +262,19 @@ def bootstrap_primary_color(color_type):
     return None
 
 
-class EmailCategory(object):
-    GENERAL = 0
-    SYSTEM = 1
-    DIRECT_CONTACT = 2
-    BROADCAST_EMAIL = 3
-    TIMED_SERVICES = 4
-    FEEDBACK = 5
-    ABUSE = 6
-    SAFETY = 7
-    TASKS = 8
-    ACCESS_REQUESTS = 9
-    SENSORS = 10
-    ADJUSTMENT_REQUESTS = 11
-    Choices = (
-        (GENERAL, "General"),
-        (SYSTEM, "System"),
-        (DIRECT_CONTACT, "Direct Contact"),
-        (BROADCAST_EMAIL, "Broadcast Email"),
-        (TIMED_SERVICES, "Timed Services"),
-        (FEEDBACK, "Feedback"),
-        (ABUSE, "Abuse"),
-        (SAFETY, "Safety"),
-        (TASKS, "Tasks"),
-        (ACCESS_REQUESTS, "Access Requests"),
-        (SENSORS, "Sensors"),
-        (ADJUSTMENT_REQUESTS, "Adjustment Requests"),
-    )
+class EmailCategory(IntegerChoices):
+    GENERAL = 0, _("General")
+    SYSTEM = 1, _("System")
+    DIRECT_CONTACT = 2, _("Direct Contact")
+    BROADCAST_EMAIL = 3, _("Broadcast Email")
+    TIMED_SERVICES = 4, _("Timed Services")
+    FEEDBACK = 5, _("Feedback")
+    ABUSE = 6, _("Abuse")
+    SAFETY = 7, _("Safety")
+    TASKS = 8, _("Tasks")
+    ACCESS_REQUESTS = 9, _("Access Requests")
+    SENSORS = 10, _("Sensors")
+    ADJUSTMENT_REQUESTS = 11, _("Adjustment Requests")
 
 
 class RecurrenceFrequency(Enum):

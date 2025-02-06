@@ -4814,7 +4814,7 @@ class ToolCredentials(BaseModel):
 
 
 class EmailLog(BaseModel):
-    category = models.IntegerField(choices=EmailCategory.Choices, default=EmailCategory.GENERAL)
+    category = models.IntegerField(choices=EmailCategory.choices, default=EmailCategory.GENERAL)
     when = models.DateTimeField(null=False, auto_now_add=True)
     sender = models.EmailField(null=False, blank=False)
     to = models.TextField(null=False, blank=False)

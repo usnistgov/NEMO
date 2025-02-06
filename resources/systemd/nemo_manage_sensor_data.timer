@@ -1,8 +1,0 @@
-[Unit]
-Description=Manage sensor data every minute in NEMO
-
-[Timer]
-OnCalendar=minutely
-
-[Install]
-WantedBy=multi-user.target

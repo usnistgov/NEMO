@@ -33,7 +33,6 @@ INSTALLED_APPS = [
     "NEMO",
     "NEMO.apps.kiosk",
     "NEMO.apps.area_access",
-    "NEMO.apps.sensors",
     "NEMO.apps.contracts",
     "rest_framework",
     "rest_framework.authtoken",

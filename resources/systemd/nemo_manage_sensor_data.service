@@ -1,6 +1,0 @@
-[Unit]
-Description=Manage sensor data in NEMO
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/docker exec nemo django-admin manage_sensor_data

@@ -89,7 +89,6 @@
                                     {% navigation_url 'recurring_charges' recurring_charges_name user.is_user_office user.is_facility_manager user.is_superuser %}
                                     {% navigation_url 'staff_charges' 'Remote work' user.is_staff user.is_superuser %}
                                     {% navigation_url 'resources' 'Resources' user.is_staff user.is_superuser %}
-                                    {% navigation_url 'sensors' 'Sensor data' %}
                                     {# we can't use args with navigation url so let's check that the regular one exists and then use staff in <li> #}
                                     {% navigation_url 'knowledge_base' '' as knowledge_base_url %}
                                     {% if knowledge_base_url %}
