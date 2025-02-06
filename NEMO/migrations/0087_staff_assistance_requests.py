@@ -22,69 +22,6 @@ class Migration(migrations.Migration):
                 help_text="Staff assistance request replies",
             ),
         ),
-        migrations.AlterField(
-            model_name="landingpagechoice",
-            name="notifications",
-            field=models.CharField(
-                blank=True,
-                choices=[
-                    ("news", "News creation and updates - notifies all users"),
-                    ("safetyissue", "New safety issues - notifies staff only"),
-                    ("buddyrequest", "New buddy request - notifies all users"),
-                    (
-                        "buddyrequestmessage",
-                        "New buddy request reply - notifies request creator and users who have replied",
-                    ),
-                    ("staffassistancerequest", "New staff assistance request - notifies staff only"),
-                    (
-                        "staffassistancerequestmessage",
-                        "New staff assistance request reply - notifies request creator and staff",
-                    ),
-                    ("adjustmentrequest", "New adjustment request - notifies reviewers only"),
-                    (
-                        "adjustmentrequestmessage",
-                        "New adjustment request reply - notifies request creator and users who have replied",
-                    ),
-                    (
-                        "temporaryphysicalaccessrequest",
-                        "New access request - notifies other users on request and reviewers",
-                    ),
-                ],
-                help_text="Displays a the number of new notifications for the user. For example, if the user has two unread news notifications then the number '2' would appear for the news icon on the landing page.",
-                max_length=100,
-                null=True,
-            ),
-        ),
-        migrations.AlterField(
-            model_name="notification",
-            name="notification_type",
-            field=models.CharField(
-                choices=[
-                    ("news", "News creation and updates - notifies all users"),
-                    ("safetyissue", "New safety issues - notifies staff only"),
-                    ("buddyrequest", "New buddy request - notifies all users"),
-                    (
-                        "buddyrequestmessage",
-                        "New buddy request reply - notifies request creator and users who have replied",
-                    ),
-                    ("staffassistancerequest", "New staff assistance request - notifies staff only"),
-                    (
-                        "staffassistancerequestmessage",
-                        "New staff assistance request reply - notifies request creator and staff",
-                    ),
-                    ("adjustmentrequest", "New adjustment request - notifies reviewers only"),
-                    (
-                        "adjustmentrequestmessage",
-                        "New adjustment request reply - notifies request creator and users who have replied",
-                    ),
-                    (
-                        "temporaryphysicalaccessrequest",
-                        "New access request - notifies other users on request and reviewers",
-                    ),
-                ],
-                max_length=100,
-            ),
-        ),
         migrations.CreateModel(
             name="StaffAssistanceRequest",
             fields=[

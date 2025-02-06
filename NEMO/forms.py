@@ -491,7 +491,6 @@ class StaffAssistanceRequestForm(ModelForm):
         fields = "__all__"
 
 
-
 class TemporaryPhysicalAccessRequestForm(ModelForm):
     class Meta:
         model = TemporaryPhysicalAccessRequest

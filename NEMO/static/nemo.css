@@ -1233,10 +1233,6 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 	border-top: inherit;
 }
 
-.modal-open[style] {
-	padding-right: 0 !important;
-}
-
 .progress-bar-default
 {
  	background-color: initial;

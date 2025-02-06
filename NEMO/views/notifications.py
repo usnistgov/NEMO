@@ -87,7 +87,7 @@ def create_buddy_request_notification(buddy_request: BuddyRequest):
 
 def create_staff_assistance_request_notification(staff_assistance_request: StaffAssistanceRequest):
     users: List[User] = User.objects.filter(is_active=True, is_staff=True).exclude(id=staff_assistance_request.user_id)
-    expiration = datetime(staff_assistance_request.creation_time.year + 100, 1, 1)
+    expiration = datetime.max
     for u in users:
         if u.get_preferences().display_new_buddy_request_notification:
             Notification.objects.update_or_create(
