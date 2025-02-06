@@ -39,6 +39,7 @@ from NEMO.models import (
     SafetyIssue,
     ScheduledOutage,
     StaffAbsence,
+    StaffAssistanceRequest,
     Task,
     TaskCategory,
     TaskImages,
@@ -482,6 +483,12 @@ class BuddyRequestForm(ModelForm):
         if end < start:
             self.add_error("end", "The end must be later than the start")
         return cleaned_data
+
+
+class StaffAssistanceRequestForm(ModelForm):
+    class Meta:
+        model = StaffAssistanceRequest
+        fields = "__all__"
 
 
 class TemporaryPhysicalAccessRequestForm(ModelForm):

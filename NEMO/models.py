@@ -337,6 +337,11 @@ class UserPreferences(BaseModel):
         choices=EmailNotificationType.on_choices(),
         help_text="Buddy request replies",
     )
+    email_send_staff_assistance_request_replies = models.PositiveIntegerField(
+        default=EmailNotificationType.BOTH_EMAILS,
+        choices=EmailNotificationType.on_choices(),
+        help_text="Staff assistance request replies",
+    )
     email_send_access_request_updates = models.PositiveIntegerField(
         default=EmailNotificationType.BOTH_EMAILS,
         choices=EmailNotificationType.on_choices(),
@@ -3965,6 +3970,8 @@ class Notification(BaseModel):
         SAFETY = "safetyissue"
         BUDDY_REQUEST = "buddyrequest"
         BUDDY_REQUEST_REPLY = "buddyrequestmessage"
+        STAFF_ASSISTANCE_REQUEST = "staffassistancerequest"
+        STAFF_ASSISTANCE_REQUEST_REPLY = "staffassistancerequestmessage"
         ADJUSTMENT_REQUEST = "adjustmentrequest"
         ADJUSTMENT_REQUEST_REPLY = "adjustmentrequestmessage"
         TEMPORARY_ACCESS_REQUEST = "temporaryphysicalaccessrequest"
@@ -3973,6 +3980,8 @@ class Notification(BaseModel):
             (SAFETY, "New safety issues - notifies staff only"),
             (BUDDY_REQUEST, "New buddy request - notifies all users"),
             (BUDDY_REQUEST_REPLY, "New buddy request reply - notifies request creator and users who have replied"),
+            (STAFF_ASSISTANCE_REQUEST, "New staff assistance request - notifies staff only"),
+            (STAFF_ASSISTANCE_REQUEST_REPLY, "New staff assistance request reply - notifies request creator and staff"),
             (ADJUSTMENT_REQUEST, "New adjustment request - notifies reviewers only"),
             (
                 ADJUSTMENT_REQUEST_REPLY,
@@ -4363,6 +4372,37 @@ class BuddyRequest(BaseModel):
 
     def __str__(self):
         return f"BuddyRequest [{self.id}]"
+
+
+class StaffAssistanceRequest(BaseModel):
+    creation_time = models.DateTimeField(
+        default=timezone.now, help_text="The date and time when the request was created."
+    )
+    description = models.TextField(help_text="The description of the request.")
+    user = models.ForeignKey(User, help_text="The user who is submitting the request.", on_delete=models.CASCADE)
+    resolved = models.BooleanField(
+        default=False, help_text="Indicates the request has been resolved and won't be shown anymore."
+    )
+    deleted = models.BooleanField(
+        default=False, help_text="Indicates the request has been deleted and won't be shown anymore."
+    )
+
+    @property
+    def creator(self) -> User:
+        return self.user
+
+    @property
+    def replies(self) -> QuerySetType[RequestMessage]:
+        return RequestMessage.objects.filter(object_id=self.id, content_type=ContentType.objects.get_for_model(self))
+
+    def creator_and_reply_users(self) -> List[User]:
+        result = {self.user}
+        for reply in self.replies:
+            result.add(reply.author)
+        return list(result)
+
+    def __str__(self):
+        return f"StaffAssistanceRequest [{self.id}]"
 
 
 class AdjustmentRequest(BaseModel):

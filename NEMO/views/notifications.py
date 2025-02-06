@@ -10,6 +10,7 @@ from NEMO.models import (
     BuddyRequest,
     Notification,
     RequestMessage,
+    StaffAssistanceRequest,
     TemporaryPhysicalAccessRequest,
     User,
 )
@@ -80,6 +81,20 @@ def create_buddy_request_notification(buddy_request: BuddyRequest):
                 notification_type=Notification.Types.BUDDY_REQUEST,
                 content_type=ContentType.objects.get_for_model(buddy_request),
                 object_id=buddy_request.id,
+                defaults={"expiration": expiration},
+            )
+
+
+def create_staff_assistance_request_notification(staff_assistance_request: StaffAssistanceRequest):
+    users: List[User] = User.objects.filter(is_active=True, is_staff=True).exclude(id=staff_assistance_request.user_id)
+    expiration = datetime.max
+    for u in users:
+        if u.get_preferences().display_new_buddy_request_notification:
+            Notification.objects.update_or_create(
+                user=u,
+                notification_type=Notification.Types.STAFF_ASSISTANCE_REQUEST,
+                content_type=ContentType.objects.get_for_model(staff_assistance_request),
+                object_id=staff_assistance_request.id,
                 defaults={"expiration": expiration},
             )
 

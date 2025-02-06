@@ -1,0 +1,46 @@
+{% load custom_tags_and_filters %}
+<table class="table table-condensed table-double-stripped thead-light" style="border: 1px solid #ddd">
+    <thead>
+        <tr>
+            <th>Created</th>
+            <th>User</th>
+            <th>Description</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for staff_assistance_request in staff_assistance_request_list %}
+            <tr>
+                <td>{{ staff_assistance_request.creation_time|date:'SHORT_DATETIME_FORMAT' }}</td>
+                <td>{{ staff_assistance_request.creator.get_name }}</td>
+                <td>{{ staff_assistance_request.description }}</td>
+                <td class="text-right text-nowrap">
+                    {% if user.is_staff and staff_assistance_request.resolved %}
+                        <form style="display: inline-block"
+                              action="{% url 'reopen_staff_assistance_request' staff_assistance_request.id %}"
+                              method="post">
+                            {% csrf_token %}
+                            {% button type="default" size="small" submit=True value="Reopen" %}
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4" style="border: none">
+                    <div style="color: rgb(128,128,128)">
+                        {% if staff_assistance_request.replies %}
+                            {% for message in staff_assistance_request.replies %}
+                                <div>
+                                    <div class="adjustment-request-message">
+                                        {{ message.content|linebreaksbr }}
+                                        <div class="request-item-message-user">{{ message.author.get_name }}, {{ message.creation_date }}</div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
