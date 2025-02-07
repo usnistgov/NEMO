@@ -20,6 +20,7 @@ from NEMO.views.customization import (
     AdjustmentRequestsCustomization,
     ApplicationCustomization,
     EmailsCustomization,
+    UserRequestsCustomization,
 )
 
 url_test_logger = getLogger(__name__)
@@ -112,6 +113,16 @@ url_kwargs_get_post = {
     "apply_adjustment": {"login_id": 1},
     "delete_adjustment_request": {"kwargs": {"request_id": 2}, "login_id": 3},
     "adjustment_request_reply": {"kwargs": {"request_id": 2}, "login_id": 3, "post": {"reply_content": "new message"}},
+    "create_staff_assistance_request": {"kwargs": {}, "post": {"description": "I need some help"}},
+    "edit_staff_assistance_request": {"kwargs": {"request_id": 1}},
+    "resolve_staff_assistance_request": {"login_id": 1},
+    "delete_staff_assistance_request": {"kwargs": {"request_id": 1}},
+    "reopen_staff_assistance_request": {"login_id": 1},
+    "staff_assistance_request_reply": {
+        "kwargs": {"request_id": 1},
+        "login_id": 3,
+        "post": {"reply_content": "new message"},
+    },
     "change_reservation_date": {
         "login_id": 1,
         "post": {
@@ -180,6 +191,7 @@ class URLsTestCase(TestCase):
         EmailsCustomization.set("safety_email_address", "email@example.org")
         EmailsCustomization.set("abuse_email_address", "email@example.org")
         AdjustmentRequestsCustomization.set("adjustment_requests_enabled", "enabled")
+        UserRequestsCustomization.set("staff_assistance_requests_enabled", "enabled")
 
     def test_get_full_url(self):
         request = RequestFactory().get("/")
