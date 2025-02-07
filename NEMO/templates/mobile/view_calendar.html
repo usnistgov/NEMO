@@ -33,4 +33,14 @@
             <rect x="15" y="24" width="21" height="3" fill="white"></rect>
         </svg>
     </a>
+    {% if item_type == 'tool' %}
+        <a href="{% url 'tool_control' item_type item.id %}">
+            <svg height="50" width="100" style="position:fixed; left:15px; bottom:15px">
+                <circle cx="25" cy="25" r="25" fill="blue"></circle>
+                <text x="25" y="26" fill="white" font-size="12" font-family="Arial" text-anchor="middle" alignment-baseline="middle">
+                Control
+                </text>
+            </svg>
+        </a>
+    {% endif %}
 {% endblock %}
