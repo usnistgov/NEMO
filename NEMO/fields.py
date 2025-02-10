@@ -37,26 +37,6 @@ class IsEmpty(models.lookups.BuiltinLookup):
                 return "%s <> ''" % sql, params
 
 
-# This widget can be used with ChoiceField as or with CharField (choices needs to be used in attrs)
-class DatalistWidget(forms.TextInput):
-    def __init__(self, attrs=None):
-        if attrs is not None:
-            attrs = attrs.copy()
-            self.choices = attrs.pop("choices", [])
-        super().__init__(attrs)
-
-    def render(self, name, value, attrs=None, renderer=None):
-        if attrs is None:
-            attrs = {}
-        attrs["list"] = f"{name}_datalist"
-        options = self.choices
-        datalist = f'<datalist id="{name}_datalist">'
-        for option_value, option_label in options:
-            datalist += f'<option value="{option_value}">{option_label}</option>'
-        datalist += "</datalist>"
-        return super().render(name, value, attrs, renderer) + datalist
-
-
 class MultiEmailWidget(forms.TextInput):
     is_hidden = False
     separator = DEFAULT_SEPARATOR
