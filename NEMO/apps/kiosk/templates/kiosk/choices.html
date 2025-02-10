@@ -8,7 +8,10 @@
 </div>
 {% if messages %}
     {% for message in messages %}
-        <div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load" {% if message.extra_tags %}{{ message.extra_tags }}{% endif %} style="display: none; margin-top: 15px">
+        <div class="alert alert-{{ message.level_tag }} alert-dismissible show-on-load"
+             {% if message.extra_tags %}{{ message.extra_tags }}{% endif %}
+             style="display: none;
+                    margin-top: 15px">
             <button type="button" class="close" data-dismiss="alert" aria-label="Modal close button">&times;</button>
             {{ message }}
         </div>
@@ -29,21 +32,8 @@
         {% endfor %}
     </div>
 {% endif %}
-<h1>Find a tool by category</h1>
-<div class="row">
-    {% for category in categories %}
-        {% if category not in unqualified_categories or customer.is_staff or "tool"|customization:"kiosk_only_show_qualified_tools" != "enabled" %}
-            <div class="col-xs-6">
-                <div class="panel panel-default {% if category in unqualified_categories %}disabled{% endif %}"
-                     onclick="view_category('{% url 'kiosk_category_choices' category customer.id %}')">
-                    <div class="panel-body">
-                        <span style="font-size:x-large; margin-right:10px">{{ category }}</span>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-    {% endfor %}
-</div>
+<h1>Find a tool</h1>
+{% include 'kiosk/tool_categories.html' %}
 {% if upcoming_reservations %}
     <h1>Upcoming Reservations</h1>
     <div>

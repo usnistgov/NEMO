@@ -207,7 +207,8 @@
 		{
 			let data = {
 				'location': '{{ location }}',
-				'badge_number': badge_number
+				'badge_number': badge_number,
+                'category': '{{ request.GET.category|default_if_none:"" }}',
 			};
 			default_content_element.hide();
 			error_interlock_element.hide();
