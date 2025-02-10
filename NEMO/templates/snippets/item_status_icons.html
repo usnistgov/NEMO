@@ -1,0 +1,39 @@
+{% with icon_size=icon_size|default:'x-large' %}
+    {% if item.in_use %}
+        <span style="font-size:{{ icon_size }};
+                     margin-right:10px"
+              class="glyphicon glyphicon-user primary-highlight"></span>
+    {% endif %}
+    {% if item.delayed_logoff_in_progress %}
+        <span style="font-size:{{ icon_size }};
+                     margin-right:10px"
+              class="glyphicon glyphicon-time primary-highlight"></span>
+    {% endif %}
+    {% if item.scheduled_outages %}
+        <span style="font-size:{{ icon_size }};
+                     margin-right:10px"
+              class="glyphicon glyphicon-time danger-highlight"></span>
+    {% elif item.scheduled_partial_outages %}
+        <span style="font-size:{{ icon_size }};
+                     margin-right:10px"
+              class="glyphicon glyphicon-time warning-highlight"></span>
+    {% endif %}
+    {% if item.required_resource_is_unavailable %}
+        <span style="font-size:{{ icon_size }};
+                     margin-right:10px"
+              class="glyphicon glyphicon-leaf danger-highlight"></span>
+    {% elif item.nonrequired_resource_is_unavailable %}
+        <span style="font-size:{{ icon_size }};
+                     margin-right:10px"
+              class="glyphicon glyphicon-leaf warning-highlight"></span>
+    {% endif %}
+    {% if item.operational == False %}
+        <span style="font-size:{{ icon_size }};
+                     margin-right:10px"
+              class="glyphicon glyphicon-fire danger-highlight"></span>
+    {% elif item.problematic == True %}
+        <span style="font-size:{{ icon_size }};
+                     margin-right:10px"
+              class="glyphicon glyphicon-wrench warning-highlight"></span>
+    {% endif %}
+{% endwith %}

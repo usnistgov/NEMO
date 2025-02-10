@@ -8,6 +8,7 @@
         </div>
         <div class="col-xs-8" style="text-align:center">
             {{ item }}
+            {% include 'snippets/item_status_icons.html' with icon_size='large' %}
             <br>
             {{ current_day|date:"l" }}
             <br>
