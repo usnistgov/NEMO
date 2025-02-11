@@ -1,6 +1,6 @@
 import importlib.metadata
 from logging import getLogger
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Tuple, Union
 
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Field
@@ -56,21 +56,28 @@ def get_extra_requires(app_name, extra_name: str) -> List[Requirement]:
     return requirements
 
 
-# Use this function in apps config ready function to add new types of notifications to NEMO
+# Use this function in apps config ready function to add new types of notifications
 def add_dynamic_notification_types(notification_types: List[Tuple[str, str]]):
     from NEMO.models import Notification, LandingPageChoice
 
-    add_dynamic_notifications_to_field(Notification._meta.get_field("notification_type"), notification_types)
-    add_dynamic_notifications_to_field(LandingPageChoice._meta.get_field("notifications"), notification_types)
+    add_dynamic_choices_to_choice_field(Notification._meta.get_field("notification_type"), notification_types)
+    add_dynamic_choices_to_choice_field(LandingPageChoice._meta.get_field("notifications"), notification_types)
 
 
-def add_dynamic_notifications_to_field(field: Field, notification_types: List[Tuple[str, str]]):
+# Use this function in apps config ready function to add new types of email categories
+def add_dynamic_email_categories(email_categories: List[Tuple[int, str]]):
+    from NEMO.models import EmailLog
+
+    add_dynamic_choices_to_choice_field(EmailLog._meta.get_field("category"), email_categories)
+
+
+def add_dynamic_choices_to_choice_field(field: Field, new_choices: List[Tuple[Union[str, int], str]]):
     try:
         original_choices = list(field.choices)
 
-        for notification_type in notification_types:
-            if notification_type not in original_choices:
-                original_choices.append(notification_type)
+        for new_choice in new_choices:
+            if new_choice not in original_choices:
+                original_choices.append(new_choice)
         field.choices = original_choices
     except FieldDoesNotExist:
-        utils_logger.exception("Error adding dynamic notifications: {}".format(notification_types))
+        utils_logger.exception("Error adding dynamic choices: {}".format(new_choices))

@@ -40,6 +40,7 @@ from NEMO.constants import (
     CHAR_FIELD_SMALL_LENGTH,
     MEDIA_PROTECTED,
 )
+from NEMO.fields import DynamicChoicesIntegerField
 from NEMO.mixins import BillableItemMixin, CalendarDisplayMixin, ConfigurationMixin, RecurrenceMixin
 from NEMO.typing import QuerySetType
 from NEMO.utilities import (
@@ -4854,7 +4855,7 @@ class ToolCredentials(BaseModel):
 
 
 class EmailLog(BaseModel):
-    category = models.IntegerField(choices=EmailCategory.choices, default=EmailCategory.GENERAL)
+    category = DynamicChoicesIntegerField(choices=EmailCategory.choices, default=EmailCategory.GENERAL)
     when = models.DateTimeField(null=False, auto_now_add=True)
     sender = models.EmailField(null=False, blank=False)
     to = models.TextField(null=False, blank=False)
