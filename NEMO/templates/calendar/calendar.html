@@ -619,8 +619,8 @@ function create_calendar()
         "slotLabelFormat": '{{ calendar_axis_time_format }}',
 		"allDaySlot": false,
 		"allDayDefault": false,
-		"slotDuration": '00:15:00', {# 15 minutes each row #}
-		"slotLabelInterval": '1:00', {# One hour intervals for label #}
+        "slotDuration": '{{ calendar_slot_duration }}',
+        "slotLabelInterval": '{{ calendar_slot_label_interval }}',
 		"editable": false,
 		"selectable": true,
 		"selectHelper": true,

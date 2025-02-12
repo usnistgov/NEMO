@@ -101,6 +101,8 @@ def calendar(request, item_type=None, item_id=None):
     calendar_all_areas = CalendarCustomization.get("calendar_all_areas")
     calendar_all_areastools = CalendarCustomization.get("calendar_all_areastools")
     calendar_qualified_tools = CalendarCustomization.get("calendar_qualified_tools")
+    calendar_slot_duration = CalendarCustomization.get("calendar_slot_duration")
+    calendar_slot_label_interval = CalendarCustomization.get("calendar_slot_label_interval")
 
     # Create reservation confirmation setting
     create_reservation_confirmation_default = CalendarCustomization.get_bool("create_reservation_confirmation")
@@ -137,6 +139,8 @@ def calendar(request, item_type=None, item_id=None):
         "calendar_all_areas": calendar_all_areas,
         "calendar_all_areastools": calendar_all_areastools,
         "calendar_qualified_tools": calendar_qualified_tools,
+        "calendar_slot_duration": calendar_slot_duration,
+        "calendar_slot_label_interval": calendar_slot_label_interval,
         "create_reservation_confirmation": create_reservation_confirmation,
         "change_reservation_confirmation": change_reservation_confirmation,
         "reservation_confirmation_date_format": reservation_confirmation_date_format,
