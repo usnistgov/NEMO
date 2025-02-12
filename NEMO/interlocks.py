@@ -573,7 +573,7 @@ class ModbusTcpInterlock(Interlock):
             if write_reply.isError():
                 raise Exception(str(write_reply))
             sleep(0.3)
-            read_reply = client.read_coils(coil, 1, **kwargs)
+            read_reply = client.read_coils(coil, count=1, **kwargs)
             if read_reply.isError():
                 raise Exception(str(read_reply))
             state = read_reply.bits[0]
@@ -592,7 +592,7 @@ class ModbusTcpInterlock(Interlock):
                     return INTERLOCK_STATUS_NO_CONNECTION
                 else:
                     kwargs = {"slave": interlock.unit_id} if interlock.unit_id is not None else {}
-                    read_reply = client.read_coils(interlock.channel, 1, **kwargs)
+                    read_reply = client.read_coils(interlock.channel, count=1, **kwargs)
                     if read_reply.isError():
                         return INTERLOCK_STATUS_ERROR + f": {str(read_reply)}"
         except ConnectionException:
