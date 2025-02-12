@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-""" Run tests
-"""
+"""Run tests"""
 import os
 import sys
 
