@@ -90,6 +90,7 @@ class MultiEmailField(models.CharField):
         self.separator = separator
         self.delimiter_separated_list = DelimiterSeparatedListConverter(self.separator)
         kwargs.setdefault("max_length", 2000)
+        self.widget = kwargs.pop("widget", MultiEmailWidget())
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):
@@ -100,9 +101,10 @@ class MultiEmailField(models.CharField):
         return name, path, args, kwargs
 
     def formfield(self, **kwargs):
-        # We are forcing our form class and widget here, replacing potential overrides from kwargs
+        # We are forcing our form class and widget here, replacing potential overrides from kwargs.
+        # It can still be overridden in the field declaration.
         return super().formfield(
-            **{**kwargs, "form_class": MultiEmailFormField, "widget": MultiEmailWidget, "separator": self.separator}
+            **{**kwargs, "form_class": MultiEmailFormField, "widget": self.widget, "separator": self.separator}
         )
 
     def validate(self, value, model_instance):
