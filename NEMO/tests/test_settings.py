@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     "NEMO",
     "NEMO.apps.kiosk",
     "NEMO.apps.area_access",
-    "NEMO.apps.contracts",
     "rest_framework",
     "django_filters",
     "mptt",
