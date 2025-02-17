@@ -1046,7 +1046,7 @@ li.area-tree-node a, li.area-tree-node a:hover, li.area-tree-node a:focus
 }
 
 /* Invalid input for post usage/reservation questions and additional event parameters */
-.dynamic_form input:invalid
+.dynamic_form input:invalid, .dynamic_form textarea:invalid, .dynamic_form select:invalid
 {
 	border-color: #dc3545!important;
 	border-width: 2px;
