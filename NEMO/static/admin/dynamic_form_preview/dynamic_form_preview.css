@@ -14,7 +14,7 @@ label
     font-size: 14px;
     line-height: 1.42857143;
     border: 1px solid lightgray;
-    width: max-content;
+    width: 100%;
     padding: 20px 30px;
 }
 
