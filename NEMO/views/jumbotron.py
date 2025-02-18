@@ -5,12 +5,15 @@ from django.views.decorators.http import require_GET
 
 from NEMO.models import Alert, Area, AreaAccessRecord, Resource, UsageEvent
 from NEMO.views.alerts import mark_alerts_as_expired
+from NEMO.views.customization import get_media_file_contents
 
 
 @login_required
 @require_GET
 def jumbotron(request):
-    return render(request, "jumbotron/jumbotron.html")
+    return render(
+        request, "jumbotron/jumbotron.html", {"watermark": bool(get_media_file_contents("jumbotron_watermark.png"))}
+    )
 
 
 @login_required
