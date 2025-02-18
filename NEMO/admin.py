@@ -492,11 +492,13 @@ class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, adm
         "duration",
         "qualified",
         "usage_event",
+        "waived",
     )
     list_filter = (
         "qualified",
         "date",
         "type",
+        "waived",
         ("tool", admin.RelatedOnlyFieldListFilter),
         ("project", admin.RelatedOnlyFieldListFilter),
         ("trainer", admin.RelatedOnlyFieldListFilter),
@@ -515,9 +517,10 @@ class TrainingSessionAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, adm
 
 @register(StaffCharge)
 class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ("id", "staff_member", "customer", "start", "end")
+    list_display = ("id", "staff_member", "customer", "start", "end", "waived")
     list_filter = (
         "start",
+        "waived",
         ("customer", admin.RelatedOnlyFieldListFilter),
         ("staff_member", admin.RelatedOnlyFieldListFilter),
     )
@@ -528,8 +531,8 @@ class StaffChargeAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
 
 @register(AreaAccessRecord)
 class AreaAccessRecordAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ("id", "customer", "area", "project", "start", "end")
-    list_filter = (("area", TreeRelatedFieldListFilter), "start")
+    list_display = ("id", "customer", "area", "project", "start", "end", "waived")
+    list_filter = (("area", TreeRelatedFieldListFilter), "start", "waived")
     date_hierarchy = "start"
     autocomplete_fields = ["customer", "project", "validated_by", "waived_by"]
     actions = [waive_selected_charges]
@@ -707,11 +710,13 @@ class ReservationAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.M
         "cancelled",
         "missed",
         "shortened",
+        "waived",
     )
     readonly_fields = ("descendant",)
     list_filter = (
         "cancelled",
         "missed",
+        "waived",
         ("tool", admin.RelatedOnlyFieldListFilter),
         ("area", TreeRelatedFieldListFilter),
         ("user", admin.RelatedOnlyFieldListFilter),
@@ -797,8 +802,8 @@ class ReservationQuestionsAdmin(admin.ModelAdmin):
 
 @register(UsageEvent)
 class UsageEventAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work")
-    list_filter = ("remote_work", "training", "start", "end", ("tool", admin.RelatedOnlyFieldListFilter))
+    list_display = ("id", "tool", "user", "operator", "project", "start", "end", "duration", "remote_work", "waived")
+    list_filter = ("remote_work", "training", "start", "end", "waived", ("tool", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "start"
     autocomplete_fields = ["tool", "user", "operator", "project", "validated_by", "waived_by"]
     actions = [waive_selected_charges]
@@ -830,8 +835,8 @@ class ConsumableCategoryAdmin(admin.ModelAdmin):
 
 @register(ConsumableWithdraw)
 class ConsumableWithdrawAdmin(ObjPermissionAdminMixin, ModelAdminRedirectMixin, admin.ModelAdmin):
-    list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date")
-    list_filter = ("date", ("consumable", admin.RelatedOnlyFieldListFilter))
+    list_display = ("id", "customer", "merchant", "consumable", "quantity", "project", "date", "waived")
+    list_filter = ("date", "waived", ("consumable", admin.RelatedOnlyFieldListFilter))
     date_hierarchy = "date"
     autocomplete_fields = ["customer", "merchant", "consumable", "project", "validated_by", "waived_by"]
     actions = [waive_selected_charges]
@@ -1787,6 +1792,7 @@ class AdjustmentRequestAdmin(admin.ModelAdmin):
         "get_time_difference",
         "get_status_display",
         "reply_count",
+        "waive",
         "applied",
         "deleted",
     )
@@ -1794,6 +1800,7 @@ class AdjustmentRequestAdmin(admin.ModelAdmin):
         "status",
         "deleted",
         "applied",
+        "waive",
         ("creator", admin.RelatedOnlyFieldListFilter),
         ("reviewer", admin.RelatedOnlyFieldListFilter),
     )

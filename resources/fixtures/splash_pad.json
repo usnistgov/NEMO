@@ -980,6 +980,34 @@
   },
   {
     "model": "NEMO.customization",
+    "pk": "adjustment_requests_waive_tool_usage_enabled",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "adjustment_requests_waive_area_access_enabled",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "adjustment_requests_waive_consumable_withdrawal_enabled",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "adjustment_requests_waive_missed_reservation_enabled",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
     "pk": "calendar_all_tools",
     "fields": {
       "value": "enabled"
@@ -2112,6 +2140,32 @@
         "captain"
       ],
       "deleted": false
+    }
+  },
+  {
+    "model": "NEMO.adjustmentrequest",
+    "pk": 4,
+    "fields": {
+      "creation_time": "2023-02-13T17:36:20.938Z",
+      "creator": [
+        "ned"
+      ],
+      "last_updated": "2023-02-13T17:39:03.473Z",
+      "last_updated_by": [
+        "captain"
+      ],
+      "item_type": [
+        "NEMO",
+        "reservation"
+      ],
+      "item_id": 1,
+      "description": "Please waive this missed reservation",
+      "status": 0,
+      "reviewer": [
+        "captain"
+      ],
+      "deleted": false,
+      "waive": true
     }
   },
   {
@@ -9574,6 +9628,38 @@
         "requestmessage"
       ],
       "object_id": 1
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 8,
+    "fields": {
+      "user": [
+        "captain"
+      ],
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "adjustmentrequest",
+      "content_type": [
+        "NEMO",
+        "adjustmentrequest"
+      ],
+      "object_id": 4
+    }
+  },
+  {
+    "model": "NEMO.notification",
+    "pk": 9,
+    "fields": {
+      "user": [
+        "ned"
+      ],
+      "expiration": "2099-02-24T04:59:59.999Z",
+      "notification_type": "adjustmentrequest",
+      "content_type": [
+        "NEMO",
+        "adjustmentrequest"
+      ],
+      "object_id": 4
     }
   },
   {
