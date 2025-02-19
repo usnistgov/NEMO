@@ -1189,6 +1189,20 @@
     }
   },
   {
+    "model": "NEMO.customization",
+    "pk": "tool_control_show_next_reservation_user",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
+    "model": "NEMO.customization",
+    "pk": "training_show_self_option_in_tool_control",
+    "fields": {
+      "value": "enabled"
+    }
+  },
+  {
     "model": "NEMO.news",
     "pk": 1,
     "fields": {
