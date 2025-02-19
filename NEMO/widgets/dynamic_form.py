@@ -67,7 +67,7 @@ class PostUsageQuestion:
         self.formula = self._init_property("formula")
         self.options = self._init_property("options")
         self.form_row = self._init_property("form_row")
-        self.form_cell = self._init_property("form_cell")
+        self.row_cell = self._init_property("row_cell")
         self.group_add_button_name = self._init_property("group_add_button_name") or "Add"
         self.index = index
         if index and not isinstance(self, PostUsageGroupQuestion):
@@ -177,7 +177,8 @@ class PostUsageRadioQuestion(PostUsageQuestion):
 
     def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        result = f'<div class="form-group {extra_class}">'
+        max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+        result = f'<div class="form-group {extra_class}" style="{max_width}">'
         result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         result += f"<div class='{'form-control-static' if self.inline else ''}'>"
         for index, choice in enumerate(self.choices):
@@ -203,7 +204,8 @@ class PostUsageCheckboxQuestion(PostUsageQuestion):
 
     def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        result = f'<div class="form-group {extra_class}">'
+        max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+        result = f'<div class="form-group {extra_class}" style="{max_width}>'
         result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         result += f'<input aria-label="hidden field used for required answer" id="required_{ self.form_name }" type="checkbox" value="" style="display: none" { "required" if self.required else "" }/>'
         result += f"<div class='{'form-control-static' if self.inline else ''}'>"
@@ -255,11 +257,11 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
 
     def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
-        result = f'<div class="form-group {extra_class}">'
+        max_width = f"max-width:{self.max_width}px" if self.max_width else ""
+        result = f'<div class="form-group {extra_class}" style="{max_width}">'
         result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         required = "required" if self.required else ""
-        max_width = f"max-width:{self.max_width}px" if self.max_width else ""
-        result += f'<select name="{self.form_name}" {required} style="{max_width}" class="form-control">'
+        result += f'<select name="{self.form_name}" {required} class="form-control">'
         blank_disabled = 'disabled="disabled"' if required else ""
         placeholder = self.placeholder if self.placeholder else "Select an option"
         result += f'<option {blank_disabled} selected="selected" value="">{placeholder}</option>'
@@ -284,7 +286,7 @@ class PostUsageDropdownQuestion(PostUsageQuestion):
                 index += 1
         result += "</select>"
         if self.help:
-            result += f'<div style="font-size:smaller;color:#999;{max_width}">{self.help}</div>'
+            result += f'<div style="font-size:smaller;color:#999;">{self.help}</div>'
         result += "</div>"
         return result
 
@@ -301,11 +303,11 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
     def render_element(self, virtual_inputs: bool, group_question_url: str, group_item_id: int, extra_class="") -> str:
         title = self.title_html or self.title
         max_width = f"max-width:{self.max_width}px" if self.max_width else ""
-        result = f'<div class="form-group {extra_class}">'
+        result = f'<div class="form-group {extra_class}" style="{max_width}">'
         result += f'<label for="{self.form_name}" style="white-space: pre-wrap">{title}{self.required_span if self.required else ""}</label>'
         input_group_required = True if self.prefix or self.suffix else False
         if input_group_required:
-            result += f'<div class="input-group" style="{max_width}">'
+            result += f'<div class="input-group">'
         if self.prefix:
             result += f'<span class="input-group-addon">{self.prefix}</span>'
         required = "required" if self.required else ""
@@ -318,14 +320,13 @@ class PostUsageTextFieldQuestion(PostUsageQuestion):
         if input_group_required:
             result += "</div>"
         if self.help:
-            result += f'<div style="font-size:smaller;color:#999;{max_width}">{self.help}</div>'
+            result += f'<div style="font-size:smaller;color:#999;">{self.help}</div>'
         result += "</div>"
         return result
 
     def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         maxlength = f'maxlength="{self.maxlength}"' if self.maxlength else ""
-        max_width = f"max-width:{self.max_width}px" if self.max_width else ""
-        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} style="{max_width}" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {maxlength} {placeholder} {pattern} {default_value} {required} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
     def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
         if virtual_inputs:
@@ -347,7 +348,7 @@ class PostUsageTextAreaFieldQuestion(PostUsageTextFieldQuestion):
 
     def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         rows = f'rows="{str(self.rows)}"' if self.rows else ""
-        return f'<textarea class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} style="max-width:{self.max_width}px;height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.get_default_value() or ""}</textarea>'
+        return f'<textarea class="form-control" id="{self.form_name}" name="{self.form_name}" {rows} {placeholder} {required} style="height:inherit" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">{self.get_default_value() or ""}</textarea>'
 
 
 class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
@@ -357,7 +358,7 @@ class PostUsageNumberFieldQuestion(PostUsageTextFieldQuestion):
         minimum = f'min="{self.min}"' if self.min else ""
         maximum = f'max="{self.max}"' if self.max else ""
         step = f'step="{self.step}"' if self.step else ""
-        return f'<input type="number" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {minimum} {maximum} {default_value} {step} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        return f'<input type="number" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {minimum} {maximum} {default_value} {step} {required} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
     def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
         if virtual_inputs:
@@ -388,7 +389,7 @@ class PostUsageFloatFieldQuestion(PostUsageTextFieldQuestion):
     def render_input(self, required: str, pattern: str, placeholder: str, default_value: str) -> str:
         precision = self.precision if self.precision else 2
         pattern = f'pattern="^\s*(?=.*[0-9])\d*(?:\.\d{"{1," + str(precision) + "}"})?\s*$"'
-        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {default_value} {required} style="max-width:{self.max_width}px" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
+        return f'<input type="text" class="form-control" id="{self.form_name}" name="{self.form_name}" {placeholder} {pattern} {default_value} {required} spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">'
 
     def render_script(self, virtual_inputs: bool, group_question_url: str, item_id: int) -> str:
         if virtual_inputs:
@@ -956,7 +957,7 @@ def sort_question_for_grid(questions: List[PostUsageQuestion]) -> List[List[Post
     for row in unique_rows:
         # Extracting cells for the current row and sorting them
         cells_in_row = sorted(
-            [q for q in row_cells if q.form_row == row], key=lambda x: (x.form_cell is None, x.form_cell)
+            [q for q in row_cells if q.form_row == row], key=lambda x: (x.row_cell is None, x.row_cell)
         )
         rows.append(cells_in_row)
 
