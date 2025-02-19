@@ -38,6 +38,7 @@ from NEMO.models import (
     PhysicalAccessLevel,
     Project,
     ProjectDiscipline,
+    ProjectType,
     Qualification,
     RecurringConsumableCharge,
     Reservation,
@@ -78,6 +79,7 @@ from NEMO.serializers import (
     PhysicalAccessLevelSerializer,
     ProjectDisciplineSerializer,
     ProjectSerializer,
+    ProjectTypeSerializer,
     QualificationSerializer,
     RecurringConsumableChargeSerializer,
     ReservationSerializer,
@@ -245,6 +247,13 @@ class ProjectDisciplineViewSet(ModelViewSet):
     filename = "project_disciplines"
     queryset = ProjectDiscipline.objects.all()
     serializer_class = ProjectDisciplineSerializer
+    filterset_fields = {"id": key_filters, "name": string_filters, "display_order": number_filters}
+
+
+class ProjectTypeViewSet(ModelViewSet):
+    filename = "project_types"
+    queryset = ProjectType.objects.all()
+    serializer_class = ProjectTypeSerializer
     filterset_fields = {"id": key_filters, "name": string_filters, "display_order": number_filters}
 
 

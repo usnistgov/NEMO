@@ -40,6 +40,7 @@ from NEMO.models import (
     PhysicalAccessLevel,
     Project,
     ProjectDiscipline,
+    ProjectType,
     Qualification,
     RecurringConsumableCharge,
     Reservation,
@@ -192,6 +193,12 @@ class UserDocumentSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         }
 
 
+class ProjectTypeSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    class Meta:
+        model = ProjectType
+        fields = "__all__"
+
+
 class ProjectSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     principal_investigators = PrimaryKeyRelatedField(
         source="manager_set", many=True, queryset=User.objects.all(), allow_null=True, required=False
@@ -208,6 +215,7 @@ class ProjectSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "only_allow_tools": ("NEMO.serializers.ToolSerializer", {"many": True}),
             "principal_investigators": ("NEMO.serializers.UserSerializer", {"source": "manager_set", "many": True}),
             "users": ("NEMO.serializers.UserSerializer", {"source": "user_set", "many": True}),
+            "project_types": ("NEMO.serializers.ProjectTypeSerializer", {"many": True}),
         }
 
 
