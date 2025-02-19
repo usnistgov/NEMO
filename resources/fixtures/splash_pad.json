@@ -546,6 +546,90 @@
     }
   },
   {
+    "model": "NEMO.consumable",
+    "pk": 6,
+    "fields": {
+      "name": "220A (mL)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 7,
+    "fields": {
+      "name": "NX88 (ml)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 8,
+    "fields": {
+      "name": "556 (mL)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 9,
+    "fields": {
+      "name": "6103 (mL)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 10,
+    "fields": {
+      "name": "A7100 (mL)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
+    "model": "NEMO.consumable",
+    "pk": 11,
+    "fields": {
+      "name": "SS25E (mL)",
+      "category": 3,
+      "quantity": 1,
+      "reusable": true,
+      "visible": false,
+      "reminder_threshold": null,
+      "reminder_email": null,
+      "reminder_threshold_reached": false
+    }
+  },
+  {
     "model": "NEMO.consumablecategory",
     "pk": 1,
     "fields": {
@@ -557,6 +641,13 @@
     "pk": 2,
     "fields": {
       "name": "Material"
+    }
+  },
+  {
+    "model": "NEMO.consumablecategory",
+    "pk": 3,
+    "fields": {
+      "name": "Slurry"
     }
   },
   {
@@ -3901,7 +3992,7 @@
       "_maximum_future_reservation_time": null,
       "_missed_reservation_threshold": 30,
       "_max_delayed_logoff": null,
-      "_post_usage_questions": "",
+      "_post_usage_questions": "[\n    {\n        \"form_row\": 1,\n        \"type\": \"number\",\n        \"title\": \"How much NX88 slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"NX88\",\n        \"consumable\": \"NX88 (ml)\"\n    },\n    {\n        \"form_row\": 1,\n        \"type\": \"number\",\n        \"title\": \"How much SS25E slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"SS25E\",\n        \"consumable\": \"SS25E (mL)\"\n    },\n    {\n        \"form_row\": 2,\n        \"type\": \"number\",\n        \"title\": \"How much 6103 slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"6103\",\n        \"consumable\": \"6103 (mL)\"\n    },\n    {\n        \"form_row\": 2,\n        \"type\": \"number\",\n        \"title\": \"How much 556 slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"556\",\n        \"consumable\": \"556 (mL)\"\n    },\n    {\n        \"form_row\": 3,\n        \"type\": \"number\",\n        \"title\": \"How much 220A slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"220A\",\n        \"consumable\": \"220A (mL)\"\n    },\n    {\n        \"form_row\": 3,\n        \"type\": \"number\",\n        \"title\": \"How much A7100 slurry was used?\",\n        \"max-width\": 275,\n        \"suffix\": \"mL\",\n        \"required\": true,\n        \"default_choice\": null,\n        \"placeholder\": \"0\",\n        \"name\": \"A7100\",\n        \"consumable\": \"A7100 (mL)\"\n    }\n]",
       "_policy_off_between_times": false,
       "_policy_off_start_time": null,
       "_policy_off_end_time": null,
